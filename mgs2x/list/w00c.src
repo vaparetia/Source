@@ -1,0 +1,182 @@
+//
+//	w00c.src
+//
+//	written by Y.Matsuhana 1999.Oct
+//
+//	$Id: w00c.src,v 1.63 2002/07/17 12:15:00 usr04098 Exp $
+
+// 2D_tex.h 用のDefine
+#define WN_W00C
+#define ENV
+
+// 常駐データ
+block .use r_tnk0
+
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include "t_common.h"
+#include "common.h"
+#include "c_effect.h"
+include		item_box_tank.h
+
+// 赤外線ゴーグル テスト用
+itembox		item/goggle_ibox.kms
+itembox		item/goggle_ibox_sh.kms
+itembox		item/tgl_label.kms
+
+
+// ----- 柴田書き換え
+cvd		effect/gun_splash/usp_spl.cvd vn
+cvd		effect/gun_splash/m92_spl.cvd vn
+cvd		effect/gun_splash/fms_spl.cvd vn
+//cvd		weapon/usp/usp_spl.cvd
+//cvd		weapon/m92/m92_spl.cvd
+// ----- ここまで
+
+// キャラクタ
+//include		snake.h
+cvd		human/sna_skl/sna_skl3.cvd
+
+// 敵兵
+//include		ene_w03a.h	// 警備兵のみの場合
+include		ene_tank.h
+
+// 気絶オルガ
+//*
+include		orga_slp.h
+//*
+// オルガドックタグ
+goods		dogtag/dogtag_org.kms
+
+
+// 強制モーション
+mtn		sna_w00c.mls
+
+// 飛び降り兵モーション
+mtn 	ene_w00c.mls
+
+//*
+//mtn		corps.mls
+//*
+
+// 水密ドア開閉用モーション
+//*
+mtn			sna_hatch.mls
+mtn			hatch_door_sna.mls
+mtn			hatch_handle_sna.mls
+//*
+
+// 小物用
+// 小さいサイズのテクスチャはまとめておく
+pack_all	aaa.tri world/w00c/w00c_uc1.dar world/w00c/w00c_uc2.dar
+
+pack_all	aab.tri \
+	effect/wave/wave07.bmp \
+//	weapon/stun_grenade \
+//	world/w00b/horo1.dar \
+	world/w00b/obs_irs.dar \
+	world/w00b/obs_box1.dar \
+	world/w00b/obs_box2.dar \
+	world/w00b/obs_box3.dar \
+	world/w00b/obs_box4.dar
+
+// 最後に描画用
+pack_all	zzz.tri \
+	world/w00/w00_pl4.dar \
+	world/w00/w00_pl3.dar
+
+//weapon	stun_grenade
+//world	w00b/horo1.kms
+world	w00b/obs_irs.kms
+world	w00b/obs_box1.kms
+world	w00b/obs_box2.kms
+world	w00b/obs_box3.kms
+world	w00b/obs_box4.kms
+
+//ワイヤー／旗 頂点アニメーション
+cvd	world/w00/w00_vfg.cv2 vn
+cvd	world/w00/w00_vw1.cv2 vn
+cvd	world/w00/w00_vw2.cv2 vn
+cvd	world/w00/w00_vw3.cv2 vn
+cvd	world/w00/w00_vw4.cv2 vn
+cvd	world/w00/w00_vw5.cv2 vn
+cvd	world/w00/w00_vw6.cv2 vn
+
+//高波用
+option makexti6 -l 128
+pack_all	wave.tri effect/wave/wave06.bmp effect/wave/wave09_alp_ovl.bmp
+option makexti6
+
+//壊れた赤外線センサー
+meca	ir_sensor/irs_box.kms
+
+// ワールド(ワールドは最後)
+pack_all	ref_w00c.tri \
+	world/w00c/w00c_01e.dar
+
+world		w00c
+//world		w00_door
+
+// w00共通データ置き場
+world		w00
+
+lt2			w00c.lt2
+hazard		w00c.hzx
+
+
+// オルガの気絶モーション
+mtn		corps_org_w00c.mls
+
+world		w01e/tnc_died_obj.kms
+
+
+// スポットライト
+world	w00/w00k2.kms // (５F左舷メイン)
+world	w00/w00k5.kms // (上に積まれた鉄箱用)
+
+
+// リネーム
+rename		corps_org_w00c.mar		corps.mar
+rename		corps_org_w00c.sar		corps.sar
+
+// デバッグ用（00.06.07より使用開始）
+
+//マルチウエイトキャラモデル
+//human	sna_def/sna_mmt.evm
+//human	sna_def/sna_def_mh.evm
+
+// ビデオ用表情
+//rmt			sna_rmt
+//rmt		sna_rmt/face.rmt
+//rmt		sna_rmt/normal.rmt
+//rmt		sna_rmt/sna_face_anger.rmt
+//rmt		sna_rmt/sna_face_exciting.rmt
+//rmt		sna_rmt/sna_face_eye_close.rmt
+//rmt		sna_rmt/sna_face_eye_close2open.rmt
+//rmt		sna_rmt/sna_face_pain.rmt
+//rmt		sna_rmt/sna_face_relax.rmt
+//rmt		sna_rmt/sna_face_scream.rmt
+//rmt		sna_rmt/sna_face_sigh.rmt
+//rmt		sna_rmt/sna_face_speech_v.rmt
+//rmt		sna_rmt/sna_face_surprise.rmt
+//rmt		sna_rmt/sna_face_teeth.rmt
+//rmt		sna_rmt/sna_face_tension.rmt
+
+//sna_face_T12a1D71.rmt
+//sna_face_de002c23.rmt
+//sna_face_de002c23_002a.rmt
+//sna_face_de002c23_002b.rmt
+//sna_face_de002c23_009a.rmt
+//sna_face_de002c23_009b.rmt
+//sna_face_sneeze.rmt
+//sna_face_speech_a.rmt
+//sna_face_speech_e.rmt
+//sna_face_speech_i.rmt
+//sna_face_speech_n.rmt
+//sna_face_speech_o.rmt
+//sna_face_speech_u.rmt
+//test.rmt
+//test_01.rmt
+//test_02.rmt

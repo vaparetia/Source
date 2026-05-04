@@ -1,0 +1,563 @@
+/*
+	trtitle.gcl
+
+	VR体験版用タイトル
+
+	2002/06/04 Y.YANO
+	$Id: trtitle.gcl,v 1.4 2002/06/14 09:05:38 usr01749 Exp $
+*/
+
+#define STAGE_N_TITLE		1
+
+//#include "stdch.h"
+#include "vardef.h"
+
+#include "mksload.h"	//sload.hより先に呼ぶことでsload.hの中身を無視する
+#include "sload.h"
+#include "sound.h"
+#include "varinit.h"
+
+
+/******************************************************************/
+/* リソース */
+/******************************************************************/
+resource オプションの説明日本語 {
+VIB:
+	'バイブレーション（振動）のＯＮ／ＯＦＦを設定します',
+BLD:
+	'血の表示のＯＮ／ＯＦＦを設定します',
+SND:
+	'ステレオ／モノラルの選択をします',
+CAP:
+	'字幕のＯＮ／ＯＦＦを設定します',
+OWN:
+	'主観操作のタイプを設定します',
+ITEM:
+	'アイテム表示のタイプを設定します',
+QUICK:
+	'クイックチェンジのタイプを設定します',
+SCRADJ:
+	'画面位置の調整を行います',
+CLRADJ:
+	'明度調整画面を表示します',
+EXIT:
+	'前画面へ戻ります',
+COLORADJ:
+	'モニター本体の明るさ設定を調整して、|'
+	'赤色のラインより下のグレースケールが|'
+	'見えなくなるようにすると、モニターの|'
+	'明るさがこのゲームを遊ぶのに最も適し|'
+	'た状態になります。'
+};
+
+resource レーダーの説明日本語 {
+RAD_TYPE1:
+	'初心者用レーダー イントルード時も表示します',
+RAD_TYPE2:
+	'標準レーダー イントルード時は非表示にします'
+RAD_OFF:
+	'レーダーをＯＦＦにします'
+}
+
+resource クイックチェンジの説明日本語 {
+unequip:
+	'選択した武器・装備品を装備/解除します'
+
+previous:
+	'前に装備していた武器・装備品と入れかえます'
+}
+
+
+resource オプションの説明英語 {
+VIB:
+	'Turn the vibration ON / OFF.',
+// RADはダミーデータ
+BLD:
+	'Turn blood display ON / OFF.',
+SND:
+	'Select STEREO / MONAURAL sound.',
+CAP:
+	'Turn the captions ON / OFF.',
+OWN:
+	'Select First Person View control type.',
+ITEM:
+	'Select item display type.',
+QUICK:
+	'Select quick change type.',
+SCRADJ:
+	'Adjust screen position.',
+CLRADJ:
+	'Display color adjustment screen.',
+EXIT:
+	'Return to previous screen.',
+COLORADJ:
+	'Adjust the monitor brightness|'
+	'so that the gray scale under|'
+	'the red line is no longer seen|'
+	'to obtain optimal brightness|'
+	'for this game.'
+};
+
+resource レーダーの説明英語 {
+RAD_TYPE1:
+	'Radar appears even during Intrusion View.',
+RAD_TYPE2:
+	'Radar does not appear during Intrusion View.'
+RAD_OFF:
+	'Radar will not appear at all.'
+}
+
+resource クイックチェンジの説明英語 {
+unequip:
+	'Equip/unequip selected weapon/item.'
+
+previous:
+	'Switch between currently and previously equipped|'
+	'weapon/item.'
+}
+
+
+resource オプションの説明フランス語 {
+VIB:
+	'Mettre la vibration sur ON / OFF.'
+// RADはダミーデータ
+BLD:
+	{Mettre l'affichage du sang sur ON / OFF.}
+SND:
+	'Choisir entre le son STEREO et MONO.'
+CAP:
+	'Mettre les sous-titres sur ON / OFF.'
+OWN:
+	{Choisir l'Observation &`a la premi&`ere personne.}
+ITEM:
+	{Choisir l'affichage des objets.}
+QUICK:
+	'Choisir les changements rapides.'
+SCRADJ:
+	{R&'egler la position de l'&'ecran.}
+CLRADJ:
+	{Afficher l'&'ecran de r&'eglage des couleurs.}
+EXIT:
+	{Retourner dans l'&'ecran pr&'ec&'edent.}
+COLORADJ:
+	{Afin d'obtenir la luminosit&'e|
+	 optimale pour ce jeu, r&'eglez la|
+	 luminosit&'e du moniteur de mani&`ere|
+	 &`a rendre invisible l'&'echelle de gris|
+	 situ&'ee sous la ligne rouge.}
+};
+
+resource レーダーの説明フランス語 {
+RAD_TYPE1:
+	{Le radar s'affiche m&^eme en Point de vue d'intrusion.}
+RAD_TYPE2:
+	{Le radar ne s'affiche pas en Point de vue d'intrusion.}
+RAD_OFF:
+	{Le radar ne s'affiche pas du tout.}
+}
+
+resource クイックチェンジの説明フランス語 {
+unequip:
+	{Equiper/Ne pas &'equiper une arme/un outil.}
+
+previous:
+	{Alterner des armes/des outils pr&'ealablement &'equip&'es.}
+}
+
+
+resource オプションの説明ドイツ語 {
+VIB:
+	'Vibration EIN / AUS.'
+// RADはダミーデータ
+BLD:
+	'Blutanzeige EIN / AUS.'
+SND:
+	'W&~ahlen Sie STEREO / MONO.'
+CAP:
+	'Untertitel EIN / AUS.'
+OWN:
+	'Beobachtungsperspektive w&~ahlen.'
+ITEM:
+	'Displaytyp w&~ahlen.'
+QUICK:
+	'Schnellwechseltyp w&~ahlen.'
+SCRADJ:
+	'Bildschirmposition regulieren.'
+CLRADJ:
+	'Farbregulierungsbildschirm einblenden.'
+EXIT:
+	'Zur&~uck zum vorigen Bildschirm.'
+COLORADJ:
+	'F&~ur optimale Helligkeit die|'
+	'Monitorhelligkeit so|'
+	'einstellen, da&~s die Graustufe|'
+	'unter der roten Linie nicht|'
+	'mehr sichtbar ist.'
+};
+
+resource レーダーの説明ドイツ語 {
+RAD_TYPE1:
+	'Radar erscheint auch in der Eindringperspektive.'
+RAD_TYPE2:
+	'Radar erscheint nicht in der Eindringperspektive.'
+RAD_OFF:
+	'Radar erscheint &~uberhaupt nicht.'
+}
+
+resource クイックチェンジの説明ドイツ語 {
+unequip:
+	'Nenme/Gebe die ausgew&~ahelten Waffen/Gegenst&~ande.'
+
+previous:
+	'Wechsle zwischen momentaner und vohergehender|'
+	'Ausr&~ustung an Waffen/Gegenst&~ande.'
+}
+
+
+resource オプションの説明イタリア語 {
+VIB:
+	'Attiva / disattiva la vibrazione.'
+// RADはダミーデータ
+BLD:
+	'Attiva / disattiva la visualizzazione del sangue.'
+SND:
+	'Seleziona sonoro in STEREO / MONO.'
+CAP:
+	'Attiva / disattiva le didascalie.'
+OWN:
+	'Seleziona tipo di controllo in Visuale Soggettiva.'
+ITEM:
+	'Seleziona tipo di visualizzazione oggetti.'
+QUICK:
+	'Seleziona tipo di cambio rapido.'
+SCRADJ:
+	'Regola posizione schermata.'
+CLRADJ:
+	'Visualizza schermata di regolazione colore.'
+EXIT:
+	'Torna alla schermata precedente.'
+COLORADJ:
+	'Regola luminosit&`a del monitor|'
+	'in modo da rendere invisibile la|'
+	'scala di grigi sotto la linea rossa|'
+	'ed ottenere la luminosit&`a ottimale|'
+	'per questo gioco.'
+};
+
+resource レーダーの説明イタリア語 {
+RAD_TYPE1:
+	'Il radar appare anche nella Visuale Incursione.'
+RAD_TYPE2:
+	'Il radar non appare nella Visuale Incursione.'
+RAD_OFF:
+	'Il radar non appare mai.'
+}
+
+resource クイックチェンジの説明イタリア語 {
+unequip:
+	'Equipaggiamento/senza equipaggiamento arma/articolo|'
+	'selezionati.'
+
+previous:
+	'Cambia tra corrente e precedente arma/articolo|'
+	'selezionati.'
+}
+
+
+resource オプションの説明スペイン語 {
+VIB:
+	{ACTIVAR / DESACTIVAR la funci&'on vibratoria.}
+// RADはダミーデータ
+BLD:
+	'Jugar CON / SIN Sangre.'
+SND:
+	{Selecciona sonido EST&'EREO / MONO.}
+CAP:
+	'Jugar CON / SIN anotaciones.'
+OWN:
+	'Selecciona el tipo de control para la Visi&\'on Primera|'
+	'Persona.'
+ITEM:
+	{Selecciona la forma de visualizaci&'on del objeto.}
+QUICK:
+	{Selecciona el tipo de cambio r&'apido.}
+SCRADJ:
+	{Ajustar la posici&'on de la pantalla.}
+CLRADJ:
+	'Muestra la pantalla de ajuste del color.'
+EXIT:
+	'Volver a la pantalla anterior.'
+COLORADJ:
+	'Ajusta el brillo de la pantalla. Cuando|'
+	'la escala de color gris que aparece|'
+	'bajo la l&\'inea roja se deje de ver,|'
+	'el brillo ser&\'a el &\'optimo durante el|'
+	'juego.'
+};
+
+resource レーダーの説明スペイン語 {
+RAD_TYPE1:
+	{El radar aparece incluso durante la Visi&'on Intrusi&'on.}
+RAD_TYPE2:
+	{El radar no aparece durante la Visi&'on Intrusi&'on.}
+RAD_OFF:
+	'El radar no aparece nunca.'
+}
+
+resource クイックチェンジの説明スペイン語 {
+unequip:
+	'Equipar/desactivar arma/objet seleccionada.'
+
+previous:
+	'Cambiar entre el arma/objeto seleccionado ahora|'
+	'y el anterior.'
+}
+
+command ローカルリソース設定 \
+	-string オプションの説明日本語 		[オプションの説明日本語:*] \
+			オプションの説明英語 		[オプションの説明英語:*] \
+			オプションの説明フランス語 	[オプションの説明フランス語:*] \
+			オプションの説明ドイツ語	[オプションの説明ドイツ語:*] \
+			オプションの説明スペイン語 	[オプションの説明スペイン語:*] \
+			オプションの説明イタリア語 	[オプションの説明イタリア語:*] \
+			レーダーの説明日本語	[レーダーの説明日本語:*] \
+			レーダーの説明英語		[レーダーの説明英語:*] \
+			レーダーの説明フランス語[レーダーの説明フランス語:*] \
+			レーダーの説明ドイツ語	[レーダーの説明ドイツ語:*] \
+			レーダーの説明スペイン語[レーダーの説明スペイン語:*] \
+			レーダーの説明イタリア語[レーダーの説明イタリア語:*] \
+			クイックチェンジの説明日本語	[クイックチェンジの説明日本語:*] \
+			クイックチェンジの説明英語		[クイックチェンジの説明英語:*] \
+			クイックチェンジの説明フランス語[クイックチェンジの説明フランス語:*] \
+			クイックチェンジの説明ドイツ語	[クイックチェンジの説明ドイツ語:*] \
+			クイックチェンジの説明スペイン語[クイックチェンジの説明スペイン語:*] \
+			クイックチェンジの説明イタリア語[クイックチェンジの説明イタリア語:*] 
+/******************************************************************/
+/******************************************************************/
+
+
+
+proc サウンド設定 {
+	chara サウンドマネージャー ＳＤマネ -pak 0
+}
+
+if( $b:タイトルステップ == 0 ){
+		chara 2Dレイアウトドライバ ２Ｄドライバ
+		@タイトル画面表示
+	} else if( $b:タイトルステップ == 2 ){
+		// タイトル
+		chara 2Dレイアウトドライバ ２Ｄドライバ
+
+		print 'タイトル画面表示'
+		@タイトル画面表示;
+	}
+
+	@サウンド設定
+
+	#ifdef JAPANESE
+		command 字幕制御 -y 348
+	#else
+		command 字幕制御 -y 400
+	#endif
+
+/***************************************************************************************************/
+// タイトル画面表示
+/***************************************************************************************************/
+	proc タイトル画面表示 {
+		if ( !($w:タイトルメニュー設定 & d:TITLE_MENU_DISPED_WARNING_VIOLENCE ) ){
+			print 'デモループ一回終了'
+			eval( $w:タイトルメニュー設定 = $w:タイトルメニュー設定 | d:TITLE_MENU_DISPED_WARNING_VIOLENCE )
+		}
+		chara ノード画面バックグラウンド バックグラウンド
+		@タイトル画面起動
+		print 'ソングスタート'
+		mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_PLAY_01
+	}
+
+	proc タイトル画面起動 {
+		chara タイトル画面マネージャー タイトル画面 \
+			-d title_logo title_face \
+			-p タイトル画面終了 \
+			-b バックグラウンド \
+			-f $w:顔フラグ
+	}
+
+	proc タイトル画面終了 $:返り値 {
+		if( $:返り値 == 0 ){
+			print 'セレクト' 
+			@game_select
+		} else {
+			command セットサウンドコード -c d:SNG_FOUTS_S
+			@mgs2_title
+		}
+	}
+
+	// MGS2 TITLE
+	proc mgs2_title {
+		mesg ノード画面バックグラウンド バックグラウンド kill
+
+		eval ($w:顔フラグ = $w:顔フラグ ^ 1);
+
+		eval( $b:タイトルステップ = 0 );
+		restart
+	}
+
+
+/***************************************************************************************************/
+// オプション
+/***************************************************************************************************/
+
+	proc sel_option {
+		chara オプション画面マネージャー オプション画面 \
+			-d node_menu \
+			-p オプション終了プロシージャー \
+			-b バックグラウンド \
+			-n 	2 \
+			-l 	7 1 \ 
+			-r 	オプションの説明英語 		レーダーの説明英語 			クイックチェンジの説明英語 		 \
+				オプションの説明フランス語 	レーダーの説明フランス語	クイックチェンジの説明フランス語 \
+				オプションの説明ドイツ語 	レーダーの説明ドイツ語 		クイックチェンジの説明ドイツ語 	 \
+				オプションの説明スペイン語 	レーダーの説明スペイン語 	クイックチェンジの説明スペイン語 \
+				オプションの説明イタリア語 	レーダーの説明イタリア語 	クイックチェンジの説明イタリア語 \
+				0 0 0 \ //韓国語
+				オプションの説明日本語 		レーダーの説明日本語 		クイックチェンジの説明日本語 	 		
+	}
+
+	proc オプション終了プロシージャー {
+		// オプションの終了
+		mesg ゲームセレクト画面マネージャー ゲームセレクト画面 ret_by_cancel
+
+#ifdef d:EU
+		command 字幕言語設定
+#endif
+
+	}
+
+/***************************************************************************************************/
+// ゲームセレクト
+/***************************************************************************************************/
+	proc game_select {
+		chara ノード画面フレームアニメーション ノードフレーム \
+			-d node_frame \
+			-b バックグラウンド
+
+		chara ゲームセレクト画面マネージャー ゲームセレクト画面 \
+			-d title_menu \
+			-p ゲームセレクト画面プロシージャー \
+			-b バックグラウンド
+	}
+
+	proc ゲームセレクト画面プロシージャー $:モード \
+												$:引数１ \ // 1ST_PLAY TANKER PLANT T&P
+												$:引数２ \ // 難易度
+												$:引数３ \ // 見つかりモード
+												$:引数４ \ // アンケート結果
+												$:引数５ \
+	{
+		if( $:モード == -1 ){
+			// 終了
+			mesg ノード画面フレームアニメーション ノードフレーム kill
+
+			@タイトル画面起動
+		} else if( $:モード == 0 ){
+			// ゲームセレクト
+#if 0
+			if( $:引数１ == 1 ){
+				// ロードゲームの起動
+				//@load_game
+			} else 
+#endif
+			if( $:引数１ == 1 ){
+				// オプションの起動
+				print 'selselselselselselsel'
+				@sel_option
+			} 
+#if 0
+			else if( $:引数１ == 3 ){
+				// スペシャルモードの起動
+				eval($b:スペシャルモードのスタートカーソル位置 = 0);
+				//@special_scr
+			} else if( $:引数１ == 4 ){
+				// ハードディスクインストーラーの起動
+			}
+#endif
+		} else if( $:モード == 1 ){
+#if 0
+			// ニューゲーム
+
+			// このプレイでタンカーをクリアしたこと表すフラグを消去
+			eval( $w:コンフィグ設定 = $w:コンフィグ設定 & ~d:CONFIG_TANKER_CLEARED );
+
+			// ゲームモードの設定
+			if( $:引数１ == 0 ){
+				print '１ＳＴプレイ'
+
+				if( $:引数４ <= 2 ) {
+					print '１ＳＴプレイ タンカープラント'
+					eval( $s:global_ゲームモード = タンカープラント )
+				} else {
+					print '１ＳＴプレイ プラント編'
+					eval( $s:global_ゲームモード = プラント編 )
+				}
+			} else if( $:引数１ == 1 ){
+				print 'タンカー編'
+				eval( $s:global_ゲームモード = タンカー編 )
+			} else if( $:引数１ == 2 ){
+				print 'プラント編'
+				eval( $s:global_ゲームモード = プラント編 )
+			} else if( $:引数１ == 3 ){
+				print 'タンカープラント'
+				eval( $s:global_ゲームモード = タンカープラント )
+			}
+
+			// ゲーム難易度の設定
+			eval( $b:n_title_ゲーム難易度 = ( $:引数２ + 1 ) * 10 )
+
+			// 見つかりモード
+			if( $:引数３ == 0 ){
+				eval( $f:title_discover = d:TRUE )
+			} else {
+				eval( $f:title_discover = d:FALSE )
+			}
+
+			if( $5 < 0 ) {
+				command セットサウンドコード -c d:SNG_FOUTS_S
+				@１周目フィクション表記
+			} else {
+				command セットサウンドコード -c d:SNG_FOUTS_S
+				chara delay アクションレベル決定ディレイ -time 60 -exec {
+					command Stream t:vc126102 -p １周目フィクション表記 //-w
+				}
+			}
+#else
+			command セットサウンドコード -c d:SNG_FOUTS_S
+			@load_select	//VR TRIAL select
+#endif
+		} else if( $:モード == 2 ){
+			// ロードゲーム
+		} else if( $:モード == 3 ){
+			// オプション
+		} else if( $:モード == 4 ){
+			// スペシャル
+		} else if( $:モード == 5 ){
+			// ハードディスクインストール
+		}
+	}	
+
+
+/***************************************************************************************************/
+// ゲームスタート
+/***************************************************************************************************/
+
+proc resident_clear {
+	/* 常駐ディレクトリ情報クリア（2001．9.4 園山追加） */
+	dim $i:常駐ディレクトリ[ 4 ]
+	eval ( $i:常駐ディレクトリ[ 0 ] = 0 )
+	eval ( $i:常駐ディレクトリ[ 1 ] = 0 )
+	eval ( $i:常駐ディレクトリ[ 2 ] = 0 )
+	eval ( $i:常駐ディレクトリ[ 3 ] = 0 )
+	command varsave $i:常駐ディレクトリ[ 0 ]
+	command varsave $i:常駐ディレクトリ[ 1 ]
+	command varsave $i:常駐ディレクトリ[ 2 ]
+	command varsave $i:常駐ディレクトリ[ 3 ]
+}

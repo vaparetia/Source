@@ -1,0 +1,94 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+
+	void edgePostLogLuvToFloats( void* output, void* input, uint32_t count );
+	void edgePostLogLuvToFX16( void* output, void* input, uint32_t count );
+	void edgePostLogLuvToArgb( void* output, void* input, uint32_t count );
+	
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+.include "edgepost_helpers.inc"
+.include "edgepost_math_helpers.inc"
+.include "edgepost_luv_helpers.inc"
+
+.macro EDGEPOST_CONVERTFROMLOGLUV( OUTPIXELSIZE )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	EDGEPOST_DECLARE_MATH_HELPER_CONSTANTS
+	EDGEPOST_DECLARE_LUV_HELPER_CONSTANTS
+	
+	// We do this backwards.
+	.reg		backoutput, backinput
+	mpyui		backoutput, count, OUTPIXELSIZE
+	mpyui		backinput, count, 4
+	a			backoutput, backoutput, output
+	a			backinput, backinput, input
+
+loop:
+	ai			backoutput, backoutput, -( OUTPIXELSIZE * 4)
+	ai			backinput, backinput, -0x10
+	ai			count, count, -4
+	
+	// Load pixels
+	.reg		s0, rgb0, rgb1, rgb2, rgb3
+	lqd			s0, 0x00( backinput )
+	EDGEPOST_CONVERT_FROM_PACKED_LOGLUV( s0, rgb0, rgb1, rgb2, rgb3 )
+.endmacro
+
+.cfunc void edgePostLogLuvToFloats( qword output, qword input, qword count )
+	EDGEPOST_CONVERTFROMLOGLUV( 16 )
+	stqd		rgb0, 0x00( backoutput )
+	stqd		rgb1, 0x10( backoutput )
+	stqd		rgb2, 0x20( backoutput )
+	stqd		rgb3, 0x30( backoutput )
+	brnz		count, loop
+.endfunc
+
+.cfunc void edgePostLogLuvToFX16( qword output, qword input, qword count )
+	EDGEPOST_CONVERTFROMLOGLUV( 8 )
+	
+	// convert to fixed 0:5:11
+	cfltu		rgb0, rgb0, 11
+	cfltu		rgb1, rgb1, 11
+	cfltu		rgb2, rgb2, 11
+	cfltu		rgb3, rgb3, 11
+	
+	// pack and store
+	.reg		out_color0, out_color1
+	EDGEPOST_PACK_PIXELS16( out_color0, rgb0, rgb1)
+	EDGEPOST_PACK_PIXELS16( out_color1, rgb2, rgb3)
+	stqd		out_color0, 0x00( backoutput )
+	stqd		out_color1, 0x10( backoutput )
+	brnz		count, loop
+.endfunc
+
+.cfunc void edgePostLogLuvToArgb( qword output, qword input, qword count )
+	EDGEPOST_CONVERTFROMLOGLUV( 4 )
+	
+	EDGEPOST_CLAMP_FLOAT( rgb0 )
+	EDGEPOST_CLAMP_FLOAT( rgb1 )
+	EDGEPOST_CLAMP_FLOAT( rgb2 )
+	EDGEPOST_CLAMP_FLOAT( rgb3 )
+	EDGEPOST_FLOAT_TO_U8( rgb0, rgb0 )
+	EDGEPOST_FLOAT_TO_U8( rgb1, rgb1 )
+	EDGEPOST_FLOAT_TO_U8( rgb2, rgb2 )
+	EDGEPOST_FLOAT_TO_U8( rgb3, rgb3 )
+	 
+	// pack and store
+	.reg		out_color
+	EDGEPOST_PACK_PIXELS8( out_color, rgb0, rgb1, rgb2, rgb3 )
+	stqd		out_color, 0x00( backoutput )
+	brnz		count, loop
+.endfunc
+

@@ -1,0 +1,343 @@
+;
+; NOTE!!!!!
+;
+; This file is a copy of bound_vu.dsm.  This file was modified to contain
+; comments in english.  It has also been reformatted for readability (vertical
+; space only, no code has been reordered).
+
+
+
+
+
+;
+;	bound_vu.dsm
+;	バウンディングチェック用マイクロプログラム(screen.c用)
+;
+;	1999/12/13 K.Takabe
+;	$Id: bound_vu.dsm,v 1.1.1.3 2002/11/19 11:42:02 Yoshizawa1 Exp $
+;
+
+.global BoundingCheckVu0
+.global BoundingCheckVu0_Func
+
+; プログラム呼び出しＶＩＦコード一覧
+BoundingCheckVu0_Func:
+	.word	( BoundCheck / 8 )
+
+.data
+.DmaPackVif 0			; タグ中のＶＩＦコード無効
+
+
+; プログラム転送ＤＭＡタグ定義
+BoundingCheckVu0:	; マイクロプログラム読み込み用タグ記憶ポインタ
+	DMAref *, _vu_prog	; DMArefによるデータ転送を行う
+	.EndDmaData			; DMAパケットの終了
+
+
+; プログラム記述部
+.DmaData _vu_prog		; DMArefで転送するデータの宣言
+	MPG 0,*				; マイクロプログラム転送VIFcode
+
+.vu
+
+
+;	upper		.					lower		.
+	nop								b			BoundCheck			; 
+	nop								nop								; 
+	nop								b			CalcSortZ			; 
+	nop								nop								; 
+	nop								b			GetEnvelopeMatrix	; 
+	nop								nop								; 
+	nop								b			MakeMatrix			; 
+	nop								nop								; 
+
+; バウンディングをチェックする
+; μプログラムインターフェイス
+; vf1:バウンディング頂点１
+; vf2:バウンディング頂点２
+; vf3:ウィンドウ座標算出用係数
+; vf4-7:透視変換マトリクス
+; vf31w:Ｚ中央値
+
+BoundCheck:
+	; バウンディングで構成される８頂点を合成する
+	nop								move.xyz	vf8,vf1				; 	
+	add.xyz			vf15,vf0,vf2	move.yz		vf9,vf1				; 	
+	add.x			vf9,vf0,vf2		move.xz		vf10,vf1			; 	
+	add.y			vf10,vf0,vf2	move.z		vf11,vf1			; 	
+	add.xy			vf11,vf0,vf2	move.xy		vf12,vf1			; 	
+	add.z			vf12,vf0,vf2	move.y		vf13,vf1			; 	
+	add.xz			vf13,vf0,vf2	move.x		vf14,vf1			; 	
+	add.yz			vf14,vf0,vf2	loi			0.5					; 
+	
+	; calculate the center point and store it in vf31.
+	mulai.xyz		ACC,vf1,I		nop								; 
+	maddi.xyz		vf31,vf2,I		nop								; 
+	
+	; 先頭４頂点を透視変換する
+	; first matrix multiply.
+	mulax.xyzw		ACC, vf4,vf8	nop								; 
+	madday.xyzw		ACC, vf5,vf8	nop								; 
+	maddaz.xyzw		ACC, vf6,vf8	nop								; 
+	maddw.xyzw		vf8, vf7,vf0	nop								; 
+
+	; second matrix multiply with internleaved first corner clip.
+	mulax.xyzw		ACC, vf4,vf9	nop								; 
+	madday.xyzw		ACC, vf5,vf9	nop								; 
+	maddaz.xyzw		ACC, vf6,vf9	nop								; 
+	clipw.xyz		vf8xyz,vf8w		nop								; Clip the first corner.
+	maddw.xyzw		vf9, vf7,vf0	nop								; 
+	
+	; third matrix multiply with internleaved second corner clip.
+	mulax.xyzw		ACC, vf4,vf10	loi			 0.0005				; 1.0/2000.0 - ?? Load a small value into I ??
+;	mulax.xyzw		ACC, vf4,vf10	loi			 4.885197850513e-4	; 1.0/2047.0
+;	mulax.xyzw		ACC, vf4,vf10	loi			 0.002604166666667	; 1.0/512.0
+	madday.xyzw		ACC, vf5,vf10	nop								; 
+	maddaz.xyzw		ACC, vf6,vf10	fcget		vi8					; Get the first corner clip results.
+	clipw.xyz		vf9xyz,vf9w		nop								; Clip the second corner.
+	maddw.xyzw		vf10, vf7,vf0	nop								; 
+
+	; fourth matrix multiply with internleaved third corner clip.
+	mulax.xyzw		ACC, vf4,vf11	nop								; 	
+	madday.xyzw		ACC, vf5,vf11	nop								; 
+	maddaz.xyzw		ACC, vf6,vf11	fcget		vi9					; Get the second corner clip results.
+	clipw.xyz		vf10xyz,vf10w	nop								; Clip the third corner.
+	maddw.xyzw		vf11, vf7,vf0	nop								; 
+
+	; scale the first four corners with internleaved fourth corner clip.
+	mul.xy			vf8,vf8,vf3		nop								; 
+	mul.xy			vf9,vf9,vf3		nop								; 
+	mul.xy			vf10,vf10,vf3	fcget		vi10				; Get the third corner clip results.
+	clipw.xyz		vf11xyz,vf11w	nop								; Clip the fourth corner.
+	mul.xy			vf11,vf11,vf3	nop								; 
+	
+	; multiply the first four scaled corners by I (I = 1/2000).
+	muli.xy			vf8,vf8,I		nop								; 
+	muli.xy			vf9,vf9,I		nop								; 
+	muli.xy			vf10,vf10,I		fcget		vi11				; Get the fourth corner clip results.
+	muli.xy			vf11,vf11,I		nop								; 
+
+	; 後半４頂点を透視変換する
+	; fifth matrix multiply.
+	mulax.xyzw		ACC, vf4,vf12	iand		vi2,vi8,vi9			; Calculate AND flags v0-v1.
+	madday.xyzw		ACC, vf5,vf12	ior			vi3,vi8,vi9			; Calculate OR flags v0-v1.
+	maddaz.xyzw		ACC, vf6,vf12	iand		vi4,vi10,vi11		; Calculate AND flags v2-v3.
+	maddw.xyzw		vf12, vf7,vf0	ior			vi5,vi10,vi11		; Calculate OR flags v2-v3.
+	
+	; sixth matrix multiply with internleaved fifth corner clip.
+	mulax.xyzw		ACC, vf4,vf13	iand		vi2,vi2,vi4			; Calculate AND flags v0-v3.
+	madday.xyzw		ACC, vf5,vf13	ior			vi3,vi3,vi5			; Calculate OR flags v0-v3.
+	maddaz.xyzw		ACC, vf6,vf13	iaddiu		vi7,vi0,0x3f		; Place 0x3f in v7.
+	clipw.xyz		vf12xyz,vf12w	nop								;
+	maddw.xyzw		vf13, vf7,vf0	nop								; 
+	
+	; seventh matrix multiply with interleaved sixth corner clip.
+	mulax.xyzw		ACC, vf4,vf14	nop								; 
+	madday.xyzw		ACC, vf5,vf14	nop								; 
+	maddaz.xyzw		ACC, vf6,vf14	fcget		vi12				; Get the fifth corner clip results.
+	clipw.xyz		vf13xyz,vf13w	nop								;
+	maddw.xyzw		vf14, vf7,vf0	nop								; 
+	
+	; eigth matrix multiply with interleaved seventh corner clip.
+	mulax.xyzw		ACC, vf4,vf15	nop								; 
+	madday.xyzw		ACC, vf5,vf15	nop								; 
+	maddaz.xyzw		ACC, vf6,vf15	fcget		vi13				; Get the sixth corner clip results.
+	clipw.xyz		vf14xyz,vf14w	iand		vi8,vi12,vi13		; Calculate AND flags v4-v5.
+	maddw.xyzw		vf15, vf7,vf0	ior			vi9,vi12,vi13		; Calculate OR flags v4-v5.
+	
+	; scale the last four corners with interleaved eighth corner clip.
+	mul.xy			vf12,vf12,vf3	nop								; 
+	mul.xy			vf13,vf13,vf3	nop								; 
+	mul.xy			vf14,vf14,vf3	fcget		vi14				; 
+	clipw.xyz		vf15xyz,vf15w	nop								; 
+	mul.xy			vf15,vf15,vf3	nop								; 
+
+	; multiply the last four scaled corners by I (I = 1/2000).
+	muli.xy			vf12,vf12,I		nop								; 
+	muli.xy			vf13,vf13,I		nop								; 
+	muli.xy			vf14,vf14,I		fcget		vi15				; Get the seventh corner clip results.
+	muli.xy			vf15,vf15,I		iand		vi10,vi14,vi15		; Calculate AND flags v6-v7.
+
+	; ＸＹのプリミティブ座標範囲チェックとクリッピングフラグの合成
+	; clip scaled corner points.
+	clipw.xyz		vf8,vf8			ior			vi11,vi14,vi15		; Calculate OR flags v6-v7.
+	clipw.xyz		vf9,vf9			iand		vi4,vi8,vi10		; Calculate AND flags v4-v7.
+	clipw.xyz		vf10,vf10		ior			vi5,vi9,vi11		; Calculate OR flags v4-v7.
+	clipw.xyz		vf11,vf11		iand		vi2,vi2,vi4			; Calculate AND flags v0-v7.
+	clipw.xyz		vf12,vf12		ior			vi3,vi3,vi5			; Calculate OR flags v0-v7.
+	clipw.xyz		vf13,vf13		iand		vi2,vi2,vi7			; 
+	clipw.xyz		vf14,vf14		iand		vi3,vi3,vi7			; 
+	clipw.xyz		vf15,vf15		fcand		vi1,0x3cf3cf		; 
+	mulax.xyzw		ACC, vf4,vf31	iadd		vi6,vi0,vi1			; set the value of vi1 into vi6.
+	madday.xyzw		ACC, vf5,vf31	nop								; 
+	maddaz.xyzw		ACC, vf6,vf31	nop								; 
+	maddw[e].xyzw	vf31, vf7,vf0	fcand		vi1,0x3cf3cf		; 
+	nop								ior			vi1,vi1,vi6			; 
+
+
+
+; ソート用のＺ値を求める
+; μプログラムインターフェイス
+; vf1:バウンディング頂点１
+; vf2:バウンディング頂点２
+; vf3:ウィンドウ座標算出用係数
+; vf4-7:透視変換マトリクス
+; vf31w:Ｚ中央値
+CalcSortZ:
+	; バウンディングで構成される８頂点を合成する
+	nop								loi			0.5					; 
+	mulai.xyz		ACC,vf1,I		nop								; 
+	maddi.xyz		vf31,vf2,I		nop								; 
+	mulax.xyzw		ACC, vf4,vf31	nop								; 
+	madday.xyzw		ACC, vf5,vf31	nop								; 
+	maddaz[e].xyzw	ACC, vf6,vf31	nop								; 
+	maddw.xyzw		vf31, vf7,vf0	nop								; 
+
+
+; シングルウェイトエンベロープ計算用マトリクスの算出（スケールは無視）
+; μプログラムインターフェイス
+; vf3:親からのオフセットベクトル(trans)
+; vf4-7:オブジェクトマトリクス(base)
+; vf8-11:親オブジェクトマトリクス(parent)
+GetEnvelopeMatrix:
+	; ApplyMatrix( parent, trans )
+	mulax.xyzw		ACC,vf8,vf3		nop								; 
+	madday.xyzw		ACC,vf9,vf3		nop								; 
+	maddaz.xyzw		ACC,vf10,vf3	nop								; 
+	maddw.xyzw		vf11,vf11,vf0	nop								; 
+	; InversMatrix( base )
+	sub.xyz			vf1,vf0,vf7		nop								; 
+	addz.y			vf14,vf0,vf5	move.x		vf12,vf4			; 
+	addx.y			vf12,vf0,vf5	move.y		vf13,vf5			; 
+	addx.z			vf12,vf0,vf6	move.z		vf14,vf6			; 
+	addy.x			vf13,vf0,vf4	move.w		vf15,vf0			; 
+	addy.z			vf13,vf0,vf6	mr32.w		vf12,vf0			; 
+	addz.x			vf14,vf0,vf4	mr32.w		vf13,vf0			; 
+	mulax.xyz		ACC,vf12,vf1	mr32.w		vf14,vf0			; 
+	madday.xyz		ACC,vf13,vf1	nop								; 
+	maddz.xyz		vf15,vf14,vf1	nop								; 
+	; MulMatrix( inv_base, parent );
+	mulax.xyzw		ACC,vf12,vf8	nop								; 
+	madday.xyzw		ACC,vf13,vf8	nop								; 
+	maddaz.xyzw		ACC,vf14,vf8	nop								; 
+	maddw.xyzw		vf16,vf15,vf8	nop								; 
+	mulax.xyzw		ACC,vf12,vf9	nop								; 
+	madday.xyzw		ACC,vf13,vf9	nop								; 
+	maddaz.xyzw		ACC,vf14,vf9	nop								; 
+	maddw.xyzw		vf17,vf15,vf9	nop								; 
+	mulax.xyzw		ACC,vf12,vf10	nop								; 
+	madday.xyzw		ACC,vf13,vf10	nop								; 
+	maddaz.xyzw		ACC,vf14,vf10	nop								; 
+	maddw.xyzw		vf18,vf15,vf10	nop								; 
+	mulax.xyzw		ACC,vf12,vf11	nop								; 
+	madday.xyzw		ACC,vf13,vf11	nop								; 
+	maddaz[e].xyzw	ACC,vf14,vf11	nop								; 
+	maddw.xyzw		vf19,vf15,vf00	nop								; 
+
+.if 0
+; 演算に必要なマトリクスの生成を行う
+; 入力
+; vf20-vf23:透視変換×カメラビューマトリクス(eye_pers)
+; vf24-vf27:ビューポートマッピング×透視変換×カメラビューマトリクス(eye_pers2)
+; vf04-vf07:オブジェクトマトリクス(world)
+; vf08-vf11:親オブジェクトマトリクス(p_world)
+; vf3:親からのオフセットベクトル(trans)
+; 出力
+; vf16-vf19:エンベロープ用マトリクス(inv_base)
+; vf20-vf23:透視変換×カメラビュー×オブジェクトマトリクス(eye_pers)
+; vf24-vf27:ビューポートマッピング×透視変換×カメラビュー×オブジェクトマトリクス(screen2)
+MakeMatrix:
+	; MulMatrix( screen, eye_pers, world );
+	mulax.xyzw		ACC ,vf20,vf04	nop								; 
+	madday.xyzw		ACC ,vf21,vf04	nop								; 
+	maddaz.xyzw		ACC ,vf22,vf04	nop								; 
+	maddw.xyzw		vf16,vf23,vf04	nop								; 
+	mulax.xyzw		ACC ,vf20,vf05	nop								; 
+	madday.xyzw		ACC ,vf21,vf05	nop								; 
+	maddaz.xyzw		ACC ,vf22,vf05	nop								; 
+	maddw.xyzw		vf17,vf23,vf05	nop								; 
+	mulax.xyzw		ACC ,vf20,vf06	nop								; 
+	madday.xyzw		ACC ,vf21,vf06	nop								; 
+	maddaz.xyzw		ACC ,vf22,vf06	nop								; 
+	maddw.xyzw		vf18,vf23,vf06	nop								; 
+	mulax.xyzw		ACC ,vf20,vf07	nop								; 
+	madday.xyzw		ACC ,vf21,vf07	move.xyzw		vf20,vf16		; 
+	maddaz.xyzw		ACC ,vf22,vf07	move.xyzw		vf21,vf17		; 
+	maddw.xyzw		vf23,vf23,vf07	move.xyzw		vf22,vf18		; 
+	; MulMatrix( screen2, eye_pers2, world );
+	mulax.xyzw		ACC ,vf24,vf04	nop								; 
+	madday.xyzw		ACC ,vf25,vf04	nop								; 
+	maddaz.xyzw		ACC ,vf26,vf04	nop								; 
+	maddw.xyzw		vf16,vf27,vf04	nop								; 
+	mulax.xyzw		ACC ,vf24,vf05	nop								; 
+	madday.xyzw		ACC ,vf25,vf05	nop								; 
+	maddaz.xyzw		ACC ,vf26,vf05	nop								; 
+	maddw.xyzw		vf17,vf27,vf05	nop								; 
+	mulax.xyzw		ACC ,vf24,vf06	nop								; 
+	madday.xyzw		ACC ,vf25,vf06	nop								; 
+	maddaz.xyzw		ACC ,vf26,vf06	nop								; 
+	maddw.xyzw		vf18,vf27,vf06	nop								; 
+	mulax.xyzw		ACC ,vf24,vf07	nop								; 
+	madday.xyzw		ACC ,vf25,vf07	move.xyzw		vf24,vf16		; 
+	maddaz.xyzw		ACC ,vf26,vf07	move.xyzw		vf25,vf17		; 
+	nop								b				GetEnvelopeMatrix ;
+	maddw.xyzw		vf27,vf27,vf07	move.xyzw		vf26,vf18		; 
+.else
+; 演算に必要なマトリクスの生成を行う
+; 入力
+; vf20-vf23:透視変換×カメラビューマトリクス(eye_pers)
+; vf04-vf07:オブジェクトマトリクス(world)
+; vf08-vf11:親オブジェクトマトリクス(p_world)
+; vf3:親からのオフセットベクトル(trans)
+; 出力
+; vf16-vf19:エンベロープ用マトリクス(inv_base)
+; vf20-vf23:透視変換×カメラビュー×オブジェクトマトリクス(eye_pers)
+MakeMatrix:
+	; MulMatrix( screen, eye_pers, world );
+	mulax.xyzw		ACC ,vf20,vf04	nop								;  //vf20 = EYE_PERS0, vf04 = base0
+	madday.xyzw		ACC ,vf21,vf04	nop								;  //vf21 = EYE_PERS1, vf04 = base0
+	maddaz.xyzw		ACC ,vf22,vf04	nop								;  //vf22 = EYE_PERS2, vf04 = base0
+	maddw.xyzw		vf16,vf23,vf04	nop								;  //vf23 = EYE_PERS3, vf04 = base0
+	mulax.xyzw		ACC ,vf20,vf05	nop								; 
+	madday.xyzw		ACC ,vf21,vf05	nop								; 
+	maddaz.xyzw		ACC ,vf22,vf05	nop								; 
+	maddw.xyzw		vf17,vf23,vf05	nop								; 
+	mulax.xyzw		ACC ,vf20,vf06	nop								; 
+	madday.xyzw		ACC ,vf21,vf06	nop								; 
+	maddaz.xyzw		ACC ,vf22,vf06	nop								; 
+	maddw.xyzw		vf18,vf23,vf06	nop								; 
+	mulax.xyzw		ACC ,vf20,vf07	nop								; 
+	madday.xyzw		ACC ,vf21,vf07	move.xyzw		vf20,vf16		; 
+	maddaz.xyzw		ACC ,vf22,vf07	move.xyzw		vf21,vf17		; 
+	nop								b				GetEnvelopeMatrix ;
+	maddw.xyzw		vf23,vf23,vf07	move.xyzw		vf22,vf18		; 
+.endif
+
+
+.if 0
+InversMatrix:
+	sub.xyz			vf1,vf0,vf7		nop								; 
+	addz.y			vf14,vf0,vf5	move.x		vf12,vf4			; 
+	addx.y			vf12,vf0,vf5	move.y		vf13,vf5			; 
+	addx.z			vf12,vf0,vf6	move.z		vf14,vf6			; 
+	addy.x			vf13,vf0,vf4	move.w		vf15,vf0			; 
+	addy.z			vf13,vf0,vf6	mr32.w		vf12,vf0			; 
+	addz.x			vf14,vf0,vf4	mr32.w		vf13,vf0			; 
+	mulax.xyz		ACC,vf12,vf1	mr32.w		vf14,vf0			; 
+	madday.xyz		ACC,vf13,vf1	nop								; 
+	maddz.xyz		vf15,vf14,vf1	nop								; 
+
+	nop[e]							nop								; 
+	nop								nop								; 
+.endif
+
+
+
+.EndMPG					; マイクロプログラム転送の終了
+.EndDmaData				; DMAref転送データの終了
+
+
+
+
+
+

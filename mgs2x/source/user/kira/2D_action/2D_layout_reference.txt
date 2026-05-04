@@ -1,0 +1,133 @@
+
+
+2Dレイアウトマネージャ 関数リファレンス
+
+
+
+
+[1] レイアウトマネージャの起動
+
+    void * NewLayout2D_Player(int name, int where)
+    void * NewLayout2D_Player_for_Prog(void)
+
+    2Dレイアウトマネージャを起動する。
+
+    NewLayout2D_Player() は、GCL から、NewLayout2D_Player_for_Prog() は
+    プログラム中から呼び出すことを想定している。
+
+
+
+[2] インタフェース関数
+
+  1) レイアウトデータのロード
+
+    int L2D_LoadLayout(int strcode, int chanl, int base_pri, int add_flag)
+    int L2D_SetupLayout(void *entry_ptr, int chanl, int base_pri, int add_flag)
+
+	strcode		     レイアウトデータの StrCode
+	entry_ptr	     レイアウトデータが開始されるポインタ
+	chanl		     描画チャネル
+	base_pri	     基準プライオリティ値
+	add_flag	     使用されるオブジェクトに追加されるフラグ
+
+    レイアウトデータをロードし、レイアウトマネージャに登録する。
+    L2D_LoadLayout() は、レイアウトデータを strcode で指定し、L2D_SetupLayout()
+    では、レイアウトデータが開始されるアドレスで指定する。
+
+    返り値は、ロードされたレイアウトデータを指定する際に使用する、
+    レイアウトハンドル値となっている。レイアウト関連関数では、同時にロード
+    されている他のレイアウトデータと区別するため、このレイアウトハンドル値を
+    使用する。
+
+    base_pri は 2D 表示モジュール(mgs2/source/user/kira/2D/以下参照)の
+    プライオリティ値で、指定されたレイアウトデータが使用する最も低い
+    プライオリティ値である。この値に、レイアウト中の各オブジェクトに
+    指定されたプライオリティ補正値を加算したものが実際の表示プライオリティ値と
+    なる。加算の結果、値が7より大きくなった場合は、7 として処理される。
+
+    add_flag は、レイアウト中の各オブジェクトに対し、自動的に与えられるフラグに
+    加え、ユーザが指定したいものを含める。通常は特権モードでの表示を許可する
+    SPR_FLAG_PRIV が指定される。
+
+
+  2) レイアウトデータの開放
+
+    int L2D_ReleaseLayout(int handle)
+
+	handle		    開放するデータのレイアウトハンドル値
+
+    レイアウトハンドル値で指定されたレイアウトデータを、レイアウトマネージャ
+    から開放する。
+
+
+  3) アクション数の取得
+
+    int L2D_GetActionNumber(int handle)
+
+	handle		     アクション数を要求するレイアウトデータのハンドル値
+
+    ハンドル値で指定されたレイアウトデータが保持するアクションの総数を得る。
+
+
+  4) アクションの実行
+
+    int L2D_EvokeAction(int handle, int strcode)
+    int L2D_EvokeActionByNumber(int handle, int actnum)
+
+        handle		    アクションを持つデータのレイアウトハンドル値
+	strcode		    アクション名の StrCode
+	actnum		    アクションの番号(アクション総数の -1 まで)
+
+    レイアウト中で定義されているアクションを呼び出す。
+    正常にアクションが開始された場合は0 を返し、エラーの場合は負の値を返す。
+    返り値は以下の意味を持つ。
+
+      L2D_STAT_NOT_ENOUGH	レイアウトマネージャが起動されていない
+
+      L2D_STAT_BAD_HANDLE	レイアウトハンドル値が不正である
+
+      L2D_STAT_UNLOAD		指定されたハンドルには、レイアウトデータが
+				ロードされていない
+
+      L2D_STAT_BUSY		他のアクションが動作中である
+
+      L2D_STAT_ACT_NOT_FOUND	指定されたアクションは定義されていない
+
+
+
+  5) アクションの停止
+
+    int L2D_BreakAction(int handle);
+
+        handle		     ステータスを要求するレイアウトデータのハンドル値
+
+    ハンドル値で指定されたレイアウトデータにおいて、アクションが動作中であれば
+    そのアクションを停止し、現在の状態に留める。
+
+    アクションが動作中でなければ、何もしない。
+
+
+
+  6) ステータスの取得
+
+    int L2D_ActionStatus(int handle);
+
+        handle		     ステータスを要求するレイアウトデータのハンドル値
+
+    ハンドル値で指定されたレイアウトデータの、現在のステータスを得る。
+    ステータスは以下の値で返される。
+
+      L2D_STAT_NOT_ENOUGH	レイアウトマネージャが起動されていない
+
+      L2D_STAT_BAD_HANDLE	レイアウトハンドル値が不正である
+
+      L2D_STAT_UNLOAD		指定されたハンドルには、レイアウトデータが
+				ロードされていない
+
+      L2D_STAT_BUSY		他のアクションが動作中である
+
+      L2D_STAT_ACK		ステータスは待機中で、アクションの起動などを
+				受け付けている
+
+
+以上。

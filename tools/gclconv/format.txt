@@ -1,0 +1,95 @@
+・GCLCONV ver3.0
+
+■可変長オフセット対応
+
+以下の構造はブロック長データをもつため、
+それを短縮できるようにする。
+
+基本的に、GCL_OPTIONなどは、上４ビットしか使っていないので、
+下４ビットを使って、以下のエンコードを行う。
+
+0x00〜0x0C	０から12まで
+0x0D **		１バイト
+0x0E ** **  ２バイト
+0x0F ** ** ** ３バイト
+
+現行のコーディング
+
+GCL_OPTION
+--
+b GCL_OPTION
+b オプション文字
+w option_len
+:
+--
+b GCL_OPTION + len
+b オプション文字
+:
+--
+
+GCL_COMMAND
+--
+b GCL_COMMAND
+w command_len
+s command_name(3bytes)
+w 1st_arg_len
+:
+--
+b GCL_COMMAND + len
+s command_name(3bytes)
+w 1st_arg_len (0x80コーディング)
+:
+--
+
+GCL_PROC
+--
+b GCL_PROC
+w command_len
+:
+--
+b GCL_PROC + len
+:
+--
+
+GCL_BLOCK
+--
+b GCL_BLOCK
+l block_len
+:
+--
+b GCL_BLOCK + len
+:
+--
+
+GCL_EXPR
+--
+b GCL_EXPR
+b expr_len
+:
+--
+b GCL_EXPR + len
+b expr_len
+:
+--
+
+■式演算子の短縮
+
+GCL_OPは、現状２バイト消費しているが、１バイトあれば充分。
+32あれば充分なので、
+0b101ddddd でコーディング
+
+0xA0|op;
+
+■定数値の短縮
+
+0xC0〜 でミニマム値を表現
+0b11dddddd で、0〜63->-1〜62を表現する。
+
+0xC0|(v-1);
+
+■ARGの短縮
+
+GCL_ARG 0x40 | ( ARG番号0〜F)
+
+
+

@@ -1,0 +1,633 @@
+#!/usr/bin/perl
+#
+# ソースプログラム用  リファレンスドキュメント簡易作成ツール
+#
+# Cプログラムのソースを解析し、自動的にHTMLを生成する。
+#
+
+die "Usage: mkcomment <file.c>\n",
+    "必ずコンパイルの通るソースを入れて下さい。\n",
+    "\toption\n",
+    "\t-I<dir> makefileと同じincludeディレクトリを指定\n"
+    if ( $#ARGV == -1 ) ;
+
+#オプションを拾う
+for  ( $i=0 ; $i<$#ARGV+1 ; $i++ )
+{
+    $define .= "$ARGV[$i] " if ( $ARGV[$i] =~ m/^-/ ) ;
+    $input   = $ARGV[$i] ;
+}
+
+#環境変数を見る
+foreach( keys %ENV )
+{
+    $define .= "-D $_='$ENV{$_}' -D $_\_'$ENV{$_}'=1 " if ( $_ =~ "MGS2" ) ;
+}
+
+
+$TOKEN_EOF = 0 ;
+$TOKEN_ID  = 1 ;
+$TOKEN_NUM = 2 ;
+$TOKEN_LIT = 3 ;
+$TOKEN_KEY = 4 ;
+$TOKEN_TYP = 5 ;
+$TOKEN_SEP = 6 ;
+$TOKEN_CPP = 7 ;
+@KEYWORD   = ("asm"      ,"break"    ,"case"     ,"continue" ,
+	      "default"  ,"do"       ,"else"     ,
+	      "for"      ,"goto"     ,"if"       ,
+	      "return"   ,"sizeof"   ,"switch"   ,
+	      "typedef"  ,"while"    ) ;
+@TYPES     = ("auto"     ,"char"     ,"const"    ,
+	      "double"   ,"enum"     ,"extern"   ,
+	      "float"    ,"int"      ,"inline"   ,"__inline__"   ,
+	      "long"     ,
+	      "register" ,"short"    ,"signed"   ,
+	      "static"   ,"struct"   ,"union"    ,
+	      "unsigned" ,"void"     ,"volatile"  ) ;
+$N_TYPES   = $#TYPES ;
+%TYPES_IDX ;
+%TYPES_FILE ;
+
+@OPERAND   = (">>=","<<=","+=" ,"-=" ,"*=" ,
+	      "/=" ,"%=" ,"&=" ,"^=" ,"|=" ,
+	      ">>" ,"<<" ,"++" ,"--" ,"->" ,
+	      "&&" ,"||" ,"<=" ,">=" ,"==" ,
+	      "!=" ,";"  ,"{"  ,"}"  ,","  ,
+	      ":"  ,"="  ,"("  ,")"  ,"["  ,
+	      "]"  ,"."  ,"&"  ,"!"  ,"~"  ,
+	      "-"  ,"+"  ,"*"  ,"/"  ,"%"  ,
+	      "<"  ,">"  ,"^"  ,"|"  ,"?"  ,"\""  ) ;
+
+
+$STAT_NOTHING  = 0 ;
+$STAT_TYPEDEF  = 1 ;
+$STAT_FUNC     = 2 ;
+$STAT_FUNCDECL = 3 ;
+$STAT_FUNCBODY = 4 ;
+
+$stat  = $STAT_NOTHING ;
+
+$token     = "" ;
+$token_prv = "" ;
+$id        = 0  ;
+
+
+$brkt_level = 0 ; #大域変数 ブラケットレベル
+$brkt_prev  = 0 ;
+
+$type     = "" ; #大域変数 作っている型
+$type_now = "" ; #大域変数 現在の型
+$type_prv = "" ; #大域変数 前の型
+
+$keys_now = "" ;
+$keys_prv = "" ;
+
+$name_now = "" ; #大域変数 今の名前
+$name_prv = "" ; #大域変数 前の名前
+
+
+open( CM, "cpp $define $input |" ) ;
+
+#プログラムを解析
+while( &get_token() )
+{
+#    print "($token) $id\n" ;
+
+    next if ( $id == $TOKEN_CPP ) ;
+
+#絶対に一番目
+    $stat = &com_switch()   if ( $stat==$STAT_NOTHING ) ;
+			  
+    $stat = &com_typedef()  if ( $stat==$STAT_TYPEDEF  ) ;
+    $stat = &com_funcdecl() if ( $stat==$STAT_FUNCDECL ) ;
+    $stat = &com_func()     if ( $stat==$STAT_FUNC     ) ;
+    $stat = &com_funcbody() if ( $stat==$STAT_FUNCBODY ) ;
+}
+
+close( CM ) ;
+
+&PrintFileOut() ;
+
+exit( 0 ) ;
+
+
+
+#
+# Command
+#
+#
+#
+
+
+sub com_initialize
+{
+    local $level = $brkt_level ;
+
+    while( 1 )
+    {
+	last if ( $token eq ";" && $brkt_level == $level ) ;
+	last if ( &get_token() == 0 ) ;
+    }
+
+    return $type ;
+}
+
+sub com_type
+{
+    local $type = "" ;
+    local $bracket = $brkt_level ;
+    local $parenth = 0 ;
+
+    while( 1 )
+    {
+	$parenth++ if ( $token eq "(" || $token eq "[" ) ;
+	$parenth-- if ( $token eq ")" || $token eq "]" ) ;
+
+	last if ( $parenth < 0 ) ;
+
+#	print "$token $parenth\n" ;
+
+	if ( $token ne "typedef" )
+	{
+	    if ( $brkt_level == $bracket && $parenth == 0 )
+	    {
+		last if ( ($token_prv ne "struct" &&
+			   $token_prv ne "union"  &&
+			   $token_prv ne "enum" ) &&
+			 $id == $TOKEN_ID ) ;
+		last if ( $token =~ m/[;,{]/ ) ;
+	    }
+	    $type .= " $token" ;
+	}
+
+	last if ( &get_token() == 0 ) ;
+    }
+
+#    print "typedef [$type] $name_now $token\n" ;
+
+    return $type ;
+}
+
+sub com_switch()
+{
+    local $type ;
+
+    return $STAT_NOTHING if ( $token =~ m/[;]/ ) ;
+    return $STAT_TYPEDEF if ( $token eq "typedef" ) ;
+
+    if ( $id == $TOKEN_TYP )
+    {
+	if ( ($type = &com_type()) ne "" )
+	{
+	    $func = $name_now  if ( $id == $TOKEN_ID ) ;
+	    $func_type = $type if ( $id == $TOKEN_ID ) ;
+
+	    #print "<$type> $name_now\n" if ( $id == $TOKEN_ID ) ;
+	}
+    }
+    &com_initialize() if ( $token eq "=" ) ;
+
+    return $STAT_FUNCDECL if ( $brkt_level == 0 && $token eq "(" ) ;
+
+    return $STAT_NOTHING ;
+}
+
+
+sub com_argument
+{
+    local $type ;
+
+    undef %args ;
+
+    while( &get_token() )
+    {
+	if ( $id == $TOKEN_TYP )
+	{
+	    $type = &com_type() ;
+	    $type = "int" if ( $type eq "" ) ;
+	    $args{ $name_now } = $type ;
+	}
+	last if ( $token =~ m/[;\){]/ ) ;
+    }
+    return $STAT_NOTHING ;
+}
+
+sub com_funcdecl()
+{
+    &com_argument() if ( $token eq "(" ) ;
+
+    &get_token() ;
+
+    &SetReference() ;
+
+    if ( $token eq ";" )
+    {
+# 	print "DECL [$func_type]$func ;\n" ;
+	return $STAT_NOTHING  ;
+    }
+#    print "FUNC [$func_type]$func ;\n" ;
+    return $STAT_FUNC ;
+}
+
+sub com_func
+{
+    if ( $brkt_level == 0 )
+    {
+	if ( $id == $TOKEN_TYP ) # K&R proto
+	{
+	    if ( ($type = &com_type()) ne "" )
+	    {
+		#print "KOKO($name_now <= $type)\n" ;
+		$args{ $name_now } = $type ;
+	    }
+	}
+    }
+    elsif ( $brkt_level==1 && $token eq "{" )
+    {
+# 	print STDERR "[$func_type]$func\n" ;
+	&OutputFunc() ;
+	return $STAT_FUNCBODY ;
+    }
+
+    return $STAT_FUNC ;
+}
+
+
+sub com_funcbody
+{
+    return $STAT_NOTHING if ( $brkt_level == 0 ) ;
+
+    return $STAT_FUNCBODY ;
+}
+
+sub com_typedef
+{
+    local $type ;
+
+    if ( ($type = &com_type( $token )) ne "" )
+    {
+#	print "typedef $name_now\n" ;
+	#型の登録
+	push( @TYPES, $name_now ) ;
+	$TYPES_IDX{$name_now}  = $#TYPES ;
+	$TYPES_FILE{$name_now} = $file ;
+
+	&OutputType() ;
+
+	return $STAT_NOTHING if ( $token eq ";" ) ;
+
+	while( &get_token() )
+	{
+	    last if ( $token eq ";" ) ;
+	}
+
+
+    }
+    return $STAT_NOTHING ;
+}
+
+
+
+
+
+#
+# Main Subroutines
+#
+#
+#
+
+sub SetReference
+{
+    if ( $file !~ m/^\/usr\/include/ && $file !~ m/\/sce\// )
+    {
+	foreach( @refs )
+	{
+	    return if ( $_ eq $func ) ;
+	}
+#	print STDERR "$file $func\n"  ;
+
+	push( @refs, $func ) ;
+    }
+}
+
+sub PrintReference
+{
+    print "<OPTION SELECTED>なし</OPTION>" ;
+    foreach( @refs )
+    {
+	print "<OPTION>$_</OPTION>" ;
+    }
+}
+
+sub PrintFileOut
+{
+    local $i ;
+
+    #ヘッダを出力
+    print "<HTML><BODY BGCOLOR=gray >\n<HR>\n" ;
+
+    #型の出力（typedefのみ）
+    for( $i=0 ; $i<$#typeout ; )
+    {
+	print $typeout[$i++] ;
+    }
+
+    #関数の出力（typedefのみ）
+    for( $i=0 ; $i<$#funcout ; )
+    {
+	print $funcout[$i++] ;
+	&PrintReference() ;
+	print $funcout[$i++] ;
+    }
+
+    #フッタを出力
+    print "</BODY></HTML>\n" ;
+}
+
+sub OutputFunc
+{
+    local $name, $i = 0 ;
+    local $output ;
+
+    return if ( $file ne $input ) ;
+    return if ( $func_type =~ m/static/ ) ;
+    
+    $output  = "<FORM ACTION=\"/cgi-bin/input.cgi\" METHOD=\"post\">\n" ;
+    $output .= "<TABLE>\n" ;
+
+    $output .= "<TR><TD  COLSPAN=3>\n" ;
+    $output .= "<H1><A NAME='$func'><B>$func</B></A></H1>\n" ;
+    $output .= "</TD></TR>\n" ;
+
+    $output .= "<TR><TD>\n" ;
+    $output .= "<H2><B>[返戻値]</B></H2>\n" ;
+    $output .= "</TD></TR>\n" ;
+
+    $output .= "<TR><TD></TD>\n" ;
+    $output .= "<TD COLSPAN=2>$func_type</TD>\n" ;
+    $output .= "<TD><i>/*</i>" ;
+    $output .= "<INPUT TYPE=TEXT NAME=return></INPUT>\n" ;
+    $output .= "<i>*/</i></TD></TR>\n" ;
+
+    $output .= "<TR><TD>\n" ;
+    $output .= "<H2><B>[引数]</B></H2>\n" ;
+    $output .= "</TD></TR>\n" ;
+
+    foreach( keys %args )
+    {
+	$output .= "<TR><TD></TD>\n" ;
+	$output .= "<TD>$args{$_}</TD>" ;
+
+	$output .= "<TD>$_</TD>" ;
+
+	$output .= "<TD><i>/*</i>" ;
+	$output .= "<INPUT TYPE=HIDDEN NAME=argnm$i VALUE='$_'>" ;
+	$output .= "<INPUT TYPE=HIDDEN NAME=argty$i VALUE='$args{$_}'>" ;
+	$output .= "<INPUT TYPE=TEXT NAME=arg$i>" ;
+	$output .= "<i>*/</i></TD></TR>\n" ;
+	$i++ ;
+    }
+
+    $output .= "<TR><TD>\n" ;
+    $output .= "<H2><B>[プロトタイプ]</B></H2>" ;
+    $output .= "</TD></TR>\n" ;
+
+    $output .= "<TR><TD></TD>\n" ;
+    $output .= "<TD TD COLSPAN=3>$func_type $func(\n" ;
+    $i = 0 ;
+    foreach( keys %args )
+    {
+	$output .= ", " if ( $i++ ) ;
+	$output .= "$args{$_} $_" ;
+    }
+    $output .= ") ;</TD></TR>\n" ;
+
+
+    $output .= "<TR><TD>\n" ;
+    $output .= "<H2><B>[機能]</B></H2>" ;
+    $output .= "</TD></TR>\n" ;
+
+    $output .= "<TR><TD></TD><TD COLSPAN=3>\n" ;
+    $output .= "<TEXTAREA NAME=surp   COLS=48 ROWS=6></TEXTAREA>" ;
+    $output .= "</TD></TR>\n" ;
+
+
+    $output .= "<TR><TD>\n" ;
+    $output .= "<H2><B>[関連]</B></H2>" ;
+    $output .= "</TD></TR>\n" ;
+
+    $output .= "<TR><TD></TD><TD COLSPAN=3>\n" ;
+    $output .= "<SELECT NAME=relate SIZE=10 MULTIPLE>" ;
+    push( @funcout, $output ) ;
+    $output  = "</SELECT>" ;
+
+    $output .= "</TD></TR>\n" ;
+
+    $output .= "<TR><TD></TD><TD>\n" ;
+    $output .= "<INPUT TYPE=SUBMIT VALUE=\"更新\">" ;
+    $output .= "</TD></TR>\n" ;
+
+    $output .= "</TABLE>\n" ;
+
+    $output .= "</FORM><HR>\n" ;
+
+    push( @funcout, $output ) ;
+}
+
+
+sub OutputType
+{
+    local $name, $i = 0 ;
+    local $output ;
+
+    return if ( $file ne $input ) ;
+    return if ( $func_type =~ m/typedef/ ) ;
+    
+    $output  = "<FORM ACTION=\"/cgi-bin/input.cgi\" METHOD=\"post\">\n" ;
+    $output .= "<TABLE>\n" ;
+
+    $output .= "<TR><TD  COLSPAN=3>\n" ;
+    $output .= "<H1><A NAME='$type_name'><B>$type_name</B></A></H1>\n" ;
+    $output .= "</TD></TR>\n" ;
+
+    $output .= "<TR><TD>\n" ;
+    $output .= "<H2><B>[型]</B></H2>\n" ;
+    $output .= "</TD></TR>\n" ;
+
+    foreach( keys %members )
+    {
+	$output .= "<TR><TD></TD>\n" ;
+	$output .= "<TD>$members{$_}</TD>" ;
+
+	$output .= "<TD>$_</TD>" ;
+
+	$output .= "<TD><i>/*</i>" ;
+	$output .= "<INPUT TYPE=HIDDEN NAME=argnm$i VALUE='$_'>" ;
+	$output .= "<INPUT TYPE=HIDDEN NAME=argty$i VALUE='$args{$_}'>" ;
+	$output .= "<INPUT TYPE=TEXT NAME=arg$i>" ;
+	$output .= "<i>*/</i></TD></TR>\n" ;
+	$i++ ;
+    }
+
+    $output .= "<TR><TD></TD><TD>\n" ;
+    $output .= "<INPUT TYPE=SUBMIT VALUE=\"更新\">" ;
+    $output .= "</TD></TR>\n" ;
+
+    $output .= "</TABLE>\n" ;
+
+    $output .= "</FORM><HR>\n" ;
+
+    push( @typeout, $output ) ;
+}
+
+
+#
+# Subroutines
+#
+#
+#
+
+sub get_token
+{
+    local $word ;
+    local $ll ;
+
+#特殊文字を取る
+    $line =~ s/^[ \t\n\r]*// ;
+    while( $line eq "" )
+    {
+	last if ( not $line = <CM> ) ;
+	$line =~ s/^[ \t]*// ;
+	$line =~ s/[\n\r]*//g ;
+
+#	printf( "[$line] line %d\n", ++$ll ) ;
+    }
+    $token_prv = $token ;
+    $token     = $line  ;
+
+    #プリプロセッサの情報
+    if ( $line =~ m/^#/ )
+    {
+	$file  = $line ;
+	$file  =~ s/.*"(.*)".*/$1/ ;
+	$line  = "" ;
+	return $id = $TOKEN_CPP ;
+    }
+
+    #文字列リテラルなの？
+    if ( $line =~ m/^".*"/ )
+    {
+	$line  =~ s/^(".*")// ;
+	$token =~ s/^(".*").*/$1/ ;
+
+	return $id = $TOKEN_LIT ;
+    }
+
+    if ( $line =~ m/^"/ )
+    {
+	$line = "" ;
+	while( $line !~ /"/ )
+	{
+	    last if ( not $line = <CM> ) ;
+	    $token .= $line ;
+	}
+	$line =~ s/[\n\r]*//g ;
+	$line  =~ s/^([^"]*")// ;
+	$token =~ s/^("[^"]*").*/$1/ ;
+
+	return $id = $TOKEN_LIT ;
+    }
+
+    #区切り文字？
+    foreach $word ( @OPERAND )
+    {
+	if ( index( $line, $word ) == 0 )
+	{
+	    $line  = substr( $line, length($word) ) ;
+	    $token = $word ;
+
+	    $brkt_level++ if ( $token eq "{" || $token eq "[" ) ;
+	    $brkt_level-- if ( $token eq "}" || $token eq "]"  ) ;
+
+	    return $id = $TOKEN_SEP ;
+	}
+    }
+
+    #キーワードですか？
+    $token =~ s/^([a-zA-Z_][a-zA-Z0-9_]*).*/$1/ ;
+    foreach $word ( @KEYWORD )
+    {
+	if ( $word eq $token )
+	{
+	    $line  = substr( $line, length($word) ) ;
+	    $token = $word ;
+
+	    $keys_prv = $keys_now ;
+	    $keys_now = $token    ;
+
+	    return $id = $TOKEN_KEY ;
+	}
+    }
+
+    #それとも型ですか？
+    foreach $word ( @TYPES )
+    {
+	if ( $word eq $token )
+	{
+	    $line  = substr( $line, length($word) ) ;
+	    $token = $word ;
+            $token = "<A HREF=$TYPES_FILE{$word}#$word>$word</A>"
+		      if ( $TYPES_IDX{$word} > $N_TYPES ) ;
+
+	    $type_prv = $type_now ;
+	    $type_now = $token    ;
+
+	    return $id = $TOKEN_TYP ;
+	}
+    }
+    $token = $line  ;
+
+    #数字？
+    if ( $line =~ m/^0[xX][0-9]/ ) #HEX数字
+    {
+	$line  =~ s/^(0[xX][0-9]+)// ;
+	$token =~ s/^(0[xX][0-9]+).*/$1/ ;
+	return $id = $TOKEN_NUM ;
+    }
+    if ( $line =~ m/^[0-9]/ ) #10進数 浮動少数
+    {
+	$line  =~ s/^([.e0-9]*)// ;
+	$token =~ s/^([.e0-9]*).*/$1/ ;
+	return $id = $TOKEN_NUM ;
+    }
+
+    #残りはIDでしょ
+    if ( $line =~ m/^[a-zA-Z_]/ )
+    {
+	$line  =~ s/^([a-zA-Z_][a-zA-Z0-9_]*)// ;
+	$token =~ s/^([a-zA-Z_][a-zA-Z0-9_]*).*/$1/ ;
+
+	$name_prv = $name_now ;
+	$name_now = $token ;
+
+	return $id = $TOKEN_ID ;
+    }
+
+    die "Illeagal token[$line]\n" if ( length($line) > 0 ) ;
+
+    return $id = $TOKEN_EOF ;
+}
+
+sub fork
+{
+    local $pid ;
+
+    unless ( $pid = fork )
+    {
+	exec( $_[0] ) ;
+	exit 0 ;
+    }
+    waitpid( $pid, 0 ) ;
+}
+

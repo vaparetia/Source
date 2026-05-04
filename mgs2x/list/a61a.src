@@ -1,0 +1,35 @@
+// a61a.src
+// ソリダス戦
+// 2002/06/19 H.Yoshiike
+// $Id: a61a.src,v 1.3 2002/06/21 04:19:48 usr13731 Exp $
+
+#define WN_W61A
+
+block .use r_vr_s
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"w61a_common.h"
+
+// オルタナティブミッション用追加エフェクト
+#include	"alt_effect.h"
+
+// 強制モーション
+mtn		rai_w61a.mls
+mtn		sna_w61a.mls
+mtn		sna_solidus.mls
+
+// アイテム
+itembox		item
+
+//そりだす
+include		solidus.h
+
+// 壊れビル窓
+pack_trnall	glass.tri \
+			debug/morita/break/dbx_dust_alp_ovl.bmp
+
+// ミサイル爆破時の爆煙
+pack_trnall	add_effect.tri \
+			effect/bakuha/bombgas3_alp.bmp

@@ -1,0 +1,591 @@
+/*
+	c50a.gcl                     
+	    亀の頭上
+
+	2000/07/28 H.Yoshiike         
+	$Id: c50a.gcl,v 1.6 2000/12/28 09:15:44 usr03682 Exp $                      
+
+	
+*/
+
+// 各種スイッチ用define
+// ------------------------------------
+// サウンド
+#define		SOUND			0
+// レーダー
+#define		RADAR			1
+// キャラクター関係
+#define		SNAKE			0
+#define		RAIDEN			1
+#define		ENEMY			0
+#define		SHIELD			0
+// ドア
+#define		CHARA_DOOR		0
+// エフェクト関係
+#define		BLUR			0
+#define		DEPTH			0
+#define		BODY_SHADOW		0
+// 子画面
+#define		SUB_CAMERA		0
+// カメラ関係
+#define		STAGE_CAMERA	1
+#define		CLEAR_CAMERA	0
+
+// フォグ
+#define		FOG				1
+
+// 入出トラップ
+#define		LD_FADEOUT		1
+#define		LOAD_TRAP		1
+// 天井
+#define		CHARA_CEIL		0
+// ライト関係
+#define		SPOT_LIGHT		0
+// オブジェ関係
+// アイテム
+#define		ITEM			0
+// 強制モーション
+#define		BY_MOTION		0
+#define		JP_MOTION		0
+
+// デバッグ関係
+#define		DEBUG_MODE		0
+#define		CHARA_CAMERA	0
+#define		TARGET_CHARA	敵兵１
+#define		SCREENSHOT		0
+#define		USB_KEY			0
+
+// 各種define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME		c50a
+#define		KMS_NAME0		c50a
+//#define		KMS_NAME1		w12b
+#define		DOOR_NAME1		w02a_dr
+#define		LT2_NAME		debug
+
+// 子画面サイズ
+#define		SUB_WIDTH		160
+#define		SUB_HEIGHT		64
+#define		SUB_MARGIN		16
+
+// キャラクター関係
+#if d:SNAKE
+	#define		PLAYER		スネーク
+#else
+	#define		PLAYER		ライデン
+#endif
+
+
+
+// モーション関係
+// ------------------------------------
+
+// include
+// ------------------------------------
+#include "sna_w02a.mh"
+#include "stdch.h"
+#include "sload.h"
+#include "beyond.h"
+#include "sound.h"
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+
+// マップ設定
+// ------------------------------------
+chara マップ 亀の頭上 -k d:KMS_NAME0 -k kame -h d:HZX_NAME,0 -l d:LT2_NAME
+
+command マップ設定	亀の頭上 -set {
+	@常駐キャラ設定
+	@サウンド設定
+//	@レーダー設定
+	@プレイヤー設定
+//	@コマンダー設定
+//	@ドア設置
+//	@亀の頭上入出トラップ設定
+//	@エフェクト設定
+	@カメラセット
+	@フォグ設定
+	@デバッグキャラセット
+}
+
+//初期マップの表示
+command マップ表示 -show 亀の頭上
+
+// 全マップ共通
+	// ローカル変数初期化
+	// ------------------------------------
+	proc ローカル変数初期化 {
+	}
+
+	// サウンド
+	// ------------------------------------
+	proc サウンド設定 {
+		#if d:SOUND
+			chara サウンドマネージャー ＳＤマネ -b 0x01000011 -e 0x0200007c -w 0xFE00007c,0xFE000080 -a 0xFE00007F
+		#endif
+	}
+
+	// レーダー
+	// ------------------------------------
+	proc レーダー設定 {
+		#if d:RADAR
+			chara レーダー レーダー
+		#endif
+	}
+
+	// プレイヤー 
+	// ------------------------------------
+	proc プレイヤー設定 {
+		#if d:SNAKE
+			chara プレイヤー d:PLAYER \
+				-p $i:プレイヤー初期Ｘ位置,$i:プレイヤー初期Ｙ位置,$i:プレイヤー初期Ｚ位置 \
+//				-p 0, 5000, -12000 \
+				-d 0,$i:プレイヤー初期方向,0 \
+//				-d 0,0,0 \
+				-s 0 \
+				-m sna_def -a snake -o sna_w02a
+
+				//バンダナ
+				chara ロープモデル３ バンダナ１ \
+					-n sna_bdn1 \
+					-d 1 \
+					-y スネーク \
+					-z 12 \
+					-x 0,60,-90 \
+					-m 12 \
+					-p 250 \
+					-k 350 \
+					-o 110 \
+					-f 1
+
+				chara ロープモデル３ バンダナ２ \
+					-n sna_bdn2 \
+					-d 1 \
+					-y スネーク \
+					-z 12 \
+					-x 0,50,-90 \
+					-m 22 \
+					-p 250 \
+					-k 350 \
+					-o 110 \
+					-f 1
+
+		#else if d:RAIDEN
+			chara プレイヤー d:PLAYER \
+				-p $i:プレイヤー初期Ｘ位置,$i:プレイヤー初期Ｙ位置,$i:プレイヤー初期Ｚ位置 \
+//				-p 0, 5000, -12000 \
+				-d 0,$i:プレイヤー初期方向,0 \
+//				-s 0 \
+				-m rai_def -a snake -o sna_w02a
+
+		#endif
+	}
+
+	// 敵兵 
+	// ------------------------------------
+	#if d:ENEMY
+		proc 攻撃兵０ {
+			#if d:SHIELD
+				chara アタッカー 敵兵:61 -r 0 -s 1 -e 1
+				chara アタッカー 敵兵:62 -r 0 -s 1 -e 1
+				chara アタッカー 敵兵:63 -r 0 -s 1 -e 1
+			#else
+				chara アタッカー 敵兵:61 -r 0 -s 1
+				chara アタッカー 敵兵:62 -r 0 -s 1
+				chara アタッカー 敵兵:63 -r 0 -s 1
+			#endif
+		}
+
+		proc 警備兵０ {
+			chara 警備兵 敵兵:01 -r 0 -n 0 -d -3000,-14000,-17500 ホール -s 1 -f 1
+			chara 警備兵 敵兵:02 -r 1 -n 0 -d 0,-14000,-28000 ホール -s 1 -f 1
+		}
+
+		proc サポート兵 {
+//			chara サポート兵 敵兵:31 -r 0 -s 1 -b 敵兵:02
+		}
+
+		proc 警備兵コマンダー {
+			chara 警備コマンダー wccomm -e {警備兵０}
+		}
+
+		proc 攻撃兵コマンダー {
+			chara 攻撃コマンダー atcomm -e 攻撃兵０
+		}
+		
+	#endif
+
+	proc コマンダー設定 {
+		#if d:ENEMY
+			chara コマンダー 敵兵セット \
+				-w 警備兵コマンダー \
+				-r 0,-14000,-32000 ホール \
+				-c 0,-14000,-32000 ホール
+
+		// 敵兵ルートチェンジ
+			trap dr001 d:PLAYER \
+				-mask 入る \	
+				-exec {
+					mesg 警備兵 敵兵:01 ルート変更 2 -3000,-14000,-17500 ホール
+				}
+		#endif
+	}
+
+/*	proc 右舷Ｂ３クリアリング初期設定 {
+		command ゲット敵兵座標 敵兵:61 $i:敵兵Ｘ $i:敵兵Ｙ $i:敵兵Ｚ
+
+		if ($i:敵兵Ｘ > 3000) {
+			eval($w:クリアリングタイプ = 1);
+
+			command セットクリアリング \
+				-p	0,0,5,クリアリングカメラ１ \
+					0,0,10,クリアリングカメラ２ \
+					0,2,7,クリアリングカメラ３ \
+					0,2,8,クリアリングカメラ４ \
+					0,2,10,クリアリングカメラ５ \
+					0,2,14,クリアリングカメラ６ \
+				-i	0,1,2,3
+
+			#if d:CLEAR_CAMERA
+				chara カメラ設定 クリアリングカメラ \
+					-c 1 \	
+					-p 4795,-7961,-16143 -t 6826,-7534,-11982 \
+					-r -60,296,0 \
+					-f 4650 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s 1
+			#endif
+		} else {
+			eval($w:クリアリングタイプ = 2);
+
+			command セットクリアリング \
+				-p	0,0,0,クリアリングカメラ１ \
+				-i	4,5,6,7
+
+			#if d:CLEAR_CAMERA
+				chara カメラ設定 クリアリングカメラ \
+					-c 1 \	
+					-p 4795,-7961,-16143 -t 6826,-7534,-11982 \
+					-r -60,296,0 \
+					-f 4650 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s 1
+			#endif
+		}
+
+		#if d:SUB_CAMERA
+			mesg サブ画面 子画面 on
+		#endif
+
+/*			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p -2172,-10596,7259 -t -2061,-13133,-834 \
+				-r 198,2039,0 \
+				-f 8482 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+
+
+			eval($f:クリアリング階段カメラＯＮ = 1);
+
+			chara delay ディレイ \
+				-time 360 \
+				-exec {  
+					if ($w:アラートモード == 2) {
+						#if d:SPOT_LIGHT
+							mesg 静止スポットライト設置 右舷B2ライト on
+						#endif
+
+					}
+				}
+*/
+	}
+*/
+	// ドア
+	// ------------------------------------
+	proc ドア設置 {
+		#if d:CHARA_DOOR
+			chara ドア ホールドア \
+				-m d:DOOR_NAME1 \
+				-d 0,1024,0 \
+				-p 1250,-14000,-13250 \
+				-slide -1500 \
+				-time 10 \
+				-exec {
+					if( $:開閉フラグ == 0 ){
+						mesg マップ接合 潜入プール／ホール off
+					} else {
+						mesg マップ接合 潜入プール／ホール on
+					}
+				}
+			trap dr001 ？ \
+				-mask ？ \	
+				-exec {
+						if($3==入る){
+							mesg ドア ホールドア open
+						}else{
+							mesg ドア ホールドア close
+						}
+				}
+		#endif
+	}
+
+	// 入出トラップ
+	// ------------------------------------
+	proc ロードプロック {
+		if ($s:呼び出しプロック == mv_w12a_w11a2_0) {
+			@mv_w12a_w11a2_0
+		} else if ($s:呼び出しプロック == mv_w12a_w12b_0) {
+			@mv_w12a_w12b_0
+		} else if ($s:呼び出しプロック == mv_w12a_w12b_1) {
+			@mv_w12a_w12b_1
+		}
+	}
+
+	proc 亀の頭上入出トラップ設定 {
+		#if d:LOAD_TRAP
+			trap ld001 d:PLAYER \
+				-mask 入る \
+				-button 0 \
+				-exec {
+					@新ロード時フェードアウト 0 -5000 -12000 0 mv_w12a_w11a2_0
+				}
+
+			trap ld002 d:PLAYER \
+				-mask 入る \
+				-exec {
+					@新ロード時フェードアウト -8000 -2000 -4500 0 mv_w12a_w12b_0
+				}
+
+			trap ld003 d:PLAYER \
+				-mask 入る \
+				-exec {
+					@新ロード時フェードアウト 8000 -2000 -4500 0 mv_w12a_w12b_1
+				}
+		#endif
+	}
+
+
+
+
+	// エフェクト関係
+	// -----------------------------------
+	proc エフェクト設定 {
+		#if d:BLUR
+			chara ブラー ブラー
+		#endif
+
+		#if d:DEPTH
+			chara Ｚフォーカス管理 Z_manager
+			mesg Ｚフォーカス管理 Z_manager パラメータ 5000 30
+		#endif
+
+		#if d:BODY_SHADOW
+			chara ＯＦＦ制御 off_man
+			mesg ＯＦＦ制御 off_man ボディシャドウＯＦＦ
+		#endif
+	}
+
+
+	// 子画面設定 
+	// ------------------------------------
+	proc 子画面設定 {
+		#if d:SUB_CAMERA
+			chara サブ画面 子画面 \
+				-w (512-d:SUB_MARGIN-d:SUB_WIDTH),d:SUB_MARGIN (512-d:SUB_MARGIN),(d:SUB_HEIGHT+d:SUB_MARGIN)
+		#endif
+	}
+
+	// ステージカメラ設定 
+	// ------------------------------------
+	proc カメラセット {
+		#if d:STAGE_CAMERA
+			chara カメラ ステージカメラ		-c 0 -l 3 -p 0 
+			chara カメラ 小部屋カメラ		-c 0 -l 2 -p 50
+			chara カメラ 匍匐カメラ			-c 0 -l 2 -p 30
+			chara カメラ モーションカメラ	-c 0 -l 2 -p 20 
+			chara カメラ ビヨンドカメラ	-c 0 -l 2 -p 20 
+
+			// デフォルトカメラ
+			chara カメラ設定 ステージカメラ \
+				-c 0 \	
+				-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-r 500,2048,0 \
+				-f 5000 \
+				-a 200 \
+				-i 0 0 0 0 \
+				-s 1
+		#endif
+	}
+
+
+
+// 各マップ別
+// Ａ脚屋上
+	// フォグ
+	// ------------------------------------
+	proc フォグ設定 {
+		#if d:FOG
+			chara フォグ 霧\
+				-c 152, 170, 140 \
+				-n -10000 \
+				-f 86000 
+		#endif
+	}
+
+	// 強制モーション用トラップ
+	// ------------------------------------
+	proc 強制モーション設定 {
+		#if d:STAGE_CAMERA
+		#if d:JP_MOTION
+			// 右舷B1右の箱の下
+			trap ky000 d:PLAYER \
+				-mask いる \
+				-button 3 \
+				-state 0,1 \	//立ち状態orしゃがみ
+				-dir 0 512 \
+				-exec {
+//					mesg プレイヤー d:PLAYER position2 0,16298 2,-21410
+/*
+					chara カメラ設定 モーションカメラ \
+						-c 1 \
+						-p 14169,688,-19905 -t 15606,-2680,-21677 \
+						-r 636,1604,0 \
+						-f 4068 \
+						-a 200 \
+						-i 0 2 0 0 \
+						-s 1
+*/
+					mesg プレイヤー d:PLAYER motion d:モーションリスト:non_jump_up 0 0 0 0x00000004
+				}
+			trap ky000 d:PLAYER \
+				-mask 出る \
+				-exec {
+					chara カメラ設定 モーションカメラ \
+						-s 0
+				}
+		#endif
+		#endif
+	}
+
+	// ビヨンド設定
+	// ------------------------------------
+	proc 潜入プールビヨンド設定 {
+		#if d:BY_MOTION
+			// B1右奥
+			trap by000 d:PLAYER \
+				-mask いる \
+				-button 3 \		//ビヨンドボタン
+				-state 0,4 \	//立ち状態or張り付き
+				-exec {
+					@南向きビヨンド発動 by000 -1000 $4 -3000 2500
+				}
+			trap by000 d:PLAYER \
+				-mask いる \
+				-state 6 \
+				-dir 0 256 \	//方向指定
+				-exec {
+					chara カメラ設定 ビヨンドカメラ \
+						-c 0 \
+						-b -32000,-32000,-32000 32000,32000,32000 \
+						-l -32000,-32000,-32000 32000,32000,32000 \
+						-r 670,1718,0 \
+						-f 5981 \
+						-a 200 \
+						-i 0 -1 0 0 \
+						-s 1
+				}
+			trap by000 d:PLAYER \
+				-mask ？ \
+				-state 5 \
+				-dir 2048 256 \	//方向指定
+				-exec {
+					chara カメラ設定 ビヨンドカメラ \
+						-c 0 \
+						-b -32000,-32000,-32000 32000,32000,32000 \
+						-l -32000,-32000,-32000 32000,32000,32000 \
+						-r 550,2048,0 \
+						-f 4195 \
+						-a 350 \
+						-i 3 2 0 0 \
+						-s $3 \
+						-z d:CAMERA_NO_CUSHION
+				}
+		#endif
+	}
+
+	// 各種カメラの設定
+	// ------------------------------------
+	proc Ａ脚屋上カメラ設定 {
+		#if d:STAGE_CAMERA
+			trap ca001 d:PLAYER \
+				-mask ？ \
+				-camera \
+				-exec {
+					chara カメラ設定 小部屋カメラ \
+						-c 0 \	
+						-b -32000,-32000,-32000 32000,3200,6500 \
+						-l -7000,-32000,-32000 7000,32000,32000 \
+						-r 250,2048,0 \
+						-f 6500 \
+						-a 200 \
+						-i 2 2 0 0 \
+						-s $3
+				}
+
+			trap ca002 d:PLAYER \
+				-mask ？ \
+				-camera \
+				-exec {
+					chara カメラ設定 小部屋カメラ \
+						-c 0 \	
+						-b 0,-32000,-8000 0,-12000,32000 \
+						-l 0,-32000,-32000 0,32000,32000 \
+						-r 250,2048,0 \
+						-f 4500 \
+						-a 200 \
+						-i 2 2 0 0 \
+						-s $3
+				}
+		#endif
+	}
+
+
+	proc 影モデル設定 {
+		chara 影投影モデル 影投影モデル \
+			-model d:KMS_NAME0 \
+			-pos 0,0,0
+	}
+
+
+// デバッグキャラ
+// ------------------------------------
+proc デバッグキャラセット {
+	#if d:DEBUG_MODE
+		#if d:CHARA_CAMERA
+			chara キャラカメラ 敵兵カメラ \
+				-c d:TARGET_CHARA \
+				-s -920,610,200 \
+				-r -200,1024,0 
+		#endif
+
+		#if d:SCREENSHOT
+			chara スクリーンショット shot
+		#endif
+
+		#if d:USB_KEY
+			chara USBキーボード実行 test \
+				-e d:KBD_ESC {	
+					mesg プレイヤー d:PLAYER position -5500, -13000, -500
+				} \
+		#endif
+	#endif
+}

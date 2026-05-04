@@ -1,0 +1,26 @@
+// st_select.src
+// スネークテイルズセレクト
+// 2002/07/13 S.Yamashita
+// $Id: sselect.src,v 1.6 2002/10/07 07:29:24 usr03700 Exp $
+
+block .nocache
+block .cache
+
+l2d		2D/snake_tales_select/snake_tales_select.l2d
+l2d		2D/clear_code/clear_code.l2d
+#ifdef MGS2_XBOX_1
+l2d		2D/node/save_load_sub/save_load.l2d
+#else
+l2d		2D/node/save_load/save_load.l2d
+#endif
+l2d		2D/clear_code/clear_code.l2d
+//icon	icon/vrticon.cnf
+icon	icon/sub_sticon.cnf
+
+binary	ending_st_e.row
+binary	ending_st_sp_e.row
+binary	titlea_st_e.row
+binary	titleb_st_e.row
+binary	titlec_st_e.row
+binary	titled_st_e.row
+binary	titlee_st_e.row

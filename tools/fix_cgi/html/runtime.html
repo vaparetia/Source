@@ -1,0 +1,84 @@
+Content-type: text/html;charset=EUC-JP
+
+<HTML>
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<META HTTP-EQUIV=CONTENT-TYPE CONTENT="text/html;charset=EUC-JP">
+<BODY BGCOLOR=gray TEXT=white LINK=pink VLINK=pink ALINK=purple BACKGROUND=/runtime.xbox/images/bg.gif>
+<hr>
+<p><center><H1><B>MGS2 XBOX の RunTime に更新</B></H1></center>
+<hr>
+
+<H2><FONT COLOR=yellow>
+_tag_incomment
+</FONT></H2>
+
+<FORM ACTION="/cgi-bin/_tag_version/input.cgi" METHOD="post">
+<INPUT TYPE=hidden NAME=shwdir VALUE=_tag_shwdir>
+<INPUT TYPE=hidden NAME=list   VALUE=_tag_list  >
+<INPUT TYPE=hidden NAME=style  VALUE=_tag_style >
+
+<TABLE>
+<TR><TD><FONT COLOR=yellow>差出人</FONT></TD>
+    <TD><SELECT NAME=from>
+_tag_include::html/member/default
+    <OPTION></OPTION>
+    <OPTION>[end]</OPTION>
+    </SELECT>
+    <INPUT TYPE=TEXT NAME=from SIZE=10 VALUE=_tag_from>
+    </TD></TR>
+
+<TR><TD><FONT COLOR=yellow>受取人</FONT></TD>
+    <TD><SELECT NAME=to>
+_tag_include::html/member/_tag_to.html
+    <OPTION></OPTION>
+    <OPTION>[end]</OPTION>
+    </SELECT>
+    <INPUT TYPE=TEXT NAME=to SIZE=10 VALUE=_tag_to>
+    </TD></TR>
+
+<TR><TD><FONT COLOR=yellow>移動元ファイル</FONT></TD>
+    <TD COLSPAN=2><INPUT TYPE=TEXT SIZE=50 NAME="locate" VALUE="_tag_locate">
+    <INPUT TYPE=SUBMIT NAME=method VALUE="リスト">
+    <INPUT TYPE=SUBMIT NAME=method VALUE="複数"  >
+    </TD></TR>
+_tag_include::_tag_list
+<TR><TD><FONT COLOR=yellow>移動先ファイル</FONT></TD>
+    <TD COLSPAN=2>
+    <INPUT TYPE=TEXT   SIZE=50 NAME="destinate" VALUE="_tag_destinate">
+    <INPUT TYPE=SUBMIT NAME=method VALUE="詳細">
+    </TD></TR>
+
+<TR><TD><FONT COLOR=yellow>コメント配信</FONT></TD>
+    <TD COLSPAN=3>
+    Runtime更新時
+    <SELECT NAME=send_ip>
+_tag_include::html/send_ip/_tag_send_ip.html
+    </SELECT>
+    FIX更新時
+    <INPUT TYPE=CHECKBOX NAME=send_fix VALUE="FIX更新時にも" _tag_SNDchecked>
+    </TD></TR>
+
+_tag_include::_tag_shwdir
+
+_tag_include::html/comment/_tag_style.html
+
+</TABLE>
+
+<INPUT TYPE=HIDDEN NAME=success VALUE=1>
+
+</FORM>
+</BODY>
+</HTML>

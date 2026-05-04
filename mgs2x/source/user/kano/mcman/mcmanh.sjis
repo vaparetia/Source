@@ -1,0 +1,100 @@
+/*
+	mcmanh.sjis
+		ƒƒ‚ƒŠ[ƒJ[ƒh‚Ìƒ^ƒCƒgƒ‹“™ASJIS‚Å‚È‚¯‚ê‚Î‚È‚ç‚È‚¢‚à‚Ì‚ğ
+		‚±‚Ìƒtƒ@ƒCƒ‹‚É‘‚­
+	
+	2001/04/19 K.Kano
+	2001/08/21 K.Kano
+		mcman_sjis.h‚©‚çˆÚs
+	$Id: mcmanh.sjis,v 1.1.1.3 2002/11/19 11:43:17 Yoshizawa1 Exp $
+*/
+
+
+#ifndef _mcmanh_sjis_
+#define _mcmanh_sjis_
+
+
+/*                               0---------1---------2---------3---------4---------5---------6--- */
+#define DEFAULT_MC_TITLE_NAME	"‚l‚d‚s‚`‚k@‚f‚d‚`‚q@‚r‚n‚k‚h‚c@‚Q"
+
+#if 0 // def JAPANESE_BP_IGNORE()
+
+#define MGS2_TITLE			"‚l‚f‚r‚Q‚r"
+#define MGS2_PHOTO_TITLE	"‚l‚f‚r‚Q‚r@‚o‚ˆ‚‚”‚@‚c‚‚”‚"
+#define MGS2_TITLE_LF_LOCATE		28
+#define MGS2_PHOTO_TITLE_LF_LOCATE	32
+
+#ifdef MGS2_VRTRIAL
+#define MGS2_VR_TITLE		"‚s‚ˆ‚…@‚c‚‚ƒ‚•‚‚…‚‚”@‚‚†""‚l‚f‚r‚Q"
+#define MGS2_VR_LF_LOCATE	30
+#else
+#define MGS2_VR_TITLE		"‚l‚f‚r‚Q‚r@‚l‚‰‚“‚“‚‰‚‚‚“"
+#define MGS2_VR_LF_LOCATE	28
+#endif
+#define MGS2_ST_TITLE		"‚l‚f‚r‚Q‚r@‚r‚‚‚‹‚…‚s‚‚Œ‚…‚“"
+#define MGS2_ST_LF_LOCATE	32
+#endif
+
+#ifdef ENGLISH
+
+#define MGS2_TITLE			"‚l‚f‚r‚Q‚r"
+#define MGS2_PHOTO_TITLE	"‚l‚f‚r‚Q‚r@‚o‚ˆ‚‚”‚@‚c‚‚”‚"
+
+//#if defined(ENGLISH) && defined(NTSC)
+//#define MGS2_TITLE_LF_LOCATE		30
+//#else
+#define MGS2_TITLE_LF_LOCATE		28
+//#endif
+
+#define MGS2_PHOTO_TITLE_LF_LOCATE	32
+
+#ifdef MGS2_VRTRIAL
+#define MGS2_VR_TITLE		"‚s‚ˆ‚…@‚c‚‚ƒ‚•‚‚…‚‚”@‚‚†""‚l‚f‚r‚Q"
+#define MGS2_VR_LF_LOCATE	30
+#else
+#define MGS2_VR_TITLE		"‚l‚f‚r‚Q‚r@‚l‚‰‚“‚“‚‰‚‚‚“"
+#define MGS2_VR_LF_LOCATE	28
+#endif
+
+#define MGS2_ST_TITLE		"‚l‚f‚r‚Q‚r@‚r‚‚‚‹‚…‚s‚‚Œ‚…‚“"
+#define MGS2_ST_LF_LOCATE	32
+
+#endif
+
+
+//#if defined(ENGLISH) && defined(NTSC)
+
+//#define MC_BASE_PLAY_TIME	"@‚O‚O‚O‚OF‚O‚OF‚O‚O"
+
+//#else
+#if 0
+#define MC_BASE_PLAY_TIME	"@‚O‚OF‚O‚OF‚O‚O"
+#else
+#define MC_BASE_PLAY_TIME	"@‚O‚OF‚O‚O"
+#endif
+
+//#endif
+
+#define MC_BASE_ID			"@‚O‚O^"
+
+
+//#define MC_N_STAGES			52
+//#define MC_N_STAGES			(52+5)
+#define MC_N_STAGES			(52+5+5)
+
+
+#define ASCII_CODE_SJIS_STR \
+	"@Ih”“•fij–{C|D^" \
+	"‚O‚P‚Q‚R‚S‚T‚U‚V‚W‚XFGƒ„H" \
+	"—‚`‚a‚b‚c‚d‚e‚f‚g‚h‚i‚j‚k‚l‚m‚n" \
+	"‚o‚p‚q‚r‚s‚t‚u‚v‚w‚x‚ymnOQ" \
+	"M‚‚‚‚ƒ‚„‚…‚†‚‡‚ˆ‚‰‚Š‚‹‚Œ‚‚‚" \
+	"‚‚‘‚’‚“‚”‚•‚–‚—‚˜‚™‚šobpP@"
+
+
+
+extern const char *mc_title_stage_name_jpn[];
+extern const char *mc_title_stage_name_nojpn[];
+#define mc_title_stage_name ( BP_Area_JP() ? mc_title_stage_name_jpn : mc_title_stage_name_nojpn )
+
+#endif

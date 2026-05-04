@@ -1,0 +1,194 @@
+VU instruction simple list
+    1999/11/10 K.Uehara
+    $Id: vuinst.txt,v 1.1.1.3 2002/11/19 11:41:45 Yoshizawa1 Exp $
+
+vf00 = ( 0.0, 0.0, 0.0, 1.0 )
+vi00 = 0
+
+MAC                             |OxOyOzOw|UxUyUzUw|SxSySzSw|ZxZyZzZw|
+STATUS                                   |DSISOSUS|SSZS D I| O U S Z|
+CLIP          |-Z+Z-Y+Y|-X+X-z+z|-y+y-x+x|-Z+Z-Y+Y|-X+X-z+z|-y+y-x+x|
+                                 ( I = invalid / D = Divide by zero )
+
+VU0 data    0x11004000 - 0x11004FFF
+VU1 data    0x1100C000 - 0x1100FFFF
+
+UPPER INSTRUCTION --------------------------------------------------------
+( ? = x or y or z or w )
+
+# ----------------------------
+NOP         nop                             ; no oparation
+
+# ----------------------------
+ADD         add.xyzw    vfd,vfs,vft
+ADDi        addi.xyzw   vfd,vfs             ; vfd = vfs + I
+ADDq        addq.xyzw   vfd,vfs             ; vfd = vfs + Q
+ADDbc       add?.xyzw   vfd,vfs,vft?        ; vfd = vfs + vft.?
+ADDA        adda.xyzw   ACC,vfs,vft         ; ACC = vfs + vft
+ADDAi       addai.xyzw  ACC,vfs,I           ; ACC = vfs + I
+ADDAq       addai.xyzw  ACC,vfs,Q           ; ACC = vfs + Q
+ADDAbc      adda?.xyzw  ACC,vfs,vft?        ; ACC = vfs + vft.?
+
+SUB         sub.xyzw    vfd,vfs,vft
+SUBi        subi.xyzw   vfd,vfs             ; vfd = vfs - I
+SUBq        subq.xyzw   vfd,vfs             ; vfd = vfs - Q
+SUBbc       sub?.xyzw   vfd,vfs,vft?        ; vfd = vfs - vft.?
+SUBA        suba.xyzw   ACC,vfs,vft         ; ACC = vfs - vft
+SUBAi       subai.xyzw  ACC,vfs,I           ; ACC = vfs - I
+SUBAq       subai.xyzw  ACC,vfs,Q           ; ACC = vfs - Q
+SUBAbc      suba?.xyzw  ACC,vfs,vft?        ; ACC = vfs - vft.?
+
+MUL         mul.xyzw    vfd,vfs,vft         ; vfd = vfs * vft
+MULi        muli.xyzw   vfd,vfs,I           ; vfd = vfs * I
+MULq        mulq.xyzw   vfd,vfs,Q           ; vfd = vfs * Q
+MULbc       mul?.xyzw   vfd,vfs,vft?        ; vfd = vfs * vft.?
+MULA        mula.xyzw   ACC,vfs,vft         ; ACC = vfs * vft
+MULAi       mulai.xyzw  ACC,vfs,I           ; ACC = vfs * I
+MULAq       mulaq.xyzw  ACC,vfs,Q           ; ACC = vfs * Q
+MULAbc      mula?.xyzw  ACC,vfs,vft?        ; ACC = vfs * vft.?
+
+MADD        madd.xyzw   vfd,vfs,vft         ; vfd = ACC + vfs * vft
+MADDi       maddi.xyzw  vfd,vfs,I           ; vfd = ACC + vfs * I
+MADDq       maddq.xyzw  vfd,vfs,Q           ; vfd = ACC + vfs * Q
+MADDbc      madd?.xyzw  vfd,vfs,vft?        ; vfd = ACC + vfs * vft.?
+MADDA       madda.xyzw  ACC,vfs,vft         ; ACC = ACC + vfs * vft
+MADDAi      maddai.xyzw ACC,vfs,I           ; ACC = ACC + vfs * I
+MADDAq      maddaq.xyzw ACC,vfs,Q           ; ACC = ACC + vfs * Q
+MADDAbc     madda?.xyzw ACC,vfs,vft?        ; ACC = ACC + vfs * vft.?
+
+MSUB        msub.xyzw   vfd,vfs,vft         ; vfd = ACC - vfs * vft
+MSUBi       msubi.xyzw  vfd,vfs,I           ; vfd = ACC - vfs * I
+MSUBq       msubq.xyzw  vfd,vfs,Q           ; vfd = ACC - vfs * Q
+MSUBbc      msub?.xyzw  vfd,vfs,vft?        ; vfd = ACC - vfs * vft.?
+MSUBA       msuba.xyzw  ACC,vfs,vft         ; ACC = ACC - vfs * vft
+MSUBAi      msubai.xyzw ACC,vfs,I           ; ACC = ACC - vfs * I
+MSUBAq      msubaq.xyzw ACC,vfs,Q           ; ACC = ACC - vfs * Q
+MSUBAbc     msuba?.xyzw ACC,vfs,vft?        ; ACC = ACC - vfs * vft.?
+
+# ----------------------------
+ABS         abs.xyzw    vfd,vfs             ; vfd = abs( vfs )
+
+MAX         max.xyzw    vfd,vfs,vft         ; vfd = max( vfs, vft )
+MAXi        maxi.xyzw   vfd,vfs,I           ; vfd = max( vfs, I )
+MAXbc       max?.xyzw   vfd,vfs,vft?        ; vfd = max( vfs, vft.? )
+
+MINI        mini.xyzw   vfd,vfs,vft         ; vfd = min( vfs, vft )
+MINIi       minii.xyzw  vfd,vfs,I           ; vfd = min( vfs, I )
+MINIbc      mini?.xyzw  vfd,vfs,vft?        ; vfd = min( vfs, vft.? )
+
+# ----------------------------
+CLIP        clipw.xyzw  vfsxyz,vftw         ; CLIP check
+
+# ----------------------------
+FTOI0       ftoi0.xyzw  vfd,vfs             ; ftoi
+FTOI4       ftoi4.xyzw  vfd,vfs             ; ftoi
+FTOI12      ftoi12.xyzw vfd,vfs             ; ftoi
+FTOI15      ftoi15.xyzw vfd,vfs             ; ftoi
+
+ITOF0       itof0.xyzw  vfd,vfs             ; itof
+ITOF4       itof4.xyzw  vfd,vfs             ; itof
+ITOF12      itof12.xyzw vfd,vfs             ; itof
+ITOF15      itof15.xyzw vfd,vfs             ; itof
+
+# ----------------------------
+OPMULA      opmula.xyz  ACCxyz,vfsxyz,vftxyz    ; outer product phase1
+OPMSUB      opmsub.xyz  vfdxyz,vfsxyz,vftxyz    ; outer product phase2
+
+LOWER INSTRUCTION --------------------------------------------------------
+
+# calc -----------------------
+IADD        iadd        vid,vis,vit         ; vid = vis + vit
+IADDI       iaddi       vid,vis,imm5        ; vid = vis + imm(sign)
+IADDIU      iaddiu      vid,vis,imm15       ; vid = vis + imm(unsign)
+ISUB        isub        vid,vis,vit         ; vid = vis - vit
+ISUBIU      isubiu      vid,vis,imm15       ; vid = vis - imm15(unsign)
+
+IAND        iand        vid,vis,vit         ; vid = vis + vit
+IOR         ior         vid,vis,vit         ; vid = vis | vit
+
+# load store ----------------
+ILW         ilw.?       vit,imm11(vis)?     ; load vi from memory   (1/4)
+ILWR        ilwr.?      vit,(vis)?          ; load vi from memory   (1/4)
+ISW         isw.xyzw    vit,imm11(vis)xyzw  ; store vi to memory    (1/4)
+ISWR        iswr.xyzw   vit,(vis)xyzw       ; store vi to memory    (1/4)
+
+LQ          lq.xyzw     vfd,imm11(vis)      ; load vf from memory   (1/4)
+LQD         lqd.xyzw    vfd,(--vis)         ; load vf from memory   (1/4)
+LQI         lqi.xyzw    vfd,(vis++)         ; load vf from memory   (1/4)
+SQ          sq.xyzw     vfs,imm11(vis)      ; store vf to memory    (1/4)
+SQD         sqd.xyzw    vfs,(--vis)         ; store vf to memory    (1/4)
+SQI         sqi.xyzw    vfs,(vis++)         ; store vf to memory    (1/4)
+
+LOI         loi         0.5                 ; load I (1/1)
+
+# oparate float register ----
+MFIR        mfir.xyzw   vfd,vis             ; vfd.dest = vis            (1/4)
+MFP         mfp.xyzw    vfd,P               ; vfd.dest = P              (1/4)
+MOVE        move.xyzw   vfd,vfs             ; vfd = vfs                 (1/4)
+MR32        mr32.xyzw   vfd,vfs             ; (dest|x) vfdx = vfsy...   (1/4)
+MTIR        mtir        vid,vfs?            ; vid = ( vfs? & 0xffff )   (1/4)
+
+# branch and jump -----------
+B           b           Label               ; branch
+BAL         bal         vit,label           ; vi <- pc ( branch and link )
+IBEQ        ibeq        vit,vis,label       ; if( vit == vis ) jump
+IBGEZ       ibgez       vis,label           ; if( vis >= 0 ) jump
+IBGTZ       ibgtz       vis,label           ; if( vis > 0 ) jump
+IBLEZ       iblez       vis,label           ; if( vis <= 0 ) jump
+IBLTZ       ibltz       vis,label           ; if( vis < 0 ) jump
+IBNE        ibne        vit,vis,label       ; if( vit != vis ) jump
+
+JALR        jalr        vit,vis             ; vit = PC, PC = vis
+JR          jr          vis                 ; PC = vis
+
+# check status --------------
+FCAND       fcand       vi01,imm24          ; vi01 = ( ( CLIP & imm ) != 0 )
+FCOR        fcor        vi01,imm24          ; vi01 = ( ( CLIP | imm ) == 0xffffff )
+FCEQ        fceq        vi01,imm24          ; vi01 = ( CLIP == imm )
+FCGET       fcget       vit                 ; vit = ( CLIP & 0x0FFF )
+FCSET       fcset       imm24               ; CLIP = imm                (1/4)
+
+FMAND       fmand       vit,vis             ; vit = MAC & vis
+FMOR        fmor        vit,vis             ; vit = MAC | vis
+FMEQ        fmeq        vit,vis             ; vit = ( MAC == vis )
+
+FSAND       fsand       vit,imm12           ; vit = STATUS & imm
+FSOR        fsor        vit,imm12           ; vit = STATUS | imm
+FSEQ        fseq        vit,imm12           ; vit = ( STATUS == imm )
+FSSET       fsset       imm12               ; STATUS = imm              (1/4)
+
+# rand ---------------------
+RINIT       rinit       R,vfs?              ; R = vfs?                  (1/1)
+RXOR        rxor        R,vfs?              ; R = R ^ vfs?              (1/1)
+RGET        rget.xyzw   vfd,R               ; vfd = R(1.0F~2.0F)        (1/4)
+RNEXT       rnext.xyzw  vfd,R               ; R = rand(), vfd = R       (1/4)
+
+# P,Q calc -----------------
+DIV         div         Q,vfs?,vft?         ; Q = vfs? / vft?           (7/7)
+
+SQRT        sqrt        Q,vfs?              ; Q = sqrt(vfs?)            (7/7)
+RSQRT       rsqrt       Q,vfs?,vft?         ; Q = vfs? / sprt( vft? )   (13/13)
+
+# vu1 only -----------------
+EATAN       eatan       P,vfs?              ; arctan(vfs?)      (53/54)
+EATANxy     eatanxy     P,vfs               ; arctan(vfsy/vfsx) (53/54)
+EATANxz     eatanxz     P,vfs               ; arctan(vfsz/vfsx) (53/54)
+ESIN        esin        P,vfs?              ; sin(vfs.?)        (28/29)
+EEXP        eexp        P,vfs?              ; exp(-vfs.?)       (43/44)
+ELENG       eleng       P,vfs               ; sqrt(vfs^2)       (17/18)
+ERLENG      erleng      P,vfs               ; 1/sqrt(vfs^2)     (23/24)
+ESQRT       esqrt       P,vfs?              ; sqrt(vfs.?)       (11/12)
+ERSQRT      ersqrt      P,vfs?              ; 1/sqrt(vfs.?)     (17/18)
+ERCPR       ercpr       P,vfs?              ; 1/vfs?            (11/12)
+ERSADD      ersadd      P,vfs               ; 1/vfs^2           (17/18)
+ESADD       esadd       P,vfs               ; vfs^2             (10/11)
+ESUM        esum        P,vfs               ; x+y+z+w           (11/12)
+
+# wait ---------------------
+WAITP       waitp                           ; wait P calc
+WAITQ       waitq                           ; wait Q calc
+
+# special ------------------
+XGKICK      xgkick      vit                 ; GIF KICK
+XITOP       xitop       vit                 ; vit = ITOP
+XTOP        xtop        vit                 ; vit = TOP

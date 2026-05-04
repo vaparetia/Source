@@ -1,0 +1,121 @@
+//
+//	w32b.src	
+//
+//	written by H.Yoshiike 2000.Nov
+//
+//	$Id: w32b.src,v 1.9 2001/11/07 08:01:29 usr03635 Exp $
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 汎用空用テクスチャのためのデファイン（c_effect.h の前で）
+//#define MORNING_SKY
+//#define DAY_SKY
+//#define EVENING_SKY <<< w32_common_game.h でデファイン済み。
+//#define NIGHT_SKY_DEMO
+#define E_OTHER1
+
+#include "w32b_game.h"
+
+// ライデン
+human	rai_def/rai_def_mh_mt.evm
+
+/* mgdemo added ----from here (Tue Jun 19 17:32:44 2001) ---- */
+pack_all vmp_def_pack.tri \
+	human/vmp_def/vmp_parts_vkpb_mh.dar \
+	human/vmp_def/vmp_hair_naked_mh_mt.dar \
+	human/vmp_def/vmp_naked_mh_mt.dar \
+	human/vmp_def/vmp_parts_vkpfix.dar
+
+human	vmp_def/vmp_parts_vkpb_mh.evm
+human	vmp_def/vmp_hair_naked_mh_mt.evm
+human	vmp_def/vmp_naked_mh_mt.evm
+human	vmp_def/vmp_parts_vkpfix.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Jun 19 20:33:34 2001) ---- */
+weapon	vamp_knife/vkf_big_mt.kms
+human	iro_def/iro_def_mh_mt.evm
+
+// エマ14917661
+// エマの滲み血
+// モデル（TRI名に、ema_ooze_blood_mh.tri が欲しいので、まとめない）
+pack_all zzz_ema_ooze_blood_mh.tri \
+		human/ema_def/ema_ooze_blood_mh.dar
+human		ema_def/ema_ooze_blood_mh.evm
+// アニメテクスチャ
+anmtex ema_ooze_blood.rat effect/ema_ooze_blood
+/*
+ema_ooze_blood00_alp.pic
+〜
+ema_ooze_blood89_alp.pic
+*/
+
+//ヴァンプ順手ナイフ
+/* mgdemo added ----upto here ---- */
+goods	demo_psg1_rai/demo_psg1_rai.kms
+goods	demo_dummy/demo_dummy.kms
+goods	demo_usp/demo_usp.kms
+/* mgdemo added ----upto here ---- */
+
+// 海面（夕方狙撃イベント）
+//include s_surface.h < w32a_game.h の方でデータは入っている。
+
+/* mgdemo added ----from here (Tue Jun 26 18:28:46 2001) ---- */
+pack_all gun_cypher_pack.tri \
+	meca/gun_cypher/gcyp_frg3_cm.dar \
+	meca/gun_cypher/gcyp_frg2_cm.dar \
+	meca/gun_cypher/gcyp_frg1_cm.dar \
+	meca/gun_cypher/demo_gcyp_pose.dar \
+	meca/gun_cypher/gcyp.dar
+
+meca	gun_cypher/gcyp_frg3_cm.kms
+meca	gun_cypher/gcyp_frg2_cm.kms
+meca	gun_cypher/gcyp_frg1_cm.kms
+meca	gun_cypher/demo_gcyp_pose.kms
+meca	gun_cypher/gcyp.kms
+/* mgdemo added ----upto here ---- */
+pack_all ema_def_pack.tri \
+	human/ema_def/ema_ooze_blood_sh.dar \
+	human/ema_def/ema_back_blood_mh.dar
+
+human	ema_def/ema_ooze_blood_sh.kms
+human	ema_def/ema_back_blood_mh.evm
+
+/* mgdemo added ----upto here ---- */
+//pack_all zzz_ema_back.tri \
+//		human/ema_def/ema_back_blood_mh.dar
+/* mgdemo added ----upto here ---- */
+
+/* 田中追加・拡張海 */
+pack_trnall	kakutyou.tri \
+		effect/plant_sea/entyou_oil_sea.bmp
+/* mgdemo added ----from here (Tue Aug 28 22:26:57 2001) ---- */
+
+/* 追加遠景モデル */
+pack_all w32demo_models.tri \
+		world/w32a/w32a/oilfence.dar \
+		world/w32a/w32a_demo/w32demo_21a.dar \
+		world/w32a/w32a_demo/w32demo_23a.dar \
+		world/w32a/w32a_demo/w32demo_31a.dar \
+		world/w32a/w32a_demo/w32demo_g.dar \
+		world/w32a/w32a_demo/w32demo_kl.dar \
+		world/w32a/w32a_demo/w32demo_l.dar
+
+world	w32a/w32a/oilfence.kms
+world	w32a/w32a_demo/w32demo_21a.kms
+world	w32a/w32a_demo/w32demo_23a.kms
+world	w32a/w32a_demo/w32demo_31a.kms
+world	w32a/w32a_demo/w32demo_g.kms
+world	w32a/w32a_demo/w32demo_kl.kms
+world	w32a/w32a_demo/w32demo_l.kms
+/* mgdemo added ----from here (Mon Oct  1 17:18:19 2001) ---- */
+vib	demo/P069_03_p02_rai_03.vib
+vib	demo/P069_03_p02_rai_02.vib
+vib	demo/P069_03_p02_rai_01.vib
+/* mgdemo added ----upto here ---- */
+
+// 優先問題解決のためサングラスを入れておく
+pack_all zzz_iro_mw.tri \
+	human/iro_def/iro_glass_black_mh_mt.dar 
+human		iro_def/iro_glass_black_mh_mt.evm

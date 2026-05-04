@@ -1,0 +1,64 @@
+// w43a.src
+// ＡＧ・丸通路
+// 2001/02/19 S.Yamashita
+// $Id: w43a.src,v 1.24 2001/08/28 14:47:16 usr10876 Exp $
+
+block .use r_plt0
+block .nocache
+block .cache
+
+include		w43a_game.h
+
+
+/* 以下はポリデモで使用する為の追加 */
+/* ---------------------------------------------- */
+/* added by S.Hirano 010405 */
+// ライデン
+human		rai_def/rai_def_mh_mt.evm
+
+// スネーク
+	//	髭剃り対応
+pack_all sna_mw.tri \
+	human/sna_def/sna_def_mh.dar \
+	human/sna_def/sna_def_addhand_mh_mt.dar \
+	human/sna_shaved/sna_shaved_mh_mt.dar
+human		sna_def/sna_def_mh.evm			//	ゲーム／デモ共用
+human	sna_def/sna_def_addhand_mh_mt.evm
+
+
+/* mgdemo added ----from here (Fri Jul  6 20:16:49 2001) ---- */
+weapon	usp/usp_sub.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Jul 12 20:11:23 2001) ---- */
+human	sna_def/sna_mag1.kms
+human	sna_def/sna_mag2.kms
+human	sna_def/sna_mag3.kms
+human	sna_def/sna_mag4.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Jul 13 17:11:12 2001) ---- */
+/* mgdemo added ----from here (Sat Jul 14 18:57:38 2001) ---- */
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Aug  9 16:56:03 2001) ---- */
+goods	demo_kck_release_case/demo_kck_release_case.kms
+human	rai_naked/rai_naked_mh_mt.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Aug 16 13:34:02 2001) ---- */
+human	rai_naked/rai_naked_p073_mh_mt.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Aug 20 10:28:55 2001) ---- */
+world	door/w42a_dr_right.kms
+world	door/w42a_dr_left.kms
+goods	demo_m4_sna/demo_m4_sna.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Aug 20 19:33:27 2001) ---- */
+goods	demo_hfb_ref_rai_mt/demo_hfb_ref_rai_mt.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Aug 21 12:37:45 2001) ---- */
+vib	demo/P074_01_p01_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Aug 24 16:16:24 2001) ---- */
+vib	demo/P073_02_p01_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Aug 28 23:22:22 2001) ---- */
+vib	demo/P073_04_p02_rai_01.vib
+/* mgdemo added ----upto here ---- */

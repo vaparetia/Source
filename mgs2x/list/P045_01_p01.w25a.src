@@ -1,0 +1,230 @@
+//
+//	P045_01_p01.w25a.src
+//
+//	written by Y.Matsuhana 2000.Nov
+//
+//	$Id: P045_01_p01.w25a.src,v 1.39 2001/11/07 06:57:15 usr03635 Exp $
+
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 汎用空用テクスチャのためのデファイン（c_effect.h の前で）
+//#define MORNING_SKY
+#define DAY_SKY // あとでハリアー空に変わる。
+//#define EVENING_SKY
+
+// 各ステージ共通要素
+include		common.h
+#include		"c_effect.h"
+
+// キャラクタ 
+// ライデン
+human		rai_def/rai_def_mh_mt.evm
+
+// プリスキン
+human		iro_def/iro_def_mh_mt.evm
+
+// ソリダス各種
+pack_all sol_1.tri \
+		human/sol_def/sol_def_mant_body_mh_mt.dar // \
+//		human/sol_def/sol_def_mh_mt.dar <<< テクスチャオーバーのためコメントアウト
+//		human/sol_def/sol_muscle_mh_mt.dar <<< テクスチャオーバーのためコメントアウト
+// ソリダス（マントの下ボディ）
+human	sol_def/sol_def_mant_body_mh_mt.evm
+
+//------------------------------------------------------ ソリダス顔付き関係は使用していない
+//ソリダス（ノーマル）
+//human	sol_def/sol_def_mh_mt.evm
+//ソリダス（マッスル）
+//human	sol_def/sol_muscle_mh_mt.evm
+//ソリダス（マッスルＭＡＸ）
+//human	sol_def/sol_vanim_2_sh_mt.kms
+//------------------------------------------------------
+
+// マントは狩野さんのひらひらプログラム使用なので、同じmh_mtでもまとめてはイケナイ。
+human	sol_def/sol_def_mant_mh_mt.evm
+
+// ワールド
+// マルチテクスチャモデル
+world		w25a/w25a
+world		w25a/other/w25a_18b.kms
+
+pack_all demo_w25ab_common.tri \
+	world/w25ab_common/w25ab_14a.dar \
+	world/w25ab_common/w25ab_17a.dar \
+	world/w25ab_common/w25ab_18a.dar \
+	world/w25ab_common/w25ab_19a.dar \
+	world/w25ab_common/w25ab_20a.dar \
+	world/w25ab_common/w25ab_21a.dar \
+	world/w25ab_common/w25ab_24a.dar \
+	world/w25ab_common/w25ab_31a.dar \
+	world/w25ab_common/w25ab_32a.dar \
+	world/w25ab_common/w25ab_32b.dar \
+	world/w25ab_common/w25ab_32c.dar \
+	world/w25ab_common/w25ab_crane.dar \
+	world/w25ab_common/w25ab_gh.dar \
+	world/w25ab_common/w25ab_i1.dar \
+	world/w25ab_common/w25ab_i2.dar \
+	world/w25ab_common/w25ab_kl.dar \
+	world/w25ab_common/w25ab_l.dar \
+	world/w25ab_common/w25ab_other00.dar \
+	world/w25ab_common/w25ab_other01.dar \
+	world/w25ab_common/w25ab_other02.dar \
+	world/w25ab_common/w25a_g.dar \
+	world/w25ab_common/w25a_gl.dar \
+	world/door/w25a_dr00.dar
+world	w25ab_common/w25ab_14a.kms
+world	w25ab_common/w25ab_17a.kms
+world	w25ab_common/w25ab_18a.kms
+world	w25ab_common/w25ab_19a.kms
+world	w25ab_common/w25ab_20a.kms
+world	w25ab_common/w25ab_21a.kms
+world	w25ab_common/w25ab_24a.kms
+world	w25ab_common/w25ab_31a.kms
+world	w25ab_common/w25ab_32a.kms
+world	w25ab_common/w25ab_32b.kms
+world	w25ab_common/w25ab_32c.kms
+world	w25ab_common/w25ab_crane.kms
+world	w25ab_common/w25ab_gh.kms
+world	w25ab_common/w25ab_i1.kms
+world	w25ab_common/w25ab_i2.kms
+world	w25ab_common/w25ab_kl.kms
+world	w25ab_common/w25ab_l.kms
+world	w25ab_common/w25ab_other00.kms
+world	w25ab_common/w25ab_other01.kms
+world	w25ab_common/w25ab_other02.kms
+world	w25ab_common/w25a_g.kms
+world	w25ab_common/w25a_gl.kms 
+world	door/w25a_dr00.kms
+
+world		sea
+lt2		w25a.lt2
+hazard		d00a3.hzx
+
+// リアル影投影モデル
+world		w25b/w25b_demo/w25demo_sdw00.kms 
+world		w25b/w25b_demo/w25demo_sdw02.kms 
+
+// 海面（昼）
+include d_surface.h
+
+// オブジェクト
+meca	ir_sensor
+//meca	harrier
+
+weapon		cfr/cfr_trp.kms
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+// リネーム
+
+/*
+ああクウォート付きでってことですね。わっかりましたー。
+なら
+\'w01b\' or "'w01b'"
+でいいです。
+本来’や”は文字列を意味させるものなので、普通に記述した場合、
+文字列に入らないのです。
+*/
+//--------------------------------------------------------------------- 追加小林
+weapon	usp/usp_sub.kms
+//カサッカ
+meca	kacatka_plant/kck_plant_mt.kms
+meca	kacatka_plant/kck_plant_trot.kms
+meca	kacatka_plant/kck_plant_mrot.kms
+meca	kacatka_plant/kck_chair.kms
+
+// 細々したものをまとめる
+pack_all misc_obj.tri \
+		goods/demo_m4_grn_sna/demo_m4_grn_sna.dar \
+		goods/demo_m4_grn_usm/demo_m4_grn_emb.dar \
+		goods/demo_m4_grn_usm/demo_m4_grn_bul.dar \
+		goods/demo_m4_grn_usm/demo_m4_grn_cartridge.dar \
+		goods/demo_m4_grn_usm/demo_m4_grn_barel_usm.dar \
+		goods/demo_m4_grn_usm/demo_m4_grn_usm.dar
+
+// misc_obj.triのモデル
+//Ｍ４グレネード
+goods	demo_m4_grn_sna/demo_m4_grn_sna.kms
+//グレネード弾類
+goods	demo_m4_grn_usm/demo_m4_grn_emb.kms
+goods	demo_m4_grn_usm/demo_m4_grn_bul.kms
+goods	demo_m4_grn_usm/demo_m4_grn_cartridge.kms
+goods	demo_m4_grn_usm/demo_m4_grn_barel_usm.kms
+goods	demo_m4_grn_usm/demo_m4_grn_usm.kms
+//ソリダス鉄襟
+human	sol_def/sol_faceguard.kms
+//ソリダスマッスル素材
+human	sol_def/sol_vanim_0_sh_mt.kms
+cvd		human/sol_def/sol_vanim_0_sh_mt.cv2	vn
+cvd		human/sol_def/sol_vanim_1_sh_mt.cv2	vn
+cvd		human/sol_def/sol_vanim_2_sh_mt.cv2	vn
+//ソリダス顔だけ
+human	sol_def/sol_def_face_mh_mt.evm
+//投棄用箱
+meca	kacatka_plant/kck_release_case_cm.kms
+//アムルアーム煙
+pack_trnall trn.tri effect/smoke/smoke_lp3_alp.bmp
+//ハリアー関連
+meca	harrier/hri_amraam.kms
+meca	harrier/hri_clst_def.kms
+meca	harrier/hri_mspod.kms
+meca	harrier/hri_pilot_vmp.kms
+meca	harrier/hri_canopy_high_mt.kms
+meca	harrier/hri_def.kms
+//デモダミー（煙型ブラーで使用）
+goods	demo_dummy/demo_dummy.kms
+//ソリダスの当たりモデル
+human	sol_def/sol_bounding.kms
+//ソリダスマント（腕組み用）
+human	sol_def/sol_def_mant_2_mh_mt.evm
+//ハリアーエフェクト
+pack_trnall trn.tri effect/smoke/smoke_lp1_alp.bmp
+pack_trnall trn.tri effect/bonbori/svc_bonbori_r.bmp
+pack_trnall trn.tri	effect/ray_effect/ray_eye_bonbori_alp.bmp 
+//ハリアーキャノピー（フレーム）
+meca	harrier/hri_canopy_frame_high.kms
+//ダミーパイロット（ソリダス）
+meca	harrier/hri_pilot_sol.kms
+//投棄用箱（ワンメッシュ）
+goods	demo_kck_release_case/demo_kck_release_case.kms
+
+// テロップ（ソリダス）
+#ifdef MGS2_LANG_ENGLISH
+// 英語
+pack_all	staff.tri \
+		2D/demo_telop/eng/sr12j_alp_ovl.bmp
+
+#else
+// 日本語
+pack_all	staff.tri \
+		2D/demo_telop/jpn/sr12j_alp_ovl.bmp
+
+#endif
+
+//--------------------------------------------------------------------- 追加小林
+texrename w25ab_24a.kms w10c_cntw04.bmp w10c_cntw04aaaa.bmp
+//振動
+vib	demo/P045_01_p01_kacatka_06.vib
+vib	demo/P045_01_p01_kacatka_05.vib
+vib	demo/P045_01_p01_kacatka_04.vib
+vib	demo/P045_01_p01_harrier_01.vib
+vib	demo/P045_01_p01_effect_02.vib
+vib	demo/P045_01_p01_effect_01.vib
+vib	demo/P045_01_p01_rai_02.vib
+vib	demo/P045_01_p01_rai_01.vib
+vib	demo/P045_01_p01_sol_01.vib
+vib	demo/P045_01_p01_kacatka_03.vib
+vib	demo/P045_01_p01_kacatka_02.vib
+vib	demo/P045_01_p01_kacatka_01.vib
+//------------------------------------------------------------ 追加小林2001/10/24
+// ダンボール破片（コモデル破片エフェクトで使用）
+item	c_box/cbx_a_frg1_cm.kms
+
+// 優先問題解決のためサングラスを入れておく
+pack_all zzz_iro_mw.tri \
+	human/iro_def/iro_glass_black_mh_mt.dar 
+human		iro_def/iro_glass_black_mh_mt.evm

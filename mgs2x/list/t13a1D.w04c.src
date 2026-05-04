@@ -1,0 +1,187 @@
+//
+//	t13a1D.w04c.src
+//
+//	written by Y.Matsuhana 1999.Dec
+//
+//	$Id: t13a1D.w04c.src,v 1.36 2002/07/29 02:11:19 usr04098 Exp $
+
+
+block .use r_tnk0
+block .nocache
+block .cache
+
+
+// 各ステージ共通要素
+include		common.h
+
+//水面用パック
+pack_all	water_sur.tri \
+			effect/env/w04c_envmap_alp_ovl.bmp
+//			debug/matsuhana/dbg_water/water_add_bld080_ovl.bmp
+include		c_effect.h
+
+// ダミーデータ
+goods		null/null.kms
+
+// 零
+meca		ray_w04c1/ray_w04c1.kms
+meca		ray_w04c1/ray_canopy_w04c1_mt.kms
+
+//world		w00
+
+// レイのコックピット
+meca		ray_cockpit/ray_cockpit.kms
+
+// 沈没タンカー
+world		w00_chinbotsu/w00_chinbotsu.kms
+// 沈没モーション
+mtn			tnk_sink.mls
+// ボンボリ用モデル（将来的には不使用にする）
+world		w00_chinbotsu/w00_chinbotsu_bonbori.kms
+
+// ライト
+lt2		w00a.lt2
+lt2		w00_chinbotsu_scale10.lt2
+hazard	d00a3.hzx
+
+//高波用
+option makexti6 -l 128
+pack_all oil.tri \
+		effect/wave/wave06.bmp \
+		effect/wave/wave06long1.bmp \
+		effect/wave/wave06long2.bmp \
+		effect/wave/wave09_alp_ovl.bmp
+option makexti6
+//		effect/wave/wave06.bmp \
+//		debug/takabe/tex/oil_alp_ovl_mod0222.bmp \
+//		debug/takabe/tex/sky_evening_add_alp_ovl_mod1120.bmp
+
+
+//天球用
+pack_trnall	tenkyu.tri \
+	effect/env/env01a_msk.bmp \
+	effect/env/env01b_msk.bmp
+
+
+// 新空
+pack_all	new_sky.tri effect/sky/w00_sky_add_alp.bmp
+
+
+// 新雷フラッシュで使用する
+world		w00/w00_sky.kms
+
+
+// カートリッジ（GCLでstdch.hをインクルードしている場合必要）
+//pack_all	weapon_cm.tri \
+//	weapon/usp/usp_emb.dar \
+//	weapon/fms/fms_emb.dar
+//weapon	usp/usp_emb.kms
+//weapon	fms/fms_emb.kms
+
+
+// デモステージ用実験
+// スネーク
+human	sna_def/sna_def_mh.evm
+
+//リキッド化オセロット
+human	rev_liq/rev_liq_addhand_mh_mt.evm
+human	rev_def/rev_def_shadow.kms
+human	rev_liq/rev_hair_liq_mh.evm
+human	rev_liq/rev_liq_boundhing.kms
+
+//コクピットエフェクト関連
+meca	ray/ray_canopy_mt.kms
+meca	ray/ray_def_mt.kms
+effect	ray_display/raycp_cover.kms
+pack_trnall trn.tri effect/ray_display/raycp_yajirushi1_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_holograph1_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_touchp_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_hanyoutex_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_circle1_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_text1_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_conpane1_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_circle2_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_scaler_r_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_circle3_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_scaler_l_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_display1_add_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_rearview_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_display1_dammy_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_liner_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_canopy_liner_alp.bmp
+
+//人体 海兵隊関連
+arkms	w04a_us_def_2.kls
+rename  w04a_us_def_2.kms w04a_us_def.kms
+
+//ゴルルコ兵
+human	gbs_def/gbs_def.kms
+
+//破片エフェクト関連
+pack_trnall trn.tri effect/bakuha/bombgas2_alp.bmp
+item	c_box/cbx_a_frg1_cm.kms
+
+//レイ目エフェクト
+pack_trnall trn.tri effect/ray_effect/ray_eye_blur_alp.bmp
+pack_trnall trn.tri effect/ray_effect/ray_eye_bonbori_alp.bmp
+// SAA
+weapon	saa/saa.kms
+
+// コバ４追加
+/*pack_all rayTri.tri \
+			2D/sight/ray_view/ray00_alp_ovl.bmp \
+			2D/sight/ray_view/ray01_alp_ovl.bmp \
+			2D/sight/ray_view/ray02_alp_ovl.bmp \
+			2D/sight/ray_view/ray03_alp_ovl.bmp \
+			2D/sight/ray_view/ray04_alp_ovl.bmp
+*/
+
+//レイ主観テクスチャ
+
+l2d 2D/sight/ray_view/ray_view.l2d
+//l2d 2D/sight/ray_view/ray_text.l2d
+
+/* mgdemo added ----from here (Thu Apr  5 14:02:28 2001) ---- */
+//weapon	usp/usp_sub.kms
+//weapon	usp/usp_amo.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Apr  5 16:01:03 2001) ---- */
+world	w04c_background/w04c1_background.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Apr  6 13:56:43 2001) ---- */
+cvd	meca/ray/ray_def_mt.cv2
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Apr  6 15:19:41 2001) ---- */
+cvd	human/sna_skl/sna_skl3.cv2
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Apr  9 14:22:07 2001) ---- */
+item	shield/shl_frg1.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Apr 13 13:16:34 2001) ---- */
+goods	demo_dummy/demo_dummy.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Apr 26 17:09:17 2001) ---- */
+pack_trnall trn.tri effect/blood/blood_2bw_alp.bmp
+/* mgdemo added ----upto here ---- */
+
+//振動データ
+// データ数が多すぎてロード時に落ちるステージが出たので、一時的にカット。010729（平野）
+// 振動ファイルは一つにまとまるようになったので組み込み。010803
+vib		demo
+
+#ifdef MGS2_XBOX_1
+pack_trnall	effect.tri \
+	effect/cloud/w00_sky_add.bmp /* XBOXの「thunder_flash.c」でのみ使用 */
+#endif
+
+//セーブダイアログ
+l2d		2D/clear_code/clear_code.l2d
+#ifdef MGS2_XBOX_1
+l2d		2D/node/save_load_sub/save_load.l2d
+#else
+l2d		2D/node/save_load/save_load.l2d
+#endif
+icon	icon/tnkicon.cnf
+/* mgdemo added ----from here (Sun Sep  2 21:37:43 2001) ---- */
+pack_trnall trn.tri effect/splash/splash05_alp.bmp
+/* mgdemo added ----upto here ---- */

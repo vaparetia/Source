@@ -1,0 +1,25 @@
+// a43a.src（アナザーミッション用）
+// ＡＧ・丸通路
+// 2001/02/19 S.Yamashita
+// $Id: a43a.src,v 1.6 2002/08/16 08:52:30 usr04249 Exp $
+
+block .use r_vr_s
+block .nocache
+block .cache
+
+include		a43a_game.h
+
+
+/* 以下はポリデモで使用する為の追加 */
+/* ---------------------------------------------- */
+/* added by S.Hirano 010405 */
+// ライデン
+
+
+// 解体Ｃ４セット 最後に描画させるためにＴＲＩ名にＺをつける
+pack_all	z_object.tri \
+			goods/c4_kaitai_a \
+			goods/c4_kaitai_b
+
+goods		c4_kaitai_a
+goods		c4_kaitai_b

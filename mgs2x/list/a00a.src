@@ -1,0 +1,241 @@
+//
+//	w00a.src
+//
+//	written by Y.Matsuhana 1999.Oct
+//
+//	$Id: a00a.src,v 1.12 2002/08/05 06:25:12 usr04249 Exp $
+
+#define WN_W00A
+
+// 常駐データ
+block .use r_vr_s
+
+block .nocache
+block .cache
+
+
+
+// 各ステージ共通要素
+#include	"t_common.h"
+#include	"common.h"
+
+
+//エフェクト関係
+//天球
+#define	EFFECT_CUSTUM
+
+#define	E_KOGETUKI				// 壁への焦げ付き
+#define	E_ENEMY					// 敵兵系
+#define	E_SLING					// スリング
+#define	E_ENEMY_LIGHT			// 敵兵ライト
+#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+#define	E_MANHATTAN_LIGHT		// マンハッタンライト
+#define	E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷
+#define	E_CROSS_FADE_LIGHT		// クロスフェード（甲板のライトで使用）
+#define	E_CHARA_HAMON			// chara 波紋
+#define	E_BROKEN_OBJECT			// 壊れ物
+#define	E_HIMATU				// 水飛沫
+#define	E_SKY_NORMAL			// 空
+#define	E_TENKYUU				// 天球ドーム
+#define	E_DOOR_LUMP				// ドアランプ
+#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+#define	ENV						//天球
+#define BONBORI					//タンカーボンボリ
+
+#include	"c_effect.h"
+
+// オルタナティブミッション用追加エフェクト
+#include	"alt_effect.h"
+
+
+// 各ステージ共通要素
+//include		wp_tank.h
+//include		gover.h
+//include		codec.h
+
+#include "a_item.h"
+
+// キャラクタ
+//include		snake.h
+include		ene_tank.h
+cvd		human/sna_skl/sna_skl3.cvd
+
+// ----- 柴田書き換え
+cvd		effect/gun_splash/usp_spl.cvd vn
+cvd		effect/gun_splash/m92_spl.cvd vn
+cvd		effect/gun_splash/fms_spl.cvd vn
+//cvd		weapon/usp/usp_spl.cvd
+//cvd		weapon/m92/m92_spl.cvd
+// ----- ここまで
+
+//ビデオ撮影用スティンガー
+//weapon	stg
+
+//ビデオ撮影用メタル
+//meca	ray/ray_def
+//mtn		ray_e3a
+//debug	sonoyama/ray_e3a_sh/ray_e3a_sh.mdl
+
+// ワールド
+world		w00
+world		w00a
+//world		w00_door
+lt2		w00a.lt2
+hazard		a00a.hzx
+
+
+
+//ワイヤー／旗 頂点アニメーション
+cvd	world/w00/w00_vfg.cv2 vn
+cvd	world/w00/w00_vw1.cv2 vn
+cvd	world/w00/w00_vw2.cv2 vn
+cvd	world/w00/w00_vw3.cv2 vn
+cvd	world/w00/w00_vw4.cv2 vn
+cvd	world/w00/w00_vw5.cv2 vn
+cvd	world/w00/w00_vw6.cv2 vn
+
+
+// 強制モーション
+mtn		sna_a00a.mls
+mtn		rai_a00a.mls
+
+//水密ドア用モーション
+mtn			sna_hatch.mls
+mtn			rai_wt_hatch.mls
+mtn			hatch_door_sna.mls
+mtn			hatch_handle_sna.mls
+
+//死体捨て用強制モーション
+mtn			corpse_w00a.mls
+
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+//pack_all	debug.tri debug/sling_test
+
+//高波用
+option makexti6 -l 128
+pack_all	wave.tri effect/wave/wave06.bmp effect/wave/wave09_alp_ovl.bmp
+option makexti6
+
+//debug		sling_test
+//human		sna_def/sna_mmt.evm
+//debug		test_door/dr1_a.mdl
+//debug		test_door/dr1_b.mdl
+
+
+//電灯に群がる羽虫
+goods	fly/fly_cm.kms
+
+
+
+// ビデオ撮影用スネーク顔表情
+//	rmt	sna_rmt
+
+
+// ビデオ撮影用スコットドルフ
+// include		scot.h
+
+
+//敵兵ステージアクション
+mtn		gbs_w00a.mls
+rename	gbs_w00a.mar	gbsstage.mar
+
+
+// リネーム
+
+
+//パッドデモ用
+
+#ifdef MGS2_VMODE_PAL
+//rpd		w00a_m9_pal.rpd
+//rpd		w00a_tobacco_pal.rpd
+//rpd		w00a_camera_pal.rpd
+
+//リネーム
+rename w00a_m9_pal.rpd w00a_m9.rpd
+rename w00a_tobacco_pal.rpd w00a_tobacco.rpd
+rename w00a_camera_pal.rpd w00a_camera.rpd
+
+#else
+//rpd		w00a_m9.rpd
+//rpd		w00a_tobacco.rpd
+//rpd		w00a_camera.rpd
+#endif
+
+/*
+rpd		w00a_wpselect.rpd
+rpd		w00a_behind.rpd
+rpd		w00a_tobacco01.rpd
+rpd		w00a_scope01.rpd
+*/
+
+/*
+//パッドデモテクスチャ
+#ifdef MGS2_VMODE_PAL
+	pack_all	padtexture.tri	\
+		2D/act_telop/e \
+		2D/act_telop/pal/act_telop02_fr_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop02_de_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop02_it_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop02_es_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop03_fr_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop03_de_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop03_it_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop03_es_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop04_fr_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop04_de_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop04_it_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop04_es_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop05_fr_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop05_de_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop05_it_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop05_es_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop06_fr_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop06_de_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop06_it_alp_ovl.bmp \
+		2D/act_telop/pal/act_telop06_es_alp_ovl.bmp
+#else
+	#ifdef MGS2_LANG_JAPANESE
+		pack_all	padtexture.tri 2D/act_telop/j
+	#else
+		pack_all	padtexture.tri 2D/act_telop/e
+	#endif
+#endif
+*/
+//水面落下振動
+vib		etc/drop_sea.vib
+
+meca    ir_sensor/irs.kms
+
+/*
+// セルゲイの写真 koba4
+2D      raw_image/celgei_snapshot.raw
+#ifdef MGS2_VMODE_PAL
+2D      raw_image/celgei_snapshot_bigsize_pal.raw
+rename	celgei_snapshot_bigsize_pal.raw	celgei_snapshot_bigsize.raw
+#else
+2D      raw_image/celgei_snapshot_bigsize.raw
+#endif
+*/
+
+//フォグ用
+effect	fog/w00_fog_fader_alp.bmp
+
+//ヌルモデル
+goods	null/null.kms
+
+// 幽霊さん
+	//mtn			gbs_e01a.mls
+	mtn			gbs_a00a_photo.mls
+
+// 解体Ｃ４セット 最後に描画させるためにＴＲＩ名にＺをつける
+pack_all	z_object.tri \
+			goods/c4_kaitai_a \
+			goods/c4_kaitai_b
+
+goods		c4_kaitai_a
+goods		c4_kaitai_b
+

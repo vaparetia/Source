@@ -1,0 +1,303 @@
+/*
+    conv.txt                                             
+    Metal Gear Solid 2 - SONS OF LIBERTY-                
+    便利関数系仕様ログ                                   
+    2001/10/18 Masafumi Okuta                            
+    $Id: conv.txt,v 1.1.1.3 2002/11/19 11:48:11 Yoshizawa1 Exp $                                                 
+*/
+
+algfunc.h : 代数系の関数の宣言
+algfunc.c : 代数系の関数群
+    ベクトル、マトリクス演算で便利そうなものをまとめたもの
+	マクロ、インライン関数に関してはコメントがあるので割愛
+
+	☆ベクトル系関数
+            // トランス移動
+            MAO_TransVector( FVECTOR* pvecRes, 		// 結果
+			     FMATRIX* pmatWorld, 	// 基準となるマトリクス
+			     FVECTOR* pvecMove );	// 移動量
+                移動量を指定座標系に絶対化して平行移動を行ない結果の座標を返す
+
+            // 絶対,相対変換
+	    MAO_RelPos( FVECTOR* pvecRes, 		// 結果
+		        FVECTOR* pvec, 			// 位置ベクトル
+		        FMATRIX* pmat); 		// 基準となるマトリクス
+                位置ベクトルpvecをpmatに対して相対化した位置をpvecResに入れる
+                
+            MAO_AbsPos( FVECTOR* pvecRes, 		// 結果
+		        FVECTOR* pvec, 			// 位置ベクトル
+		        FMATRIX* pmat);			// 基準となるマトリクス
+                位置ベクトルpvecをpmatに対して絶対化した位置をpvecResに入れる
+
+            MAO_RelVec( FVECTOR* pvecRes, 		// 結果
+		        FVECTOR* pvec, 			// 方向ベクトル
+		        FMATRIX* pmat); 		// 基準となるマトリクス
+                方向ベクトルpvecをpmatに対して相対化した方向をpvecResに入れる
+
+            MAO_AbsVec( FVECTOR* pvecRes, 		// 結果
+		        FVECTOR* pvec, 			// 方向ベクトル
+		        FMATRIX* pmat);			// 基準となるマトリクス
+                方向ベクトルpvecをpmatに対して絶対化した方向をpvecResに入れる
+
+            MAO_RelMat( FMATRIX* pmatRes, 		// 結果
+		        FMATRIX* pmat1, 		// 変換されるマトリクス
+		        FMATRIX* pmat2);		// 基準となるマトリクス
+                pmat1をpmat2に対して相対化したマトリクスをpmatResに入れる
+            MAO_AbsMat( FMATRIX* pmatRes, 		// 結果
+		        FMATRIX* pmat1, 		// 変換されるマトリクス
+		        FMATRIX* pmat2);		// 基準となるマトリクス
+                pmat1をpmat2に対して絶対化したマトリクスをpmatResに入れる
+            MAO_RelRot( FMATRIX* pmatRes, 		// 結果
+		        FMATRIX* pmat1,			// 変換されるマトリクス
+		        FMATRIX* pmat2);		// 基準となるマトリクス
+                pmat1をpmat2に対して相対化したマトリクスをpmatResに入れる
+		ただしmat.m[3][0]〜mat.m[3][3]は(0.f, 0.f, 0.f, 1.f)となる
+            MAO_AbsRot( FMATRIX* pmatRes, 		// 結果
+		        FMATRIX* pmat1, 		// 変換されるマトリクス
+		        FMATRIX* pmat2);		// 基準となるマトリクス
+                pmat1をpmat2に対して絶対化したマトリクスをpmatResに入れる
+		ただしmat.m[3][0]〜mat.m[3][3]は(0.f, 0.f, 0.f, 1.f)となる
+
+            // 軸設定関数
+	    MAO_SetAxisY( FMATRIX* pmatRes, 		// 結果
+                          FMATRIX* pmat,  		// 設定するマトリクス
+                          FVECTOR* pvec); 		// Y軸
+                pmatのY軸をpvecにしてマトリクスを再構築する。流れは以下の通り
+                    Y軸を設定
+                    Y軸とZ軸からX軸を外積で求める
+                    X軸とY軸からZ軸を外積で求める
+            MAO_SetAxisZ( FMATRIX* pmatRes,  		// 結果
+                          FMATRIX* pmat,  		// 設定するマトリクス
+                          FVECTOR* pvec); 		// Z軸
+                pmatのZ軸をpvecにしてマトリクスを再構築する。流れは以下の通り
+                    Z軸を設定
+                    Y軸とZ軸からX軸を外積で求める
+                    X軸とZ軸からY軸を外積で求める
+                
+            // 補間関数
+	    MAO_InterpVec( FVECTOR* pvecRes,            // 結果
+                           FVECTOR* pvecBase,           // 現在値
+                           FVECTOR* pvecAim,            // 目標値
+                           float    fRate);             // 割合
+                pvecBaseからpvecAimに対してfRate(0.fで現在値,1.fで目標値)分線形補間したものをpvecResに入れる
+		    変換式は : pvecRes = pvecBase * fRate + pvecAim * (1.f - fRate);
+            // カメラに対して最も見えやすい方向ベクトル(幅指定あり)を生成
+            MAO_CalcVisibleVector( FVECTOR* pvecRes,    // 結果
+                                   FVECTOR* pvec1,      // 位置１
+                                   FVECTOR* pvec2,      // 位置２
+                                   float    fWidth);    // 幅
+                pvec1とpvec2を結ぶ線分に垂直なベクトルで画面に表示された時もっとも長く見えるベクトル方向を求める。
+
+            // エルミート補間
+            MAO_LoadMatHermiteLerp( void);
+                エルミート計算用マトリックスをVUのレジスタに送る
+	    MAO_HermiteLerpVec( FVECTOR* pvecRes,	// 位置結果
+				FVECTOR* pvecDiff,	// 変化量結果 
+				FVECTOR* pvecBasePos,	// 補間元座標
+				FVECTOR* pvecAimPos,	// 補間先座標
+				FVECTOR* pvecBaseDiff,	// 補間元変化量
+				FVECTOR* pvecAimDiff, 	// 補間先変化量
+				float    fRate); 	// 割合(0.f〜1.f)
+                エルミート補間を行ない結果の位置と変化量（傾き）を取得
+                
+            MAO_HermiteLerpVecScale( FVECTOR* pvecRes,		// 位置結果
+		                     FVECTOR* pvecDiff,		// 変化量結果 
+				     FVECTOR* pvecBasePos,	// 補間元座標
+				     FVECTOR* pvecAimPos,	// 補間先座標
+				     FVECTOR* pvecBaseDiff,	// 補間元変化量
+				     FVECTOR* pvecAimDiff, 	// 補間先変化量
+				     float    fRate, 		// 割合(0.f〜1.f)
+				     float    fScale); 		// フレーム数
+                MAO_HermiteLerpVecの可変フレーム対応版
+
+            // 3点ベジェ補間
+            MAO_MakeBezierMatrix( FMATRIX* pmatBezier,  	// 結果
+		                  FVECTOR* pvec1,  		// 始点
+                                  FVECTOR* pvec2,  		// 制御点
+                                  FVECTOR* pvec3); 		// 終点
+                始点,制御点,終点の情報からベジェ補間変換マトリクスを作成する。
+                補間自体はMAO_Bezier3InterpQuickでおこなわれる。
+		             |  1 -2  1  0 ||   pvec1 |
+		pmatBezier = | -2  2  0  0 ||   pvec2 |
+		             |  1  0  0  0 ||   pvec3 |
+ 	                     |  0  0  0  1 || 0 0 0 1 |
+
+	    MAO_Bezier3InterpQuick( FVECTOR* pvecRes, 		// 結果
+                                    FMATRIX* pmatBezier,  	// 変換マトリクス
+                                    float    fRate); 		// 割合(0.f〜1.f)
+                MAO_MakeBezierMatrixで作成した変換マトリクスを用いてベジェ補間を行なう。
+                pvecRes = pmatBazier * vec( fRate^2, fRate, 1.f, 0.f );
+
+	    MAO_Bezier3Interp( FVECTOR* pvecRes,		// 結果
+                               FVECTOR* pvec1, 			// 始点
+                               FVECTOR* pvec2, 			// 制御点
+                               FVECTOR* pvec3, 			// 終点
+                               float    fRate);		 	// 割合(0.f〜1.f)
+                始点,制御点,終点の情報からベジェ補間変換マトリクスを作成,その後そのマトリクスを用いてベジェ補間を行なう
+                pvecRes = ( 1.f - fRate )^2 * pvec1 + 2 * fRate * (1.f - fRate) * pvec2 + fRate^2 * pvec3
+ 	                  |  1 -2  1  0 ||   pvec1 || fRate^2 fRate 1 0 |
+                pvecRes = | -2  2  0  0 ||   pvec2 |
+ 	                  |  1  0  0  0 ||   pvec3 |
+ 	                  |  0  0  0  1 || 0 0 0 1 |
+ 
+            // ベクトルの長さ取得
+            _MAO_FVecLen3( FVECTOR* vec);
+                vecの長さを求める
+
+            _MAO_FVec2Len3( FVECTOR* vec1, FVECTOR* vec2);
+                vec1とvec2の長さを求める
+
+            _MAO_FVec2Len2( FVECTOR* pvec1, FVECTOR* pvec2);
+                vec1とvec2の長さをY値を除いて求める
+
+maoutil.h : 便利関数の宣言
+maoutil.c : 便利関数群
+    algfuncからより特化されたものやデバッグ用の便利関数をあつめたもの
+
+            MAO_GetDiffVec3( FVECTOR* pvecDiff,		// 方向ベクトル:出力 (NULL指定OK)
+		             int*     pnDist,		// 差分距離    :出力 (NULL指定OK)
+		             int*     pnDir,		// Y方向       :出力 (NULL指定OK)
+		             FVECTOR* pvecFrom,		// 始点
+		             FVECTOR* pvecTo);		// 終点
+                pvecFromとpvecToの二点の距離,方向ベクトル,Y方向(0〜4096)を求める。不必要な出力はNULLを指定することができる
+
+	    MAO_FlatCheck( FVECTOR* pvecPos, 		// 調べる位置
+                           FVECTOR* pvec1,  		// バウンダリボックス(最小値)
+                           FVECTOR* pvec2); 		// バウンダリボックス(最大値)
+                pvecPosがpvec1とpvec2の間に存在するかチェック（箱の線上も含む）Yの値は無視する。
+	            成功:1
+	            失敗:0
+
+            MAO_BoundCheck( FVECTOR* pvecPos, 		// 調べる位置
+                            FVECTOR* pvec1,  		// バウンダリボックス(最小値)
+                            FVECTOR* pvec2); 		// バウンダリボックス(最大値)
+                pvecPosがpvec1とpvec2の間に存在するかチェック（箱の線上も含む）
+	            成功:1
+	            失敗:0
+
+	    MAO_SphereCheck( FVECTOR*	pvecPos, 	// 調べる位置
+		             FVECTOR*   pvecCenter, 	// 判定球の中心
+		             int	nRad);          // 判定球の半径 
+	        pvecCenterを中心とする半径nRadの球のなかに（球面上は除く）pvecPosが存在するかチェック
+	            成功:1
+	            失敗:0
+
+            MAO_DbgPlayerPosDump(void);
+                コンソール上にプレイヤーの座標を吐き出す
+
+            MAO_DbgDumpVector( FVECTOR* pvec);
+                コンソール上にpvecの値をfloat形式で吐き出す
+
+            MAO_DbgDumpSVector( SVECTOR* pvec);
+                コンソール上にpvecの値をshort形式で吐き出す
+
+            MAO_DbgDumpMatrix( FMATRIX* pmat);
+                コンソール上にpmatの値を吐き出す
+
+	    MAO_DbgDrawMatrix( FMATRIX* pmat, 	   	// 参照するマトリクス
+             		       float    fLength);       // 線の長さ
+                X軸:赤,Y軸:緑,Z軸:青として正方向にfLength分の長さのラインを描画する。
+
+  	    MAO_DbgDrawBox( FVECTOR* pvecPos,	            // 中心位置
+          		    float fX, float fY, float fZ,   // 各方向の大きさ
+		            u_char r, u_char g, u_char b)   // 色
+                pvecPosを中心としてサイズが(fX,fY,fZ)となる箱を色(r,g,b)で描画
+
+            MAO_DbgDrawTrap( int nTrap, u_char r, u_char g, u_char b);
+                nTrapを中心としてサイズが(fX,fY,fZ)となる箱を色(r,g,b)で描画
+
+	    MAO_GetDirZone2( FVECTOR* 	pvecDir,   	// 結果:方向ベクトル
+		             int 	nFromZone, 	// ゾーン番号
+		             int 	nToZone); 	// ゾーン番号
+                nFromZoneの中心からnToZoneの中心への方向ベクトルを求めてpvecDirに入れる
+	    MAO_GetDirZoneToZone( int nFromZone, 	// ゾーン番号
+		                  int nToZone);		// ゾーン番号
+                nFromZoneの中心からnToZoneの中心へのY方向を返す
+
+            // スクラッチパッド関連
+	    MAO_CopyMemToScr( void* pvMainMem,          // メインメモリアドレス
+                              void* pvScrPad,           // スクラッチパッドアドレス
+                              int   nSize,           	// サイズ
+                              int   nNum);          	// 個数
+                pvMainMemからpvScrPadへnSize * nNum分のデータをコピー
+
+            MAO_CopyScrToMem( void* pvMainMem,          // メインメモリアドレス
+                              void* pvScrPad,           // スクラッチパッドアドレス
+                              int   nSize,           	// サイズ
+                              int   nNum);          	// 個数
+                pvScrPadからpvMainMemへnSize * nNum分のデータをコピー
+                
+            // ゾーンチェック
+	    MAO_ChkZoneInZ2Z( HZX_GROUP_ID hzx_id,       // HZXのグループID
+                              int 	   nZone1,       // 探索ゾーン１
+		              int          nZone2,       // 探索ゾーン２
+                              int          nAimzone);    // 目標ゾーン
+                nZone1とnZone2の最短経路上にnAimzoneが存在するかチェック（nZone1, nZone2, nAimzoneはhzx_idに所属すること）
+
+	    // プリミティブ系
+            MAO_FreePrim2( DG_PRIM2* prim );
+                primにたいしてプリミティブ解放処理を行なう
+
+            MAO_SetRGBA( u_char R, u_char G, u_char B, u_char A);
+                R,G,B,Aを32bit整数にパックしてそれを返す。
+                (R<<24) | (G<<16) | (B<<8) | (A)
+
+            // メモリ不足チェック
+            MAO_MemoryFullCreate( void );
+                空きメモリをくいつぶす（128バイト単位で確保できるかチェックして確保できる最大のサイズを算出しそのサイズでmalloc）
+
+            MAO_MemoryFullDestroy( void );
+                MAO_MemoryFullCreateで確保したワークの解放
+
+memmot.h : メモリモーションの宣言
+memmot.c : メモリモーション関数群
+    始めにモーションデータを全フレーム分メモリ上に展開してそれを参照することで処理時間を軽減するシステム。
+    今回はカモメのみの使用になったので特化している(16関節など)
+
+    struct MEMMOT_DATA : メモリモーションの展開したデータを扱う構造体
+    struct MEMMOT_CTRL : 再生用の制御構造体
+                
+        MEMMOT_GetAbsRot( MEMMOT_CTRL*);
+            モーションデータの中から現在再生しているモーションの再生時間にあった回転データの先頭を返す                
+
+        MEMMOT_SetMotion( MEMMOT_CTRL*, int, int);
+            再生するモーションを切替える
+
+        MEMMOT_SetMotionSpeed( MEMMOT_CTRL*, float);
+            再生速度を変更(未使用) : 整数速度指定しかまともに再生できない
+
+        MEMMOT_AdjustMotion( MEMMOT_CTRL *mmt_ctrl);
+            アジャスト機能
+            
+        MEMMOT_QuatSlerp( FVECTOR *res, FVECTOR *from, FVECTOR *to, float t )
+            クォータニオンの線形補間
+        
+        MEMMOT_ActMotion( MEMMOT_CTRL* mmt_ctrl);
+            クォータニオンの線形補間を含めた回転情報の更新
+
+        MEMMOT_ActMotion2( MOTION_CONTROL*, DG_OBJS*, FVECTOR* );
+            再生処理:モデルに反映
+
+        MEMMOT_CheckObject_IsEnd( MEMMOT_CTRL*, int);
+            モーション終了チェック
+                
+        MEMMOT_MakeMotion( MEMMOT_CTRL*);
+            モーション再生
+
+        MEMMOT_MakeMotionSkip( MEMMOT_CTRL*);
+            画面外スキップ用モーション再生
+                
+        MEMMOT_InitMotion( MEMMOT_CTRL*, MEMMOT_DATA*, OBJECT*, int);
+            メモリモーション制御システム初期化 
+
+	MEMMOT_GetMotionData( int motion, int* pnMotNum, int* pnFlame );
+            モーションの総フレーム数を取得
+
+        MEMMOT_MotionPreCalloc( MEMMOT_DATA*, int, int);
+            全モーションの全フレーム数を先計算する
+                
+        MEMMOT_FreeWork(MEMMOT_DATA* );
+            メモリモーションで使用したメモリ解放
+                
+        MEMMOT_CheckMotionTime( MEMMOT_CTRL* pmmCtrl, int time );
+            指定時間timeを過ぎているかどうかチェック

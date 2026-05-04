@@ -1,0 +1,300 @@
+#!/usr/bin/perl
+
+#
+# Configuration Term
+#
+#
+$www_dir = "/usr/local/develop/httpd/cgi-bin/msg" ;
+$fix_dir = "/u/develop/mj001data/fix" ;
+$tmp_dir = "/u/develop/mj001data/temporary" ;
+
+$work_dir = "__tmp" ;
+
+$FLG_FLUSH_NON = 0 ;
+$FLG_FLUSH_BMP = 1 ;
+$FLG_FLUSH_TRN = 2 ;
+
+
+
+
+#
+# Main Initialization 
+#
+#
+#
+$fix_dir = $ENV{'MGS_FIX'}."/fix"       if ( $ENV{'MGS_FIX'} ) ;
+$tmp_dir = $ENV{'MGS_FIX'}."/temporary" if ( $ENV{'MGS_FIX'} ) ;
+$src_dir = $fix_dir ;
+$dst_dir  = "." ;
+
+die "Usage: prevpack [-options] file.mdl ...\n",
+    "    -f fast mode\n",
+    "    -c No check a number of textures on a polygon\n" if ( $#ARGV == -1 ) ;
+$mdl_file = $ARGV[$i] if ( $ARGV[$i] =~ ".mdl" ) ;
+
+for  ( $i=0 ; $i<$#ARGV+1 ; $i++ )
+{
+    $log_file = $ARGV[++$i], next if ( $ARGV[$i] eq "-e"   ) ;
+    $cm2_flg =1            , next if ( $ARGV[$i] eq "-cm2" ) ;
+    $fast_flg =1           , next if ( $ARGV[$i] eq "-f"   ) ;
+    $chck_flg =1           , next if ( $ARGV[$i] eq "-c"   ) ;
+    push( @files, $ARGV[$i] ) ;
+}
+
+&fork( "rm -r $work_dir" ) if ( -e $work_dir ) ;
+&fork( "mkdir -p $work_dir/cur" ) and die "Cannot make temp dir here!!\n" ;
+&fork( "mkdir -p $work_dir/dar" ) and die "Cannot make temp dir here!!\n" ;
+&fork( "mkdir -p $work_dir/trn" ) and die "Cannot make temp dir here!!\n" ;
+
+# Main Loop
+foreach $src_file ( @files )
+{
+    $flg = $FLG_FLUSH_NON ;
+    $src_dir  = "" ;
+    $src_dir  = $src_file if ( $src_file =~ m/\// ) ;
+    $src_dir  =~ s/\/[^\/]*$/\// ;
+    $src_file =~ s/.*\/([^\/]*)$/$1/ ;
+    if ( $src_file =~ m/\.mdl$/ )
+    {
+        local $cmd, $rpt, $km3 ;
+
+	$kms = $src_file ;
+	$kms =~ s/.mdl/.kms/ ;
+	$evm = $src_file ;
+	$evm =~ s/.mdl/.evm/ ;
+	$cv2 = $src_dir.$src_file ;
+	$cv2 =~ s/.mdl/.cv2/ ;
+	$rpt = $src_dir.$src_file ;
+	$rpt =~ s/.mdl/.rpt/ ;
+	$tri = $src_file ;
+	$tri =~ s/\.[^\.]*$// ;
+
+	die "RPT file not found!! $rpt\n" if ( not -e $rpt ) ;
+
+	$| = 1 ;
+	print "Now making $src_dir$kms.\n" ;
+
+	$command = "mdl2kc $src_dir$src_file $kms $cv2 -l $work_dir -r $rpt " ;
+	$command .= "-c " if ( $chck_flg ) ;
+	$command .= "-f " if ( $fast_flg ) ;
+	&fork( $command ) && die "Error !!!\n" ;
+
+	print "Done.\n" ;
+
+	$flg = &dir_cp_work( $work_dir, "-pB", "bmp" ) ;
+        &fork( "rm -f  $work_dir/*.bmp" ) ;
+	&flush_bmp( "$work_dir/cur" )  ;
+
+	print "Now Combine Tri & KMS $kms.\n" ;
+        printf( "kms_util -t $tri $work_dir/$kms\n" ) ;
+#        &fork( "kms_util -t $tri $work_dir/$kms" ) ;
+        &fork( "kms_util2 -t $tri $work_dir/$kms" ) if( -e "$work_dir/$kms" ) ;
+        &fork( "kms_util2 -t $tri $work_dir/$evm" ) if( -e "$work_dir/$evm" ) ;
+	print "Done.\n" ;
+    }
+}
+
+$tri = "trans" ;
+&flush_bmp( "$work_dir/trn" ) if ( $trn_flg ) ;
+&flush_work() ;
+
+&fork( "rm -rf $work_dir" ) ;
+
+exit( 0 ) ;
+
+
+
+
+
+
+
+
+#
+# COMMAND SUBROUTINES
+#
+# especially starting with "com_" regards as command
+#
+
+sub flush_bmp
+{
+    local ( $dir ) = @_ ;
+    local $ls, $log, $cmd ;
+
+    open( LS, "ls $dir |" ) ;
+    for( $ls=0 ; <LS> ; $ls++ ){}
+    close LS ;
+    return if ( $ls==0 ) ;
+
+    print "start making $tri.tri\n" ;
+    &fork( "echo 'start making $tri.tri' >> $log_file" ) if ( $log_file ) ;
+
+
+# BMPの数をチェックする
+    if ( $ls >= 2 )
+    {
+	if ( &fork( "id_check $dir/*.bmp > /dev/null" ) )
+	{
+	    print "Error : Texture ID Batting!!!!!!!!!\n" ;
+	    exit( 1 ) ;
+	}
+    }
+
+# CM２を作る
+    $log = $log_file ? $log_file.".1" : "/dev/null" ;
+    &fork( "makecm2 -i $dir/*.bmp -o $dir/$tri.cm2 >& $log" ) and print "Error in makecm2!!:$!\n" ;
+
+
+# TRIを作る
+    $log = $log_file ? $log_file.".2" : "/dev/null" ;
+    $cmd = "   -i $dir/*.cm2 -o $work_dir/$tri.tri >& $log" if ( $dir !~ "trn" ) ;
+    $cmd = "-t -i $dir/*.cm2 -o $work_dir/$tri.tri >& $log" if ( $dir =~ "trn" ) ;
+    &fork( "make_tri $cmd" ) and print "Error in make_tri!!:$!\n" ;
+    &cp( "$tri.tri",  $work_dir, $work_dir ) ;
+
+
+
+    printf "Warning: $tri.tri exceed 1M bytes!!\n" if ( (stat("$work_dir/$tri.tri"))[7] > 1024*1024 ) ;
+    &fork( "cp $dir/*.cm2 ." ) if ( $cm2_flg ) ;
+    &fork( "rm -f $dir/* $work_dir/dar/*" ) ;
+    if ( $log_file ) {
+	&fork( "cat $log_file.1 $log_file.2 >> $log_file" ) ;
+	&fork( "echo 'Done.' >> $log_file" ) ;
+	&fork( "echo '----------------------------------next-------------------------------'>> $log_file" ) ;
+    }
+    print "Done.\n" ;
+
+    undef( %tex_checked ) ;
+}
+
+sub flush_work()
+{
+    open( LST, "ls -XrpB $work_dir | grep -v / |" ) ;
+    while( <LST> )
+    {
+	chop ;
+	&fork( "cp $work_dir/$_ ." ) ;
+    }
+    close LST ;
+}
+
+
+
+
+
+#
+# SUBROUTINES
+#
+# 
+#
+sub cp()
+{
+    local( $src, $src_d, $dst_d ) = @_ ;
+    local $dst=$src, $file=$src, $ext=$src ;
+
+    $ext  =~ s/^.*\.// ;
+    $file =~ s/\..*$// ;
+
+    return if ( $tex_checked{$dst} || $checked{$dst} ) ;
+    $tex_checked{$dst} = 1 if ( $ext eq "bmp" ) ;
+    $checked{$dst}     = 1 if ( $ext ne "bmp" ) ;
+    &chk_strcode( $file, $ext ) ;
+
+#    die "$dst_d/$dst has already existed.Duplicate name.\nWas going to 'mv $src_d/$src $dst_d/$dst'\n"
+#	if ( -e "$dst_d/$dst" && $src_d ne $dst_d ) ;
+    &fork( "mv $src_d/$src $dst_d/$dst" ) if ( $src_d eq $dst_d && $src ne $dst ) ;
+    &fork( "echo 'mv $src_d/$src $dst_d/$dst' >> $log_file" ) if ( $src_d eq $dst_d && $src ne $dst && $log_file ) ;
+    &fork( "cp $src_d/$src $dst_d/$dst" ) if ( $src_d ne $dst_d ) ;
+    &fork( "echo 'cp $src_d/$src $dst_d/$dst' >> $log_file" ) if ( $src_d ne $dst_d && $log_file ) ;
+}
+
+sub mode_cp_cvd()
+{
+    local ( $_, $src ) = @_ ;
+
+    &cp( $_, $src, $work_dir ) if ( /\.cvd$/ ) ;
+}
+sub mode_cp_bmp()
+{
+    local ( $_, $src ) = @_ ;
+    local  $dar_d = "$work_dir/dar" ;
+
+    if ( /\.dar$/ )
+    {
+	&fork( "dar xl$dar_d $src/$_" ) ;
+	&dir_cp_work( $dar_d, "-B", "bmp" ) ;
+	&fork( "rm -f $dar_d/*" ) ;
+    }
+    elsif ( /\.bmp$/ )
+    {
+	&cp( $_, $src, "$work_dir/cur" )             if (  /_ovl/ || !/(_add|_sub|_hlf|_alp|_bld)/ ) ;
+	&cp( $_, $src, "$work_dir/trn" ), $trn_flg=1 if ( !/_ovl/ &&  /(_add|_sub|_hlf|_alp|_bld)/ ) ;
+    }
+}
+
+
+sub dir_cp_work()
+{
+    local ( $dir, $ls_opt, $mode ) = @_ ;
+    local $l_dir, $src, $i ;
+
+    open( LST, "ls $ls_opt $dir | grep -v '/\$' |" ) ;
+    $dir =~ s/\/[^\/]*\*$// ;
+    foreach $i ( <LST> )
+    {
+	chop( $_ = $i ) ;
+	next if ( m/^[ \t]*$/ ) ;
+
+	$l_dir = $_, $l_dir =~ s/:$//, next if ( $_ =~ /:$/    ) ;
+	$src = "$dir/$l_dir" ;
+	s/.*\/([^\/]+)$/$1/ ;
+
+	&mode_cp_cvd( $_, $src, $flg ) if ( $mode eq "cvd" ) ;
+	next if ( /\.cvd$/ ) ;
+	&mode_cp_bmp( $_, $src, $flg ) if ( $mode eq "bmp" ) ;
+    }
+    close LST ;
+}
+
+sub chk_strcode()
+{
+    local ( $file, $ext ) = @_ ;
+    local %codes, $code ;
+
+    $code = &strcode($file) ;
+#print "$file($ext) stcode = $code\n" ;
+    die "$codes{$code.$ext} and $_[0] have same strcode($code)\n" if ( $codes{$code.$ext} ) ;
+    $codes{$code.$ext} = $_[0] ;
+}
+
+sub strcode()
+{
+    local ( $string ) = @_ ;
+    local $len, $BITLEN = 24 ;
+    local $id, $mask ;
+
+    $id  = 0 ;
+    $len = length( $string )-1 ;
+    $mask = (1 << $BITLEN)-1 ;
+    foreach $i (0..$len)
+    {
+	$id = ( $id << 5 ) | ($id >> ($BITLEN-5) ) ;
+	$id += ord( substr( $string, $i,1 ) ) ;
+	$id &= $mask ;
+    }
+    $id = 1 if ( $id == 0 ) ;
+
+    return $id ;
+}
+
+sub fork
+{
+    local $pid ;
+    unless ( $pid = fork )
+    {
+        exec( $_[0] ) ;
+        exit 0 ;
+    }
+    waitpid( $pid, 0 ) ;
+    $| = 1 ;
+    return $? ;
+}

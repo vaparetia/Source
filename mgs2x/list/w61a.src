@@ -1,0 +1,33 @@
+// w61a.src
+// ソリダス戦
+// 2001/03/29 H.Yoshiike
+// $Id: w61a.src,v 1.16 2001/09/28 10:27:42 usr03682 Exp $
+
+#define WN_W61A
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"w61a_common.h"
+
+// 強制モーション
+mtn		rai_w61a.mls
+
+// アイテム
+itembox		item
+
+//そりだす
+include		solidus.h
+
+// 壊れビル窓
+pack_trnall	glass.tri \
+			debug/morita/break/dbx_dust_alp_ovl.bmp
+
+// ミサイル爆破時の爆煙
+pack_trnall	add_effect.tri \
+			effect/bakuha/bombgas3_alp.bmp
+
+// ボスラッシュモード
+gcx		boss

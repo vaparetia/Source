@@ -1,0 +1,1541 @@
+/*
+	開発終了時報告書
+	2001/11/02 S.Okajima
+	$Id: randam_file.txt,v 1.1.1.3 2002/11/19 11:46:50 Yoshizawa1 Exp $
+*/
+
+シナリオ起動：キャラ・コマンド
+//---------------------------------------------------------------------
+//岡嶋 okajima
+
+chara プラント明滅ライト[NewPutTexturePlant] $s:名前 \
+	-t $s:テクスチャ名 \
+	-p $v:中心座標 ...\
+	-u $v:回転中心 \ // 全体を回転させる中心座標XYZ(default:0,0,0)
+	-r $i:Ｙ軸回転（４０９６系） \ // 全体を回転させる角度(default:0)
+	-c $i:Ｒ $i:Ｇ $i:Ｂ $i:α ...4\
+	-s $i:サイズ \
+	-f $i:点滅フレーム（ＮＴＳＣ準拠）// 指定しない、もしくは０以下でつきっぱなし
+// １６枚以上になるなら、もう一個キャラを呼んで下さい
+mesg プラント明滅ライト $s:名前 ＯＦＦ[0]
+mesg プラント明滅ライト $s:名前 ＯＮ[1]
+
+
+chara ノード端末ディスプレイ[NewNodeLamp] $s:名前 \
+	-r $i:Ｙ軸回転（４０９６系） \
+	-p $i:中心座標 ... //
+
+command 泡色変更[NewBubbleManyColorSet] $i:カラー
+//0xRRGGBBAA で 表現
+//0x00000000 で デフォルトに戻る
+// 参考）デフォルト 0x60668020
+
+chara ３Ｄビュー[NewView3d] $s:名前
+
+chara 水中濁り[NewGasInWater] $s:名前 \
+	-m $i:モード \ // （デフォルト 0）0：加算 1：減算 2：α加算 3 α減算
+	-c $i:色（ＲＧＢα） ... // （デフォルト128,196,255,32）
+mesg 水中濁り $s:名前 オフ[0]
+mesg 水中濁り $s:名前 オン[1]
+mesg 水中濁り $s:名前 殺す[2]
+mesg 水中濁り $s:名前 kill[-1]
+
+
+chara ライデン水中マスクの泡[NewRaidenMaskBubbleScn] $s:名前 \
+	-n $s:キャラネーム
+mesg ライデン水中マスクの泡 $s:名前 オフ[0]
+mesg ライデン水中マスクの泡 $s:名前 オン[1]
+mesg ライデン水中マスクの泡 $s:名前 殺す[2]
+mesg ライデン水中マスクの泡 $s:名前 kill[-1]
+
+
+chara 垂直水飛沫[NewAutoSplushVertical_Scn] $s:名前 \
+	-p $i:中心座標のＸＺ２つ ... \ // Ｙは水面になる
+	-w $i:幅 \
+	-i $i:強さ
+
+
+chara 天井照り返し[NewWaterReflect] $s:名前 \
+	-r $i:法線（４０９６系、ＸＹＺ指定） ... \
+	-p $i:中心座標 ... \
+	-w $i:幅 \
+	-h $i:高さ \
+	-m $i:モード \ // ０：全面等価、１：上フェード
+	-a $i:α \ // 0~255：指定無しで255
+	-b $i:α   // 0~255：指定無しで255
+// -a は モード０で全面の、モード１で最大のαを意味する
+// -b は モード１で必用で最小のαを意味する
+
+chara 壁照り返し[NewWaterReflectWall] $s:名前 \
+	-r $i:法線（４０９６系、ＸＹＺ指定） ... \
+	-p $i:中心座標 ... \
+	-w $i:幅 \
+	-h $i:高さ \
+	-m $i:モード \ // ０：全面等価、１：上フェード
+	-a $i:α \ // 0~255：指定無しで255
+	-b $i:α   // 0~255：指定無しで255
+// -a は モード０で全面の、モード１で最大のαを意味する
+// -b は モード１で必用で最小のαを意味する
+
+chara ドアランプ[NewDoorLamp] $s:名前 \
+	-r $i:Ｙ軸回転（４０９６系） \
+	-p $i:中心座標 ... // 階数表示部分の中央の座標
+mesg ドアランプ $s:名前 ＯＦＦ[0]
+mesg ドアランプ $s:名前 赤[1]
+mesg ドアランプ $s:名前 赤点滅[2] $i:点滅時間（フレーム指定：NTSC基準） // 時間経過後「赤」になる。-1 で点滅しっぱなし
+mesg ドアランプ $s:名前 青[3]
+mesg ドアランプ $s:名前 破壊[4]
+mesg ドアランプ $s:名前 黄[5]
+mesg ドアランプ $s:名前 黄点滅[6] $i:点滅時間（フレーム指定：NTSC基準） // 時間経過後「黄」になる-1 で点滅しっぱなし
+
+chara エレベータパネル制御[NewElavatorLamp] $s:名前 \
+	-k $i:種類 \ // 0（１Ｆ・Ｂ１・Ｂ２） 1（１Ｆ・Ｂ１）
+	-i $i:現在の階数 \ // セット時の表示部とパネル選択の階数
+	-r $i:Ｙ軸回転（４０９６系） \
+	-p $i:中心座標 ... \	// 階数表示部分の中央の座標
+	-c $i:パネルの色 ... // （デフォルト48,48,48）
+mesg エレベータパネル制御 $s:名前 １Ｆ[0]
+mesg エレベータパネル制御 $s:名前 Ｂ１[1]
+mesg エレベータパネル制御 $s:名前 Ｂ２[2]
+
+chara バンププール[NewPoolWaterComplex] $s:名前 \
+	-b $i:バンダリ ... \		// XZ のセット２つ
+	-n $s:キャラネーム
+
+chara 位置固定波紋[NewRippleStable] $s:名前 \
+	-n $i:場所の数 \
+	-p $i:中心座標 ... 		// 注意！！[XZ データ数２個]が１セット
+// 高さは水面に合わされる
+
+chara 詳細水飛沫[NewDropBodySplushScn] $s:名前 \
+	-n $s:キャラネーム \
+	-c $s:ＣＶ２モデルネーム
+//n,c 共に必ず必要
+
+chara 泡で波紋管理[NewRipBubbleMan] $s:名前 \
+	-n $s:キャラネーム
+
+chara 爆発[NewBombEffectScn] $s:名前 \
+	-p $i:中心座標 ... 		// XYZ データ数３個
+
+
+chara 漏電火花[NewShortSparkLine] $s:名前 \
+	-p $i:中心座標 ... 		// XYZ データ数３個
+mesg 漏電火花 $s:名前 オフ[0]
+mesg 漏電火花 $s:名前 オン[1]
+mesg 漏電火花 $s:名前 殺す[2]
+mesg 漏電火花 $s:名前 kill[-1]
+
+
+chara スリット光[NewSlitLight] $s:名前 \
+	-p $i:中心座標 ... \		// XYZ データ数３個
+	-n $i:法線 ... \		// XYZ データ数３個
+	-d $i:光線の絶対方向 ... \	// XYZ データ数３個
+	-l $i:光線の到達距離
+
+chara スリット光２[NewSlitLight2] $s:名前 \
+	-p $i:中心座標 ... \		// XYZ データ数３個
+	-n $i:法線 ... \		// XYZ データ数３個
+	-d $i:光線の絶対方向 ... \	// XYZ データ数３個
+	-l $i:光線の到達距離
+
+chara 水面監視水飛沫[NewCheckWaterLevel] $s:名前 \
+	-n $s:キャラネーム
+mesg 水面監視水飛沫 $s:名前 オフ[0]
+mesg 水面監視水飛沫 $s:名前 オン[1]
+mesg 水面監視水飛沫 $s:名前 殺す[2]
+mesg 水面監視水飛沫 $s:名前 kill[-1]
+
+chara 濁流[NewPassingSplash] $s:名前 \
+	-n $i:ルート中心 ... \	// （XYZW の４つ。wは幅）を任意のセット数（３２まで）
+	-h $i:高さ \
+	-p $i:種類 \ // ０：主流用 １：周辺ガス用 ２：パーティクル用
+	-s $i:サイズ
+mesg 濁流 $s:名前 殺す[0]
+mesg 濁流 $s:名前 kill[-1]
+
+chara 床照り返し管理[NewFloorLightMan] $s:名前
+
+chara 水面に落下物の水飛沫[NewDiveSplashScn] $s:名前 \
+	-p $i:中心座標 ... \			// XYZ データ数３個：水面上の点
+	-f $i:タンカー座標系の時１を指定	// 発生後手前に移動する
+
+chara 波紋管理[NewRippleMan] $s:名前
+
+chara 水飛沫管理[NewSplushMan] $s:名前
+
+chara 連続発生線状泡[NewBubbleLineScn] $s:名前 \
+	-p $i:発生場所 ...			// XYZ データ数３個
+mesg 連続発生線状泡 $s:名前 オフ[0]
+mesg 連続発生線状泡 $s:名前 オン[1]
+mesg 連続発生線状泡 $s:名前 殺す[2]
+mesg 連続発生線状泡 $s:名前 kill[-1]
+
+chara カメラダスト[NewDustOnCamera] $s:名前 \
+	-i $i:不可視起動 \ // ０以外で不可視
+	-col $i:ＲＧＢ ... \
+	-n $i:ダストの量 // 512*n
+mesg カメラダスト $s:名前 オフ[0]
+mesg カメラダスト $s:名前 オン[1]
+
+chara エリアダスト[NewDustArea] $s:名前 \
+	-p $i:２点指定：発生領域 ... \	// XYZ データ数３個×２＝６個
+	-i $i:不可視起動 \ // ０以外で不可視
+	-col $i:ＲＧＢ ... \
+	-n $i:ダストの量 // 512*n
+mesg エリアダスト $s:名前 オフ[0]
+mesg エリアダスト $s:名前 オン[1]
+
+chara カメラ泡[NewBubbleOnCamera] $s:名前 \
+	-i $i:不可視起動 \ // ０以外で不可視
+	-col $i:ＲＧＢ ... \
+	-n $i:ダストの量 // 512*n
+mesg カメラ泡 $s:名前 オフ[0]
+mesg カメラ泡 $s:名前 オン[1]
+
+chara 窓からの光 [NewWindowLight] $s:名前 \
+	-p $i:窓枠中心座標 ... \			// XYZ データ数３個
+	-r $i:回転（４０９６系） ... \		// XY  ２
+	-s $i:縦幅、横幅 ... \				// ２
+	-t $i:光源位置 ... \				// XYZ ３
+	-l $i:光到達距離 \					// １
+	-c $i:ＲＧＢα ...					// ＲＧＢα ４
+
+chara 巻き上げ煙 [NewDynamicFlow] $s:名前 \
+	-b $i:バンダリ ... \		// XYZ のセット２つ
+	-s $i:パーティクルサイズ
+
+chara カメラ前曇り [NewSteamOnCameraScenario] $s:名前 \
+	-t $i:消えるまでのフレーム数（ＮＴＳＣ基準）デフォルト600
+mesg カメラ前曇り $s:名前 殺す[-1]
+
+chara 任意稲光 [NewFreeThunder] $s:名前 \
+	-x $i:画面の中心をゼロとしたＸ座標（始点） \ // -4096(LEFT ) 〜 4096(RIGHT)
+	-y $i:画面の中心をゼロとしたＹ座標（始点） \ // -4096(UPPER) 〜 4096(LOWER)
+	-u $i:画面の中心をゼロとしたＸ座標（終点） \ // -4096(LEFT ) 〜 4096(RIGHT)
+	-v $i:画面の中心をゼロとしたＹ座標（終点）   // -4096(UPPER) 〜 4096(LOWER)
+// 上限下限とも制限しないので、画面の外を設定可能
+
+
+chara 速度可変 [NewSlowDown] $s:名前 \
+	-l $i:繰り返しの数 \ // -1 で 常駐
+	-t $i:スキップ
+mesg 速度可変 $s:名前 スキップ変更[0] $i:フレームスキップ数
+//[フレームスキップ数]が１で通常
+// 1 : 100%
+// 2 :  50%
+// 3 :  33%
+// 4 :  25%
+// ・・・
+
+command マッキー音[NewMakkyRainSet] $i:ＳＥナンバー
+// 0:常駐ＯＦＦ
+// 1:常駐雨音ＯＮ
+
+chara 斜め回転床水飛沫 [NewSplashRotate] $s:名前 \
+	-n $i:量 \			// ３２枚の何倍？
+	-p $i:場所 ... \	// ＸＹＺの ３つ
+	-r $i:向き ... \	// Ｘ回転、Ｙ回転 の２つ
+	-w $i:幅 ... 		// 回転前のＸ幅、Ｙ幅（厚みに相当）、Ｚ幅 の ３つ
+mesg 斜め回転床水飛沫 $s:名前 オフ[0]
+mesg 斜め回転床水飛沫 $s:名前 オン[1]
+mesg 斜め回転床水飛沫 $s:名前 殺す[2]
+mesg 斜め回転床水飛沫 $s:名前 kill[-1]
+
+chara 壁消火器 [NewExtinguisherMini] $s:名前 \
+	-p $v:場所 \
+	-b $i:バンダリ ... \	// XYZ のセット２つ
+	-i $i:赤外線センサーに有効 \// １で有効
+	-e $p:破壊時実行プロック \ //
+	-d $i:デバグ // １でデバグターゲットが見える
+
+chara 消火器 [NewExtinguisher] $s:名前 \
+	-r $v:向き \
+	-p $v:場所 \
+	-l $s:光源 \
+	-b $i:バンダリ ... \	// XYZ のセット２つ
+	-i $i:赤外線センサーに有効 \// １で有効
+	-e $p:破壊時実行プロック \ //
+	-d $i:デバグ // １でデバグターゲットが見える
+
+command セットファークリップ[NewFarClipParamSet] $i:near $i:far
+
+chara スローパラメータ制御 [NewSlowParamMan] $s:名前 \
+	-s $i:パーセント
+//-s は １００でデフォルトと同等
+mesg スローパラメータ制御 $s:名前 パーセント[0] $i:パーセント $i:変化フレーム
+//      １００でデフォルトと同等
+
+
+//chara ジョージワシントン橋のライン補強[NewGWB_Lines] $s:名前
+chara ジョージワシントン橋のライン補強モデル[NewGWB_LinesModel] $s:名前
+
+chara アイテム[NewItemBox] $s:名前 \
+	-m $s:マップ名直接指定 \ // 通常は指定しない
+	-b $b:発生パターン \ // 0:その場発生 1:その場に弾んで発生 2:ランダム方向に発射（収得不可の可能性アリ）
+	-p $v:（必須）発生位置 \
+	-k $s:（必須）本体モデル名 \
+	-s $s:（必須）影モデル名 \
+	-l $s:ラベルモデル名 \	// 無くてもよい
+	-f $b:（必須）アイテム・武器の区別 \ // （x実行時 に $1 で返る）
+	-i $b:（必須）中身のID \             // （x実行時 に $2 で返る）
+	-n $b:（必須）個数 \                 // （x実行時 に $3 で返る）
+	-h $w:高さ \		// 影からの高さ
+	-e $p:取得時実行関数 \
+	-z $p:自然消滅時実行関数 \
+	-r $i:飛沫：０でなし、１であり、設定しなければなし \
+	-g '文字列' \ //収得時メッセージ。無ければデフォルトメッセージを表示。
+	-x { アイテム取られ時実行プロック } \
+	-t $i:ドッグタグ名前 \ // ドッグタグ以外は設定しない（収得時の表示用）
+	-u $w:ドッグタグＩＤ   // ドッグタグ以外は設定しない（x実行時 に $5 で返る）
+//キャラの名前は（x実行時 に $4 で返る）
+// -e -x は どちらか一方のみ指定。
+// -f を指定するかしないかは自由。
+// -e -f -x ともに、出力として
+//         $1 に アイテム・武器の区別
+//         $2 に 中身のＩＤ
+//         $3 に 個数
+//         $4 に 名前
+// を返す。
+mesg アイテム $s:名前 オフ[0]
+mesg アイテム $s:名前 オン[1]
+mesg アイテム $s:名前 殺す[2]
+mesg アイテム $s:名前 影だけオフ[3]
+mesg アイテム $s:名前 床監視開始[4]
+mesg アイテム $s:名前 kill[-1]
+
+command アイテム収得可能範囲設定[OK_ResetGetBoundary] \
+	$i:Ｘ軸幅 \ // デフォルト  300 (2001.7/3現在)
+	$i:Ｙ軸幅 \ // デフォルト 1500 (2001.7/3現在)
+	$i:Ｚ軸幅   // デフォルト  300 (2001.7/3現在)
+
+
+chara くるくる物体 [NewRotateY_Object] $s:名前 \
+	-k $s:モデル名 \ // 必ず指定する
+	-p $v:中心の座標 \
+	-r $i:回転速度 \ // 4096=360°系。１フレームに回転する角度を指定。
+	-s $i:水飛沫ＯＮ・ＯＦＦ \ // 1 を指定したらモデルに外接する最小直方体の上面に水飛沫
+	-f $i:カメラから何mmからフェードしはじめるか \ //default:3000
+	-l $i:カメラから何mmでクリッピングするか \     //default:10000
+	-d $i:ユニット数 \ // ユニット数（1unit=32polygons:max_unit=16）
+	   $i:水平の位置ランダム幅 \
+	   $i:上方位置ランダム幅 \
+	   $i:色の強度（α）
+
+chara ライン水飛沫 [NewLineSplash] $s:名前 \
+	-n $i:データ数 \
+	-f $i:カメラから何mmからフェードしはじめるか \ //default:3000
+	-l $i:カメラから何mmでクリッピングするか \     //default:10000
+	-d $i:ユニット数 \ // ユニット数（1unit=32polygons:max_unit=16）
+	   $i:水平の位置ランダム幅 \
+	   $i:上方位置ランダム幅 \
+	   $i:色の強度（α） \
+	   $v:線分の端点２つ ...
+mesg ライン水飛沫 $s:名前 オフ[0]
+mesg ライン水飛沫 $s:名前 オン[1]
+mesg ライン水飛沫 $s:名前 殺す[2]
+mesg ライン水飛沫 $s:名前 kill[-1]
+
+chara 落下水飛沫[NewSplashFall_Scn] $s:名前 \
+	-l $i:２点指定ライン ... \	// XYZ のセット２つ
+	-s $i:落下方向 \		// ０）直角右回転に落下 １）直角左回転に落下
+	-n $i:水飛沫の数 \		// １フレームに出す数
+	-t $i:サウンドのトラックＮｏ    // 省略可
+// -l オプションの１つ目から２つ目へに向かってをベクトルと見て
+//（その時Ｙは見ず、上から見たときを考える）、
+// それからの -s オプション方向に落下させる
+// ぶっちゃけた話、実行して壁の内側に出てるようなら -s を変えれば済む。
+mesg 落下水飛沫 $s:名前 オフ[0]
+mesg 落下水飛沫 $s:名前 オン[1]
+mesg 落下水飛沫 $s:名前 殺す[2]
+mesg 落下水飛沫 $s:名前 kill[-1]
+
+chara 床水飛沫[NewSplashFloor_Scn] $s:名前 \
+	-b $i:バンダリ ... \	// XYZ のセット２つ
+	-n $i:水飛沫の数	// １フレームに出す数
+mesg 床水飛沫 $s:名前 オフ[0]
+mesg 床水飛沫 $s:名前 オン[1]
+mesg 床水飛沫 $s:名前 殺す[2]
+mesg 床水飛沫 $s:名前 kill[-1]
+
+chara コントラスト[NewContrast_Scn] $s:名前 \
+	-c $i:ＲＧＢα ... \	//最初にＲＧＢを引いた後にαを掛ける。(α=128で１倍)
+	-n $i:ネガポジ \	//０：ポジティブ １：ネガティブ
+	-t $i:変化フレーム	//変化完了までのフレーム数
+
+chara フェードインアウト [NewFadeInOut_Scn] $s:名前 \
+	-i $i:初期ＲＧＢα ... \		//設定するとこのＲＧＢαから始まる
+	-c $i:ＲＧＢα ... \		//目標のＲＧＢα
+	-t $i:変化フレーム \		//変化完了までのフレーム数
+	-p $p:移行時間後起動proc \
+	-s $i:設定されればプライオリティを低く設定
+
+/*
+chara フェード [NewFadeInOutScn] $s:名前 \
+	-m $i:加算減算 \	//0:加算 1:減算
+	-c $v:初期ＲＧＢα \	//設定するとこのＲＧＢαから始まる
+	-f $i:フェードモード \	//0:fade_in 1:fade_out
+	-v $i:バリエーション \	//0:full 1:center 2:drop
+	-t $i:移行時間（フレーム） \
+	-p $p:移行時間後起動proc \
+	-s $i:移行時間後デストロイしない //αの最終値をセットする（そのαで変化ストップ）
+*/
+
+chara 蓋付き段ボール[NewHako_purapura] $s:名前 \
+	-p $v:場所 \
+	-r $v:向き \
+	-a $i:蓋の初期角度（４つ：無くてもいい） ... //モデルの形状依存の為 -2048 〜 256
+
+chara 波紋 [NewRipple] $s:名前 \
+	-n $i:ユニット数 \ // ユニット数（1unit=16ripple:max_unit=32）
+	-b $i:バンダリＸＺＸＺ ... \ // ＹなしのＸＺの組２つ
+	-h $i:出現の高さ
+mesg 波紋 $s:名前 オフ[0]
+mesg 波紋 $s:名前 オン[1]
+mesg 波紋 $s:名前 殺す[2]
+mesg 波紋 $s:名前 kill[-1]
+
+chara 身体水飛沫 [NewBodySplashScn] $s:名前 \
+	-n $s:キャラネーム \
+	-c $s:ＣＶ２モデルネーム \
+	-l $i:「可視化最大距離」と「薄くなりはじめ距離」 ... \
+	-s $i:太り率
+// -n -c のオプションが無いとダメ
+// -l -s は 無くてよい。
+// -l:(8000 5000) が 目安。
+// -s:100でデフォルト等倍
+
+chara 窓の外は雨 [NewRainWindow] $s:名前 \
+	-c $v:中心の座標 \
+	-s $i:縦と横 ... \
+	-r $v:例によってＹＸＺ順回転（Ｚ＝０が無難）
+// どのオプションが無くても落とす
+
+chara プロジェクタライト [NewProjectorLight] $s:名前 \
+	-p $v:中心座標 \
+	-d $v:目標地点
+// 中心から目標地点方向を照らす
+mesg プロジェクタライト $s:名前 オフ[0]
+mesg プロジェクタライト $s:名前 オン[1]
+mesg プロジェクタライト $s:名前 ゆっくりオフ[2]
+mesg プロジェクタライト $s:名前 ゆっくりオン[3]
+
+chara 固定ボリュームライト [NewCircleLightSpot] $s:名前 \
+	-p $v:中心座標 \
+	-d $v:目標地点 \
+	-n $i:ポリゴン数（ＭＡＸ３２） \ // 以下カスタマイズ用。無くてもよい。
+	-l $i:全長 \
+	-w $i:最大幅
+// 中心から目標地点方向を照らす
+mesg 固定ボリュームライト $s:名前 オフ[10]
+mesg 固定ボリュームライト $s:名前 オン[11]
+
+chara 武器水飛沫 [NewWeaponSplash] $s:名前
+
+//「プットテクスチャクロスフェードカメラ」と
+//「プットテクスチャクロスフェードカメラドア」の前にセットする
+chara カメラ雨[NewRainCamera] $s:名前 \
+	-l $i:目の前吹き込みＯＦＦ \ // ０以外で吹き込みＯＦＦする
+	-i $i:不可視起動  // ０以外で不可視
+mesg カメラ雨 $s:名前 オフ[0]
+mesg カメラ雨 $s:名前 オン[1]
+mesg カメラ雨 $s:名前 カメラ前水飛沫出っ放し[2]
+mesg カメラ雨 $s:名前 カメラ前水飛沫出っ放し解除[3]
+mesg カメラ雨 $s:名前 カメラ前水飛沫制御オフ[4]
+mesg カメラ雨 $s:名前 カメラ前水飛沫制御オン[5]
+
+
+chara ＯＦＦ制御[NewOffMan] $s:名前
+mesg ＯＦＦ制御 $s:名前 ボディシャドウＯＦＦ[0]
+mesg ＯＦＦ制御 $s:名前 ボディシャドウＯＮ[1]
+
+chara プットテクスチャ[NewPutWorldTex] $s:名前 \
+	-t $s:テクスチャ名 ...\
+	-p $v:中心座標 ...\
+	-r $i:Ｙ軸回転 ...\
+	-c $i:Ｒ $i:Ｇ $i:Ｂ $i:α ...4\
+	-s $i:幅 $i:高さ ...2
+
+//ワールド座標固定
+chara プットテクスチャクロスフェードワールド[NewPutWorldTexFadeWorld] $s:名前 \
+	-t $s:テクスチャ名１ \
+	-u $s:テクスチャ名２ \
+	-p $v:中心座標 ...\
+	-r $i:Ｘ軸回転 $i:Ｙ軸回転 ...2\
+	-s $i:幅 $i:高さ
+
+//常にカメラの方向を向く
+chara プットテクスチャクロスフェードカメラ[NewPutWorldTexFadeCamera] $s:名前 \
+	-t $s:テクスチャ名１ \
+	-u $s:テクスチャ名２ \
+	-v $s:テクスチャ名３ \
+	-p $v:中心座標 ...\
+	-s $i:幅１ $i:幅２ $i:幅３ \
+	-z $i:遠景時拡大率
+//遠景時拡大率は４０９６で等倍
+mesg プットテクスチャクロスフェードカメラ $s:名前 ＯＦＦ[0]
+mesg プットテクスチャクロスフェードカメラ $s:名前 ＯＮ[1]
+
+
+
+
+//常にカメラの方向を向く（ドア用）
+chara プットテクスチャクロスフェードカメラドア[NewPutWorldTexFadeCameraForDoor] $s:名前 \
+	-t $s:テクスチャ名１ \
+	-u $s:テクスチャ名２ \
+	-p $v:中心座標 ...\
+	-s $i:幅\
+	-z $i:遠景時拡大率
+//遠景時拡大率は４０９６で等倍
+
+
+//常にカメラの方向を向く
+chara プットテクスチャクロスフェードターゲット無し[NewPutTexNoTarget] $s:名前 \
+	-t $s:テクスチャ名１ \
+	-u $s:テクスチャ名２ \
+	-v $s:テクスチャ名３ \
+	-p $v:中心座標 ...\
+	-s $i:幅１ $i:幅２ $i:幅３ \
+	-z $i:遠景時拡大率 \ //遠景時拡大率は４０９６で等倍
+	-b $i:点滅時間 \
+	-w $i:ワイヤー用
+//点滅時間を「指定しない」もしくは「０以下の値をセットする」と出っ放し
+
+
+chara スクリーンショット[NewScreenShotControl] $s:名前 \
+	-w $i:どっちのパッドか \ // 0 で １コン 、1 で ２コン  指定しないと１コン
+	-k $i:キーアサイン // コマデフの上の方にある d:PAD_A とか。 指定しないと左アナログ押し込み
+//常駐させる。
+//セーブ場所は 実行環境の cdrom.img の直下にナンバリングされて入る。
+
+chara ライト位置管理[NewDynamicLightPosManager] $s:名前
+
+chara 風制御[NewWindManager] $s:名前 \
+	 -i $w:通常風単位時間移動距離（風速）ＭＡＸ \
+	 -j $w:突風単位時間移動距離（風速）ＭＡＸ \
+	 -r $v:通常風方向（鉛直下向きからの方向）\
+	 -a $w:方向のランダム幅 \
+	 -b $w:突風頻度（何フレームに１回（目安））\
+	 -c $w:突風継続時間ＭＡＸ（フレーム）
+
+mesg 風制御 $s:名前 オフ[0]
+mesg 風制御 $s:名前 オン[1]
+
+chara ローカル風[NewLocalWind] $s:名前 \
+	 -n $i:データ塊の数 \
+	 -d $i:データ ...
+// データの並び
+// ２点で立方体を表現（６つ）、
+// その立方体内の風方向（Ｙ軸のみ１つ）
+// 風方向ランダム幅（4096(=360度)）（全方向に加味される、１つ）
+// 風速MAX（１つ）
+// 以上９つの数字で一塊。
+
+// キャラ起動時はオン
+mesg ローカル風 $s:名前 オフ[0]
+mesg ローカル風 $s:名前 オン[1]
+mesg ローカル風 $s:名前 殺す[2]
+mesg ローカル風 $s:名前 kill[-1]
+
+//______________
+//影響キャラ一覧
+//~~~~~~~~~~~~~~
+//雨
+//煙突
+//カメラ雨
+//霧雨
+
+// ★常駐用
+chara カメラ血[NewBloodCamera] $s:名前
+
+// ★常駐用
+chara 壁血[NewBloodWall] $s:名前
+
+// ★常駐用
+chara 追跡血[NewBloodSpread] $s:名前
+
+// ★常駐用
+chara 壁焦げ[NewBombWall] $s:名前
+
+
+chara 霧雨[NewRainFogPers] $s:名前
+mesg 霧雨 $s:名前 オフ[0]
+mesg 霧雨 $s:名前 オン[1]
+mesg 霧雨 $s:名前 殺す[2]
+mesg 霧雨 $s:名前 kill[-1]
+
+
+chara ブラー[NewBlur] $s:名前 \
+	-i $i:強度 //初期強度０〜２５５、直ちに反映される
+mesg ブラー $s:名前 オフ[0]
+mesg ブラー $s:名前 オン[1]
+mesg ブラー $s:名前 キャラ削除[2]
+mesg ブラー $s:名前 パラメータ[3] $i:強度 $i:変化時間
+
+chara Ｚフォーカス管理[NewZman] $s:名前 \
+		-z $i:カメラ相対近Ｚ \
+		   $i:カメラ相対遠Ｚ \
+		-t $i:変化時間
+mesg Ｚフォーカス管理 $s:名前 パラメータ１[0] \
+		$i:カメラ相対近Ｚ \
+		$i:カメラ相対遠Ｚ \
+		$i:変化時間
+mesg Ｚフォーカス管理 $s:名前 パラメータ２[1] \
+		$i:カメラ相対近Ｚ \
+		$i:カメラ相対遠Ｚ \
+		$i:変化時間
+mesg Ｚフォーカス管理 $s:名前 パラメータ３[2] \
+		$i:カメラ相対近Ｚ \
+		$i:カメラ相対遠Ｚ \
+		$i:変化時間
+mesg Ｚフォーカス管理 $s:名前 パラメータ４[3] \
+		$i:カメラ相対近Ｚ \
+		$i:カメラ相対遠Ｚ \
+		$i:変化時間
+mesg Ｚフォーカス管理 $s:名前 パラメータ２有効[11]
+mesg Ｚフォーカス管理 $s:名前 パラメータ３有効[12]
+mesg Ｚフォーカス管理 $s:名前 パラメータ４有効[13]
+mesg Ｚフォーカス管理 $s:名前 パラメータ２無効[21]
+mesg Ｚフォーカス管理 $s:名前 パラメータ３無効[22]
+mesg Ｚフォーカス管理 $s:名前 パラメータ４無効[23]
+//--------------
+// $i:カメラ相対Ｚ \
+// $i:変化時間
+// パラメータ１の値は、キャラ：Ｚフォーカス管理起動時の値となる（変更不可）。
+// 優先度：パラメータ４ ＞ パラメータ３ ＞ パラメータ２ ＞ パラメータ１
+//
+// 設定値はパラメータ１〜４で指定する（この状態だけではパラメータ１のみが
+// 有効設定される）。設定値は個別にいつでも変更可。
+// それぞれの優先の設定値を有効無効にするには、個別に有効メッセージを送る。
+// （無効にしても設定値はクリアされない）
+// 同時に幾つも有効の場合、優先度に沿って設定される。
+
+
+//表示枚数２枚以上、１６枚以下
+chara デプス[NewDepthEffect] $s:名前 -n $w:表示枚数 \
+	-d $i:拡大ドット \
+	-i $i:重ねあわせ強度
+mesg デプス $s:名前 パラメータ１[0] $i:拡大ドット $i:重ねあわせ強度
+mesg デプス $s:名前 パラメータ２[1] $i:拡大ドット $i:重ねあわせ強度
+mesg デプス $s:名前 パラメータ３[2] $i:拡大ドット $i:重ねあわせ強度
+mesg デプス $s:名前 パラメータ４[3] $i:拡大ドット $i:重ねあわせ強度
+mesg デプス $s:名前 パラメータ１有効[10]
+mesg デプス $s:名前 パラメータ２有効[11]
+mesg デプス $s:名前 パラメータ３有効[12]
+mesg デプス $s:名前 パラメータ４有効[13]
+mesg デプス $s:名前 パラメータ１無効[20]
+mesg デプス $s:名前 パラメータ２無効[21]
+mesg デプス $s:名前 パラメータ３無効[22]
+mesg デプス $s:名前 パラメータ４無効[23]
+// $i:拡大ドット \     ぼかしは拡大で表現する。縦横何ドット拡大するか。
+// $i:重ねあわせ強度 \ ６４が標準２５５まで
+// デプス内部で参照する「カメラ相対位置」はＺフォーカス管理の遠近Ｚを
+// 使用している。
+// 各パラメータが有効になったとき、その以前の値からの変化が終了するまでの
+// 時間は、Ｚフォーカス管理の変化時間となる。
+// すべてのパラメータが無効になったときデプス効果は処理をしない（有効になれば
+// 処理を再開する）。
+
+chara モデル位置アニメ[NewModelPosAnimation] $s:名前 \
+	-k $s:モデル名 \
+	-n $w:データ数 \ //メモリが許す限り
+	-d $i:データ列 ...\ //time, pos_x, pos_y, pos_z, rot_x, rot_y, rot_z
+	-r $w:リピートありなし
+
+// -d $i:データ列 ...\ time, pos_x, pos_y, pos_z, rot_x, rot_y, rot_z では、
+// time : フレーム
+// pos_x: 相対移動値Ｘ
+// pos_y: 相対移動値Ｙ
+// pos_z: 相対移動値Ｚ
+// rot_x: 相対回転値Ｘ
+// rot_y: 相対回転値Ｙ
+// rot_z: 相対回転値Ｚ
+// をあらわす。ただし、最初の組みは、初期値として直接代入される（絶対値）。
+
+chara モデル切り替えアニメ[NewModelPatAnimation] $s:名前 \
+	-n $w:データ数 \ //メモリが許す限り
+	-p $v:表示位置 \
+	-r $v:表示角度 \
+	-d $s:モデル名 $i:表示フレーム ...2 \
+	-i $w:リピートありなし
+
+chara モデル切り替えアニメステージ[NewModelPatAnimation2] $s:名前 \
+	-l $s:ライト名 \
+	-n $w:データ数 \ //メモリが許す限り
+	-p $v:表示位置 \
+	-r $v:表示角度 \
+	-d $s:モデル名 $i:表示フレーム ...2 \
+	-i $w:リピートありなし
+
+chara 環境光[NewAmbientSet] $s:名前 \
+	 -c $v:ＲＧＢカラー
+
+chara 平行光[NewParallelSet] $s:名前 \
+	 -c $v:ＲＧＢカラー \
+	 -d $v:回転 \	// ＸＹＺ回転系
+	 -p $v:方向		// 原点からこの位置に向かって光が射す
+// -d -p の同じ指定不可
+
+chara フォグ[NewFogSet] $s:名前 \
+	 -c $v:ＲＧＢカラー \
+	 -n $i:ＮＥＡＲ値 \
+	 -f $i:ＦＡＲ値 \
+	 -t $i:変化フレーム（ＮＴＳＣ基準で指定） \
+	 -z
+// -z オプションを付けると -f で指定した値でＦＡＲクリップする。
+
+
+chara フォグコントローラ[NewFogControl] $s:名前 \
+	 -n $i:データ数 \
+	 -d $i:R_G_B_NEAR_FAR_UP_DOWN ... \
+	 -z
+// -z オプションを付けると FAR で指定した値でクリップする。
+
+mesg フォグコントローラ $s:名前 セット[0] \
+	$i:セット番号 $i:変化フレーム：NTSC基準
+// データセットは上からセット０、セット１、セット２....となる。
+// メッセージで切り替える。
+// フォグコントローラ自体は同時に二つ以上はセットできない。
+// R    :カラーＲ成分
+// G    :カラーＧ成分
+// B    :カラーＢ成分
+// NEAR :ニア値
+// FAR  :水平ファー値、ファークリップも兼ねる
+// UP   :上方ファー値、カメラの視線方向が水平から上向きの時のファー値（真上でこの値になる）
+// DOWN :下方ファー値、カメラの視線方向が水平から下向きの時のファー値（真下でこの値になる）
+
+
+chara 雨[NewRain] $s:名前 \
+	-n $w:ユニット数 \ //（１ユニット＝128ライン）256ユニットまで
+	-b $v:非表示バンダリ ... \ //２個でバンダリボックスを表現
+	-c $w:輝度値
+mesg 雨 $s:名前 オフ[0]
+mesg 雨 $s:名前 オン[1]
+mesg 雨 $s:名前 殺す[2]
+mesg 雨 $s:名前 kill[-1]
+mesg 雨 $s:名前 パーセンテージ[3] $i:シナリオＭＡＸを１００とする
+
+
+//雨のスロー対応版
+chara 雨速度可変[NewRainSlow] $s:名前 \
+	-n $w:ユニット数 \ //（１ユニット＝128ライン）256ユニットまで
+	-b $v:非表示バンダリ ... \ //２個でバンダリボックスを表現
+	-c $w:輝度値
+
+chara 固定雨[NewRainFix] $s:名前 \
+	-n $w:ユニット数 \ //（１ユニット＝128ライン）256ユニットまで
+	-b $v:非表示バンダリ ... \ //２個でバンダリボックスを表現
+	-c $w:輝度値
+// バンダリに入っているかチェック（雨粒を表示させない）
+mesg 固定雨 $s:名前 オフ[0]
+mesg 固定雨 $s:名前 オン[1]
+mesg 固定雨 $s:名前 殺す[2]
+mesg 固定雨 $s:名前 kill[-1]
+mesg 固定雨 $s:名前 パーセンテージ[3] $i:シナリオＭＡＸを１００とする
+
+chara 位置指定雨[NewRainParts] $s:名前 \
+	-n $w:ユニット数 \ //（１ユニット＝128ライン）256ユニットまで
+	-b $v:表示位置バンダリ ... \ //２個でバンダリボックスを表現。必ず必要
+	-c $w:輝度値 \
+	-o $b:主観時以外はＯＦＦにする // デフォルトでは常に表示。１を指定で有効。
+// キャラ起動時はオン
+mesg 位置指定雨 $s:名前 オフ[0]
+mesg 位置指定雨 $s:名前 オン[1]
+mesg 位置指定雨 $s:名前 殺す[2]
+mesg 位置指定雨 $s:名前 kill[-1]
+mesg 位置指定雨 $s:名前 パーセンテージ[3] $i:シナリオＭＡＸを１００とする
+
+chara プレビューカメラ[NewDebugCam] $s:名前
+
+
+chara   天球[NewSkyColumn] $s:名前 \
+	    -h $i:高さ \
+	    -b $i:底
+mesg 天球 $s:名前 オフ[0]
+mesg 天球 $s:名前 オン[1]
+mesg 天球 $s:名前 Ｙ回転[2] $i:４０９６で一周
+mesg 天球 $s:名前 殺す[3]
+mesg 天球 $s:名前 kill[-1]
+
+chara   煙突煙[New_ChimnySmoke] $s:名前 \
+	    -n $w:ユニット数 \ // ５ユニットまで
+	    -c $v:色 ...     \
+	    -p $v:出現位置 ... //ユニット数個
+//chara   プラズマ[New_Plasma] $s:名前
+
+chara   マンハッタン[NewManhattan3D] $s:名前 \
+	    -l $s:光源 \
+	    -h $i:高さの絶対座標（指定無しでデフォルト）
+mesg マンハッタン $s:名前 殺す[-1]
+chara   マンハッタンフォグ有効[NewManhattan3D_Fog] $s:名前 \
+	    -l $s:光源 \
+	    -h $i:高さの絶対座標（指定無しでデフォルト）
+mesg マンハッタンフォグ有効 $s:名前 殺す[-1]
+
+chara   マンハット黄灯[NewManhatLight] $s:名前
+chara   マンハット赤灯1[NewManhatLight_L1] $s:名前
+chara   マンハット赤灯2[NewManhatLight_L2] $s:名前
+
+chara   ブルックリン[NewBrooklyn3D] $s:名前 \
+	    -l $s:光源 \
+	    -h $i:高さの絶対座標（指定無しでデフォルト）
+mesg ブルックリン $s:名前 殺す[-1]
+chara   ブルックリンフォグ有効[NewBrooklyn3D_Fog] $s:名前 \
+	    -l $s:光源 \
+	    -h $i:高さの絶対座標（指定無しでデフォルト）
+mesg ブルックリンフォグ有効 $s:名前 殺す[-1]
+
+chara   ブルックリン赤灯[NewBrooklyn_R2] $s:名前
+chara   AKS弾[NewCartridgeAksALL] $s:名前
+chara   USP弾[NewCartridgeUspALL] $s:名前
+chara   FMS弾[NewCartridgeFmsALL] $s:名前
+chara   SPS弾[NewCartridgeSpsALL] $s:名前
+chara   P90弾[NewCartridgeP90ALL] $s:名前
+chara   M4弾[NewCartridgeM4_demoALL] $s:名前
+chara   GLK弾[NewCartridgeGLKALL] $s:名前
+chara   M4A1弾[NewCartridgeM4A1ALL] $s:名前
+chara   ABK弾[NewCartridgeABKALL] $s:名前
+chara   M4_DEMO_GUN弾[NewCartridgeM4_demo_gunALL] $s:名前
+chara   SOCOM弾[NewCartridgeSOCOMALL] $s:名前
+chara   PSG弾[NewCartridgePSGALL] $s:名前
+chara   MECA弾[NewCartridgeMECAALL] $s:名前
+
+chara   新空[NewSky_Prev] $s:名前 \
+	    -u $i:設定すると雲を適当に高くセットする \
+	    -h $i:設定すると雲を任意の高さにセットする \
+	    -m $s:テンプ \
+	    -g $i:設定するとデモ中でもゲーム環境と同じにする
+mesg 新空 $s:名前 殺す[0]
+mesg 新空 $s:名前 表示[1]
+mesg 新空 $s:名前 消す[2]
+chara   新空アルファ[NewSkyAlpha_Prev] $s:名前 \
+	    -u $i:設定すると雲を適当に高くセットする \
+	    -h $i:設定すると雲を任意の高さにセットする \
+	    -m $s:テンプ
+mesg 新空アルファ $s:名前 kill[-1]
+chara   新雷フラッシュ[NewThund_Flash] $s:名前 \
+		-probability $w:発生確率 \	// n frameに１回の確率で発生
+		-thunder_disable			// 稲妻の発生抑制（雲のフラッシュのみ）
+chara   懐中電灯[NewFlashLight] $s:名前 \
+	    -m $s:モデル名 \
+	    -p $v:位置 \
+	    -r $v:回転 \
+	    -e $p:破壊proc \
+	    -f $i:破壊・未破壊フラグ // 0:で未破壊 1:破壊後（デフォルト０）
+
+// レイブン
+chara  レイブン人形[New_Figure_Raven] $s:名前 \
+	    -m $s:モデル名 \
+	    -p $v:位置 \
+            -r $v:回転
+/***********************************************
+// 「複数赤外線」に移行：2001.07/19
+//
+// 回転度 4096 = 360度
+//chara   赤外線[NewIRS] $s:名前 \
+//	    -p $v:スイッチ座標 $v:センサー１ $v:センサー２ \
+//	    -r $v:スイッチ回転 $v:センサー１ $v:センサー２ \
+//	    -e $p:赤外線接触proc \
+//	    -s $p:スイッチ破壊時proc \
+//	    -a $i:１を指定すると下部のセンサー無し（50cmの隙間ができる）
+//mesg    赤外線 $s:名前 on[1]
+//mesg    赤外線 $s:名前 off[0]
+************************************************/
+
+// トラップ用 C4
+chara   トラップ専用C4[NewTRAP_C4] $s:名前 \
+	    -p $v:c4の座標 \
+	    -r $v:回転度 \
+	    -e $p:爆破時実行プロック \
+	    -n $i:設定すると、爆発音が敵兵に聞こえなくなる \
+	    -m $i:設定すると、Ｍ９でも爆発するようになる \
+	    -o $i:設定すると、Ｃ４の表示をＯＦＦにする
+mesg    トラップ専用C4 $s:名前 off[0]
+mesg    トラップ専用C4 $s:名前 on[1]
+mesg    トラップ専用C4 $s:名前 lamp_off[2]
+
+//園山拡張
+//$p:爆破時実行プロック の引数として、
+//$1 : 名前
+//$2 〜 $4 : Ｃ４の座標
+//が入ります。
+
+/* 小麦粉 */
+chara   メリケン粉[NewFlour] $s:名前 \
+		-m $s:モデル名 \
+		-p $v:位置 \
+		-r $v:回転度 \
+		-e $p:赤外線可視proc
+mesg    メリケン粉 $s:名前 くしゃみ[0]
+
+
+
+----------------------------------------------------------------
+ディレクトリ内ファイル
+----------------------------------------------------------------
+conv/
+demo_effect/
+effect/
+effect2/
+effect3/
+etc/
+t_debug/
+t_effect/
+t_fig_raven/
+t_flashlight/
+t_irs/
+t_prev/
+t_tyoudan/
+t_util/
+
+conv:
+	strconv.exe
+	strconv.c
+プログラム内で 収得していた strcode を変換して埋め込むプログラムと実行ファイル。
+
+
+-------------------
+demo_effect:
+デモ用エフェクトとして作成。ただしゲーム中でも使用されるものもある。
+	blood.h
+血の色等の設定ファイル
+	camera_crush.c
+監視カメラ・ガンカメラ等の破壊時エフェクト
+	common_smoke.c
+汎用的な煙エフェクト
+	d_blood.c
+汎用血エフェクト
+	d_blood1.c
+汎用血エフェクト１：テクスチャ引き延ばし型
+	d_blood2.c
+汎用血エフェクト２：スプライト使用型
+	d_body_plasma_dot.c
+スプライトで連結したプラズマエフェクト
+	d_contrast.c
+全画面描画を繰り返してＲＧＢ毎のコントラストを変更する
+	d_fade_io.c
+フェードイン・アウト：デモ・シナリオ用
+	d_fade_io_prog.c
+フェードイン・アウト：ゲーム用
+	d_fade_io_prog_strong.c
+フェードイン・アウト：描画優先が高い
+	d_fog_set.c
+フォグ値の変更・管理
+	d_gas_fixed_pers.c
+ガスエフェクト。仮想的にワールド座標で移動する点を透視変換し、カメラ前に描画。
+	d_gas_fixed_world.c
+ガスエフェクト。ワールド座標にそのまま描画
+	d_gas_on_camera.c
+ガスエフェクト。カメラ座標に位置がある。
+	d_inter_poly.c
+ポリゴンを繋ぎ曲面を表現
+	d_inter_poly_grenade.c
+ポリゴンを繋ぎ曲面を表現：グレネード用
+	d_plasma_line.c
+点描にてプラズマを表現
+	d_plasma_poly.c
+ポリゴンにてプラズマを表現
+	d_rain_cm.c
+カメラレンズに着く雨滴表現
+	d_set_hola.c
+光芒表現
+	d_splash.c
+水飛沫発生制御
+	d_splash_camera.c
+カメラ前の水しぶき表現
+	d_splash_fall.c
+落下水飛沫
+	d_splash_floor.c
+床水飛沫
+	d_splash_motion.c
+キャラ等の関節の動きに連動した水飛沫
+	d_splash_parts.c
+水飛沫の構成部分
+	d_splash_parts_slow.c
+水飛沫の構成部分：スロー対応
+	d_splash_ripple.c
+複数重ね波紋
+	d_thunder.c
+稲光呼び出し口
+	d_thunder_parts.c
+稲光実部
+	d_vol_shadow.c
+ＣＶ２利用、光源からの線状影＆ライト
+	dive_splash.c
+水没入水飛沫
+	gw_lines.c
+ジョージワシントン橋のワイヤ（未使用）
+	gw_lines_model.c
+ジョージワシントン橋のワイヤ（未使用）
+
+-------------------
+effect:
+	achuu.c
+くしゃみ制御
+	achuu_parts.c
+くしゃみエフェクト実部
+	bb_dan.c
+レイブン人形の発射するＢＢ弾
+	blood.h
+血用ヘッダ
+	blood2.c
+血
+	blood_bio.c
+敵兵死亡時の血
+	blood_cm.c
+カメラに付着する血
+	blood_dp.c
+落下する血（不可視）
+	blood_m9.c
+パーティクル血：床落下後付着
+	blood_part1.c
+ポリゴン引き延ばし血
+	blood_part2.c
+スプライト血
+	blood_sp.c
+追跡用床血
+	blood_wl.c
+壁付着血
+	blur.c
+前画面を全画面に描画するブラー
+	blur_dpt.c
+奥行き付きブラー
+	blur_timer.c
+時限ブラー
+	body_sdw.c
+キャラモデルの関節間からでるポリゴン影
+	body_sph.c
+ＣＶ２頂点に出る水しぶき
+	bokashi.c
+矩形領域ぼかし
+	bomb.c
+爆発制御
+	bomb2.c
+爆発制御２
+	bomb_chaff.c
+カメラ前チャフ片散布制御
+	bomb_chaff_screen.c
+カメラ前チャフ片散布
+	bomb_gas.c
+爆発パーツ：中心ガス
+	bomb_kasu.c
+爆発パーツ：飛翔破片
+	bomb_stan.c
+画面フラッシュ
+	bomb_vibration.h
+爆発時振動ヘッダ
+	bomb_wall.c
+壁焦げ
+	c_box_body.c
+ダンボール破壊：本体
+	c_box_dust.c
+ダンボール破壊：ゴミ
+	c_box_parts.c
+ダンボール破壊：蓋破片
+	c_light.c
+敵兵ライトなど
+	c_light_spot.c
+スポットライト
+	cb_hole_light.c
+ダンボール撃たれ時の漏れ光線
+	cb_splash.c
+ダンボール水飛沫
+	chair_hit.c
+椅子跳弾エフェクト
+	cigar.c
+たばこエフェクト
+	cotton.c
+綿舞い
+	crush_dust.c
+壊れ時パーティクル破片
+	extinguisher.c
+消火器
+	extinguisher_jet.c
+消火器噴出
+	extinguisher_mini.c
+ミニ消火器
+	fade_in_out.c
+フェード・インアウト制御
+	flush_man.c
+全画面描画でフラッシュ制御
+	flush_screen.c
+全画面描画でフラッシュ
+	flying_smoke.c
+飛翔物煙
+	flying_smoke2.c
+飛翔物煙２
+	flying_smoke_no_hzd.c
+飛翔物煙：当たりを見ない
+	foot_print.c
+足跡
+	ft_splsh.c
+足元水飛沫
+	george_bonbori.c
+ジョージワシントン橋用ボンボリ
+	hako.c
+ジャガイモ用ダンボール
+	line_sph.c
+欄干水飛沫
+	lit_man.c
+光源管理
+	lit_man.h
+光源管理：ヘッダ
+	mdl_anim.c
+モデル切り替えアニメーション
+	mdl_p2.c
+モデル切り替えアニメーション
+	mdl_p_am.c
+モデル切り替えアニメーション
+	nikita_ef.c
+ニキータミサイルエフェクト
+	objs_fall.c
+落下物統合
+	off_man.c
+メッセージＯＦＦ制御
+	projector_light.c
+映写機ライト
+	rain.c
+雨
+	rain_cm.c
+カメラ前雨
+	rain_cm.h
+カメラ前雨：ヘッダ
+	rain_cm_window.c
+窓ガラス用雨
+	rain_fix.c
+位置固定雨
+	rain_gas.c
+雨用ガス
+	rain_gas_pers.c
+雨用ガス：透視変換してカメラ前に描画
+	rain_gas_pers_demo.c
+雨用ガス：透視変換してカメラ前に描画：デモ用
+	rain_parts.c
+位置指定雨：パーツ
+	rain_slow.c
+スロー対応雨
+	ripple.c
+波紋
+	rot_y_object.c
+Ｙ軸のみ回転物体
+	saa_smoke.c
+ショットガン煙
+	set_t_dr.c
+ドア用ランプの光芒
+	set_t_fc.c
+外灯用光芒
+	set_t_fw.c
+遠景用光芒
+	set_t_plant.c
+プラント外周光芒
+	set_tex.c
+ワールドにスプライト表示
+	shield_crsh.c
+盾壊れエフェクト：制御
+	shield_e.c
+盾壊れエフェクト：破片
+	slowdown.c
+フレーム処理落ち発生
+	snake_breath_cm.c
+スネークの息によるカメラ曇り
+	sofa_hit.c
+ソファー跳弾エフェクト
+	spherelight.c
+球状ライト
+	splash_rot.c
+回転物の水飛沫
+	steam_cm.c
+水蒸気噴出によりカメラ前が曇る
+	steam_smoke.c
+水蒸気噴出
+	tear_drops.c
+スプライトを沢山繋いだ涙
+	twin_dr.c
+ウエスタン扉
+	weapon_sph.c
+主観時用武器水飛沫：ＣＶ２使用
+	weapon_sph2.c
+主観時用武器水飛沫：飛沫
+	wind_local.c
+局地風
+	wind_local2.c
+局地風２
+	wind_man.c
+風制御
+	z_man.c
+エフェクト用Ｚ軸値の管理
+
+-------------------
+effect2:
+	auto_splush.c
+仮想球と水面のインタラクションによる水飛沫
+	blood_strip.c
+ストリップ使用血：制御
+	blood_strip_parts.c
+ストリップ使用血：パーツ
+	blow_line.c
+リニアガン発射時巻き込み煙
+	bubble.h
+泡設定用共通ヘッダ
+	bubble_cm.c
+カメラ間に発生する泡
+	bubble_line.c
+線状に連なる泡
+	bubble_many.c
+カメラ前に発生する泡
+	bubble_motion.c
+モーションに連動して発生する泡
+	check_water_level.c
+水位を監視、制御する
+	circle_splush.c
+円形に水飛沫を発生する
+	crush_parts.c
+壊れ物のパーツ
+	delay_tmplight.c
+テンプライト制御
+	drop_body_splush.c
+身体から滴る水しぶき：シナリオ呼び
+	drop_body_splush_prog.c
+身体から滴る水しぶき：プログラム呼び
+	dust_area.c
+水中ダスト：位置固定
+	dust_cm.c
+水中ダスト：カメラ前
+	dynamic_flow.c
+濁流
+	floor_light_man.c
+床への照り返しライト
+	gas_line.c
+リニアガン発射時に巻き込みケムリ
+	inter_line_blade.c
+剣の軌跡を補完ポリゴンで表示
+	line_brust.c
+リニアガン発射時に巻き込みケムリ２
+	liner_gun_init.c
+リニアガン発射時制御部
+	liner_gun_plasma.c
+リニアガンのプラズマ
+	liner_gun_plasma_flush.c
+リニアガンの発光
+	liner_plasma_small.c
+リニアガン銃口部プラズマ
+	metal_blow_water.c
+メタルギアの顎が水中に没するときの水流
+	point_tidal.c
+ベクトル指定水飛沫
+	prism_bullet.c
+光学迷彩銃弾
+	rain_cm_con.c
+カメラ前水滴：位置指定
+	ray_sphere.c
+ストリップ水飛沫
+	ripple_bubble.c
+似非バンプ使用波紋
+	ripple_man.c
+波紋制御
+	ripple_stable.c
+位置固定波紋
+	short_spark.c
+短調火花
+	side_flare.c
+横方向ハレーション
+	slit_light.c
+スリットからの光線
+	slit_light2.c
+スリットからの光線（によるホコリ）
+	sonic_wave.c
+衝撃波
+	splush_big.c
+大き目水飛沫
+	splush_man.c
+水飛沫制御
+	splush_plane.c
+スプライト水飛沫
+	splush_surface_gravity_man.c
+水面考慮水飛沫
+	splush_surface_man.c
+水面考慮水飛沫：制御部
+	splush_tidal.c
+波涛水飛沫：制御
+	splush_tidal_parts.c
+波涛水飛沫：パーツ１
+	splush_tidal_parts2.c
+波涛水飛沫：パーツ２
+	splush_tidal_parts3.c
+波涛水飛沫：パーツ３
+	splush_tidal_parts4.c
+波涛水飛沫：パーツ４
+	spot_blur_line.c
+線状にポイントブラーを並べる
+	str_disp.c
+文字列表示
+	wall_tidal.c
+壁状に波涛
+	water_drops.c
+しずく
+	water_front.c
+波涛先頭
+	water_front_prim.c
+波涛先頭スプライト
+	water_wind.c
+ヘリ直下水飛沫
+	window_light.c
+窓からの光
+
+-------------------
+effect3:
+	auto_splush_vertical.c
+垂直方向の水飛沫
+	blood_drop_demo.c
+落下血：スプライト
+	blood_strip_demo.c
+落下血：ストリップ
+	bomb_bubble.c
+水中機雷爆発時泡
+	bomb_in_water.c
+水中機雷
+	bomb_sphere.c
+水中機雷：爆発
+	breath_demo.c
+息による泡
+	bubble_bullet.c
+銃弾の弾道跡泡
+	death_dive_splush.c
+落下時水飛沫
+	dive_flow.c
+飛び込み水飛沫
+	door_lamp.c
+ドアランプ制御
+	drops_many_cm.c
+カメラ前水滴：大量版
+	dust_cone.c
+円錐状光線中のダスト
+	dynamic_scar.c
+移動物への弾痕
+	elevator_lamp.c
+エレベータランプ
+	explosion.h
+球状爆発制御用ヘッダ
+	explosion_controler.c
+球状爆発制御
+	explosion_parts.c
+球状爆発パーツ
+	fluid_flow_man.c
+濁流制御
+	fluid_flow_parts.c
+縛流パーツ
+	flying_smoke_slow.c
+爆発煙：スロー対応
+	fog_control.c
+フォグ制御
+	gas2_pers_fast.c
+カメラ高速移動時用透視変換ガス２
+	gas_in_water.c
+水中爆発用ガス
+	gas_pers_fast.c
+カメラ高速移動時用透視変換ガス
+	hitech_face_blood.c
+ハイテク兵フェイスマスク内血のり
+	kirari_cm.c
+線状きらめき
+	kirari_water_cm.c
+線状きらめき：水面での
+	kirari_water_sun.c
+線状きらめき：太陽が水面に反射
+	kirari_water_sun2.c
+線状きらめき：太陽が水面に反射２
+	mountain_splush.c
+山状水飛沫
+	mountain_splush_spread.c
+山状水飛沫：子供
+	node_lamp.c
+ノード端末ランプ
+	peter_blood.c
+水中の矩形領域からのガス流
+	poly_hola_upper.c
+オーラ
+	pool_water.c
+波立つプール
+	pool_water_stable.c
+波立つプールの泡
+	raiden_mask_bubble.c
+ライデンのマスクから出る泡
+	ray_missile_launcher.c
+レイのミサイル発射
+	ray_missile_shower.c
+レイのミサイルシャワー
+	ripple_strip.c
+巨大波紋
+	slow_man.c
+スローパラメータ制御
+	smoke2_strip.c
+ストリップ状煙２
+	smoke_in_water.c
+水中煙
+	smoke_mitsukoshi.c
+沸き立つ水蒸気の発散
+	smoke_mitsukoshi_man.c
+沸き立つ水蒸気の発散：制御
+	smoke_strip.c
+ストリップ状煙
+	smoke_strip_control.c
+ストリップ状煙：制御
+	splush_rsprt.c
+スプライト使用水飛沫
+	splush_rsprt_hari.c
+ストリップ状煙：ハリアー機銃着水用
+	splush_vertical.c
+垂直水飛沫
+	sprt_hola.c
+スプライト使用オーラ
+	sprt_hola_upper.c
+スプライト使用オーラ：上昇部
+	strip_dome.c
+ドーム状ポリゴン
+	strip_hola.c
+ストリップ使用オーラ
+	vamp_drop_splash.c
+スプライト使用パーティクル水飛沫
+	vamp_hola.c
+オーラ
+	vamp_knife_fix.c
+ナイフ用線状きらめき
+	vapor.c
+立ち上る水蒸気
+	view_3d.c
+立体視実験
+	w_mine_lamp.c
+水中地雷ランプ
+	water_reflect.c
+水面の光乱反射
+	water_reflect_wall.c
+水面の光乱反射：壁用
+	water_surface.c
+水面１
+	water_surface2.c
+水面２
+
+-------------------
+etc:
+	amb_set.c
+アンビエントパラメータセット
+	cb_wet.c
+濡れダンボール制御
+	far_clip_set.c
+ファークリップパラメータセット
+	fog_set.c
+フォグパラメータセット
+	item_box.c
+アイテムボックス
+	makky_rain.c
+雨音生業
+	ok_init.c
+ユーザーイニシャライザ
+	ok_util.c
+ユーティリティ
+	ok_util.h
+ユーティリティ：ヘッダ
+	prl_set.c
+平行光パラメータセット
+	randamizer.c
+ランダムテーブルイニシャライザ
+	scr_shot.c
+スクリーンショット制御
+	scr_st_c.c
+スクリーンショット
+	shake_camera.c
+カメラ揺らし制御
+
+-------------------
+t_debug:
+	pri_objnum.c
+デバグ用文字列表示
+
+-------------------
+t_effect:
+	afterimage.c
+敵兵暗視ゴーグル残像
+	blood.c
+血煙
+	breath.c
+息
+	chim_smo.c
+煙突煙
+	dust_cloud.c
+土煙
+	inf_cam.c
+暗視ゴーグル
+	radio_break.c
+無線破壊
+	s_light_break.c
+盾ライト壊れ
+	shield_smoke.c
+盾壊れ煙
+	spark.c
+跳弾火花
+
+-------------------
+t_fig_raven:
+	fig_raven.c
+レイブン人形
+	fig_raven.h
+レイブン人形ヘッダ
+	fig_raven_init.c
+レイブン人形初期化
+
+-------------------
+t_flashlight:
+	fl_light_act.c
+懐中電灯
+	fl_light_ini.c
+懐中電灯初期化
+	fl_light_target.c
+懐中電灯ターゲット
+	flashlight.c
+懐中電灯
+	flashlight.h
+懐中電灯ヘッダ
+
+-------------------
+t_irs:
+	irs.c
+赤外線コントローラ
+	irs_break.c
+赤外線破壊
+	trap_c4.c
+トラップＣ４（未使用）
+
+-------------------
+t_prev:
+	bonbori_red.c
+マンハッタンビル警告灯：赤
+	bonbori_yw.c
+マンハッタンビル警告灯：黄
+	brooklyn.c
+ブルックリンビル群
+	fog_wall.c
+遠方フェード用壁
+	manhat3d.c
+マンハッタン
+	sky_column.c
+円柱状空
+	sky_prev.c
+天球
+	sky_prev_alpha.c
+α抜き天球
+	thund_flash.c
+稲光
+
+-------------------
+t_tyoudan:
+	tyou_smo.c
+跳弾煙
+	tyoudan.c
+跳弾
+
+-------------------
+t_util:
+	datacopy.c
+ユーティル
+
+

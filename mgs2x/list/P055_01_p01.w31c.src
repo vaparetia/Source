@@ -1,0 +1,113 @@
+//
+//	P055_01_p01.w31c.src
+//
+//	written by H.Yoshiike 2001.Jul
+//
+//	$Id: P055_01_p01.w31c.src,v 1.14 2001/09/20 03:55:41 usr04496 Exp $
+
+// 常駐データ
+block .use r_plt0
+block .nocache
+block .cache
+
+#include "w31c_common.h"
+
+
+// ライデン
+pack_all	raiden.tri \
+		human/rai_def/rai_def_mh_mt.dar
+human		rai_def/rai_def_mh_mt.evm
+
+//エマ・エメリッヒ
+//マルチとシングルは映り込みがあるため,同時に映るためTRIを分ける
+human	ema_def/ema_def_mh_mt.evm
+cvd 	human/ema_def/ema_raindammy.cv2 vn
+//髪の毛,めがね,ＩＤカード等の付属品
+human/ema_def  ema_bounding.kms ema_glasses_mt.kms
+human/ema_def  ema_def_sh_mt.kms
+human/ema_def  ema_hair_mh.evm ema_hair_swim_mh.evm ema_idrope_mh_mt.evm
+
+// ヴァンプ
+human	vmp_def/vmp_naked_light_mh_mt.evm
+human	vmp_coat/vmp_hair_coat_mh_mt.evm
+human	vmp_coat/vmp_coat_bounding.kms
+human	vmp_def/vmp_naked_shadow.kms
+human	vmp_def/vmp_naked_sh.kms
+weapon	vamp_knife/vkf_big_inv.kms
+human	vmp_def/vmp_parts_vkpa_mh.evm
+human	vmp_def/vmp_parts_vkpb_mh.evm
+weapon	vamp_knife/vkf_small_cm.kms
+
+//-------------------------------------------------------------------追加小林ここから
+
+weapon	usp/usp_sub.kms
+
+//裸ヴァンプ
+human	vmp_def/vmp_naked_mh_mt.evm
+human	vmp_def/vmp_naked_addhand_mh_mt.evm		//ヴァンプ指付き
+//ヴァンプナイフ
+human	vmp_def/vmp_parts_vkpa_mh.evm
+//ヴァンプの舌
+human	vmp_def/vmp_tongue_mh_mt.evm
+//ヴァンプ頬の傷
+pack_all zzz_v_face_kizu.tri \
+		human/vmp_def/vmp_facewound2_mh.dar \
+		human/vmp_def/vmp_facewound1_mh.dar
+human	vmp_def/vmp_facewound2_mh.evm
+human	vmp_def/vmp_facewound1_mh.evm
+//裸ヴァンプアタリ
+human	vmp_def/vmp_naked_bounding.kms
+//裸ヴァンプ髪の毛
+human	vmp_def/vmp_hair_naked_mh_mt.evm
+//-------------------------------------------------------------------追加小林ここまで
+
+/* mgdemo added ----from here (Tue Jul 10 23:11:53 2001) ---- */
+human	sel_def/sel_def.kms
+pack_trnall trn.tri effect/blood/blood_2bw_alp.bmp
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Aug  3 18:00:02 2001) ---- */
+human	ema_def/ema_glasses_sh_mt.evm
+human	ema_def/ema_def_addhand_mh_mt.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Wed Aug 15 14:14:17 2001) ---- */
+vib	demo/P057_01_p01_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Wed Aug 15 16:46:05 2001) ---- */
+human	ema_def/ema_glas_nullshadow_sh.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Wed Aug 22 16:07:29 2001) ---- */
+human	rai_def/rai_def_addhand_mh_mt.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Sat Aug 25 22:15:52 2001) ---- */
+vib	demo/P058_01_p01_rai_02.vib
+vib	demo/P058_01_p01_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Sat Aug 25 22:48:08 2001) ---- */
+vib	demo/P058_03_p02_quake_01.vib
+vib	demo/P058_03_p02_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Sun Aug 26 12:50:12 2001) ---- */
+vib	demo/P058_08_p04_ema_04.vib
+vib	demo/P058_08_p04_ema_03.vib
+vib	demo/P058_08_p04_ema_02.vib
+vib	demo/P058_08_p04_ema_01.vib
+vib	demo/P058_08_p04_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Sun Aug 26 15:08:11 2001) ---- */
+
+//RPD_P058_02_R01_エマ救出２無線機デモ１ 中振動さん	added by fukushima 0902
+vib	program/ema_rescue.vib
+
+// テロップ
+#ifdef MGS2_LANG_ENGLISH
+// 英語d
+pack_all	staff.tri \
+		2D/demo_telop/eng/sr11j_alp_ovl.bmp
+
+#else
+// 日本語
+pack_all	staff.tri \
+		2D/demo_telop/jpn/sr11j_alp_ovl.bmp
+#endif/* mgdemo added ----from here (Sun Sep  2 22:33:35 2001) ---- */
+pack_trnall trn.tri effect/splash/splash05_alp.bmp
+/* mgdemo added ----upto here ---- */

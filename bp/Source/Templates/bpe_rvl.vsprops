@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="BPE RVL"
+	InheritedPropertySheets=".\bpe_common.vsprops"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="&quot;$(BPE_ROOT)/Source/ExtLibraries/Edge/Branch/host-common/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/Edge/Branch/target/common/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/Edge/Branch/target/common/include/vectormath&quot;;&quot;$(NW4R_ROOT)/Library/include&quot;"
+		PreprocessorDefinitions="BOOST_SIGNALS_SOURCE;BOOST_REGEX_SOURCE;ZLIB_INTERNAL"
+		StringPooling="true"
+		ExceptionHandling="0"
+		EnableEnhancedInstructionSet="2"
+		PrecompiledHeaderFile="$(IntDir)\StdAfx.mch"
+		DebugInformationFormat="3"
+		CompileAs="0"
+		DisableSpecificWarnings="4251;4275;4793;4065"
+	/>
+	<Tool
+		Name="VCLibrarianTool"
+		OutputFile="$(OutDir)\$(ProjectName).a"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		OutputFile="$(OutDir)\$(ProjectName).a"
+		AdditionalLibraryDirectories="&quot;$(NW4R_ROOT)/Library/lib/RVL/Release&quot;"
+		GenerateDebugInformation="true"
+		SubSystem="2"
+		EnableCOMDATFolding="2"
+		ImportLibrary=""
+		TargetMachine="1"
+	/>
+</VisualStudioPropertySheet>

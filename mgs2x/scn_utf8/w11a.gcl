@@ -1,0 +1,2271 @@
+/*
+	w11a.gcl                     
+		海底ドック(オープニング～爆弾解体前)
+
+	2000/08/23 H.Yoshiike         
+	$Id: w11a.gcl,v 1.156 2002/10/03 15:15:18 usr04761 Exp $                      
+
+	
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+// ステージ名
+#define		STAGE_W11A		1		// 共通プロック切り分け用
+// 敵兵、ＮＰＣ状況（薬莢を呼び分けるのに必要）
+#define		ENE_P_GOL		1		// 都市迷彩ゴル兵
+//#define		ENE_T_GOL		1		// タンカー編ゴル兵
+//#define		ENE_SHOT		1		// ショットガン兵
+//#define		ENE_HIGH_TECH	1		// ハイテク兵
+//#define		ENE_SHIELD		1		// 盾兵
+//#define		ENE_TNG			1		// 天狗兵
+//#define		NPC_SNAKE		1		// NPCスネーク
+//#define		NO_YAKKYOU		1		// 薬莢すべていらない
+
+// 各種スイッチ用define
+// ------------------------------------
+// サウンド
+#define		SOUND			1		// サウンドデータは最初に呼ぶ
+#define		BGM				1		// BGMは敵兵コマンダーの後に呼ぶ
+// デモ
+#define		DEMO			1
+#define		POLYDEMO_LOAD	1		// ポリゴンデモロードを使用するのに必要
+// ノード端末
+#define		NODE			1		// ノードcharaを使用するのに必要
+// キャラクター関係
+#define		RAIDEN			1		// SNAKEとは排他
+#define		ENEMY			1		// コマンダーと警備兵(敵を出すときは必須)
+#define		DEMO_DOLL		1		// ルートデモ人形
+// ドア
+#define		WT_DOOR			1		// 水密ドア
+#define		SLIDE_DOOR		1		// スライドドア
+// 入出トラップ
+#define		LOAD_TRAP		1
+#define		STAGE_END		1		// ステージ終了時処理を使用可にする
+// フォグ
+#define		FOG				1
+// エフェクト関係
+// 子画面
+#define		SUB_CAMERA		1
+// カメラ関係
+#define		CLEAR_CAMERA	1		// クリアリング専用カメラ(要子画面)
+#define		PAN_CAMERA		1		// パンカメラ
+// 天井
+#define		CHARA_CEIL		1		// 天井君
+// 透明壁
+#define		TR_WALL			1		// シナリオ置きの透明壁
+// ライト関係
+#define		CHARA_LIGHT		1		// キャラ専用ライト
+// オブジェ関係
+#define		LOCKER			1		// ロッカー
+#define		SD_LOCKER_FLR	4		// ロッカー扉SE番号(倒れバージョン)
+#define		SD_LOCKER_HZD	1		// ロッカー扉SE番号(扉バージョン)
+#define		SUBMARINE		1		// 潜水艇
+#define		C4_BOMB			1		// 解体用
+// 水中モード関連
+#define	WATER				1		// 水面
+#define	WATER_MODE			1		// 水中モード基本キャラ設定を使用するのに必要
+#define WATER_SURFACE		-47250	// 水面の高さ
+#define	WATER_CAMERA_ZONE	5		// 追従カメラが使用するゾーンのあるグループ番号(必要があれば定義する)
+#define	WATER_ELUDE_IN		1		// エルード状態から入水できる場合は定義する
+#define	CAMERA_BUBBLE_NUM	3		// カメラ泡の個数(いらない場合は定義しない)
+#define	CAMERA_DUST_NUM		10		// カメラダストの個数(いらない場合は定義しない)
+// アイテム
+#define		ITEM			1
+// 強制モーション
+#define		JP_MOTION		1		// ジャンプモーション
+#define		BY_MOTION		1		// ビヨンドモーション
+// ２Ｄテクスチャ説明表示
+#define		EX_TEX			1		// 説明テクスチャ表示を使用するのに必要
+#define		TEX_FADE_TIME	30		// 説明テクスチャのフェードインアウトタイム
+
+
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+	#define		DEBUG_MODE		0		// デバッグ開発環境
+	#define		NO_POLYDEMO		0		// ポリデモなしフラグ
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+	#define		DEBUG_MODE		0		// デバッグ開発環境
+	#define		NO_POLYDEMO		0		// ポリデモなしフラグ
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME		w11a
+#define		KMS_NAME0		w11a0
+#define		MT_KMS_NAME0	w11a0_speobj_mt
+#define		KMS_NAME1		w11a1
+#define		KMS_NAME2		w11a2
+#define		KMS_NAME3		w11_elv_fader
+#define		CEIL_NAME0		w11a0r
+#define		CEIL_NAME1		w11a1r
+#define		CEIL_NAME2		w11a2r
+#define		WALL_NAME0		w11a0_southwall
+#define		WALL_NAME1		w11a2_southwall
+#define		DOOR_NAME1		dr_free
+#define		LT2_NAME		w11
+#define		R_MT_FILE		rai_w11a
+
+// キャラクター関係
+#if d:RAIDEN
+	#define		PLAYER		ライデン	// モーションができるまで名前はスネーク
+#else
+	#define		PLAYER		スネーク
+#endif
+
+
+// 気絶兵モーションリスト
+enum 気絶兵モーションリスト {
+	gps_walk = 0,
+	gps_idle,
+	gps_sit_pose,
+	gps_get_up,
+	gps_half_crouch,
+	gps_idle_ready,
+	gps_look_around
+}
+
+// 敵兵巡回ルート
+enum E_R {
+	デモ兵ルート = 0,
+	ＶＲルートＥ,
+	東ルートＥ通常,
+	東ルートＥ警戒,
+	ＶＲルートＮ,
+	東ルートＮ,
+	ＨＤ追加ルート,
+	頭痛いルート,
+	発着口ルート,
+	ＶＲルートＥＸ,
+	東ルートＥＸ,
+	エレベータ前ルートＥＸ
+}
+
+
+// クリアリングエリア０
+enum C_R0 {
+	先頭兵ルート = 0,
+	２番兵ルート,
+	先頭兵ロッカー開けルート右,
+	先頭兵ロッカー開けルート中央,
+	先頭兵ロッカー開けルート左
+}
+
+
+// include
+// ------------------------------------
+#include "rai_w11a.mh"		// 強制モーションリスト
+#include "stdch.h"
+#include "sload.h"
+#include "jump.h"
+#include "beyond.h"
+#include "sound.h"
+#include "enevoice.h"
+#include "item_info.h"
+#include "w11abc_common.h"
+#include "w11ab_common.h"
+#include "name_entry.rsc" // ネームエントリー専用 by koba4
+#include "node_res.h"
+#include "ene_item.h"
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+//eval($w:p_story = d:ST:P004_01_P01ノード初接続１ポリゴンデモ１終了)
+#if d:DEBUG_PRINT
+// デバッグ用にタンカー編からのフラグか着ているかどうかチェックする
+	print 'tanker_flag_checkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk!!'
+	print $f:w00a_タンカー右舷で死体捨てた
+	print $f:w00a_タンカー左舷で死体捨てた
+	print $f:w00a_タンカー３Ｆ左舷横で死体捨てた
+	print $f:w00a_タンカー３Ｆ左舷正面で死体捨てた
+	print $f:w00a_タンカー３Ｆ右舷で死体捨てた
+#endif
+
+// マップ設定
+// ------------------------------------
+chara マップ 発着口 -k d:KMS_NAME0 -h d:HZX_NAME,0 -l d:LT2_NAME
+chara マップ 連結ハッチ -k d:KMS_NAME1 -h d:HZX_NAME,1 -l d:LT2_NAME
+chara マップ 昇降機ホール -k d:KMS_NAME2 -k d:KMS_NAME3 -h d:HZX_NAME,2 -l d:LT2_NAME
+
+chara マップ接合 発着口／連結ハッチ 発着口 連結ハッチ
+chara マップ接合 連結ハッチ／昇降機ホール 連結ハッチ 昇降機ホール
+// シナリオデモ専用マップ接合
+chara マップ接合 デモ用発着口／昇降機ホール 発着口 昇降機ホール
+chara マップ接合 デモ用連結ハッチ／昇降機ホール 連結ハッチ 昇降機ホール
+
+
+command マップ設定 発着口 連結ハッチ 昇降機ホール -set {
+	// サウンド、キャラクターのセット
+	// ------------------------------------
+	#if d:SOUND	
+		@サウンド設定				// データは最初に呼ぶ。w11abc_common.hで定義
+	#endif
+		@レーダーオンオフチェック $f:w11a_ノードフラグ	// stdproc.hで定義
+
+	@常駐キャラ設定				// stdch.hで定義
+
+	@ローカル変数初期化			// w11abc_common.hで定義
+	@設定値変更					// w11abc_common.hで定義
+	@ポリデモ後変数設定
+	@シナリオデモキャラセット	// stdproc.hで定義
+	@プラグイン設定				// w11abc_common.hで定義
+	@プレイヤー設定				// w11abc_common.hで定義
+	#if d:JP_MOTION
+		@ジャンプ設定				// w11ab_common.hで定義
+	#endif
+	#if d:ENEMY
+		@コマンダー設定
+		@敵兵ルートチェンジ設定
+	#endif
+	#if d:BGM
+		if ( $w:p_story > d:ST:P003_02_R02スネーク昇降機上昇２無線デモ１開始 ) {
+			@ＢＧＭ設定					// プレイヤー→敵兵→BGMの順で呼ぶ。w11abc_common.hで定義
+		}
+	#endif
+	@弾痕跳弾設定				// w11abc_common.hで定義
+	// マップ切り替え、ロード、ドア
+	// ------------------------------------
+	#if d:SLIDE_DOOR
+		@ドア設置					// w11abc_common.hで定義
+	#endif
+	#if d:LOAD_TRAP
+		@昇降機ホールロード設定		// w11ab_common.hで定義
+	#endif
+	// ステージ、オブジェクト関連
+	// ------------------------------------
+	if ( $w:p_story >= d:ST:P004_01_P01ノード初接続１ポリゴンデモ１終了 ) {
+	// ノードに初接続するまではマップを出さない
+		@プラント編全体マップ設定 d:Ａ脚マップ	// stdproc.hで定義
+	} else {
+	// 全体マップが出るまではステージ名を出す
+		@ポーズ時ステージ名表示設定 d:wn_Ａ脚底部海底ドック
+	}
+	#if d:FOG
+		@フォグ設定					// w11abc_common.hで定義
+	#endif
+		@カメラセット				// w11abc_common.hで定義
+		@子画面設定
+	#if d:DEBUG_CHARA
+		@デバッグキャラセット		// w11abc_common.hで定義
+	#endif
+}
+
+command マップ設定 発着口 連結ハッチ -set {
+	@水密ドア設置				// w11ab_common.hで定義
+}
+
+command マップ設定 発着口 -set {
+	#if d:DEMO
+		@Ａ脚底部連結ハッチ１シナリオデモ１設定
+	#endif
+	#if d:CHARA_CEIL
+		@発着口天井設置				// w11ab_common.hで定義
+	#endif
+	#if d:TR_WALL
+		@透明壁設置					// w11ab_common.hで定義
+	#endif
+	#if d:LOCKER
+		@ロッカー設置				// w11ab_common.hで定義
+	#endif
+	@イントルード金網設定			// w11ab_common.hで定義
+	#if d:SUBMARINE
+		@潜水艇設置					// w11ab_common.hで定義
+	#endif
+	#if d:ITEM
+		@発着口アイテム設置			// w11abc_common.hで定義
+	#endif
+	#if d:BY_MOTION
+		@発着口ビヨンド設定			// w11ab_common.hで定義
+	#endif
+		@発着口カメラ設定			// w11ab_common.hで定義
+
+	@発着口壁スポットライト			// w11ab_common.hで定義
+	#if d:C4_BOMB
+		@解体Ｃ４設置				// w11ab_common.hで定義
+	#endif
+
+	if ( $w:p_story < d:ST:P004_02_R01ノード初接続２無線デモ１終了 ) {
+		@フナ虫設定
+		@メニューフナムシ取り付き設定	// stdproc.hで定義
+	}
+	#if d:WATER
+		@水中モード基本キャラ設定
+		@エルード時の体水飛沫設定	// w11ab_common.hで定義
+		@敵兵水落ち設定				// w11ab_common.hで定義
+		@発着口水面設定				// w11ab_common.hで定義
+		@発着口水中モードプレイヤー連動キャラ設定	// w11ab_common.hで定義
+	#endif
+
+	@フェンスドア設定				// w11ab_common.hで定義
+}
+
+command マップ設定 連結ハッチ -set {
+	#if d:CHARA_CEIL
+		@連結ハッチ天井設置			// w11ab_common.hで定義
+	#endif
+		@連結ハッチカメラ設定		// w11ab_common.hで定義
+}
+
+command マップ設定 昇降機ホール -set {
+	#if d:NODE
+		@w11a_ノード端末設定 1536
+	#endif
+	@昇降機設置						// w11abc_common.hで定義
+	#if d:CHARA_CEIL
+		@昇降機ホール天井設置			// w11abc_common.hで定義
+	#endif
+	#if d:ITEM
+		@昇降機ホールアイテム設置		// w11abc_common.hで定義
+	#endif
+	@昇降機ホールカメラ設定
+
+// デモと共用するプロック
+	@昇降機ホール揺れライト設定		// w11abc_common.hで定義
+	@昇降機ホール壁ライト設定		// w11abc_common.hで定義
+	@昇降機ホール壁スポットライト	// w11abc_common.hで定義
+	@昇降機ホールスポットライト設定 // w11abc_common.hで定義
+}
+
+
+// キャラ用ライトは最後に設定
+command マップ設定 発着口 連結ハッチ 昇降機ホール -set {
+	#if d:CHARA_LIGHT
+		@キャラ用ライト設置				// w11abc_common.hで定義
+	#endif
+}
+
+
+// 無線用include ※位置は動かさないこと
+#include "w11a_cdc.ch"
+#include "p_force_cdc.ch"
+
+// 全てのセットが終わったところでフェードイン
+// ゲームマップ表示
+if( $s:登場ポイント == sp_init_w11a0_0 ) {
+	//初期マップの表示
+	command マップ表示 -show 発着口
+	command マップ表示 -show 連結ハッチ
+	mesg マップ接合 発着口／連結ハッチ on
+	// 全てのセットが終わったところでフェードイン
+	@ステージ開始時処理 d:LOAD_TYPE:NO_MOVE_TYPE プール入り口 0 d:M_TYPE:WALK_CHANGE
+	mesg プレイヤー d:PLAYER stance d:FA_END_STAND 1024 1024 0
+} else if ( $s:登場ポイント == スネーク登場デモ後 ){
+	command マップ表示 -show 昇降機ホール
+	mesg マップ接合 発着口／連結ハッチ on
+	@ロード時フェードイン
+	mesg プレイヤー d:PLAYER stance d:FA_END_STAND 1024 1024 0
+} else if ( $s:登場ポイント == ノード初接続デモ後 ){
+	// ノード初接続前後は画面を黒くしたままにする
+	command マップ表示 -show 昇降機ホール
+	// フェードインが終わるまではパッドリリース
+	command パッド操作 -release
+	eval($f:ロードチェックＯＮフラグ = 1);
+	@ノード接続時プロック
+	@w11a_ノード端末起動
+
+} else if ( $s:登場ポイント == ノード初接続無線デモ後 ) {
+	command マップ表示 -show 昇降機ホール
+	mesg マップ接合 発着口／連結ハッチ on
+	// フェードインが終わるまではパッドリリース
+	command パッド操作 -release
+	eval($f:ロードチェックＯＮフラグ = 1);
+	chara フェードインアウト フェードイン \
+		-i 0,0,0 128 \
+		-c 0,0,0 0 \
+		-t d:FADEIN_TIME
+
+	@P004_02_R01ノード初接続２無線デモ１終了後イベント開始
+}
+
+
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// 全マップ共通
+	// ポリデモ後変数設定
+	proc ポリデモ後変数設定 {
+		#if d:DEBUG_PRINT
+			print 'polydemo_end_var_change!'
+		#endif
+		if ( $w:p_story == d:ST:P003_02_R02スネーク昇降機上昇２無線デモ１終了 ) {
+		// スネーク上昇ポリゴンデモ後の無線後の設定
+			eval( $i:プレイヤー初期Ｘ位置 = -4534 ) ;
+			eval( $i:プレイヤー初期Ｙ位置 = -45000 ) ;
+			eval( $i:プレイヤー初期Ｚ位置 = 2232 ) ;
+			eval( $i:プレイヤー初期方向 = 1024 );
+			eval( $b:プレイヤー初期姿勢 = d:FA_END_SQUAT ) ;
+			eval( $s:登場ポイント = スネーク登場デモ後 );
+			@デモ後武器アイテム制御 d:デモ後必ず素手 d:デモ後特殊装備なし
+
+		} else if ( $w:p_story == d:ST:P004_01_P01ノード初接続１ポリゴンデモ１終了 ) {
+		// ノード初接続後の設定
+			eval( $i:プレイヤー初期Ｘ位置 = 2764 ) ;
+			eval( $i:プレイヤー初期Ｙ位置 = -45000 ) ;
+			eval( $i:プレイヤー初期Ｚ位置 = -8999 ) ;
+			eval( $i:プレイヤー初期方向 = 1572 )
+			eval( $b:プレイヤー初期姿勢 = d:FA_END_STAND ) ;
+			eval( $s:登場ポイント = ノード初接続デモ後 );
+			@デモ後武器アイテム制御 d:デモ後必ず素手 d:デモ後特殊装備なし
+
+		} else if ( $w:p_story == d:ST:P004_02_R01ノード初接続２無線デモ１終了 ) {
+		// ノード初接続無線後の設定
+			eval( $i:プレイヤー初期Ｘ位置 = 2764 ) ;
+			eval( $i:プレイヤー初期Ｙ位置 = -45000 ) ;
+			eval( $i:プレイヤー初期Ｚ位置 = -8999 ) ;
+			eval( $i:プレイヤー初期方向 = 1572 )
+			eval( $b:プレイヤー初期姿勢 = d:FA_END_STAND ) ;
+			eval( $s:登場ポイント = ノード初接続無線デモ後 );
+		}
+
+	}
+
+	// シナリオデモ
+	// ------------------------------------
+	// Ａ脚底部連結ハッチ１シナリオデモ１
+	proc Ａ脚底部連結ハッチ１シナリオデモ１設定 {
+		#if d:DEBUG_PRINT
+			print 'event01_set'
+		#endif
+
+		if ( $w:p_story < d:ST:P002_01_S01Ａ脚底部連結ハッチ１シナリオデモ１開始 ) {
+			#ifndef d:PAL
+				chara パッドデモ パッドデモ１ -file w11a_paddemo
+			#else
+				chara パッドデモ パッドデモ１ -file w11a_paddemo_p
+			#endif
+
+			chara ルートデモ人形 気絶兵 \
+				-route 0 0 \
+				-kms gps_def_mt \ /*EVMを表示する場合はダミーKMSが必要*/
+				-mar gbsstage \
+				-number d:気絶兵モーションリスト:gps_walk \
+				-a	気絶兵アバカン \
+				-weapon	2
+
+		}
+	}
+
+	proc Ａ脚底部連結ハッチ１シナリオデモ１開始 {
+		#if d:DEBUG_PRINT
+			print 'event01_start'
+		#endif
+
+		eval ( $w:ローカル変数Ｗ１ = 0 );
+		eval ( $w:p_story = d:ST:P002_01_S01Ａ脚底部連結ハッチ１シナリオデモ１終了 );
+
+		mesg ルートデモ人形 気絶兵 アクション終了
+
+		chara デモキャンセルチェック デモキャンセル \
+			-p Ａ脚底部連結ハッチ１シナリオデモ１キャンセル
+
+		@シナリオデモ開始処理（ダンボールも解除）
+		mesg パッドデモ パッドデモ１ start
+
+		command メニュー設定 -gage off
+
+		if (($w:タイトルメニュー設定 & d:TITLE_MENU_STORY_SEL_MASK) != d:TITLE_MENU_STORY_SEL_TANDP ) {
+				if ( $w:言語 == d:LANG_ENGLISH_ENGLAND ) {
+					@説明テクスチャ表示 主観説明 act_telop5_alp_ovl 120
+				} else if ( $w:言語 == d:LANG_FRENCH ) {
+					@説明テクスチャ表示 主観説明 act_telop05_fr_alp_ovl 120
+				} else if ( $w:言語 == d:LANG_GERMANY ) {
+					@説明テクスチャ表示 主観説明 act_telop05_de_alp_ovl 120
+				} else if ( $w:言語 == d:LANG_ITALY ) {
+					@説明テクスチャ表示 主観説明 act_telop05_it_alp_ovl 120
+				} else if ( $w:言語 == d:LANG_SPANISH ) {
+					@説明テクスチャ表示 主観説明 act_telop05_es_alp_ovl 120
+				} else if ( $w:言語 == d:LANG_JAPANESE ) {
+					@説明テクスチャ表示 主観説明 act_telop05_jp_alp_ovl 120
+				}
+		}
+
+		chara delay ディレイ \
+			-time 180 \ 
+			-exec{
+				eval ( $w:ローカル変数Ｗ１ = $w:ローカル変数Ｗ１ + 1 );
+				if ( $w:ローカル変数Ｗ１ == 1 ) {
+					if (($w:タイトルメニュー設定 & d:TITLE_MENU_STORY_SEL_MASK) != d:TITLE_MENU_STORY_SEL_TANDP ) {
+							if ( $w:言語 == d:LANG_ENGLISH_ENGLAND ) {
+								@説明テクスチャ表示 主観説明 act_telop2_alp_ovl 120
+							} else if ( $w:言語 == d:LANG_FRENCH ) {
+								@説明テクスチャ表示 主観説明 act_telop02_fr_alp_ovl 120
+							} else if ( $w:言語 == d:LANG_GERMANY ) {
+								@説明テクスチャ表示 主観説明 act_telop02_de_alp_ovl 120
+							} else if ( $w:言語 == d:LANG_ITALY ) {
+								@説明テクスチャ表示 主観説明 act_telop02_it_alp_ovl 120
+							} else if ( $w:言語 == d:LANG_SPANISH ) {
+								@説明テクスチャ表示 主観説明 act_telop02_es_alp_ovl 120
+							} else if ( $w:言語 == d:LANG_JAPANESE ) {
+								@説明テクスチャ表示 主観説明 act_telop02_jp_alp_ovl 120
+							}
+					}
+					return 180;
+
+				} else if ( $w:ローカル変数Ｗ１ == 2 ) {
+					if (($w:タイトルメニュー設定 & d:TITLE_MENU_STORY_SEL_MASK) != d:TITLE_MENU_STORY_SEL_TANDP ) {
+							if ( $w:言語 == d:LANG_ENGLISH_ENGLAND ) {
+								@説明テクスチャ表示 主観説明 act_telop3_alp_ovl 200
+							} else if ( $w:言語 == d:LANG_FRENCH ) {
+								@説明テクスチャ表示 主観説明 act_telop03_fr_alp_ovl 200
+							} else if ( $w:言語 == d:LANG_GERMANY ) {
+								@説明テクスチャ表示 主観説明 act_telop03_de_alp_ovl 200
+							} else if ( $w:言語 == d:LANG_ITALY ) {
+								@説明テクスチャ表示 主観説明 act_telop03_it_alp_ovl 200
+							} else if ( $w:言語 == d:LANG_SPANISH ) {
+								@説明テクスチャ表示 主観説明 act_telop03_es_alp_ovl 200
+							} else if ( $w:言語 == d:LANG_JAPANESE ) {
+								@説明テクスチャ表示 主観説明 act_telop03_jp_alp_ovl 200
+							}
+					}
+					return 200;
+
+				} else if ( $w:ローカル変数Ｗ１ == 3 ) {
+					mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_FOUTP_S
+					return 60;
+
+				} else if ( $w:ローカル変数Ｗ１ == 4 ) {
+					command ＳＥセットモード -s d:se_code:SD_S_JINGLE03 \
+						-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+					mesg ルートデモ人形 気絶兵 アクション終了
+					// カメラを奪い、敵兵をズームしていく
+					chara ブラー カメラブラー -i 40
+					mesg ブラー カメラブラー パラメータ 70 40
+					chara シナリオカメラ振動 手ぶれカメラ \
+						-xlevel 5 \
+						-ylevel 5 \
+						-time 150 \
+						-mode 0
+
+					chara カメラ設定 シナリオデモカメラ \
+						-c 1 \
+						-p -11344,-43500,13290 -t -11627,-43782,12639 \
+						-r 259,2315,0 -f 770 \
+						-a 150 \
+						-i 0 0 0 0 \
+						-s 1
+
+					chara カメラ設定 シナリオデモカメラ \
+						-c 1 \
+						-p -11344,-43500,13290 -t -11528,-43722,12561 \
+						-r 139,2210,0 -f 769 \
+						-a 270 \
+						-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+						-interp_time 40 \ // 補完時間を指定
+						-s 1
+	
+					return 40;
+
+				} else if ( $w:ローカル変数Ｗ１ == 5 ) {
+					mesg ブラー カメラブラー パラメータ 100 50
+					mesg 敵兵装備品 気絶兵アバカン 銃をもつ
+
+					chara カメラ設定 シナリオデモカメラ \
+						-c 1 \
+						-p -11344,-43500,13290 -t -11528,-43722,12561 \
+						-r 139,2210,0 -f 769 \
+						-a 270 \
+						-i 0 0 0 0 \
+						-s 1
+
+					chara カメラ設定 シナリオデモカメラ \
+						-c 1 \
+						-p -11344,-43500,13290 -t -11413,-43647,12528 \
+						-r 85,2113,0 -f 768 \
+						-a 420 \
+						-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+						-interp_time 50 \ // 補完時間を指定
+						-s 1
+
+					return 50;
+
+				} else if ( $w:ローカル変数Ｗ１ == 6 ) {
+					mesg パッドデモ パッドデモ１ kill
+					mesg ブラー カメラブラー パラメータ 30 90
+
+					chara カメラ設定 シナリオデモカメラ \
+						-c 1 \
+						-p -11344,-43500,13290 -t -11413,-43647,12528 \
+						-r 85,2113,0 -f 768 \
+						-a 420 \
+						-i 0 0 0 0 \
+						-s 1
+
+					chara カメラ設定 シナリオデモカメラ \
+						-c 1 \
+						-p -11344,-43500,13290 -t -11346,-43557,12519 \
+						-r 50,2053,0 -f 769 \
+						-a 600 \
+						-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+						-interp_time 60 \ // 補完時間を指定
+						-s 1
+
+					return 120;
+
+				} else if ( $w:ローカル変数Ｗ１ == 7 ) {
+					// プレイヤーの強制モーション発動
+					mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_FIN_S
+					mesg ブラー カメラブラー キャラ削除
+					mesg シナリオカメラ振動 手ぶれカメラ kill
+					mesg プレイヤー d:PLAYER motion \
+						d:モーションリスト:sdemo_w11a_call 0 0 d:FA_END_SQUAT d:FA_NO_INTERP \
+						-11113, 13358
+
+					return 1;
+
+				} else if ( $w:ローカル変数Ｗ１ == 8 ) {
+					// カメラもすぐチェンジ
+					chara カメラ設定 シナリオデモカメラ \
+						-c 1 \
+						-p -12075,-43205,16165 -t -11470,-43944,13351 \
+						-r 164,1910,0 -f 2972 \
+						-a 200 \
+						-i 0 0 0 0 \
+						-s 1
+
+					chara カメラ設定 シナリオデモカメラ \
+						-c 1 \
+						-p -11318,-43466,16385 -t -10757,-44178,13561 \
+						-r 158,1920,0 -f 2966 \
+						-a 200 \
+						-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+						-interp_time 250 \ // 補完時間を指定
+						-s 1
+
+					return 100;
+				} else if ( $w:ローカル変数Ｗ１ == 9 ) {
+					mesg ルートデモ人形 気絶兵 アクション終了
+					return 60;
+
+				} else if ( $w:ローカル変数Ｗ１ == 10 ) {
+					@Ａ脚底部連結ハッチ１シナリオデモ１終了
+					return 0;
+				}
+			}
+	}
+
+	proc Ａ脚底部連結ハッチ１シナリオデモ１終了 {
+		#if d:DEBUG_PRINT
+			print 'event01_end'
+		#endif
+/*
+		chara フェードインアウト フェードアウト \
+			-c 0,0,0 128 \
+			-t d:FADEOUT_TIME \
+			-p Ａ脚底部連結ハッチ２無線デモ１開始
+*/
+		@Ａ脚底部連結ハッチ２無線デモ１開始
+	}
+	
+
+	proc Ａ脚底部連結ハッチ２無線デモ１開始 {
+		#if d:DEBUG_PRINT
+			print 'codec_demo_start'
+		#endif
+
+		mesg ルートデモ人形 気絶兵 kill
+		mesg デモキャンセルチェック デモキャンセル kill
+
+		command 強制モーションキャンセル
+		chara カメラ設定 シナリオデモカメラ -s -1
+		mesg プレイヤー d:PLAYER position -10878 -45000 13500
+		mesg プレイヤー d:PLAYER stance d:FA_END_SQUAT 0 0 0
+
+		chara delay 強制ディレイ \
+			-time 1 \
+			-exec {
+				@rt_P002_02_R01Ａ脚底部連結ハッチ２無線デモ１
+			}
+	}
+
+	proc Ａ脚底部連結ハッチ１シナリオデモ１キャンセル {
+		#if d:DEBUG_PRINT 
+			print 'event01_cancel'
+		#endif
+
+		chara フェードインアウト フェードアウト \
+			-c 0,0,0 128 \
+			-t d:FADEOUT_TIME \
+			-p Ａ脚底部連結ハッチ１シナリオデモ１キャンセル後
+	}
+
+	proc Ａ脚底部連結ハッチ１シナリオデモ１キャンセル後 {
+		#if d:DEBUG_PRINT 
+			print 'event01_cancel2'
+		#endif
+
+		mesg デモキャンセルチェック デモキャンセル kill
+		mesg delay ディレイ kill
+
+		mesg ルートデモ人形 気絶兵 kill
+
+		mesg ２Ｄスプライト表示 主観説明 kill
+		mesg ２Ｄスプライト表示 ビハインド説明 kill
+		mesg ２Ｄスプライト表示 のぞきこみ説明 kill
+
+		mesg ブラー カメラブラー キャラ削除
+
+		command ＳＥセットモード -s d:se_code:SD_S_MUTEW11A \
+			-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+		mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_FIN_S
+
+		mesg パッドデモ パッドデモ１ kill
+		mesg プレイヤー d:PLAYER position -10878 -45000 13500
+		mesg プレイヤー d:PLAYER stance d:FA_END_SQUAT 0 0 0
+		command 強制モーションキャンセル
+		chara カメラ設定 シナリオデモカメラ -s -1
+
+		chara delay 強制ディレイ \
+			-time 1 \
+			-exec {
+				@rt_P002_02_R01Ａ脚底部連結ハッチ２無線デモ１
+			}
+	}
+	
+	proc Ａ脚底部連結ハッチ２無線デモ１後スタート {
+		#if d:DEBUG_PRINT 
+			print 'event01_cancelend_start'
+		#endif
+	
+		mesg プレイヤー d:PLAYER stance d:FA_END_STAND 0 0 0
+		chara delay 強制ディレイ \
+			-time 1 \
+			-exec {
+				@シナリオデモ終了処理
+				command メニュー設定 -gage on
+			}
+	}
+
+	// ポリゴンデモロードの後呼ばれる
+	proc ポリデモロードスタート {
+		if ( $w:p_story < d:ST:P004_01_P01ノード初接続１ポリゴンデモ１開始 ) {
+		// 最初はスネーク昇降機デモへ飛ばす
+	 		@mv_P003_01_p01_0
+		} else {
+		// 次はノード初接続デモへ飛ばす
+			@昇降機ホール揺れフラグチェック
+			@mv_P004_01_P01_0
+		}
+	}
+
+	// ノード端末
+	// ------------------------------------
+	proc w11a_ノード端末設定 $:方向 {
+	
+		@ノードエフェクト設置
+
+		trap node d:PLAYER \
+			-mask いる \
+			-and \				//Andモード
+			-dir $:方向,512 ($:方向+2048),512 \
+			-key d:PAD_ACTION d:PAD_ACTION \
+			-state d:TRP_STATE_STAND, d:TRP_STATE_CAUTION \
+			-exec {
+				#if d:DEBUG_PRINT
+					print 'node_on'
+				#endif
+
+				if ( $w:p_story >= d:ST:P004_02_R01ノード初接続２無線デモ１終了 ) {
+					if ( $w:アラートモード == d:ALERT_MODE_SENNYU || $w:アラートモード == d:ALERT_MODE_TANSAKU ) {
+						command パッド操作 -release
+						command メニュー設定 -menu off -gage off -radar off -subwin off -radio off -pause off
+						mesg コマンダー 敵兵セット 視界オフ
+						@ノード接続時プロック
+						@ノード端末起動
+					} else {
+						command ＳＥセットモード -s d:SD_S_BUZZER01 -p 0,0,0  -m 1
+					}
+				} else {
+					if ( $w:アラートモード == d:ALERT_MODE_SENNYU || $w:アラートモード == d:ALERT_MODE_TANSAKU ) {
+						@ノード接続時プロック
+					} else {
+						command ＳＥセットモード -s d:SD_S_BUZZER01 -p 0,0,0  -m 1
+					}
+				}
+			}
+	}
+
+	proc ノード接続時プロック {
+		#if d:DEBUG_PRINT
+			print 'node_set'
+		#endif
+
+		eval($f:ノードフラグ = $f:w11a_ノードフラグ);
+
+		// 初接続の時はポリデモへ
+		if ( $w:p_story < d:ST:P004_01_P01ノード初接続１ポリゴンデモ１開始 ) {
+			// 敵兵の位置を覚える
+			command 敵兵メモリー更新 \
+				w11a \
+				$i:ステージプレイ時間 \
+				$w:グローバルロード回数
+
+			// 敵兵がロッカーに入っていないか調査する
+			command ゲット敵兵状態２ 敵兵:01 $i:w11a_敵兵01状態
+			command ゲット敵兵状態２ 敵兵:02 $i:w11a_敵兵02状態
+			if ( $w:ゲーム設定 >= d:LEVEL_HARD ) {
+				command ゲット敵兵状態２ 敵兵:03 $i:w11a_敵兵03状態
+			}
+
+			preseek 'd001p02'
+			@ポリゴンデモロード d:ST:P004_01_P01ノード初接続１ポリゴンデモ１開始
+		}
+	}
+
+	proc w11a_ノード端末起動 {
+		#if d:DEBUG_PRINT
+			print 'node_switch_on'
+		#endif
+
+		command パッド操作 -release
+		command メニュー設定 -menu off -gage off -radar off -subwin off -radio off -pause off
+		mesg コマンダー 敵兵セット 視界オフ
+
+		// 初回はダウンロード画面へ
+		chara delay ディレイ -time 1 -exec {
+			command ノード画面起動 -map -name -black d:NODE_FLAG_BLACK_IN
+		}
+	}
+
+	proc ノード接続後プロック {
+		#if d:DEBUG_PRINT
+			print 'node_event_go'
+		#endif
+
+		if ( $w:ゲーム設定 == d:LEVEL_VERYEASY ) {
+			eval($f:w11a_ノードフラグ = 1);
+			eval($f:w12b_ノードフラグ = 1);
+			eval($f:w14a_ノードフラグ = 1);
+			eval($f:w16a_ノードフラグ = 1);
+			eval($f:w18a_ノードフラグ = 1);
+			eval($f:w20a_ノードフラグ = 1);
+			eval($f:w22a_ノードフラグ = 1);
+			eval($f:w24a_ノードフラグ = 1);
+			eval($f:w24b_ノードフラグ = 1);
+			eval($f:w24c_ノードフラグ = 1);
+			eval($f:w24d_ノードフラグ = 1);
+			eval($f:w31a_ノードフラグ = 1);
+			eval($f:w31b_ノードフラグ = 1);
+			eval($f:w31c_ノードフラグ = 1);
+//			eval($f:w41a_ノードフラグ = 1);
+		} else {
+			eval($f:w11a_ノードフラグ = 1);
+		}
+
+		if ( $w:p_story < d:ST:P004_02_R01ノード初接続２無線デモ１開始 ) {
+		// 初ノード接続が終了したら即無線へ
+			chara フェードインアウト フェードイン \
+				-i 0,0,0 128 \
+				-c 0,0,0 0 \
+				-t 1 \
+				-p rt_P004_02_R01ノード初接続２無線デモ１
+
+			command メニュー設定 -node_access on 
+		}
+	}
+
+	proc P004_02_R01ノード初接続２無線デモ１終了後イベント開始 {
+		#if d:DEBUG_PRINT
+			print 'node_codec_demo_end'
+		#endif
+
+		eval( $f:w11a_敵兵お目覚めデモフラグ = 0 );
+
+		// 敵兵がドアトラップに入っているときはスライドドアを開けた状態からスタート
+		trap ev040 敵兵 \
+			-mask 入る \
+			-exec {
+				mesg ドア ホールドア openstart 	//開いた状態からスタート
+				mesg マップ接合 連結ハッチ／昇降機ホール on
+			}
+
+		// 決められたトラップ内に敵兵がいた場合、気絶から目覚めた敵兵デモを開始させる
+		// 一番北
+		trap ev023 敵兵:01 \
+			-mask 入る \
+			-exec {
+				@敵兵お目覚めシナリオデモ 1866,-40210,-5237
+			}
+
+		// フォークリフト付近
+		trap ev024 敵兵:01 \
+			-mask 入る \
+			-exec {
+				@敵兵お目覚めシナリオデモ -2386,-39781,-1491
+			}
+
+		// 中央荷物北側
+		trap ev025 敵兵:01 \
+			-mask 入る \
+			-exec {
+				@敵兵お目覚めシナリオデモ 397,-39396,-1740
+			}
+
+		// 東上側
+		trap ev026 敵兵:01 \
+			-mask 入る \
+			-exec {
+				@敵兵お目覚めシナリオデモ -5094,-39079,1068
+			}
+
+		// 西側
+		trap ev027 敵兵:01 \
+			-mask 入る \
+			-exec {
+				@敵兵お目覚めシナリオデモ 4042,-40717,3035
+			}
+
+		// 東中央
+		trap ev028 敵兵:01 \
+			-mask 入る \
+			-exec {
+				@敵兵お目覚めシナリオデモ -1168,-39844,1819
+			}
+
+		// スライドドア付近
+		trap ev029 敵兵:01 \
+			-mask 入る \
+			-exec {
+				chara delay ディレイ -time 1 -exec {
+					@敵兵お目覚めシナリオデモ 689,-40613,5119
+				}
+			}
+
+		// 南側中央
+		trap ev030 敵兵:01 \
+			-mask 入る \
+			-exec {
+				@敵兵お目覚めシナリオデモ 1720,-40427,5759
+			}
+
+		// 南側右
+		trap ev031 敵兵:01 \
+			-mask 入る \
+			-exec {
+				@敵兵お目覚めシナリオデモ -2102,-39657,5371
+			}
+
+		// 連結通路北
+		trap ev032 敵兵:01 \
+			-mask 入る \
+			-exec {
+				@敵兵お目覚めシナリオデモ -9212,-41533,4126
+			}
+
+		// 連結通路南
+		trap ev033 敵兵:01 \
+			-mask 入る \
+			-exec {
+				@敵兵お目覚めシナリオデモ -11750,-42928,13038
+			}
+
+		// 発着口北東
+		trap ev034 敵兵:01 \
+			-mask 入る \
+			-exec {
+				@敵兵お目覚めシナリオデモ -7689,-39456,17875
+			}
+
+		// 発着口北中央
+		trap ev035 敵兵:01 \
+			-mask 入る \
+			-exec {
+				@敵兵お目覚めシナリオデモ -10628,-40892,21312
+			}
+
+		// 発着口北西
+		trap ev036 敵兵:01 \
+			-mask 入る \
+			-exec {
+				// 敵兵の状態を見るため１フレ遅らせる
+				chara delay ディレイ -time 1 -exec {
+					command ゲット敵兵状態２ 敵兵:01 $i:w11a_敵兵01状態
+					if ( !($i:w11a_敵兵01状態 & 0x00080000) ) {
+						@敵兵お目覚めシナリオデモ -19176,-42008,24433
+					} else {
+						command トラップ切り替え -trap ev023 -switch 0
+						command トラップ切り替え -trap ev024 -switch 0
+						command トラップ切り替え -trap ev025 -switch 0
+						command トラップ切り替え -trap ev026 -switch 0
+						command トラップ切り替え -trap ev027 -switch 0
+						command トラップ切り替え -trap ev028 -switch 0
+						command トラップ切り替え -trap ev029 -switch 0
+						command トラップ切り替え -trap ev030 -switch 0
+						command トラップ切り替え -trap ev031 -switch 0
+						command トラップ切り替え -trap ev032 -switch 0
+						command トラップ切り替え -trap ev033 -switch 0
+						command トラップ切り替え -trap ev034 -switch 0
+						command トラップ切り替え -trap ev035 -switch 0
+						command トラップ切り替え -trap ev036 -switch 0
+						command トラップ切り替え -trap ev037 -switch 0
+						command トラップ切り替え -trap ev038 -switch 0
+						command トラップ切り替え -trap ev040 -switch 0
+						command パッド操作 -cancel
+						eval( $f:w11a_敵兵お目覚めデモフラグ = 1 );
+					}
+				}
+			}
+
+		// 発着口南西
+		trap ev037 敵兵:01 \
+			-mask 入る \
+			-exec {
+				@敵兵お目覚めシナリオデモ -16915,-43312,29249
+			}
+
+		// 発着口南東
+		trap ev038 敵兵:01 \
+			-mask 入る \
+			-exec {
+				@敵兵お目覚めシナリオデモ -6533,-43323,29249
+			}
+/*
+		// 昇降機ホール外
+		trap ev032 敵兵:01 \
+			-mask 入る \
+			-exec {
+				// カメラに写せないところにいた場合はデモが起こらないようにすべてオフする
+				command トラップ切り替え -trap ev023 -switch 0
+				command トラップ切り替え -trap ev024 -switch 0
+				command トラップ切り替え -trap ev025 -switch 0
+				command トラップ切り替え -trap ev026 -switch 0
+				command トラップ切り替え -trap ev027 -switch 0
+				command トラップ切り替え -trap ev028 -switch 0
+				command トラップ切り替え -trap ev029 -switch 0
+				command トラップ切り替え -trap ev030 -switch 0
+				command トラップ切り替え -trap ev031 -switch 0
+				command トラップ切り替え -trap ev032 -switch 0
+				eval( $f:w11a_敵兵お目覚めデモフラグ = 1 );
+//				command varsave
+			}
+*/
+
+		// 敵兵が目覚め始める
+		#if d:ENEMY
+			mesg 敵兵共通 敵兵 永久ダウンオフ
+			mesg 敵兵共通 敵兵:01 ダウン時間セット (d:FAINT_TIME_1 + 120)
+
+			if ( $w:ゲーム設定 == d:LEVEL_VERYEASY ) {
+				mesg 敵兵共通 敵兵:02 ダウン時間セット (d:FAINT_TIME_1 + 3600)
+			} else if ( $w:ゲーム設定 == d:LEVEL_EASY ) {
+				mesg 敵兵共通 敵兵:02 ダウン時間セット (d:FAINT_TIME_1 + 600)
+			} else {
+				mesg 敵兵共通 敵兵:02 ダウン時間セット (d:FAINT_TIME_1)
+			}
+
+			if ( $w:ゲーム設定 >= d:LEVEL_HARD ) {
+				mesg 敵兵共通 敵兵:03 ダウン時間セット (d:FAINT_TIME_1 + 90)
+			}
+			eval ( $f:rfp_w11a_敵兵起きた = 1 );
+		#endif
+
+		// 敵兵が起きて警戒モードになるかをチェックする
+			if ( $w:ゲーム設定 == d:LEVEL_VERYEASY ) {
+			// VERYEASYは敵兵:01がロッカーに入っていなければすぐコール。入っているときは敵が起きた時点でコール
+				chara delay ディレイ \
+					-time 150 \
+					-exec {
+						// VERYEASYでは眠らされる場合があるので、敵の状態をチェックする
+//						command ゲット敵兵状態拡張版 敵兵:01 $i:w11a_敵兵01状態
+						command ゲット敵兵状態２ 敵兵:01 $i:w11a_敵兵01状態
+						command ゲット敵兵状態拡張版 敵兵:02 $i:w11a_敵兵02状態
+						if ( !($i:w11a_敵兵01状態 & 0x00080000) || \
+							 ( !($i:w11a_敵兵02状態 & 0x01) && !($i:w11a_敵兵02状態 & 0x02) ) ) {
+							@rp_w11a_敵兵おっきした警告ＣＡＬＬ
+							command トラップ切り替え -trap ev051 -switch 1
+							mesg プロック連続実行 警戒モードチェック kill
+							return 0;
+						} else {
+							return 1;
+						}
+					}
+			} else if ( $w:ゲーム設定 == d:LEVEL_EASY ) {
+			// EASYは敵兵01に合わせる
+				chara delay ディレイ \
+					-time (d:FAINT_TIME_1-40+120) \
+					-exec {
+						// EASY以下では眠らされる場合があるので、敵の状態をチェックする
+						command ゲット敵兵状態拡張版 敵兵:01 $i:w11a_敵兵01状態
+						command ゲット敵兵状態拡張版 敵兵:02 $i:w11a_敵兵02状態
+						if ( ( !($i:w11a_敵兵01状態 & 0x01) && !($i:w11a_敵兵01状態 & 0x02) ) || \
+							 ( !($i:w11a_敵兵02状態 & 0x01) && !($i:w11a_敵兵02状態 & 0x02) ) ) {
+							@rp_w11a_敵兵おっきした警告ＣＡＬＬ
+							command トラップ切り替え -trap ev051 -switch 1
+							mesg プロック連続実行 警戒モードチェック kill
+							return 0;
+						} else {
+							return 1;
+						}
+					}
+			} else if ( $w:ゲーム設定 == d:LEVEL_NORMAL ) {
+			// 通常は敵兵02に合わせる
+				chara delay ディレイ \
+					-time (d:FAINT_TIME_1-40) \
+					-exec {
+						command ゲット敵兵状態拡張版 敵兵:01 $i:w11a_敵兵01状態
+						command ゲット敵兵状態拡張版 敵兵:02 $i:w11a_敵兵02状態
+						if ( ( !($i:w11a_敵兵01状態 & 0x01) && !($i:w11a_敵兵01状態 & 0x02) ) || \
+							 ( !($i:w11a_敵兵02状態 & 0x01) && !($i:w11a_敵兵02状態 & 0x02) ) ) {
+							@rp_w11a_敵兵おっきした警告ＣＡＬＬ
+							command トラップ切り替え -trap ev051 -switch 1
+							mesg プロック連続実行 警戒モードチェック kill
+							return 0;
+						} else {
+							return 1;
+						}
+					}
+			} else {
+			// 通常は敵兵02に合わせる
+				chara delay ディレイ \
+					-time (d:FAINT_TIME_1-40) \
+					-exec {
+						command ゲット敵兵状態拡張版 敵兵:01 $i:w11a_敵兵01状態
+						command ゲット敵兵状態拡張版 敵兵:02 $i:w11a_敵兵02状態
+						command ゲット敵兵状態拡張版 敵兵:03 $i:w11a_敵兵03状態
+						if ( ( !($i:w11a_敵兵01状態 & 0x01) && !($i:w11a_敵兵01状態 & 0x02) ) || \
+							 ( !($i:w11a_敵兵02状態 & 0x01) && !($i:w11a_敵兵02状態 & 0x02) ) || \
+							 ( !($i:w11a_敵兵03状態 & 0x01) && !($i:w11a_敵兵03状態 & 0x02) ) ) {
+							@rp_w11a_敵兵おっきした警告ＣＡＬＬ
+							command トラップ切り替え -trap ev051 -switch 1
+							mesg プロック連続実行 警戒モードチェック kill
+							return 0;
+						} else {
+							return 1;
+						}
+					}
+			}
+
+		// 同時に昇降機降下のスイッチをオン
+		chara delay ディレイ \
+			-time (60*5) \
+			-exec {
+				// 潜入モードなら昇降機降下
+				if ( `@シナリオデモ用安全チェック` && $f:w11a_敵兵お目覚めデモフラグ == 1 ) {
+/* エレベーターランプのシナリオデモは日本語版以降カットになりました。
+					@シナリオデモ開始処理
+					chara カメラ設定 シナリオデモカメラ  \
+						-c 1 \	
+						-p 2784,-42964,-8203 -t -2689,-43980,-13179 \
+						-r 89,2591,0 -f 7467 \
+						-a 190 \
+						-i 0 0 0 0 \
+						-s 1
+					mesg フォーチュン戦昇降機 昇降機 降下   // スイッチ＆シャッターの連動あり
+					chara delay ディレイ \
+						-time 180 \
+						-exec {
+							@シナリオデモ終了処理
+							chara カメラ設定 シナリオデモカメラ -s -1
+						}
+*/
+					mesg フォーチュン戦昇降機 昇降機 降下   // スイッチ＆シャッターの連動あり
+					eval ( $f:rfp_w11a_昇降機下り始めた = 1 );
+					return 0
+				} else {
+					return 1
+				}
+			}
+
+		// デモが万が一発動しなかった場合の安全処理
+		chara delay ディレイ \
+			-time 10 \
+			-exec {
+				// 10フレ後でも敵兵シナリオデモがなくかつお目覚めフラグもたってない場合ははまるので強制的にフラグを立てる
+				if ( $f:w11a_敵兵お目覚め中フラグ == 0 && $f:w11a_敵兵お目覚めデモフラグ == 0 ) {
+					#if d:DEBUG_PRINT
+						print 'danger!!!!!!!!!------------------敵兵:01が範囲指定外。安全処理入ります。'
+					#endif
+					eval( $f:w11a_敵兵お目覚めデモフラグ = 1 );
+					command パッド操作 -cancel
+				}
+			}
+
+		// さらにエレベータの高さをチェックして到着カメラも出すようにする
+		chara delay ディレイ２ \
+			-time 1 \
+			-exec {
+				if ( $w:ゲーム設定 <= d:LEVEL_NORMAL ) {
+					if ( `@シナリオデモ用安全チェック（警戒モードでもＯＫ）` && \
+						 `command フォーチュン戦昇降機位置取得` < 4000 && \
+						 `@敵兵距離チェック 敵兵:01 2000` && `@敵兵距離チェック 敵兵:02 2000` && \
+						!(`command プレイヤー状態取得` & d:PFLAG_INTRUDE) && \
+						!(`command プレイヤー状態取得` & d:PFLAG_WATER) ) {
+						mesg マップ接合 デモ用発着口／昇降機ホール on
+						mesg マップ接合 デモ用連結ハッチ／昇降機ホール on
+						@シナリオデモ開始処理
+						chara カメラ設定 シナリオデモカメラ  \
+							-c 1 \	
+							-p 1945,-42987,-3786 -t 1018,-43496,-6947 \
+							-r 100,2234,0 -f 3333 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						mesg フォーチュン戦昇降機 昇降機 強制振動ＯＮ   // 振動を強制的にする
+
+						chara デモキャンセルチェック デモキャンセル \
+							-p エレベーター到着デモキャンセル
+
+						chara delay キャンセルディレイ \
+							-time 178 \
+							-exec {
+								mesg デモキャンセルチェック デモキャンセル kill
+							}
+
+						chara delay エレベーターデモディレイ \
+							-time 180 \
+							-exec {
+								mesg マップ接合 デモ用発着口／昇降機ホール off
+								mesg マップ接合 デモ用連結ハッチ／昇降機ホール off
+								@シナリオデモ終了処理
+								chara カメラ設定 シナリオデモカメラ -s -1
+								mesg フォーチュン戦昇降機 昇降機 強制振動ＯＦＦ
+							}
+
+						return 0
+					} else if ( $f:rfp_w11_昇降機に乗れますよ == 1 ) {
+						return 0
+					} else {
+						return 1
+					}
+				} else {
+					if ( `@シナリオデモ用安全チェック（警戒モードでもＯＫ）` && \
+						 `command フォーチュン戦昇降機位置取得` < 4000 && \
+						 `@敵兵距離チェック 敵兵:01 2000` && \
+						 `@敵兵距離チェック 敵兵:02 2000` && \
+						 `@敵兵距離チェック 敵兵:03 2000` && \
+						!(`command プレイヤー状態取得` & d:PFLAG_INTRUDE) && \
+						!(`command プレイヤー状態取得` & d:PFLAG_WATER) ) {
+						mesg マップ接合 デモ用発着口／昇降機ホール on
+						mesg マップ接合 デモ用連結ハッチ／昇降機ホール on
+						@シナリオデモ開始処理
+						chara カメラ設定 シナリオデモカメラ  \
+							-c 1 \	
+							-p 1945,-42987,-3786 -t 1018,-43496,-6947 \
+							-r 100,2234,0 -f 3333 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						mesg フォーチュン戦昇降機 昇降機 強制振動ＯＮ   // 振動を強制的にする
+
+						chara デモキャンセルチェック デモキャンセル \
+							-p エレベーター到着デモキャンセル
+
+						chara delay キャンセルディレイ \
+							-time 178 \
+							-exec {
+								mesg デモキャンセルチェック デモキャンセル kill
+							}
+
+						chara delay エレベーターデモディレイ \
+							-time 180 \
+							-exec {
+								mesg マップ接合 デモ用発着口／昇降機ホール off
+								mesg マップ接合 デモ用連結ハッチ／昇降機ホール off
+								@シナリオデモ終了処理
+								chara カメラ設定 シナリオデモカメラ -s -1
+								mesg フォーチュン戦昇降機 昇降機 強制振動ＯＦＦ
+							}
+
+						return 0
+					} else if ( $f:rfp_w11_昇降機に乗れますよ == 1 ) {
+						return 0
+					} else {
+						return 1
+					}
+				}
+			}
+	}
+
+	proc エレベーター到着デモキャンセル {
+		#if d:DEBUG_PRINT
+			print 'elv_demo_cancel'
+		#endif
+
+		mesg delay キャンセルディレイ kill
+		mesg delay エレベーターデモディレイ kill
+		mesg デモキャンセルチェック デモキャンセル kill
+		mesg マップ接合 デモ用発着口／昇降機ホール off
+		mesg マップ接合 デモ用連結ハッチ／昇降機ホール off
+		@シナリオデモ終了処理
+		chara カメラ設定 シナリオデモカメラ -s -1
+		mesg フォーチュン戦昇降機 昇降機 強制振動ＯＦＦ
+	}
+
+	proc 敵兵お目覚めシナリオデモ $:カメラＸ $:カメラＹ $:カメラＺ {
+		#if d:DEBUG_PRINT
+			print 'enemy_wakeup_demo_start'
+		#endif
+
+		eval( $f:w11a_敵兵お目覚め中フラグ = 1 );
+		eval ( $w:ローカル変数Ｗ１ = 0 );
+		// ロード時フェードインのパッドキャンセルを停止する。
+		eval( $f:デモ再生フラグ = 1);
+		mesg マップ接合 デモ用発着口／昇降機ホール on
+		mesg マップ接合 デモ用連結ハッチ／昇降機ホール on
+
+		chara delay ディレイ \
+			-time 2 \
+			-arg $:カメラＸ $:カメラＹ $:カメラＺ \
+			-exec {
+				eval ( $w:ローカル変数Ｗ１ = $w:ローカル変数Ｗ１ + 1 );
+
+				if ( $w:ローカル変数Ｗ１ == 1 ) {
+					@シナリオデモ開始処理
+					command ゲット敵兵座標 敵兵:01 $i:敵兵Ｘ $i:敵兵Ｙ $i:敵兵Ｚ
+
+					chara カメラ設定 シナリオデモカメラ  \
+						-c 1 \	
+						-p $1, $2, $3 -t $i:敵兵Ｘ $i:敵兵Ｙ $i:敵兵Ｚ \
+						-r 900,2048,0 -f 2000 \
+						-a 200 \
+						-i 0 0 0 0 \
+						-s 1
+
+					chara カメラ設定 シナリオデモカメラ \
+						-c 1 \
+						-p $1, $2, $3 -t $i:敵兵Ｘ $i:敵兵Ｙ $i:敵兵Ｚ \
+						-r 900,2048,0 -f 2000 \
+						-a 400 \
+						-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+						-interp_time 120 \ // 補完時間を指定
+						-s 1
+
+					chara ブラー カメラブラー -i 10
+					mesg ブラー カメラブラー パラメータ 110 60
+					return 60;
+
+				} else if ( $w:ローカル変数Ｗ１ == 2 ) {
+					mesg ブラー カメラブラー パラメータ 10 20
+					return 20;
+
+				} else if ( $w:ローカル変数Ｗ１ == 3 ) {
+					mesg ブラー カメラブラー キャラ削除
+					return 90;
+
+				} else if ( $w:ローカル変数Ｗ１ == 4 ) {
+					command トラップ切り替え -trap ev023 -switch 0
+					command トラップ切り替え -trap ev024 -switch 0
+					command トラップ切り替え -trap ev025 -switch 0
+					command トラップ切り替え -trap ev026 -switch 0
+					command トラップ切り替え -trap ev027 -switch 0
+					command トラップ切り替え -trap ev028 -switch 0
+					command トラップ切り替え -trap ev029 -switch 0
+					command トラップ切り替え -trap ev030 -switch 0
+					command トラップ切り替え -trap ev031 -switch 0
+					command トラップ切り替え -trap ev032 -switch 0
+					command トラップ切り替え -trap ev033 -switch 0
+					command トラップ切り替え -trap ev034 -switch 0
+					command トラップ切り替え -trap ev035 -switch 0
+					command トラップ切り替え -trap ev036 -switch 0
+					command トラップ切り替え -trap ev037 -switch 0
+					command トラップ切り替え -trap ev038 -switch 0
+					command トラップ切り替え -trap ev040 -switch 0
+					chara カメラ設定 シナリオデモカメラ -s -1
+					@シナリオデモ終了処理
+					eval( $f:デモ再生フラグ = 0);
+					eval( $f:w11a_敵兵お目覚めデモフラグ = 1 );
+					mesg マップ接合 デモ用発着口／昇降機ホール off
+					mesg マップ接合 デモ用連結ハッチ／昇降機ホール off
+//					command varsave
+				}
+			}
+	}
+
+	proc 敵兵距離チェック $:敵兵名 $:指定距離 {
+		command ゲット敵兵座標 $:敵兵名 $i:敵兵Ｘ座標変数 $i:敵兵Ｙ座標変数 $i:敵兵Ｚ座標変数
+		command VecLen	$i:敵兵Ｘ座標変数 $i:敵兵Ｙ座標変数 $i:敵兵Ｚ座標変数 \
+						$i:プレイヤー位置Ｘ $i:プレイヤー位置Ｙ $i:プレイヤー位置Ｚ
+
+		if ( $status > $:指定距離 ) {
+			return d:TRUE
+		} else {
+			return d:FALSE
+		}
+	}
+
+	proc 敵兵ルートチェンジ設定 {
+		#if d:DEBUG_PRINT
+			print 'enemy_route_change'
+		#endif
+		
+		trap ev001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				mesg アタッカー 敵兵:01 ルート変更 d:E_R:ＶＲルートＥ
+				command トラップ切り替え -trap ev001 -switch 0
+				command トラップ切り替え -trap ev051 -switch 1
+			}
+
+		trap ev051 d:PLAYER \
+			-mask ＊ \
+			-exec {
+				if ( $f:rfp_w11_昇降機に乗れますよ == 1 && $f:w11a_頭痛くてルート変更フラグ == 0 ) {
+					// 頭痛いルートは一回だけ
+					eval( $f:w11a_頭痛くてルート変更フラグ = 1 );
+					if ( $w:ゲーム設定 <= d:LEVEL_NORMAL ) {
+						mesg アタッカー 敵兵:01 ルート変更 d:E_R:頭痛いルート
+						chara delay ディレイ \
+							-time 600 \
+							-exec {  
+								mesg アタッカー 敵兵:01 ルート変更 d:E_R:発着口ルート
+							}
+						command トラップ切り替え -trap ev051 -switch 0
+						command トラップ切り替え -trap ev001 -switch 1
+					}
+				} else if ( $f:rfp_w11_昇降機に乗れますよ == 1 && $f:w11a_頭痛くてルート変更フラグ == 1 && \
+							$3 == 入る ) {
+					if ( $w:ゲーム設定 <= d:LEVEL_NORMAL ) {
+						mesg アタッカー 敵兵:01 ルート変更 d:E_R:発着口ルート
+						command トラップ切り替え -trap ev051 -switch 0
+						command トラップ切り替え -trap ev001 -switch 1
+					}
+				}
+			}
+	}
+
+	// 敵兵 
+	// ------------------------------------
+	proc 特殊警備兵０ {
+		#if d:DEBUG_PRINT
+			print 'watcher_set'
+		#endif
+		// 気絶兵状態セット
+		if ( $w:p_story < d:ST:P004_01_P01ノード初接続１ポリゴンデモ１開始 ) {
+			// フォークリフトのそばで倒れている（カメラに写る）
+			command セット敵兵メモリー \
+				w11a 昇降機ホール 敵兵:01 \
+				-850 -45000 -5386 1250 \
+				d:ENEMEM_ST_FAINT d:ENEMEM_PS_FRONT d:FAINT_TIME_3 \
+				$w:敵標準気絶  $w:敵標準体力 0 0
+
+			// エレベーターから突き落とされる
+			command セット敵兵メモリー \
+				w11a 昇降機ホール 敵兵:02 \
+				459 -45000 -6817 3072 \
+				d:ENEMEM_ST_FAINT d:ENEMEM_PS_BACK d:FAINT_TIME_3 \
+				$w:敵標準気絶  $w:敵標準体力 0 0
+
+		} else {
+/* 日本語版以降はロッカーに入れたらそのまま
+			// ロッカーに閉じ込められていたら即復活
+			if ( $i:w11a_敵兵01状態 == 0x00080000 ) {
+				command セット敵兵メモリー \
+					w11a 発着口 敵兵:01 \
+					-16000 -45000 16000 1250 \
+					d:ENEMEM_ST_FAINT d:ENEMEM_PS_FRONT 120 \
+					$w:敵標準気絶  $w:敵標準体力 0 0
+			}
+			if ( $i:w11a_敵兵02状態 == 0x00080000 ) {
+				command セット敵兵メモリー \
+					w11a 発着口 敵兵:02 \
+					-17000 -45000 16000 1250 \
+					d:ENEMEM_ST_FAINT d:ENEMEM_PS_FRONT 180 \
+					$w:敵標準気絶  $w:敵標準体力 0 0
+			}
+*/
+		}
+
+		if( $w:ゲーム設定 == d:LEVEL_VERYEASY ) {
+			// VERY EASYの配置
+			chara アタッカー 敵兵:01 \
+				-r d:E_R:ＶＲルートＥ \
+				-c d:E_R:ＶＲルートＥ \			// 探索ルート
+				-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+				-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+				-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_CONVERT | d:ENE_STATUS_URBAN | d:ENE_STATUS_EVER_ZZZ) \
+				-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+				-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+				-j ドッグタグ_敵兵 [dogtag:plt_w11a_guard_ve_01] \
+					[dogtag:plt_w11a_guard_ea_01] [dogtag:dummy] \
+					[dogtag:dummy] [dogtag:dummy]
+
+			chara アタッカー 敵兵:02 \
+				-r d:E_R:東ルートＥ通常 \
+				-n 1 \
+				-c d:E_R:東ルートＥ警戒 \			// 探索ルート
+				-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+				-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+				-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_CONVERT | d:ENE_STATUS_URBAN | d:ENE_STATUS_EVER_ZZZ) \
+				-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+				-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+				-j ドッグタグ_敵兵 [dogtag:plt_w11a_guard_ve_02] \
+					[dogtag:plt_w11a_guard_ea_02] [dogtag:dummy] \
+					[dogtag:dummy] [dogtag:dummy]
+
+		} else if ( $w:ゲーム設定 == d:LEVEL_EASY ) {
+			// EASYの配置
+			chara アタッカー 敵兵:01 \
+				-r d:E_R:ＶＲルートＥ \
+				-c d:E_R:ＶＲルートＥ \					// 探索ルート
+				-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+				-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+				-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_CONVERT | d:ENE_STATUS_URBAN | d:ENE_STATUS_EVER_ZZZ) \
+				-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+				-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+				-j ドッグタグ_敵兵 [dogtag:plt_w11a_guard_ve_01] \
+					[dogtag:plt_w11a_guard_ea_01] [dogtag:dummy] \
+					[dogtag:dummy] [dogtag:dummy]
+
+			chara アタッカー 敵兵:02 \
+				-r d:E_R:東ルートＥ通常 \
+				-n 1 \
+				-c d:E_R:東ルートＥ警戒 \			// 探索ルート
+				-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+				-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+				-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_CONVERT | d:ENE_STATUS_URBAN | d:ENE_STATUS_EVER_ZZZ) \
+				-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+				-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+				-j ドッグタグ_敵兵 [dogtag:plt_w11a_guard_ve_02] \
+					[dogtag:plt_w11a_guard_ea_02] [dogtag:dummy] \
+					[dogtag:dummy] [dogtag:dummy]
+
+		} else if ( $w:ゲーム設定 == d:LEVEL_NORMAL ) {
+			// NORMALの配置
+			chara アタッカー 敵兵:01 \
+				-r d:E_R:ＶＲルートＮ \
+				-c d:E_R:ＶＲルートＮ \					// 探索ルート
+				-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+				-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+				-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_CONVERT | d:ENE_STATUS_URBAN | d:ENE_STATUS_EVER_ZZZ) \
+				-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３
+
+			chara アタッカー 敵兵:02 \
+				-r d:E_R:東ルートＮ \
+				-c d:E_R:東ルートＮ \					// 探索ルート
+				-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+				-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+				-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_CONVERT | d:ENE_STATUS_URBAN | d:ENE_STATUS_EVER_ZZZ) \
+				-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３
+
+		} else if ( $w:ゲーム設定 == d:LEVEL_HARD ) {
+			// HARDの配置
+			chara アタッカー 敵兵:01 \
+				-r d:E_R:ＶＲルートＮ \
+				-c d:E_R:ＶＲルートＮ \					// 探索ルート
+				-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+				-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+				-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_CONVERT | d:ENE_STATUS_URBAN | d:ENE_STATUS_EVER_ZZZ) \
+				-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３
+
+			chara アタッカー 敵兵:02 \
+				-r d:E_R:ＨＤ追加ルート \
+				-c d:E_R:ＨＤ追加ルート \					// 探索ルート
+				-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+				-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+				-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_CONVERT | d:ENE_STATUS_URBAN | d:ENE_STATUS_EVER_ZZZ) \
+				-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３
+
+		} else {
+			// EXTREMEの配置
+			chara アタッカー 敵兵:01 \
+				-r d:E_R:ＶＲルートＥＸ \
+				-c d:E_R:ＶＲルートＥＸ \					// 探索ルート
+				-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+				-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+				-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_CONVERT | d:ENE_STATUS_URBAN | d:ENE_STATUS_EVER_ZZZ) \
+				-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３
+
+			chara アタッカー 敵兵:02 \
+				-r d:E_R:エレベータ前ルートＥＸ \
+				-c d:E_R:エレベータ前ルートＥＸ \					// 探索ルート
+				-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+				-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+				-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_CONVERT | d:ENE_STATUS_URBAN | d:ENE_STATUS_EVER_ZZZ) \
+				-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３
+
+		}
+	}
+
+	proc ハード以上用警備兵 {
+		#if d:DEBUG_PRINT
+			print 'watcher_set'
+		#endif
+		if ( $w:p_story < d:ST:P004_01_P01ノード初接続１ポリゴンデモ１開始 ) {
+			command セット敵兵メモリー \
+				w11a 昇降機ホール 敵兵:03 \
+				5584 -45000 4400 1300 \
+				d:ENEMEM_ST_FAINT d:ENEMEM_PS_BACK d:FAINT_TIME_3 \
+				$w:敵標準気絶  $w:敵標準体力 0 0
+		} else {
+/* 日本語版以降はロッカーに入れたらそのまま
+			if ( $i:w11a_敵兵03状態 == 0x00080000 ) {
+				command セット敵兵メモリー \
+					w11a 発着口 敵兵:03 \
+					-18000 -45000 16000 1250 \
+					d:ENEMEM_ST_FAINT d:ENEMEM_PS_FRONT 180 \
+					$w:敵標準気絶  $w:敵標準体力 0 0
+			}
+*/
+		}
+
+		if ( $w:ゲーム設定 == d:LEVEL_HARD ) {
+			chara 警備兵 敵兵:03 \
+				-r d:E_R:東ルートＮ -n 0 -d 0,-45000,-9000 昇降機ホール \
+				-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+				-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+				-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_URBAN | d:ENE_STATUS_EVER_ZZZ) \
+				-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３
+		} else {
+			chara 警備兵 敵兵:03 \
+				-r d:E_R:東ルートＥＸ -n 0 -d 0,-45000,-9000 昇降機ホール \
+				-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+				-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+				-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_URBAN | d:ENE_STATUS_EVER_ZZZ) \
+				-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３
+		}
+	}
+
+	proc 警備兵コマンダー {
+		#if d:DEBUG_PRINT
+			print 'wccomm_set'
+		#endif
+
+		chara 警備コマンダー wccomm -e { ハード以上用警備兵 }
+	}
+
+	proc 攻撃兵コマンダー {
+		#if d:DEBUG_PRINT
+			print 'atcomm_set'
+		#endif
+
+		chara 攻撃コマンダー atcomm \
+			-status 0x01 \		// 危険モード時にワープ
+			-e { 特殊警備兵０ }
+	}
+
+
+	resource ghq_caution_voice {
+	w11a:
+		$t{
+			t:vc040074, //「警戒を怠るな」
+			-2,
+			// 連絡が途絶えた時の音声
+			t:vc040101,	// 指揮官「返事をしろ！寝てるのか！？起きろ！！」
+			-1	// 全ての登録終了
+		}
+	}
+
+
+	proc コマンダー設定 {
+		#if d:DEBUG_PRINT
+			print 'commander_set'
+		#endif
+
+		if ( $w:ゲーム設定 <= d:LEVEL_NORMAL ) {
+			chara コマンダー 敵兵セット \
+				-a 攻撃兵コマンダー \
+				-m $w:スタートアラートモード \
+				-r	-13500,-45000,14000 発着口 \
+					2500,-45000,-9000 昇降機ホール \
+				-c	-13500,-45000,14000 発着口 \
+					2500,-45000,-9000 昇降機ホール \
+				-y [ghq_caution_voice:w11a] \
+				-v [ene_plant_voice:03] \
+				-z $i:敵標準麻酔持続 \
+				-o $i:敵標準気絶持続 \
+				-b 0 \
+				-s d:ENE_STAGE_GPS \
+				-d 昇降機ホール \
+				-h $i:標準警戒時間 \		// 警戒時間、ここは45秒
+				-p 	0, -1, -1 クリアリングエリア０初期設定 \
+					0, -3, -3 クリアリング回避回数処理 \
+					-2, -2, -2 クリアリングカメラオフ
+
+		} else {
+			chara コマンダー 敵兵セット \
+				-w 警備兵コマンダー \
+				-a 攻撃兵コマンダー \
+				-m $w:スタートアラートモード \
+				-r	-13500,-45000,14000 発着口 \
+					2500,-45000,-9000 昇降機ホール \
+				-c	-13500,-45000,14000 発着口 \
+					2500,-45000,-9000 昇降機ホール \
+				-y [ghq_caution_voice:w11a] \
+				-v [ene_plant_voice:03] \
+				-z $i:敵標準麻酔持続 \
+				-o $i:敵標準気絶持続 \
+				-b 0 \
+				-s d:ENE_STAGE_GPS \
+				-d 昇降機ホール \
+				-h $i:標準警戒時間 \		// 警戒時間、ここは45秒
+				-p 	0, -1, -1 クリアリングエリア０初期設定 \
+					0, -3, -3 クリアリング回避回数処理 \
+					-2, -2, -2 クリアリングカメラオフ
+		}
+
+		@クリアリングキャンセル設定
+
+		// クリアリング子画面チェック
+		@クリアリング子画面チェック
+
+		// 待機所の設定
+		if( $i:プレイヤー初期Ｚ位置 < 6000 ){
+			#if d:DEBUG_PRINT 
+				print '待機所変更 発着口'
+			#endif
+			mesg コマンダー 敵兵セット 待機所替え 0
+		}else{
+			#if d:DEBUG_PRINT 
+				print '待機所変更 昇降機ホール'
+			#endif
+			mesg コマンダー 敵兵セット 待機所替え 1
+		}
+		
+		trap ev060 d:PLAYER \
+			-mask 出る \
+			-exec {
+				if ( $4 > -8500 ) {
+					#if d:DEBUG_PRINT 
+						print '待機所変更 発着口'
+					#endif
+					mesg コマンダー 敵兵セット 待機所替え 0
+				} else {
+					#if d:DEBUG_PRINT 
+						print '待機所変更 昇降機ホール'
+					#endif
+					mesg コマンダー 敵兵セット 待機所替え 1
+				}
+			}
+	}
+
+
+	proc クリアリングエリア０初期設定 {
+		#if d:DEBUG_PRINT 
+			print '$b:w11a_クリアリング回避回数='$b:w11a_クリアリング回避回数
+			print '$w:クリアリングレベルアップ回数='$w:クリアリングレベルアップ回数
+		#endif
+
+		command セットクリアリング \
+			-i	d:C_R0:先頭兵ルート, \
+				d:C_R0:２番兵ルート, \
+			-p	0, d:C_R0:先頭兵ルート, 12 ロッカーチェック０右 \
+				0, d:C_R0:先頭兵ロッカー開けルート右, 4 先頭兵ルート１－１３へ復帰 \
+				0, d:C_R0:先頭兵ルート, 13 ロッカーチェック０中央 \
+				0, d:C_R0:先頭兵ロッカー開けルート中央, 4 先頭兵ルート１－１４へ復帰 \
+				0, d:C_R0:先頭兵ルート, 14 ロッカーチェック０左 \
+				0, d:C_R0:先頭兵ロッカー開けルート左, 4 先頭兵ルート１－１５へ復帰 \
+				0, d:C_R0:２番兵ルート, 8 奥までチェック０ \
+				0, d:C_R0:２番兵ルート, 10 ２番兵ルート１－１７へ復帰 \
+				0, d:C_R0:２番兵ルート, 30 棚下チェック０ \
+				0, d:C_R0:先頭兵ルート, 0 子画面オンオフチェック０ \
+				0, d:C_R0:先頭兵ルート, 0 クリアリングカメラ０－１ \
+				0, d:C_R0:先頭兵ルート, 3 クリアリングカメラ０－２ \
+				0, d:C_R0:先頭兵ルート, 8 クリアリングカメラ０－３ \
+				0, d:C_R0:先頭兵ルート, 19 クリアリングカメラ０－４ \
+				0, d:C_R0:先頭兵ルート, 30 クリアリングカメラ０－５ \
+				0, d:C_R0:先頭兵ルート, 37 クリアリングカメラ０－６
+	}
+
+	// クリアリングキャンセル設定
+	//---------------------------------------
+	proc クリアリングキャンセル設定 {
+		#if d:DEBUG_PRINT 
+			print 'clearing_cancel_set'
+		#endif
+
+		// 指定トラップに入ったときはクリアリングを発生させない
+		trap cl021 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if ($3 == 入る) {
+					mesg コマンダー 敵兵セット クリアリングエリアスキップオン 0
+				} else if ($3 == 出る) {
+					mesg コマンダー 敵兵セット クリアリングエリアスキップオフ 0
+				}
+			}
+	}
+
+	// クリアリングが終了したら呼ぶプロック
+	//---------------------------------------
+	proc クリアリング回避回数処理 {
+		if ( $b:w11a_クリアリング回避回数 < 255 ) {
+			eval( $b:w11a_クリアリング回避回数 = $b:w11a_クリアリング回避回数 + 1 );
+		}
+	}
+
+	// すべてのクリアリングのキャンセル＆終了プロック
+	//---------------------------------------
+	proc クリアリングカメラオフ {
+		eval( $f:クリアリング中フラグ = 0 );
+		chara カメラ設定 クリアリングカメラ -s -1
+		eval( $f:クリアリング子画面フラグ = 0 );
+		#if d:SUB_CAMERA
+			mesg サブ画面 子画面 off
+		#endif
+	}
+
+	// クリアリング子画面チェック
+	//---------------------------------------
+	proc クリアリング子画面チェック {
+		#if d:DEBUG_PRINT 
+			print 'clearing_sub_camera_check'
+		#endif
+
+		chara プロック連続実行 子画面チェック \
+			-time -1 \
+			-exec { \
+				if ( $f:クリアリング子画面フラグ == 1 ) {
+					if ( $s:プレイヤーがいるロッカー名 == ロッカー01 || \
+						 $s:プレイヤーがいるロッカー名 == ロッカー02 || \
+						 $s:プレイヤーがいるロッカー名 == ロッカー03 || \
+						(`command プレイヤー状態取得` & d:PFLAG_INTRUDE) ) {
+
+						command ゲットゲームステータス $i:ローカル変数Ｉ２
+						if ( $i:ローカル変数Ｉ２ & d:STATE_CLEARING ) {
+							#if d:SUB_CAMERA
+								mesg サブ画面 子画面 on
+							#endif
+						}
+					} else {
+						#if d:SUB_CAMERA
+							mesg サブ画面 子画面 off
+						#endif
+					}
+				}
+			}
+	}
+
+	proc ロッカーチェック０右 {
+		if ( $b:w11a_クリアリング回避回数 >= $w:クリアリングレベルアップ回数 + 1 ) {
+			// 規定数+1を超えるとロッカー開けルートへチェンジ
+			command ロッカー状態 -n ロッカー03
+			if ( !($status & 0x2000) && ($status & 0x0001) ) {
+				// ノーマル以下では中に入っていたら開けない
+				if ( $w:ゲーム設定 >= d:LEVEL_HARD || $s:プレイヤーがいるロッカー名 != ロッカー03 ) {
+					command チェンジクリアリングルート 敵兵:01 -r d:C_R0:先頭兵ロッカー開けルート右 -p 0
+				}
+			}
+		}
+	}
+
+	proc 先頭兵ルート１－１３へ復帰 {
+		command チェンジクリアリングルート 敵兵:01 -r d:C_R0:先頭兵ルート -p 13
+	}
+
+	proc ロッカーチェック０中央 {
+		if ( $b:w11a_クリアリング回避回数 >= $w:クリアリングレベルアップ回数 + 1 ) {
+			// 規定数+1を超えるとロッカー開けルートへチェンジ
+			command ロッカー状態 -n ロッカー02
+			if ( !($status & 0x2000) && ($status & 0x0001) ) {
+				// ノーマル以下では中に入っていたら開けない
+				if ( $w:ゲーム設定 >= d:LEVEL_HARD || $s:プレイヤーがいるロッカー名 != ロッカー02 ) {
+					command チェンジクリアリングルート 敵兵:01 -r d:C_R0:先頭兵ロッカー開けルート中央 -p 0
+				}
+			}
+		}
+	}
+
+	proc 先頭兵ルート１－１４へ復帰 {
+		command チェンジクリアリングルート 敵兵:01 -r d:C_R0:先頭兵ルート -p 14
+	}
+
+	proc ロッカーチェック０左 {
+		if ( $b:w11a_クリアリング回避回数 >= $w:クリアリングレベルアップ回数 + 1 ) {
+			// 規定数+1を超えるとロッカー開けルートへチェンジ
+			command ロッカー状態 -n ロッカー01
+			if ( !($status & 0x2000) && ($status & 0x0001) ) {
+				// ノーマル以下では中に入っていたら開けない
+				if ( $w:ゲーム設定 >= d:LEVEL_HARD || $s:プレイヤーがいるロッカー名 != ロッカー01 ) {
+					command チェンジクリアリングルート 敵兵:01 -r d:C_R0:先頭兵ロッカー開けルート左 -p 0
+				}
+			}
+		}
+	}
+
+	proc 先頭兵ルート１－１５へ復帰 {
+		command チェンジクリアリングルート 敵兵:01 -r d:C_R0:先頭兵ルート -p 15
+	}
+
+	proc 奥までチェック０ {
+		// 規定数をこえていたら奥まで見るかどうかチェックする
+		if ( $b:w11a_クリアリング回避回数 >= $w:クリアリングレベルアップ回数 ) {
+			if ( $w:ゲーム設定 >= d:LEVEL_HARD || $i:プレイヤー位置Ｘ < -7500 ) {
+				command チェンジクリアリングルート 敵兵:02 -r d:C_R0:２番兵ルート -p 11
+			}
+		}
+	}
+
+	proc ２番兵ルート１－１７へ復帰 {
+		command チェンジクリアリングルート 敵兵:02 -r d:C_R0:２番兵ルート -p 17
+	}
+
+	proc 棚下チェック０ {
+		// 規定数以内もしくはノーマル以下のときは棚下を見るかどうかチェックする
+		if ( $b:w11a_クリアリング回避回数 <= $w:クリアリングレベルアップ回数 || $w:ゲーム設定 <= d:LEVEL_NORMAL ) {
+			if ( `command プレイヤー状態取得` & d:PFLAG_INTRUDE ) {
+				command チェンジクリアリングルート 敵兵:02 -r d:C_R0:２番兵ルート -p 33
+			}
+		}
+	}
+
+	proc 子画面オンオフチェック０ {
+		eval( $f:クリアリング子画面フラグ = 1 );
+	}
+
+	proc クリアリングカメラ０－１ {
+		command カメラマップ設定 -chanl 1 -map 連結ハッチ
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p -12042,-42782,5402 -t -10115,-43940,4098 \
+				-r 301,1412,0 -f 2599 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p -12331,-42653,4685 -t -10326,-43940,3652 \
+				-r 338,1334,0 -f 2596 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*5) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+	proc クリアリングカメラ０－２ {
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p -11128,-42932,16794 -t -11765,-43990,14573 \
+				-r 280,2230,0 -f 2541 \
+				-a 200 \
+				-i 2 -1 0 0 \
+				-s 1
+		#endif
+	}
+
+	proc クリアリングカメラ０－３ {
+		if ( $i:プレイヤー位置Ｘ < -11750 ) {
+			#if d:CLEAR_CAMERA
+				chara カメラ設定 クリアリングカメラ \
+					-c 1 \	
+					-p -14087,-42445,19446 -t -13180,-43260,16784 \
+					-r 184,1834,0 -f 2928 \
+					-a 283 \
+					-i 2 -1 0 0 \
+					-s 1
+
+				chara カメラ設定 クリアリングカメラ \
+					-c 1 \	
+					-p -17251,-41995,21051 -t -16171,-43183,18645 \
+					-r 276,1773,0 -f 2892 \
+					-a 216 \
+					-i 0 -1 0 0 \
+					-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+					-interp_time (60*8) \ // 補完時間を指定
+					-s 1
+
+			#endif
+		} else {
+			#if d:CLEAR_CAMERA
+				chara カメラ設定 クリアリングカメラ \
+					-c 1 \	
+					-p -19966,-42695,18984 -t -12853,-43721,15499 \
+					-r 84,1321,0 -f 7987 \
+					-a 609 \
+					-i 2 -1 0 0 \
+					-s 1
+
+				chara カメラ設定 クリアリングカメラ \
+					-c 1 \	
+					-p -19966,-42695,18984 -t -13087,-44469,15334 \
+					-r 146,1342,0 -f 7987 \
+					-a 202 \
+					-i 0 -1 0 0 \
+					-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+					-interp_time (60*8) \ // 補完時間を指定
+					-s 1
+			#endif
+		}
+	}
+
+	proc クリアリングカメラ０－４ {
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p -19339,-42421,25747 -t -16729,-43692,22315 \
+				-r 187,1624,0 -f 4495 \
+				-a 318 \
+				-i 2 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p -19341,-42423,25748 -t -18274,-44232,21774 \
+				-r 270,1877,0 -f 4495 \
+				-a 249 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*10) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+	proc クリアリングカメラ０－５ {
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p -19358,-43550,27582 -t -17681,-44901,22144 \
+				-r 152,1853,0 -f 5848 \
+				-a 248 \
+				-i 2 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p -19449,-43359,28233 -t -17656,-45962,23318 \
+				-r 301,1820,0 -f 5843 \
+				-a 198 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*10) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+	proc クリアリングカメラ０－６ {
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p -14274,-42865,26165 -t -15890,-44691,21374 \
+				-r 226,2260,0 -f 5376 \
+				-a 200 \
+				-i 2 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p -14502,-42367,26108 -t -13279,-43058,20922 \
+				-r 84,1897,0 -f 5373 \
+				-a 650 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*9) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+	// 子画面設定 
+	// ------------------------------------
+	proc 子画面設定 {
+		#if d:DEBUG_PRINT
+			print 'sub_camera_set'
+		#endif
+
+		chara サブ画面 子画面 \
+			-w (512-d:SUB_MARGIN-d:SUB_WIDTH),d:SUB_MARGIN (512-d:SUB_MARGIN),(d:SUB_HEIGHT+d:SUB_MARGIN)
+	}
+
+
+// 各マップ別設定
+// ------------------------------------
+// 昇降機ホール
+	// 各種カメラの設定
+	// ------------------------------------
+	proc 昇降機ホールカメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w11a2_camera_set'
+		#endif
+
+		trap ca021 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				if ( $w:p_story < d:ST:P003_01_P01スネーク昇降機上昇１ポリゴンデモ１終了 ) {
+					// 最初はポリデモへ飛ぶので、カメラを変化させない
+					chara カメラ設定 メインカメラ \
+						-c 0 \	
+						-b -11316,-39467,4286 -8474,-39467,4286 \
+						-l -11316,-43497,2993 -8474,-43497,2993 \
+						-r 821,2048,0 \
+						-f 4239 \
+						-a 200 \
+						-i 0 0 0 0 \
+						-z d:CAMERA_NO_CUSHION \
+						-s $3
+				} else {
+					if ( $6 < 2400 ) {
+						@CS_スムーズカメラ降順 $6 -2000 -4000 -2500 -2300
+						eval( $i:補完ＢＸ = $i:CS_結果１ );
+
+						@CS_スムーズカメラ降順 $6 -2000 -4000 2500 2300
+						eval( $i:補完ＢＸ２ = $i:CS_結果１ );
+					} else {
+						@CS_スムーズカメラ降順 $4 -4000 -5500 -2500 -4250
+						eval( $i:補完ＢＸ = $i:CS_結果１ );
+
+						@CS_スムーズカメラ降順 $4 5500 4000 4250 2500
+						eval( $i:補完ＢＸ２ = $i:CS_結果１ );
+					}
+
+					@CS_スムーズカメラ降順 $6 6000 4000 876 500
+					eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+					chara カメラ設定 メインカメラ \
+						-c 0 \	
+						-b $i:補完ＢＸ,-38000,1000 $i:補完ＢＸ２,-38000,5776 \
+						-l $i:補完ＢＸ,-43653,-5000 $i:補完ＢＸ２,-43653,4249 \
+						-r $i:補完ＲＸ,2048,0 \
+						-f 7500 \
+						-a 200 \
+						-i 2 -1 0 0 \
+						-s $3
+				}
+			}
+
+		trap ca022 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -4000 -5000 -2300 -850
+				eval( $i:補完ＢＸ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -4000 -5000 2300 850
+				eval( $i:補完ＢＸ２ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -4000 -5000 -38000 -38500
+				eval( $i:補完ＢＹ = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b $i:補完ＢＸ,$i:補完ＢＹ,-434 $i:補完ＢＸ２,$i:補完ＢＹ,5776 \
+					-l $i:補完ＢＸ,-43653,-5834 $i:補完ＢＸ２,-43653,4249 \
+					-r 500,2048,0 \
+					-f 7500 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-s $3
+			}
+
+		// エレベーター
+		trap ca023 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 1 \	
+					-p 0,-42999,-3037 -t 0,-43401,-6872 \
+					-r 68,2048,0 -f 3856 \
+					-a 200 \
+					-i 0 1 0 0 \
+					-s $3
+			}
+
+		trap ca024 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 1 \	
+					-p -3482,-37782,3207 -t -3482,-43426,474 \
+					-r 730,2048,0 -f 6271 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-s $3
+			}
+
+		trap ca025 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 1 \	
+					-p -1488,-38000,1129 -t -1488,-43403,-1505 \
+					-r 725,2048,0 -f 5949 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-s $3
+			}
+
+		trap ca026 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 1 \	
+					-p -2749,-37753,2227 -t -2749,-43675,-2366 \
+					-r 594,2048,0 -f 7494 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-s $3
+			}
+
+		trap ca027 d:PLAYER \
+			-mask ？ \
+			-state 1,2 \	//しゃがみor匍匐
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 0 \	
+					-b d:CAM_MIN,-38000,d:CAM_MIN d:CAM_MAX,-38000,d:CAM_MAX \
+					-l d:CAM_MIN,-43653,d:CAM_MIN d:CAM_MAX,-43653,d:CAM_MAX \
+					-r 840,2048,0 \
+					-f 7250 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-s $3
+			}
+
+	}
+
+
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下仮キャラ用proc
+// -----------------------------------------------------------------------------------
+// 仮キャラ
+// ------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------

@@ -1,0 +1,132 @@
+//
+//	a03b.src
+//
+//	written by H.Yoshiike 1999.Oct
+//
+//	$Id$
+
+// 長廊下
+
+// 常駐データ
+block .use r_vr_s
+
+block .nocache
+block .cache
+
+#define WN_W03B
+// アナザーミッション明示
+#define		WN_ANOTHER
+
+// ゲーム用データ
+#include "w03b_game.h"
+// オルタナティブミッション用追加エフェクト
+#include	"alt_effect.h"
+
+// リアル影出し用
+debug		hirano/sdw03b_cvtd.kms
+debug		hirano/test_sdw03b.kms
+debug		hirano/test_sdw03b_cvtd_up.kms
+debug		hirano/test_sdw03b_cvtd_dwn.kms
+
+// t08/t09デモ用データ
+// 船倉の一部
+world	w03b/w03b3
+
+// デモキャラクタ(ゴル兵はene_w03a.hをそのまま使用)
+// スネーク
+human	sna_def/sna_def_mh.evm
+
+// オセロット
+human	rev_coat/rev_coat.evm
+human	rev_coat/rev_hair_fix.kms
+human	rev_coat/rev_parts_coat.kms
+cvd human/rev_coat/rev_parts_coat.cvd
+cloth	human/rev_coat/rev_parts_coat.rwv
+human	rev_coat/rev_coat_bounding.kms
+weapon	saa/saa.kms
+
+//振動データ
+// データ数が多すぎてロード時に落ちるステージが出たので、一時的にカット。010729（平野）
+// 振動ファイルは一つにまとまるようになったので組み込み。010803
+vib		demo
+
+//-----以下ビデオ用-----
+// ビデオ撮影用スネークモデル
+//human	sna_def/sna_mmt.evm
+
+// ビデオ撮影用スネーク顔表情
+//rmt	sna_rmt
+
+//手モーフィン
+//human	sna_def/sna_def_shmt.kms
+//	sna_def_handanime/sna_rhand_sdoor01.kms \
+//	sna_def_handanime/sna_lhand_sdoor01.kms
+
+//cvd	human/sna_def/sna_def_shmt.cv2
+//cvd	human/sna_def_handanime/sna_rhand_sdoor01.cv2
+//cvd	human/sna_def_handanime/sna_rhand_sdoor02.cv2
+//cvd	human/sna_def_handanime/sna_rhand_sdoor03.cv2
+//cvd	human/sna_def_handanime/sna_rhand_sdoor04.cv2
+//cvd	human/sna_def_handanime/sna_lhand_sdoor01.cv2
+//cvd	human/sna_def_handanime/sna_lhand_sdoor02.cv2
+//cvd	human/sna_def_handanime/sna_lhand_sdoor03.cv2
+//cvd	human/sna_def_handanime/sna_lhand_sdoor04.cv2
+
+
+//電灯に群がる羽虫
+goods	fly/fly_cm.kms
+
+
+// リネーム
+
+//saa煙（追加田中修平）
+pack_all	saa.tri \
+			effect/smoke/smoke_lp1_alp.bmp
+
+//rename	sna_def.kms sna_def_nouse.kms
+//rename	sna_def.cv2 sna_def_nouse.cv2
+//rename	sna_def_shmt.kms sna_def.kms
+//rename	sna_def_shmt.cv2 sna_def.cv2
+# Add Demo Model List by mgdemo. by w03b/test.lst
+
+world	door/w04_sdr.kms
+world	door/w04_sdr_hnd.kms
+world	door/w03esdr_body.kms
+world	door/w03esdr_handle.kms
+
+# End Demo Model List.
+
+//オセロット影
+human	rev_def/rev_def_shadow.kms
+
+//水密ドア
+goods		demo_w00_sdr/demo_w00_sdr_r.kms
+
+//デモダミー
+goods		demo_dummy/demo_dummy.kms
+
+//プリシェードドア（平野臨時追加：0611）
+pack_all demo_door.tri \
+		goods/demo_goods/demo_dr_body.dar \
+		goods/demo_goods/demo_dr_handle.dar \
+		goods/demo_goods/demo_dr_body2.dar
+goods		demo_goods/demo_dr_body.kms
+goods		demo_goods/demo_dr_handle.kms
+goods		demo_goods/demo_dr_body2.kms
+/* mgdemo added ----from here (Tue Jun 19 18:02:26 2001) ---- */
+pack_trnall trn.tri effect/color/col256_bld100.bmp
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Jul 30 20:30:43 2001) ---- */
+// mgdemoが加えたと思われるので、コメントアウト。解除の予定はなし。010803
+//vib	demo/t09a1D_sna_handle02.vib
+//vib	demo/t09a1D_sna_handle01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Jul 30 22:50:55 2001) ---- */
+// mgdemoが加えたと思われるので、コメントアウト。解除の予定はなし。010803
+//vib	demo/t08a1D_sna_hide.vib
+//vib	demo/t08a1D_sna_setup02.vib
+//vib	demo/t08a1D_sna_setup01.vib
+/* mgdemo added ----upto here ---- *//* mgdemo added ----from here (Tue Sep 25 14:38:50 2001) ---- */
+goods	demo_usp/demo_usp_supressor.kms
+goods	demo_usp/demo_usp_supressor.kms
+/* mgdemo added ----upto here ---- */

@@ -1,0 +1,144 @@
+#!/usr/bin/perl
+
+open( HOST, "hostname |" ) ;
+chop( $hostname = <HOST> ) ;
+close( HOST ) ;
+
+die "Usage: allup [-options] destinate sources ... \n",
+    "    Send specified files to runtime.\n",
+    "    Destination must be ommmited prefix directory(/u/develop/mj001data/runtime)\n",
+    "    Host<$hostname> must be <mutsu.konami>.\n",
+    "  options:\n",
+    "\t-from <name> name(usr?????) for updating person\n",
+    "\t-to   <name> updating person\n",
+    "\t-send <name> sending IPMSG\n" if ( $#ARGV == -1 || $hostname ne "mutsu.konami" ) ;
+
+$dest  = "" ;
+$files = "" ;
+$from  = $ENV{USER} ;
+$to    = "" ;
+$send  = "" ;
+$locate =  "" ;
+
+for( $i=0 ; $i<=$#ARGV ; $i++ )
+{
+    $from = $ARGV[++$i], next if ( $ARGV[$i] eq "-from" ) ;
+    $to   = $ARGV[++$i], next if ( $ARGV[$i] eq "-to"   ) ;
+    $send = $ARGV[++$i], next if ( $ARGV[$i] eq "-send" ) ;
+    $dest = $ARGV[  $i], next if ( $dest eq "" ) ;
+    $l = $k = $ARGV[$i] ;
+    $l =~ s/(.+\/)[^\/]+/$1/ ;
+    if ( $l ne $ARGV[$i] )
+    {
+	$locate = $l if ( $locate eq "" ) ;
+	die "File must be same dir <$locate> and <$l>\n" if ( $locate ne $l ) ;
+    }
+    $k =~ s/.*\/([^\/]+)$/$1/ ;
+    $files  .= " $k" ;
+}
+$dest .= "/" ;
+$dest =~ s/\/+/\//g ;
+$type = $dest ;
+$type =~ s/^\/?([^\/]+)\/?.*/$1/ ;
+
+$files =~ s/[ \t]+/ /g ;
+$files =~ s/^[ \t]+// ;
+$date  = localtime ;
+
+if ( $locate !~ m/^\// )
+{
+    open( PWD, "pwd |" ) ;
+    $_ = <PWD> ;
+    s/[\n\r]+/\// ;
+    $locate = $_ . $locate ;
+    close PWD ;
+}
+
+%user = ("usr00339" => "Â¼²¬",
+	 "usr00725" => "¾¾²Ö",
+	 "usr01098" => "Ê¿Ìî",
+	 "usr01475" => "¿¢¸¶",
+	 "usr02011" => "±à»³",
+	 "usr02774" => "¹âÉô",
+	 "usr03806" => "ËÒÂ¼",
+	 "usr04098" => "¿¹ÅÄ" ) ;
+$from = $user{$from} if ( $user{$from} ) ;
+$to   = $user{$to  } if ( $user{$to  } ) ;
+
+%tags = ("from"     => $from,
+	 "to"       => $to,
+	 "locate"   => $locate,
+	 "files"    => $files,
+	 "date"     => $date,
+	 "destinate"=> $dest,
+	 "type"     => $type,
+	 "bbs"      => "0",
+	 "style"    => "",
+	 "reason"   => "¿·µ¬",
+	 "send_ip"  => "ËÜ¿Í",
+	 "send_fix" => "",
+	 "change"   => "echo/",
+	 "comment"  => "",
+	 "method"   => "¹¹¿·" ) ;
+
+$cmd_line = &encode("from"     ,
+		    "to"       ,
+		    "locate"   ,
+		    "files"    ,
+		    "date"     ,
+		    "destinate",
+		    "type"     ,
+		    "bbs"      ,
+		    "style"    ,
+		    "reason"   ,
+		    "send_ip"  ,
+		    "send_fix" ,
+		    "change"   ,
+		    "comment"  ,
+		    "method"    ) ;
+
+print "Is it OK ?" ;
+<STDIN> ;
+
+&fork( "/exports/mj001data/httpd/cgi-bin/post.cgi '$cmd_line' > /dev/null" ) && print( "Post Fail\n" ) ;
+
+exit( 0 ) ;
+
+
+#
+# Subroutines
+#
+#
+#
+sub fork
+{
+    local $pid ;
+
+    unless ( $pid = fork )
+    {
+	exec( $_[0] ) ;
+	exit 0 ;
+    }
+    waitpid( $pid, 0 ) ;
+    return $? ;
+}
+
+sub encode
+{
+    local @tag_name = @_ ;
+    local $str, $tmp ;
+
+    foreach( @tag_name )
+    {
+	print "$_ => [$tags{$_}]\n" ;
+	$tmp = $tags{$_} ;
+	$tmp =~ s/(\W)/sprintf("%%%.2X", ord($1))/ge ;
+	$tmp =~ s/%20/+/g ;
+	$str .= $_."=".$tmp."&" ;
+    }
+    chop( $str ) ;
+    return $str ;
+}
+
+1 ;
+

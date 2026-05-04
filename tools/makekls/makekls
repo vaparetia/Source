@@ -1,0 +1,190 @@
+#!/usr/bin/perl
+#
+# MakeKMS (Gather DG_OBJ from other KMS-files and combine to one.)
+#
+# 2000/01/21 r1.0 T.Morita 
+# $Id: makekls,v 1.11 2002/04/17 11:46:30 usr04098 Exp $
+#
+
+die "Usage: makekls list-file[.kls] [output[.kms]] [-options]\n",
+    "Make kms-file from object list.\n",
+    "options:\n",
+    "\t-d <dir> Directory for output files\n",
+    "\t-s <dir> Directory for kls files[default:/u/develop/mj001data/fix/kls]\n",
+    "\t-m <dir> Directory for mdl files[default:/u/develop/mj001data/fix/human]\n",
+    "\t-e  Create a C-code-file.\n",
+    "\t-n  Do not make KMS-file.\n",
+    "\t-c  Create a Cv2-file.\n",
+    "\t-t  Print out TRI-file used in KMS.\n" if ( $#ARGV == -1 ) ;
+
+$mktr_flg = $enum_flg = $nomk_flg = 0 ;
+$mdl_dir = "/u/develop/mj001data/fix/human/" ;
+$src_dir = "/u/develop/mj001data/fix/kls/" ;
+$dst_dir = "./" ;
+
+$enum_flg = $nomk_flg = $mkcv_flg = $mktr_flg = 0 ; 
+
+for( $i=0 ; $i<$#ARGV+1 ; $i++ )
+{
+    $enum_flg=1                , next if ( $ARGV[$i] eq "-e" ) ;
+    $nomk_flg=1                , next if ( $ARGV[$i] eq "-n" ) ;
+    $mkcv_flg=1                , next if ( $ARGV[$i] eq "-c" ) ;
+    $mktr_flg=1                , next if ( $ARGV[$i] eq "-t" ) ;
+    $src_dir = $ARGV[++$i]     , next if ( $ARGV[$i] eq "-s" ) ;
+    $mdl_dir = $ARGV[++$i]     , next if ( $ARGV[$i] eq "-m" ) ;
+    $dst_dir = $ARGV[++$i]     , next if ( $ARGV[$i] eq "-d" ) ;
+    $in      = $ARGV[$i].".kls", next if ( not $in ) ;
+    $kms     = $ARGV[$i].".kms" ;
+}
+
+die "Please specify the kls-file name.\n" if ( not $in ) ;
+
+$src_dir .= "/" ;
+$src_dir =~ s/\/\/$/\// ; 
+$dst_dir .= "/" ;
+$dst_dir =~ s/\/\/$/\// ; 
+$mdl_dir .= "/" ;
+$mdl_dir =~ s/\/\/$/\// ; 
+
+$in  =~ s/.kls.kls/.kls/ ;
+die "File not found($src_dir$in).\n" if ( ! -f "$src_dir$in" ) ;
+
+$enum  = $in ;
+$enum  =~ s/.kls$/.kh/ ;
+$enum  =~ s/.*\/([^\/]+)$/$1/ ;
+$enum_name = $enum ;
+$enum_name =~ s/\.kh$// ;
+
+$km_ext = "kms", $cv_ext = "cv2" ;
+$km_ext = "kmx", $cv_ext = "cvx" if ( $ENV{'MGS2_XBOX'} == 1 ) ;
+$kms = "$in.$km_ext" if ( not $kms ) ;
+$kms =~ s/.kms.$km_ext/$km_ext/ ;
+$kms =~ s/.kls.$km_ext/$km_ext/ ;
+
+
+$cmdkms = $cmdcv2 = "" ;
+
+open( NAMELIST, "$src_dir$in" ) or die "Cannot find list-file($!)\n" ;
+
+$num = <NAMELIST> ;
+
+for ( $i=0 ; $i<$num ; $i++ )
+{
+    $_ = <NAMELIST> ;
+    s/\n$// ;
+    s/\r$// ;
+    s/^[ \t]*// ;
+    next if ( not $_ ) ;
+
+    $file_name[$i] = $_ ;
+    print "$mdl_dir$_\n" if ( -e "$mdl_dir/$_.dar" && $mktr_flg ) ;
+}
+
+$num = <NAMELIST> ;
+
+for ( $i=0 ; $i<22 ; $i++ )
+{
+    for ( $j=0 ; $j<$num ; $j++ )
+    {
+	$joint_id[$i][$j] = -1 ;
+    }
+}
+
+$array = "" ;
+$joint = 0 ;
+if ( $enum_flg )
+{
+    open( ENUM, ">$enum" ) ;
+    print ENUM "#define DEFAULT_".uc($enum_name)." " ;
+    printf(ENUM "%d\n\n",  strcode($file_name[0]) );
+#    print ENUM "enum kls_".$enum_name."_t {\n" ;
+}
+for ( $i=0 ; $i<$num ; $i++ )
+{
+    $_ = <NAMELIST> ;
+    ( $name, @data ) = split( /,/ ) ;
+#    print ENUM "\t$name,\n" if ( $enum_flg ) ;
+    $array .="\t{" ;
+    $j = 0 ;
+    foreach( @data )
+    {
+	if ( $_ != 0 )
+	{
+	    if ( $joint_id[$j][$_] == -1 )
+	    {
+		$joint_id[$j][$_] = $joint++ ;
+		$cmdcv2 .= $mdl_dir.$file_name[$_].".$cv_ext -n $j " ;
+		$cmdkms .= $mdl_dir.$file_name[$_].".$km_ext -n $j " ;
+	    }
+	    $array .=  sprintf( "%2d,", $joint_id[$j][$_] ) ; 
+	}
+	else
+	{
+	    $array .=  "-1," ;
+	}
+	$j++ ;
+    }
+    $array .="},\n" ;
+}
+if ( $enum_flg )
+{
+#print ENUM "} ;\n\n"
+    print ENUM "int kls_"."$enum_name"."[][21] = {\n" ;
+    print ENUM "$array} ;\n" ;
+    close( ENUM ) ;
+}
+
+close( NAMELIST ) ;
+
+$arkms = "arkms" ;
+$arkms .= ".xbox" if ( $ENV{'MGS2_XBOX'} == 1 ) ;
+&fork( "$arkms $dst_dir$enum_name.$km_ext $cmdkms > /dev/null" ) or
+    die "arkms ERROR!!\n" if ( !$nomk_flg ) ;
+&fork( "arcvd $dst_dir$enum_name.$cv_ext $cmdcv2 > /dev/null" ) or
+    die "arcvd ERROR!!\n" if ( !$nomk_flg && $mkcv_flg ) ;
+
+if ( $ENV{'MGS2_XBOX'} != 1 ) {
+    &fork( "chng_kmsid $dst_dir$enum_name.$km_ext > /dev/null" ) or
+	die "arcvd ERROR!!\n" if ( !$nomk_flg ) ;
+}
+
+exit( 0 ) ;
+
+
+#
+# Subroutines
+#
+#
+#
+#Copy directories
+sub fork
+{
+    local $pid ;
+
+    unless ( $pid = fork )
+    {
+	exec( $_[0] ) ;
+	exit 0 ;
+    }
+    waitpid( $pid, 0 ) ;
+}
+
+sub strcode()
+{
+    local ( $string ) = @_ ;
+    local $len, $BITLEN = 24 ;
+    local $id, $mask ;
+
+    $id  = 0 ;
+    $len = length( $string )-1 ;
+    $mask = (1 << $BITLEN)-1 ;
+    foreach $i (0..$len)
+    {
+        $id = ( $id << 5 ) | ($id >> ($BITLEN-5) ) ;
+        $id += ord( substr( $string, $i,1 ) ) ;
+        $id &= $mask ;
+    }
+    $id = 1 if ( $id == 0 ) ;
+
+    return $id ;
+}

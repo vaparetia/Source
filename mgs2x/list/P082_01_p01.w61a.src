@@ -1,0 +1,188 @@
+// P082_01_p01.w61a.src
+// エンディングデモ専用
+// 2001/03/29 H.Yoshiike
+// $Id: P082_01_p01.w61a.src,v 1.24 2002/07/29 02:12:29 usr04098 Exp $
+
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+
+// キャラクタ
+// ARKMS は他のキャラクタよりも先に記述するのが安全。
+
+//マンハッタン市民 
+arkms	cit_male_all_def.kls
+arkms	cti_female.kls
+
+//NYPD 警官隊（オープニング用を使う）
+arkms	nyp_def_epa.kls
+
+// ライデン
+human		rai_def/rai_def_addhand_mh_mt.evm
+//human		rai_def/rai_def_mh_mt.evm 
+// ソリダス
+pack_all sol_def.tri \
+	human/sol_def/sol_def_addhand_mh_mt.dar \
+	human/sol_def/sol_gantai_mh_mt.dar \
+	human/sol_def/sol_faceguard.dar
+human		sol_def/sol_def_addhand_mh_mt.evm
+human		sol_def/sol_gantai_mh_mt.evm
+human		sol_def/sol_faceguard.kms
+// スネーク
+pack_all sna_nm.tri \
+	human/sna_def/sna_def.dar \
+	human/sna_shaved/sna_shaved_mt.dar
+
+// 優先問題解決のためサングラスを入れておく
+pack_all sna_mw.tri \
+	human/sna_def/sna_def_addhand_mh_mt.dar \
+	human/sna_shaved/sna_shaved_mh_mt.dar \
+	human/sna_def/sna_glass_mh_mt.dar 
+
+human		sna_def/sna_glass_mh_mt.evm
+
+human		sna_def/sna_def_addhand_mh_mt.evm
+human		sna_def/sna_def.kms
+
+pack_all demo_sna_def.tri \
+	human/sna_def/sna_mag1.dar \
+	human/sna_def/sna_mag2.dar \
+	human/sna_def/sna_mag3.dar \
+	human/sna_def/sna_mag4.dar \
+	human/sna_def/sna_bdn2.dar \
+	human/sna_def/sna_bdn1.dar
+human	sna_def/sna_mag1.kms
+human	sna_def/sna_mag2.kms
+human	sna_def/sna_mag3.kms
+human	sna_def/sna_mag4.kms
+human	sna_def/sna_bdn2.kms
+human	sna_skl/sna_skl3.kms
+human	sna_def/sna_bdn1.kms
+
+// ローズ
+human	ros_def/ros_def_mh_mt.evm
+
+// マンハッタン市民 
+human		cit_def
+
+//NYPD 警官隊（オープニング用を使う）
+pack_all	nyp_def123.tri \
+			human/nyp_def/nyp_def1.dar \
+			human/nyp_def/nyp_def2.dar \
+			human/nyp_def/nyp_def3.dar
+human	nyp_def/nyp_def1.kms
+human	nyp_def/nyp_def2.kms
+human	nyp_def/nyp_def3.kms
+
+human	nyp_def/nyp_def4_mt.kms // これだけマルチテクスチャ（黒人デカ）
+human	nyp_def/nyp_armd.kms
+
+// ワールド
+pack_all	other.tri \
+			world/w62a/smoke \
+			world/w62a/w62a_sky
+
+pack_all	demo_w62a0.tri \
+	world/w62a/w62a0 \
+	world/w62a/smoke
+
+pack_all	demo_w62a1.tri \
+	world/w62a/w62a1 \
+	world/w62a/w62a_sky
+
+world		w62a/w62a0
+world		w62a/w62a1
+world		w62a/smoke
+world		w62a/w62a_sky
+
+lt2			w62a_scale10_am700.lt2 
+lt2			w62a_scale10_am730.lt2 
+hazard		d00a3.hzx
+
+world		w61a/w61a_flag.kms
+world		w62a/w62a_flag/w61a_flag_fall2.kms // 静止旗
+
+// 旗用頂点データ
+cvd world/w61a/w61a_flag.cv2 vn
+
+// 落下旗
+anm		w61a_flag_fall/w61a_flag_fall1.xsi -N -S 100
+
+// オブジェクト
+// 小さいサイズのテクスチャはまとめておく
+
+// デバッグ用
+debug	kimura/raiden_gogle/raiden_gogle_sev.kms
+
+// リネーム
+
+/* mgdemo added ----from here (Wed Aug  8 23:58:53 2001) ---- */
+pack_all	demo_goods.tri \
+	item/mo_disk/mo_disk.dar \
+	goods/demo_dummy/demo_dummy.dar \
+	goods/demo_katana_sol/demo_mst_sht.dar \
+	goods/demo_katana_sol/demo_kwt_sht.dar \
+	goods/demo_tejyou/demo_tjo_rai_broken_r.dar \
+	goods/demo_tejyou/demo_tjo_rai_broken_l.dar
+item	mo_disk/mo_disk.kms
+goods	demo_dummy/demo_dummy.kms
+goods	demo_katana_sol/demo_mst_sht.kms
+goods	demo_katana_sol/demo_kwt_sht.kms
+goods	demo_tejyou/demo_tjo_rai_broken_r.kms
+goods	demo_tejyou/demo_tjo_rai_broken_l.kms
+
+goods	dogtag/dogtag_mh_mt.evm
+
+pack_all	demo_weapon.tri \
+	weapon/minsyutou/mst_l_mt.dar \
+	weapon/kyowatou/kwt_r_mt.dar \
+	weapon/hfb/hfb_mt.dar \
+	weapon/minsyutou/mst_hl_cm.dar \
+	weapon/kyowatou/kwt_hl_cm.dar
+weapon	minsyutou/mst_l_mt.kms
+weapon	kyowatou/kwt_r_mt.kms
+weapon	hfb/hfb_mt.kms
+weapon	minsyutou/mst_hl_cm.kms
+weapon	kyowatou/kwt_hl_cm.kms
+
+world	w01d/dining/potato03.kms
+pack_trnall trn.tri debug/shibata/staffroll/alpha03_alp_ovl.bmp
+pack_trnall trn.tri effect/bonbori/w_bonbori.bmp
+
+pack_all	demo_other_human.tri \
+	human/rai_naked/rai_dogtag_naked_mh.dar \
+	human/rai_naked/rai_dogtag_bounding.dar \
+	human/ros_def/ros_hair_fd_mh_mt.dar \
+	human/ros_def/ros_bounding.dar \
+	human/ros_def/ros_hair_b_mh_mt.dar \
+	human/par_def/par_def_mh.dar \
+	human/par_def/par_hane.dar
+human	rai_naked/rai_dogtag_naked_mh.evm
+human	rai_naked/rai_dogtag_bounding.kms
+human	ros_def/ros_hair_fd_mh_mt.evm
+human	ros_def/ros_bounding.kms
+human	ros_def/ros_hair_b_mh_mt.evm
+human	par_def/par_def_mh.evm
+human	par_def/par_hane.kms
+
+vib	demo/P082_01_p01_rai_05.vib
+vib	demo/P082_01_p01_rai_04.vib
+vib	demo/P082_01_p01_rai_03.vib
+vib	demo/P082_01_p01_rai_02.vib
+vib	demo/P082_01_p01_rai_01.vib
+vib	demo/P082_02_p02_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Wed Sep  5 16:09:21 2001) ---- */
+vib	demo/P082_04_p03_rai_02.vib
+vib	demo/P082_04_p03_rai_03.vib
+vib	demo/P082_04_p03_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Sep  6 22:23:37 2001) ---- */
+goods	dogtag/dogtag_chain_sh.kms
+/* mgdemo added ----upto here ---- */

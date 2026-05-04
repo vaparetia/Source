@@ -1,0 +1,71 @@
+#
+#	EE Standard Makefile
+#
+
+SHELL	    = /bin/sh
+
+TOP         = /usr/local/sce/ee
+LIBDIR	    = $(TOP)/lib
+INCDIR	    = $(TOP)/include
+
+LOCALLIB	= /usr/local/home/kaz/work/mgs2/module/lib/
+
+TARGET1	    = ps2thumb
+OBJS1	    = crt0.o ps2thumb.o trans.o
+
+LCFILE	    = ./app.cmd
+LIBS	    = $(LIBDIR)/libgraph.a \
+		      $(LIBDIR)/libdma.a \
+		      $(LIBDIR)/libdev.a \
+		      $(LIBDIR)/libpkt.a \
+		      $(LIBDIR)/libpad.a \
+		      $(LIBDIR)/libkernl.a \
+		      $(LIBDIR)/libvu0.a \
+			  $(LIBDIR)/libcdvd.a
+
+PREFIX	    = ee
+AS	    = $(PREFIX)-gcc
+CC	    = $(PREFIX)-gcc
+LD	    = $(PREFIX)-gcc
+DVPASM	    = $(PREFIX)-dvp-as
+OBJDUMP	    = $(PREFIX)-objdump
+RUN	    = dsedb -r run
+RM	    = /bin/rm -f
+
+CFLAGS	    = -O2 -Wall -fno-common -I /usr/local/sce/ee/include
+CXXFLAGS    = -O2 -Wall -fno-exceptions -fno-common
+ASFLAGS	    = -c -xassembler-with-cpp
+DVPASMFLAGS = -g
+LDFLAGS	    = -nostartfiles -L$(LIBDIR) -lm -lc -s
+TMPFLAGS    =
+
+.SUFFIXES: .c .s .cc .dsm
+
+
+$(TARGET1).elf: $(OBJS1) $(LIBS)
+	$(LD) -o $@ -T $(LCFILE) $(OBJS1) $(LIBS) $(LDFLAGS)
+
+crt0.o: $(LIBDIR)/crt0.s
+	$(AS) $(ASFLAGS) $(TMPFLAGS) -o $@ $<
+
+.s.o:
+	$(AS) $(ASFLAGS) $(TMPFLAGS) -I$(INCDIR) -o $@ $<
+
+.dsm.o:
+	$(DVPASM) $(DVPASMFLAGS) -I$(INCDIR) -o $@ $<
+
+.c.o:
+	$(CC) $(CFLAGS) $(TMPFLAGS) -I$(INCDIR) -c $< -o $*.o
+
+.cc.o:
+	$(CC) $(CXXFLAGS) $(TMPFLAGS) -I$(INCDIR) -c $< -o $*.o
+
+clean:
+	$(RM) *.o *.map *.lst core *.dis *.elf
+
+encodeps2.o : encode.c
+	$(CC) $(CFLAGS) $(TMPFLAGS) -I$(INCDIR) -c $< -o $*.o
+decodeps2.o : decode.c
+	$(CC) $(CFLAGS) $(TMPFLAGS) -I$(INCDIR) -c $< -o $*.o
+commonps2.o : common.c
+	$(CC) $(CFLAGS) $(TMPFLAGS) -I$(INCDIR) -c $< -o $*.o

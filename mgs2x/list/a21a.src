@@ -1,0 +1,47 @@
+//
+//	a21a.src（アナザーミッション用）
+//
+//	written by H.Yoshiike 2000.Oct
+//
+//	$Id: a21a.src,v 1.5 2002/07/18 08:20:38 usr03379 Exp $
+
+//	ステージ名表記用
+#define		WN_W21A
+// アナザーミッション明示
+#define		WN_ANOTHER
+
+//	共通データ
+#define		DAY_SKY		//	昼空
+#include	"a21_common.h"
+
+//	ワールド
+
+//	ＡＢ共通
+world		w21_common/other
+world		w21_common/w21_bg
+
+
+//	Ａのみ
+world		w21a
+
+//	ライト
+lt2		w21a.lt2
+
+//	海
+option makexti6 -l 256
+pack_all	oil.tri \
+		effect/plant_sea/d_oil_sea_alp_ovl_mod0222.bmp \
+		effect/plant_sea/d_oil_ref_add_alp_ovl_mod1120.bmp
+option makexti6
+
+
+//	アナザーミッション用追加分
+//	スネークテイルズＢ用エマ
+#include		"emma.h"
+
+//	スネークテイルズＢ用落ちない落とし穴
+world	a21a
+
+
+//	リネーム
+texrename w21_24a.kms w10c_cntw04.bmp w10c_cntw04aaaa.bmp

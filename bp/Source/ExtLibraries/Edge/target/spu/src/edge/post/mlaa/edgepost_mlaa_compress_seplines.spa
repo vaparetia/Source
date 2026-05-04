@@ -1,0 +1,187 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2010 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+/*
+ * The output of findSeparationLines is not ideal as the input for computeBounds. Thus we tranform it here per separation line,
+ * instead of doing it per-pixel in findSeparationLines. Furthermore, this is the first opportunity to blend single-pixel features,
+ * which do not need to be fed through the entire pipeline.
+ */
+
+ 
+.set BLEND_DISCARDED, 1		// set this to 1 to do a single-pixel blend for lines that were skipped because of length
+
+.macro WRITE_VALID_COUNT(valid, ptr, lineIndex)
+	.localreg		validPixelsTemp, insertMask, value
+
+	.localreg		kLineIndex, kLineIndexInsert
+	il32			kLineIndex, lineIndex
+	il128			kLineIndexInsert, "Dbcd000000000000"
+	shufb			value, kLineIndex, valid, kLineIndexInsert
+
+	lqd				[validPixelsGroup] validPixelsTemp, 0x00(ptr)
+	cwd				insertMask,0x00(ptr)
+	shufb			validPixelsTemp, value, validPixelsTemp, insertMask
+	stqd			[validPixelsGroup] validPixelsTemp, 0x00(ptr)
+.endmacro
+
+.macro GET_VALID_PIXELS(start, end, pixels, shufExtractLength)
+	.localreg		count
+	sf				count, start, end
+	ai				count, count, 0x10
+	il				pixels, 0
+@@valid_pixel_loop:	
+	.localreg		lineInfo, length
+	ai				count, count, -0x10
+	lqx				lineInfo, count, start
+	shufb			length, lineInfo, lineInfo, shufExtractLength
+	a				pixels, pixels, length
+	ai				pixels, pixels, 1
+	
+	brnz			count, @@valid_pixel_loop
+.endmacro
+
+// count the number of valid pixels and throw away small features. Optionally, blend those small features.
+.macro GET_VALID_PIXELS_AND_COMPRESS(start, end, pixels, line0, line1, memgroup0, memgroup1, shufExtractLength, shufExtractOffset)
+	.localreg		count, read, write
+	.memgroup		@@compress
+	sf				count, start, end
+	il				pixels, 0
+	
+	brz				count, @@valid_pixel_compress_end
+	
+	mov				read, start
+	mov				write, start
+	
+@@valid_pixel_compress_loop:	
+	.localreg		lineInfo, length
+	ai				count, count, -0x10
+	lqd				[@@compress] lineInfo, 0x00(read)
+	ai				read, read, 0x10
+	shufb			length, lineInfo, lineInfo, shufExtractLength
+	
+	.localreg		lineValid, lineLength, lineValidSplat
+	ai				lineLength, length, 1
+	cgt				lineValid, lineLength, minLineLength
+		
+	selb			lineLength, zero, lineLength, lineValid
+	a				pixels, lineLength, pixels
+	
+	stqd			[@@compress]lineInfo, 0x00(write)
+	.localreg		writeOffset
+	selb			writeOffset, zero, minusSixteen, lineValid
+	sf				write, writeOffset, write
+	
+.if BLEND_DISCARDED
+	.localreg		raw_pixel0, raw_pixel1, offset
+	
+	shufb			lineValidSplat, lineValid, lineValid, shuf_AAAA
+	
+	shufb			offset, lineInfo, lineInfo, shufExtractOffset	
+	lqx				[memgroup0]raw_pixel0, offset, line0
+	lqx				[memgroup1]raw_pixel1, offset, line1
+	.localreg		pixel0, pixel1
+	rotqby			pixel0, raw_pixel0, offset
+	rotqby			pixel1, raw_pixel1, offset
+	.localreg		unpacked0, unpacked1
+	shufb			unpacked0, pixel0, pixel0, kExtractPixel0
+	shufb			unpacked1, pixel1, pixel1, kExtractPixel0
+
+	.localreg		unpacked0blend0	
+	mpy				unpacked0blend0, unpacked0, kBlendFactor0
+	
+	.localreg		blended0
+	mpya			blended0, unpacked1, kBlendFactor1, unpacked0blend0
+
+	.localreg		packed0
+	shufb			packed0, pixel0, blended0, kPackPixel0
+
+	.localreg		insertionMask
+	cwx				insertionMask, offset, line0
+	
+	.localreg		inserted0
+	shufb			inserted0, packed0, raw_pixel0, insertionMask
+	
+	.localreg		result0
+	selb			result0, inserted0, raw_pixel0, lineValidSplat
+	
+	stqx			result0, offset, line0
+	
+.endif		
+	
+	brnz			count, @@valid_pixel_compress_loop
+	
+	
+@@valid_pixel_compress_end:
+	
+.endmacro
+
+
+.cfunc void edgePostMlaaCompressSeparationLines
+	(	qword copy0, qword copy1, qword copy2, qword copy3, qword line4,
+		qword lineBuf0, qword lineBuf1, qword lineBuf2, qword lineBuf3,
+		qword validPixels0, qword validPixels1, qword validPixels2, qword validPixels3,
+		qword minLineLength, qword bufferEnds)
+
+
+	// write back the valid pixel counts	
+	.memgroup		validPixelsGroup
+	.memgroup		blendTarget0, blendTarget1, blendTarget2, blendTarget3, blendTarget4
+	
+	.reg			validPixelsAccum0, validPixelsAccum1, validPixelsAccum2, validPixelsAccum3
+	.reg			bufferEnd0, bufferEnd1, bufferEnd2, bufferEnd3
+	.reg			zero, minusSixteen
+	
+	.reg			shuf_AAAA
+	il128			shuf_AAAA, "AAAA"
+	
+	.reg			kExtractPixel0, kPackPixel0, kBlendFactor0, kBlendFactor1
+	il128			kExtractPixel0, "000A000B000C000D"
+	il128			kPackPixel0, "AgkoAgkoAgkoAgko"		// we save the alpha channel and implicitly shift the blended values down by 8 bit.	
+	il32			kBlendFactor0, 0x00E0		// 7/8
+	il32			kBlendFactor1, 0x0020		// 1/8
+
+
+	
+	il				zero,0
+	il				minusSixteen, -16
+
+	mov				bufferEnd0, bufferEnds
+	shlqbyi			bufferEnd1, bufferEnds, 4
+	shlqbyi			bufferEnd2, bufferEnds, 8
+	shlqbyi			bufferEnd3, bufferEnds, 12
+
+
+	// now we need to filter the seperation lines by length
+
+	.reg			kShufExtractLength0, kShufExtractOffset0
+	.reg			kShufExtractLength1, kShufExtractOffset1
+	.reg			kShufExtractLength2, kShufExtractOffset2
+	.reg			kShufExtractLength3, kShufExtractOffset3
+	
+	il128			kShufExtractOffset0, "0A000000"
+	il128			kShufExtractLength0, "0B000000"
+	il128			kShufExtractOffset1, "0C000000"
+	il128			kShufExtractLength1, "0D000000"	
+	il128			kShufExtractOffset2, "0E000000"
+	il128			kShufExtractLength2, "0F000000"
+	il128			kShufExtractOffset3, "0G000000"
+	il128			kShufExtractLength3, "0H000000"
+	
+
+	// these are the filter
+	GET_VALID_PIXELS_AND_COMPRESS(lineBuf0, bufferEnd0, validPixelsAccum0, copy0, copy1, blendTarget0, blendTarget1, kShufExtractLength0, kShufExtractOffset0)
+	GET_VALID_PIXELS_AND_COMPRESS(lineBuf1, bufferEnd1, validPixelsAccum1, copy1, copy2, blendTarget1, blendTarget2, kShufExtractLength1, kShufExtractOffset1)
+	GET_VALID_PIXELS_AND_COMPRESS(lineBuf2, bufferEnd2, validPixelsAccum2, copy2, copy3, blendTarget2, blendTarget3, kShufExtractLength2, kShufExtractOffset2)
+	GET_VALID_PIXELS_AND_COMPRESS(lineBuf3, bufferEnd3, validPixelsAccum3, copy3, line4, blendTarget3, blendTarget4, kShufExtractLength3, kShufExtractOffset3)
+
+
+	// and now we write the number of valid pixels.	
+	WRITE_VALID_COUNT(validPixelsAccum0, validPixels0, 0)
+	WRITE_VALID_COUNT(validPixelsAccum1, validPixels1, 1)
+	WRITE_VALID_COUNT(validPixelsAccum2, validPixels2, 2)
+	WRITE_VALID_COUNT(validPixelsAccum3, validPixels3, 3)
+	
+.endfunc

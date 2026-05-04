@@ -1,0 +1,57 @@
+//
+//	w45a.src	
+//
+//	written by H.Yoshiike 2000.Aug
+//
+//	$Id: w45a.src,v 1.31 2001/11/07 08:25:10 usr03635 Exp $
+
+block .use r_plt0
+block .nocache
+block .cache
+
+#include "w45a_game.h"
+
+pack_all raiden.tri \
+		human/rai_def/rai_def_mh_mt.dar
+human	rai_def/rai_def_mh_mt.evm
+
+//	デモ用マルチテクスチャ天狗兵
+//human	tng_def/tng_high.kms
+
+
+
+
+
+
+
+
+
+
+
+/* mgdemo added ----from here (Wed Jul 11 15:11:41 2001) ---- */
+human	sel_def/sel_def.kms
+weapon	usp/usp_sub.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Wed Jul 11 15:22:37 2001) ---- */
+goods	demo_p90_sol/demo_p90_sol.kms
+goods	demo_m4_sna/demo_m4_sna.kms
+human	sna_def/sna_mag1.kms
+human	sna_def/sna_mag2.kms
+human	sna_def/sna_mag3.kms
+human	sna_def/sna_mag4.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Jul 30 19:52:11 2001) ---- */
+human	gbs_def/gbs_hlst.kms
+human	gbs_def/gbs_bp.kms
+/* mgdemo added ----upto here ---- */
+human	tng_def/tng_magazine.kms
+human	tng_def/tng_saya.kms
+human	tng_def/tng_strap.kms/* mgdemo added ----from here (Wed Aug 15 20:32:59 2001) ---- */
+vib	demo/P077_02_p01_rai_01.vib
+/* mgdemo added ----upto here ---- */
+
+
+// 優先問題解決のためサングラスを入れておく
+pack_all zzz_sna_mw.tri \
+	human/sna_def/sna_glass_mh_mt.dar 
+human	sna_def/sna_glass_mh_mt.evm

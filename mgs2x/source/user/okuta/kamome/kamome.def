@@ -1,0 +1,45 @@
+/*
+    kamome.def
+    かもめ関連定義ファイル
+    2001/05/08 Masafumi Okuta
+*/
+
+// static 
+
+static void KMM_MakeFlyingArea( KAMOME* kamome, FVECTOR* pvecMin, FVECTOR* pvecMax);
+static void KMM_CallHeadMark( KAMOME* kamome, int mode);
+static void KMM_EraseHeadMark( KAMOME* kamome );
+static void KMM_SetLodMode( KAMOME* kamome, int mode);
+static void KMM_CallDmgProc( KAMOME_MNG* kmmng, int nType);
+//static void KMM_LowPoriMotionFix( KAMOME* kamome );
+
+// kmsound.c
+static void KMM_ClearSeList( KAMOME_MNG* kmmng);
+static int  KMM_AddAtcSeList( KAMOME_MNG* kmmng, KAMOME* kamome);
+static int  KMM_AddNearSeList( KAMOME_MNG* kmmng, KAMOME* kamome);
+
+#ifdef DEBUG
+// kmdbg.c
+static void KMM_DbgProcess(KAMOME_MNG* kmmng);
+static void KMM_InitDebugWork(KAMOME_MNG* kmmng);
+//static void KMM_DbgDumpMoveWork(KAMOME* kamome);
+#endif
+
+// 外部関数
+extern float	HZX_GetFloorLevel( void );
+extern int	ENE_GCL_GetFV( char *ptr, FVECTOR *fvec );
+extern void 	TS_VecToRot( SVECTOR *rot, FVECTOR *vec );
+extern float 	_TS_Sin( int s );
+extern int	_FVecToRotXY( FVECTOR* vec, SVECTOR* rot );
+extern void 	SIG_NumPrint(FVECTOR*, int);
+extern void*	New_Zzz(FMATRIX *world);
+extern void*	NewPiyori(FMATRIX *world, int *map );
+extern void 	SearchAndFallAttachment_called(OBJECT *obj,int func_type,int delay_count,int rnd_delay_count);
+extern int	KR_CameraDis( FVECTOR* );
+
+// 外部変数
+extern FMATRIX 	G_wind_matrix;	// 風マトリクス
+extern int	G_wind_intense;	// 風力
+
+
+    

@@ -1,0 +1,109 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+	@fn			extern "C" void edgePostAvgLuminanceFX16( qword input, qword count, float* avgLuminancePtr, float* maxLuminancePtr )
+**/
+//--------------------------------------------------------------------------------------------------
+
+.include "edgepost_helpers.inc"
+
+
+.cfunc void edgePostAvgLuminanceFX16( qword input, qword count, qword avgLuminancePtr, qword maxLuminancePtr )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+
+	// luminance factor
+	.reg		lfR, lfG, lfB
+	ilf32		lfR, 0.2126f
+	ilf32		lfG, 0.7152f
+	ilf32		lfB, 0.0722f
+	
+	// unpacking shuffle masks
+	.reg		kUnpackShuf0, kUnpackShuf1, kUnpackShuf2
+	il128		kUnpackShuf0, "0B0F0b0f"
+	il128		kUnpackShuf1, "0C0G0c0g"
+	il128		kUnpackShuf2, "0D0H0d0h"
+	
+	// outputs
+	.reg		avgLuminance, maxLuminance
+	ilf32		avgLuminance, .0f
+	ilf32		maxLuminance, .0f
+	
+	// save count parameter for final average
+	.reg		saved_count
+	ori			saved_count, count, 0
+	
+loop:
+	ai			input, input, 0x20
+	ai			count, count, -4
+	
+	// load input pixels
+	.reg		s0, s1
+	lqd			s0, -0x20( input )
+	lqd			s1, -0x10( input )
+
+	// unpack straight to SIMD
+	.reg		R, G, B
+	shufb		R, s0, s1, kUnpackShuf0
+	shufb		G, s0, s1, kUnpackShuf1
+	shufb		B, s0, s1, kUnpackShuf2
+	
+	// convert to float
+	cuflt		R, R, 11
+	cuflt		G, G, 11
+	cuflt		B, B, 11
+	
+	// get luminance
+	.reg		luminance
+	fm			luminance, R, lfR
+	fma			luminance, G, lfG, luminance
+	fma			luminance, B, lfB, luminance
+	
+	// accumulate
+	fa			avgLuminance, avgLuminance, luminance
+	
+	// take max
+	.reg		m
+	fcgt		m, luminance, maxLuminance
+	selb		maxLuminance, maxLuminance, luminance, m
+	brnz		count, loop
+	
+
+	// final work
+	.reg		t0, t1, t2, m0, m1, m2
+	rotqbyi		t0, avgLuminance, 4
+	rotqbyi		t1, avgLuminance, 8
+	rotqbyi		t2, avgLuminance, 12
+	fa			avgLuminance, avgLuminance, t0
+	fa			avgLuminance, avgLuminance, t1
+	fa			avgLuminance, avgLuminance, t2
+	shufb		saved_count, saved_count, saved_count, kEdgePostReplicateX
+	cuflt		t1, saved_count, 0
+	frest		t0, t1
+	fi			t0, t1, t0
+	fm			avgLuminance, avgLuminance, t0
+	shufb		avgLuminance, avgLuminance, avgLuminance, kEdgePostReplicateX
+	stqd		avgLuminance, 0x00(avgLuminancePtr)
+	
+	rotqbyi		t0, maxLuminance, 4
+	rotqbyi		t1, maxLuminance, 8
+	rotqbyi		t2, maxLuminance, 12
+	fcgt		m0, t0, maxLuminance
+	fcgt		m1, t1, maxLuminance
+	fcgt		m2, t2, maxLuminance
+	selb		maxLuminance, maxLuminance, t0, m0
+	selb		maxLuminance, maxLuminance, t1, m1
+	selb		maxLuminance, maxLuminance, t2, m2
+	shufb		maxLuminance, maxLuminance, maxLuminance, kEdgePostReplicateX
+	stqd		maxLuminance, 0x00(maxLuminancePtr)
+	
+.endfunc
+

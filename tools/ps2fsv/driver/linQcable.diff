@@ -1,0 +1,24 @@
+*** Config.in	Fri May 19 19:37:36 2000
+--- ../Config.in	Fri May 19 19:36:48 2000
+***************
+*** 23,28 ****
+--- 23,29 ----
+  comment 'USB Devices'
+     dep_tristate '  USB Printer support' CONFIG_USB_PRINTER $CONFIG_USB
+     dep_tristate '  USB Scanner support' CONFIG_USB_SCANNER $CONFIG_USB
++    dep_tristate '  USB LinQ CABLE support' CONFIG_USB_LINQCABLE $CONFIG_USB
+     dep_tristate '  USB Audio support' CONFIG_USB_AUDIO $CONFIG_USB $CONFIG_SOUND
+     dep_tristate '  USB Modem (CDC ACM) support' CONFIG_USB_ACM $CONFIG_USB
+     dep_tristate '  USB Serial Converter support' CONFIG_USB_SERIAL $CONFIG_USB
+*** Makefile	Fri May 19 19:37:30 2000
+--- ../Makefile	Fri May 19 19:36:54 2000
+***************
+*** 68,73 ****
+--- 68,74 ----
+  obj-$(CONFIG_INPUT_EVDEV)	+= evdev.o input.o
+  
+  obj-$(CONFIG_USB_SCANNER)	+= scanner.o
++ obj-$(CONFIG_USB_LINQCABLE)	+= linQcable.o
+  obj-$(CONFIG_USB_ACM)		+= acm.o
+  obj-$(CONFIG_USB_PRINTER)	+= printer.o
+  obj-$(CONFIG_USB_AUDIO)		+= audio.o

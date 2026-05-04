@@ -1,0 +1,161 @@
+#!/usr/bin/perl
+
+die "Usage: makemar list-file[.mls] [output[.mar]] [-options]\n",
+    "Make mar-file from mt3 motion file list.\n",
+    "options:\n",
+    "\t-l <dir> Directory for input files.\n",
+    "\t-e  Create the enum-file.\n",
+    "\t-n  Do not make MAR-file.\n",
+    "\t-m  output the enum name as 'モーションリスト'\n",
+    "\t-s <sls-file> Input SLS-file\n",
+    "\t-sd SAR-debug mode\n" if ( $#ARGV == -1 ) ;
+
+&get_args() ;
+&make_path() ;
+&check_mar() if ( $chek_flg ) ; 
+&make_mar() ;
+
+print $error ;
+exit( 1 ) if ( $error ) ;
+exit( 0 ) ;
+
+
+#
+# Subroutines
+#
+#
+#
+sub get_args()
+{
+    $cpp_opt = ""  ;
+    $src_dir = "." ;
+    for( $i=0 ; $i<$#ARGV+1 ; $i++ )
+    {
+	$enum_flg=1                   , next if ( $ARGV[$i] eq "-e" ) ;
+	$nomk_flg=1                   , next if ( $ARGV[$i] eq "-n" ) ;
+	$sls_debug=1                  , next if ( $ARGV[$i] eq "-sd" ) ;
+	$chek_flg=1,$nomk_flg=1       , next if ( $ARGV[$i] eq "-chk" ) ;
+	$cpp_opt .= " ".$ARGV[$i]     , next if ( $ARGV[$i] =~ "-D" ) ;
+	$sls_file = $ARGV[++$i]       , next if ( $ARGV[$i] eq "-s" ) ;
+	$enum_tag = "モーションリスト", next if ( $ARGV[$i] eq "-m" ) ;
+	$src_dir = $ARGV[++$i]        , next if ( $ARGV[$i] eq "-l" ) ;
+	$in      = $ARGV[$i].".mls"   , next if ( not $in ) ;
+	$mar     = $ARGV[$i].".mar" ;
+    }
+}
+
+sub check_mar()
+{
+    open( GREP, "cpp $cpp_opt $in | grep -E 'mt3|mtn' |" ) or die "Cannot find list-file($!)\n" ;
+    $dir = <GREP> ;
+    close GREP ;
+    $dir =~ s/^([^\/]*)\/.*/$1/ ;
+
+    open( LS, "ls /u/develop/mj001data/runtime/mtn/$dir |" ) or die "Cannot find list-file($!)\n" ;
+    foreach $file ( <LS> )
+    {
+	chop $file ;
+	$file =~ s/\.mtn$// ;
+	open( GREP, "cpp $cpp_opt $in | grep '$file.' |" ) or die "Cannot find list-file($!)\n" ;
+	print "<$file.mt3> is missing\n" if ( <GREP> eq "" ) ;
+	close GREP ;
+    }
+    close( LS ) ;
+}
+
+sub make_path()
+{
+    die "Please specify the list-file name.\n" if ( not $in ) ;
+    $in  =~ s/.mls.mls/.mls/ ;
+    die "File not found($in).\n" if ( not -e $in ) ;
+
+    $src_dir .= "/" ;
+    $src_dir =~ s/\/\/$/\// ; 
+
+    $enum  = $in ;
+    $enum  =~ s/.mls/.mh/ ;
+    $enum  =~ s/.*\/([^\/]+)$/$1/ ;
+    if ( !$enum_tag )
+    {
+	$enum_tag = $enum ;
+	$enum_tag =~ s/\.mh$// ;
+    }
+
+    $mar = $in.".mar" if ( not $mar ) ;
+    $mar =~ s/.mar.mar/.mar/ ;
+    $mar =~ s/.mls.mar/.mar/ ;
+
+#For SEV-archive
+    $sar = $mar ;
+    $sar =~ s/.mar$/.sar/ ;
+    $sar_dir = $src_dir ;
+    $sar_dir =~ s/\/mtn\//\/sev\// ;
+}
+
+sub make_mar()
+{
+    local $sar_cmd = "", $mar_cmd = "" ;
+    local $num ;
+
+    $num = 0 ;
+    open( ENUM, ">$enum" ), print ENUM "enum $enum_tag {\n" if ( $enum_flg ) ;
+    open( NAMELIST, "cpp $cpp_opt $in |" ) or die "Cannot find list-file($!)\n" ;
+    printf( "sev_archiver -n $sar -l $sls_file\n" ) if ( $sls_debug ) ;
+    &fork( "sev_archiver -n $sar -l $sls_file" ) if ( $sls_file ) ;
+    while( <NAMELIST> )
+    {
+	next if ( /^#/ ) ;
+	s/[\n\r]+$// ;
+	s/^[ \t]*// ;
+	next if ( not $_ ) ;
+	s/\.mtn/\.mt3/g ;
+	
+	@command = split(' ') ;
+	if ( $enum_flg )
+	{
+		 if ( $command[1] eq "" || $command[1] eq "DUMMY" )
+		 {
+		     $command[1] = $command[0] ;
+		     $command[1] =~ s/\.mt3// ; 
+		     $command[1] =~ s/.*\/([^\/]+)/$1/ ;
+		 }
+		 print ENUM "\t$command[1]," ;
+		 print ENUM "\t/*$num*/" if ( ($num % 5) == 0 ) ;
+		 print ENUM "\n" ;
+		 $num++ ;
+	}
+	$command[0] = "dummy_motion/dummy21joint.mt3" if ( $command[1] eq "DUMMY" || $command[2] eq "DUMMY" ) ;
+	next if ( $nomk_flg ) ;
+	$error .= "Cant' find <$command[0]>\n", next if ( not -e "$src_dir$command[0]" ) ;
+
+	$mar_cmd .= "  $src_dir$command[0]" ;
+	$command[0] =~ s/mt3/sev/ ;
+	$sar_cmd .= " $sar_dir$command[0]" ;
+    }
+
+    if ( !$nomk_flg )
+    {
+	&fork( "mar -c $mar $mar_cmd >& /dev/null " ) ;
+    
+	print( "sev_archiver -e ../module/inc_se/se_defin.h -a $sar -l $sls_file -i $sar_cmd\n" ) if ( $sls_debug ) ;
+	&fork( "sev_archiver -e ../module/inc_se/se_defin.h -a $sar -l $sls_file -i $sar_cmd > /dev/null" ) if ( $sls_file ) ;
+    }
+    
+    print ENUM "};\n" if ( $enum_flg ) ;
+    close( ENUM ) if ( $enum_flg ) ;
+    close( NAMELIST ) ;
+}
+
+
+sub fork
+{
+    local $pid ;
+
+    unless ( $pid = fork )
+    {
+	exec( $_[0] ) ;
+	exit 0 ;
+    }
+    waitpid( $pid, 0 ) ;
+}
+

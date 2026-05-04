@@ -1,0 +1,136 @@
+//
+//	a25d.src
+//
+//	written by H.Yoshiike 2002.Feb
+//
+//	$Id$
+
+block .use r_vr_s
+block .nocache
+block .cache
+
+#define WN_W25C			// w25d だけど w25cで定義
+#define WN_W25D			
+
+#define E_WATER
+// 敵兵タイプ
+#define ENE_P_GOL		// w25bは都市迷彩攻撃兵
+
+// 空タイプ
+#define		DAY_SKY		// 空タイプ
+
+// 各ステージ共通要素
+#include	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+// オルタナティブミッション用追加エフェクト
+#include	"alt_effect.h"
+
+// ライデン 体燃え用
+pack_trnall	effect.tri \
+			debug/morita/w11c_test/w11c2_fire3a_alp.bmp \
+			effect/plant_sea/e_oil_sea_alp_ovl_mod0222.bmp
+cvd			human/sna_skl/sna_skl.cv2
+
+// 敵兵関連define
+// 敵兵タイプ
+#define ENE_P_GOL		// w25dは都市迷彩攻撃兵
+#define ENE_ATTACKER
+#define ENE_MAR '-DDEL_WALKMAN=DUMMY -DDEL_SHIELD=DUMMY -DDEL_SHOTGUN=DUMMY -DDEL_TNG=DUMMY -DDEL_LOCKER=DUMMY -DDEL_TOILET=DUMMY -DDEL_SHOUBEN=DUMMY'
+
+// DEL_WALKMAN ウォークマン兵のモーション
+// DEL_SHIELD 盾兵のモーション
+// DEL_SHOTGUN ショットガン兵のモーション
+// DEL_TNG 天狗兵
+// DEL_HIGH ハイテク兵
+// DEL_RADIO　無線使用
+// DEL_EROTICA　エロ本発見
+// DEL_BOX　ダンボール調べ
+// DEL_GRD　グレネード投げ
+// DEL_NEAR_ATTACK　近接格闘攻撃
+// DEL_LOCKER　ロッカー関連
+// DEL_HANG　羽交い絞め
+// DEL_PARTS　部位ダメージあり
+// DEL_CARRY　死体引きずり
+// DEL_TOILET　トイレ（w16a専用）
+// DEL_SHOUBEN　放尿（w25c専用）
+
+// キャラクタ
+#include	"ene_plant.h"
+
+// 強制モーション
+mtn		rai_a25d.mls
+mtn		sna_a25d.mls
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+pack_all	z_w25c.tri \
+			world/w25c/w25c \
+			world/a25c/w25c_plate.dar \
+			world/door/w25c_dr00.dar \
+			world/door/w25c_dr00x.dar
+
+
+world		w25c/w25c
+world		a25c/w25c_plate.kms
+
+world/w25cd_common/w25cd_bg \
+		w25cd_17a.kms \
+		w25cd_18a.kms \
+		w25cd_19a.kms \
+		w25cd_20a.kms \
+		w25cd_21a.kms \
+		w25cd_24a.kms \
+		w25cd_25a.kms \
+		w25cd_31a.kms \
+		w25cd_32a.kms \
+		w25cd_32b.kms \
+		w25cd_32c.kms \
+		w25cd_crane.kms \
+		w25cd_gh.kms \
+		w25cd_i.kms \
+		w25cd_ij.kms \
+		w25cd_jk.kms \
+		w25cd_k.kms \
+		w25cd_l.kms \
+		w25cd_other00.kms \
+		w25cd_other01.kms 
+
+world		w25cd_common/other/w25d_28a.kms
+world		w25cd_common/other/w25cd_31b.kms
+world		sea
+
+world		door/w25c_dr00.kms
+world		door/w25c_dr00x.kms 
+lt2			w25c.lt2
+hazard		a25d.hzx
+
+
+// オブジェクト
+#define		GUN_CYP
+#include	"cypher.h"
+
+// アイテム
+itembox
+
+// 海面
+option makexti6 -l 256
+pack_all	oil.tri \
+		effect/plant_sea/d_oil_ref_add_alp_ovl_mod1120.bmp \
+		effect/plant_sea/d_oil_sea_alp_ovl_mod0222.bmp
+option makexti6
+
+pack_all '-s'	gmov.tri 2D/game_over/dekisi_alp_ovl.bmp
+pack_trnall	effect.tri \
+		effect/plant_sea/d_oil_sea_alp_ovl_mod0222.bmp 
+
+
+//	振動
+vib		etc/drop_sea.vib
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+// リネーム
+texrename w25cd_24a.kms w10c_cntw04.bmp w10c_cntw04aaaa.bmp

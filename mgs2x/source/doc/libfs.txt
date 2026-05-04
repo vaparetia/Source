@@ -1,0 +1,165 @@
+★ libfs リファレンス
+
+--------------------------------------------------------------------------------
+■ 概要
+--------------------------------------------------------------------------------
+
+libfsは起動時のIOPモジュールロードや、プログラム内からのすべてのファイル
+アクセスを行なうライブラリである。
+以下の機能を持つ。
+
+・PS2起動時処理
+・ステージデータをT10000でのデバッグ時のディレクトリツリー形式と
+  DVDでの動作時のアーカイブ形式で等価に扱う関数
+・ファイルのセクタ単位でのリード
+・ストリーミングライブラリ
+
+--------------------------------------------------------------------------------
+■ PS2起動時処理
+--------------------------------------------------------------------------------
+
+PS2起動時のIOPリプレース処理や、IOPモジュールのロードを行なう。
+すべての操作はlibfs/select.cに記述し、コンパイル時のDEFINEスイッチによって
+切替えオブジェクトを作成、それを明示的にリンクすることで切替える。
+また、ステージデータの読み取り形式も変更する。
+
+以下、
+	CD	CD/DVD
+	HDU	PS2外づけ
+	HD	開発環境のHD
+	USB 開発環境のUSB
+と表記。
+
+以下の各環境に応じて、IOPのモジュールの構成と読み込みPATHが変わる。
+大まかに、HDU, USB, USERとモジュールグループを分けると以下のようになる。
+mgs2/sourceで各環境をmake hdなどとして指定できる。
+
+hd(開発環境)
+	HDU,USB,USERを、host0:から
+	ファイルシステムはhost0:
+	ステージはディレクトリ形式
+
+usb(USBファイルシステム)
+	HDU,USBをcdrom0:から
+	USERをusbfsから
+	ファイルシステムはusbfs
+	ステージはディレクトリ形式
+
+usbd(USBファイルシステム/デバッグ用)
+	HDU,USB,USERをhost0:から
+	ファイルシステムはusbfs
+	ステージはディレクトリ形式
+
+hdu(PS2HDユニット／プレビュー環境)
+	HDUをcdrom0:から
+	USB,USERをpfs0:から
+	printfはusb
+	ファイルシステムはpfs0:
+	ステージはパッキング形式
+
+hdud(PS2HDユニット／プレビュー環境/デバッグ用)
+	HDU,USB,USERをhost0:から
+	printfはusb
+	ファイルシステムはpfs0:
+	ステージはパッキング形式(BINFIX)
+
+cd(実機)
+	HDU,USB,USERを、cdrom0:から
+	ファイルシステムはcdbios(pfs0:)
+	ステージはパッキング形式
+
+cdd(実機/デバッグ用)
+	HDU,USB,USERを、host0:から
+	ファイルシステムはcdbios(pfs0:)
+	ステージはパッキング形式(BINFIX)
+
+外から呼びだされる関数は以下の通り。
+
+void FS_ResetIOP( void );
+	/*	IOPモジュールのリセット */
+
+void FS_StartDaemon( void );
+	/* FS ライブラリの初期設定 */
+
+void FS_LoadIopModules( void *addr );
+	/* IOP Module のロード。ロード用ワークとしてメモリ領域を渡す。 */
+
+--------------------------------------------------------------------------------
+■ ステージデータ読み込み
+--------------------------------------------------------------------------------
+
+ステージデータは基本的にディレクトリ名を渡すことでロードを行なう。
+開発時のディレクトリツリー形式と、リリース時のアーカイブファイル形式を、
+ライブラリのリンクを細工することで切替える。
+また、アーカイブファイル時に、プログラムバイナリだけをHDDから読み込むことも、
+可能。(上記でBINFIXと表記)
+
+void *FS_LoadStageRequest( char *dirname );
+	/* データ読み込み要求 info構造体へのポインタを返す */
+
+int  FS_LoadStageSync( void *info );
+	/* データが読み込まれる間の処理を行う */
+
+void FS_LoadStageComplete( void *info );
+	/* データの読み込み終了処理 */
+
+サウンドデータは以下の関数を呼び出すことで、IOP側からロードを起動する。
+
+void FS_LoadSoundPak( int code );
+	/* サウンドデータの読み込み起動 */
+
+DVD上のアーカイブ形式読み込み時に以下の関数を呼び出すことでヘッドのプリシークを
+行なうことができる。
+
+void FS_LoadStagePreseek( char *dirname );
+
+--------------------------------------------------------------------------------
+■ その他データ読み込み
+--------------------------------------------------------------------------------
+
+ファイルについては、すべて、libfs/file.cnfに記述されているファイルのみを扱い、
+filenoと、先頭からのセクタ単位でのオフセットで読み込む。
+HDDの時も、cdrom.img/のそのファイルを同じように読み込む。
+
+void FS_LoadFileRequest( int fileno, int offset, int size, void *buffer );
+	/* ファイル読み込み要求。メディアに関わらず使用可能 */
+int  FS_LoadFileSync( void );
+	/* load 完了チェック */
+
+DVD読み取り中にエラーが発生した場合は、CDBIOSからこの関数を通じてエラーを
+取得できる。
+
+int FS_GetDiscStatus( void );
+	/* ディスクの読み取りエラー通知 */
+
+--------------------------------------------------------------------------------
+■ ストリーミングライブラリ
+--------------------------------------------------------------------------------
+
+汎用ストリーミングライブラリ。
+2本並列までサポート。
+時間管理等はこの中では行なわれず、あくまでバッファが空いた時に
+FS_StreamSync中で読み込みがスタートする。
+
+FS_STREAM *FS_Stream( int pos, void *buffer, int size, int flag );
+void FS_StreamClose( FS_STREAM *h_info );
+int FS_StreamSync( FS_STREAM *h_info );
+void FS_StreamStop( FS_STREAM *h_info );
+void *FS_StreamGetData( FS_STREAM *h_info, int req_type );
+void FS_StreamUngetData( FS_STREAM *h_info, void *data );
+int FS_StreamGetNextType( FS_STREAM *h_info );
+void FS_StreamFreeData( FS_STREAM *h_info, void *data );
+int FS_StreamGetSystemData( FS_STREAM *h_info );
+int FS_StreamGetSize( FS_STREAM *h_info, void *ptr );
+int FS_StreamGetStatus( FS_STREAM *h_info );
+int FS_StreamSystemStatus( void );	// CDが読み取り中かどうか
+int FS_StreamIsReading( FS_STREAM *h_info );// このstreamが読み取り中かどうか
+
+void FS_StreamLock( FS_STREAM *h_info );
+void FS_StreamUnlock( FS_STREAM *h_info );
+int FS_StreamIsLocked( FS_STREAM *h_info );
+
+#define FS_STREAM_GET_TIME( ptr )	( ( ( STREAM_TAG * )(ptr) - 1 )->time )
+#define FS_STREAM_GET_SIZE( ptr ) \
+	( ( ( STREAM_TAG * )(ptr) - 1 )->size - sizeof( STREAM_TAG ) )
+#define FS_STREAM_GET_OPTION( ptr )	( ( ( STREAM_TAG * )(ptr) - 1 )->option )

@@ -1,0 +1,3339 @@
+//=============================================================================
+// w20c_fat.gcl
+// ファットマン
+// 2001/05/07 Masafumi Okuta
+// $Id: w20c_fat.gcl,v 1.50 2002/05/27 11:58:35 usr03682 Exp $
+//
+
+//=============================================================================
+// 爆弾設置場所 define
+//=============================================================================
+
+//-----------------------------------------------------------------------------
+// コンテナ
+
+// -------------------------  NORTH_1_Z
+// | ----------|---------- |  NORTH_2_Z
+// | |         |         | |
+// |-|---------|---------|-|  MEDIUM__Z
+// | |         |         | |
+// | ----------|---------- |  SOUTH_2_Z
+// -------------------------  SOUTH_1_Z
+//
+// WEST_1_X    MEDIUM_X    EAST_1_X
+//   WEST_2_X            EAST_2_X
+
+// 横(S,W,E,N)
+//   MEDIUM_X SOUTH_1_Z
+//   WEST_1_X MEDIUM__Z
+//   EAST_1_X MEDIUM__Z
+//   MEDIUM_X NORTH_1_Z
+//
+// 上(SW,NW,SE,NE)
+//   WEST_2_X SOUTH_2_Z
+//   WEST_2_X NORTH_2_Z
+//   EAST_2_X SOUTH_2_Z
+//   EAST_2_X NORTH_2_Z
+//
+// 下(S,W,E,N,M)
+//   MEDIUM_X SOUTH_2_Z
+//   WEST_2_X MEDIUM__Z
+//   EAST_2_X MEDIUM__Z
+//   MEDIUM_X NORTH_2_Z
+//   MEDIUM_X MEDIUM__Z
+
+#define _C_SIDE_Y (12750)
+#define _C_UP_Y   (13500)
+#define _C_BTM_Y  (12000)
+
+//----- コンテナ１－１
+
+#define _C11_WEST_1_X (45250)
+#define _C11_WEST_2_X (45400)
+#define _C11_MEDIUM_X (47000)
+#define _C11_EAST_2_X (48600)
+#define _C11_EAST_1_X (48750)
+
+#define _C11_SOUTH_1_Z (-102500)
+#define _C11_SOUTH_2_Z (-102650)
+#define _C11_MEDIUM__Z (-103750)
+#define _C11_NORTH_2_Z (-104850)
+#define _C11_NORTH_1_Z (-105000)
+
+//----- コンテナ２－１
+
+#define _C21_WEST_1_X (45250)
+#define _C21_WEST_2_X (45400)
+#define _C21_MEDIUM_X (47000)
+#define _C21_EAST_2_X (48600)
+#define _C21_EAST_1_X (48750)
+
+#define _C21_SOUTH_1_Z (-102500+5000)
+#define _C21_SOUTH_2_Z (-102650+5000)
+#define _C21_MEDIUM__Z (-103750+5000)
+#define _C21_NORTH_2_Z (-104850+5000)
+#define _C21_NORTH_1_Z (-105000+5000)
+
+//----- コンテナ２－２
+
+#define _C22_WEST_1_X (45250+5750)
+#define _C22_WEST_2_X (45400+5750)
+#define _C22_MEDIUM_X (47000+5750)
+#define _C22_EAST_2_X (48600+5750)
+#define _C22_EAST_1_X (48750+5750)
+
+#define _C22_SOUTH_1_Z (-102500+5000)
+#define _C22_SOUTH_2_Z (-102650+5000)
+#define _C22_MEDIUM__Z (-103750+5000)
+#define _C22_NORTH_2_Z (-104850+5000)
+#define _C22_NORTH_1_Z (-105000+5000)
+
+//----- コンテナ２－３
+
+#define _C23_WEST_1_X (45250+13250)
+#define _C23_WEST_2_X (45400+13250)
+#define _C23_MEDIUM_X (47000+13250)
+#define _C23_EAST_2_X (48600+13250)
+#define _C23_EAST_1_X (48750+13250)
+
+#define _C23_SOUTH_1_Z (-102500+5000)
+#define _C23_SOUTH_2_Z (-102650+5000)
+#define _C23_MEDIUM__Z (-103750+5000)
+#define _C23_NORTH_2_Z (-104850+5000)
+#define _C23_NORTH_1_Z (-105000+5000)
+
+//----- コンテナ２－４
+
+#define _C24_WEST_1_X (45250+19000)
+#define _C24_WEST_2_X (45400+19000)
+#define _C24_MEDIUM_X (47000+19000)
+#define _C24_EAST_2_X (48600+19000)
+#define _C24_EAST_1_X (48750+19000)
+
+#define _C24_SOUTH_1_Z (-102500+5000)
+#define _C24_SOUTH_2_Z (-102650+5000)
+#define _C24_MEDIUM__Z (-103750+5000)
+#define _C24_NORTH_2_Z (-104850+5000)
+#define _C24_NORTH_1_Z (-105000+5000)
+
+//----- コンテナ３－１
+
+#define _C31_WEST_1_X (45250)
+#define _C31_WEST_2_X (45400)
+#define _C31_MEDIUM_X (47000)
+#define _C31_EAST_2_X (48600)
+#define _C31_EAST_1_X (48750)
+
+#define _C31_SOUTH_1_Z (-102500+10000)
+#define _C31_SOUTH_2_Z (-102650+10000)
+#define _C31_MEDIUM__Z (-103750+10000)
+#define _C31_NORTH_2_Z (-104850+10000)
+#define _C31_NORTH_1_Z (-105000+10000)
+
+//----- コンテナ３－２
+
+#define _C32_WEST_1_X (45250+5750)
+#define _C32_WEST_2_X (45400+5750)
+#define _C32_MEDIUM_X (47000+5750)
+#define _C32_EAST_2_X (48600+5750)
+#define _C32_EAST_1_X (48750+5750)
+
+#define _C32_SOUTH_1_Z (-102500+10000)
+#define _C32_SOUTH_2_Z (-102650+10000)
+#define _C32_MEDIUM__Z (-103750+10000)
+#define _C32_NORTH_2_Z (-104850+10000)
+#define _C32_NORTH_1_Z (-105000+10000)
+
+//----- コンテナ３－３
+
+#define _C33_WEST_1_X (45250+13250)
+#define _C33_WEST_2_X (45400+13250)
+#define _C33_MEDIUM_X (47000+13250)
+#define _C33_EAST_2_X (48600+13250)
+#define _C33_EAST_1_X (48750+13250)
+
+#define _C33_SOUTH_1_Z (-102500+10000)
+#define _C33_SOUTH_2_Z (-102650+10000)
+#define _C33_MEDIUM__Z (-103750+10000)
+#define _C33_NORTH_2_Z (-104850+10000)
+#define _C33_NORTH_1_Z (-105000+10000)
+
+//----- コンテナ３－４
+
+#define _C34_WEST_1_X (45250+19000)
+#define _C34_WEST_2_X (45400+19000)
+#define _C34_MEDIUM_X (47000+19000)
+#define _C34_EAST_2_X (48600+19000)
+#define _C34_EAST_1_X (48750+19000)
+
+#define _C34_SOUTH_1_Z (-102500+10000)
+#define _C34_SOUTH_2_Z (-102650+10000)
+#define _C34_MEDIUM__Z (-103750+10000)
+#define _C34_NORTH_2_Z (-104850+10000)
+#define _C34_NORTH_1_Z (-105000+10000)
+
+//----- コンテナ４－３
+
+#define _C43_WEST_1_X (45250+13250)
+#define _C43_WEST_2_X (45400+13250)
+#define _C43_MEDIUM_X (47000+13250)
+#define _C43_EAST_2_X (48600+13250)
+#define _C43_EAST_1_X (48750+13250)
+
+#define _C43_SOUTH_1_Z (-102500+15000)
+#define _C43_SOUTH_2_Z (-102650+15000)
+#define _C43_MEDIUM__Z (-103750+15000)
+#define _C43_NORTH_2_Z (-104850+15000)
+#define _C43_NORTH_1_Z (-105000+15000)
+
+//----- コンテナ４－４
+
+#define _C44_WEST_1_X (45250+19000)
+#define _C44_WEST_2_X (45400+19000)
+#define _C44_MEDIUM_X (47000+19000)
+#define _C44_EAST_2_X (48600+19000)
+#define _C44_EAST_1_X (48750+19000)
+
+#define _C44_SOUTH_1_Z (-102500+15000)
+#define _C44_SOUTH_2_Z (-102650+15000)
+#define _C44_MEDIUM__Z (-103750+15000)
+#define _C44_NORTH_2_Z (-104850+15000)
+#define _C44_NORTH_1_Z (-105000+15000)
+
+//-----------------------------------------------------------------------------
+// 箱
+
+// 箱１
+// ------------------------  NORTH_1_Z
+// |     |          |     |
+// |-----|----------|-----|  MEDIUM__Z
+// |     |          |     |
+// ------------------------  SOUTH_1_Z
+//
+// WEST_1_X               EAST_1_X
+//       WEST_2_X   EAST_2_X
+
+// 箱２
+//            -------------  NORTH_1_Z
+//            |     |     |
+//            |-----|-----|  NORTH_2_Z
+//            |     |     |
+// ------------     |     |  MEDIUM__Z
+// |     |          |     |
+// |-----|----------|-----|  SOUTH_2_Z
+// |     |          |     |
+// ------------------------  SOUTH_1_Z
+//
+// WEST_1_X   MEDIUM_X    EAST_1_X
+//       WEST_2_X   EAST_2_X
+
+// 箱３
+// ------------------------  NORTH_1_Z
+// |     |    |     |     |
+// |-----|----|-----|-----|  NORTH_2_Z
+// |     |    |     |     |
+// |-----------     |     |  MEDIUM__Z
+// |     |          |     |
+// |-----|----------|-----|  SOUTH_2_Z
+// |     |          |     |
+// ------------------------  SOUTH_1_Z
+//
+// WEST_1_X   MEDIUM_X    EAST_1_X
+//       WEST_2_X   EAST_2_X
+
+#define _B_SIDE_1_Y (12000)
+#define _B_SIDE_2_Y (13000)
+#define _B_UP_1_Y   (12500)
+#define _B_UP_2_Y   (13500)
+
+//----- 箱１
+
+#define _B1_WEST_1_X (51000)
+#define _B1_WEST_2_X (51500)
+#define _B1_EAST_2_X (52500)
+#define _B1_EAST_1_X (53000)
+
+#define _B1_SOUTH_1_Z (-102500)
+#define _B1_MEDIUM__Z (-103000)
+#define _B1_NORTH_1_Z (-103500)
+
+//----- 箱２
+
+#define _B2_WEST_1_X (66250)
+#define _B2_WEST_2_X (66750)
+#define _B2_MEDIUM_X (67250)
+#define _B2_EAST_2_X (67750)
+#define _B2_EAST_1_X (68250)
+
+#define _B2_SOUTH_1_Z (-101500)
+#define _B2_SOUTH_2_Z (-102000)
+#define _B2_MEDIUM__Z (-102500)
+#define _B2_NORTH_2_Z (-103000)
+#define _B2_NORTH_1_Z (-103500)
+
+//----- 箱３
+
+#define _B3_WEST_1_X (67000)
+#define _B3_WEST_2_X (67500)
+#define _B3_MEDIUM_X (68000)
+#define _B3_EAST_2_X (68500)
+#define _B3_EAST_1_X (69000)
+
+#define _B3_SOUTH_1_Z (-82750)
+#define _B3_SOUTH_2_Z (-83250)
+#define _B3_MEDIUM__Z (-83750)
+#define _B3_NORTH_2_Z (-84250)
+#define _B3_NORTH_1_Z (-84750)
+
+//-----------------------------------------------------------------------------
+// ドラム缶
+
+// ドラム缶１
+//            -------------  NORTH_1_Z
+//            |     |     |
+//            |-----|-----|  NORTH_2_Z
+//            |     |     |
+// ------------     |     |  MEDIUM__Z
+// |     |          |     |
+// |-----|----------|-----|  SOUTH_2_Z
+// |     |          |     |
+// ------------------------  SOUTH_1_Z
+//
+// WEST_1_X   MEDIUM_X    EAST_1_X
+//       WEST_2_X   EAST_2_X
+
+// ドラム缶２
+// ------------------------  NORTH_1_Z
+// |     |          |     |
+// |-----|----------|-----|  MEDIUM__Z
+// |     |          |     |
+// ------------------------  SOUTH_1_Z
+//
+// WEST_1_X               EAST_1_X
+//       WEST_2_X   EAST_2_X
+
+#define _D_SIDE_Y (12125)
+#define _D_UP_Y   (12750)
+
+//----- ドラム缶１
+
+#define _D1_WEST_1_X (48800)
+#define _D1_WEST_2_X (49125)
+#define _D1_MEDIUM_X (49550)
+#define _D1_EAST_2_X (49875)
+#define _D1_EAST_1_X (50200)
+
+#define _D1_SOUTH_1_Z (-107300)
+#define _D1_SOUTH_2_Z (-107625)
+#define _D1_MEDIUM__Z (-107950)
+#define _D1_NORTH_2_Z (-108375)
+#define _D1_NORTH_1_Z (-108700)
+
+//----- ドラム缶２
+
+#define _D2_WEST_1_X (48050)
+#define _D2_WEST_2_X (48375)
+#define _D2_EAST_2_X (49125)
+
+#define _D2_SOUTH_1_Z (-81550)
+#define _D2_MEDIUM__Z (-81875)
+#define _D2_NORTH_1_Z (-82200)
+
+//-----------------------------------------------------------------------------
+// ラック
+
+#define _R_TOP_Y   (13300)
+#define _R_MID_Y   (12550)
+#define _R_BTM_Y   (11800)
+#define _R_TOP_R_Y (13250)
+#define _R_MID_R_Y (12500)
+
+//----- ラック１－西１
+
+#define _R1_MID_X (45500)
+
+#define _R1_TOP_Z   (-86025)
+#define _R1_MID_Z   (-88350)
+#define _R1_BTM_Z   (-87900)
+#define _R1_TOP_R_Z (-87050)
+#define _R1_MID_R_Z (-88800)
+
+//----- ラック１－西２
+
+#define _R2_MID_X (48000)
+
+#define _R2_TOP_Y   (13400)
+#define _R2_TOP_Z   (-88225)
+#define _R2_MID_Z   (-88000)
+#define _R2_BTM_Z   (-87650)
+#define _R2_TOP_R_Z (-87150)
+#define _R2_MID_R_Z (-87600)
+
+//----- ラック１－南２
+
+#define _R3_MID_Z (-84750)
+
+#define _R3_TOP_X   (61425)
+#define _R3_TOP_Y   (13600)
+#define _R3_MID_X   (62200)
+#define _R3_BTM_X   (64100)
+#define _R3_TOP_R_X (63200)
+#define _R3_MID_R_X (62850)
+
+//----- ラック１－南１
+
+#define _R4_MID_Z (-82250)
+
+#define _R4_TOP_X   (64050)
+#define _R4_TOP_Y   (13550)
+#define _R4_MID_X   (62050)
+#define _R4_MID_Y   (12950)
+#define _R4_BTM_X   (61700)
+#define _R4_TOP_R_X (62575)
+#define _R4_MID_R_X (62600)
+
+//----- ラック２
+
+#define _R5_MID_A_Z (-82925)
+#define _R5_MID_B_Z (-82075)
+
+#define _R5_TOP_B_X   (49950)
+#define _R5_TOP_B_Y   (12900)
+#define _R5_MID_A_X   (52250)
+#define _R5_MID_A_Y   (12850)
+#define _R5_BTM_A_X   (49900)
+#define _R5_BTM_A_Y   (12200)
+#define _R5_TOP_A_R_X (50025)
+#define _R5_MID_B_R_X (52600)
+
+//-----------------------------------------------------------------------------
+// おまけ
+
+#define _OMAKE_1_X ( 55500)
+#define _OMAKE_1_Y ( 12125)
+#define _OMAKE_1_Z (-80250)
+#define _OMAKE_2_X ( 56750)
+#define _OMAKE_2_Y ( 12150)
+#define _OMAKE_2_Z (-79900)
+
+//=============================================================================
+// その他 define
+//=============================================================================
+
+//-----------------------------------------------------------------------------
+// Ｃ４設置タイプ
+
+#define _SET_UNDER         0x0001	// しゃがみ設置
+#define _SET_STAND         0x0002	// 立ち状態設置
+#define _SET_UPPER         0x0004	// 高所設置
+#define _SET_RUN           0x0008	// 走り設置
+#define _SET_STAND_AND_RUN 0x000a	// 立ち状態＆走り設置
+
+//-----------------------------------------------------------------------------
+// 回転インデックス
+
+#enum {
+	_C4_ROT_S1,		// 南壁１
+	_C4_ROT_S2,		// 南壁２
+	_C4_ROT_S3,		// 南壁３
+	_C4_ROT_W1,		// 西壁１
+	_C4_ROT_W2,		// 西壁２
+	_C4_ROT_W3,		// 西壁３
+	_C4_ROT_E1,		// 東壁１
+	_C4_ROT_E2,		// 東壁２
+	_C4_ROT_E3,		// 東壁３
+	_C4_ROT_N1,		// 北壁１
+	_C4_ROT_N2,		// 北壁２
+	_C4_ROT_N3,		// 北壁３
+	_C4_ROT_U1,		// 上床１
+	_C4_ROT_U2,		// 上床２
+	_C4_ROT_U3,		// 上床３
+	_C4_ROT_D1,		// 下床１
+	_C4_ROT_D2,		// 下床２
+	_C4_ROT_D3,		// 下床３
+};
+
+//-----------------------------------------------------------------------------
+// Ｃ４設置インデックス
+
+#define _CS_S___LV1_   0	// コンテナ横 11
+#define _CS_W___LV1_  11	// コンテナ横 11
+#define _CS_E___LV1_  22	// コンテナ横 11
+#define _CS_N___LV2_  33	// コンテナ横 11
+#define _CT_SW__LV1_  44	// コンテナ上 11
+#define _CT_NW__LV1_  55	// コンテナ上 11
+#define _CT_SE__LV1_  66	// コンテナ上 11
+#define _CT_NE__LV1_  77	// コンテナ上 11
+
+#define _CB_S___LV3_  88	// コンテナ下 11
+#define _CB_W___LV3_  99	// コンテナ下 11
+#define _CB_E___LV3_ 110	// コンテナ下 11
+#define _CB_N___LV3_ 121	// コンテナ下 11
+#define _CB_C___LV3_ 132	// コンテナ下 11
+
+#define _B1_S1__LV1_ 143	// 箱横        6
+#define _B1_T1__LV1_ 149	// 箱上        2
+#define _B2_S1__LV1_ 151	// 箱横        8
+#define _B2_T1__LV1_ 159	// 箱上        3
+#define _B3_S1__LV1_ 162	// 箱横        8
+#define _B3_T1__LV1_ 170	// 箱上        3
+#define _B3_S2__LV1_ 173	// 箱横２      4
+#define _B3_T2__LV1_ 177	// 箱上２      1
+
+#define _D1_S___LV1_ 178	// ドラム横    7
+#define _D1_T___LV1_ 185	// ドラム上    3
+#define _D2_S___LV1_ 188	// ドラム横    5
+#define _D2_T___LV1_ 193	// ドラム上    2
+
+#define _R1_____LV4_ 195	// ラック１    3
+#define _R2_____LV4_ 198	// ラック１    3
+#define _R3_____LV4_ 201	// ラック１    3
+#define _R4_____LV4_ 204	// ラック１    3
+#define _R5_____LV4_ 207	// ラック２    3
+#define _R1_R___LV4_ 210	// ラック１Ｒ  2
+#define _R2_R___LV4_ 212	// ラック１Ｒ  2
+#define _R3_R___LV4_ 214	// ラック１Ｒ  2
+#define _R4_R___LV4_ 216	// ラック１Ｒ  2
+#define _R5_R___LV4_ 218	// ラック２Ｒ  2
+
+#define _OMAKE__LV5_ 220	// おまけ      2
+
+//-----------------------------------------------------------------------------
+// 変数
+
+eval($i:Ｓローカル変数Ｉ１ = 0);
+eval($i:Ｓローカル変数Ｉ２ = 0);
+eval($i:Ｓローカル変数Ｉ３ = 0);
+
+
+// 字幕のリソース
+#include "cap_resource.h"
+
+
+
+//=============================================================================
+// メイン
+//=============================================================================
+
+//-----------------------------------------------------------------------------
+// ＦＡＴ難易度設定
+
+proc ＦＡＴ難易度設定 {
+#if d:DEBUG_PRINT
+	print '*** FAT Game Level Set ***'
+#endif
+
+	if($w:ゲーム設定 == d:LEVEL_VERYEASY) {
+		// ＶＥＲＹ ＥＡＳＹ
+		eval($i:w20c_ＦＡＴ耐久値             =    2)
+		eval($i:w20c_ＦＡＴ耐久値回復フレーム =   90)
+		eval($i:w20c_ＦＡＴ体力               =  256)
+		eval($i:w20c_ＦＡＴ攻撃力割合         =  100)
+		eval($i:w20c_ＦＡＴ爆弾難度レート１   =   35)
+		eval($i:w20c_ＦＡＴ爆弾難度レート２   =   35)
+		eval($i:w20c_ＦＡＴ爆弾難度レート３   =   15)
+		eval($i:w20c_ＦＡＴ爆弾難度レート４   =   15)
+		eval($i:w20c_ＦＡＴ爆弾設置最低数     =    2)
+		eval($i:w20c_ＦＡＴ爆弾設置最大数     =    3)
+		eval($i:w20c_ＦＡＴタイマーベース値   = 3600)
+		eval($i:w20c_ＦＡＴタイマー加算値     = 1200)
+
+	} else if($w:ゲーム設定 == d:LEVEL_EASY) {
+		// ＥＡＳＹ
+		eval($i:w20c_ＦＡＴ耐久値             =    3)
+		eval($i:w20c_ＦＡＴ耐久値回復フレーム =   90)
+		eval($i:w20c_ＦＡＴ体力               =  256)
+		eval($i:w20c_ＦＡＴ攻撃力割合         =  100)
+		eval($i:w20c_ＦＡＴ爆弾難度レート１   =   25)
+		eval($i:w20c_ＦＡＴ爆弾難度レート２   =   25)
+		eval($i:w20c_ＦＡＴ爆弾難度レート３   =   25)
+		eval($i:w20c_ＦＡＴ爆弾難度レート４   =   25)
+		eval($i:w20c_ＦＡＴ爆弾設置最低数     =    2)
+		eval($i:w20c_ＦＡＴ爆弾設置最大数     =    3)
+		eval($i:w20c_ＦＡＴタイマーベース値   = 3000)
+		eval($i:w20c_ＦＡＴタイマー加算値     = 1000)
+
+	} else if($w:ゲーム設定 == d:LEVEL_NORMAL) {
+		// ＮＯＲＭＡＬ
+		eval($i:w20c_ＦＡＴ耐久値             =    3)
+		eval($i:w20c_ＦＡＴ耐久値回復フレーム =   60)
+		eval($i:w20c_ＦＡＴ体力               =  256)
+		eval($i:w20c_ＦＡＴ攻撃力割合         =  100)
+		eval($i:w20c_ＦＡＴ爆弾難度レート１   =   25)
+		eval($i:w20c_ＦＡＴ爆弾難度レート２   =   25)
+		eval($i:w20c_ＦＡＴ爆弾難度レート３   =   25)
+		eval($i:w20c_ＦＡＴ爆弾難度レート４   =   25)
+		eval($i:w20c_ＦＡＴ爆弾設置最低数     =    2)
+		eval($i:w20c_ＦＡＴ爆弾設置最大数     =    3)
+		eval($i:w20c_ＦＡＴタイマーベース値   = 2400)
+		eval($i:w20c_ＦＡＴタイマー加算値     = 1200)
+
+	} else if($w:ゲーム設定 == d:LEVEL_HARD) {
+		// ＨＡＲＤ
+		eval($i:w20c_ＦＡＴ耐久値             =    4)
+		eval($i:w20c_ＦＡＴ耐久値回復フレーム =   60)
+		eval($i:w20c_ＦＡＴ体力               =  384)
+		eval($i:w20c_ＦＡＴ攻撃力割合         =  110)
+		eval($i:w20c_ＦＡＴ爆弾難度レート１   =   10)
+		eval($i:w20c_ＦＡＴ爆弾難度レート２   =   10)
+		eval($i:w20c_ＦＡＴ爆弾難度レート３   =   40)
+		eval($i:w20c_ＦＡＴ爆弾難度レート４   =   40)
+		eval($i:w20c_ＦＡＴ爆弾設置最低数     =    3)
+		eval($i:w20c_ＦＡＴ爆弾設置最大数     =    4)
+		eval($i:w20c_ＦＡＴタイマーベース値   = 1500)
+		eval($i:w20c_ＦＡＴタイマー加算値     =  900)
+
+	} else {
+		// ＶＥＲＹ ＨＡＲＤ
+		eval($i:w20c_ＦＡＴ耐久値             =    5)
+		eval($i:w20c_ＦＡＴ耐久値回復フレーム =   60)
+		eval($i:w20c_ＦＡＴ体力               =  512)
+		eval($i:w20c_ＦＡＴ攻撃力割合         =  130)
+		eval($i:w20c_ＦＡＴ爆弾難度レート１   =   05)
+		eval($i:w20c_ＦＡＴ爆弾難度レート２   =   05)
+		eval($i:w20c_ＦＡＴ爆弾難度レート３   =   45)
+		eval($i:w20c_ＦＡＴ爆弾難度レート４   =   45)
+		eval($i:w20c_ＦＡＴ爆弾設置最低数     =    4)
+		eval($i:w20c_ＦＡＴ爆弾設置最大数     =    5)
+		eval($i:w20c_ＦＡＴタイマーベース値   = 1200)
+		eval($i:w20c_ＦＡＴタイマー加算値     =  900)
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Ｃ４撃ったらゲームオーバー
+
+proc Ｃ４撃ったらゲームオーバー {
+#if d:DEBUG_PRINT
+	print '*** C4 Shot Game Over ***'
+#endif
+
+	@Ｃ４爆発ゲームオーバー処理 $3 $4 $5
+}
+
+//-----------------------------------------------------------------------------
+// Ｃ４爆発ゲームオーバー
+
+proc Ｃ４爆発ゲームオーバー {
+#if d:DEBUG_PRINT
+	print '*** C4 Explode Game Over ***'
+#endif
+
+	@Ｃ４爆発ゲームオーバー処理 $1 $2 $3
+}
+
+//-----------------------------------------------------------------------------
+// Ｃ４爆発ゲームオーバー処理
+
+proc Ｃ４爆発ゲームオーバー処理 $:Ｘ座標 $:Ｙ座標 $:Ｚ座標 {
+#if d:DEBUG_PRINT
+	print '*** C4 Explode Game Over Routine ***'
+#endif
+
+	if(`command ゲームオーバーチェック` == 1) {
+		return
+	}
+
+	command ファットマン非表示
+	command カモメ非表示
+	command プレイヤー不可視
+
+	if($:Ｚ座標 < -106000) {
+		// ドラム缶１
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 46620,19645,-104729 -t 48977,11996,-107866
+
+	} else if($:Ｚ座標 < -101000) {
+		if($:Ｘ座標 < 50000) {
+			// コンテナ１－１
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 44762,22171,-98113 -t 46820,14954,-102263
+
+		} else if($:Ｘ座標 < 56500) {
+			// 箱１
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 49221,21239,-97336 -t 50903,14251,-102012
+
+		} else {
+			// 箱２
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 70172,21148,-97311 -t 67026,14190,-101193
+
+		}
+	} else if($:Ｚ座標 <  -96000) {
+		if($:Ｘ座標 < 50000) {
+			// コンテナ２－１
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 44208,22022,-93091 -t 46463,15084,-97570
+
+		} else if($:Ｘ座標 < 56500) {
+			// コンテナ２－２
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 50337,21849,-92657 -t 51517,14937,-97561
+
+		} else if($:Ｘ座標 < 63000) {
+			// コンテナ２－３
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 61419,21286,-92580 -t 60036,14401,-97462
+
+		} else {
+			// コンテナ２－４
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 68257,21871,-92779 -t 66276,15014,-97481
+
+		}
+	} else if($:Ｚ座標 <  -91000) {
+		if($:Ｘ座標 < 50000) {
+			// コンテナ３－１
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 44109,22349,-87860 -t 46387,15445,-92301
+
+		} else if($:Ｘ座標 < 56500) {
+			// コンテナ３－２
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 50281,21031,-86989 -t 51510,14663,-92502
+
+		} else if($:Ｘ座標 < 63000) {
+			// コンテナ３－３
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 61424,20582,-86974 -t 60013,14269,-92501
+
+		} else {
+			// コンテナ３－４
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 68821,20311,-87136 -t 66377,14481,-92813
+
+		}
+	} else if($:Ｚ座標 <  -85500) {
+		if($:Ｘ座標 < 47000) {
+			// ラック１－西１
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 41567,19164,-83752 -t 45317,12640,-87667
+
+		} else if($:Ｘ座標 < 56500) {
+			// ラック１－西２
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 46069,19978,-81957 -t 47673,13128,-86692
+
+		} else if($:Ｘ座標 < 63000) {
+			// コンテナ４－３
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 61263,20517,-82314 -t 60162,13829,-87399
+
+		} else {
+			// コンテナ４－４
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 69605,20931,-82364 -t 66675,14782,-87391
+
+		}
+	} else if($:Ｚ座標 <  -81000) {
+		if($:Ｘ座標 < 49500) {
+			// ドラム缶２
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 46366,19501,-77378 -t 48711,12925,-82145
+
+		} else if($:Ｘ座標 < 56500) {
+			// ラック２
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 55508,18913,-77103 -t 52577,13013,-82371
+
+		} else if($:Ｘ座標 < 66000) {
+			if($:Ｘ座標 < -83500) {
+				// ラック１－南２
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 60046,22129,-80023 -t 61029,14691,-83846
+
+			} else {
+				// ラック１－南１
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 65042,19884,-76793 -t 63313,13236,-81650
+
+			}
+		} else {
+			// 箱３
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 70940,19534,-78854 -t 67461,13512,-83545
+
+		}
+	} else {
+		// おまけ
+								chara カメラ設定 でもデモカメラ -c 1 -a 200 -i 0 0 0 0 -s 1 \
+									-p 58109,19281,-77017 -t 55812,11946,-80408
+
+	}
+
+	@爆発ゲームオーバー処理（簡易版） d:BOMB_EFFECT_ON
+}
+
+//-----------------------------------------------------------------------------
+// プレイヤー位置取得
+
+proc プレイヤー位置取得 {
+#if d:DEBUG_PRINT
+	print '*** Get Player Position ***'
+#endif
+
+	if(    (  45000 < $i:プレイヤー位置Ｘ) && ($i:プレイヤー位置Ｘ <  68000)  \
+		&& (-110000 < $i:プレイヤー位置Ｚ) && ($i:プレイヤー位置Ｚ < -81500)) {
+		return 1
+	} else {
+		return 0
+	}
+}
+
+//-----------------------------------------------------------------------------
+// ファットマン死亡ゲームクリア
+
+proc ファットマン死亡ゲームクリア {
+#if d:DEBUG_PRINT
+	print '*** Fatman Dead Game Clear ***'
+#endif
+
+	command パッド操作 -release
+//	command プレイヤー無敵セット
+	if(`@プレイヤー位置取得` == 1) {
+		chara delay ディレイ -time 10 -exec {
+			if(`command ゲームオーバーチェック` == 1) {
+				return
+			}
+
+		#ifdef d:MISSION_TALE
+			@スネークテイルズ用ファットマン戦終了時処理 0
+		#else
+			#ifndef d:BOSS_MODE
+				eval($f:rfp_ファットマン死んだ      = 1)
+				eval($f:w20c_ファットマン死亡フラグ = 1)
+				command セットサウンドコード -c d:SNG_FOUTS_S
+				@ファットマン死亡シナリオデモ開始
+			#else
+				@ボスラッシュ終了時処理
+			#endif
+		#endif
+		}
+
+	} else {
+		chara delay ディレイ -time 100 -exec {
+			if(`command ゲームオーバーチェック` == 1) {
+				return
+			}
+		#ifdef d:MISSION_TALE
+			@スネークテイルズ用ファットマン戦終了時処理 0
+		#else
+			#ifndef d:BOSS_MODE
+				eval($f:rfp_ファットマン死んだ      = 1)
+				eval($f:w20c_ファットマン死亡フラグ = 1)
+				command セットサウンドコード -c d:SNG_FOUTS_S
+				@ファットマン死亡シナリオデモ開始
+			#else
+				@ボスラッシュ終了時処理
+			#endif
+		#endif
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// ファットマン気絶ゲームクリア
+
+proc ファットマン気絶ゲームクリア {
+#if d:DEBUG_PRINT
+	print '*** Fatman KO Game Clear ***'
+#endif
+
+	command パッド操作 -release
+//	command プレイヤー無敵セット
+	if(`@プレイヤー位置取得` == 1) {
+		chara delay ディレイ -time 10 -exec {
+			if(`command ゲームオーバーチェック` == 1) {
+				return
+			}
+
+		#ifdef d:MISSION_TALE
+			@スネークテイルズ用ファットマン戦終了時処理 1
+		#else
+			#ifndef d:BOSS_MODE
+				eval($f:rfp_ファットマン死んだ      = 1)
+				eval($f:w20c_ファットマン死亡フラグ = 0)
+				command セットサウンドコード -c d:SNG_FOUTS_S
+				@ファットマン死亡シナリオデモ開始
+			#else
+				@ボスラッシュ終了時処理
+			#endif
+		#endif
+		}
+
+	} else {
+		chara delay ディレイ -time 100 -exec {
+			if(`command ゲームオーバーチェック` == 1) {
+				return
+			}
+		#ifdef d:MISSION_TALE
+			@スネークテイルズ用ファットマン戦終了時処理 1
+		#else
+			#ifndef d:BOSS_MODE
+				eval($f:rfp_ファットマン死んだ      = 1)
+				eval($f:w20c_ファットマン死亡フラグ = 0)
+				command セットサウンドコード -c d:SNG_FOUTS_S
+				@ファットマン死亡シナリオデモ開始
+			#else
+				@ボスラッシュ終了時処理
+			#endif
+		#endif
+		}
+	}
+}
+
+
+proc スネークテイルズ用ファットマン戦終了時処理 $:気絶フラグ {
+	#if d:DEBUG_PRINT
+		print '*** Fatman Dead Game Clear ***'
+	#endif
+
+	$f:テイルズＡファットマン倒したフラグ = 1;
+
+	if ( $:気絶フラグ == 0 ) {
+		$f:テイルズＡファットマン気絶フラグ = 0;
+	} else {
+		$f:テイルズＡファットマン気絶フラグ = 1;
+	}
+	
+	@紙芝居ステージロード $b:tales_story_a
+	
+}
+
+//-----------------------------------------------------------------------------
+// ファットマン情報取得
+
+proc ファットマン情報取得 {
+#if d:DEBUG_PRINT
+	print '*** Fatman Info Proc ***'
+#endif
+
+	if($1 == d:FAT_GCLINFO_PHASE_BOMB) {			// 爆弾フェーズ開始
+		#if d:DEBUG_PRINT
+			print '*** BOMB-PHASE ***'
+		#endif
+
+		eval($f:rfp_ファットマン爆弾生きてる = 0)
+
+	} else if($1 == d:FAT_GCLINFO_PHASE_DEMINE) {	// 解体フェーズ開始
+		#if d:DEBUG_PRINT
+			print '*** DEMINE-PHASE ***'
+		#endif
+
+		eval($f:rfp_ファットマン爆弾生きてる = 0)
+
+	} else if($1 == d:FAT_GCLINFO_PHASE_SHOOT) {	// 銃撃フェーズ開始
+		#if d:DEBUG_PRINT
+			print '*** SHOOT-PHASE ***'
+		#endif
+
+		eval($f:rfp_ファットマン爆弾生きてる = 0)
+
+	} else if($1 == d:FAT_GCLINFO_STARTUP_BOMB) {	// 爆弾起動
+		#if d:DEBUG_PRINT
+			print '*** STARTUP-PHASE ***'
+		#endif
+
+		eval($f:rfp_ファットマン爆弾生きてる = 1)
+
+	} else if($1 == d:FAT_GCLINFO_CLEAR_BOMB) {		// 爆弾解体完了
+		#if d:DEBUG_PRINT
+			print '*** CLEAR-BOMB ***'
+		#endif
+
+		eval($f:rfp_ファットマン爆弾生きてる = 0)
+
+	} else if($1 == d:FAT_GCLINFO_GAME_CLEAR) {		// ファットマン死亡時
+		#if d:DEBUG_PRINT
+			print '*** GAME-CLEAR ***'
+		#endif
+
+		eval($f:rfp_ファットマン死んだ = 1)
+
+	} else if($1 == d:FAT_GCLINFO_FALL) {			// ファットマン転倒時
+		#if d:DEBUG_PRINT
+			print '*** FALL ***'
+		#endif
+
+		#ifndef d:BOSS_MODE
+
+		// ソコム弾を出す
+		if($w:ゲーム設定 < d:LEVEL_NORMAL) {
+			if($w:ゲーム設定 == d:LEVEL_VERYEASY) {
+				command rand 3
+			} else {
+				command rand 6
+			}
+			if($status == 0) {
+				command コントロール座標取得 ファットマンキャラ $i:Ｓローカル変数Ｉ１ $i:Ｓローカル変数Ｉ２ $i:Ｓローカル変数Ｉ３
+				@弾薬_ソコム_敵兵 ヘリポート $i:Ｓローカル変数Ｉ１ $i:Ｓローカル変数Ｉ２ $i:Ｓローカル変数Ｉ３
+			}
+		}
+
+		#endif
+	}
+}
+
+//-----------------------------------------------------------------------------
+// ファットマン配置_ＥＡＳＹ（_ＨＡＲＤ との違いは jputnum と index だけ）
+
+proc ファットマン配置_ＥＡＳＹ {
+#if d:DEBUG_PRINT
+	print '*** Fatman Set: Easy ***'
+#endif
+
+	// 難易度設定
+	@ＦＡＴ難易度設定
+
+	chara ファットマン ファットマンキャラ \
+		-s          32 \							// ID
+		-p          63125, 11500, -86500 \			// 初期位置
+		-d          1024 \							// 初期Ｙ方向
+		-cparam		$i:w20c_ＦＡＴ耐久値,           $i:w20c_ＦＡＴ耐久値回復フレーム, $i:w20c_ＦＡＴ体力,             $i:w20c_ＦＡＴ攻撃力割合 \			// パラメータ(耐久値,耐久値回復フレーム,体力,攻撃力割合)
+		-hdifficult	$i:w20c_ＦＡＴ爆弾難度レート１, $i:w20c_ＦＡＴ爆弾難度レート２,   $i:w20c_ＦＡＴ爆弾難度レート３, $i:w20c_ＦＡＴ爆弾難度レート４ \		// 爆弾難度レート
+		-jputnum	$i:w20c_ＦＡＴ爆弾設置最低数,   $i:w20c_ＦＡＴ爆弾設置最大数,     $i:w20c_ＦＡＴタイマーベース値, $i:w20c_ＦＡＴタイマー加算値 \		// 爆弾設定
+		-mkamome    かもめ管理 \					// カモメマネージャ
+		-over       Ｃ４爆発ゲームオーバー \		// ゲームオーバープロシージャ
+		-ubombover  Ｃ４撃ったらゲームオーバー \	// C4狙撃爆発ゲームオーバープロシージャ
+		-kill       ファットマン死亡ゲームクリア \	// クリアプロシージャ
+		-endknock   ファットマン気絶ゲームクリア \	// M9 No Killクリアプロシージャ
+		-ginfo      ファットマン情報取得 \			// コールバックプロシージャ
+
+
+
+		//----- ストリーミング番号
+		-vox \
+			t:vc103301, t:vc103302, t:vc103303, t:vc103304, t:vc103305, \
+			t:vc103306, t:vc103307, t:vc103308, t:vc103309, t:vc103310, \
+			t:vc103332, t:vc103333, t:vc103334, t:vc103335, t:vc103336, \
+			t:vc103337, t:vc103338, t:vc103339, t:vc103340, t:vc103341, \
+			t:vc103342, t:vc103343, t:vc103344, t:vc103350, t:vc103353, \
+			t:vc103354, t:vc103367, t:vc103368, t:vc103369, t:vc103370, \
+			t:vc103371, t:vc103372, t:vc103373, t:vc103374, t:vc103376, \
+			t:vc103377, t:vc103379, t:vc103380, t:vc103383, t:vc103384, \
+			t:vc103385, t:vc103387, t:vc103389, t:vc103390, t:vc103392, \
+			t:vc103393 \
+		//----- ストリーミングフラグ
+		-flagvox \
+			0, 0, 0, 0, 0, \
+			0, 0, 0, 0, 0, \
+			0, 0, 0, 0, 0, \
+			0, 0, 0, 0, 0, \
+			0, 0, 0, 0, 0, \
+			0, 0, 0, 0, 0, \
+			0, 0, 0, 0, 0, \
+			0, 0, 0, 0, 0, \
+			0, 0, 0, 0, 0, \
+			0 \
+		//----- ストリーミング長さ
+		-len_vox \
+			t:vc103301_len, t:vc103302_len, t:vc103303_len, t:vc103304_len, t:vc103305_len, \
+			t:vc103306_len, t:vc103307_len, t:vc103308_len, t:vc103309_len, t:vc103310_len, \
+			t:vc103332_len, t:vc103333_len, t:vc103334_len, t:vc103335_len, t:vc103336_len, \
+			t:vc103337_len, t:vc103338_len, t:vc103339_len, t:vc103340_len, t:vc103341_len, \
+			t:vc103342_len, t:vc103343_len, t:vc103344_len, t:vc103350_len, t:vc103353_len, \
+			t:vc103354_len, t:vc103367_len, t:vc103368_len, t:vc103369_len, t:vc103370_len, \
+			t:vc103371_len, t:vc103372_len, t:vc103373_len, t:vc103374_len, t:vc103376_len, \
+			t:vc103377_len, t:vc103379_len, t:vc103380_len, t:vc103383_len, t:vc103384_len, \
+			t:vc103385_len, t:vc103387_len, t:vc103389_len, t:vc103390_len, t:vc103392_len, \
+			t:vc103393_len \
+
+
+
+		//----- 回転量データテーブル
+		-rot \
+			   0,    0,    0, \		// _C4_ROT_S1
+			   0,    0, 1024, \		// _C4_ROT_S2
+			   0,    0, 3072, \		// _C4_ROT_S3
+			   0, 3072,    0, \		// _C4_ROT_W1
+			   0, 3072, 1024, \		// _C4_ROT_W2
+			   0, 3072, 3072, \		// _C4_ROT_W3
+			   0, 1024,    0, \		// _C4_ROT_E1
+			   0, 1024, 1024, \		// _C4_ROT_E2
+			   0, 1024, 3072, \		// _C4_ROT_E3
+			   0, 2048,    0, \		// _C4_ROT_N1
+			   0, 2048, 1024, \		// _C4_ROT_N2
+			   0, 2048, 3072, \		// _C4_ROT_N3
+			3072,  512,    0, \		// _C4_ROT_U1
+			3072, 1024,    0, \		// _C4_ROT_U2
+			3072, 3584,    0, \		// _C4_ROT_U3
+			1024,  512,    0, \		// _C4_ROT_D1
+			1024, 1536,    0, \		// _C4_ROT_D2
+			1024, 2560,    0  \		// _C4_ROT_D3
+
+
+
+		//----- 設置位置
+		-bmpos \
+		// 0
+			// コンテナ横－南(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C11_SOUTH_1_Z    ), \
+			(d:_C21_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C21_SOUTH_1_Z    ), \
+			(d:_C22_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C22_SOUTH_1_Z    ), \
+			(d:_C23_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C23_SOUTH_1_Z    ), \
+			(d:_C24_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C24_SOUTH_1_Z    ), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C31_SOUTH_1_Z    ), \
+			(d:_C32_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C32_SOUTH_1_Z    ), \
+			(d:_C33_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C33_SOUTH_1_Z    ), \
+			(d:_C34_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C34_SOUTH_1_Z    ), \
+			(d:_C43_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C43_SOUTH_1_Z    ), \
+			(d:_C44_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C44_SOUTH_1_Z    ), \
+
+			// コンテナ横－西(11)
+			(d:_C11_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C11_MEDIUM__Z    ), \
+			(d:_C21_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C21_MEDIUM__Z    ), \
+			(d:_C22_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C22_MEDIUM__Z    ), \
+			(d:_C23_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C23_MEDIUM__Z    ), \
+			(d:_C24_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C24_MEDIUM__Z    ), \
+
+			(d:_C31_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C31_MEDIUM__Z    ), \
+			(d:_C32_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C32_MEDIUM__Z    ), \
+			(d:_C33_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C33_MEDIUM__Z    ), \
+			(d:_C34_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C34_MEDIUM__Z    ), \
+			(d:_C43_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C43_MEDIUM__Z    ), \
+			(d:_C44_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C44_MEDIUM__Z    ), \
+
+			// コンテナ横－東(11)
+			(d:_C11_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C11_MEDIUM__Z    ), \
+			(d:_C21_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C21_MEDIUM__Z    ), \
+			(d:_C22_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C22_MEDIUM__Z    ), \
+			(d:_C23_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C23_MEDIUM__Z    ), \
+			(d:_C24_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C24_MEDIUM__Z    ), \
+
+			(d:_C31_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C31_MEDIUM__Z    ), \
+			(d:_C32_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C32_MEDIUM__Z    ), \
+			(d:_C33_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C33_MEDIUM__Z    ), \
+			(d:_C34_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C34_MEDIUM__Z    ), \
+			(d:_C43_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C43_MEDIUM__Z    ), \
+			(d:_C44_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C44_MEDIUM__Z    ), \
+
+			// コンテナ横－北(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C11_NORTH_1_Z    ), \
+			(d:_C21_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C21_NORTH_1_Z    ), \
+			(d:_C22_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C22_NORTH_1_Z    ), \
+			(d:_C23_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C23_NORTH_1_Z    ), \
+			(d:_C24_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C24_NORTH_1_Z    ), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C31_NORTH_1_Z    ), \
+			(d:_C32_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C32_NORTH_1_Z    ), \
+			(d:_C33_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C33_NORTH_1_Z    ), \
+			(d:_C34_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C34_NORTH_1_Z    ), \
+			(d:_C43_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C43_NORTH_1_Z    ), \
+			(d:_C44_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C44_NORTH_1_Z    ), \
+		// 44
+
+
+			// コンテナ上－南西(11)
+			(d:_C11_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C11_SOUTH_2_Z -30), \
+			(d:_C21_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C21_SOUTH_2_Z -30), \
+			(d:_C22_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C22_SOUTH_2_Z -30), \
+			(d:_C23_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C23_SOUTH_2_Z -30), \
+			(d:_C24_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C24_SOUTH_2_Z -30), \
+
+			(d:_C31_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C31_SOUTH_2_Z -30), \
+			(d:_C32_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C32_SOUTH_2_Z -30), \
+			(d:_C33_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C33_SOUTH_2_Z -30), \
+			(d:_C34_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C34_SOUTH_2_Z -30), \
+			(d:_C43_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C43_SOUTH_2_Z -30), \
+			(d:_C44_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C44_SOUTH_2_Z -30), \
+
+			// コンテナ上－北西(11)
+			(d:_C11_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C11_NORTH_2_Z +30), \
+			(d:_C21_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C21_NORTH_2_Z +30), \
+			(d:_C22_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C22_NORTH_2_Z +30), \
+			(d:_C23_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C23_NORTH_2_Z +30), \
+			(d:_C24_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C24_NORTH_2_Z +30), \
+
+			(d:_C31_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C31_NORTH_2_Z +30), \
+			(d:_C32_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C32_NORTH_2_Z +30), \
+			(d:_C33_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C33_NORTH_2_Z +30), \
+			(d:_C34_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C34_NORTH_2_Z +30), \
+			(d:_C43_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C43_NORTH_2_Z +30), \
+			(d:_C44_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C44_NORTH_2_Z +30), \
+
+			// コンテナ上－南東(11)
+			(d:_C11_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C11_SOUTH_2_Z -30), \
+			(d:_C21_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C21_SOUTH_2_Z -30), \
+			(d:_C22_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C22_SOUTH_2_Z -30), \
+			(d:_C23_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C23_SOUTH_2_Z -30), \
+			(d:_C24_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C24_SOUTH_2_Z -30), \
+
+			(d:_C31_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C31_SOUTH_2_Z -30), \
+			(d:_C32_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C32_SOUTH_2_Z -30), \
+			(d:_C33_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C33_SOUTH_2_Z -30), \
+			(d:_C34_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C34_SOUTH_2_Z -30), \
+			(d:_C43_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C43_SOUTH_2_Z -30), \
+			(d:_C44_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C44_SOUTH_2_Z -30), \
+
+			// コンテナ上－北東(11)
+			(d:_C11_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C11_NORTH_2_Z +30), \
+			(d:_C21_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C21_NORTH_2_Z +30), \
+			(d:_C22_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C22_NORTH_2_Z +30), \
+			(d:_C23_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C23_NORTH_2_Z +30), \
+			(d:_C24_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C24_NORTH_2_Z +30), \
+
+			(d:_C31_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C31_NORTH_2_Z +30), \
+			(d:_C32_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C32_NORTH_2_Z +30), \
+			(d:_C33_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C33_NORTH_2_Z +30), \
+			(d:_C34_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C34_NORTH_2_Z +30), \
+			(d:_C43_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C43_NORTH_2_Z +30), \
+			(d:_C44_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C44_NORTH_2_Z +30), \
+		// 88
+
+
+			// コンテナ下－南(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C11_SOUTH_2_Z -100), \
+			(d:_C21_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C21_SOUTH_2_Z -100), \
+			(d:_C22_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C22_SOUTH_2_Z -100), \
+			(d:_C23_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C23_SOUTH_2_Z -100), \
+			(d:_C24_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C24_SOUTH_2_Z -100), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C31_SOUTH_2_Z -100), \
+			(d:_C32_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C32_SOUTH_2_Z -100), \
+			(d:_C33_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C33_SOUTH_2_Z -100), \
+			(d:_C34_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C34_SOUTH_2_Z -100), \
+			(d:_C43_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C43_SOUTH_2_Z -100), \
+			(d:_C44_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C44_SOUTH_2_Z -100), \
+
+			// コンテナ下－西(11)
+			(d:_C11_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C11_MEDIUM__Z    ), \
+			(d:_C21_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C21_MEDIUM__Z    ), \
+			(d:_C22_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C22_MEDIUM__Z    ), \
+			(d:_C23_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C23_MEDIUM__Z    ), \
+			(d:_C24_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C24_MEDIUM__Z    ), \
+
+			(d:_C31_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C31_MEDIUM__Z    ), \
+			(d:_C32_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C32_MEDIUM__Z    ), \
+			(d:_C33_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C33_MEDIUM__Z    ), \
+			(d:_C34_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C34_MEDIUM__Z    ), \
+			(d:_C43_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C43_MEDIUM__Z    ), \
+			(d:_C44_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C44_MEDIUM__Z    ), \
+
+			// コンテナ下－東(11)
+			(d:_C11_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C11_MEDIUM__Z    ), \
+			(d:_C21_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C21_MEDIUM__Z    ), \
+			(d:_C22_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C22_MEDIUM__Z    ), \
+			(d:_C23_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C23_MEDIUM__Z    ), \
+			(d:_C24_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C24_MEDIUM__Z    ), \
+
+			(d:_C31_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C31_MEDIUM__Z    ), \
+			(d:_C32_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C32_MEDIUM__Z    ), \
+			(d:_C33_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C33_MEDIUM__Z    ), \
+			(d:_C34_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C34_MEDIUM__Z    ), \
+			(d:_C43_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C43_MEDIUM__Z    ), \
+			(d:_C44_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C44_MEDIUM__Z    ), \
+
+			// コンテナ下－北(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C11_NORTH_2_Z +100), \
+			(d:_C21_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C21_NORTH_2_Z +100), \
+			(d:_C22_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C22_NORTH_2_Z +100), \
+			(d:_C23_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C23_NORTH_2_Z +100), \
+			(d:_C24_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C24_NORTH_2_Z +100), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C31_NORTH_2_Z +100), \
+			(d:_C32_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C32_NORTH_2_Z +100), \
+			(d:_C33_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C33_NORTH_2_Z +100), \
+			(d:_C34_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C34_NORTH_2_Z +100), \
+			(d:_C43_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C43_NORTH_2_Z +100), \
+			(d:_C44_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C44_NORTH_2_Z +100), \
+
+			// コンテナ下－中(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C11_MEDIUM__Z    ), \
+			(d:_C21_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C21_MEDIUM__Z    ), \
+			(d:_C22_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C22_MEDIUM__Z    ), \
+			(d:_C23_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C23_MEDIUM__Z    ), \
+			(d:_C24_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C24_MEDIUM__Z    ), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C31_MEDIUM__Z    ), \
+			(d:_C32_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C32_MEDIUM__Z    ), \
+			(d:_C33_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C33_MEDIUM__Z    ), \
+			(d:_C34_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C34_MEDIUM__Z    ), \
+			(d:_C43_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C43_MEDIUM__Z    ), \
+			(d:_C44_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C44_MEDIUM__Z    ), \
+		// 143
+
+
+			// 箱１(8)
+			(d:_B1_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_SOUTH_1_Z    ), \
+			(d:_B1_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_SOUTH_1_Z    ), \
+			(d:_B1_WEST_1_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_MEDIUM__Z    ), \
+			(d:_B1_EAST_1_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_MEDIUM__Z    ), \
+			(d:_B1_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_NORTH_1_Z    ), \
+			(d:_B1_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_NORTH_1_Z    ), \
+
+			(d:_B1_WEST_2_X    ), (d:_B_UP_1_Y    ), (d:_B1_MEDIUM__Z    ), \
+			(d:_B1_EAST_2_X    ), (d:_B_UP_1_Y    ), (d:_B1_MEDIUM__Z    ), \
+
+			// 箱２(11)
+			(d:_B2_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_SOUTH_1_Z    ), \
+			(d:_B2_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_SOUTH_1_Z    ), \
+			(d:_B2_WEST_1_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_SOUTH_2_Z    ), \
+			(d:_B2_EAST_1_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_SOUTH_2_Z    ), \
+			(d:_B2_MEDIUM_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_NORTH_2_Z    ), \
+			(d:_B2_EAST_1_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_NORTH_2_Z    ), \
+			(d:_B2_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_MEDIUM__Z    ), \
+			(d:_B2_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_NORTH_1_Z    ), \
+
+			(d:_B2_WEST_2_X    ), (d:_B_UP_1_Y    ), (d:_B2_SOUTH_2_Z    ), \
+			(d:_B2_EAST_2_X    ), (d:_B_UP_1_Y    ), (d:_B2_SOUTH_2_Z    ), \
+			(d:_B2_EAST_2_X    ), (d:_B_UP_1_Y    ), (d:_B2_NORTH_2_Z    ), \
+
+			// 箱３(16)
+			(d:_B3_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_SOUTH_1_Z    ), \
+			(d:_B3_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_SOUTH_1_Z    ), \
+			(d:_B3_WEST_1_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_SOUTH_2_Z    ), \
+			(d:_B3_EAST_1_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_SOUTH_2_Z    ), \
+			(d:_B3_WEST_1_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_NORTH_2_Z    ), \
+			(d:_B3_EAST_1_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_NORTH_2_Z    ), \
+			(d:_B3_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_NORTH_1_Z    ), \
+			(d:_B3_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_NORTH_1_Z    ), \
+
+			(d:_B3_WEST_2_X    ), (d:_B_UP_1_Y    ), (d:_B3_SOUTH_2_Z    ), \
+			(d:_B3_EAST_2_X    ), (d:_B_UP_1_Y    ), (d:_B3_SOUTH_2_Z    ), \
+			(d:_B3_EAST_2_X    ), (d:_B_UP_1_Y    ), (d:_B3_NORTH_2_Z    ), \
+
+			(d:_B3_WEST_2_X    ), (d:_B_SIDE_2_Y    ), (d:_B3_MEDIUM__Z +70), \
+			(d:_B3_WEST_1_X +20), (d:_B_SIDE_2_Y    ), (d:_B3_NORTH_2_Z    ), \
+			(d:_B3_MEDIUM_X +20), (d:_B_SIDE_2_Y    ), (d:_B3_NORTH_2_Z    ), \
+			(d:_B3_WEST_2_X    ), (d:_B_SIDE_2_Y    ), (d:_B3_NORTH_1_Z +70), \
+
+			(d:_B3_WEST_2_X    ), (d:_B_UP_2_Y    ), (d:_B3_NORTH_2_Z    ), \
+		// 178
+
+
+			// ドラム缶１(10)
+			(d:_D1_WEST_2_X    ), (d:_D_SIDE_Y    ), (d:_D1_SOUTH_1_Z    ), \
+			(d:_D1_EAST_2_X    ), (d:_D_SIDE_Y    ), (d:_D1_SOUTH_1_Z    ), \
+			(d:_D1_WEST_1_X    ), (d:_D_SIDE_Y    ), (d:_D1_SOUTH_2_Z    ), \
+			(d:_D1_EAST_1_X    ), (d:_D_SIDE_Y    ), (d:_D1_SOUTH_2_Z    ), \
+			(d:_D1_EAST_1_X    ), (d:_D_SIDE_Y    ), (d:_D1_NORTH_2_Z    ), \
+			(d:_D1_WEST_2_X    ), (d:_D_SIDE_Y    ), (d:_D1_MEDIUM__Z    ), \
+			(d:_D1_EAST_2_X    ), (d:_D_SIDE_Y    ), (d:_D1_NORTH_1_Z    ), \
+
+			(d:_D1_WEST_2_X    ), (d:_D_UP_Y    ), (d:_D1_SOUTH_2_Z    ), \
+			(d:_D1_EAST_2_X    ), (d:_D_UP_Y    ), (d:_D1_SOUTH_2_Z    ), \
+			(d:_D1_EAST_2_X    ), (d:_D_UP_Y    ), (d:_D1_NORTH_2_Z    ), \
+
+			// ドラム缶２(7)
+			(d:_D2_WEST_2_X    ), (d:_D_SIDE_Y    ), (d:_D2_SOUTH_1_Z    ), \
+			(d:_D2_EAST_2_X    ), (d:_D_SIDE_Y    ), (d:_D2_SOUTH_1_Z    ), \
+			(d:_D2_WEST_1_X    ), (d:_D_SIDE_Y    ), (d:_D2_MEDIUM__Z    ), \
+			(d:_D2_WEST_2_X    ), (d:_D_SIDE_Y    ), (d:_D2_NORTH_1_Z    ), \
+			(d:_D2_EAST_2_X    ), (d:_D_SIDE_Y    ), (d:_D2_NORTH_1_Z    ), \
+
+			(d:_D2_WEST_2_X    ), (d:_D_UP_Y    ), (d:_D2_MEDIUM__Z    ), \
+			(d:_D2_EAST_2_X    ), (d:_D_UP_Y    ), (d:_D2_MEDIUM__Z    ), \
+		// 195
+
+
+			// ラック１－西(6)
+			(d:_R1_MID_X    ), (d:_R_TOP_Y    ), (d:_R1_TOP_Z    ), \
+			(d:_R1_MID_X    ), (d:_R_MID_Y    ), (d:_R1_MID_Z    ), \
+			(d:_R1_MID_X    ), (d:_R_BTM_Y    ), (d:_R1_BTM_Z    ), \
+			(d:_R2_MID_X    ), (d:_R2_TOP_Y    ), (d:_R2_TOP_Z    ), \
+			(d:_R2_MID_X    ), (d:_R_MID_Y    ), (d:_R2_MID_Z    ), \
+			(d:_R2_MID_X    ), (d:_R_BTM_Y    ), (d:_R2_BTM_Z    ), \
+
+			// ラック１－南(6)
+			(d:_R3_TOP_X    ), (d:_R3_TOP_Y    ), (d:_R3_MID_Z    ), \
+			(d:_R3_MID_X    ), (d:_R_MID_Y    ), (d:_R3_MID_Z    ), \
+			(d:_R3_BTM_X    ), (d:_R_BTM_Y    ), (d:_R3_MID_Z    ), \
+			(d:_R4_TOP_X    ), (d:_R4_TOP_Y    ), (d:_R4_MID_Z    ), \
+			(d:_R4_MID_X    ), (d:_R4_MID_Y    ), (d:_R4_MID_Z    ), \
+			(d:_R4_BTM_X    ), (d:_R_BTM_Y    ), (d:_R4_MID_Z    ), \
+
+			// ラック２(3)
+			(d:_R5_TOP_B_X    ), (d:_R5_TOP_B_Y    ), (d:_R5_MID_B_Z -325), \
+			(d:_R5_MID_A_X    ), (d:_R5_MID_A_Y    ), (d:_R5_MID_A_Z    ), \
+			(d:_R5_BTM_A_X    ), (d:_R5_BTM_A_Y    ), (d:_R5_MID_A_Z    ), \
+		// 210
+
+
+			// ラック１－西Ｒ(4)
+			(d:_R1_MID_X    ), (d:_R_TOP_R_Y    ), (d:_R1_TOP_R_Z    ), \
+			(d:_R1_MID_X    ), (d:_R_MID_R_Y    ), (d:_R1_MID_R_Z    ), \
+			(d:_R2_MID_X    ), (d:_R_TOP_R_Y    ), (d:_R2_TOP_R_Z    ), \
+			(d:_R2_MID_X    ), (d:_R_MID_R_Y    ), (d:_R2_MID_R_Z    ), \
+
+			// ラック１－南Ｒ(4)
+			(d:_R3_TOP_R_X    ), (d:_R_TOP_R_Y    ), (d:_R3_MID_Z    ), \
+			(d:_R3_MID_R_X    ), (d:_R_MID_R_Y    ), (d:_R3_MID_Z    ), \
+			(d:_R4_TOP_R_X    ), (d:_R_TOP_R_Y    ), (d:_R4_MID_Z    ), \
+			(d:_R4_MID_R_X    ), (d:_R_MID_R_Y    ), (d:_R4_MID_Z    ), \
+
+			// ラック２Ｒ(2)
+			(d:_R5_TOP_A_R_X    ), (d:_R_TOP_R_Y    ), (d:_R5_MID_A_Z    ), \
+			(d:_R5_MID_B_R_X    ), (d:_R_MID_R_Y    ), (d:_R5_MID_B_Z    ), \
+		// 220
+
+
+			// おまけ(2)
+			(d:_OMAKE_1_X    ), (d:_OMAKE_1_Y    ), (d:_OMAKE_1_Z    ), \
+			(d:_OMAKE_2_X    ), (d:_OMAKE_2_Y    ), (d:_OMAKE_2_Z    ), \
+		// 222
+
+
+
+		//----- 回転
+		-qrotindex \
+		// 0
+			// コンテナ横－南(11)
+			d:_C4_ROT_S1, d:_C4_ROT_S2, d:_C4_ROT_S3, d:_C4_ROT_S1, d:_C4_ROT_S1, d:_C4_ROT_S1, \
+			d:_C4_ROT_S2, d:_C4_ROT_S3, d:_C4_ROT_S2, d:_C4_ROT_S3, d:_C4_ROT_S1, \
+
+			// コンテナ横－西(11)
+			d:_C4_ROT_W2, d:_C4_ROT_W1, d:_C4_ROT_W1, d:_C4_ROT_W2, d:_C4_ROT_W3, d:_C4_ROT_W1, \
+			d:_C4_ROT_W1, d:_C4_ROT_W3, d:_C4_ROT_W2, d:_C4_ROT_W1, d:_C4_ROT_W1, \
+
+			// コンテナ横－東(11)
+			d:_C4_ROT_E3, d:_C4_ROT_E2, d:_C4_ROT_E1, d:_C4_ROT_E1, d:_C4_ROT_E1, d:_C4_ROT_E3, \
+			d:_C4_ROT_E2, d:_C4_ROT_E1, d:_C4_ROT_E1, d:_C4_ROT_E2, d:_C4_ROT_E3, \
+
+			// コンテナ横－北(11)
+			d:_C4_ROT_N1, d:_C4_ROT_N1, d:_C4_ROT_N2, d:_C4_ROT_N3, d:_C4_ROT_N1, d:_C4_ROT_N3, \
+			d:_C4_ROT_N1, d:_C4_ROT_N2, d:_C4_ROT_N1, d:_C4_ROT_N2, d:_C4_ROT_N1, \
+		// 44
+
+			// コンテナ上－南西(11)
+			d:_C4_ROT_U2, d:_C4_ROT_U3, d:_C4_ROT_U1, d:_C4_ROT_U2, d:_C4_ROT_U2, d:_C4_ROT_U2, \
+			d:_C4_ROT_U2, d:_C4_ROT_U1, d:_C4_ROT_U2, d:_C4_ROT_U3, d:_C4_ROT_U1, \
+
+			// コンテナ上－北西(11)
+			d:_C4_ROT_U3, d:_C4_ROT_U2, d:_C4_ROT_U1, d:_C4_ROT_U2, d:_C4_ROT_U2, d:_C4_ROT_U1, \
+			d:_C4_ROT_U1, d:_C4_ROT_U3, d:_C4_ROT_U2, d:_C4_ROT_U2, d:_C4_ROT_U3, \
+
+			// コンテナ上－南東(11)
+			d:_C4_ROT_U1, d:_C4_ROT_U2, d:_C4_ROT_U2, d:_C4_ROT_U1, d:_C4_ROT_U2, d:_C4_ROT_U2, \
+			d:_C4_ROT_U1, d:_C4_ROT_U3, d:_C4_ROT_U2, d:_C4_ROT_U2, d:_C4_ROT_U2, \
+
+			// コンテナ上－北東(11)
+			d:_C4_ROT_U2, d:_C4_ROT_U2, d:_C4_ROT_U1, d:_C4_ROT_U3, d:_C4_ROT_U2, d:_C4_ROT_U2, \
+			d:_C4_ROT_U1, d:_C4_ROT_U3, d:_C4_ROT_U1, d:_C4_ROT_U2, d:_C4_ROT_U2, \
+		// 88
+
+			// コンテナ下－南(11)
+			d:_C4_ROT_D2, d:_C4_ROT_D1, d:_C4_ROT_D3, d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D2, \
+			d:_C4_ROT_D1, d:_C4_ROT_D3, d:_C4_ROT_D1, d:_C4_ROT_D2, d:_C4_ROT_D2, \
+
+			// コンテナ下－西(11)
+			d:_C4_ROT_D2, d:_C4_ROT_D3, d:_C4_ROT_D2, d:_C4_ROT_D1, d:_C4_ROT_D2, d:_C4_ROT_D1, \
+			d:_C4_ROT_D3, d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D1, \
+
+			// コンテナ下－東(11)
+			d:_C4_ROT_D3, d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D1, \
+			d:_C4_ROT_D3, d:_C4_ROT_D2, d:_C4_ROT_D1, d:_C4_ROT_D3, d:_C4_ROT_D1, \
+
+			// コンテナ下－北(11)
+			d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D1, d:_C4_ROT_D3, \
+			d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D1, d:_C4_ROT_D2, d:_C4_ROT_D2, \
+
+			// コンテナ下－中(11)
+			d:_C4_ROT_D3, d:_C4_ROT_D2, d:_C4_ROT_D1, d:_C4_ROT_D2, d:_C4_ROT_D1, d:_C4_ROT_D3, \
+			d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D1, d:_C4_ROT_D2, d:_C4_ROT_D2, \
+		// 143
+
+			// 箱１(8)
+			d:_C4_ROT_S1, d:_C4_ROT_S1, \
+			d:_C4_ROT_W3, d:_C4_ROT_E1, \
+			d:_C4_ROT_N3, d:_C4_ROT_N1, \
+			d:_C4_ROT_U1, d:_C4_ROT_U3, \
+
+			// 箱２(11)
+			d:_C4_ROT_S2, d:_C4_ROT_S1, \
+			d:_C4_ROT_W1, d:_C4_ROT_E2, \
+			d:_C4_ROT_W2, d:_C4_ROT_E1, \
+			d:_C4_ROT_N2, d:_C4_ROT_N3, \
+			d:_C4_ROT_U3, d:_C4_ROT_U1, d:_C4_ROT_U1, \
+
+			// 箱３(16)
+			d:_C4_ROT_S3, d:_C4_ROT_S1, \
+			d:_C4_ROT_W3, d:_C4_ROT_E3, \
+			d:_C4_ROT_W1, d:_C4_ROT_E1, \
+			d:_C4_ROT_N1, d:_C4_ROT_N2, \
+			d:_C4_ROT_U2, d:_C4_ROT_U1, d:_C4_ROT_U3, \
+
+			d:_C4_ROT_S2, d:_C4_ROT_W1, d:_C4_ROT_E1, d:_C4_ROT_N1, \
+			d:_C4_ROT_U1, \
+		// 178
+
+			// ドラム缶１(10)
+			d:_C4_ROT_S1, d:_C4_ROT_S3, \
+			d:_C4_ROT_W1, d:_C4_ROT_E2, d:_C4_ROT_E3, \
+			d:_C4_ROT_N1, d:_C4_ROT_N3, \
+			d:_C4_ROT_U1, d:_C4_ROT_U3, d:_C4_ROT_U1, \
+
+			// ドラム缶２(7)
+			d:_C4_ROT_S1, d:_C4_ROT_S2, \
+			d:_C4_ROT_W2, \
+			d:_C4_ROT_N1, d:_C4_ROT_N2, \
+			d:_C4_ROT_U3, d:_C4_ROT_U1, \
+		// 195
+
+			// ラック１－西(6)
+			d:_C4_ROT_U1, d:_C4_ROT_U2, d:_C4_ROT_U1, d:_C4_ROT_U1, d:_C4_ROT_U3, d:_C4_ROT_U2, \
+
+			// ラック１－南(6)
+			d:_C4_ROT_U1, d:_C4_ROT_U2, d:_C4_ROT_U3, d:_C4_ROT_U2, d:_C4_ROT_U1, d:_C4_ROT_U3, \
+
+			// ラック２(3)
+			d:_C4_ROT_U2, d:_C4_ROT_U2, d:_C4_ROT_U1, \
+		// 210
+
+			// ラック１－西Ｒ(4)
+			d:_C4_ROT_D1, d:_C4_ROT_D3, d:_C4_ROT_D1, d:_C4_ROT_D3, \
+
+			// ラック１－南Ｒ(4)
+			d:_C4_ROT_D1, d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D1, \
+
+			// ラック２Ｒ(2)
+			d:_C4_ROT_D2, d:_C4_ROT_D1, \
+		// 220
+
+			// おまけ(2)
+			d:_C4_ROT_N1, d:_C4_ROT_N3, \
+		// 222
+
+
+
+		//----- 立ち位置
+		-aimpos \
+		// 0
+			// コンテナ横－南(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C11_SOUTH_1_Z+500), \
+			(d:_C21_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C21_SOUTH_1_Z+500), \
+			(d:_C22_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C22_SOUTH_1_Z+500), \
+			(d:_C23_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C23_SOUTH_1_Z+500), \
+			(d:_C24_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C24_SOUTH_1_Z+500), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C31_SOUTH_1_Z+500), \
+			(d:_C32_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C32_SOUTH_1_Z+500), \
+			(d:_C33_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C33_SOUTH_1_Z+500), \
+			(d:_C34_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C34_SOUTH_1_Z+500), \
+			(d:_C43_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C43_SOUTH_1_Z+500), \
+			(d:_C44_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C44_SOUTH_1_Z+500), \
+
+			// コンテナ横－西(11)
+			(d:_C11_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C11_MEDIUM__Z    ), \
+			(d:_C21_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C21_MEDIUM__Z    ), \
+			(d:_C22_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C22_MEDIUM__Z    ), \
+			(d:_C23_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C23_MEDIUM__Z    ), \
+			(d:_C24_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C24_MEDIUM__Z    ), \
+
+			(d:_C31_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C31_MEDIUM__Z    ), \
+			(d:_C32_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C32_MEDIUM__Z    ), \
+			(d:_C33_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C33_MEDIUM__Z    ), \
+			(d:_C34_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C34_MEDIUM__Z    ), \
+			(d:_C43_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C43_MEDIUM__Z    ), \
+			(d:_C44_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C44_MEDIUM__Z    ), \
+
+			// コンテナ横－東(11)
+			(d:_C11_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C11_MEDIUM__Z    ), \
+			(d:_C21_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C21_MEDIUM__Z    ), \
+			(d:_C22_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C22_MEDIUM__Z    ), \
+			(d:_C23_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C23_MEDIUM__Z    ), \
+			(d:_C24_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C24_MEDIUM__Z    ), \
+
+			(d:_C31_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C31_MEDIUM__Z    ), \
+			(d:_C32_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C32_MEDIUM__Z    ), \
+			(d:_C33_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C33_MEDIUM__Z    ), \
+			(d:_C34_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C34_MEDIUM__Z    ), \
+			(d:_C43_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C43_MEDIUM__Z    ), \
+			(d:_C44_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C44_MEDIUM__Z    ), \
+
+			// コンテナ横－北(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C11_NORTH_1_Z-500), \
+			(d:_C21_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C21_NORTH_1_Z-500), \
+			(d:_C22_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C22_NORTH_1_Z-500), \
+			(d:_C23_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C23_NORTH_1_Z-500), \
+			(d:_C24_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C24_NORTH_1_Z-500), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C31_NORTH_1_Z-500), \
+			(d:_C32_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C32_NORTH_1_Z-500), \
+			(d:_C33_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C33_NORTH_1_Z-500), \
+			(d:_C34_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C34_NORTH_1_Z-500), \
+			(d:_C43_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C43_NORTH_1_Z-500), \
+			(d:_C44_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C44_NORTH_1_Z-500), \
+		// 44
+
+
+			// コンテナ上－南西(11)
+			(d:_C11_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C11_SOUTH_2_Z+500), \
+			(d:_C21_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C21_SOUTH_2_Z+500), \
+			(d:_C22_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C22_SOUTH_2_Z+500), \
+			(d:_C23_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C23_SOUTH_2_Z+500), \
+			(d:_C24_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C24_SOUTH_2_Z+500), \
+
+			(d:_C31_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C31_SOUTH_2_Z+500), \
+			(d:_C32_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C32_SOUTH_2_Z+500), \
+			(d:_C33_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C33_SOUTH_2_Z+500), \
+			(d:_C34_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C34_SOUTH_2_Z+500), \
+			(d:_C43_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C43_SOUTH_2_Z+500), \
+			(d:_C44_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C44_SOUTH_2_Z+500), \
+
+			// コンテナ上－北西(11)
+			(d:_C11_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C11_NORTH_2_Z-500), \
+			(d:_C21_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C21_NORTH_2_Z-500), \
+			(d:_C22_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C22_NORTH_2_Z-500), \
+			(d:_C23_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C23_NORTH_2_Z-500), \
+			(d:_C24_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C24_NORTH_2_Z-500), \
+
+			(d:_C31_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C31_NORTH_2_Z-500), \
+			(d:_C32_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C32_NORTH_2_Z-500), \
+			(d:_C33_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C33_NORTH_2_Z-500), \
+			(d:_C34_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C34_NORTH_2_Z-500), \
+			(d:_C43_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C43_NORTH_2_Z-500), \
+			(d:_C44_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C44_NORTH_2_Z-500), \
+
+			// コンテナ上－南東(11)
+			(d:_C11_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C11_SOUTH_2_Z+500), \
+			(d:_C21_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C21_SOUTH_2_Z+500), \
+			(d:_C22_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C22_SOUTH_2_Z+500), \
+			(d:_C23_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C23_SOUTH_2_Z+500), \
+			(d:_C24_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C24_SOUTH_2_Z+500), \
+
+			(d:_C31_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C31_SOUTH_2_Z+500), \
+			(d:_C32_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C32_SOUTH_2_Z+500), \
+			(d:_C33_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C33_SOUTH_2_Z+500), \
+			(d:_C34_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C34_SOUTH_2_Z+500), \
+			(d:_C43_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C43_SOUTH_2_Z+500), \
+			(d:_C44_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C44_SOUTH_2_Z+500), \
+
+			// コンテナ上－北東(11)
+			(d:_C11_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C11_NORTH_2_Z-500), \
+			(d:_C21_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C21_NORTH_2_Z-500), \
+			(d:_C22_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C22_NORTH_2_Z-500), \
+			(d:_C23_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C23_NORTH_2_Z-500), \
+			(d:_C24_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C24_NORTH_2_Z-500), \
+
+			(d:_C31_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C31_NORTH_2_Z-500), \
+			(d:_C32_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C32_NORTH_2_Z-500), \
+			(d:_C33_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C33_NORTH_2_Z-500), \
+			(d:_C34_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C34_NORTH_2_Z-500), \
+			(d:_C43_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C43_NORTH_2_Z-500), \
+			(d:_C44_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C44_NORTH_2_Z-500), \
+		// 88
+
+
+			// コンテナ下－南(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C11_SOUTH_2_Z+500), \
+			(d:_C21_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C21_SOUTH_2_Z+500), \
+			(d:_C22_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C22_SOUTH_2_Z+500), \
+			(d:_C23_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C23_SOUTH_2_Z+500), \
+			(d:_C24_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C24_SOUTH_2_Z+500), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C31_SOUTH_2_Z+500), \
+			(d:_C32_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C32_SOUTH_2_Z+500), \
+			(d:_C33_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C33_SOUTH_2_Z+500), \
+			(d:_C34_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C34_SOUTH_2_Z+500), \
+			(d:_C43_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C43_SOUTH_2_Z+500), \
+			(d:_C44_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C44_SOUTH_2_Z+500), \
+
+			// コンテナ下－西(11)
+			(d:_C11_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C11_MEDIUM__Z    ), \
+			(d:_C21_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C21_MEDIUM__Z    ), \
+			(d:_C22_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C22_MEDIUM__Z    ), \
+			(d:_C23_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C23_MEDIUM__Z    ), \
+			(d:_C24_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C24_MEDIUM__Z    ), \
+
+			(d:_C31_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C31_MEDIUM__Z    ), \
+			(d:_C32_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C32_MEDIUM__Z    ), \
+			(d:_C33_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C33_MEDIUM__Z    ), \
+			(d:_C34_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C34_MEDIUM__Z    ), \
+			(d:_C43_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C43_MEDIUM__Z    ), \
+			(d:_C44_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C44_MEDIUM__Z    ), \
+
+			// コンテナ下－東(11)
+			(d:_C11_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C11_MEDIUM__Z    ), \
+			(d:_C21_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C21_MEDIUM__Z    ), \
+			(d:_C22_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C22_MEDIUM__Z    ), \
+			(d:_C23_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C23_MEDIUM__Z    ), \
+			(d:_C24_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C24_MEDIUM__Z    ), \
+
+			(d:_C31_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C31_MEDIUM__Z    ), \
+			(d:_C32_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C32_MEDIUM__Z    ), \
+			(d:_C33_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C33_MEDIUM__Z    ), \
+			(d:_C34_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C34_MEDIUM__Z    ), \
+			(d:_C43_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C43_MEDIUM__Z    ), \
+			(d:_C44_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C44_MEDIUM__Z    ), \
+
+			// コンテナ下－北(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C11_NORTH_2_Z-500), \
+			(d:_C21_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C21_NORTH_2_Z-500), \
+			(d:_C22_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C22_NORTH_2_Z-500), \
+			(d:_C23_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C23_NORTH_2_Z-500), \
+			(d:_C24_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C24_NORTH_2_Z-500), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C31_NORTH_2_Z-500), \
+			(d:_C32_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C32_NORTH_2_Z-500), \
+			(d:_C33_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C33_NORTH_2_Z-500), \
+			(d:_C34_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C34_NORTH_2_Z-500), \
+			(d:_C43_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C43_NORTH_2_Z-500), \
+			(d:_C44_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C44_NORTH_2_Z-500), \
+
+			// コンテナ下－中(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C11_MEDIUM__Z-1500), \
+			(d:_C21_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C21_MEDIUM__Z-1500), \
+			(d:_C22_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C22_MEDIUM__Z-1500), \
+			(d:_C23_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C23_MEDIUM__Z-1500), \
+			(d:_C24_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C24_MEDIUM__Z-1500), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C31_MEDIUM__Z-1500), \
+			(d:_C32_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C32_MEDIUM__Z-1500), \
+			(d:_C33_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C33_MEDIUM__Z-1500), \
+			(d:_C34_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C34_MEDIUM__Z-1500), \
+			(d:_C43_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C43_MEDIUM__Z-1500), \
+			(d:_C44_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C44_MEDIUM__Z-1500), \
+		// 143
+
+
+			// 箱１(8)
+			(d:_B1_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_SOUTH_1_Z+500), \
+			(d:_B1_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_SOUTH_1_Z+500), \
+			(d:_B1_WEST_1_X-500), (d:_B_SIDE_1_Y    ), (d:_B1_MEDIUM__Z    ), \
+			(d:_B1_EAST_1_X+500), (d:_B_SIDE_1_Y    ), (d:_B1_MEDIUM__Z    ), \
+			(d:_B1_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_NORTH_1_Z-500), \
+			(d:_B1_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_NORTH_1_Z-500), \
+
+			(d:_B1_WEST_2_X    ), (d:_B_UP_1_Y    ), (d:_B1_MEDIUM__Z+500), \
+			(d:_B1_EAST_2_X    ), (d:_B_UP_1_Y    ), (d:_B1_MEDIUM__Z+500), \
+
+			// 箱２(11)
+			(d:_B2_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_SOUTH_1_Z+500), \
+			(d:_B2_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_SOUTH_1_Z+500), \
+			(d:_B2_WEST_1_X-500), (d:_B_SIDE_1_Y    ), (d:_B2_SOUTH_2_Z    ), \
+			(d:_B2_EAST_1_X+500), (d:_B_SIDE_1_Y    ), (d:_B2_SOUTH_2_Z    ), \
+			(d:_B2_MEDIUM_X-500), (d:_B_SIDE_1_Y    ), (d:_B2_NORTH_2_Z    ), \
+			(d:_B2_EAST_1_X+500), (d:_B_SIDE_1_Y    ), (d:_B2_NORTH_2_Z    ), \
+			(d:_B2_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_MEDIUM__Z-500), \
+			(d:_B2_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_NORTH_1_Z-500), \
+
+			(d:_B2_WEST_2_X-500), (d:_B_UP_1_Y    ), (d:_B2_SOUTH_2_Z    ), \
+			(d:_B2_EAST_2_X+500), (d:_B_UP_1_Y    ), (d:_B2_SOUTH_2_Z    ), \
+			(d:_B2_EAST_2_X    ), (d:_B_UP_1_Y    ), (d:_B2_NORTH_2_Z-500), \
+
+			// 箱３(16)
+			(d:_B3_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_SOUTH_1_Z+500), \
+			(d:_B3_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_SOUTH_1_Z+500), \
+			(d:_B3_WEST_1_X-500), (d:_B_SIDE_1_Y    ), (d:_B3_SOUTH_2_Z    ), \
+			(d:_B3_EAST_1_X+500), (d:_B_SIDE_1_Y    ), (d:_B3_SOUTH_2_Z    ), \
+			(d:_B3_WEST_1_X-500), (d:_B_SIDE_1_Y    ), (d:_B3_NORTH_2_Z    ), \
+			(d:_B3_EAST_1_X+500), (d:_B_SIDE_1_Y    ), (d:_B3_NORTH_2_Z    ), \
+			(d:_B3_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_NORTH_1_Z-500), \
+			(d:_B3_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_NORTH_1_Z-500), \
+
+			(d:_B3_WEST_2_X-500), (d:_B_UP_1_Y    ), (d:_B3_SOUTH_2_Z    ), \
+			(d:_B3_EAST_2_X+500), (d:_B_UP_1_Y    ), (d:_B3_SOUTH_2_Z    ), \
+			(d:_B3_EAST_2_X    ), (d:_B_UP_1_Y    ), (d:_B3_NORTH_2_Z-500), \
+
+			(d:_B3_WEST_2_X-500), (d:_B_SIDE_2_Y    ), (d:_B3_MEDIUM__Z    ), \
+			(d:_B3_WEST_1_X-500), (d:_B_SIDE_2_Y    ), (d:_B3_NORTH_2_Z    ), \
+			(d:_B3_MEDIUM_X    ), (d:_B_SIDE_2_Y    ), (d:_B3_NORTH_2_Z-500), \
+			(d:_B3_WEST_2_X    ), (d:_B_SIDE_2_Y    ), (d:_B3_NORTH_1_Z-500), \
+
+			(d:_B3_WEST_2_X    ), (d:_B_UP_2_Y    ), (d:_B3_NORTH_2_Z-500), \
+		// 178
+
+
+			// ドラム缶１(10)
+			(d:_D1_WEST_2_X    ), (d:_D_SIDE_Y    ), (d:_D1_SOUTH_1_Z+500), \
+			(d:_D1_EAST_2_X    ), (d:_D_SIDE_Y    ), (d:_D1_SOUTH_1_Z+500), \
+			(d:_D1_WEST_1_X-500), (d:_D_SIDE_Y    ), (d:_D1_SOUTH_2_Z    ), \
+			(d:_D1_EAST_1_X+500), (d:_D_SIDE_Y    ), (d:_D1_SOUTH_2_Z    ), \
+			(d:_D1_EAST_1_X+500), (d:_D_SIDE_Y    ), (d:_D1_NORTH_2_Z    ), \
+			(d:_D1_WEST_2_X    ), (d:_D_SIDE_Y    ), (d:_D1_MEDIUM__Z-500), \
+			(d:_D1_EAST_2_X    ), (d:_D_SIDE_Y    ), (d:_D1_NORTH_1_Z-500), \
+
+			(d:_D1_WEST_2_X-500), (d:_D_UP_Y    ), (d:_D1_SOUTH_2_Z    ), \
+			(d:_D1_EAST_2_X+500), (d:_D_UP_Y    ), (d:_D1_SOUTH_2_Z    ), \
+			(d:_D1_EAST_2_X    ), (d:_D_UP_Y    ), (d:_D1_NORTH_2_Z-500), \
+
+			// ドラム缶２(7)
+			(d:_D2_WEST_2_X    ), (d:_D_SIDE_Y    ), (d:_D2_SOUTH_1_Z+500), \
+			(d:_D2_EAST_2_X    ), (d:_D_SIDE_Y    ), (d:_D2_SOUTH_1_Z+500), \
+			(d:_D2_WEST_1_X-500), (d:_D_SIDE_Y    ), (d:_D2_MEDIUM__Z    ), \
+			(d:_D2_WEST_2_X    ), (d:_D_SIDE_Y    ), (d:_D2_NORTH_1_Z-500), \
+			(d:_D2_EAST_2_X    ), (d:_D_SIDE_Y    ), (d:_D2_NORTH_1_Z-500), \
+
+			(d:_D2_WEST_2_X    ), (d:_D_UP_Y    ), (d:_D2_MEDIUM__Z+500), \
+			(d:_D2_EAST_2_X    ), (d:_D_UP_Y    ), (d:_D2_MEDIUM__Z+500), \
+		// 195
+
+
+			// ラック１－西(6)
+			(d:_R1_MID_X-500), (d:_R_TOP_Y    ), (d:_R1_TOP_Z    ), \
+			(d:_R1_MID_X-500), (d:_R_MID_Y    ), (d:_R1_MID_Z    ), \
+			(d:_R1_MID_X-500), (d:_R_BTM_Y    ), (d:_R1_BTM_Z    ), \
+			(d:_R2_MID_X+500), (d:_R2_TOP_Y    ), (d:_R2_TOP_Z    ), \
+			(d:_R2_MID_X+500), (d:_R_MID_Y    ), (d:_R2_MID_Z    ), \
+			(d:_R2_MID_X+500), (d:_R_BTM_Y    ), (d:_R2_BTM_Z    ), \
+
+			// ラック１－南(6)
+			(d:_R3_TOP_X    ), (d:_R3_TOP_Y    ), (d:_R3_MID_Z-500), \
+			(d:_R3_MID_X    ), (d:_R_MID_Y    ), (d:_R3_MID_Z-500), \
+			(d:_R3_BTM_X    ), (d:_R_BTM_Y    ), (d:_R3_MID_Z-500), \
+			(d:_R4_TOP_X    ), (d:_R4_TOP_Y    ), (d:_R4_MID_Z+500), \
+			(d:_R4_MID_X    ), (d:_R4_MID_Y    ), (d:_R4_MID_Z+500), \
+			(d:_R4_BTM_X    ), (d:_R_BTM_Y    ), (d:_R4_MID_Z+500), \
+
+			// ラック２(3)
+			(d:_R5_TOP_B_X-500), (d:_R5_TOP_B_Y    ), (d:_R5_MID_B_Z    ), \
+			(d:_R5_MID_A_X+500), (d:_R5_MID_A_Y    ), (d:_R5_MID_A_Z    ), \
+			(d:_R5_BTM_A_X-500), (d:_R5_BTM_A_Y    ), (d:_R5_MID_A_Z    ), \
+		// 210
+
+
+			// ラック１－西Ｒ(4)
+			(d:_R1_MID_X-500), (d:_R_TOP_R_Y    ), (d:_R1_TOP_R_Z    ), \
+			(d:_R1_MID_X-500), (d:_R_MID_R_Y    ), (d:_R1_MID_R_Z    ), \
+			(d:_R2_MID_X+500), (d:_R_TOP_R_Y    ), (d:_R2_TOP_R_Z    ), \
+			(d:_R2_MID_X+500), (d:_R_MID_R_Y    ), (d:_R2_MID_R_Z    ), \
+
+			// ラック１－南Ｒ(4)
+			(d:_R3_TOP_R_X    ), (d:_R_TOP_R_Y    ), (d:_R3_MID_Z-500), \
+			(d:_R3_MID_R_X    ), (d:_R_MID_R_Y    ), (d:_R3_MID_Z-500), \
+			(d:_R4_TOP_R_X    ), (d:_R_TOP_R_Y    ), (d:_R4_MID_Z+500), \
+			(d:_R4_MID_R_X    ), (d:_R_MID_R_Y    ), (d:_R4_MID_Z+500), \
+
+			// ラック２Ｒ(2)
+			(d:_R5_TOP_A_R_X-500), (d:_R_TOP_R_Y    ), (d:_R5_MID_A_Z    ), \
+			(d:_R5_MID_B_R_X+500), (d:_R_MID_R_Y    ), (d:_R5_MID_B_Z    ), \
+		// 220
+
+
+			// おまけ(2)
+			(d:_OMAKE_1_X    ), (d:_OMAKE_1_Y    ), (d:_OMAKE_1_Z-500), \
+			(d:_OMAKE_2_X    ), (d:_OMAKE_2_Y    ), (d:_OMAKE_2_Z-500), \
+		// 222
+
+
+
+		//----- タイプ
+		-type \
+		// 0
+			// コンテナ横－南(11)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// コンテナ横－西(11)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// コンテナ横－東(11)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// コンテナ横－北(11)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+		// 44
+
+			// コンテナ上－南西(11)
+			d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, \
+			d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, \
+
+			// コンテナ上－北西(11)
+			d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, \
+			d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, \
+
+			// コンテナ上－南東(11)
+			d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, \
+			d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, \
+
+			// コンテナ上－北東(11)
+			d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, \
+			d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, \
+		// 88
+
+			// コンテナ下－南(11)
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+
+			// コンテナ下－西(11)
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+
+			// コンテナ下－東(11)
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+
+			// コンテナ下－北(11)
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+
+			// コンテナ下－中(11)
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+		// 143
+
+			// 箱１(8)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// 箱２(11)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// 箱３(16)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_UPPER, \
+		// 178
+
+			// ドラム缶１(10)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// ドラム缶２(7)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+		// 195
+
+			// ラック１－西(6)
+			d:_SET_UPPER, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_UPPER, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// ラック１－南(6)
+			d:_SET_UPPER, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_UPPER, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// ラック２(3)
+			d:_SET_STAND, d:_SET_STAND, d:_SET_STAND, \
+		// 210
+
+			// ラック１－西Ｒ(4)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// ラック１－南Ｒ(4)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// ラック２Ｒ(2)
+			d:_SET_STAND, d:_SET_STAND, \
+		// 220
+
+			// おまけ(2)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+		// 222
+
+
+
+		//----- レーダートラップ
+		-nmtrap \
+		// 0
+			// コンテナ横－南(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ横－西(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ横－東(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ横－北(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+		// 44
+
+			// コンテナ上－南西(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ上－北西(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ上－南東(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ上－北東(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+		// 88
+
+			// コンテナ下－南(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ下－西(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ下－東(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ下－北(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ下－中(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+		// 143
+
+			// 箱１(8)
+			bm101, bm101, \
+			bm101, bm101, \
+			bm101, bm101, \
+			bm101, bm101, \
+
+			// 箱２(11)
+			bm102, bm102, \
+			bm102, bm102, \
+			bm102, bm102, \
+			bm102, bm102, \
+			bm102, bm102, bm102, \
+
+			// 箱３(16)
+			bm103, bm103, \
+			bm103, bm103, \
+			bm103, bm103, \
+			bm103, bm103, \
+			bm103, bm103, bm103, \
+
+			bm103, bm103, bm103, bm103, \
+			bm103, \
+		// 178
+
+			// ドラム缶１(10)
+			bm201, bm201, \
+			bm201, bm201, bm201, \
+			bm201, bm201, \
+			bm201, bm201, bm201, \
+
+			// ドラム缶２(7)
+			bm202, bm202, \
+			bm202, \
+			bm202, bm202, \
+			bm202, bm202, \
+		// 195
+
+			// ラック１－西(6)
+			bm301, bm301, bm301, bm302, bm302, bm302, \
+
+			// ラック１－南(6)
+			bm303, bm303, bm303, bm304, bm304, bm304, \
+
+			// ラック２(3)
+			bm305, bm305, bm305, \
+		// 210
+
+			// ラック１－西Ｒ(4)
+			bm301, bm301, bm302, bm302, \
+
+			// ラック１－南Ｒ(4)
+			bm303, bm303, bm304, bm304, \
+
+			// ラック２Ｒ(2)
+			bm305, bm305, \
+		// 220
+
+			// おまけ(2)
+			bm401, bm401, \
+		// 222
+
+
+
+		//----- 設置インデックス
+		//        [セット数]8 * [パターン]16 * [難易度]4
+		//
+		//                 ＥＡＳＹ     ＨＡＲＤ
+		//        難度１   コンテナ横   コンテナ北
+		//        難度２   コンテナ上   コンテナ下
+		//        難度３   コンテナ上   ラック
+		//        難度４   コンテナ北   ラック
+		-index \
+		//------------------------- 難度１ -------------------------
+		// コンテナ横   箱上   ドラム上
+		// 北半分
+		(d:_CS_S___LV1_+00), (d:_CS_W___LV1_+01), (d:_CS_E___LV1_+02), (d:_CS_S___LV1_+03), (d:_CS_W___LV1_+04), (d:_B1_T1__LV1_+00), (d:_B2_T1__LV1_+00), (d:_D1_T___LV1_+02), \
+		(d:_CS_E___LV1_+00), (d:_CS_S___LV1_+01), (d:_CS_W___LV1_+02), (d:_CS_E___LV1_+03), (d:_CS_S___LV1_+04), (d:_B1_T1__LV1_+01), (d:_B2_T1__LV1_+01), (d:_D1_T___LV1_+01), \
+		(d:_CS_W___LV1_+00), (d:_CS_E___LV1_+01), (d:_CS_S___LV1_+02), (d:_CS_W___LV1_+03), (d:_CS_E___LV1_+04), (d:_B1_T1__LV1_+00), (d:_B2_T1__LV1_+02), (d:_D1_T___LV1_+00), \
+		(d:_CS_S___LV1_+00), (d:_CS_W___LV1_+01), (d:_CS_E___LV1_+02), (d:_CS_S___LV1_+03), (d:_CS_W___LV1_+04), (d:_B1_T1__LV1_+01), (d:_B2_T1__LV1_+00), (d:_D1_T___LV1_+02), \
+		(d:_CS_E___LV1_+00), (d:_CS_S___LV1_+01), (d:_CS_W___LV1_+02), (d:_CS_E___LV1_+03), (d:_CS_S___LV1_+04), (d:_B1_T1__LV1_+00), (d:_B2_T1__LV1_+01), (d:_D1_T___LV1_+01), \
+		(d:_CS_W___LV1_+00), (d:_CS_E___LV1_+01), (d:_CS_S___LV1_+02), (d:_CS_W___LV1_+03), (d:_CS_E___LV1_+04), (d:_B1_T1__LV1_+01), (d:_B2_T1__LV1_+02), (d:_D1_T___LV1_+00), \
+		(d:_CS_S___LV1_+00), (d:_CS_W___LV1_+01), (d:_CS_E___LV1_+02), (d:_CS_S___LV1_+03), (d:_CS_W___LV1_+04), (d:_B1_T1__LV1_+00), (d:_B2_T1__LV1_+00), (d:_D1_T___LV1_+02), \
+		(d:_CS_E___LV1_+00), (d:_CS_S___LV1_+01), (d:_CS_W___LV1_+02), (d:_CS_E___LV1_+03), (d:_CS_S___LV1_+04), (d:_B1_T1__LV1_+01), (d:_B2_T1__LV1_+01), (d:_D1_T___LV1_+01), \
+		// 南半分
+		(d:_CS_S___LV1_+05), (d:_CS_W___LV1_+06), (d:_CS_E___LV1_+07), (d:_CS_S___LV1_+08), (d:_CS_W___LV1_+09), (d:_CS_E___LV1_+10), (d:_CS_S___LV1_+01), (d:_B3_T1__LV1_+00), \
+		(d:_CS_W___LV1_+05), (d:_CS_E___LV1_+06), (d:_CS_S___LV1_+07), (d:_CS_W___LV1_+08), (d:_CS_E___LV1_+09), (d:_CS_S___LV1_+10), (d:_CS_W___LV1_+02), (d:_B3_T1__LV1_+01), \
+		(d:_CS_E___LV1_+05), (d:_CS_S___LV1_+06), (d:_CS_W___LV1_+07), (d:_CS_E___LV1_+08), (d:_CS_S___LV1_+09), (d:_CS_W___LV1_+10), (d:_CS_E___LV1_+03), (d:_B3_T1__LV1_+02), \
+		(d:_CS_S___LV1_+05), (d:_CS_W___LV1_+06), (d:_CS_E___LV1_+07), (d:_CS_S___LV1_+08), (d:_CS_W___LV1_+09), (d:_CS_E___LV1_+10), (d:_CS_S___LV1_+04), (d:_B3_T1__LV1_+00), \
+		(d:_CS_W___LV1_+05), (d:_CS_E___LV1_+06), (d:_CS_S___LV1_+07), (d:_CS_W___LV1_+08), (d:_CS_E___LV1_+09), (d:_CS_S___LV1_+10), (d:_CS_W___LV1_+01), (d:_B3_T1__LV1_+01), \
+		(d:_CS_E___LV1_+05), (d:_CS_S___LV1_+06), (d:_CS_W___LV1_+07), (d:_CS_E___LV1_+08), (d:_CS_S___LV1_+09), (d:_CS_W___LV1_+10), (d:_CS_E___LV1_+02), (d:_B3_T1__LV1_+02), \
+		(d:_CS_S___LV1_+05), (d:_CS_W___LV1_+06), (d:_CS_E___LV1_+07), (d:_CS_S___LV1_+08), (d:_CS_W___LV1_+09), (d:_CS_E___LV1_+10), (d:_CS_S___LV1_+03), (d:_B3_T1__LV1_+00), \
+		(d:_CS_W___LV1_+05), (d:_CS_E___LV1_+06), (d:_CS_S___LV1_+07), (d:_CS_W___LV1_+08), (d:_CS_E___LV1_+09), (d:_CS_S___LV1_+10), (d:_CS_W___LV1_+04), (d:_B3_T1__LV1_+01), \
+
+		//------------------------- 難度２ -------------------------
+		// コンテナ横上   箱上   ドラム上
+		// 北半分
+		(d:_CS_S___LV1_+00), (d:_CS_W___LV1_+01), (d:_CS_E___LV1_+02), (d:_CT_NE__LV1_+03), (d:_CT_SE__LV1_+04), (d:_B1_T1__LV1_+00), (d:_B2_T1__LV1_+00), (d:_D1_T___LV1_+02), \
+		(d:_CT_NW__LV1_+00), (d:_CT_SW__LV1_+01), (d:_CS_S___LV1_+02), (d:_CS_W___LV1_+03), (d:_CS_E___LV1_+04), (d:_B1_T1__LV1_+01), (d:_B2_T1__LV1_+01), (d:_D1_T___LV1_+01), \
+		(d:_CT_NE__LV1_+00), (d:_CT_SE__LV1_+01), (d:_CT_NW__LV1_+02), (d:_CT_SW__LV1_+03), (d:_CS_S___LV1_+04), (d:_B1_T1__LV1_+00), (d:_B2_T1__LV1_+02), (d:_D1_T___LV1_+00), \
+		(d:_CS_W___LV1_+00), (d:_CS_E___LV1_+01), (d:_CT_NE__LV1_+02), (d:_CT_SE__LV1_+03), (d:_CT_NW__LV1_+04), (d:_B1_T1__LV1_+01), (d:_B2_T1__LV1_+00), (d:_D1_T___LV1_+02), \
+		(d:_CT_SW__LV1_+00), (d:_CS_S___LV1_+01), (d:_CS_W___LV1_+02), (d:_CS_E___LV1_+03), (d:_CT_NE__LV1_+04), (d:_B1_T1__LV1_+00), (d:_B2_T1__LV1_+01), (d:_D1_T___LV1_+01), \
+		(d:_CT_SE__LV1_+00), (d:_CT_NW__LV1_+01), (d:_CT_SW__LV1_+02), (d:_CS_S___LV1_+03), (d:_CS_W___LV1_+04), (d:_B1_T1__LV1_+01), (d:_B2_T1__LV1_+02), (d:_D1_T___LV1_+00), \
+		(d:_CS_E___LV1_+00), (d:_CT_NE__LV1_+01), (d:_CT_SE__LV1_+02), (d:_CT_NW__LV1_+03), (d:_CT_SW__LV1_+04), (d:_B1_T1__LV1_+00), (d:_B2_T1__LV1_+00), (d:_D1_T___LV1_+02), \
+		(d:_CS_S___LV1_+00), (d:_CS_W___LV1_+01), (d:_CS_E___LV1_+02), (d:_CT_NE__LV1_+03), (d:_CT_SE__LV1_+04), (d:_B1_T1__LV1_+01), (d:_B2_T1__LV1_+01), (d:_D1_T___LV1_+01), \
+		// 南半分
+		(d:_CS_S___LV1_+05), (d:_CS_W___LV1_+06), (d:_CS_E___LV1_+07), (d:_CT_NE__LV1_+08), (d:_CT_SE__LV1_+09), (d:_CT_NW__LV1_+10), (d:_CT_SW__LV1_+01), (d:_B3_T1__LV1_+00), \
+		(d:_CT_SW__LV1_+05), (d:_CS_S___LV1_+06), (d:_CS_W___LV1_+07), (d:_CS_E___LV1_+08), (d:_CT_NE__LV1_+09), (d:_CT_SE__LV1_+10), (d:_CT_NW__LV1_+02), (d:_B3_T1__LV1_+01), \
+		(d:_CT_NW__LV1_+05), (d:_CT_SW__LV1_+06), (d:_CS_S___LV1_+07), (d:_CS_W___LV1_+08), (d:_CS_E___LV1_+09), (d:_CT_NE__LV1_+10), (d:_CT_SE__LV1_+03), (d:_B3_T1__LV1_+02), \
+		(d:_CT_SE__LV1_+05), (d:_CT_NW__LV1_+06), (d:_CT_SW__LV1_+07), (d:_CS_S___LV1_+08), (d:_CS_W___LV1_+09), (d:_CS_E___LV1_+10), (d:_CT_NE__LV1_+04), (d:_B3_T1__LV1_+00), \
+		(d:_CT_NE__LV1_+05), (d:_CT_SE__LV1_+06), (d:_CT_NW__LV1_+07), (d:_CT_SW__LV1_+08), (d:_CS_S___LV1_+09), (d:_CS_W___LV1_+10), (d:_CS_E___LV1_+01), (d:_B3_T1__LV1_+01), \
+		(d:_CS_E___LV1_+05), (d:_CT_NE__LV1_+06), (d:_CT_SE__LV1_+07), (d:_CT_NW__LV1_+08), (d:_CT_SW__LV1_+09), (d:_CS_S___LV1_+10), (d:_CS_W___LV1_+02), (d:_B3_T1__LV1_+02), \
+		(d:_CS_W___LV1_+05), (d:_CS_E___LV1_+06), (d:_CT_NE__LV1_+07), (d:_CT_SE__LV1_+08), (d:_CT_NW__LV1_+09), (d:_CT_SW__LV1_+10), (d:_CS_S___LV1_+03), (d:_B3_T1__LV1_+00), \
+		(d:_CS_S___LV1_+05), (d:_CS_W___LV1_+06), (d:_CS_E___LV1_+07), (d:_CT_NE__LV1_+08), (d:_CT_SE__LV1_+09), (d:_CT_NW__LV1_+10), (d:_CT_SW__LV1_+04), (d:_B3_T1__LV1_+01), \
+
+		//------------------------- 難度３ -------------------------
+		// コンテナ横上   箱上横   ドラム上横
+		// 西半分
+		(d:_CS_S___LV1_+00), (d:_CT_SW__LV1_+06), (d:_CT_NW__LV1_+05), (d:_CT_SE__LV1_+02), (d:_CT_NE__LV1_+01), (d:_B1_S1__LV1_+00), (d:_D1_S___LV1_+00), (d:_D2_T___LV1_+01), \
+		(d:_CS_S___LV1_+01), (d:_CS_W___LV1_+00), (d:_CT_NW__LV1_+06), (d:_CT_SE__LV1_+05), (d:_CT_NE__LV1_+02), (d:_B1_S1__LV1_+01), (d:_D1_S___LV1_+01), (d:_D2_T___LV1_+00), \
+		(d:_CS_S___LV1_+02), (d:_CS_W___LV1_+01), (d:_CS_E___LV1_+00), (d:_CT_SE__LV1_+06), (d:_CT_NE__LV1_+05), (d:_B1_S1__LV1_+02), (d:_D1_S___LV1_+02), (d:_D2_S___LV1_+04), \
+		(d:_CS_S___LV1_+05), (d:_CS_W___LV1_+02), (d:_CS_E___LV1_+01), (d:_CT_SW__LV1_+00), (d:_CT_NE__LV1_+06), (d:_B1_S1__LV1_+03), (d:_D1_S___LV1_+03), (d:_D2_S___LV1_+03), \
+		(d:_CS_S___LV1_+06), (d:_CS_W___LV1_+05), (d:_CS_E___LV1_+02), (d:_CT_SW__LV1_+01), (d:_CT_NW__LV1_+00), (d:_B1_S1__LV1_+04), (d:_D1_S___LV1_+04), (d:_D2_S___LV1_+02), \
+		(d:_CT_SE__LV1_+00), (d:_CS_W___LV1_+06), (d:_CS_E___LV1_+05), (d:_CT_SW__LV1_+02), (d:_CT_NW__LV1_+01), (d:_B1_S1__LV1_+05), (d:_D1_S___LV1_+05), (d:_D2_S___LV1_+01), \
+		(d:_CT_SE__LV1_+01), (d:_CT_NE__LV1_+00), (d:_CS_E___LV1_+06), (d:_CT_SW__LV1_+05), (d:_CT_NW__LV1_+02), (d:_B1_T1__LV1_+00), (d:_D1_S___LV1_+06), (d:_D2_S___LV1_+00), \
+
+		// 東半分
+		(d:_CS_S___LV1_+03), (d:_CT_NW__LV1_+10), (d:_B2_T1__LV1_+02), (d:_CT_SE__LV1_+09), (d:_CT_NE__LV1_+10), (d:_B1_T1__LV1_+01), (d:_B3_S1__LV1_+00), (d:_D1_T___LV1_+00), \
+		(d:_CS_S___LV1_+04), (d:_CS_W___LV1_+08), (d:_B2_T1__LV1_+01), (d:_CT_SE__LV1_+03), (d:_CT_NE__LV1_+08), (d:_B2_S1__LV1_+07), (d:_B3_S1__LV1_+01), (d:_D1_T___LV1_+01), \
+		(d:_CS_S___LV1_+07), (d:_CS_W___LV1_+04), (d:_CS_E___LV1_+04), (d:_CT_SE__LV1_+04), (d:_CT_NE__LV1_+09), (d:_B2_S1__LV1_+06), (d:_B3_S1__LV1_+02), (d:_D1_T___LV1_+02), \
+		(d:_CS_S___LV1_+08), (d:_CS_W___LV1_+09), (d:_CS_E___LV1_+09), (d:_CT_SW__LV1_+07), (d:_CT_NE__LV1_+07), (d:_B2_S1__LV1_+05), (d:_B3_S1__LV1_+03), (d:_B3_T1__LV1_+01), \
+		(d:_CS_S___LV1_+09), (d:_CS_W___LV1_+03), (d:_CS_E___LV1_+03), (d:_CT_SW__LV1_+04), (d:_CT_NW__LV1_+04), (d:_B2_S1__LV1_+04), (d:_B3_S1__LV1_+04), (d:_B3_T1__LV1_+02), \
+		(d:_CS_S___LV1_+10), (d:_CS_W___LV1_+07), (d:_CS_E___LV1_+10), (d:_CT_SW__LV1_+03), (d:_CT_NW__LV1_+03), (d:_B2_S1__LV1_+03), (d:_B3_S1__LV1_+05), (d:_B3_S2__LV1_+00), \
+		(d:_CT_SE__LV1_+10), (d:_CS_W___LV1_+10), (d:_CS_E___LV1_+07), (d:_CT_SW__LV1_+10), (d:_CT_NW__LV1_+09), (d:_B2_S1__LV1_+02), (d:_B3_S1__LV1_+06), (d:_B3_S2__LV1_+01), \
+		(d:_CT_SE__LV1_+07), (d:_CT_NE__LV1_+03), (d:_CS_E___LV1_+08), (d:_CT_SW__LV1_+08), (d:_CT_NW__LV1_+08), (d:_B2_S1__LV1_+01), (d:_B3_S1__LV1_+07), (d:_B3_S2__LV1_+02), \
+		(d:_CT_SE__LV1_+08), (d:_CT_NE__LV1_+04), (d:_B2_T1__LV1_+00), (d:_CT_SW__LV1_+09), (d:_CT_NW__LV1_+07), (d:_B2_S1__LV1_+00), (d:_B3_T1__LV1_+00), (d:_B3_S2__LV1_+03), \
+
+		//------------------------- 難度４ -------------------------
+		// コンテナ横上北   箱上横   ドラム上横
+		// 北半分
+		(d:_CS_S___LV1_+00), (d:_CT_NE__LV1_+01), (d:_CS_W___LV1_+02), (d:_CT_SE__LV1_+03), (d:_CS_E___LV1_+04), (d:_B1_S1__LV1_+00), (d:_B2_T1__LV1_+00), (d:_D1_S___LV1_+00), \
+		(d:_CT_NW__LV1_+00), (d:_CS_N___LV2_+01), (d:_CT_SW__LV1_+02), (d:_CS_S___LV1_+03), (d:_CT_NE__LV1_+04), (d:_B1_S1__LV1_+01), (d:_B2_T1__LV1_+01), (d:_D1_S___LV1_+01), \
+		(d:_CS_W___LV1_+00), (d:_CT_SE__LV1_+01), (d:_CS_E___LV1_+02), (d:_CT_NW__LV1_+03), (d:_CS_N___LV2_+04), (d:_B1_S1__LV1_+02), (d:_B2_T1__LV1_+02), (d:_D1_S___LV1_+02), \
+		(d:_CT_SW__LV1_+00), (d:_CS_S___LV1_+01), (d:_CT_NE__LV1_+02), (d:_CS_W___LV1_+03), (d:_CT_SE__LV1_+04), (d:_B1_S1__LV1_+03), (d:_B2_S1__LV1_+00), (d:_D1_S___LV1_+03), \
+		(d:_CS_E___LV1_+00), (d:_CT_NW__LV1_+01), (d:_CS_N___LV2_+02), (d:_CT_SW__LV1_+03), (d:_CS_S___LV1_+04), (d:_B1_S1__LV1_+04), (d:_B2_S1__LV1_+01), (d:_D1_S___LV1_+04), \
+		(d:_CT_NE__LV1_+00), (d:_CS_W___LV1_+01), (d:_CT_SE__LV1_+02), (d:_CS_E___LV1_+03), (d:_CT_NW__LV1_+04), (d:_B1_S1__LV1_+05), (d:_B2_S1__LV1_+02), (d:_D1_T___LV1_+00), \
+		(d:_CS_N___LV2_+00), (d:_CT_SW__LV1_+01), (d:_CS_S___LV1_+02), (d:_CT_NE__LV1_+03), (d:_CS_W___LV1_+04), (d:_B1_T1__LV1_+00), (d:_B2_S1__LV1_+03), (d:_D1_T___LV1_+01), \
+		(d:_CT_SE__LV1_+00), (d:_CS_E___LV1_+01), (d:_CT_NW__LV1_+02), (d:_CS_N___LV2_+03), (d:_CT_SW__LV1_+04), (d:_B1_T1__LV1_+01), (d:_B2_S1__LV1_+04), (d:_D1_T___LV1_+02), \
+		// 南半分
+		(d:_CS_S___LV1_+05), (d:_CT_NE__LV1_+06), (d:_CS_W___LV1_+07), (d:_CT_SE__LV1_+08), (d:_CS_E___LV1_+09), (d:_CT_NW__LV1_+10), (d:_B3_T1__LV1_+00), (d:_D2_S___LV1_+04), \
+		(d:_CS_N___LV2_+05), (d:_CT_SW__LV1_+06), (d:_CS_S___LV1_+07), (d:_CT_NE__LV1_+08), (d:_CS_W___LV1_+09), (d:_CT_SE__LV1_+10), (d:_B3_T1__LV1_+01), (d:_D2_S___LV1_+03), \
+		(d:_CS_E___LV1_+05), (d:_CT_NW__LV1_+06), (d:_CS_N___LV2_+07), (d:_CT_SW__LV1_+08), (d:_CS_S___LV1_+09), (d:_CT_NE__LV1_+10), (d:_B3_T1__LV1_+02), (d:_D2_S___LV1_+02), \
+		(d:_CS_W___LV1_+05), (d:_CT_SE__LV1_+06), (d:_CS_E___LV1_+07), (d:_CT_NW__LV1_+08), (d:_CS_N___LV2_+09), (d:_CT_SW__LV1_+10), (d:_B3_T2__LV1_+00), (d:_D2_S___LV1_+01), \
+		(d:_CT_NW__LV1_+05), (d:_CS_S___LV1_+06), (d:_CT_NE__LV1_+07), (d:_CS_W___LV1_+08), (d:_CT_SE__LV1_+09), (d:_CS_E___LV1_+10), (d:_B3_S1__LV1_+00), (d:_D2_S___LV1_+00), \
+		(d:_CT_SE__LV1_+05), (d:_CS_N___LV2_+06), (d:_CT_SW__LV1_+07), (d:_CS_S___LV1_+08), (d:_CT_NE__LV1_+09), (d:_CS_W___LV1_+10), (d:_B3_S1__LV1_+02), (d:_D2_T___LV1_+01), \
+		(d:_CT_NE__LV1_+05), (d:_CS_E___LV1_+06), (d:_CT_NW__LV1_+07), (d:_CS_N___LV2_+08), (d:_CT_SW__LV1_+09), (d:_CS_S___LV1_+10), (d:_B3_S2__LV1_+01), (d:_D2_T___LV1_+00), \
+		(d:_CT_SW__LV1_+05), (d:_CS_W___LV1_+06), (d:_CT_SE__LV1_+07), (d:_CS_E___LV1_+08), (d:_CT_NW__LV1_+09), (d:_CS_N___LV2_+10), (d:_B3_S2__LV1_+03), (d:_OMAKE__LV5_+00)
+
+	// 初回の爆弾
+	mesg ファットマン ファットマンキャラ 初回設置 3600, (d:_B2_S1__LV1_+02) ,(d:_CS_S___LV1_+02)
+
+	// 各国語対応
+	// 欧州、韓国はＳＥ字幕が入る
+	#ifdef d:EU || d:KOREA
+		#ifdef d:EU
+		// 欧州版では言語選択があるためにこのコマンドを使う(:01とかで定義プロックを変えられる)
+			command 字幕言語設定
+		#endif
+		@ファットマンＳＥ字幕リソース
+	#endif
+}
+
+//-----------------------------------------------------------------------------
+// ファットマン配置_ＨＡＲＤ（_ＥＡＳＹ との違いは jputnum と index だけ）
+
+proc ファットマン配置_ＨＡＲＤ {
+#if d:DEBUG_PRINT
+	print '*** Fatman Set: Hard ***'
+#endif
+
+	// 難易度設定
+	@ＦＡＴ難易度設定
+
+	chara ファットマン ファットマンキャラ \
+		-s          32 \							// ID
+		-p          63125, 11500, -86500 \			// 初期位置
+		-d          1024 \							// 初期Ｙ方向
+		-cparam		$i:w20c_ＦＡＴ耐久値,           $i:w20c_ＦＡＴ耐久値回復フレーム, $i:w20c_ＦＡＴ体力,             $i:w20c_ＦＡＴ攻撃力割合 \			// パラメータ(耐久値,耐久値回復フレーム,体力,攻撃力割合)
+		-hdifficult	$i:w20c_ＦＡＴ爆弾難度レート１, $i:w20c_ＦＡＴ爆弾難度レート２,   $i:w20c_ＦＡＴ爆弾難度レート３, $i:w20c_ＦＡＴ爆弾難度レート４ \		// 爆弾難度レート
+		-jputnum	$i:w20c_ＦＡＴ爆弾設置最低数,   $i:w20c_ＦＡＴ爆弾設置最大数,     $i:w20c_ＦＡＴタイマーベース値, $i:w20c_ＦＡＴタイマー加算値 \		// 爆弾設定
+		-mkamome    かもめ管理 \					// カモメマネージャ
+		-over       Ｃ４爆発ゲームオーバー \		// ゲームオーバープロシージャ
+		-ubombover  Ｃ４撃ったらゲームオーバー \	// C4狙撃爆発ゲームオーバープロシージャ
+		-kill       ファットマン死亡ゲームクリア \	// クリアプロシージャ
+		-endknock   ファットマン気絶ゲームクリア \	// M9 No Killクリアプロシージャ
+		-ginfo      ファットマン情報取得 \			// コールバックプロシージャ
+
+
+
+		//----- ストリーミング番号
+		-vox \
+			t:vc103301, t:vc103302, t:vc103303, t:vc103304, t:vc103305, \
+			t:vc103306, t:vc103307, t:vc103308, t:vc103309, t:vc103310, \
+			t:vc103332, t:vc103333, t:vc103334, t:vc103335, t:vc103336, \
+			t:vc103337, t:vc103338, t:vc103339, t:vc103340, t:vc103341, \
+			t:vc103342, t:vc103343, t:vc103344, t:vc103350, t:vc103353, \
+			t:vc103354, t:vc103367, t:vc103368, t:vc103369, t:vc103370, \
+			t:vc103371, t:vc103372, t:vc103373, t:vc103374, t:vc103376, \
+			t:vc103377, t:vc103379, t:vc103380, t:vc103383, t:vc103384, \
+			t:vc103385, t:vc103387, t:vc103389, t:vc103390, t:vc103392, \
+			t:vc103393 \
+		//----- ストリーミングフラグ
+		-flagvox \
+			0, 0, 0, 0, 0, \
+			0, 0, 0, 0, 0, \
+			0, 0, 0, 0, 0, \
+			0, 0, 0, 0, 0, \
+			0, 0, 0, 0, 0, \
+			0, 0, 0, 0, 0, \
+			0, 0, 0, 0, 0, \
+			0, 0, 0, 0, 0, \
+			0, 0, 0, 0, 0, \
+			0 \
+		//----- ストリーミング長さ
+		-len_vox \
+			t:vc103301_len, t:vc103302_len, t:vc103303_len, t:vc103304_len, t:vc103305_len, \
+			t:vc103306_len, t:vc103307_len, t:vc103308_len, t:vc103309_len, t:vc103310_len, \
+			t:vc103332_len, t:vc103333_len, t:vc103334_len, t:vc103335_len, t:vc103336_len, \
+			t:vc103337_len, t:vc103338_len, t:vc103339_len, t:vc103340_len, t:vc103341_len, \
+			t:vc103342_len, t:vc103343_len, t:vc103344_len, t:vc103350_len, t:vc103353_len, \
+			t:vc103354_len, t:vc103367_len, t:vc103368_len, t:vc103369_len, t:vc103370_len, \
+			t:vc103371_len, t:vc103372_len, t:vc103373_len, t:vc103374_len, t:vc103376_len, \
+			t:vc103377_len, t:vc103379_len, t:vc103380_len, t:vc103383_len, t:vc103384_len, \
+			t:vc103385_len, t:vc103387_len, t:vc103389_len, t:vc103390_len, t:vc103392_len, \
+			t:vc103393_len \
+
+
+
+		//----- 回転量データテーブル
+		-rot \
+			   0,    0,    0, \		// _C4_ROT_S1
+			   0,    0, 1024, \		// _C4_ROT_S2
+			   0,    0, 3072, \		// _C4_ROT_S3
+			   0, 3072,    0, \		// _C4_ROT_W1
+			   0, 3072, 1024, \		// _C4_ROT_W2
+			   0, 3072, 3072, \		// _C4_ROT_W3
+			   0, 1024,    0, \		// _C4_ROT_E1
+			   0, 1024, 1024, \		// _C4_ROT_E2
+			   0, 1024, 3072, \		// _C4_ROT_E3
+			   0, 2048,    0, \		// _C4_ROT_N1
+			   0, 2048, 1024, \		// _C4_ROT_N2
+			   0, 2048, 3072, \		// _C4_ROT_N3
+			3072,  512,    0, \		// _C4_ROT_U1
+			3072, 1024,    0, \		// _C4_ROT_U2
+			3072, 3584,    0, \		// _C4_ROT_U3
+			1024,  512,    0, \		// _C4_ROT_D1
+			1024, 1536,    0, \		// _C4_ROT_D2
+			1024, 2560,    0  \		// _C4_ROT_D3
+
+
+
+		//----- 設置位置
+		-bmpos \
+		// 0
+			// コンテナ横－南(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C11_SOUTH_1_Z    ), \
+			(d:_C21_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C21_SOUTH_1_Z    ), \
+			(d:_C22_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C22_SOUTH_1_Z    ), \
+			(d:_C23_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C23_SOUTH_1_Z    ), \
+			(d:_C24_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C24_SOUTH_1_Z    ), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C31_SOUTH_1_Z    ), \
+			(d:_C32_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C32_SOUTH_1_Z    ), \
+			(d:_C33_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C33_SOUTH_1_Z    ), \
+			(d:_C34_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C34_SOUTH_1_Z    ), \
+			(d:_C43_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C43_SOUTH_1_Z    ), \
+			(d:_C44_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C44_SOUTH_1_Z    ), \
+
+			// コンテナ横－西(11)
+			(d:_C11_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C11_MEDIUM__Z    ), \
+			(d:_C21_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C21_MEDIUM__Z    ), \
+			(d:_C22_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C22_MEDIUM__Z    ), \
+			(d:_C23_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C23_MEDIUM__Z    ), \
+			(d:_C24_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C24_MEDIUM__Z    ), \
+
+			(d:_C31_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C31_MEDIUM__Z    ), \
+			(d:_C32_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C32_MEDIUM__Z    ), \
+			(d:_C33_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C33_MEDIUM__Z    ), \
+			(d:_C34_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C34_MEDIUM__Z    ), \
+			(d:_C43_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C43_MEDIUM__Z    ), \
+			(d:_C44_WEST_1_X    ), (d:_C_SIDE_Y    ), (d:_C44_MEDIUM__Z    ), \
+
+			// コンテナ横－東(11)
+			(d:_C11_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C11_MEDIUM__Z    ), \
+			(d:_C21_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C21_MEDIUM__Z    ), \
+			(d:_C22_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C22_MEDIUM__Z    ), \
+			(d:_C23_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C23_MEDIUM__Z    ), \
+			(d:_C24_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C24_MEDIUM__Z    ), \
+
+			(d:_C31_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C31_MEDIUM__Z    ), \
+			(d:_C32_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C32_MEDIUM__Z    ), \
+			(d:_C33_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C33_MEDIUM__Z    ), \
+			(d:_C34_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C34_MEDIUM__Z    ), \
+			(d:_C43_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C43_MEDIUM__Z    ), \
+			(d:_C44_EAST_1_X    ), (d:_C_SIDE_Y    ), (d:_C44_MEDIUM__Z    ), \
+
+			// コンテナ横－北(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C11_NORTH_1_Z    ), \
+			(d:_C21_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C21_NORTH_1_Z    ), \
+			(d:_C22_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C22_NORTH_1_Z    ), \
+			(d:_C23_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C23_NORTH_1_Z    ), \
+			(d:_C24_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C24_NORTH_1_Z    ), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C31_NORTH_1_Z    ), \
+			(d:_C32_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C32_NORTH_1_Z    ), \
+			(d:_C33_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C33_NORTH_1_Z    ), \
+			(d:_C34_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C34_NORTH_1_Z    ), \
+			(d:_C43_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C43_NORTH_1_Z    ), \
+			(d:_C44_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C44_NORTH_1_Z    ), \
+		// 44
+
+
+			// コンテナ上－南西(11)
+			(d:_C11_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C11_SOUTH_2_Z -30), \
+			(d:_C21_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C21_SOUTH_2_Z -30), \
+			(d:_C22_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C22_SOUTH_2_Z -30), \
+			(d:_C23_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C23_SOUTH_2_Z -30), \
+			(d:_C24_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C24_SOUTH_2_Z -30), \
+
+			(d:_C31_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C31_SOUTH_2_Z -30), \
+			(d:_C32_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C32_SOUTH_2_Z -30), \
+			(d:_C33_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C33_SOUTH_2_Z -30), \
+			(d:_C34_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C34_SOUTH_2_Z -30), \
+			(d:_C43_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C43_SOUTH_2_Z -30), \
+			(d:_C44_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C44_SOUTH_2_Z -30), \
+
+			// コンテナ上－北西(11)
+			(d:_C11_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C11_NORTH_2_Z +30), \
+			(d:_C21_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C21_NORTH_2_Z +30), \
+			(d:_C22_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C22_NORTH_2_Z +30), \
+			(d:_C23_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C23_NORTH_2_Z +30), \
+			(d:_C24_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C24_NORTH_2_Z +30), \
+
+			(d:_C31_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C31_NORTH_2_Z +30), \
+			(d:_C32_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C32_NORTH_2_Z +30), \
+			(d:_C33_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C33_NORTH_2_Z +30), \
+			(d:_C34_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C34_NORTH_2_Z +30), \
+			(d:_C43_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C43_NORTH_2_Z +30), \
+			(d:_C44_WEST_2_X +50), (d:_C_UP_Y    ), (d:_C44_NORTH_2_Z +30), \
+
+			// コンテナ上－南東(11)
+			(d:_C11_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C11_SOUTH_2_Z -30), \
+			(d:_C21_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C21_SOUTH_2_Z -30), \
+			(d:_C22_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C22_SOUTH_2_Z -30), \
+			(d:_C23_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C23_SOUTH_2_Z -30), \
+			(d:_C24_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C24_SOUTH_2_Z -30), \
+
+			(d:_C31_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C31_SOUTH_2_Z -30), \
+			(d:_C32_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C32_SOUTH_2_Z -30), \
+			(d:_C33_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C33_SOUTH_2_Z -30), \
+			(d:_C34_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C34_SOUTH_2_Z -30), \
+			(d:_C43_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C43_SOUTH_2_Z -30), \
+			(d:_C44_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C44_SOUTH_2_Z -30), \
+
+			// コンテナ上－北東(11)
+			(d:_C11_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C11_NORTH_2_Z +30), \
+			(d:_C21_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C21_NORTH_2_Z +30), \
+			(d:_C22_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C22_NORTH_2_Z +30), \
+			(d:_C23_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C23_NORTH_2_Z +30), \
+			(d:_C24_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C24_NORTH_2_Z +30), \
+
+			(d:_C31_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C31_NORTH_2_Z +30), \
+			(d:_C32_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C32_NORTH_2_Z +30), \
+			(d:_C33_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C33_NORTH_2_Z +30), \
+			(d:_C34_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C34_NORTH_2_Z +30), \
+			(d:_C43_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C43_NORTH_2_Z +30), \
+			(d:_C44_EAST_2_X -50), (d:_C_UP_Y    ), (d:_C44_NORTH_2_Z +30), \
+		// 88
+
+
+			// コンテナ下－南(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C11_SOUTH_2_Z -100), \
+			(d:_C21_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C21_SOUTH_2_Z -100), \
+			(d:_C22_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C22_SOUTH_2_Z -100), \
+			(d:_C23_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C23_SOUTH_2_Z -100), \
+			(d:_C24_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C24_SOUTH_2_Z -100), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C31_SOUTH_2_Z -100), \
+			(d:_C32_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C32_SOUTH_2_Z -100), \
+			(d:_C33_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C33_SOUTH_2_Z -100), \
+			(d:_C34_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C34_SOUTH_2_Z -100), \
+			(d:_C43_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C43_SOUTH_2_Z -100), \
+			(d:_C44_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C44_SOUTH_2_Z -100), \
+
+			// コンテナ下－西(11)
+			(d:_C11_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C11_MEDIUM__Z    ), \
+			(d:_C21_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C21_MEDIUM__Z    ), \
+			(d:_C22_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C22_MEDIUM__Z    ), \
+			(d:_C23_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C23_MEDIUM__Z    ), \
+			(d:_C24_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C24_MEDIUM__Z    ), \
+
+			(d:_C31_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C31_MEDIUM__Z    ), \
+			(d:_C32_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C32_MEDIUM__Z    ), \
+			(d:_C33_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C33_MEDIUM__Z    ), \
+			(d:_C34_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C34_MEDIUM__Z    ), \
+			(d:_C43_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C43_MEDIUM__Z    ), \
+			(d:_C44_WEST_2_X +175), (d:_C_BTM_Y    ), (d:_C44_MEDIUM__Z    ), \
+
+			// コンテナ下－東(11)
+			(d:_C11_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C11_MEDIUM__Z    ), \
+			(d:_C21_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C21_MEDIUM__Z    ), \
+			(d:_C22_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C22_MEDIUM__Z    ), \
+			(d:_C23_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C23_MEDIUM__Z    ), \
+			(d:_C24_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C24_MEDIUM__Z    ), \
+
+			(d:_C31_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C31_MEDIUM__Z    ), \
+			(d:_C32_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C32_MEDIUM__Z    ), \
+			(d:_C33_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C33_MEDIUM__Z    ), \
+			(d:_C34_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C34_MEDIUM__Z    ), \
+			(d:_C43_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C43_MEDIUM__Z    ), \
+			(d:_C44_EAST_2_X -175), (d:_C_BTM_Y    ), (d:_C44_MEDIUM__Z    ), \
+
+			// コンテナ下－北(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C11_NORTH_2_Z +100), \
+			(d:_C21_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C21_NORTH_2_Z +100), \
+			(d:_C22_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C22_NORTH_2_Z +100), \
+			(d:_C23_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C23_NORTH_2_Z +100), \
+			(d:_C24_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C24_NORTH_2_Z +100), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C31_NORTH_2_Z +100), \
+			(d:_C32_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C32_NORTH_2_Z +100), \
+			(d:_C33_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C33_NORTH_2_Z +100), \
+			(d:_C34_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C34_NORTH_2_Z +100), \
+			(d:_C43_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C43_NORTH_2_Z +100), \
+			(d:_C44_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C44_NORTH_2_Z +100), \
+
+			// コンテナ下－中(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C11_MEDIUM__Z    ), \
+			(d:_C21_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C21_MEDIUM__Z    ), \
+			(d:_C22_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C22_MEDIUM__Z    ), \
+			(d:_C23_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C23_MEDIUM__Z    ), \
+			(d:_C24_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C24_MEDIUM__Z    ), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C31_MEDIUM__Z    ), \
+			(d:_C32_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C32_MEDIUM__Z    ), \
+			(d:_C33_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C33_MEDIUM__Z    ), \
+			(d:_C34_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C34_MEDIUM__Z    ), \
+			(d:_C43_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C43_MEDIUM__Z    ), \
+			(d:_C44_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C44_MEDIUM__Z    ), \
+		// 143
+
+
+			// 箱１(8)
+			(d:_B1_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_SOUTH_1_Z    ), \
+			(d:_B1_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_SOUTH_1_Z    ), \
+			(d:_B1_WEST_1_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_MEDIUM__Z    ), \
+			(d:_B1_EAST_1_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_MEDIUM__Z    ), \
+			(d:_B1_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_NORTH_1_Z    ), \
+			(d:_B1_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_NORTH_1_Z    ), \
+
+			(d:_B1_WEST_2_X    ), (d:_B_UP_1_Y    ), (d:_B1_MEDIUM__Z    ), \
+			(d:_B1_EAST_2_X    ), (d:_B_UP_1_Y    ), (d:_B1_MEDIUM__Z    ), \
+
+			// 箱２(11)
+			(d:_B2_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_SOUTH_1_Z    ), \
+			(d:_B2_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_SOUTH_1_Z    ), \
+			(d:_B2_WEST_1_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_SOUTH_2_Z    ), \
+			(d:_B2_EAST_1_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_SOUTH_2_Z    ), \
+			(d:_B2_MEDIUM_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_NORTH_2_Z    ), \
+			(d:_B2_EAST_1_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_NORTH_2_Z    ), \
+			(d:_B2_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_MEDIUM__Z    ), \
+			(d:_B2_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_NORTH_1_Z    ), \
+
+			(d:_B2_WEST_2_X    ), (d:_B_UP_1_Y    ), (d:_B2_SOUTH_2_Z    ), \
+			(d:_B2_EAST_2_X    ), (d:_B_UP_1_Y    ), (d:_B2_SOUTH_2_Z    ), \
+			(d:_B2_EAST_2_X    ), (d:_B_UP_1_Y    ), (d:_B2_NORTH_2_Z    ), \
+
+			// 箱３(16)
+			(d:_B3_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_SOUTH_1_Z    ), \
+			(d:_B3_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_SOUTH_1_Z    ), \
+			(d:_B3_WEST_1_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_SOUTH_2_Z    ), \
+			(d:_B3_EAST_1_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_SOUTH_2_Z    ), \
+			(d:_B3_WEST_1_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_NORTH_2_Z    ), \
+			(d:_B3_EAST_1_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_NORTH_2_Z    ), \
+			(d:_B3_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_NORTH_1_Z    ), \
+			(d:_B3_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_NORTH_1_Z    ), \
+
+			(d:_B3_WEST_2_X    ), (d:_B_UP_1_Y    ), (d:_B3_SOUTH_2_Z    ), \
+			(d:_B3_EAST_2_X    ), (d:_B_UP_1_Y    ), (d:_B3_SOUTH_2_Z    ), \
+			(d:_B3_EAST_2_X    ), (d:_B_UP_1_Y    ), (d:_B3_NORTH_2_Z    ), \
+
+			(d:_B3_WEST_2_X    ), (d:_B_SIDE_2_Y    ), (d:_B3_MEDIUM__Z +70), \
+			(d:_B3_WEST_1_X +20), (d:_B_SIDE_2_Y    ), (d:_B3_NORTH_2_Z    ), \
+			(d:_B3_MEDIUM_X +20), (d:_B_SIDE_2_Y    ), (d:_B3_NORTH_2_Z    ), \
+			(d:_B3_WEST_2_X    ), (d:_B_SIDE_2_Y    ), (d:_B3_NORTH_1_Z +70), \
+
+			(d:_B3_WEST_2_X    ), (d:_B_UP_2_Y    ), (d:_B3_NORTH_2_Z    ), \
+		// 178
+
+
+			// ドラム缶１(10)
+			(d:_D1_WEST_2_X    ), (d:_D_SIDE_Y    ), (d:_D1_SOUTH_1_Z    ), \
+			(d:_D1_EAST_2_X    ), (d:_D_SIDE_Y    ), (d:_D1_SOUTH_1_Z    ), \
+			(d:_D1_WEST_1_X    ), (d:_D_SIDE_Y    ), (d:_D1_SOUTH_2_Z    ), \
+			(d:_D1_EAST_1_X    ), (d:_D_SIDE_Y    ), (d:_D1_SOUTH_2_Z    ), \
+			(d:_D1_EAST_1_X    ), (d:_D_SIDE_Y    ), (d:_D1_NORTH_2_Z    ), \
+			(d:_D1_WEST_2_X    ), (d:_D_SIDE_Y    ), (d:_D1_MEDIUM__Z    ), \
+			(d:_D1_EAST_2_X    ), (d:_D_SIDE_Y    ), (d:_D1_NORTH_1_Z    ), \
+
+			(d:_D1_WEST_2_X    ), (d:_D_UP_Y    ), (d:_D1_SOUTH_2_Z    ), \
+			(d:_D1_EAST_2_X    ), (d:_D_UP_Y    ), (d:_D1_SOUTH_2_Z    ), \
+			(d:_D1_EAST_2_X    ), (d:_D_UP_Y    ), (d:_D1_NORTH_2_Z    ), \
+
+			// ドラム缶２(7)
+			(d:_D2_WEST_2_X    ), (d:_D_SIDE_Y    ), (d:_D2_SOUTH_1_Z    ), \
+			(d:_D2_EAST_2_X    ), (d:_D_SIDE_Y    ), (d:_D2_SOUTH_1_Z    ), \
+			(d:_D2_WEST_1_X    ), (d:_D_SIDE_Y    ), (d:_D2_MEDIUM__Z    ), \
+			(d:_D2_WEST_2_X    ), (d:_D_SIDE_Y    ), (d:_D2_NORTH_1_Z    ), \
+			(d:_D2_EAST_2_X    ), (d:_D_SIDE_Y    ), (d:_D2_NORTH_1_Z    ), \
+
+			(d:_D2_WEST_2_X    ), (d:_D_UP_Y    ), (d:_D2_MEDIUM__Z    ), \
+			(d:_D2_EAST_2_X    ), (d:_D_UP_Y    ), (d:_D2_MEDIUM__Z    ), \
+		// 195
+
+
+			// ラック１－西(6)
+			(d:_R1_MID_X    ), (d:_R_TOP_Y    ), (d:_R1_TOP_Z    ), \
+			(d:_R1_MID_X    ), (d:_R_MID_Y    ), (d:_R1_MID_Z    ), \
+			(d:_R1_MID_X    ), (d:_R_BTM_Y    ), (d:_R1_BTM_Z    ), \
+			(d:_R2_MID_X    ), (d:_R2_TOP_Y    ), (d:_R2_TOP_Z    ), \
+			(d:_R2_MID_X    ), (d:_R_MID_Y    ), (d:_R2_MID_Z    ), \
+			(d:_R2_MID_X    ), (d:_R_BTM_Y    ), (d:_R2_BTM_Z    ), \
+
+			// ラック１－南(6)
+			(d:_R3_TOP_X    ), (d:_R3_TOP_Y    ), (d:_R3_MID_Z    ), \
+			(d:_R3_MID_X    ), (d:_R_MID_Y    ), (d:_R3_MID_Z    ), \
+			(d:_R3_BTM_X    ), (d:_R_BTM_Y    ), (d:_R3_MID_Z    ), \
+			(d:_R4_TOP_X    ), (d:_R4_TOP_Y    ), (d:_R4_MID_Z    ), \
+			(d:_R4_MID_X    ), (d:_R4_MID_Y    ), (d:_R4_MID_Z    ), \
+			(d:_R4_BTM_X    ), (d:_R_BTM_Y    ), (d:_R4_MID_Z    ), \
+
+			// ラック２(3)
+			(d:_R5_TOP_B_X    ), (d:_R5_TOP_B_Y    ), (d:_R5_MID_B_Z -325), \
+			(d:_R5_MID_A_X    ), (d:_R5_MID_A_Y    ), (d:_R5_MID_A_Z    ), \
+			(d:_R5_BTM_A_X    ), (d:_R5_BTM_A_Y    ), (d:_R5_MID_A_Z    ), \
+		// 210
+
+
+			// ラック１－西Ｒ(4)
+			(d:_R1_MID_X    ), (d:_R_TOP_R_Y    ), (d:_R1_TOP_R_Z    ), \
+			(d:_R1_MID_X    ), (d:_R_MID_R_Y    ), (d:_R1_MID_R_Z    ), \
+			(d:_R2_MID_X    ), (d:_R_TOP_R_Y    ), (d:_R2_TOP_R_Z    ), \
+			(d:_R2_MID_X    ), (d:_R_MID_R_Y    ), (d:_R2_MID_R_Z    ), \
+
+			// ラック１－南Ｒ(4)
+			(d:_R3_TOP_R_X    ), (d:_R_TOP_R_Y    ), (d:_R3_MID_Z    ), \
+			(d:_R3_MID_R_X    ), (d:_R_MID_R_Y    ), (d:_R3_MID_Z    ), \
+			(d:_R4_TOP_R_X    ), (d:_R_TOP_R_Y    ), (d:_R4_MID_Z    ), \
+			(d:_R4_MID_R_X    ), (d:_R_MID_R_Y    ), (d:_R4_MID_Z    ), \
+
+			// ラック２Ｒ(2)
+			(d:_R5_TOP_A_R_X    ), (d:_R_TOP_R_Y    ), (d:_R5_MID_A_Z    ), \
+			(d:_R5_MID_B_R_X    ), (d:_R_MID_R_Y    ), (d:_R5_MID_B_Z    ), \
+		// 220
+
+
+			// おまけ(2)
+			(d:_OMAKE_1_X    ), (d:_OMAKE_1_Y    ), (d:_OMAKE_1_Z    ), \
+			(d:_OMAKE_2_X    ), (d:_OMAKE_2_Y    ), (d:_OMAKE_2_Z    ), \
+		// 222
+
+
+
+		//----- 回転
+		-qrotindex \
+		// 0
+			// コンテナ横－南(11)
+			d:_C4_ROT_S1, d:_C4_ROT_S2, d:_C4_ROT_S3, d:_C4_ROT_S1, d:_C4_ROT_S1, d:_C4_ROT_S1, \
+			d:_C4_ROT_S2, d:_C4_ROT_S3, d:_C4_ROT_S2, d:_C4_ROT_S3, d:_C4_ROT_S1, \
+
+			// コンテナ横－西(11)
+			d:_C4_ROT_W2, d:_C4_ROT_W1, d:_C4_ROT_W1, d:_C4_ROT_W2, d:_C4_ROT_W3, d:_C4_ROT_W1, \
+			d:_C4_ROT_W1, d:_C4_ROT_W3, d:_C4_ROT_W2, d:_C4_ROT_W1, d:_C4_ROT_W1, \
+
+			// コンテナ横－東(11)
+			d:_C4_ROT_E3, d:_C4_ROT_E2, d:_C4_ROT_E1, d:_C4_ROT_E1, d:_C4_ROT_E1, d:_C4_ROT_E3, \
+			d:_C4_ROT_E2, d:_C4_ROT_E1, d:_C4_ROT_E1, d:_C4_ROT_E2, d:_C4_ROT_E3, \
+
+			// コンテナ横－北(11)
+			d:_C4_ROT_N1, d:_C4_ROT_N1, d:_C4_ROT_N2, d:_C4_ROT_N3, d:_C4_ROT_N1, d:_C4_ROT_N3, \
+			d:_C4_ROT_N1, d:_C4_ROT_N2, d:_C4_ROT_N1, d:_C4_ROT_N2, d:_C4_ROT_N1, \
+		// 44
+
+			// コンテナ上－南西(11)
+			d:_C4_ROT_U2, d:_C4_ROT_U3, d:_C4_ROT_U1, d:_C4_ROT_U2, d:_C4_ROT_U2, d:_C4_ROT_U2, \
+			d:_C4_ROT_U2, d:_C4_ROT_U1, d:_C4_ROT_U2, d:_C4_ROT_U3, d:_C4_ROT_U1, \
+
+			// コンテナ上－北西(11)
+			d:_C4_ROT_U3, d:_C4_ROT_U2, d:_C4_ROT_U1, d:_C4_ROT_U2, d:_C4_ROT_U2, d:_C4_ROT_U1, \
+			d:_C4_ROT_U1, d:_C4_ROT_U3, d:_C4_ROT_U2, d:_C4_ROT_U2, d:_C4_ROT_U3, \
+
+			// コンテナ上－南東(11)
+			d:_C4_ROT_U1, d:_C4_ROT_U2, d:_C4_ROT_U2, d:_C4_ROT_U1, d:_C4_ROT_U2, d:_C4_ROT_U2, \
+			d:_C4_ROT_U1, d:_C4_ROT_U3, d:_C4_ROT_U2, d:_C4_ROT_U2, d:_C4_ROT_U2, \
+
+			// コンテナ上－北東(11)
+			d:_C4_ROT_U2, d:_C4_ROT_U2, d:_C4_ROT_U1, d:_C4_ROT_U3, d:_C4_ROT_U2, d:_C4_ROT_U2, \
+			d:_C4_ROT_U1, d:_C4_ROT_U3, d:_C4_ROT_U1, d:_C4_ROT_U2, d:_C4_ROT_U2, \
+		// 88
+
+			// コンテナ下－南(11)
+			d:_C4_ROT_D2, d:_C4_ROT_D1, d:_C4_ROT_D3, d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D2, \
+			d:_C4_ROT_D1, d:_C4_ROT_D3, d:_C4_ROT_D1, d:_C4_ROT_D2, d:_C4_ROT_D2, \
+
+			// コンテナ下－西(11)
+			d:_C4_ROT_D2, d:_C4_ROT_D3, d:_C4_ROT_D2, d:_C4_ROT_D1, d:_C4_ROT_D2, d:_C4_ROT_D1, \
+			d:_C4_ROT_D3, d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D1, \
+
+			// コンテナ下－東(11)
+			d:_C4_ROT_D3, d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D1, \
+			d:_C4_ROT_D3, d:_C4_ROT_D2, d:_C4_ROT_D1, d:_C4_ROT_D3, d:_C4_ROT_D1, \
+
+			// コンテナ下－北(11)
+			d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D1, d:_C4_ROT_D3, \
+			d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D1, d:_C4_ROT_D2, d:_C4_ROT_D2, \
+
+			// コンテナ下－中(11)
+			d:_C4_ROT_D3, d:_C4_ROT_D2, d:_C4_ROT_D1, d:_C4_ROT_D2, d:_C4_ROT_D1, d:_C4_ROT_D3, \
+			d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D1, d:_C4_ROT_D2, d:_C4_ROT_D2, \
+		// 143
+
+			// 箱１(8)
+			d:_C4_ROT_S1, d:_C4_ROT_S1, \
+			d:_C4_ROT_W3, d:_C4_ROT_E1, \
+			d:_C4_ROT_N3, d:_C4_ROT_N1, \
+			d:_C4_ROT_U1, d:_C4_ROT_U3, \
+
+			// 箱２(11)
+			d:_C4_ROT_S2, d:_C4_ROT_S1, \
+			d:_C4_ROT_W1, d:_C4_ROT_E2, \
+			d:_C4_ROT_W2, d:_C4_ROT_E1, \
+			d:_C4_ROT_N2, d:_C4_ROT_N3, \
+			d:_C4_ROT_U3, d:_C4_ROT_U1, d:_C4_ROT_U1, \
+
+			// 箱３(16)
+			d:_C4_ROT_S3, d:_C4_ROT_S1, \
+			d:_C4_ROT_W3, d:_C4_ROT_E3, \
+			d:_C4_ROT_W1, d:_C4_ROT_E1, \
+			d:_C4_ROT_N1, d:_C4_ROT_N2, \
+			d:_C4_ROT_U2, d:_C4_ROT_U1, d:_C4_ROT_U3, \
+
+			d:_C4_ROT_S2, d:_C4_ROT_W1, d:_C4_ROT_E1, d:_C4_ROT_N1, \
+			d:_C4_ROT_U1, \
+		// 178
+
+			// ドラム缶１(10)
+			d:_C4_ROT_S1, d:_C4_ROT_S3, \
+			d:_C4_ROT_W1, d:_C4_ROT_E2, d:_C4_ROT_E3, \
+			d:_C4_ROT_N1, d:_C4_ROT_N3, \
+			d:_C4_ROT_U1, d:_C4_ROT_U3, d:_C4_ROT_U1, \
+
+			// ドラム缶２(7)
+			d:_C4_ROT_S1, d:_C4_ROT_S2, \
+			d:_C4_ROT_W2, \
+			d:_C4_ROT_N1, d:_C4_ROT_N2, \
+			d:_C4_ROT_U3, d:_C4_ROT_U1, \
+		// 195
+
+			// ラック１－西(6)
+			d:_C4_ROT_U1, d:_C4_ROT_U2, d:_C4_ROT_U1, d:_C4_ROT_U1, d:_C4_ROT_U3, d:_C4_ROT_U2, \
+
+			// ラック１－南(6)
+			d:_C4_ROT_U1, d:_C4_ROT_U2, d:_C4_ROT_U3, d:_C4_ROT_U2, d:_C4_ROT_U1, d:_C4_ROT_U3, \
+
+			// ラック２(3)
+			d:_C4_ROT_U2, d:_C4_ROT_U2, d:_C4_ROT_U1, \
+		// 210
+
+			// ラック１－西Ｒ(4)
+			d:_C4_ROT_D1, d:_C4_ROT_D3, d:_C4_ROT_D1, d:_C4_ROT_D3, \
+
+			// ラック１－南Ｒ(4)
+			d:_C4_ROT_D1, d:_C4_ROT_D2, d:_C4_ROT_D2, d:_C4_ROT_D1, \
+
+			// ラック２Ｒ(2)
+			d:_C4_ROT_D2, d:_C4_ROT_D1, \
+		// 220
+
+			// おまけ(2)
+			d:_C4_ROT_N1, d:_C4_ROT_N3, \
+		// 222
+
+
+
+		//----- 立ち位置
+		-aimpos \
+		// 0
+			// コンテナ横－南(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C11_SOUTH_1_Z+500), \
+			(d:_C21_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C21_SOUTH_1_Z+500), \
+			(d:_C22_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C22_SOUTH_1_Z+500), \
+			(d:_C23_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C23_SOUTH_1_Z+500), \
+			(d:_C24_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C24_SOUTH_1_Z+500), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C31_SOUTH_1_Z+500), \
+			(d:_C32_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C32_SOUTH_1_Z+500), \
+			(d:_C33_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C33_SOUTH_1_Z+500), \
+			(d:_C34_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C34_SOUTH_1_Z+500), \
+			(d:_C43_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C43_SOUTH_1_Z+500), \
+			(d:_C44_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C44_SOUTH_1_Z+500), \
+
+			// コンテナ横－西(11)
+			(d:_C11_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C11_MEDIUM__Z    ), \
+			(d:_C21_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C21_MEDIUM__Z    ), \
+			(d:_C22_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C22_MEDIUM__Z    ), \
+			(d:_C23_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C23_MEDIUM__Z    ), \
+			(d:_C24_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C24_MEDIUM__Z    ), \
+
+			(d:_C31_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C31_MEDIUM__Z    ), \
+			(d:_C32_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C32_MEDIUM__Z    ), \
+			(d:_C33_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C33_MEDIUM__Z    ), \
+			(d:_C34_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C34_MEDIUM__Z    ), \
+			(d:_C43_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C43_MEDIUM__Z    ), \
+			(d:_C44_WEST_1_X-500), (d:_C_SIDE_Y    ), (d:_C44_MEDIUM__Z    ), \
+
+			// コンテナ横－東(11)
+			(d:_C11_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C11_MEDIUM__Z    ), \
+			(d:_C21_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C21_MEDIUM__Z    ), \
+			(d:_C22_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C22_MEDIUM__Z    ), \
+			(d:_C23_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C23_MEDIUM__Z    ), \
+			(d:_C24_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C24_MEDIUM__Z    ), \
+
+			(d:_C31_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C31_MEDIUM__Z    ), \
+			(d:_C32_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C32_MEDIUM__Z    ), \
+			(d:_C33_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C33_MEDIUM__Z    ), \
+			(d:_C34_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C34_MEDIUM__Z    ), \
+			(d:_C43_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C43_MEDIUM__Z    ), \
+			(d:_C44_EAST_1_X+500), (d:_C_SIDE_Y    ), (d:_C44_MEDIUM__Z    ), \
+
+			// コンテナ横－北(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C11_NORTH_1_Z-500), \
+			(d:_C21_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C21_NORTH_1_Z-500), \
+			(d:_C22_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C22_NORTH_1_Z-500), \
+			(d:_C23_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C23_NORTH_1_Z-500), \
+			(d:_C24_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C24_NORTH_1_Z-500), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C31_NORTH_1_Z-500), \
+			(d:_C32_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C32_NORTH_1_Z-500), \
+			(d:_C33_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C33_NORTH_1_Z-500), \
+			(d:_C34_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C34_NORTH_1_Z-500), \
+			(d:_C43_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C43_NORTH_1_Z-500), \
+			(d:_C44_MEDIUM_X    ), (d:_C_SIDE_Y    ), (d:_C44_NORTH_1_Z-500), \
+		// 44
+
+
+			// コンテナ上－南西(11)
+			(d:_C11_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C11_SOUTH_2_Z+500), \
+			(d:_C21_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C21_SOUTH_2_Z+500), \
+			(d:_C22_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C22_SOUTH_2_Z+500), \
+			(d:_C23_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C23_SOUTH_2_Z+500), \
+			(d:_C24_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C24_SOUTH_2_Z+500), \
+
+			(d:_C31_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C31_SOUTH_2_Z+500), \
+			(d:_C32_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C32_SOUTH_2_Z+500), \
+			(d:_C33_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C33_SOUTH_2_Z+500), \
+			(d:_C34_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C34_SOUTH_2_Z+500), \
+			(d:_C43_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C43_SOUTH_2_Z+500), \
+			(d:_C44_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C44_SOUTH_2_Z+500), \
+
+			// コンテナ上－北西(11)
+			(d:_C11_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C11_NORTH_2_Z-500), \
+			(d:_C21_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C21_NORTH_2_Z-500), \
+			(d:_C22_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C22_NORTH_2_Z-500), \
+			(d:_C23_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C23_NORTH_2_Z-500), \
+			(d:_C24_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C24_NORTH_2_Z-500), \
+
+			(d:_C31_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C31_NORTH_2_Z-500), \
+			(d:_C32_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C32_NORTH_2_Z-500), \
+			(d:_C33_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C33_NORTH_2_Z-500), \
+			(d:_C34_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C34_NORTH_2_Z-500), \
+			(d:_C43_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C43_NORTH_2_Z-500), \
+			(d:_C44_WEST_2_X    ), (d:_C_UP_Y    ), (d:_C44_NORTH_2_Z-500), \
+
+			// コンテナ上－南東(11)
+			(d:_C11_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C11_SOUTH_2_Z+500), \
+			(d:_C21_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C21_SOUTH_2_Z+500), \
+			(d:_C22_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C22_SOUTH_2_Z+500), \
+			(d:_C23_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C23_SOUTH_2_Z+500), \
+			(d:_C24_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C24_SOUTH_2_Z+500), \
+
+			(d:_C31_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C31_SOUTH_2_Z+500), \
+			(d:_C32_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C32_SOUTH_2_Z+500), \
+			(d:_C33_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C33_SOUTH_2_Z+500), \
+			(d:_C34_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C34_SOUTH_2_Z+500), \
+			(d:_C43_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C43_SOUTH_2_Z+500), \
+			(d:_C44_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C44_SOUTH_2_Z+500), \
+
+			// コンテナ上－北東(11)
+			(d:_C11_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C11_NORTH_2_Z-500), \
+			(d:_C21_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C21_NORTH_2_Z-500), \
+			(d:_C22_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C22_NORTH_2_Z-500), \
+			(d:_C23_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C23_NORTH_2_Z-500), \
+			(d:_C24_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C24_NORTH_2_Z-500), \
+
+			(d:_C31_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C31_NORTH_2_Z-500), \
+			(d:_C32_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C32_NORTH_2_Z-500), \
+			(d:_C33_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C33_NORTH_2_Z-500), \
+			(d:_C34_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C34_NORTH_2_Z-500), \
+			(d:_C43_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C43_NORTH_2_Z-500), \
+			(d:_C44_EAST_2_X    ), (d:_C_UP_Y    ), (d:_C44_NORTH_2_Z-500), \
+		// 88
+
+
+			// コンテナ下－南(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C11_SOUTH_2_Z+500), \
+			(d:_C21_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C21_SOUTH_2_Z+500), \
+			(d:_C22_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C22_SOUTH_2_Z+500), \
+			(d:_C23_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C23_SOUTH_2_Z+500), \
+			(d:_C24_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C24_SOUTH_2_Z+500), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C31_SOUTH_2_Z+500), \
+			(d:_C32_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C32_SOUTH_2_Z+500), \
+			(d:_C33_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C33_SOUTH_2_Z+500), \
+			(d:_C34_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C34_SOUTH_2_Z+500), \
+			(d:_C43_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C43_SOUTH_2_Z+500), \
+			(d:_C44_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C44_SOUTH_2_Z+500), \
+
+			// コンテナ下－西(11)
+			(d:_C11_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C11_MEDIUM__Z    ), \
+			(d:_C21_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C21_MEDIUM__Z    ), \
+			(d:_C22_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C22_MEDIUM__Z    ), \
+			(d:_C23_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C23_MEDIUM__Z    ), \
+			(d:_C24_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C24_MEDIUM__Z    ), \
+
+			(d:_C31_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C31_MEDIUM__Z    ), \
+			(d:_C32_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C32_MEDIUM__Z    ), \
+			(d:_C33_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C33_MEDIUM__Z    ), \
+			(d:_C34_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C34_MEDIUM__Z    ), \
+			(d:_C43_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C43_MEDIUM__Z    ), \
+			(d:_C44_WEST_2_X-500), (d:_C_BTM_Y    ), (d:_C44_MEDIUM__Z    ), \
+
+			// コンテナ下－東(11)
+			(d:_C11_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C11_MEDIUM__Z    ), \
+			(d:_C21_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C21_MEDIUM__Z    ), \
+			(d:_C22_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C22_MEDIUM__Z    ), \
+			(d:_C23_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C23_MEDIUM__Z    ), \
+			(d:_C24_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C24_MEDIUM__Z    ), \
+
+			(d:_C31_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C31_MEDIUM__Z    ), \
+			(d:_C32_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C32_MEDIUM__Z    ), \
+			(d:_C33_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C33_MEDIUM__Z    ), \
+			(d:_C34_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C34_MEDIUM__Z    ), \
+			(d:_C43_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C43_MEDIUM__Z    ), \
+			(d:_C44_EAST_2_X+500), (d:_C_BTM_Y    ), (d:_C44_MEDIUM__Z    ), \
+
+			// コンテナ下－北(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C11_NORTH_2_Z-500), \
+			(d:_C21_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C21_NORTH_2_Z-500), \
+			(d:_C22_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C22_NORTH_2_Z-500), \
+			(d:_C23_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C23_NORTH_2_Z-500), \
+			(d:_C24_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C24_NORTH_2_Z-500), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C31_NORTH_2_Z-500), \
+			(d:_C32_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C32_NORTH_2_Z-500), \
+			(d:_C33_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C33_NORTH_2_Z-500), \
+			(d:_C34_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C34_NORTH_2_Z-500), \
+			(d:_C43_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C43_NORTH_2_Z-500), \
+			(d:_C44_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C44_NORTH_2_Z-500), \
+
+			// コンテナ下－中(11)
+			(d:_C11_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C11_MEDIUM__Z-1500), \
+			(d:_C21_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C21_MEDIUM__Z-1500), \
+			(d:_C22_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C22_MEDIUM__Z-1500), \
+			(d:_C23_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C23_MEDIUM__Z-1500), \
+			(d:_C24_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C24_MEDIUM__Z-1500), \
+
+			(d:_C31_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C31_MEDIUM__Z-1500), \
+			(d:_C32_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C32_MEDIUM__Z-1500), \
+			(d:_C33_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C33_MEDIUM__Z-1500), \
+			(d:_C34_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C34_MEDIUM__Z-1500), \
+			(d:_C43_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C43_MEDIUM__Z-1500), \
+			(d:_C44_MEDIUM_X    ), (d:_C_BTM_Y    ), (d:_C44_MEDIUM__Z-1500), \
+		// 143
+
+
+			// 箱１(8)
+			(d:_B1_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_SOUTH_1_Z+500), \
+			(d:_B1_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_SOUTH_1_Z+500), \
+			(d:_B1_WEST_1_X-500), (d:_B_SIDE_1_Y    ), (d:_B1_MEDIUM__Z    ), \
+			(d:_B1_EAST_1_X+500), (d:_B_SIDE_1_Y    ), (d:_B1_MEDIUM__Z    ), \
+			(d:_B1_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_NORTH_1_Z-500), \
+			(d:_B1_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B1_NORTH_1_Z-500), \
+
+			(d:_B1_WEST_2_X    ), (d:_B_UP_1_Y    ), (d:_B1_MEDIUM__Z+500), \
+			(d:_B1_EAST_2_X    ), (d:_B_UP_1_Y    ), (d:_B1_MEDIUM__Z+500), \
+
+			// 箱２(11)
+			(d:_B2_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_SOUTH_1_Z+500), \
+			(d:_B2_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_SOUTH_1_Z+500), \
+			(d:_B2_WEST_1_X-500), (d:_B_SIDE_1_Y    ), (d:_B2_SOUTH_2_Z    ), \
+			(d:_B2_EAST_1_X+500), (d:_B_SIDE_1_Y    ), (d:_B2_SOUTH_2_Z    ), \
+			(d:_B2_MEDIUM_X-500), (d:_B_SIDE_1_Y    ), (d:_B2_NORTH_2_Z    ), \
+			(d:_B2_EAST_1_X+500), (d:_B_SIDE_1_Y    ), (d:_B2_NORTH_2_Z    ), \
+			(d:_B2_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_MEDIUM__Z-500), \
+			(d:_B2_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B2_NORTH_1_Z-500), \
+
+			(d:_B2_WEST_2_X-500), (d:_B_UP_1_Y    ), (d:_B2_SOUTH_2_Z    ), \
+			(d:_B2_EAST_2_X+500), (d:_B_UP_1_Y    ), (d:_B2_SOUTH_2_Z    ), \
+			(d:_B2_EAST_2_X    ), (d:_B_UP_1_Y    ), (d:_B2_NORTH_2_Z-500), \
+
+			// 箱３(16)
+			(d:_B3_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_SOUTH_1_Z+500), \
+			(d:_B3_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_SOUTH_1_Z+500), \
+			(d:_B3_WEST_1_X-500), (d:_B_SIDE_1_Y    ), (d:_B3_SOUTH_2_Z    ), \
+			(d:_B3_EAST_1_X+500), (d:_B_SIDE_1_Y    ), (d:_B3_SOUTH_2_Z    ), \
+			(d:_B3_WEST_1_X-500), (d:_B_SIDE_1_Y    ), (d:_B3_NORTH_2_Z    ), \
+			(d:_B3_EAST_1_X+500), (d:_B_SIDE_1_Y    ), (d:_B3_NORTH_2_Z    ), \
+			(d:_B3_WEST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_NORTH_1_Z-500), \
+			(d:_B3_EAST_2_X    ), (d:_B_SIDE_1_Y    ), (d:_B3_NORTH_1_Z-500), \
+
+			(d:_B3_WEST_2_X-500), (d:_B_UP_1_Y    ), (d:_B3_SOUTH_2_Z    ), \
+			(d:_B3_EAST_2_X+500), (d:_B_UP_1_Y    ), (d:_B3_SOUTH_2_Z    ), \
+			(d:_B3_EAST_2_X    ), (d:_B_UP_1_Y    ), (d:_B3_NORTH_2_Z-500), \
+
+			(d:_B3_WEST_2_X-500), (d:_B_SIDE_2_Y    ), (d:_B3_MEDIUM__Z    ), \
+			(d:_B3_WEST_1_X-500), (d:_B_SIDE_2_Y    ), (d:_B3_NORTH_2_Z    ), \
+			(d:_B3_MEDIUM_X    ), (d:_B_SIDE_2_Y    ), (d:_B3_NORTH_2_Z-500), \
+			(d:_B3_WEST_2_X    ), (d:_B_SIDE_2_Y    ), (d:_B3_NORTH_1_Z-500), \
+
+			(d:_B3_WEST_2_X    ), (d:_B_UP_2_Y    ), (d:_B3_NORTH_2_Z-500), \
+		// 178
+
+
+			// ドラム缶１(10)
+			(d:_D1_WEST_2_X    ), (d:_D_SIDE_Y    ), (d:_D1_SOUTH_1_Z+500), \
+			(d:_D1_EAST_2_X    ), (d:_D_SIDE_Y    ), (d:_D1_SOUTH_1_Z+500), \
+			(d:_D1_WEST_1_X-500), (d:_D_SIDE_Y    ), (d:_D1_SOUTH_2_Z    ), \
+			(d:_D1_EAST_1_X+500), (d:_D_SIDE_Y    ), (d:_D1_SOUTH_2_Z    ), \
+			(d:_D1_EAST_1_X+500), (d:_D_SIDE_Y    ), (d:_D1_NORTH_2_Z    ), \
+			(d:_D1_WEST_2_X    ), (d:_D_SIDE_Y    ), (d:_D1_MEDIUM__Z-500), \
+			(d:_D1_EAST_2_X    ), (d:_D_SIDE_Y    ), (d:_D1_NORTH_1_Z-500), \
+
+			(d:_D1_WEST_2_X-500), (d:_D_UP_Y    ), (d:_D1_SOUTH_2_Z    ), \
+			(d:_D1_EAST_2_X+500), (d:_D_UP_Y    ), (d:_D1_SOUTH_2_Z    ), \
+			(d:_D1_EAST_2_X    ), (d:_D_UP_Y    ), (d:_D1_NORTH_2_Z-500), \
+
+			// ドラム缶２(7)
+			(d:_D2_WEST_2_X    ), (d:_D_SIDE_Y    ), (d:_D2_SOUTH_1_Z+500), \
+			(d:_D2_EAST_2_X    ), (d:_D_SIDE_Y    ), (d:_D2_SOUTH_1_Z+500), \
+			(d:_D2_WEST_1_X-500), (d:_D_SIDE_Y    ), (d:_D2_MEDIUM__Z    ), \
+			(d:_D2_WEST_2_X    ), (d:_D_SIDE_Y    ), (d:_D2_NORTH_1_Z-500), \
+			(d:_D2_EAST_2_X    ), (d:_D_SIDE_Y    ), (d:_D2_NORTH_1_Z-500), \
+
+			(d:_D2_WEST_2_X    ), (d:_D_UP_Y    ), (d:_D2_MEDIUM__Z+500), \
+			(d:_D2_EAST_2_X    ), (d:_D_UP_Y    ), (d:_D2_MEDIUM__Z+500), \
+		// 195
+
+
+			// ラック１－西(6)
+			(d:_R1_MID_X-500), (d:_R_TOP_Y    ), (d:_R1_TOP_Z    ), \
+			(d:_R1_MID_X-500), (d:_R_MID_Y    ), (d:_R1_MID_Z    ), \
+			(d:_R1_MID_X-500), (d:_R_BTM_Y    ), (d:_R1_BTM_Z    ), \
+			(d:_R2_MID_X+500), (d:_R2_TOP_Y    ), (d:_R2_TOP_Z    ), \
+			(d:_R2_MID_X+500), (d:_R_MID_Y    ), (d:_R2_MID_Z    ), \
+			(d:_R2_MID_X+500), (d:_R_BTM_Y    ), (d:_R2_BTM_Z    ), \
+
+			// ラック１－南(6)
+			(d:_R3_TOP_X    ), (d:_R3_TOP_Y    ), (d:_R3_MID_Z-500), \
+			(d:_R3_MID_X    ), (d:_R_MID_Y    ), (d:_R3_MID_Z-500), \
+			(d:_R3_BTM_X    ), (d:_R_BTM_Y    ), (d:_R3_MID_Z-500), \
+			(d:_R4_TOP_X    ), (d:_R4_TOP_Y    ), (d:_R4_MID_Z+500), \
+			(d:_R4_MID_X    ), (d:_R4_MID_Y    ), (d:_R4_MID_Z+500), \
+			(d:_R4_BTM_X    ), (d:_R_BTM_Y    ), (d:_R4_MID_Z+500), \
+
+			// ラック２(3)
+			(d:_R5_TOP_B_X-500), (d:_R5_TOP_B_Y    ), (d:_R5_MID_B_Z    ), \
+			(d:_R5_MID_A_X+500), (d:_R5_MID_A_Y    ), (d:_R5_MID_A_Z    ), \
+			(d:_R5_BTM_A_X-500), (d:_R5_BTM_A_Y    ), (d:_R5_MID_A_Z    ), \
+		// 210
+
+
+			// ラック１－西Ｒ(4)
+			(d:_R1_MID_X-500), (d:_R_TOP_R_Y    ), (d:_R1_TOP_R_Z    ), \
+			(d:_R1_MID_X-500), (d:_R_MID_R_Y    ), (d:_R1_MID_R_Z    ), \
+			(d:_R2_MID_X+500), (d:_R_TOP_R_Y    ), (d:_R2_TOP_R_Z    ), \
+			(d:_R2_MID_X+500), (d:_R_MID_R_Y    ), (d:_R2_MID_R_Z    ), \
+
+			// ラック１－南Ｒ(4)
+			(d:_R3_TOP_R_X    ), (d:_R_TOP_R_Y    ), (d:_R3_MID_Z-500), \
+			(d:_R3_MID_R_X    ), (d:_R_MID_R_Y    ), (d:_R3_MID_Z-500), \
+			(d:_R4_TOP_R_X    ), (d:_R_TOP_R_Y    ), (d:_R4_MID_Z+500), \
+			(d:_R4_MID_R_X    ), (d:_R_MID_R_Y    ), (d:_R4_MID_Z+500), \
+
+			// ラック２Ｒ(2)
+			(d:_R5_TOP_A_R_X-500), (d:_R_TOP_R_Y    ), (d:_R5_MID_A_Z    ), \
+			(d:_R5_MID_B_R_X+500), (d:_R_MID_R_Y    ), (d:_R5_MID_B_Z    ), \
+		// 220
+
+
+			// おまけ(2)
+			(d:_OMAKE_1_X    ), (d:_OMAKE_1_Y    ), (d:_OMAKE_1_Z-500), \
+			(d:_OMAKE_2_X    ), (d:_OMAKE_2_Y    ), (d:_OMAKE_2_Z-500), \
+		// 222
+
+
+
+		//----- タイプ
+		-type \
+		// 0
+			// コンテナ横－南(11)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// コンテナ横－西(11)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// コンテナ横－東(11)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// コンテナ横－北(11)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+		// 44
+
+			// コンテナ上－南西(11)
+			d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, \
+			d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, \
+
+			// コンテナ上－北西(11)
+			d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, \
+			d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, \
+
+			// コンテナ上－南東(11)
+			d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, \
+			d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, \
+
+			// コンテナ上－北東(11)
+			d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, \
+			d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, d:_SET_UPPER, \
+		// 88
+
+			// コンテナ下－南(11)
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+
+			// コンテナ下－西(11)
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+
+			// コンテナ下－東(11)
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+
+			// コンテナ下－北(11)
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+
+			// コンテナ下－中(11)
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+			d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, d:_SET_UNDER, \
+		// 143
+
+			// 箱１(8)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// 箱２(11)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// 箱３(16)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_UPPER, \
+		// 178
+
+			// ドラム缶１(10)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// ドラム缶２(7)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+		// 195
+
+			// ラック１－西(6)
+			d:_SET_UPPER, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_UPPER, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// ラック１－南(6)
+			d:_SET_UPPER, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_UPPER, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// ラック２(3)
+			d:_SET_STAND, d:_SET_STAND, d:_SET_STAND, \
+		// 210
+
+			// ラック１－西Ｒ(4)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// ラック１－南Ｒ(4)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+
+			// ラック２Ｒ(2)
+			d:_SET_STAND, d:_SET_STAND, \
+		// 220
+
+			// おまけ(2)
+			d:_SET_STAND_AND_RUN, d:_SET_STAND_AND_RUN, \
+		// 222
+
+
+
+		//----- レーダートラップ
+		-nmtrap \
+		// 0
+			// コンテナ横－南(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ横－西(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ横－東(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ横－北(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+		// 44
+
+			// コンテナ上－南西(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ上－北西(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ上－南東(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ上－北東(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+		// 88
+
+			// コンテナ下－南(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ下－西(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ下－東(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ下－北(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+
+			// コンテナ下－中(11)
+			bm001, bm002, bm003, bm004, bm005, bm006, \
+			bm007, bm008, bm009, bm010, bm011, \
+		// 143
+
+			// 箱１(8)
+			bm101, bm101, \
+			bm101, bm101, \
+			bm101, bm101, \
+			bm101, bm101, \
+
+			// 箱２(11)
+			bm102, bm102, \
+			bm102, bm102, \
+			bm102, bm102, \
+			bm102, bm102, \
+			bm102, bm102, bm102, \
+
+			// 箱３(16)
+			bm103, bm103, \
+			bm103, bm103, \
+			bm103, bm103, \
+			bm103, bm103, \
+			bm103, bm103, bm103, \
+
+			bm103, bm103, bm103, bm103, \
+			bm103, \
+		// 178
+
+			// ドラム缶１(10)
+			bm201, bm201, \
+			bm201, bm201, bm201, \
+			bm201, bm201, \
+			bm201, bm201, bm201, \
+
+			// ドラム缶２(7)
+			bm202, bm202, \
+			bm202, \
+			bm202, bm202, \
+			bm202, bm202, \
+		// 195
+
+			// ラック１－西(6)
+			bm301, bm301, bm301, bm302, bm302, bm302, \
+
+			// ラック１－南(6)
+			bm303, bm303, bm303, bm304, bm304, bm304, \
+
+			// ラック２(3)
+			bm305, bm305, bm305, \
+		// 210
+
+			// ラック１－西Ｒ(4)
+			bm301, bm301, bm302, bm302, \
+
+			// ラック１－南Ｒ(4)
+			bm303, bm303, bm304, bm304, \
+
+			// ラック２Ｒ(2)
+			bm305, bm305, \
+		// 220
+
+			// おまけ(2)
+			bm401, bm401, \
+		// 222
+
+
+
+		//----- 設置インデックス
+		//        [セット数]8 * [パターン]16 * [難易度]4
+		//
+		//                 ＥＡＳＹ     ＨＡＲＤ
+		//        難度１   コンテナ横   コンテナ北
+		//        難度２   コンテナ上   コンテナ下
+		//        難度３   コンテナ上   ラック
+		//        難度４   コンテナ北   ラック
+		-index \
+		//------------------------- 難度１ -------------------------
+		// コンテナ横上北   箱上横   ドラム上横
+		// 北半分
+		(d:_CS_S___LV1_+00), (d:_CT_NE__LV1_+01), (d:_CS_W___LV1_+02), (d:_CT_SE__LV1_+03), (d:_CS_E___LV1_+04), (d:_B1_S1__LV1_+00), (d:_B2_T1__LV1_+00), (d:_D1_S___LV1_+00), \
+		(d:_CT_NW__LV1_+00), (d:_CS_N___LV2_+01), (d:_CT_SW__LV1_+02), (d:_CS_S___LV1_+03), (d:_CT_NE__LV1_+04), (d:_B1_S1__LV1_+01), (d:_B2_T1__LV1_+01), (d:_D1_S___LV1_+01), \
+		(d:_CS_W___LV1_+00), (d:_CT_SE__LV1_+01), (d:_CS_E___LV1_+02), (d:_CT_NW__LV1_+03), (d:_CS_N___LV2_+04), (d:_B1_S1__LV1_+02), (d:_B2_T1__LV1_+02), (d:_D1_S___LV1_+02), \
+		(d:_CT_SW__LV1_+00), (d:_CS_S___LV1_+01), (d:_CT_NE__LV1_+02), (d:_CS_W___LV1_+03), (d:_CT_SE__LV1_+04), (d:_B1_S1__LV1_+03), (d:_B2_S1__LV1_+00), (d:_D1_S___LV1_+03), \
+		(d:_CS_E___LV1_+00), (d:_CT_NW__LV1_+01), (d:_CS_N___LV2_+02), (d:_CT_SW__LV1_+03), (d:_CS_S___LV1_+04), (d:_B1_S1__LV1_+04), (d:_B2_S1__LV1_+01), (d:_D1_S___LV1_+04), \
+		(d:_CT_NE__LV1_+00), (d:_CS_W___LV1_+01), (d:_CT_SE__LV1_+02), (d:_CS_E___LV1_+03), (d:_CT_NW__LV1_+04), (d:_B1_S1__LV1_+05), (d:_B2_S1__LV1_+02), (d:_D1_T___LV1_+00), \
+		(d:_CS_N___LV2_+00), (d:_CT_SW__LV1_+01), (d:_CS_S___LV1_+02), (d:_CT_NE__LV1_+03), (d:_CS_W___LV1_+04), (d:_B1_T1__LV1_+00), (d:_B2_S1__LV1_+03), (d:_D1_T___LV1_+01), \
+		(d:_CT_SE__LV1_+00), (d:_CS_E___LV1_+01), (d:_CT_NW__LV1_+02), (d:_CS_N___LV2_+03), (d:_CT_SW__LV1_+04), (d:_B1_T1__LV1_+01), (d:_B2_S1__LV1_+04), (d:_D1_T___LV1_+02), \
+		// 南半分
+		(d:_CS_S___LV1_+05), (d:_CT_NE__LV1_+06), (d:_CS_W___LV1_+07), (d:_CT_SE__LV1_+08), (d:_CS_E___LV1_+09), (d:_CT_NW__LV1_+10), (d:_B3_T1__LV1_+00), (d:_D2_S___LV1_+04), \
+		(d:_CS_N___LV2_+05), (d:_CT_SW__LV1_+06), (d:_CS_S___LV1_+07), (d:_CT_NE__LV1_+08), (d:_CS_W___LV1_+09), (d:_CT_SE__LV1_+10), (d:_B3_T1__LV1_+01), (d:_D2_S___LV1_+03), \
+		(d:_CS_E___LV1_+05), (d:_CT_NW__LV1_+06), (d:_CS_N___LV2_+07), (d:_CT_SW__LV1_+08), (d:_CS_S___LV1_+09), (d:_CT_NE__LV1_+10), (d:_B3_T1__LV1_+02), (d:_D2_S___LV1_+02), \
+		(d:_CS_W___LV1_+05), (d:_CT_SE__LV1_+06), (d:_CS_E___LV1_+07), (d:_CT_NW__LV1_+08), (d:_CS_N___LV2_+09), (d:_CT_SW__LV1_+10), (d:_B3_T2__LV1_+00), (d:_D2_S___LV1_+01), \
+		(d:_CT_NW__LV1_+05), (d:_CS_S___LV1_+06), (d:_CT_NE__LV1_+07), (d:_CS_W___LV1_+08), (d:_CT_SE__LV1_+09), (d:_CS_E___LV1_+10), (d:_B3_S1__LV1_+00), (d:_D2_S___LV1_+00), \
+		(d:_CT_SE__LV1_+05), (d:_CS_N___LV2_+06), (d:_CT_SW__LV1_+07), (d:_CS_S___LV1_+08), (d:_CT_NE__LV1_+09), (d:_CS_W___LV1_+10), (d:_B3_S1__LV1_+02), (d:_D2_T___LV1_+01), \
+		(d:_CT_NE__LV1_+05), (d:_CS_E___LV1_+06), (d:_CT_NW__LV1_+07), (d:_CS_N___LV2_+08), (d:_CT_SW__LV1_+09), (d:_CS_S___LV1_+10), (d:_B3_S2__LV1_+01), (d:_D2_T___LV1_+00), \
+		(d:_CT_SW__LV1_+05), (d:_CS_W___LV1_+06), (d:_CT_SE__LV1_+07), (d:_CS_E___LV1_+08), (d:_CT_NW__LV1_+09), (d:_CS_N___LV2_+10), (d:_B3_S2__LV1_+03), (d:_D2_T___LV1_+00), \
+
+		//------------------------- 難度２ -------------------------
+		// コンテナ横上北下   箱上横   ドラム上横
+		// 北半分
+		(d:_CS_S___LV1_+00), (d:_CT_NE__LV1_+01), (d:_CS_W___LV1_+02), (d:_CT_SE__LV1_+03), (d:_CS_E___LV1_+04), (d:_CB_C___LV3_+00), (d:_B2_S1__LV1_+01), (d:_B1_T1__LV1_+00), \
+		(d:_CT_NW__LV1_+00), (d:_CS_N___LV2_+01), (d:_CT_SW__LV1_+02), (d:_CS_S___LV1_+03), (d:_CT_NE__LV1_+04), (d:_CB_N___LV3_+01), (d:_B2_S1__LV1_+03), (d:_B1_S1__LV1_+03), \
+		(d:_CS_W___LV1_+00), (d:_CT_SE__LV1_+01), (d:_CS_E___LV1_+02), (d:_CT_NW__LV1_+03), (d:_CS_N___LV2_+04), (d:_CB_E___LV3_+02), (d:_B2_S1__LV1_+05), (d:_B1_S1__LV1_+04), \
+		(d:_CT_SW__LV1_+00), (d:_CS_S___LV1_+01), (d:_CT_NE__LV1_+02), (d:_CS_W___LV1_+03), (d:_CT_SE__LV1_+04), (d:_CB_W___LV3_+03), (d:_B2_T1__LV1_+00), (d:_D1_S___LV1_+03), \
+		(d:_CS_E___LV1_+00), (d:_CT_NW__LV1_+01), (d:_CS_N___LV2_+02), (d:_CT_SW__LV1_+03), (d:_CS_S___LV1_+04), (d:_CB_S___LV3_+04), (d:_B2_T1__LV1_+02), (d:_D1_S___LV1_+04), \
+		(d:_CT_NE__LV1_+00), (d:_CS_W___LV1_+01), (d:_CT_SE__LV1_+02), (d:_CS_E___LV1_+03), (d:_CT_NW__LV1_+04), (d:_CB_S___LV3_+00), (d:_B1_S1__LV1_+00), (d:_D1_S___LV1_+06), \
+		(d:_CS_N___LV2_+00), (d:_CT_SW__LV1_+01), (d:_CS_S___LV1_+02), (d:_CT_NE__LV1_+03), (d:_CS_W___LV1_+04), (d:_CB_C___LV3_+02), (d:_B1_S1__LV1_+01), (d:_D1_T___LV1_+01), \
+		(d:_CT_SE__LV1_+00), (d:_CS_E___LV1_+01), (d:_CT_NW__LV1_+02), (d:_CS_N___LV2_+03), (d:_CT_SW__LV1_+04), (d:_CB_N___LV3_+04), (d:_B1_T1__LV1_+01), (d:_D1_T___LV1_+02), \
+		// 南半分
+		(d:_CS_S___LV1_+05), (d:_CT_NE__LV1_+06), (d:_CS_W___LV1_+07), (d:_CT_SE__LV1_+08), (d:_CS_E___LV1_+09), (d:_CT_NW__LV1_+10), (d:_CB_C___LV3_+10), (d:_B3_S1__LV1_+04), \
+		(d:_CS_N___LV2_+05), (d:_CT_SW__LV1_+06), (d:_CS_S___LV1_+07), (d:_CT_NE__LV1_+08), (d:_CS_W___LV1_+09), (d:_CT_SE__LV1_+10), (d:_CB_N___LV3_+09), (d:_B3_S1__LV1_+03), \
+		(d:_CS_E___LV1_+05), (d:_CT_NW__LV1_+06), (d:_CS_N___LV2_+07), (d:_CT_SW__LV1_+08), (d:_CS_S___LV1_+09), (d:_CT_NE__LV1_+10), (d:_CB_E___LV3_+08), (d:_B3_T1__LV1_+02), \
+		(d:_CS_W___LV1_+05), (d:_CT_SE__LV1_+06), (d:_CS_E___LV1_+07), (d:_CT_NW__LV1_+08), (d:_CS_N___LV2_+09), (d:_CT_SW__LV1_+10), (d:_CB_W___LV3_+07), (d:_B3_S2__LV1_+01), \
+		(d:_CT_NW__LV1_+05), (d:_CS_S___LV1_+06), (d:_CT_NE__LV1_+07), (d:_CS_W___LV1_+08), (d:_CT_SE__LV1_+09), (d:_CS_E___LV1_+10), (d:_CB_S___LV3_+06), (d:_B3_T2__LV1_+00), \
+		(d:_CT_SE__LV1_+05), (d:_CS_N___LV2_+06), (d:_CT_SW__LV1_+07), (d:_CS_S___LV1_+08), (d:_CT_NE__LV1_+09), (d:_CS_W___LV1_+10), (d:_CB_S___LV3_+05), (d:_D2_S___LV1_+02), \
+		(d:_CT_NE__LV1_+05), (d:_CS_E___LV1_+06), (d:_CT_NW__LV1_+07), (d:_CS_N___LV2_+08), (d:_CT_SW__LV1_+09), (d:_CS_S___LV1_+10), (d:_CB_C___LV3_+07), (d:_D2_S___LV1_+03), \
+		(d:_CT_SW__LV1_+05), (d:_CS_W___LV1_+06), (d:_CT_SE__LV1_+07), (d:_CS_E___LV1_+08), (d:_CT_NW__LV1_+09), (d:_CS_N___LV2_+10), (d:_CB_N___LV3_+09), (d:_D2_T___LV1_+00), \
+
+		//------------------------- 難度３ -------------------------
+		// コンテナ横上北下   箱上横   ドラム上横   ラック
+
+		//------------------------- 難度４ -------------------------
+		// コンテナ横上北下   箱上横   ドラム上横   ラックＲ
+		(d:_CS_S___LV1_+00), (d:_CS_E___LV1_+06), (d:_CS_N___LV2_+09), (d:_CT_NE__LV1_+00), (d:_CB_S___LV3_+05), (d:_R1_____LV4_+00), (d:_B1_S1__LV1_+03), (d:_D1_S___LV1_+00), \
+		(d:_CS_W___LV1_+02), (d:_CS_N___LV2_+10), (d:_CT_SE__LV1_+02), (d:_CS_S___LV1_+06), (d:_CB_C___LV3_+07), (d:_R1_____LV4_+01), (d:_B1_T1__LV1_+00), (d:_D1_T___LV1_+02), \
+		(d:_CS_E___LV1_+04), (d:_CT_SW__LV1_+01), (d:_CS_S___LV1_+10), (d:_CS_W___LV1_+09), (d:_CB_W___LV3_+01), (d:_R1_____LV4_+02), (d:_B2_S1__LV1_+03), (d:_D2_S___LV1_+04), \
+		(d:_CS_N___LV2_+06), (d:_CT_NW__LV1_+04), (d:_CT_NE__LV1_+05), (d:_CT_NW__LV1_+02), (d:_CB_S___LV3_+04), (d:_R2_____LV4_+00), (d:_B2_T1__LV1_+01), (d:_D2_T___LV1_+00), \
+		(d:_CT_SW__LV1_+08), (d:_CT_SE__LV1_+02), (d:_CS_W___LV1_+07), (d:_CT_SE__LV1_+07), (d:_CB_E___LV3_+06), (d:_R2_____LV4_+01), (d:_B3_S1__LV1_+06), (d:_D1_S___LV1_+01), \
+		(d:_CT_NW__LV1_+10), (d:_CT_NE__LV1_+07), (d:_CT_SW__LV1_+03), (d:_CS_E___LV1_+05), (d:_CB_C___LV3_+00), (d:_R2_____LV4_+02), (d:_B3_T1__LV1_+00), (d:_D1_T___LV1_+01), \
+		(d:_CT_SE__LV1_+01), (d:_CS_S___LV1_+00), (d:_CS_E___LV1_+08), (d:_CS_N___LV2_+01), (d:_CB_N___LV3_+03), (d:_R3_____LV4_+00), (d:_B3_S2__LV1_+03), (d:_D2_S___LV1_+03), \
+		(d:_CT_NE__LV1_+03), (d:_CS_W___LV1_+03), (d:_CT_NW__LV1_+01), (d:_CT_SW__LV1_+03), (d:_CB_N___LV3_+09), (d:_R3_____LV4_+01), (d:_B3_T2__LV1_+00), (d:_D2_T___LV1_+01), \
+		(d:_CS_S___LV1_+05), (d:_CS_E___LV1_+08), (d:_CS_N___LV2_+06), (d:_CT_NE__LV1_+10), (d:_CB_S___LV3_+08), (d:_R3_____LV4_+02), (d:_B1_S1__LV1_+01), (d:_D1_S___LV1_+02), \
+		(d:_CS_W___LV1_+07), (d:_CS_N___LV2_+09), (d:_CT_SE__LV1_+04), (d:_CS_S___LV1_+04), (d:_CB_C___LV3_+02), (d:_R4_____LV4_+00), (d:_B1_T1__LV1_+01), (d:_D1_T___LV1_+00), \
+		(d:_CS_E___LV1_+09), (d:_CT_SW__LV1_+05), (d:_CS_S___LV1_+00), (d:_CS_W___LV1_+08), (d:_CB_W___LV3_+10), (d:_R4_____LV4_+01), (d:_B2_S1__LV1_+05), (d:_D2_S___LV1_+02), \
+		(d:_CS_N___LV2_+06), (d:_CT_NW__LV1_+04), (d:_CT_NE__LV1_+03), (d:_CT_NW__LV1_+09), (d:_CB_W___LV3_+02), (d:_R4_____LV4_+02), (d:_B2_T1__LV1_+02), (d:_D2_T___LV1_+00), \
+		(d:_CT_SW__LV1_+07), (d:_CT_SE__LV1_+07), (d:_CS_W___LV1_+02), (d:_CT_SE__LV1_+04), (d:_CB_E___LV3_+07), (d:_R5_____LV4_+00), (d:_B3_S1__LV1_+07), (d:_D1_S___LV1_+03), \
+		(d:_CT_NW__LV1_+05), (d:_CT_NE__LV1_+01), (d:_CT_SW__LV1_+08), (d:_CS_E___LV1_+10), (d:_CB_C___LV3_+08), (d:_R5_____LV4_+01), (d:_B3_T1__LV1_+00), (d:_D1_T___LV1_+02), \
+		(d:_CT_SE__LV1_+04), (d:_CS_S___LV1_+08), (d:_CS_E___LV1_+09), (d:_CS_N___LV2_+03), (d:_CB_N___LV3_+01), (d:_R5_____LV4_+02), (d:_B3_S2__LV1_+02), (d:_D2_S___LV1_+01), \
+		(d:_CT_NE__LV1_+00), (d:_CS_W___LV1_+00), (d:_CT_NW__LV1_+07), (d:_CT_SW__LV1_+05), (d:_CB_E___LV3_+06), (d:_R1_____LV4_+01), (d:_B3_T2__LV1_+00), (d:_D2_T___LV1_+01), \
+		(d:_CS_S___LV1_+08), (d:_CS_E___LV1_+10), (d:_CS_N___LV2_+01), (d:_CT_NE__LV1_+07), (d:_CB_S___LV3_+00), (d:_R1_R___LV4_+00), (d:_B1_S1__LV1_+00), (d:_D1_S___LV1_+04), \
+		(d:_CS_W___LV1_+02), (d:_CS_N___LV2_+03), (d:_CT_SE__LV1_+04), (d:_CS_S___LV1_+08), (d:_CB_C___LV3_+10), (d:_R1_R___LV4_+01), (d:_B1_T1__LV1_+01), (d:_D1_T___LV1_+01), \
+		(d:_CS_E___LV1_+09), (d:_CT_SW__LV1_+06), (d:_CS_S___LV1_+10), (d:_CS_W___LV1_+00), (d:_CB_W___LV3_+03), (d:_R2_R___LV4_+00), (d:_B2_S1__LV1_+00), (d:_D2_S___LV1_+00), \
+		(d:_CS_N___LV2_+01), (d:_CT_NW__LV1_+02), (d:_CT_NE__LV1_+05), (d:_CT_NW__LV1_+02), (d:_CB_S___LV3_+05), (d:_R2_R___LV4_+01), (d:_B2_T1__LV1_+00), (d:_D2_T___LV1_+00), \
+		(d:_CT_SW__LV1_+03), (d:_CT_SE__LV1_+09), (d:_CS_W___LV1_+06), (d:_CT_SE__LV1_+06), (d:_CB_E___LV3_+04), (d:_R3_R___LV4_+00), (d:_B3_S1__LV1_+02), (d:_D1_S___LV1_+05), \
+		(d:_CT_NW__LV1_+10), (d:_CT_NE__LV1_+05), (d:_CT_SW__LV1_+00), (d:_CS_E___LV1_+01), (d:_CB_C___LV3_+09), (d:_R3_R___LV4_+01), (d:_B3_T1__LV1_+02), (d:_D1_T___LV1_+00), \
+		(d:_CT_SE__LV1_+00), (d:_CS_S___LV1_+00), (d:_CS_E___LV1_+05), (d:_CS_N___LV2_+10), (d:_CB_N___LV3_+07), (d:_R4_R___LV4_+00), (d:_B3_S2__LV1_+01), (d:_D1_S___LV1_+06), \
+		(d:_CT_NE__LV1_+06), (d:_CS_W___LV1_+06), (d:_CT_NW__LV1_+08), (d:_CT_SW__LV1_+09), (d:_CB_N___LV3_+09), (d:_R4_R___LV4_+01), (d:_B3_T2__LV1_+00), (d:_D2_T___LV1_+01), \
+		(d:_CS_S___LV1_+03), (d:_CS_E___LV1_+01), (d:_CS_N___LV2_+09), (d:_CT_NE__LV1_+03), (d:_CB_S___LV3_+03), (d:_R5_R___LV4_+00), (d:_B1_S1__LV1_+04), (d:_B1_S1__LV1_+02), \
+		(d:_CS_W___LV1_+08), (d:_CS_N___LV2_+03), (d:_CT_SE__LV1_+07), (d:_CS_S___LV1_+00), (d:_CB_C___LV3_+08), (d:_R5_R___LV4_+01), (d:_B1_T1__LV1_+00), (d:_B2_S1__LV1_+01), \
+		(d:_CS_E___LV1_+02), (d:_CT_SW__LV1_+05), (d:_CS_S___LV1_+06), (d:_CS_W___LV1_+02), (d:_CB_W___LV3_+10), (d:_R2_____LV4_+02), (d:_B2_S1__LV1_+06), (d:_B3_S1__LV1_+01), \
+		(d:_CS_N___LV2_+04), (d:_CT_NW__LV1_+10), (d:_CT_NE__LV1_+02), (d:_CT_NW__LV1_+04), (d:_CB_W___LV3_+00), (d:_R3_____LV4_+00), (d:_B2_T1__LV1_+01), (d:_B3_S2__LV1_+00), \
+		(d:_CT_SW__LV1_+01), (d:_CT_SE__LV1_+04), (d:_CS_W___LV1_+00), (d:_CT_SE__LV1_+01), (d:_CB_E___LV3_+06), (d:_R4_____LV4_+02), (d:_B3_S1__LV1_+03), (d:_B1_S1__LV1_+05), \
+		(d:_CT_NW__LV1_+07), (d:_CT_NE__LV1_+07), (d:_CT_SW__LV1_+10), (d:_CS_E___LV1_+05), (d:_CB_C___LV3_+02), (d:_R5_____LV4_+01), (d:_B3_T1__LV1_+01), (d:_B2_S1__LV1_+07), \
+		(d:_CT_SE__LV1_+05), (d:_CS_S___LV1_+02), (d:_CS_E___LV1_+01), (d:_CS_N___LV2_+08), (d:_CB_N___LV3_+04), (d:_R2_R___LV4_+01), (d:_B3_S2__LV1_+00), (d:_B3_S1__LV1_+00), \
+		(d:_CT_NE__LV1_+09), (d:_CS_W___LV1_+08), (d:_CT_NW__LV1_+04), (d:_CT_SW__LV1_+06), (d:_CB_E___LV3_+05), (d:_R3_R___LV4_+00), (d:_B3_T2__LV1_+00), (d:_OMAKE__LV5_+01)
+
+	// 初回の爆弾
+	mesg ファットマン ファットマンキャラ 初回設置 2800, (d:_B2_S1__LV1_+02) ,(d:_CS_S___LV1_+02)
+
+	// 各国語対応
+	// 欧州、韓国はＳＥ字幕が入る
+	#ifdef d:EU || d:KOREA
+		#ifdef d:EU
+		// 欧州版では言語選択があるためにこのコマンドを使う(:01とかで定義プロックを変えられる)
+			command 字幕言語設定
+		#endif
+		@ファットマンＳＥ字幕リソース
+	#endif
+}

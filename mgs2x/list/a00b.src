@@ -1,0 +1,193 @@
+//
+//	w00b.src
+//
+//	written by Y.Matsuhana 1999.Oct
+//
+//	$Id: a00b.src,v 1.7 2002/08/05 07:24:04 usr04249 Exp $
+
+
+#define WN_W00B
+
+// 常駐データ
+block .use r_vr_1
+
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"t_common.h"
+#include	"common.h"
+
+//天球
+#define	EFFECT_CUSTUM
+
+#define	E_KOGETUKI				// 壁への焦げ付き
+#define	E_ENEMY					// 敵兵系
+#define	E_ENEMY_LIGHT			// 敵兵ライト
+#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+#define	E_MANHATTAN_LIGHT		// マンハッタンライト
+#define	E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷
+#define	E_CROSS_FADE_LIGHT		// クロスフェード（甲板のライトで使用）
+#define	E_CHARA_HAMON			// chara 波紋
+#define	E_BROKEN_OBJECT			// 壊れ物
+#define	E_HIMATU				// 水飛沫
+#define	E_SKY_NORMAL			// 空
+#define	E_TENKYUU				// 天球ドーム
+#define	E_DOOR_LUMP				// ドアランプ
+#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+#define	ENV						//天球
+#define	BONBORI					//タンカーボンボリ
+
+#include	"c_effect.h"
+//include		wp_tank.h
+
+#include "a_item.h"
+
+// オルタナティブミッション用追加エフェクト
+#include	"alt_effect.h"
+
+
+/*
+// ダンボール
+item	c_box
+
+#if 0
+//武器類は必要な分だけ入れる
+// （シングルウェイト）マルチテクスチャモデル
+pack_all	weapon_mt.tri \
+	weapon/m92/m92_amo.dar \
+//	weapon/m92/m92_sub.dar \
+	weapon/usp/usp_amo.dar \
+	weapon/usp/usp_sub.dar \
+	weapon/fms/fms_sub.dar \
+	weapon/ssk/ssk_mt.dar
+
+// それ以外のノーマルモデル
+pack_all	weapon_nm.tri \
+	weapon/m92 \
+	weapon/usp \
+	weapon/fms/fms_emb.dar \
+	weapon/stun_grenade
+
+weapon		fms/fms_emb.kms
+weapon		m92
+weapon		stun_grenade
+weapon		chaff_grenade
+weapon		usp
+#endif
+
+weapon		ssk/ssk_mt.kms
+
+// ----- 柴田書き換え
+cvd		effect/gun_splash/usp_spl.cvd vn
+cvd		effect/gun_splash/m92_spl.cvd vn
+//cvd		effect/gun_splash/fms_spl.cvd vn
+// もしかしたら、後でw00に移動するかも？
+//cvd		weapon/usp/usp_spl.cvd   vn
+//cvd		weapon/m92/m92_spl.cvd   vn
+// ----- ここまで
+*/
+
+// キャラクタ
+//include		snake.h
+//include		orga.h
+cvd		human/sna_skl/sna_skl3.cvd  vn
+//マルチウエイトキャラモデル
+//human	sna_def/sna_mmt.evm
+
+// ビデオ撮影用スネーク顔表情
+//rmt		sna_rmt
+
+// オルガ表情（暫定？）
+//rmt/org_rmt	org_face_anger.rmt \
+//			org_face_de002c24.rmt \
+//			org_face_excitement.rmt \
+//			org_face_pain.rmt \
+//			org_face_scream.rmt \
+//			org_face_smile.rmt \
+//			org_face_t05a1d41.rmt \
+//			org_face_teeth.rmt
+//rmt		org_rmt
+
+// 強制モーション
+mtn		sna_w00b.mls
+
+// 死体
+world	w01e/tnc_died_obj.kms
+
+// 小物用
+// 小さいサイズのテクスチャはまとめておく
+// 描画順  床以外のステージ(aab.tri)/ホロ隠しオブジェ(aab.tri)/床映り込み(aac.tri):ステージ床(zzz.tri)
+//pack_all	aab.tri \
+//	debug/kimura/w00b
+pack_all	aac.tri \
+	effect/wave/wave07.bmp       \
+	world/w00b/w00b_slt0_brk.dar \
+	world/w00b/w00b_slt0.dar     \
+	world/w00b/horo1.dar         \
+	world/w00b/obs_irs.dar       \
+	world/w00b/obs_box1.dar      \
+	world/w00b/obs_box2.dar      \
+	world/w00b/obs_box3.dar      \
+	world/w00b/obs_box4.dar
+pack_all	zzz.tri \
+	world/w00b/w00b_floor.dar
+pack_all	aaa.tri \
+	world/w00b
+
+//デザートイーグル（メリル用）
+weapon	desert_eagle
+
+//投光器 照り返し用
+cvd	world/w00b/w00b_slt0.cv2 vnu
+
+//ワイヤー／旗 頂点アニメーション
+cvd	world/w00/w00_vfg.cv2 vn
+cvd	world/w00/w00_vw1.cv2 vn
+cvd	world/w00/w00_vw2.cv2 vn
+cvd	world/w00/w00_vw3.cv2 vn
+cvd	world/w00/w00_vw4.cv2 vn
+cvd	world/w00/w00_vw5.cv2 vn
+cvd	world/w00/w00_vw6.cv2 vn
+
+//debug/kimura/w00b
+
+//ホロアニメーション
+cvd	world/w00b/horo1.cv2    v
+anm	w00b_horo.xsi -n -N -R 1
+meca	ir_sensor/irs_box.kms
+
+// グレネード用波紋
+pack_trnall trans00.tri \
+	effect/hamon/hamon06_add_msk.bmp \
+	effect/flare
+
+
+//高波用
+option makexti6 -l 128
+pack_all	wave.tri effect/wave/wave06.bmp effect/wave/wave09_alp_ovl.bmp
+option makexti6
+
+// ワールド(ワールドは最後)
+world	w00b
+//world	w00_door
+// w00共通データ置き場
+world	w00
+lt2	w00b.lt2
+hazard	w00b.hzx
+
+
+
+//デバッグ用（00.06.12使用開始）
+
+//debug	hirano
+
+// リネーム
+rename	ssk_mt.kms ssk.kms
+
+//ボスラッシュ用対応
+//gcx	boss
+
+include mrl.h

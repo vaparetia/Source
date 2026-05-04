@@ -1,0 +1,45 @@
+; DG常駐ピクセルシェーダのテスト用。
+; 要るのかどうかは謎。
+;
+; 2001.05.18  F.Miyauchi
+
+; パッチ用ピクセルシェーダ
+;
+; r1.a でフォグをかける
+
+#ifdef KP_XBOX
+xps.1.1
+#else
+ps.1.1
+#endif
+
+; テクスチャ
+tex t0
+texcoord t3
+
+; 入力カラー * テクスチャカラー
+mul v0.rgb, v0, t3
+mul_x2 r0.rgb, v0, t0
+mul_x4 r0.a, v0, t0
+
+#ifdef DDDDDDDDDDDDDD
+
+#ifdef KP_XBOX
+xps.1.1
+#else
+ps.1.1
+#endif
+
+; テクスチャ
+tex t0
+
+; 入力カラー * テクスチャカラー
+mul r0, v0, t0
+
+#ifdef KP_XBOX	// ファイナルコンバイナの設定
+; final color = s0*s1 + (1-s0)*s2 + s3
+; final alpha = s6.a
+; final combiner prod register = s4*s5
+xfc	zero_sat, r0_sat, r0_sat, zero_sat, zero_sat, zero_sat, r0_sat
+#endif
+#endif

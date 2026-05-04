@@ -1,0 +1,113 @@
+/*
+    dma_prio.h
+    ＤＭＡ関係の優先順位リスト
+
+	2000/11/04 T.Shibata
+
+	$Id: dma_priority.txt,v 1.1.1.3 2002/11/19 11:41:42 Yoshizawa1 Exp $
+*/
+
+#ifndef DMA_PRIO_H
+#define DMA_PRIO_H
+
+include "dmapack.h"
+
+//優先高い ↓
+/* ------------------------------------------------------------------
+
+        PHASE_LAST
+
+--------------------------------------------------------------*/
+//													ゲームオーバー[menu]
+#define DMA_PHASE_GMOVER	(DG_DMAPACK_PHASE_LAST)
+#define DMA_PRIO_GMOVER		(254)
+//													トゥービーコンテニュー[menu]
+#define DMA_PHASE_TBCON		(DG_DMAPACK_PHASE_LAST)
+#define DMA_PRIO_TBCON		(254)
+
+/* --------------------------------------------------------- */
+//													フェードＩＯシナリオ[menu]
+#define DMA_PHASE_FIOSCN	(DG_DMAPACK_PHASE_LAST)
+#definr DMA_PRIO_FIOSCN		(250)
+/* --------------------------------------------------------- */
+//												   	コーデック字幕[menu|pri]
+#define DMA_PHASE_CCPT		(DG_DMAPACK_PHASE_LAST)
+#define	DMA_PRIO_CCPT		(128)
+//													無線画面エフェクト[norm|pri]
+#define DMA_PHASE_CCRT		(DG_DMAPACK_PHASE_LAST)
+#define	DMA_PRIO_CCRT		(128)
+/* ----------------------------------------------------------------
+
+        PHASE_AFTER
+
+------------------------------------------------------------ */
+//print [menu] after 250
+//													メニューサブ[menu]
+#define DMA_PHASE_MENUS 	(DG_DMAPACK_PHASE_AFTER)
+#define DMA_PRIO_MENUS0 	(251)
+#define DMA_PRIO_MENUS1 	(240)
+/* --------------------------------------------------------- */
+//													２Ｄスプライト[0⇔4]
+#define	DMA_PHASE_2DSPRT	(DG_DMAPACK_PHASE_AFTER)
+#define	DMA_PRIO_2DSPRT		(144)
+/* --------------------------------------------------------- */
+//													フェードＩＯ_prog[norm]
+#define	DMA_PHASE_FIOPROG0	(DG_DMAPACK_PHASE_AFTER)
+#define	DMA_PRIO_FIOPROG0	(135)
+/* --------------------------------------------------------- */
+//													シネマスクリーン[menu]
+#define DMA_PHASE_CNSCR		(DG_DMAPACK_PHASE_AFTER)
+#define DMA_PRIO_CNSCR		(128)
+//													レーダー[menu]
+#define DMA_PHASE_RADAR		(DG_DMAPACK_PHASE_AFTER)
+#define DMA_PRIO_RADAR		(128)
+//													画面割れ[norm]
+#define DMA_PHASE_SCARCK	(DG_DMAPACK_PHASE_AFTER)
+#define DMA_PRIO_SCRACK		(128)
+//                                                  ぼかし[norm]
+#define DMA_PHASE_BOKASI	(DG_DMAPACK_PHASE_AFTER)
+#define DMA_PRIO_BOKASI		(128)
+//													ニアフォーカス[norm]
+#define DMA_PHASE_NFOCUS	(DG_DMAPACK_PHASE_AFTER)
+#define DMA_PRIO_NFOCUS		(128)
+//													ファーフォーカス[norm]
+#define DMA_PHASE_FFOCUS	(DG_DMAPACK_PHASE_AFTER)
+#define DMA_PRIO_FFOCUS		(128)
+//													無線フェードＩＯ[norm]
+#define DMA_PHASE_CFADEIO	(DG_DMAPACK_PHASE_AFTER)
+#define DMA_PRIO_CFADEIO	(128)
+//													無線水平同期ズレ[norm]
+#define DMA_PHASE_CHSYNC	(DG_DMAPACK_PHASE_AFTER)
+#define DMA_PRIO_CHSYNC		(128)
+/* ----------------------------------------------------------------
+
+        PHASE_NORM
+
+------------------------------------------------------------ */
+//													ブラー[menu]
+#define DMA_PHASE_BLUR		(DG_DMAPACK_PHASE_NORMAL)
+#define DMA_PRIO_BLUR		(100)
+/* --------------------------------------------------------- */
+//													コントラスト[menu]
+#define DMA_PHASE_CNTRST	(DG_DMAPACK_PHASE_NORMAL)
+#define DMA_PHASE_CNTRST0	(97)
+#define DMA_PHASE_CNTRST1	(96)
+#define DMA_PHASE_CNTRST2	(95)
+//													フェードＩＯプログラム[menu]
+#define	DMA_PHASE_FIOPROG1	(DG_DMAPACK_PHASE_NORMAL)
+#define	DMA_PRIO_FIOPROG1	(96)
+//													ブラータイマー[menu]
+#define DMA_PHASE_BLURTM	(DG_DMAPACK_PHASE_NORMAL)
+#define DMA_PRIO_BLURTM		(90)
+/* ----------------------------------------------------------------
+
+        PHASE_FIRST
+
+------------------------------------------------------------ */
+//													コーデックＩＮ[menu|pri]
+#define	DMA_PHASE_CINDEMO	(DG_DMAPACK_PHASE_FIRST)
+#define DMA_PRIO_CINDEMO	(0)
+
+//優先低い ↑
+
+#endif

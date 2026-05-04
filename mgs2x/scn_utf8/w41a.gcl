@@ -1,0 +1,3045 @@
+/*
+	w41a.gcl                     
+	    拷問部屋
+
+	2000/11/28 H.Yoshiike         
+	$Id: w41a.gcl,v 1.161 2002/10/04 04:45:34 usr04761 Exp $                      
+
+	
+*/
+
+// 各種スイッチ用define
+// ------------------------------------
+// サウンド
+#define		SOUND			1		// サウンドデータは最初に呼ぶ
+#define		BGM				1		// BGMは敵兵コマンダーの後に呼ぶ
+// デモ
+#define		DEMO			0
+// ノード端末
+#define		NODE			1
+// キャラクター関係
+#define		RAIDEN			1		// SNAKEとは排他
+#define		SNAKE			0
+#define		ENEMY			1		// コマンダーと警備兵(敵を出すときは必須)
+#define		SUPPORT			0		// サポート兵
+#define		ATTACKER		1		// 攻撃兵
+#define		SHIELD			0		// 盾兵(1) or 通常攻撃兵(0)
+// ドア
+#define		WT_DOOR			0		// 水密ドア
+#define		SLIDE_DOOR		1		// スライドドア
+// 入出トラップ
+#define		LOAD_TRAP		1
+#define		STAGE_END		1		// ステージ終了時処理を使用可にする
+// フォグ
+#define		FOG				1
+// エフェクト関係
+#define		EFFECT			0		// エフェクト全般
+#define		BLUR			0		// ブラー
+#define		Z_MANAGER		0		// Ｚフォーカス管理(敵のライト等で仕様)
+#define		BODY_SHADOW		0		// 敵のライトによって出る影
+
+// 子画面
+#define		SUB_CAMERA		0
+// カメラ関係
+#define		CLEAR_CAMERA	0		// クリアリング専用カメラ(要子画面)
+
+// 天井
+#define		CHARA_CEIL		1		// 天井君
+// 透明壁
+#define		TR_WALL			0		// シナリオ置きの透明壁
+// ライト関係
+#define		SPOT_LIGHT		0		// スポットライト
+#define		CHARA_LIGHT		1		// キャラ専用ライト
+// オブジェ関係
+#define		LOCKER			1		// ロッカー
+// アイテム
+#define		ITEM			1
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// 各種設定用define
+// ------------------------------------
+//	マップ関係
+//	アタリ
+#define		HZX_NAME			w41a
+
+
+#define		KMS_NAME0			w41a			//	本体
+#define		KMS_NAME1			w41a_corridor	//	廊下
+
+
+//	ドア
+#define		DOOR_NAME			w41a_cell_sdr		//	独房用
+#define		DOOR_NAME2			w41a_cell_sdr_02	//	右ドア用
+#define		DOOR_NAME_LOAD		w01f_dr			// 	ロード用使ってない
+#define		DOOR_NAME_LOAD1A	w41a_dr_left	// 	ロード用
+#define		DOOR_NAME_LOAD1B	w41a_dr_right	// 	ロード用
+
+//	天井君で置くもの
+#define		CEIL_NAME0			w41a_ar			//	屋根
+
+//	プットオブジェで置くもの
+#define		KMS_NAME2			w42a_dummy		//	ロードエリア
+
+#define		KMS_NAME3			dr_lamp_cor_off	//	廊下西ドアランプ赤
+#define		KMS_NAME4			dr_lamp_cor_on 	//	廊下西ドアランプ青
+#define		KMS_NAME5			dr_lamp_cel_off	//	独房ドアランプ赤
+
+#define		CAN					w41a_kan		//	缶
+#define		STRAW				w41a_kan_st		//	ストロー
+#define		BED					w41a_goumon		//	拷問ベッド
+
+#define		LT2_NAME			w41a
+
+
+//	キャラクター関係
+#if d:RAIDEN
+	#define		PLAYER		ライデン
+#else
+	#define		PLAYER		スネーク
+#endif
+
+//	強制モーション
+
+//	薬莢系
+#define			ENE_TNG				1	//	天狗兵
+
+//	ステージ系
+#define			STAGE_W41A			1
+
+#define			STAGE_PLANT			1	//	プラント編
+
+#define			POLYDEMO_LOAD		1
+
+// ローカル変数
+//	$f:w41a_捕まったふりビハインドフラグ	捕まったふりをしているかどうか
+//	$f:w41a_主観デモフラグ					主観デモかどうか
+//	$f:w41a_主観デモ完全終了フラグ			主観デモ関連がすべて終了したかどうか
+//	$i:w41a_拷問ベッド角度					拷問ベッドの角度
+//	$f:w41a_拷問直後開始時処理終了フラグ	拷問直後開始時処理が終了したかどうか
+
+//	$b:w41a_バグステージ名				//	バグったときのステージ名表記用
+										//	0	wn_アーセナルギア空腸
+										//	1	wn_アーセナルギア胃
+										//	2	wn_青山二丁目
+										//	3	wn_麻布十番
+										//	4	wn_船橋市
+										//	5	wn_ニューヨーク52番街
+
+//	$b:w41a_風邪薬フラグ				//	風邪薬をとったかどうか
+//	$f:w41a_ロッカー内フラグ			//	プレイヤーがロッカー内にいるかどうか
+//	$f:w41a_捕まったふりバレたフラグ	//	捕まったふりがバレたかどうか
+//	$f:w41a_ドアランプフラグ			//	ドアランプ点滅用フラグ
+//	$f:w41a_拷問機左側引っかかったフラグ	主観デモＳＥ用
+//	$f:w41a_拷問機右側引っかかったフラグ	主観デモＳＥ用
+
+//	$f:w41a_ロッカーに敵入れたフラグ	//	裸のため死体引き摺り出来ないので必要ないはずだが念のため
+
+// ステージ固有モーションリスト
+// ------------------------------------
+enum ソリダスモーションリスト {
+	sol_idle = 0,
+	sol_walk,
+	sol_breath1,
+	sol_glare,
+	sol_snakehand,
+	sol_breath2
+}
+enum オセロットモーションリスト {
+	rev_idle = 0,
+	rev_breath1,
+	rev_walk,
+	rev_snakehand,
+	rev_breath2
+}
+enum オルガモーションリスト {
+	org_idle = 0,
+	org_talk,
+	org_punch
+}
+
+#include "rai_w41a.mh"
+
+
+// include
+// ------------------------------------
+#include "stdch.h"
+#include "sload.h"
+#include "sound.h"
+#include "enevoice.h"
+#include "item_info.h"
+#include "commdef.h"
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+#include "w41a_d_common.h"	//	デモ／ゲーム共通プロック
+#include "node_res.h"
+
+
+// マップ設定
+// ------------------------------------
+chara マップ 拷問部屋	-k	d:KMS_NAME0 \
+						-k	d:KMS_NAME1	\
+						-h 	d:HZX_NAME,0 -l d:LT2_NAME
+
+//	デバッグ用
+/*
+	if ($w:p_story < d:ST:P070_21_P12ＡＧ起動２１ポリゴンデモ１２終了) {
+		eval($w:p_story = d:ST:P070_21_P12ＡＧ起動２１ポリゴンデモ１２終了)
+	}
+*/
+command マップ設定 拷問部屋 -set {
+
+	#if d:SOUND	
+	@サウンド設定	// データは最初に呼ぶ
+	#endif
+
+	//	ノードアクセス関連
+	@レーダーオンオフチェック $f:w41a_ノードフラグ
+	@常駐キャラ設定
+	command	プレイヤーパッド設定 //プレイヤーのパッドタイプを設定する(実質ＸＢＯＸ版のみに意味があるがＰＳ２であってもＯＫ)
+
+	@ローカル変数初期化
+	#if d:NODE
+	@ノード端末設定 2048
+//	@ノードディスプレイ設定		//	ノード設定の中でまとめられた
+	#endif
+	@設定値変更
+	@プラグイン設定
+	@プレイヤー設定
+	#if d:ENEMY
+	@コマンダー設定
+	#endif
+	#if d:BGM	
+	@ＢＧＭ設定	// プレイヤー→敵兵→BGMの順で呼ぶ
+	#endif
+	#if d:SLIDE_DOOR
+	@ドア設置
+	@主観禁止壁設定
+	#endif
+	#if d:LOAD_TRAP
+	@ロード設定
+	#endif
+	@オブジェクト設定
+	@拷問台設定
+	#if d:CHARA_CEIL
+	@天井設定
+	#endif
+	#if d:LOCKER
+	@ロッカー設定
+	# endif
+	@監視カメラ設定
+
+	#if d:ITEM
+	@アイテム設定
+	#endif
+	#if d:FOG
+	@フォグ設定
+	#endif
+	#if d:EFFECT
+	@エフェクト設定
+	#endif
+	@映り込み設定
+
+	@カメラセット
+	@拷問部屋カメラ設定
+	@子画面設定
+
+	@捕まったふり設定
+
+	@主観デモ設定
+
+	@影設定
+//	@死体歩き設定
+	#if d:CHARA_LIGHT
+	@キャラ用ライト設定		// マップ設定の最後に呼ぶ
+	#endif
+	@全体マップ設定
+
+	#if d:DEBUG_CHARA
+	//	@デバッグキャラセット
+	#endif
+
+	@シナリオデモキャラセット
+}
+
+// 無線用include ※位置は動かさないこと
+#include "w41a_cdc.ch"
+
+#include "p_force_cdc.ch"
+
+
+//初期マップの表示
+command マップ表示 	-add 拷問部屋
+
+// 全てのセットが終わったところでフェードイン
+@拷問部屋開始時処理
+
+
+
+//###################################################################################
+//									各proc設定
+//###################################################################################
+
+
+
+//###################################################################################
+//									全マップ共通
+//###################################################################################
+
+	proc サウンド設定 {
+		#if d:DEBUG_PRINT 
+			print 'sound_set'
+		#endif
+
+		if ($w:p_story < d:ST:P071_01_R01拷問部屋脱出１無線機デモ１終了) {
+			chara サウンドマネージャー ＳＤマネ -pak 0
+		} else {
+			chara サウンドマネージャー ＳＤマネ -pak 1
+		}
+
+
+		@サウンド効果音設定
+		command 弾痕ノーマル -n 0
+		command 弾痕ノーマル -n 1
+		command 弾痕ノーマル -n 3
+
+		command 跳弾ノーマル -n 0
+		command 跳弾ノーマル -n 1
+		command 跳弾ノーマル -n 3
+	}
+
+	proc ローカル変数初期化 {
+		#if d:DEBUG_PRINT 
+			print 'localvar_init'
+		#endif
+
+		eval ($f:w41a_捕まったふりビハインドフラグ = d:FALSE)
+
+		if ($f:w41a_主観デモ完全終了フラグ == d:FALSE) {
+			eval ($f:w41a_主観デモフラグ = d:TRUE)
+		} else {
+			eval ($f:w41a_主観デモフラグ = d:FALSE)
+		}
+
+		eval ($f:w41a_捕まったふりバレたフラグ = d:FALSE)
+		eval ($f:w41a_ドアランプフラグ = d:FALSE)
+
+		eval ($f:w41a_拷問機左側引っかかったフラグ = d:FALSE)
+		eval ($f:w41a_拷問機右側引っかかったフラグ = d:FALSE)
+
+		//	必要ないはずだが念のため
+		eval ($f:w41a_ロッカーに敵入れたフラグ = d:FALSE)
+	}
+
+	proc 設定値変更 {
+		#if d:DEBUG_PRINT 
+			print 'status_set'
+		#endif
+	}
+
+	proc ノード接続時プロック {
+		#if d:DEBUG_PRINT
+			print 'node_set'
+		#endif
+
+	// 必ず必要。フラグの初期化はvarinit.hですでに行っています。
+		eval($f:ノードフラグ = $f:w41a_ノードフラグ);
+	}
+
+	// 接続したフラグをたてたりする
+	proc ノード接続後プロック {
+		#if d:DEBUG_PRINT
+			print 'node_event_go'
+		#endif
+
+		if ($f:w41a_ノードフラグ == 0) {
+			//	ノードにアクセスしたら全体マップが出るのでポーズ時ステージ名表示は殺す
+			mesg ２Ｄスプライト表示＿ポーズ ポーズ時マップネーム表示 kill
+			@プラント編全体マップ設定 d:アーセナルギア胃 	//	全体マップ表示
+		}
+		eval($f:w41a_ノードフラグ = 1);
+		command メニュー設定 -node_access on 
+	print '#################################################################################SKOBA'
+
+/*
+		chara フェードインアウト フェードアウト \
+			-c 0,0,0 128 \
+			-t 1 \
+			-p ノードアクセス終了
+*/
+	}
+
+	proc ノードアクセス終了 {
+			eval ($i:プレイヤー初期Ｘ位置 = $i:プレイヤー位置Ｘ)
+			eval ($i:プレイヤー初期Ｙ位置 = $i:プレイヤー位置Ｙ)
+			eval ($i:プレイヤー初期Ｚ位置 = $i:プレイヤー位置Ｚ)
+			eval ($i:プレイヤー初期方向 = $w:プレイヤー方向)
+			eval ($s:登場ポイント = ノードアクセス後)
+			restart
+	}
+
+	proc ノードディスプレイ設定 {
+		chara ノード端末ディスプレイ NewNodeLamp \
+			-r 0 \
+			-p 5650 0 -8500
+	}
+
+
+	// ------------------------------------
+	proc プラグイン設定 {
+		#if d:DEBUG_PRINT
+			print 'plugin_set'
+		#endif
+		//	風邪用
+		command プラグインくしゃみ
+
+	}
+
+
+
+//###################################################################################
+//									 プレイヤー
+//###################################################################################
+
+	proc プレイヤー設定 {
+		#if d:DEBUG_PRINT
+			print 'player_set'
+		#endif
+
+		//	主観デモ中はプレイヤー起動だめ！
+		if ($f:w41a_主観デモフラグ == d:FALSE) {
+			#if d:RAIDEN
+
+				//	裸モード
+				command はだかモードセット
+
+				print 'PLAYERPLAYERPLAYERPLAYERPLAYERPLAYERPLAYERPLAYERPLAYERPLAYERPLAYERPLAYERPLAYERPLAYER'
+				chara プレイヤー d:PLAYER \
+					-p $i:プレイヤー初期Ｘ位置,$i:プレイヤー初期Ｙ位置,$i:プレイヤー初期Ｚ位置 \
+					-d 0,$i:プレイヤー初期方向,0 \
+					-s 0 \
+//					-m rai_def -a raiden \
+					-m rai_naked_sh -a raiden \
+					-o rai_w41a \
+					-f d:PLY_NO_FOOT_SHADOW
+
+				//	髪の毛
+				@ライデン髪の毛設定 d:NORMAL_HAIR
+
+			#else if d:SNAKE
+				chara プレイヤー d:PLAYER \
+					-p $i:プレイヤー初期Ｘ位置,$i:プレイヤー初期Ｙ位置,$i:プレイヤー初期Ｚ位置 \
+//					-p -18000, -46000, 23000 \
+					-d 0,$i:プレイヤー初期方向,0 \
+					-s 0 \
+					-m sna_def -a snake -o rai_common
+
+					//バンダナ
+					chara ロープモデル３ バンダナ１ \
+						-n sna_bdn1 \
+						-d 1 \
+						-y スネーク \
+						-z 12 \
+						-x 0,60,-90 \
+						-m 12 \
+						-p 250 \
+						-k 350 \
+						-o 110 \
+						-f 1
+
+					chara ロープモデル３ バンダナ２ \
+						-n sna_bdn2 \
+						-d 1 \
+						-y スネーク \
+						-z 12 \
+						-x 0,50,-90 \
+						-m 22 \
+						-p 250 \
+						-k 350 \
+						-o 110 \
+						-f 1
+			#endif
+		}
+	}
+
+//###################################################################################
+//								敵兵
+//###################################################################################
+
+//	敵兵配置
+
+//	基本セット
+	proc 天狗兵セット {
+		@天狗兵０
+	}
+
+
+//	コマンダーセット
+	proc 天狗兵コマンダー {
+		chara 天狗兵コマンダー tng_com \
+			-e { 天狗兵セット } \
+			-type 0 \
+			-avoid -1000,0,-2000 300
+	}
+
+	//	コマンダー
+	//	司令官音声
+
+	resource ghq_caution_voice {
+	w41a:
+		$t{
+			t:vc040601,	//	指揮官　　「了解、総員、警戒を強化せよ」
+			-2,
+			t:vc049066,	//	指揮官　　「どうしたんだ？」
+			-1
+		}
+	}
+
+	proc コマンダー設定 {
+		//	主観デモ中はコマンダ起動だめ！
+		if ($f:w41a_主観デモフラグ == d:FALSE) {
+			#if d:DEBUG_PRINT
+				print 'commander_set'
+			#endif
+
+			chara コマンダー 敵兵セット \
+				-a 天狗兵コマンダー \
+				-r 7000,0,-11000 拷問部屋 7000,0,-1500 拷問部屋 \
+				-c 7000,0,-11000 拷問部屋 \
+				-p 0,-1,-1 拷問部屋クリアリング設定 \
+/*
+				-j	0 1 1 t:vc045071 t:vc045071_len \
+					0 1 2 t:vc045072 t:vc045072_len \
+					0 1 4 t:vc045073 t:vc045073_len \
+*/
+				-j	0 1 1 t:vc045072 t:vc045072_len \
+					0 1 2 t:vc045071 t:vc045071_len \
+					0 1 4 t:vc045073 t:vc045073_len \
+
+				-v [ene_plant_voice:04] \
+				-y [ghq_caution_voice:w41a] \
+				-z $i:敵標準麻酔持続 \
+				-o $i:敵標準気絶持続 \
+				-b $w:敵標準再発生数 \
+				-s d:ENE_STAGE_GPS \
+				-m $w:スタートアラートモード \
+				-h $i:標準警戒時間		// 警戒時間
+
+		}
+	}
+
+
+
+//	敵兵配置０
+
+	proc 天狗兵０ {
+		chara 天狗兵Ａ 敵兵:61 \
+		-r 5 \
+		-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+		-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+	}
+
+
+
+//###################################################################################
+//								クリアリング
+//###################################################################################
+
+	proc 拷問部屋クリアリング設定 {
+		command セットクリアリング \
+			-p	-1,-1,-1 クリアリングカメラ設定 \
+				0,0,0 クリアリングカメラ０ \
+				0,0,2 クリアリングカメラ１ \
+				0,0,4 クリアリングルート変更 \
+				0,0,5 クリアリングカメラ２ \
+				0,0,7 クリアリングカメラ３ \
+
+				0,1,0 クリアリングカメラオフ \
+				-2,-2,-2,クリアリングカメラオフ \
+			-i 0
+	}
+
+	proc クリアリングカメラ設定 {
+
+	}
+
+	proc クリアリングカメラ０ {
+		chara カメラ設定 クリアリングカメラ \
+			-c 1 \
+			-p 4784,3595,-4157 -t 7009,1464,-6697 \
+			-r 367,1579,0 -f 3993 \
+			-a 139 \
+			-i 0 0 0 0 \
+			-s 1
+
+		command カメラマップ設定 -chanl 1 -map 拷問部屋
+		mesg サブ画面 子画面 on
+
+	}
+
+	proc クリアリングカメラ１ {
+		chara カメラ設定 クリアリングカメラ \
+			-c 1 \
+			-p -736,3567,938 -t 2401,1136,-4207 \
+			-r 250,1691,0 -f 6498 \
+			-a 200 \
+			-i 0 0 0 0 \
+			-s 1
+	}
+	proc クリアリングカメラ２ {
+		chara カメラ設定 クリアリングカメラ \
+			-c 1 \
+			-p -5970,3510,-4568 -t 3653,-2536,-890 \
+			-r 346,786,0 -f 11946 \
+			-a 200 \
+			-i 0 0 0 0 \
+			-s 1
+	}
+
+	proc クリアリングカメラ３ {
+		chara カメラ設定 クリアリングカメラ \
+			-c 1 \
+			-p -1430,3145,1624 -t 3376,1032,-898 \
+			-r 242,1339,0 -f 5824 \
+			-a 200 \
+			-i 0 0 0 0 \
+			-s 1
+	}
+
+	proc クリアリングルート変更 {
+/*
+		chara delay カメラオフディレイ \
+			-t 120 \
+			-p	クリアリングカメラオフ
+*/
+		print 'SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS'
+		if ($f:w41a_捕まったふりビハインドフラグ == d:TRUE) {
+		print 'CHANGE-CHANGE-CHANGE-CHANGE-CHANGE-CHANGE-CHANGE-CHANGE-CHANGE-CHANGE'
+			command チェンジクリアリングルート \
+				敵兵:61 -r 1 -p 0
+		}
+	}
+
+	proc クリアリングカメラオフ {
+//		mesg delay カメラオフディレイ kill
+		mesg サブ画面 子画面 off
+		chara カメラ設定 クリアリングカメラ -s 0
+	}
+
+
+
+	proc 子画面設定 {
+		chara サブ画面 子画面 \
+			-w (512-d:SUB_MARGIN-d:SUB_WIDTH),d:SUB_MARGIN (512-d:SUB_MARGIN),(d:SUB_HEIGHT+d:SUB_MARGIN)
+	}
+
+
+//###################################################################################
+//								ＢＧＭ設定
+//###################################################################################
+
+	proc ＢＧＭ設定 {
+		#if d:DEBUG_PRINT 
+			print 'bgm_set'
+		#endif
+		if ($w:p_story < d:ST:P071_01_R01拷問部屋脱出１無線機デモ１終了) {
+
+		} else {
+			chara ＢＧＭマネージャー ＢＧＭマネ
+		}
+
+	}
+
+//###################################################################################
+//									 ドア＆マップ切り替え
+//###################################################################################
+
+#if 0
+	//	w41a_d_common.h内に記述
+
+	proc ドア設置 {
+		#if d:DEBUG_PRINT
+			print 'slide_door_set'
+		#endif
+
+		chara ドア 廊下東ドア \
+			-m d:DOOR_NAME_LOAD1A \
+			-d 0,3072,0 \
+			-p 10625,0,-8000 \
+			-slide d:SD_SLIDE_ARSENAL_LEFT \
+			-time d:SD_OPEN_TIME \
+			-between 拷問部屋 拷問部屋 \
+			-w_door d:DOOR_NAME_LOAD1B d:SD_SLIDE_ARSENAL_RIGHT \
+			-h 1500 \
+			-light 影用モデル \
+			-exec {
+				if ( !($:開閉フラグ) ){
+					mesg プットオブジェ 拷問部屋ロードエリア off
+				} else {
+					mesg プットオブジェ 拷問部屋ロードエリア on
+				}
+			}
+		trap dr001 ？ \
+			-mask ？ \	
+			-exec {
+				if ($3==入る) {
+					mesg ドア 廊下東ドア open $2
+				} else {
+					mesg ドア 廊下東ドア close $2
+				}
+			}
+
+		chara ドア 廊下西ドア \
+			-m d:DOOR_NAME2 \
+			-d 0,1024,0 \
+			-p 4125,0,-4500 \
+			-slide (0-d:SD_SLIDE_OUTSIDE) \
+			-time d:SD_OPEN_TIME \
+			-between 拷問部屋 拷問部屋 \
+			-light 影用モデル \
+			-exec {
+				if ( !($:開閉フラグ) ){
+					mesg プットオブジェ 廊下西ドアランプ青 off
+					mesg プットオブジェ 廊下西ドアランプ赤 on
+				} else {
+					mesg プットオブジェ 廊下西ドアランプ青 on
+					mesg プットオブジェ 廊下西ドアランプ赤 off
+				}
+
+			}
+		trap dr002 ？ \
+			-mask ？ \	
+			-exec {
+				if ($3==入る) {
+					mesg ドア 廊下西ドア open $2
+				} else {
+					mesg ドア 廊下西ドア close $2
+				}
+			}
+
+/*
+		//	必要なし
+		chara ドア トイレドア \
+			-m d:DOOR_NAME \
+			-d 0,2048,0 \
+			-p 6000,0,-125 \
+			-slide d:SD_SLIDE_OUTSIDE \
+			-time d:SD_OPEN_TIME \
+			-between 拷問部屋 拷問部屋 \
+			-exec {
+			}
+*/
+		chara ドア 独房ドア \
+			-m d:DOOR_NAME \
+			-d 0,0,0 \
+			-p -5500,0,1875 \
+			-slide (0-d:SD_SLIDE_OUTSIDE) \
+			-time d:SD_OPEN_TIME \
+			-between 拷問部屋 拷問部屋 \
+			-card_level 9999 \			//	無理矢理開かなくする
+			-light 影用モデル \
+			-exec {
+			}
+		trap dr003 ？ \
+			-mask ？ \	
+			-exec {
+				if ($3 == 入る) {
+					mesg ドア 独房ドア open $2
+					@ドアランプ点滅処理
+				} else {
+					mesg ドア 独房ドア close $2
+				}
+			}
+
+	}
+
+	proc ドアランプ点滅処理 {
+		chara プロック連続実行 ドア点滅管理人 \
+			-t 90 \
+			-p ドアランプ点滅 \
+			-end_exec {
+				mesg プットオブジェ 独房ドアランプ赤 on
+			}
+	}
+
+	proc ドアランプ点滅 {
+		chara delay ドアランプ点滅ディレイ \
+			-t 30 \
+			-e {
+				if ($f:w41a_ドアランプフラグ == d:FALSE) {
+					eval($f:w41a_ドアランプフラグ = d:TRUE )
+					mesg プットオブジェ 独房ドアランプ赤 off
+				} else {
+					eval($f:w41a_ドアランプフラグ = d:FALSE )
+					mesg プットオブジェ 独房ドアランプ赤 on
+				}
+			}
+	}
+
+#endif
+
+	proc 主観禁止壁設定 {
+
+		@主観禁止壁 廊下東ドア壁 10625,0,-8000 3072 1500
+		@主観禁止床 廊下東ドア床１ 廊下東ドア床２ 10625,0,-8000 3072 1500
+
+		trap dr001 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if( $3 == 入る ) {
+					mesg 透明壁 廊下東ドア壁 on
+				} else {
+					mesg 透明壁 廊下東ドア壁 off
+				}
+			}
+
+		trap dr002 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if( $3 == 入る ) {
+					mesg 透明壁 Ｄ脚ドア壁 on
+				} else {
+					mesg 透明壁 Ｄ脚ドア壁 off
+				}
+			}
+
+
+
+	
+	}
+
+
+
+//###################################################################################
+//									開始時処理
+//###################################################################################
+
+	proc 拷問部屋開始時処理 {
+		if( $s:登場ポイント == sp_w24d_w41a_0 ) {
+			//	シェル１中央棟Ｂ３から
+//			@ステージ開始時処理 d:LOAD_TYPE:NO_MOVE_TYPE エレベーター 0 d:M_TYPE:WALK_CHANGE
+			@拷問開始時処理
+		} else if ( $s:登場ポイント == sp_w42a_w41a_0 ) {
+			print '$b:w41a_バグステージ名'$b:w41a_バグステージ名
+			//	アーセナルギア通路Ａから
+			if ($b:w41a_バグステージ名 == 1) {
+				@ステージ開始時処理（ステージ名表示） \
+				d:LOAD_TYPE:SL_DOOR_TYPE 廊下東ドア 2500 d:DEFAULT_M_TYPE \
+				d:wn_アーセナルギア胃
+			} else if ($b:w41a_バグステージ名 == 2) {
+				@ステージ開始時処理（ステージ名表示） \
+				d:LOAD_TYPE:SL_DOOR_TYPE 廊下東ドア 2500 d:DEFAULT_M_TYPE \
+				d:wn_青山二丁目
+			} else if ($b:w41a_バグステージ名 == 3) {
+				@ステージ開始時処理（ステージ名表示） \
+				d:LOAD_TYPE:SL_DOOR_TYPE 廊下東ドア 2500 d:DEFAULT_M_TYPE \
+				d:wn_麻布十番
+			} else if ($b:w41a_バグステージ名 == 4) {
+				@ステージ開始時処理（ステージ名表示） \
+				d:LOAD_TYPE:SL_DOOR_TYPE 廊下東ドア 2500 d:DEFAULT_M_TYPE \
+				d:wn_船橋市
+			} else if ($b:w41a_バグステージ名 == 5) {
+				@ステージ開始時処理（ステージ名表示） \
+				d:LOAD_TYPE:SL_DOOR_TYPE 廊下東ドア 2500 d:DEFAULT_M_TYPE \
+				d:wn_ニューヨーク52番街
+			} else {
+				//	バグだよここにくるのは
+				@ステージ開始時処理（ステージ名表示） \
+				d:LOAD_TYPE:SL_DOOR_TYPE 廊下東ドア 2500 d:DEFAULT_M_TYPE \
+				d:wn_アーセナルギア胃
+			}
+			//	ロード時カメラ
+			@ロード時カメラ設定
+		} else if ( $s:登場ポイント == 拷問直後 ) {
+			//	デモ直後から
+			@拷問直後開始時処理
+		} else if ( $s:登場ポイント == ノードアクセス後 ){
+			//	ノードアクセス後
+			@ステージ開始時処理 d:LOAD_TYPE:NO_MOVE_TYPE エレベーター 0 d:M_TYPE:WALK_CHANGE
+		}
+	}
+
+	//	拷問時のステージ開始時は特殊
+	proc 拷問開始時処理 {
+		@特殊装備解除
+
+		// パッド操作を奪う(無線やポーズも不許可にする)
+		command パッド操作 -release
+		command メニュー設定 -radio off -pause off
+		// フェードインスタート
+
+		//	シェル１中央棟Ｂ３から
+		if ($w:p_story < d:ST:P070_11_M02ＡＧ起動１１ムービーデモ２開始) {
+			chara フェードインアウト フェードイン \
+				-i 0,0,0 128 \
+				-c 0,0,0 0 \
+				-t (d:FADEIN_TIME*2)
+		} else {
+			chara フェードインアウト フェードイン \
+				-i 0,0,0 128 \
+				-c 0,0,0 0 \
+				-t d:FADEIN_TIME
+		}
+		chara delay パッドディレイ \
+			-time (d:FADEIN_TIME*2) \
+			-e {
+				//	無線とポーズは不許可のまま
+				command パッド操作 -cancel
+				eval($f:ロードチェックＯＮフラグ = 1);
+			}
+	}
+	//	拷問終了直後のステージ開始時は特殊
+	proc 拷問直後開始時処理 {
+	#if d:DEBUG_PRINT 
+		print 'stage_start'
+	#endif
+
+		//	ＢＧＭを鳴らす
+		command セットサウンドコード -c d:SNG_PLAY_05
+		//	ポーズ時ステージ表示を入れる
+		@ポーズ時ステージ名表示設定 d:wn_アーセナルギア胃
+
+		//	シナリオデモ開始処理を行う
+		command シナリオデモ開始
+		command 無線設定 -reset
+		command メニュー設定 -menu off -gage off -radar off -subwin off
+		mesg シネマスクリーン シネマ フェードアウト 1
+		command パッド操作 -release
+		command プレイヤー無敵セット
+		mesg コマンダー 敵兵セット 視界オフ
+		@特殊装備解除
+
+
+		//	捕まった状態から始める
+		mesg プレイヤー d:PLAYER motion \
+//			d:モーションリスト:behind_goumon \
+			d:モーションリスト:escape_goumon \
+				0 \
+				0 \
+				0 \
+				( d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_NO_INTERP) \
+//				( d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR ) \
+//				-2000,-3400		//	モーションが修正されたらこちら
+				-2000,-3250
+
+		command	強制モーション終了プロック \
+				-motion d:モーションリスト:escape_goumon \
+				-proc 拷問直後開始時処理終了
+//				-proc 拷問直後歩き処理
+		
+		//	強制モーション用カメラ
+		chara カメラ設定 シナリオカメラ \
+			-c 1 \
+			-p -912,515,582 -t -2011,1571,-3274 \
+			-r 3928,2229,0 -f 4146 \
+			-a 465 \
+			-i 0 -1 0 0 \
+			-s 1
+
+		chara delay シナリオカメラディレイ \
+			-t 300 \
+			-e {
+				chara カメラ設定 シナリオカメラ \
+					-c 1 \
+					-p 1382,3,-3752 -t -1226,961,-3340 \
+					-r -324,2074,0 -f 2828 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+	}
+
+	proc 拷問直後開始時処理終了 {
+		chara カメラ設定 シナリオカメラ \
+			-s -1
+//		mesg プレイヤー d:PLAYER position \
+//			-2000,$i:プレイヤー位置Ｙ,-2400
+
+		//	シナリオデモ終了処理を行う
+		@シナリオデモ終了処理
+		chara delay ゲーム復帰ディレイ \
+			-t d:C_FADE_TIME \
+			-e {
+			command パッド操作 -cancel
+			command メニュー設定 -radio on -pause on
+			eval ($f:ロードチェックＯＮフラグ = 1)
+			eval ($f:w41a_拷問直後開始時処理終了フラグ = d:TRUE)
+		}
+
+		//	風邪をひく
+		if($w:風邪状態 == 0) {
+		print '#######################################COLD_START'
+			eval ( $i:風邪引きカウンタ = 0 )
+			command プレイヤー風邪引かせ \
+				-time 120	//	$i:くしゃみ間隔（秒）
+
+			//	くしゃみ間隔セット
+			@アーセナルくしゃみ間隔
+		}
+	}
+
+
+
+
+
+//###################################################################################
+//									ロード設定
+//###################################################################################
+
+	proc バグステージ名設定 {
+
+		// バグステージ名の決定
+		if($b:w41a_バグステージ名 < 2) {
+			command rand 4
+			eval($b:w41a_バグステージ名 = ($status + 2))
+		} else {
+			command rand 3
+			if($b:w41a_バグステージ名 > ($status + 2)) {
+				eval($b:w41a_バグステージ名 = ($status + 2))
+			} else {
+				eval($b:w41a_バグステージ名 = ($status + 3))
+			}
+		}
+
+	}
+
+	proc ロードプロック {
+		#if d:DEBUG_PRINT 
+			print 'load_proc'
+		#endif
+
+		if ($s:呼び出しプロック == mv_w41a_w42a_0) {
+			// アーセナルギア通路Ａへ
+			@mv_w41a_w42a_0
+		}
+	}
+
+	proc ロード設定 {
+		#if d:DEBUG_PRINT 
+			print 'load_set'
+		#endif
+
+		trap ld001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if( $f:ロードチェックＯＮフラグ == 1 ) {
+					//	初めてここを出るときは
+					if ($w:p_story < d:ST:P071_01_R01拷問部屋脱出１無線機デモ１終了) {
+
+						//	ＢＧＭをフェードアウト
+						command セットサウンドコード -c d:SNG_FOUTS_S
+
+						// アーセナルギア通路Ａへ
+						eval ($b:w41a_バグステージ名 = 0)
+						@ステージ終了時処理（ステージ名表示）\
+						12250 0 -7250 1024 mv_w41a_w42a_0 d:DEFAULT_M_TYPE \
+						d:wn_アーセナルギア空腸
+
+					//	２回目以降は
+					} else {
+						// アーセナルギア通路Ａへ
+						@バグステージ名設定
+						if ($b:w41a_バグステージ名 == 2) {
+							@ステージ終了時処理（ステージ名表示）\
+							12250 0 -7250 1024 mv_w41a_w42a_0 d:DEFAULT_M_TYPE \
+							d:wn_青山二丁目
+						} else if ($b:w41a_バグステージ名 == 3) {
+							@ステージ終了時処理（ステージ名表示）\
+							12250 0 -7250 1024 mv_w41a_w42a_0 d:DEFAULT_M_TYPE \
+							d:wn_麻布十番
+						} else if ($b:w41a_バグステージ名 == 4) {
+							@ステージ終了時処理（ステージ名表示）\
+							12250 0 -7250 1024 mv_w41a_w42a_0 d:DEFAULT_M_TYPE \
+							d:wn_船橋市
+						} else if ($b:w41a_バグステージ名 == 5) {
+							@ステージ終了時処理（ステージ名表示）\
+							12250 0 -7250 1024 mv_w41a_w42a_0 d:DEFAULT_M_TYPE \
+							d:wn_ニューヨーク52番街
+						}
+					}
+					//	ロード時カメラ
+					@ロード時カメラ設定
+					//	先読み
+					preseek 'w42a'
+				}
+			}
+	}
+
+	proc ロード時カメラ設定 {
+		chara カメラ設定 ロードカメラ \
+						-c 1 \	
+						-p 8070,3871,-4382 \
+						-t 9649,1539,-7219 \
+						-a 200 \
+						-i 0 1 0 0 \
+						-s 1
+
+		chara プロック連続実行 カメラ戻し管理人 \
+			-proc カメラ戻し管理
+	}
+
+	proc カメラ戻し管理 {
+		command パッドチェック \
+			-no_use
+		if ($status != 1) {
+			chara カメラ設定 ロードカメラ \
+				-s -1
+			mesg プロック連続実行 カメラ戻し管理人 kill
+		}
+	}
+
+
+//###################################################################################
+//									オブジェクト
+//###################################################################################
+
+#if 0
+	//	w41a_d_common.h内に記述
+	proc オブジェクト設定 {
+		//	股間隠し系
+		chara プットオブジェ コーラ -m d:CAN \
+			-r 0,0,0 \
+			-p -1500,1000,1950  -l d:LT2_NAME \
+			-s 100,100,100
+		chara プットオブジェ ストロー -m d:STRAW \
+			-r 0,512,0 \
+//			-p (-1500-25),(1000+160),1950  -l d:LT2_NAME \
+			-p (-1490),1120,1970  -l d:LT2_NAME \
+			-s 100,100,100
+
+		//	主観デモ中は邪魔になるので拷問ベッドオフ
+		if ($f:w41a_主観デモフラグ == d:FALSE) {
+			chara プットオブジェ 拷問ベッド -m d:BED \
+				-r 0,0,0 \
+				-p 0,0,0  -l d:LT2_NAME \
+				-s 100,100,100
+		}
+
+		//	ロードエリア
+		chara プットオブジェ 拷問部屋ロードエリア \
+			-m 	d:KMS_NAME2 -r 0 0 0 -p 0 0 0  -l d:LT2_NAME
+		mesg プットオブジェ 拷問部屋ロードエリア off
+
+		//	ドアランプ
+		//	廊下西ドアランプ
+		chara プットオブジェ 廊下西ドアランプ赤 \
+			-m 	d:KMS_NAME3 -r 0 0 0 -p 0 0 0  -l d:LT2_NAME
+
+		chara プットオブジェ 廊下西ドアランプ青 \
+			-m 	d:KMS_NAME4 -r 0 0 0 -p 0 0 0  -l d:LT2_NAME
+			mesg プットオブジェ 廊下西ドアランプ青 off
+
+		//	独房ドアランプ
+		chara プットオブジェ 独房ドアランプ赤 \
+			-m 	d:KMS_NAME5 -r 0 0 0 -p 0 0 0  -l d:LT2_NAME
+
+	}
+#endif
+
+	proc 拷問台設定 {
+		//	主観デモ中は邪魔になるので拷問ベッドオフ
+		if ($f:w41a_主観デモフラグ == d:FALSE) {
+			chara プットオブジェ 拷問ベッド -m d:BED \
+				-r 0,0,0 \
+				-p 0,0,0  -l d:LT2_NAME \
+				-s 100,100,100
+		}
+	
+	}
+
+/*
+	//	w41a_d_common.h内に記述
+	proc 天井設定 {
+		#if d:DEBUG_PRINT
+			print 'w41a_ceil_set'
+		#endif
+
+		chara 天井君 拷問部屋天井 -m d:CEIL_NAME0 -h 4000 -p 0,0,0 -l d:LT2_NAME
+	}
+*/
+
+	proc ロッカーチェック $:番号 {
+		@壊れ物再セットチェック $i:w41a_ロッカーロード回数[$:番号]
+		if($f:再セットフラグ) {
+			eval($i:w41a_ロッカー状態[$:番号] = 0)
+		}
+	}
+
+	proc ロッカー状態保存 $:番号 $:行動 $:ロッカー名 {
+		if(($:行動 != 6) && ($:行動 != 8)) {
+			// 状態変化時
+			eval($i:w41a_ロッカーロード回数[$:番号] = $w:グローバルロード回数);
+		} else if($:行動 == 8) {
+			// ステージ終了時
+			command ロッカー状態 -n $:ロッカー名
+			eval($i:w41a_ロッカー状態[$:番号] = $status)
+		}
+	}
+
+
+	proc ロッカー設定 {
+		#if d:DEBUG_PRINT
+			print 'w11a0_locker_set'
+		#endif
+
+		chara ロッカー管理 管理人さん -n 1
+		command ロッカーモーション -motion locker
+		command プレイヤーロッカーモーション -motion rai_n_locker
+
+		@ロッカーチェック 0
+		chara ロッカー ロッカー１ \
+			-kms neo_locker_door \
+			-p 2950, 0,-6900 \
+			-r 0,0,0 \
+			-s 0 \
+			-flag 0x0001 \
+			-seno 1 \
+			-sefloor 1 \
+			-load_state $i:w41a_ロッカー状態[0]  \
+			-exec {
+				@ロッカー状態保存 0 $3 $4
+				//	必要ないはずだが念のため
+				//	敵が中にいるときドアを（壊して）開けたら
+				if ( ($3 == 0) || ($3 == 4) ) {
+					if ($f:w41a_ロッカーに敵入れたフラグ == d:TRUE) {
+						eval ($f:w41a_ロッカーに敵入れたフラグ = d:FALSE)
+					}
+				//	敵を中に入れたら
+				} else if ($3 == 5) {
+					if ($f:w41a_ロッカーに敵入れたフラグ == d:FALSE) {
+						eval ($f:w41a_ロッカーに敵入れたフラグ = d:TRUE)
+					}
+				}
+			}
+
+		trap lk001 d:PLAYER \
+			-and \
+			-mask いる \
+			-state 0,4 \
+			-dir 2048,512 0,512 \
+			-button d:ACTION_BUTTON,-1 \
+			-exec {
+				command ロッカー状態 -n ロッカー１
+				mesg プレイヤー d:PLAYER locker ロッカー１ $status 2048 512 2950,-6900
+			}
+
+
+		//	ロッカー手前
+		trap lk002 d:PLAYER \
+			-mask ？ \
+			-state 6 \			//強制モーション中
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				if ($3 == 入る) {
+					if ( ($w:プレイヤー方向 >= 1024) && ($w:プレイヤー方向 <= 3072) ) {
+						chara カメラ設定 モーションカメラ \
+							-c 1 \
+							-p 3341,5092,-5244 -t 2939,2257,-6127 \
+							-r 809,2326,0 -f 2996 \
+							-a 200 \
+							-i 0 2 0 0 \
+							-s $3
+					} else {
+						chara カメラ設定 モーションカメラ \
+							-c 1 \
+//							-p 1357,1308,-2331 -t 2402,1161,-5129 \
+							-p 1157,1308,-2331 -t 2402,1161,-5129 \
+							-r 32,1815,0 -f 2990 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+						chara delay モーションカメラディレイ \
+							-t 45 \
+							-e {
+								chara カメラ設定 モーションカメラ \
+									-c 1 \
+									-p 3341,5092,-5244 -t 2939,2257,-6127 \
+									-r 809,2326,0 -f 2996 \
+									-a 200 \
+									-i 0 2 0 0 \
+									-s 1
+							}
+					}
+				} else {
+					chara カメラ設定 モーションカメラ \
+						-s $3
+				}
+			}
+		trap lk002 d:PLAYER \
+			-mask 出る \
+			-exec {
+				if ($f:w41a_ロッカー内フラグ == d:TRUE) {
+					eval ($f:w41a_ロッカー内フラグ = d:FALSE)
+				}
+			}
+
+		//	ロッカー内
+		trap lk003 d:PLAYER \
+			-mask ？ \
+			-state 6 \			//強制モーション中
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				//	必要ないはずだが念のため
+				//	敵を中に入れているときは
+				if ($f:w41a_ロッカーに敵入れたフラグ == d:TRUE) {
+					//	カメラ切り替えは無し
+					return;
+				}
+				
+				if ($3 == 入る) {
+					if ( ($w:プレイヤー方向 <= 1024) || ($w:プレイヤー方向 >= 3072) ) {
+						chara カメラ設定 モーションカメラ \
+							-c 1 \
+							-p 1357,1308,-2331 -t 2402,1161,-5129 \
+							-r 32,1815,0 -f 2990 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+				
+						if ($f:w41a_ロッカー内フラグ == d:FALSE) {
+
+							chara delay モーションカメラディレイ \
+								-t 45 \
+								-e {
+									eval ($f:w41a_ロッカー内フラグ = d:TRUE)
+									chara カメラ設定 モーションカメラ２ \
+										-c 1 \
+										-p 3341,5092,-5244 -t 2939,2257,-6127 \
+										-r 809,2326,0 -f 2996 \
+										-a 200 \
+										-i 0 0 0 0 \
+										-s 1
+								}
+						}
+					}
+				} else if ($3 == 出る) {
+					if ($f:w41a_ロッカー内フラグ == d:TRUE) {
+						chara カメラ設定 モーションカメラ２ \
+							-s -1
+					}
+
+					chara カメラ設定 モーションカメラ \
+						-c 1 \
+						-p 1357,1308,-2331 -t 2402,1161,-5129 \
+						-r 32,1815,0 -f 2990 \
+						-a 200 \
+						-i 0 0 0 0 \
+						-s $3
+				}
+			}
+	}
+
+
+#if 0
+	//	w41a_d_common.h内に記述
+	//	監視カメラ
+	proc 監視カメラ設定 {
+
+	/*
+		chara プラントカメラ  監視カメラ:01 \
+		-pos -5000,1500,5500 \
+		-rot 300 512 0 \ 	// ＸＹ値のみ有効
+		-dir 0 \ /*片側角度*/
+		-center 0 0 \ /*初期方向は符号付き相対指定*/
+		-i 1
+		
+
+		mesg プラントカメラ 監視カメラ:01 視界オフ
+	*/
+		chara プットオブジェ ダミー監視カメラ \
+			-m svc_plant \
+			-p -4950,3250,-5430 \
+			-r 450 384 0 \
+			-s 100 100 100 \
+			-l d:LT2_NAME
+
+	}
+#endif
+
+
+//###################################################################################
+//									アイテム
+//###################################################################################
+
+	proc アイテム設定 {
+		#if d:DEBUG_PRINT
+			print 'item_set'
+		#endif
+
+		//	レーション
+		@アイテム再セットチェック（難易度対応） $b:w41a_取得ロード回数[0] 
+		if ($f:再セットフラグ) {
+			@レーション_初期設置 レーション:01 -5250 0 -3500 0			//	左側イントルードの中
+		}
+
+
+		//	風邪薬
+		if ($b:w41a_風邪薬フラグ == d:FALSE) {
+			chara アイテム 風邪薬:01 \
+				-b d:シナリオの発生パターン \		// 発生パターン
+				-p 2500,200,-7200 \		// 発生位置
+				-k medicine_ibox \					// モデル：箱本体
+				-s medicine_ibox_sh \				// モデル：箱影
+				-l cold_medicine_label \			// モデル：ラベル
+				-f d:アイテム種別:アイテム \		// ＩＤ：from ..../scn/equip.h
+				-i d:アイテム:風邪薬 \				// ＩＤ：from ..../scn/equip.h
+				-n 1 \								// 個数
+				-r 0 \						// 0で飛沫無し。
+				-h d:シナリオの高さ \				// 床面からの高さ
+				-x {
+					eval ($b:w41a_風邪薬フラグ = d:TRUE)
+				}
+		}
+
+	}
+
+	proc アイテム取得時番号設定 $:ボックス名 {
+		#if d:DEBUG_PRINT
+			print 'item_no_set'
+		#endif
+
+		if ($:ボックス名 == レーション:01) {
+			eval($b:w41a_取得ロード回数[0] = $w:グローバルロード回数);
+		}
+	}
+
+
+
+//###################################################################################
+//									 エフェクト
+//###################################################################################
+
+#if 0
+	//	w41a_d_common.h内に記述
+	proc フォグ設定 {
+		#if d:DEBUG_PRINT
+			print 'fog_set'
+		#endif
+
+		chara フォグ 霧\
+			-c 8, 35, 30 \
+			-n 1000 \
+			-f 18000 
+	}
+#endif
+
+	proc エフェクト設定 {
+		#if d:DEBUG_PRINT
+			print 'effect_set'
+		#endif
+
+		#if d:BLUR
+			chara ブラー ブラー
+		#endif
+
+		#if d:Z_MANAGER
+			chara Ｚフォーカス管理 Z_manager
+			mesg Ｚフォーカス管理 Z_manager パラメータ 5000 30
+		#endif
+
+		#if d:BODY_SHADOW
+			chara ＯＦＦ制御 off_man
+			mesg ＯＦＦ制御 off_man ボディシャドウＯＦＦ
+		#endif
+	}
+
+	proc 映り込み設定 {
+		chara 鏡面モデル管理 床映り込み \
+			-pos	0,0,0 \
+			-axis	1		// Y軸反点
+
+		if ($f:w41a_主観デモフラグ == d:FALSE) {
+			//	拷問部屋内に入ったものは映り込む
+			trap ca001 ？ \
+				-mask ？ \
+				-exec {
+					if ($3 == 入る) {
+						mesg 鏡面モデル管理 床映り込み add $2
+					} else if ($3 == 出る){
+						mesg 鏡面モデル管理 床映り込み del $2
+					}
+				}
+	
+			trap ca003 ？ \
+				-mask ？ \
+				-exec {
+					if ($3 == 入る) {
+						mesg 鏡面モデル管理 床映り込み add $2
+					} else if ($3 == 出る){
+						mesg 鏡面モデル管理 床映り込み del $2
+					}
+				}
+		}
+	
+	}
+
+	proc キャラ用ライト設定 {
+		#if d:DEBUG_PRINT
+			print 'chara_light_set'
+		#endif
+
+		chara 環境光 環境光源 \
+			 -c 25 65 60
+
+		chara 平行光 平行光源 \
+			 -c 41 47 32 \
+			 -p -4430 1691 -1585
+	}
+
+
+	proc 影設定 {
+		#if d:DEBUG_PRINT
+		print'SHADOW'
+		#endif
+
+		//	影写り用モデル
+			//	部屋
+		chara 影投影モデル 影用モデル \
+			-model w41a_sdw \
+			-pos 0,0,0
+			//	廊下
+		chara 影投影モデル 影用モデル２ \
+			-model w41a_sdw_02 \
+			-pos 0,0,0
+
+
+		//	影写り用ハザード　敵兵が影を発見
+/*
+		command	影投影ハザード \
+			-name 拷問部屋 \
+			-group 1
+*/
+		chara 影管理 影管理人 \
+			-type 1
+
+		if ($f:w41a_主観デモフラグ == d:FALSE) {
+			//	部屋
+			trap sh001 ？ \
+				-mask  ？ \
+				-exec {
+					if ($3 == 入る) {
+						print '#############################################################ROOM_SDWON'
+						mesg 影管理 影管理人 add $2 影用モデル
+					} else if ($3 == 出る) {
+						print '#############################################################ROOM_SDWOFF'
+						mesg 影管理 影管理人 del $2
+					}
+				}
+			//	廊下
+			trap sh002 ？ \
+				-mask  ？ \
+				-exec {
+					if ($3 == 入る) {
+						print '#############################################################COR_SDWON'
+						mesg 影管理 影管理人 add $2 影用モデル２
+					} else if ($3 == 出る) {
+						print '#############################################################COR_SDWOFF'
+						mesg 影管理 影管理人 del $2
+					}
+				}
+		}
+	}
+
+//###################################################################################
+//									カメラ
+//###################################################################################
+
+	proc カメラセット {
+		#if d:DEBUG_PRINT
+			print 'stage_camera_set'
+		#endif
+
+		chara カメラ ステージカメラ		-c 0 -l 3 -p 0 
+		chara カメラ 通路カメラ			-c 0 -l 2 -p 60
+		chara カメラ 小部屋カメラ		-c 0 -l 2 -p 50
+		chara カメラ 張り付きカメラ		-c 0 -l 2 -p 30
+		chara カメラ モーションカメラ	-c 0 -l 0 -p 20
+		chara カメラ モーションカメラ２	-c 0 -l 0 -p 15
+		chara カメラ 捕まったふりカメラ	-c 0 -l 0 -p 10
+		chara カメラ シナリオカメラ		-c 0 -l 1 -p 6
+		chara カメラ ロードカメラ		-c 0 -l 1 -p 5
+
+		chara カメラ クリアリングカメラ		-c 1 -l 2 -p 0
+
+		// デフォルトカメラ
+		chara カメラ設定 ステージカメラ \
+			-c 0 \	
+			-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-r 250,2048,0 \
+			-f 6500 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s 1
+	}
+
+	proc 拷問部屋カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w41a_camera_set'
+		#endif
+
+		// 拷問部屋
+#if 0
+		trap ca001 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 1000 -500 5581 3750
+				eval ($i:補完ＢＹ = $i:CS_結果１);
+				@CS_スムーズカメラ降順 $6 1000 -500 6251 3751
+				eval ($i:補完ＢＸ = $i:CS_結果１);
+				@CS_スムーズカメラ降順 $6 1000 -500 6251 3751
+				eval ($i:補完ＬＸ = $i:CS_結果１);
+
+				chara カメラ設定 小部屋カメラ \
+					-c 0 \	
+					-b -5751,$i:補完ＢＹ,-7351 $i:補完ＢＸ,4887,1055 \
+					-l -5751,d:CAM_MIN,-7251 $i:補完ＬＸ,1543,1006 \
+					-r 250,2048,0 \
+					-f 4500 \
+					-a 200 \
+					-i 0 0 0 0 \
+//					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+#else
+
+		trap ca001 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+					chara カメラ設定 小部屋カメラ \
+						-c 0 \	
+/*
+						-b -4546,d:CAM_MIN,-7351 2328,6000,1055 \
+						-l -4546,d:CAM_MIN,-7251 2328,1543,1006 \
+*/
+						-b -4546,d:CAM_MIN,-3402 2328,6000,1055 \
+						-l -4546,d:CAM_MIN,-5424 2328,1543,1006 \
+						-r 800,2048,0 \
+						-f 6000 \
+						-a 200 \
+						-i 0 0 0 0 \
+//						-z d:CAMERA_NO_CUSHION \
+						-s $3
+			}
+
+		trap ca003 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+					chara カメラ設定 小部屋カメラ \
+						-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,1155\
+						-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+						-c 1 \	
+						-p 5276,6000,1055 -t 5276,1370,751 \
+						-r 981,2048,0 -f 4640 \
+						-a 200 \
+						-i 0 -1 0 0 \
+						-z d:CAMERA_LIMITBOUND_EXIST \
+						-s $3
+			}
+
+
+
+
+
+
+
+#endif
+
+		// 通路
+		trap ca002 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 通路カメラ \
+					-c 0 \	
+//					-b 5250,d:CAM_MIN,-5594 9501,4835,-4301 \
+//					-l 5250,d:CAM_MIN,-7501 9501,1319,-4999 \
+					-b 5250,d:CAM_MIN,-5594 9501,4835,-4688 \
+					-l 5250,d:CAM_MIN,-7501 9501,1319,-4788 \
+					-r 700,2048,0 \
+					-f 4000 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+
+
+	//	張り付き移動
+		trap bh001 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 2048 256 \	// 方向指定
+			-camera \
+			-exec {
+				chara カメラ設定 張り付きカメラ \
+					-c 0 \	
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN 3672,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN 3672,d:CAM_MAX,d:CAM_MAX \
+					-r 202,0,0 -f 2751 \
+					-a 200 \
+					-i 2 1 0 0 \
+					-s $3 \
+					-z (d:CAMERA_NO_CUSHION | d:CAMERA_NO_PAD_ADJUST)
+			}
+
+		trap bh002 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 2048 256 \	// 方向指定
+			-camera \
+			-exec {
+				chara カメラ設定 張り付きカメラ \
+					-c 0 \	
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 97,0,0 -f 1516 \
+					-a 200 \
+					-i 2 1 0 0 \
+					-s $3 \
+					-z (d:CAMERA_NO_CUSHION | d:CAMERA_NO_PAD_ADJUST)
+			}
+
+
+
+
+
+
+
+
+
+
+
+	}
+
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+
+//###################################################################################
+//									デモ設定
+//###################################################################################
+
+	proc ホワイトフェードポリデモスタート $:ストーリーフラグ {
+		command 無線設定 -reset
+		command パッド操作 -release
+		command プレイヤー無敵セット
+		mesg コマンダー 敵兵セット 視界オフ
+		eval ( $w:p_story = $:ストーリーフラグ );
+		// ポリデモのときはレーダーオフするためのフラグ
+		eval($f:global_polygon_demo = 1);
+
+		chara フェードインアウト フェードアウト \
+			-c 128,128,128 128 \
+			-t (d:FADEOUT_TIME*2) \
+			-s 1 \
+			-p フェードアウト終了
+	}
+
+	proc フェードアウト終了 {
+		chara delay フェードアウト終了ディレイ \
+			-t 5 \
+			-p mv_w41a_d070px9_0
+	}
+
+	proc ポリデモロードスタート {
+		@mv_w41a_d070px9_0
+	}
+
+	proc 無線機デモスタート $:ストーリーフラグ {
+		command 無線設定 -reset
+		command パッド操作 -release
+		command プレイヤー無敵セット
+		mesg コマンダー 敵兵セット 視界オフ
+		eval ( $w:p_story = $:ストーリーフラグ );
+
+		// ポリデモのときはレーダーオフするためのフラグ
+		eval($f:global_polygon_demo = 1);
+
+		chara フェードインアウト フェードアウト \
+			-c 0,0,0 128 \
+			-t d:FADEOUT_TIME \
+			-p 黒フェードアウト終了
+
+	}
+	proc 黒フェードアウト終了 {
+		chara delay フェードアウト終了ディレイ \
+			-t 180 \
+			-e {
+				restart
+			}
+	}
+
+	proc 主観デモ終了 {
+
+		if ($w:p_story < d:ST:P070_13_P09ＡＧ起動１３ポリゴンデモ９開始) {
+			mesg デモキャンセルチェック 主観デモキャンセル kill
+			mesg シネマスクリーン シネマ フェードアウト 0
+			command メニュー設定 -gage off
+			mesg 簡易レイアウトプレイヤ 息我慢ボタン 再生終了 d:L2D_BREAK
+
+			@ホワイトフェードポリデモスタート d:ST:P070_13_P09ＡＧ起動１３ポリゴンデモ９開始
+
+		//	現在使用していない
+		} else if ($w:p_story < d:ST:P070_23_R04ＡＧ起動２３無線機デモ４開始) {
+			chara delay オルガ殴られディレイ \
+				-t 210 \
+				-e {
+//					@ポリゴンデモロード d:ST:P070_23_R04ＡＧ起動２３無線機デモ４開始
+					@無線機デモスタート d:ST:P070_23_R04ＡＧ起動２３無線機デモ４開始
+
+				}
+
+		//	ストーリーフラグがこのときは主観デモが完全に終了する
+		} else if ($w:p_story ==  d:ST:P070_23_R04ＡＧ起動２３無線機デモ４終了) {
+			//	プレイヤー初期位置を代入
+			eval($i:プレイヤー初期Ｘ位置 = -2000) 
+			eval($i:プレイヤー初期Ｚ位置 = -3400) 
+			//	リスタートかけてゲームに戻る
+			eval ($f:w41a_主観デモ完全終了フラグ = d:TRUE)
+			eval ($s:登場ポイント = 拷問直後)
+			restart -s
+		}
+	}
+
+
+	proc 拷問起き設定 {
+		//	初期角度代入
+		eval ($i:w41a_拷問ベッド角度 = 512)
+		//	ベッド起動
+		chara delay 拷問起きディレイ \
+		-t 60 \
+		-e {
+			chara プロック連続実行 拷問起き管理人 \
+				-p 拷問起き管理 \
+				-t -1
+		}
+	}
+	proc 拷問起き管理 {
+		if ($i:w41a_拷問ベッド角度 > 1) {
+			eval ( $i:w41a_拷問ベッド角度 = $i:w41a_拷問ベッド角度 - 3)
+			mesg 主観デモプレイヤー ライデン rotate $i:w41a_拷問ベッド角度 -1
+		} else {
+			mesg プロック連続実行 拷問起き管理人 kill
+		}
+	}
+
+	proc 拷問開始 {
+		//	ストリーム再生
+		eval ( $i:STREAM_ID = `%Stream t:vc107001 -p 拷問１＿Ａ終了 -action 拷問１＿Ａプロック` )
+//		eval ( $i:STREAM_ID = `%Stream t:vc107001 -p 主観デモ終了` )
+		chara delay ディレイ \
+			-time 1 \
+			-exec{
+				if ($i:STREAM_ID < 0) {
+					eval ( $i:STREAM_ID = `%Stream t:vc107001 -p 拷問１＿Ａ終了 -action 拷問１＿Ａプロック` )
+					return 1
+				} else {
+					return 0
+				}
+			}
+	}
+
+	proc 拷問１＿Ａ終了 {
+	//	デモキャンセルが押された場合はこの処理は通らないようにする
+	if ($1 == 1) {
+		//	念のため
+		mesg デモキャンセルチェック オルガ主観デモキャンセル kill
+		return 
+	}
+
+	//	英語の場合は時間調整のためディレイをずらす
+	#ifdef d:ENGLISH
+		chara delay 拷問音声ディレイ \
+		-t 275 \
+		-e {
+			eval ( $i:STREAM_ID = `%Stream t:vc107002 -p 拷問１＿Ｂ終了 -action 拷問１＿Ｂプロック` )
+			chara delay ディレイ \
+				-time 1 \
+				-exec{
+					if ($i:STREAM_ID < 0) {
+						eval ( $i:STREAM_ID = `%Stream t:vc107002 -p 拷問１＿Ｂ終了 -action 拷問１＿Ｂプロック` )
+						return 1
+					} else {
+						return 0
+					}
+				}
+		}
+	//	それ以外は
+	#else
+		chara delay 拷問音声ディレイ \
+		-t 180 \
+		-e {
+			eval ( $i:STREAM_ID = `%Stream t:vc107002 -p 拷問１＿Ｂ終了 -action 拷問１＿Ｂプロック` )
+			chara delay ディレイ \
+				-time 1 \
+				-exec{
+					if ($i:STREAM_ID < 0) {
+						eval ( $i:STREAM_ID = `%Stream t:vc107002 -p 拷問１＿Ｂ終了 -action 拷問１＿Ｂプロック` )
+						return 1
+					} else {
+						return 0
+					}
+				}
+		}
+	#endif
+	}
+
+	proc 拷問１＿Ｂ終了 {
+		//	デモキャンセルが押された場合はこの処理は通らないようにする
+		if ($1 == 1) {
+			//	念のため
+			mesg デモキャンセルチェック オルガ主観デモキャンセル kill
+			return 
+		}
+
+		chara delay 拷問音声ディレイ \
+		-t 60 \
+		-e {
+			eval ( $i:STREAM_ID = `%Stream t:vc107003 -p 拷問１＿Ｃ終了 -action 拷問１＿Ｃプロック` )
+			chara delay ディレイ \
+				-time 1 \
+				-exec{
+					if ($i:STREAM_ID < 0) {
+						eval ( $i:STREAM_ID = `%Stream t:vc107003 -p 拷問１＿Ｃ終了 -action 拷問１＿Ｃプロック` )
+						return 1
+					} else {
+						return 0
+					}
+				}
+		}
+	}
+	proc 拷問１＿Ｃ終了 {
+		//	デモキャンセルが押された場合はこの処理は通らないようにする
+		if ($1 == 1) {
+			//	念のため
+			mesg デモキャンセルチェック オルガ主観デモキャンセル kill
+			return 
+		}
+
+		eval ( $i:STREAM_ID = `%Stream t:vc107004 -p 拷問１＿Ｄ終了 -action 拷問１＿Ｄプロック` )
+		chara delay ディレイ \
+			-time 1 \
+			-exec{
+				if ($i:STREAM_ID < 0) {
+					eval ( $i:STREAM_ID = `%Stream t:vc107004 -p 拷問１＿Ｄ終了 -action 拷問１＿Ｄプロック` )
+					return 1
+				} else {
+					return 0
+				}
+			}
+	}
+	proc 拷問１＿Ｄ終了 {
+		//	デモキャンセルが押された場合はこの処理は通らないようにする
+		if ($1 == 1) {
+			//	念のため
+			mesg デモキャンセルチェック オルガ主観デモキャンセル kill
+			return 
+		}
+
+		eval ( $i:STREAM_ID = `%Stream t:vc107005 -p 拷問１＿Ｅ終了 -action 拷問１＿Ｅプロック` )
+		chara delay ディレイ \
+			-time 1 \
+			-exec{
+				if ($i:STREAM_ID < 0) {
+					eval ( $i:STREAM_ID = `%Stream t:vc107005 -p 拷問１＿Ｅ終了 -action 拷問１＿Ｅプロック` )
+					return 1
+				} else {
+					return 0
+				}
+			}
+	}
+	proc 拷問１＿Ｅ終了 {
+		//	デモキャンセルが押された場合はこの処理は通らないようにする
+		if ($1 == 1) {
+			//	念のため
+			mesg デモキャンセルチェック オルガ主観デモキャンセル kill
+			return 
+		}
+
+		eval ( $i:STREAM_ID = `%Stream t:vc107006 -p 拷問１＿Ｆ終了 -action 拷問１＿Ｆプロック` )
+		chara delay ディレイ \
+			-time 1 \
+			-exec{
+				if ($i:STREAM_ID < 0) {
+					eval ( $i:STREAM_ID = `%Stream t:vc107006 -p 拷問１＿Ｆ終了 -action 拷問１＿Ｆプロック` )
+					return 1
+				} else {
+					return 0
+				}
+			}
+	}
+	proc 拷問１＿Ｆ終了 {
+		//	デモキャンセルが押された場合はこの処理は通らないようにする
+		if ($1 == 1) {
+			//	念のため
+			mesg デモキャンセルチェック オルガ主観デモキャンセル kill
+			return 
+		}
+
+		eval ( $i:STREAM_ID = `%Stream t:vc107007 -p 主観デモ終了 -action 拷問１＿Ｇプロック` )
+		chara delay ディレイ \
+			-time 1 \
+			-exec{
+				if ($i:STREAM_ID < 0) {
+					eval ( $i:STREAM_ID = `%Stream t:vc107007 -p 主観デモ終了 -action 拷問１＿Ｇプロック` )
+					return 1
+				} else {
+					return 0
+				}
+			}
+	}
+
+	proc 拷問１＿Ａプロック $:ストリームＩＤ $:話者名 $:アクションコード {
+		if ($:アクションコード == 0) {
+			//	「久しぶり…」
+	//		mesg ルートデモ人形 ソリダス ルートノード変更 2 2
+
+		} else if ($:アクションコード == 1) {
+			//	「ジャック…」オセロットソリダスを見て一歩前に出る
+			mesg ルートデモ人形 オセロット ルートノード変更 3 1
+		}
+	}
+
+	proc 拷問１＿Ｂプロック $:ストリームＩＤ $:話者名 $:アクションコード {
+		if ($:アクションコード == 0) {
+			//「この男を…」	から９０フレーム後にオセロットをにらむ
+			mesg ルートデモ人形 ソリダス ルートノード変更 2 3
+		}
+
+	}
+	proc 拷問１＿Ｃプロック $:ストリームＩＤ $:話者名 $:アクションコード {
+		if ($:アクションコード == 0) {
+			//	「私を覚えている…」
+//			mesg ルートデモ人形 ソリダス ルートノード変更 2 4
+		}
+	}
+	proc 拷問１＿Ｄプロック $:ストリームＩＤ $:話者名 $:アクションコード {
+		//	「大きくなった…」のあと
+		 if ($:アクションコード == 0) {
+			//	蛇手伸びる
+			mesg ルートデモ人形 ソリダス ルートノード変更 2 5
+			mesg デモ蛇手 ソリダス蛇手 motion 1
+
+
+			//	蛇手がプレイヤーにからんだ直後
+			chara delay パッド振動ディレイ \
+				-t 46 \
+				-e {
+					//	振動
+					chara パッド振動 首締めパッド振動 -vibfile snake_arm_01
+				}
+
+			//	蛇手がプレイヤーにからんだ直後
+			chara delay カメラ振動ディレイ \
+				-t 60 \
+				-e {
+					//	ライデン首が動かなくなる
+					mesg 主観デモプレイヤー ライデン rotate -64 0 1
+					mesg 主観デモプレイヤー ライデン rx_limit 1 1
+					mesg 主観デモプレイヤー ライデン ry_limit 1 1
+
+					chara シナリオカメラ振動 首締め振動 \
+						-xlevel 10 \
+						-ylevel 60 \
+						-time 900 \
+						-mode 0
+
+				}
+
+			//	プラズマずしゃ～ん
+//			mesg デモ蛇手 ソリダス蛇手 flow 1
+			//	オセロットビックリ
+			mesg ルートデモ人形 オセロット ルートノード変更 3 3
+		}
+	}
+
+	proc ソリダス蛇手終了 {
+		if ($1 == 1) {
+			//	蛇手伸びたあとのループ
+			mesg デモ蛇手 ソリダス蛇手 motion 2
+			//	プラズマずしゃ～んオフ
+//			mesg デモ蛇手 ソリダス蛇手 flow 0
+
+			//	Ｏ２が減っていく
+			chara Ｏ２ゲージ ソリダス首締めくん \
+				-max 2500 -length d:O2_GAGE
+			command Ｏ２ゲージ表示
+			command Ｏ２ゲージ回復力設定 32
+			@０２設定
+
+			//	ガマン説明テクスチャ表示
+			//	イギリス
+			if ($w:言語 == d:LANG_ENGLISH_ENGLAND) {
+				chara 簡易レイアウトプレイヤ 息我慢ボタン \
+					-c 4					\
+					-l breath				\
+					-i DefaultAction		\
+					-b OpenBreath			\
+					-e Close_Breath
+			//	フランス
+			} else if ($w:言語 == d:LANG_FRENCH) {
+				chara 簡易レイアウトプレイヤ 息我慢ボタン \
+					-c 4					\
+					-l breath				\
+					-i DefaultAction		\
+					-b OpenBreath-fr		\
+					-e Close_Breath-fr
+			//	ドイツ
+			} else if ($w:言語 == d:LANG_GERMANY) {
+				chara 簡易レイアウトプレイヤ 息我慢ボタン \
+					-c 4					\
+					-l breath				\
+					-i DefaultAction		\
+					-b OpenBreath-de		\
+					-e Close_Breath-de
+			//	イタリア
+			} else if ($w:言語 == d:LANG_ITALY ) {
+				chara 簡易レイアウトプレイヤ 息我慢ボタン \
+					-c 4					\
+					-l breath				\
+					-i DefaultAction		\
+					-b OpenBreath-it		\
+					-e Close_Breath-it
+			//	スペイン
+			} else if ($w:言語 == d:LANG_SPANISH) {
+				chara 簡易レイアウトプレイヤ 息我慢ボタン \
+					-c 4					\
+					-l breath				\
+					-i DefaultAction		\
+					-b OpenBreath-es		\
+					-e Close_Breath-es
+			} else if ($w:言語 == d:LANG_JAPANESE) {
+				chara 簡易レイアウトプレイヤ 息我慢ボタン \
+					-c 4					\
+					-l breath				\
+					-i DefaultAction		\
+					-b OpenBreath-jp		\
+					-e Close_Breath-jp
+			}
+
+			//	蛇手スキャン音設定
+			@蛇手スキャン音設定
+		}
+	}
+
+	proc ０２設定 {
+		chara プロック連続実行 Ｏ２管理人 \
+			-t -1 \
+			-e {
+//				if ($w:Ｏ２ > 2) {
+				if ($w:Ｏ２ > 4) {
+					eval($w:Ｏ２ = $w:Ｏ２- 4)
+//					eval($w:Ｏ２ = $w:Ｏ２- 2)
+				}
+			}
+	}
+
+	proc 蛇手スキャン音設定 {
+		@蛇手スキャン音実行
+	}
+	proc 蛇手スキャン音実行 {
+		chara delay 蛇手スキャン音ディレイ \
+			-t 12 \
+			-e {
+				command ＳＥセットモード -s d:se_code:SD_A_HEBSCAN1 \
+					-p	$i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ \
+					-m 1
+				@蛇手スキャン音実行
+			}
+	}
+
+	proc 拷問１＿Ｅプロック $:ストリームＩＤ $:話者名 $:アクションコード {
+		//	ぐわぁぁぁ
+	}
+
+	proc 拷問１＿Ｆプロック $:ストリームＩＤ $:話者名 $:アクションコード {
+		if ($:アクションコード == 0) {
+			//	「大量の…」
+			mesg ルートデモ人形 ソリダス ルートノード変更 2 6
+		}
+	}
+
+	proc 拷問１＿Ｇプロック $:ストリームＩＤ $:話者名 $:アクションコード {
+		//	ぐわぁぁぁ
+	}
+
+/*
+	proc 拷問１プロック $:ストリームＩＤ $:話者名 $:アクションコード {
+			if ($:アクションコード == 0) {
+				//	「久しぶり…」
+	//			mesg ルートデモ人形 ソリダス ルートノード変更 2 2
+
+			} else if ($:アクションコード == 1) {
+				//	オセロットをにらむ
+				mesg ルートデモ人形 ソリダス ルートノード変更 2 3
+
+			} else if ($:アクションコード == 2) {
+				//	「私を覚えている…」
+				mesg ルートデモ人形 ソリダス ルートノード変更 2 4
+
+			} else if ($:アクションコード == 3) {
+				//	蛇手伸びる
+				mesg ルートデモ人形 ソリダス ルートノード変更 2 5
+				//	オセロットビックリ
+				mesg ルートデモ人形 オセロット ルートノード変更 3 3
+
+			} else if ($:アクションコード == 4) {
+				//	「大量の…」
+	//			mesg ルートデモ人形 ソリダス ルートノード変更 2 6
+
+			} else if ($:アクションコード == 5) {
+				//	「この男を…」
+				mesg ルートデモ人形 オセロット ルートノード変更 3 1
+			}
+	}
+*/
+
+
+
+	proc 拷問２プロック $:ストリームＩＤ $:話者名 $:アクションコード {
+		if ($:アクションコード == 0) {
+			mesg ルートデモ人形 オルガ ルートノード変更 4 1
+
+			//	振動
+			chara delay パッド振動ディレイ \
+				-t 178 \
+				-e {
+					//	振動
+					chara パッド振動 殴られパッド振動 -vibfile org_punch
+				}
+
+
+
+
+
+		} else if ($:アクションコード == 1) {
+			//	パンチを食らうとダメージ
+			command プレイヤーライフ値操作 \
+				-type 1 \
+				-value -10
+
+			//	うぐ！
+			mesg 主観デモプレイヤー ライデン rotate 512 0 1
+			mesg 主観デモプレイヤー ライデン rx_limit 1 1
+			mesg 主観デモプレイヤー ライデン ry_limit 1 1
+
+			chara シナリオカメラ振動 殴られ振動 \
+				-xlevel 10 \
+				-ylevel 60 \
+				-time 60 \
+				-mode 0
+
+			mesg ブラー 視界ブラー パラメータ 120 180
+
+		}
+	
+	}
+
+
+	proc 主観デモ設定 {
+		//	主観デモ中のみ起動
+		if ($f:w41a_主観デモフラグ == d:TRUE) {
+
+			//	レーダーは消す　武器・アイテムメニューのオフ　無線オフ　ポーズオフ
+			command メニュー設定 \
+				-radar off -menu off \
+				-radio off -pause off
+
+			//	ブラーを入れる
+			chara ブラー 視界ブラー \
+					-i 96
+
+			//	毎回外しておかないと音がなる
+			eval($w:武器 = d:武器:素手);
+			eval($w:アイテム = d:アイテム:素手);
+
+			//	ガチャガチャ音設定
+			@拷問枷音設定
+
+			//	ストーリーフラグで分岐
+			if ($w:p_story < d:ST:P070_13_P09ＡＧ起動１３ポリゴンデモ９開始) {
+
+				//	ＢＧＭを鳴らす
+				command セットサウンドコード -c d:SNG_PLAY_05
+
+				//	シネマスクリーン起動
+				mesg シネマスクリーン シネマ フェードアウト 1
+
+				//	シネマスクリーン解除
+				chara delay シネマスクリーンディレイ \
+					-t 240 \
+					-e {
+						mesg シネマスクリーン シネマ フェードイン 0
+					}
+
+				//	武器アイテムを取り上げる
+				command	武器アイテム取られ
+
+				//	主観プレイヤー起動
+				chara 主観デモプレイヤー ライデン \
+					-k rah_def_dummy \
+//					-e rah_def_mh_mt \
+					-e rah_naked_mh_mt \
+					-m rai_w41a \
+					-p -2000,1750,-3400 \
+					-r 512,0,0		//	拷問起きをする場合
+//					-r 0,0,0
+
+				//	プレイヤー視界制限
+				mesg 主観デモプレイヤー ライデン ry_limit 512  512
+
+			
+				//	顔を起こす
+				@拷問起き設定
+
+
+				//	ソリダス起動
+				chara ルートデモ人形 ソリダス \
+					-route 2 0 \ 
+					-kms sol_def_sh_mt \		//	影／映り込み用
+					-evm sol_def_mh_mt \
+					-mar sol_w41a \
+					-number d:ソリダスモーションリスト:sol_breath1 \
+					-face ソリダス \
+					-item sol_gantai_obj 12 \
+					-proc 拷問開始 1
+
+
+				chara デモ蛇手 ソリダス蛇手 \
+					-model sol_snakearm_mh_mt \
+					-motion sol_snakearm_w41a \
+					-parent ソリダス \
+					-unit 2 \
+					-proc ソリダス蛇手終了
+
+				mesg デモ蛇手 ソリダス蛇手 flow 0
+
+				//	映り込みモデル表示
+//				mesg 鏡面モデル管理 床映り込み add ソリダス
+//				mesg 影管理 影管理人 add ソリダス 影用モデル
+
+				//	オセロット起動
+				chara ルートデモ人形 オセロット \
+					-route 3 0 \
+					-kms rev_plant_sh_mt \		//	影／映り込み用
+					-evm rev_plant_mh_mt \
+					-mar rev_w41a \
+					-face オセロット \
+					-number d:オセロットモーションリスト:rev_breath1
+
+				//	オセロット髪の毛
+				chara ロープモデル３ オセロットの髪の毛 \
+					-n rev_hair_fix \
+					-d 4 \
+					-y オセロット \
+					-z 2 \
+					-o 100 \
+					-b rev_coat_bounding \
+					-f 1 \
+					-h 1
+
+				//	映り込みモデル表示
+//				mesg 鏡面モデル管理 床映り込み add オセロット
+//				mesg 影管理 影管理人 add オセロット 影用モデル
+
+				chara 台詞発生源君 発生源君 \
+					-n ライデン ソリダス オセロット \
+					-m d:STRFAD_MODE_NO_JIMAKU
+
+				//	キャンセルできないようにする
+//				chara デモキャンセルチェック 主観デモキャンセル -p ソリダスデモキャンセル
+
+			} else if ($w:p_story < d:ST:P070_23_R04ＡＧ起動２３無線機デモ４開始) {
+
+				//	ＢＧＭを鳴らす
+				command セットサウンドコード -c d:SNG_PLAY_05
+
+				//	主観プレイヤー起動
+				chara 主観デモプレイヤー ライデン \
+					-k rah_def_dummy \
+//					-e rah_def_mh_mt \
+					-e rah_naked_mh_mt \
+					-m rai_w41a \
+					-p -2000,1750,-3400 \
+					-r 0,0,0
+
+				//	プレイヤー視界制限
+				mesg 主観デモプレイヤー ライデン ry_limit 512  512
+
+				//	オルガ起動
+				chara ルートデモ人形 オルガ \
+					-route 4 0 \
+					-kms org_plant_sh_mt \		//	影／映り込み用
+					-evm org_plant_mh_mt \
+					-mar org_w41a \
+					-face オルガ \
+					-number d:オルガモーションリスト:org_talk
+
+				chara マルチウェイト髪の毛モデル プラントオルガの髪 \
+					-n org_plant_hair_mh\
+					-d 20 \
+					-y オルガ \
+					-b org_plant_dummy \
+					-z 11 12 \
+					-o 100 \
+					-f 1 \
+					-c 2 { 11 12 }
+
+				//	オルガ装備品
+				chara 装備品Ｃ ピストル \
+					-n demo_org_plant_hlst \
+					-y オルガ \
+					-z 0 \
+					-x -117,93,72 \
+					-f 1
+				chara 装備品Ｃ 無線機 \
+					-n demo_org_plant_radio \
+					-y オルガ \
+					-z 0 \
+					-x 81,147,-77 \
+					-f 1
+				chara 装備品Ｂ ナイフ \
+					-n demo_org_plant_ssk \
+					-y オルガ \
+					-z 0 \
+					-x 112,47,87 \
+					-q 17 \
+					-p 37,-164,122
+
+				//	映り込みモデル表示
+//				mesg 鏡面モデル管理 床映り込み add オルガ
+				//	影モデル表示
+//				mesg 影管理 影管理人 add オルガ 影用モデル
+
+				//	ストリーム再生
+//				eval ( $i:STREAM_ID = `%Stream t:vc107011 -p 主観デモ終了 -action 拷問２プロック` )
+				eval ( $i:STREAM_ID = `%Stream t:vc107011 -p オルガ主観デモ終了 -action 拷問２プロック` )
+				chara delay ディレイ \
+					-time 1 \
+					-exec{
+						if ($i:STREAM_ID < 0) {
+							eval ( $i:STREAM_ID = `%Stream t:vc107011 -p オルガ主観デモ終了 -action 拷問２プロック` )
+							return 1
+						} else {
+							return 0
+						}
+					}
+
+				chara 台詞発生源君 発生源君 \
+					-n ライデン オルガ \
+					-m d:STRFAD_MODE_NO_JIMAKU
+
+				//	キャンセルできないようにする
+//					chara デモキャンセルチェック オルガ主観デモキャンセル -p オルガ主観デモキャンセル
+
+			}
+#if 0
+			//	使ってない
+			} else if ($w:p_story ==  d:ST:P070_23_R04ＡＧ起動２３無線機デモ４開始) {
+
+				//	主観プレイヤー起動
+				chara 主観デモプレイヤー ライデン \
+					-k rah_def_dummy \
+//					-e rah_def_mh_mt \
+					-e rah_naked_mh_mt \
+					-m rai_w41a \
+					-p -2000,1750,-3400 \
+					-r 0,0,0
+
+				mesg 主観デモプレイヤー ライデン ry_limit 512  512
+
+				//	かけなかったら２０秒後に無線
+				chara delay 無線機ディレイ \
+					-t 600 \
+					-e {
+						@rt_P070_23_R04ＡＧ起動２３無線機デモ４
+					}
+			}
+#endif
+		}
+	}
+
+	//	主観デモキャンセル
+	proc ソリダスデモキャンセル {
+		print '##############################################DEMOSTOP'
+			@主観デモ終了
+		//	鳴っているときは
+	}
+	proc オルガ主観デモキャンセル {
+		mesg デモキャンセルチェック オルガ主観デモキャンセル kill
+		eval ($w:p_story = d:ST:P070_23_R04ＡＧ起動２３無線機デモ４開始)
+		if ($w:p_story < d:ST:P070_23_R04ＡＧ起動２３無線機デモ４終了) {
+			//	無線がかかってくる
+			chara フェードインアウト フェードアウト \
+				-c 0,0,0 128 \
+				-t d:FADEOUT_TIME \
+				-p rt_P070_23_R04ＡＧ起動２３無線機デモ４
+		} else {
+			@w41a_拘束開放処理
+		}
+	}
+
+	//	オルガ主観デモ終了
+	proc オルガ主観デモ終了 {
+		//	デモキャンセルが押された場合はこの処理は通らないようにする
+		if ($1 == 1) {
+			//	念のため
+			mesg デモキャンセルチェック オルガ主観デモキャンセル kill
+			return 
+		}
+
+		chara delay 主観デモ終了ディレイ \
+			-t 210 \
+			-e {
+				eval( $w:p_story = d:ST:P070_23_R04ＡＧ起動２３無線機デモ４開始)
+
+				mesg 装備品Ｃ ピストル kill
+				mesg 装備品Ｃ 無線機 kill
+				mesg 装備品Ｂ ナイフ kill
+				mesg マルチウェイト髪の毛モデル プラントオルガの髪 kill
+
+				mesg ルートデモ人形 オルガ kill
+	
+
+				//	ドア開く
+				mesg ドア 廊下西ドア open
+
+
+				chara delay 主観復帰ディレイ \
+					-t 120 \
+					-e {
+						//	ドア閉まる
+						mesg ドア 廊下西ドア close
+
+
+						//	ライデン首を上げる
+						eval ($i:w41a_拷問ベッド角度 = 512)
+						chara プロック連続実行 ライデン起き上がり \
+							-t -1 \
+							-e {
+								if ($i:w41a_拷問ベッド角度 >= 0) {
+									eval( $i:w41a_拷問ベッド角度 = $i:w41a_拷問ベッド角度 - 5)
+									mesg 主観デモプレイヤー ライデン rotate $i:w41a_拷問ベッド角度 -1
+								} else {
+									mesg ブラー 視界ブラー パラメータ 0 600
+									mesg 主観デモプレイヤー ライデン rotate 128 -1 0	//-1で無視
+									//	無線復帰
+									command メニュー設定 -radio on
+
+									mesg プロック連続実行 ライデン起き上がり kill
+
+
+								}
+							}
+						
+						//	主観操作復帰
+						mesg 主観デモプレイヤー ライデン ry_limit 512 512
+						mesg 主観デモプレイヤー ライデン rx_limit 640 800
+
+					}
+
+				//	かけなかったら２０秒後に無線
+				chara delay 無線機ディレイ \
+					-t 1200 \
+					-e {
+						@rt_P070_23_R04ＡＧ起動２３無線機デモ４
+					}
+			}
+	}
+
+	//	無線機の終了の中で呼ばれる
+	proc w41a_拘束開放処理 {
+		mesg デモキャンセルチェック オルガ主観デモキャンセル kill
+		mesg delay 無線機ディレイ kill
+#if 0
+		chara delay 主観デモ終了ディレイ \
+			-t 120 \
+			-e {
+				//	ＳＥ呼び
+				command ＳＥセットモード -s d:se_code:SD_A_KASEOPEN \
+					-p	$i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ \
+					-m 1
+				//	振動
+				chara パッド振動 外れパッド振動 -vibfile rai_release
+				chara delay 主観デモ終了ディレイ \
+					-t 10 \
+					-e {
+						@主観デモ終了
+					}
+		}
+#else
+		//	ＳＥ呼び
+		command ＳＥセットモード -s d:se_code:SD_A_KASEOPEN \
+			-p	$i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ \
+			-m 1
+		//	振動
+		chara パッド振動 外れパッド振動 -vibfile rai_release
+		chara delay 主観デモ終了ディレイ \
+			-t 10 \
+			-e {
+				@主観デモ終了
+			}
+
+#endif
+	}
+
+	proc 拷問枷音設定 {
+		chara プロック連続実行 拷問枷音管理人 \
+			-t -1 \
+			-e {
+				//	左側
+				if ( ($w:プレイヤー方向 >= 510) && ($w:プレイヤー方向 <= 2048) ) {
+					//	左側引っかかっていない場合
+					if ($f:w41a_拷問機左側引っかかったフラグ == d:FALSE) {
+						//	押しっぱなしでチェック
+						if (`command パッドチェック -status` & d:PAD_L) {
+							eval ($f:w41a_拷問機左側引っかかったフラグ = d:TRUE)
+							command ＳＥセットモード -s d:se_code:SD_A_KASESTOP \
+								-p	$i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ \
+								-m 1
+							//	振動
+							chara パッド振動 枷音パッド振動 -vibfile rai_restriction
+						}
+					//	引っかかった場合
+					} else {
+						//	押されたでチェック
+						if (`command パッドチェック -press` & d:PAD_L) {
+							command ＳＥセットモード -s d:se_code:SD_A_KASESTOP \
+								-p	$i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ \
+								-m 1
+							//	振動
+							chara パッド振動 枷音パッド振動 -vibfile rai_restriction
+						}
+					}
+				//	右側
+				 } else if ( ($w:プレイヤー方向 > 2048) && ($w:プレイヤー方向 <= 3586) ) {
+					//	右側引っかかっていない場合
+					if ($f:w41a_拷問機右側引っかかったフラグ == d:FALSE) {
+						//	押しっぱなしでチェック
+						if (`command パッドチェック -status` & d:PAD_R) {
+							eval ($f:w41a_拷問機右側引っかかったフラグ = d:TRUE)
+							command ＳＥセットモード -s d:se_code:SD_A_KASESTOP \
+								-p	$i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ \
+								-m 1
+							//	振動
+							chara パッド振動 枷音パッド振動 -vibfile rai_restriction
+						}
+					//	引っかかった場合
+					} else {
+						if (`command パッドチェック -press` & d:PAD_R) {
+							eval ($f:w41a_拷問機右側引っかかったフラグ = d:TRUE)
+							command ＳＥセットモード -s d:se_code:SD_A_KASESTOP \
+								-p	$i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ \
+								-m 1
+							//	振動
+							chara パッド振動 枷音パッド振動 -vibfile rai_restriction
+						}
+					}
+				//	それ以外
+				} else {
+					//	フラグを初期化する
+					eval ($f:w41a_拷問機左側引っかかったフラグ = d:FALSE)
+					eval ($f:w41a_拷問機右側引っかかったフラグ = d:FALSE)
+				}
+			}
+	}
+
+
+
+//###################################################################################
+//									特殊処理
+//###################################################################################
+
+	proc 捕まったふり監視 {
+#if 0
+		if ($f:w41a_捕まったふりバレたフラグ == d:FALSE) {
+			if ($w:アラートモード == d:ALERT_MODE_KIKEN) {
+				#if d:DEBUG_PRINT
+				print 'BARETA-BARETA-BARETA-BARETA-BARETA-BARETA-BARETA'
+				#endif
+				eval ($f:w41a_捕まったふりバレたフラグ = d:TRUE)
+			}
+		}
+#else
+		trap cl001 d:PLAYER \
+			-mask ＊ \
+			-exec {
+				if ($3 == いる) {
+					if ($f:w41a_捕まったふりバレたフラグ == d:FALSE) {
+						if ($w:アラートモード == d:ALERT_MODE_KIKEN) {
+							eval ($f:w41a_捕まったふりバレたフラグ = d:TRUE)
+						}
+					}
+		/*
+					} else if ($f:w41a_捕まったふりバレたフラグ == d:TRUE) {
+						if ($w:アラートモード != d:ALERT_MODE_KIKEN) {
+							eval ($f:w41a_捕まったふりバレたフラグ = d:FALSE)
+						}
+					}
+		*/
+				} else if ($3 == 出る) {
+					if ($f:w41a_捕まったふりバレたフラグ == d:TRUE) {
+						if ($w:アラートモード != d:ALERT_MODE_KIKEN) {
+							eval ($f:w41a_捕まったふりバレたフラグ = d:FALSE)
+						}
+					}
+				}
+			}
+#endif
+	}
+
+
+
+
+	proc 捕まったふり設定 {
+		trap enhidden d:PLAYER \
+			-mask いる \
+			-exec {
+//				print 'ENEHIDDENENEHIDDENENEHIDDENENEHIDDENENEHIDDENENEHIDDENENEHIDDENENEHIDDENENEHIDDENENEHIDDEN'
+			}
+	
+		//	捕まったふり監視
+#if 0
+		if ($f:w41a_捕まったふりバレたフラグ == d:FALSE) {
+			chara プロック連続実行 捕まったふり監視人 \
+				-t -1 \
+				-p 捕まったふり監視
+		}
+#else
+
+		@捕まったふり監視
+#endif
+
+		//	エネミーから隠れるトラップをオフにしておく
+		command トラップ切り替え \
+			-trap enhidden \
+			-switch 0
+
+		//	捕まったふりビハインド
+		trap ky001 d:PLAYER \
+			-mask いる \
+			-dir 0 512 \	//	プレイヤーがこちらを向いているとき
+			-exec {
+				//	主観中は起動しない
+				if (`command プレイヤー状態取得` & d:PFLAG_SUBJECT ) {
+					return ;
+				}
+
+				//	ダンボールを装備していなかったら
+				if (	($w:アイテム !=d:アイテム:ダンボール) && ($w:アイテム !=d:アイテム:ダンボールＢ) && \
+						($w:アイテム !=d:アイテム:ダンボールＣ) && ($w:アイテム !=d:アイテム:ダンボールＤ) && \
+						($w:アイテム !=d:アイテム:ダンボールＥ)	) {
+
+					//	拷問直後開始時処理が終了したら
+					if ($f:w41a_拷問直後開始時処理終了フラグ == d:TRUE) {
+						//	捕まったふりがバレていないとき
+						if ($f:w41a_捕まったふりバレたフラグ == d:FALSE) {
+							//	パッドチェックを行う
+							command パッドチェック \
+								-status
+							//	パッド上が押され続けていたら
+							if ($status & d:PAD_U) {
+								//	捕まったふりビハインド発動	最初の強制モーションは１回のみ
+								if ($f:w41a_捕まったふりビハインドフラグ == d:FALSE) {
+									eval ($f:w41a_捕まったふりビハインドフラグ = d:TRUE)
+									mesg プレイヤー d:PLAYER motion \
+										d:モーションリスト:behind_goumon \
+										0 \
+										0 \
+										0 \
+										( d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_NO_INTERP) \
+										-2000,-3400,1142	//	これはアタリの中なので取り扱い要注意
+
+								//	見つからないエリアオン
+									command トラップ切り替え \
+										-trap enhidden \
+										-switch 1
+								}
+
+							//	ループは呼び続ける。ループ回数は１だとだめ
+							command 強制モーションループ回数設定 \
+								-loop 2
+
+							//	パッド上が押され続けていなかったら
+							} else {
+								//	捕まったふりビハインド発動が発動していた場合
+								if ($f:w41a_捕まったふりビハインドフラグ == d:TRUE) {
+									command パッド操作 \
+										-release
+
+									//	プレイヤーをアタリの外へ瞬間移動させる
+									mesg プレイヤー d:PLAYER position \
+										-2000,1042,-2500
+
+									//	プレイヤーの強制モーションを終了する
+									chara delay 強制モーションキャンセルディレイ \
+										-t 1 \
+										-e {
+											command 強制モーションキャンセル
+										}
+
+								//	見つからないエリアオフ
+									command トラップ切り替え \
+										-trap enhidden \
+										-switch 0
+								}
+							}
+
+						//	捕まったふりがバレたとき
+						} else if ($f:w41a_捕まったふりバレたフラグ == d:TRUE) {
+							//	捕まったふりビハインド発動が発動していた場合
+							if ($f:w41a_捕まったふりビハインドフラグ == d:TRUE) {
+								command パッド操作 \
+									-release
+
+								//	プレイヤーをアタリの外へ瞬間移動させる
+								mesg プレイヤー d:PLAYER position \
+									-2000,1042,-2500
+
+								//	プレイヤーの強制モーションを終了する
+								chara delay 強制モーションキャンセルディレイ \
+									-t 1 \
+									-e {
+										command 強制モーションキャンセル
+									}
+
+								//	見つからないエリアオフ
+								command トラップ切り替え \
+									-trap enhidden \
+									-switch 0
+							}
+						}
+					}
+
+				}
+			}
+
+		//	捕まったふり用近景ぼかし
+		chara 近景ぼかし 近景ぼかし１ \
+			-plane 8 -near 1500 -far 5000
+
+
+		trap ky001 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_FORCE \
+			-exec {
+				if ($f:w41a_拷問直後開始時処理終了フラグ == d:TRUE) {
+					if ($3 == 入る) {
+							//	カメラ設定
+							chara カメラ設定 捕まったふりカメラ \
+								-c 1 \
+			//					-p -1565,1224,2326 -t -1114,-628,-3795 \
+			//					-p -1565,1228,2326 -t -1114,-628,-3795 \
+								-p -1572,1223,2207 -t -2062,343,-2615 \
+								-a 500 \
+								-i 0 0 0 0 \
+								-s 1
+
+							chara カメラ設定 捕まったふりカメラ \
+								-c 1 \
+			//					-p -1565,1224,2326 -t -1114,-628,-3795 \
+			//					-p -1565,1228,2326 -t -1114,-628,-3795 \
+								-p -1572,1223,2207 -t -2062,343,-2615 \
+								-a 158 \
+								-i 0 0 0 0 \
+								-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+								-interp_time 30 \ // 補完時間を指定
+								-s 1
+							//	ぼかし処理
+							mesg 近景ぼかし 近景ぼかし１ on
+					} else {
+						//	保険
+						command パッド操作 \
+							-release
+
+						chara カメラ設定 捕まったふりカメラ \
+							-c 1 \
+							-p 1382,3,-3752 -t -1226,961,-3340 \
+							-r -324,2074,0 -f 2828 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						chara delay カメラ復帰 \
+							-t 45 \
+							-e {
+								//	カメラを戻す
+								chara カメラ設定 捕まったふりカメラ \
+									-s -1
+								//	ぼかし処理解除
+								mesg 近景ぼかし 近景ぼかし１ off
+							}
+
+						chara delay パッド復帰 \
+							-t 60 \
+							-e {
+								eval ($f:w41a_捕まったふりビハインドフラグ = d:FALSE)
+								command パッド操作 \
+									-cancel
+							}
+
+					}
+
+				}
+			}
+
+	}
+
+	proc 全体マップ設定 {
+		//	ノードにアクセスしていたら全体マップを出す
+		if ($f:w41a_ノードフラグ == 1) {
+			if ($b:w41a_バグステージ名 == 0) {
+				//	ここには来ないはず
+				@プラント編全体マップ設定 d:アーセナルギア空腸	//	全体マップ表示
+			} else if ($b:w41a_バグステージ名 == 1) {
+				@プラント編全体マップ設定 d:アーセナルギア胃 	//	全体マップ表示
+			} else if ($b:w41a_バグステージ名 == 2) {
+				@プラント編全体マップ設定 d:青山二丁目 			//	全体マップ表示
+			} else if ($b:w41a_バグステージ名 == 3) {
+				@プラント編全体マップ設定 d:麻布十番 			//	全体マップ表示
+			} else if ($b:w41a_バグステージ名 == 4) {
+				@プラント編全体マップ設定 d:船橋市 				//	全体マップ表示
+			} else if ($b:w41a_バグステージ名 == 5) {
+				@プラント編全体マップ設定 d:ニューヨーク52番街 	//	全体マップ表示
+			}
+
+		//	ノードにアクセスしていない、かつw42aから戻ってきたときステージ名を表示する
+		} else {
+			if ($w:p_story >= d:ST:P071_01_R01拷問部屋脱出１無線機デモ１終了) {
+				if ($b:w41a_バグステージ名 == 0) {
+					//	ここには来ないはず
+					@ポーズ時ステージ名表示設定 d:wn_アーセナルギア空腸
+				} else if ($b:w41a_バグステージ名 == 1) {
+					@ポーズ時ステージ名表示設定 d:wn_アーセナルギア胃
+				} else if ($b:w41a_バグステージ名 == 2) {
+					@ポーズ時ステージ名表示設定 d:wn_青山二丁目
+				} else if ($b:w41a_バグステージ名 == 3) {
+					@ポーズ時ステージ名表示設定 d:wn_麻布十番
+				} else if ($b:w41a_バグステージ名 == 4) {
+					@ポーズ時ステージ名表示設定 d:wn_船橋市
+				} else if ($b:w41a_バグステージ名 == 5) {
+					@ポーズ時ステージ名表示設定 d:wn_ニューヨーク52番街
+				}
+			}
+		}
+	}
+
+
+	proc くしゃみ設定 {
+		//	w42aから戻ってきたとき
+		if ($w:p_story >= d:ST:P071_01_R01拷問部屋脱出１無線機デモ１終了) {
+			@アーセナルくしゃみ間隔
+		}
+	}
+
+
+
+
+
+
+
+// 以下仮キャラ用proc
+// -----------------------------------------------------------------------------------
+// 仮キャラ
+// ------------------------------------
+proc 水面セット {
+	#if d:DEBUG_PRINT
+		print 'water_set'
+	#endif
+
+	chara 頂点アニメブラー 仮水面 \
+		-model w31a_sea \
+		-base 10 \
+		-width 1 \
+		-flag 5 \
+		-pos 0,0,0
+}
+
+	proc 死体歩き設定 {
+		trap wa001 d:PLAYER \
+			-mask いる \
+			-exec {
+					command プレイヤー死体歩き
+			}
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------
+proc デバッグキャラセット {
+	#if d:DEBUG_PRINT
+		print 'debug_chara_set'
+	#endif
+
+	#if d:CHARA_CAMERA
+		chara キャラカメラ 敵兵カメラ \
+			-c d:TARGET_CHARA \
+			-s -920,610,200 \
+			-r -200,1024,0 
+	#endif
+
+	#if d:SCREENSHOT
+		chara スクリーンショット shot
+	#endif
+
+	#if d:USB_KEY
+		chara USBキーボード実行 test \
+			-e d:KBD_ESC {	
+				mesg プレイヤー d:PLAYER position -5500, -13000, -500
+			} \
+	#endif
+}

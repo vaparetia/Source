@@ -1,0 +1,92 @@
+//
+//	P070_13_p09.w41a.src
+//
+//	written by H.Yoshiike 2000.Nov
+//
+//	$Id: P070_13_p09.w41a.src,v 1.8 2001/09/05 07:13:20 usr10892 Exp $
+
+block .use r_plt2
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include		"p_common.h"
+#include		"common.h"
+#include		"c_effect.h"
+
+// ワールド
+pack_all	zzz.tri \
+			world/w41a/other
+
+world		w41a/w41a
+world		w41a/other
+
+
+lt2			w41a.lt2
+hazard		d00a3.hzx
+
+//	ドア
+pack_all	w41a_dr.tri \
+				world/door/w41a_dr_left.dar \
+				world/door/w41a_dr_right.dar \
+				world/door/w41a_cell_sdr.dar \
+				world/door/w41a_cell_sdr_02.dar
+
+world		door/w41a_dr_left.kms
+world		door/w41a_dr_right.kms
+world		door/w41a_cell_sdr.kms
+world		door/w41a_cell_sdr_02.kms
+
+// オブジェ関係
+goods		locker/neo_locker_door.kms
+
+//	監視カメラ
+meca		svc_plant
+
+// ライデン（本来必要なのは、裸ライデン？）
+human	rai_def/rai_def_mh_mt.evm
+
+// ソリダス
+pack_all	sol_mh.tri	\
+//	human/sol_def/sol_def_face_mh_mt.dar \
+	human/sol_def/sol_snakearm_mh_mt.dar \
+	human/sol_def/sol_def_mh_mt.dar
+
+//human	sol_def/sol_def_face_mh_mt.evm
+human	sol_def/sol_snakearm_mh_mt.evm
+human	sol_def/sol_def_mh_mt.evm
+
+// オセロット
+human	rev_plant/rev_plant_mh_mt.evm
+human	rev_plant/rev_plant_addhand_mh_mt.evm
+
+// オルガ
+human	org_plant/org_plant_mh_mt.evm
+	//	髪の毛
+human	org_plant/org_plant_hair_mh.evm
+human	org_plant/org_plant_dummy.kms
+
+/* mgdemo added ----from here (Sun Jul 29 20:30:27 2001) ---- */
+human	sol_def/sol_snakearm_2_mh_mt.evm
+human	sol_def/sol_def_addhand_mh_mt.evm
+human	sol_def/sol_gantai_mh_mt.evm
+weapon	saa/saa.kms
+human	rai_naked/rai_naked_mh_mt.evm
+human	rev_coat/rev_hair_fix.kms
+human	rev_coat/rev_coat_bounding.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Aug  6 22:46:56 2001) ---- */
+item	mo_disk/mo_disk.kms
+goods	demo_org_plant_goods/demo_org_plant_hlst.kms
+goods	demo_org_plant_goods/demo_org_plant_radio.kms
+goods	demo_org_plant_goods/demo_org_plant_ssk.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Wed Aug 15 11:09:59 2001) ---- */
+human	rev_plant/rev_plant_addhand_mh_mt.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Aug 16 14:25:43 2001) ---- */
+vib	demo/P070_13_p09_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Wed Sep  5 16:09:41 2001) ---- */
+human	sol_def/sol_sarm_shadow.kms
+/* mgdemo added ----upto here ---- */

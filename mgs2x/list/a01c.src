@@ -1,0 +1,84 @@
+//
+//	w01c.src
+//
+//	written by S.Hirano 1999.Oct
+//
+//	$Id: a01c.src,v 1.9 2002/08/06 06:05:17 usr04249 Exp $
+
+#define WN_W01C
+
+// 常駐データ
+block .use r_vr_s
+
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"t_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+// オルタナティブミッション用追加エフェクト
+#include	"alt_effect.h"
+
+//映り込ませ用に、一時的にこちらで記述する。ここから、
+
+goods		powder_ex
+
+
+//ここまで
+
+// ワールド
+world		w01c/w01cr.kms
+world		w01c
+lt2			w01c.lt2
+hazard		a01c.hzx
+
+// キャラクタ
+include		ene_tank.h
+
+// 強制モーション
+mtn			sna_w01c.mls
+mtn			rai_w01c.mls
+
+// アイテム
+#include "a_item.h"
+
+
+// 撮影用マルチウエイトキャラモデル
+//human	sna_def/sna_mmt.evm
+
+// ビデオ撮影用スネーク顔表情
+//rmt		sna_rmt
+
+// ロッカー
+mtn					sna_locker.mls
+mtn					locker.mls
+
+// 体験版用監視カメラ
+meca	sv_camera
+
+// デバッグ用
+// 消火器のモデル
+debug	okajima/hose_test/hose_cone.kms
+debug	okajima/hose_test/hose_new2.kms
+cvd		debug/okajima/hose_test/hose_new2.cvd vn
+
+// リネーム
+rename		aks_sp.cv2	aks_sp_1.cv2
+
+// パッドデモ
+rpd			w01c_paddemo_1.rpd
+
+pack_all 	clr_fonts.tri effect/font
+
+// IDコンフリクト対応
+texrename w01cr.kms w01b_wb03.bmp w01b_id_ch.bmp
+
+// 解体Ｃ４セット 最後に描画させるためにＴＲＩ名にＺをつける
+pack_all	z_object.tri \
+			goods/c4_kaitai_a \
+			goods/c4_kaitai_b
+
+goods		c4_kaitai_a
+goods		c4_kaitai_b
+

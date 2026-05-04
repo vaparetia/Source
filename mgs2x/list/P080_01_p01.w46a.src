@@ -1,0 +1,243 @@
+//
+//	P080_01_p01.w46a.src
+//
+//	written by H.Yoshiike 2000.Aug
+//
+//	$Id: P080_01_p01.w46a.src,v 1.24 2002/07/22 11:53:40 usr02774 Exp $
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include		"p_common.h"
+#include		"common.h"
+#include		"c_effect.h"
+
+// 臨時追加
+pack_all raiden.tri \
+		human/rai_def/rai_def_mh_mt.dar
+human	rai_def/rai_def_mh_mt.evm
+
+//	空
+world	w00/w00_sky.kms
+pack_trnall effect.tri \
+	effect/sky/w00_sky_add_alp.bmp
+
+pack_trnall effect.tri \
+	effect/wave/wave12_alp_ovl.bmp
+
+// RAY's effect
+pack_trnall effect.tri \
+		effect/wind/wind01.bmp \
+		effect/blood/blood_1e_msk.bmp \
+		effect/pdray_effect/pdray_eye_hl_alp.bmp \
+		effect/pdray_effect/pdray_eye_noise_alp.bmp \
+		effect/smoke/smoke_lp3_alp.bmp \
+		effect/smoke/smoke_lp4_alp.bmp \
+		effect/splash/splash06_alp.bmp \
+		effect/drop/drop01_msk.bmp \
+		effect/weapon_effect/muzzlefrash_01_alp.bmp
+
+// ワールド
+// それ以外のモデル 
+world		w46a
+lt2			w46a.lt2
+hazard		w46a.hzx
+
+
+// オブジェ関係
+// 小さいサイズのテクスチャはまとめておく
+/*
+debug 		kimura/ryousan_metal
+meca		pdray/pdray_def_mt.kms
+cvd			meca/pdray/pdray_def_mt.cv2
+pack_all	pdray_other.tri \
+				meca/pdray/pdray_standby_lod.dar \
+				meca/pdray/pdray_out_p_lod.dar \
+				meca/pdray/pdray_kneemsl.dar \
+				meca/pdray/pdray_kneemsl_r.dar \
+				meca/pdray/pdray_kneemsl_l.dar \
+				meca/pdray/pdray_backmsl.dar \
+				meca/pdray/pdray_backmsl_open.dar \
+				meca/pdray/pdray_backmsl_close.dar \
+				meca/pdray/pdray_landmine.dar \
+				meca/pdray/pdray_number_dummy.dar \
+				meca/pdray/pdray_number_a01_r.dar \
+				meca/pdray/pdray_number_a01_l.dar \
+				meca/pdray/pdray_number_a02_r.dar \
+				meca/pdray/pdray_number_a02_l.dar \
+				meca/pdray/pdray_number_a03_r.dar \
+				meca/pdray/pdray_number_a03_l.dar \
+				meca/pdray/pdray_number_a04_r.dar \
+				meca/pdray/pdray_number_a04_l.dar \
+				meca/pdray/pdray_number_a05_r.dar \
+				meca/pdray/pdray_number_a05_l.dar \
+				meca/pdray/pdray_number_b01_r.dar \
+				meca/pdray/pdray_number_b01_l.dar 
+meca		pdray/pdray_standby_lod.kms
+meca		pdray/pdray_out_p_lod.kms
+meca		pdray/pdray_kneemsl.kms
+meca		pdray/pdray_kneemsl_r.kms
+meca		pdray/pdray_kneemsl_l.kms
+meca		pdray/pdray_backmsl.kms
+meca		pdray/pdray_backmsl_open.kms
+meca		pdray/pdray_backmsl_close.kms
+meca		pdray/pdray_landmine.kms
+meca		pdray/pdray_number_dummy.kms
+meca		pdray/pdray_number_a01_r.kms
+meca		pdray/pdray_number_a01_l.kms
+meca		pdray/pdray_number_a02_r.kms
+meca		pdray/pdray_number_a02_l.kms
+meca		pdray/pdray_number_a03_r.kms
+meca		pdray/pdray_number_a03_l.kms
+meca		pdray/pdray_number_a04_r.kms
+meca		pdray/pdray_number_a04_l.kms
+meca		pdray/pdray_number_a05_r.kms
+meca		pdray/pdray_number_a05_l.kms
+meca		pdray/pdray_number_b01_r.kms
+meca		pdray/pdray_number_b01_l.kms 
+*/
+
+
+//-------------------------------------------------------------追加小林ここから
+//何故か追加されるＵＳＰ
+weapon	usp/usp_sub.kms
+
+//オルガ
+human	org_plant/org_plant_mh_mt.evm
+//Ｐ９０
+weapon	p90/p90.kms
+//オルガ関係
+human	org_plant/org_plant_hair_mh.evm
+human	org_plant/org_plant_dummy.kms
+goods	demo_org_plant_goods/demo_org_plant_hlst.kms
+goods	demo_org_plant_goods/demo_org_plant_radio.kms
+goods	demo_org_plant_goods/demo_org_plant_ssk.kms
+//マカロフ
+goods	demo_makarov_org/demo_makarov_org.kms
+//Ｐ９０ハイモデル
+goods	demo_p90_sol/demo_p90_sol.kms
+//蛇手
+human	sol_def/sol_snakearm_mh_mt.evm
+human	sol_def/sol_snakearm_2_mh_mt.evm
+//デモダミー
+goods	demo_dummy/demo_dummy.kms
+//オルガ死体セット
+human	org_plant/org_plant_dead_mh_mt.evm
+human	org_plant/org_plant_dead_hair_mh.evm
+//ソリダス眼帯
+human	sol_def/sol_gantai_mh_mt.evm
+//スイカ破片（脳漿・血飛沫）
+//world	w16a/w16a0/watermelon/watermelon_bro_s.kms
+pack_trnall trn.tri world/w16a/w16a_bro/w16a0_watermelon/watermelon01_alp.bmp
+world	w16a/w16a_bro/w16a0_watermelon/watermelon_bro_s.kms
+//ソリダス鉄襟
+human	sol_def/sol_faceguard.kms
+//ソリダスマッスル素材
+human	sol_def/sol_vanim_0_sh_mt.kms
+cvd		human/sol_def/sol_vanim_0_sh_mt.cv2	vn
+cvd		human/sol_def/sol_vanim_1_sh_mt.cv2	vn
+cvd		human/sol_def/sol_vanim_2_sh_mt.cv2	vn
+//フォーチュン
+human	for_def/for_def_mh_mt.evm
+//スネーク
+	//	髭剃りスネーク対応
+//pack_all sna_mw.tri \
+//	human/sna_def/sna_def_mh.dar \
+//	human/sna_shaved/sna_shaved_mh_mt.dar
+//human	sna_def/sna_def_mh.evm
+pack_all sna_mw.tri \
+	human/sna_def/sna_def_addhand_mh_mt.dar \
+	human/sna_shaved/sna_shaved_addhand_mh_mt.dar
+human	sna_def/sna_def_addhand_mh_mt.evm
+//スネーク装備
+human	sna_def/sna_bdn2.kms
+human	sna_def/sna_bdn1.kms
+human	sna_def/sna_mag1.kms
+human	sna_def/sna_mag2.kms
+human	sna_def/sna_mag3.kms
+human	sna_def/sna_mag4.kms
+//スネークアタリ
+//これにも一応髭剃り対応しました（2001/09/05 : 園山）
+pack_all sna_nm.tri \
+	human/sna_def/sna_def.dar \
+	human/sna_shaved/sna_shaved_mt.dar
+human	sna_def/sna_def.kms
+
+//フォーチュン装備
+goods	demo_linearrifle/demo_lnr.kms
+human	for_def/for_hair_def_mh.evm
+human	for_def/for_def_bounding.kms
+pack_trnall trn.tri human/for_coat/for_lnr_sling.bmp
+//手錠
+goods	demo_tejyou/demo_tjo_sna_link.kms
+//ＡＩレイ主観
+l2d	2D/sight/ai_ray_view/ai_ray_view.l2d
+//ガソリン炎
+pack_trnall trn.tri effect/bakuha/bombsphere01_alp.bmp
+pack_trnall trn.tri effect/bakuha/bombsphere03_alp.bmp
+pack_trnall trn.tri effect/bakuha/bombsphere04_alp.bmp
+//レイ関連
+meca	pdray/pdray_number_a04_r.kms
+meca	pdray/pdray_number_a04_l.kms
+meca	pdray/pdray_number_a03_r.kms
+meca	pdray/pdray_number_a03_l.kms
+meca	pdray/pdray_number_a02_r.kms
+meca	pdray/pdray_number_a02_l.kms
+meca	pdray/pdray_number_a01_r.kms
+meca	pdray/pdray_number_a01_l.kms
+meca	pdray/pdray_def_mt.kms
+//ソリダス刀
+goods	demo_katana_sol/demo_kwt_uni_mount.kms
+goods	demo_katana_sol/demo_mst_uni_mount.kms
+//レイ目エフェクト
+pack_trnall trn.tri effect/bonbori/w_bonbori.bmp
+//レイ滲み血で使用
+cvd	meca/pdray/pdray_def_mt.cv2
+//ソリダス
+human	sol_def/sol_def_face_mh_mt.evm 
+human	sol_def/sol_def_addhand_mh_mt.evm
+//スネークアドハンド
+//human	sna_def/sna_def_addhand_mh_mt.evm
+//-------------------------------------------------------------追加小林ここまで
+//振動 p080_03_p03
+vib	demo/P080_03_p02_rai_02.vib
+vib	demo/P080_03_p02_rai_01.vib
+vib	demo/P080_03_p02_ray_03.vib
+vib	demo/P080_03_p02_effect_01.vib
+vib	demo/P080_03_p02_ray_02.vib
+vib	demo/P080_03_p02_sol_01.vib
+vib	demo/P080_03_p02_ray_01.vib
+vib	demo/P080_03_p02_ray_04.vib
+//振動 p080_01_p01
+vib	demo/P080_01_p01_ray_10.vib
+vib	demo/P080_01_p01_ray_09.vib
+vib	demo/P080_01_p01_ray_08.vib
+vib	demo/P080_01_p01_ray_07.vib
+vib	demo/P080_01_p01_org_03.vib
+vib	demo/P080_01_p01_rai_03.vib
+vib	demo/P080_01_p01_sol_01.vib
+vib	demo/P080_01_p01_ray_06.vib
+vib	demo/P080_01_p01_org_02.vib
+vib	demo/P080_01_p01_org_01.vib
+vib	demo/P080_01_p01_ray_05.vib
+vib	demo/P080_01_p01_ray_04.vib
+vib	demo/P080_01_p01_ray_03.vib
+vib	demo/P080_01_p01_rai_02.vib
+vib	demo/P080_01_p01_ray_02.vib
+vib	demo/P080_01_p01_ray_01.vib
+vib	demo/P080_01_p01_effect_01.vib
+vib	demo/P080_01_p01_rai_01.vib
+
+// このステージでセーブロードさせるために必要
+#ifdef MGS2_XBOX_1
+l2d		2D/node/save_load_sub/save_load.l2d
+#else
+l2d		2D/node/save_load/save_load.l2d
+#endif
+l2d		2D/clear_code/clear_code.l2d
+icon	icon/plticon.cnf
+
+//
+goods	demo_m4_grn_usm/demo_m4_grn_emb.kms

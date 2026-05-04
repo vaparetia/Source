@@ -1,0 +1,109 @@
+//	w01f.src
+//	written by 	M.Uehara 1999.Oct
+//				S.Kaneyoshi	2000/04/01
+//	$Id: w01f.src,v 1.59 2001/11/01 06:23:46 usr04249 Exp $
+
+// 2D_tex.h 用のDefine
+#define WN_W01F
+
+// 常駐データ
+block .use r_tnk0
+
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include "t_common.h"
+#include "common.h"
+include		c_effect.h
+
+// キャラクタ
+include		ene_tank.h
+
+// 強制モーション
+mtn			sna_w01f.mls
+
+// 武器
+//include 	wp_tank.h
+
+// アイテム
+include		item_box_tank.h
+
+// コモデル
+pack_all allcm_cm.tri \
+			goods/bottle/btl_piece.dar \
+			world/w01f/goods/tree_01.dar \
+			world/w01f/goods/break7d.dar \
+			world/w01f/goods/book_hahen.dar
+
+// 羽虫コモデル
+goods		fly/fly_cm.kms
+
+// 大ガラス破片KMS生成コマンド
+fract		glass_pce -s 176134 -g 282 287 45 -5 -nw \
+			-t allcm_cm.tri dbx_dust_alp_ovl.bmp
+
+// マルチテクスチャ
+world/w01f	goods/sofa_mt.kms
+
+// ワールド
+	// 優先の関係で一つでパックする
+	world/w01f			base/w01f_box.kms
+
+	world/w01f			base
+	world/w01f/goods	book.kms book_moto.kms
+	world/w01f			bar tv b1 roof goods
+	world/w01f			floor
+	world/w01f			load_model
+
+
+// テスト用ポスター
+world		w01a/locker/w01alc_tobira_nu.kms
+world		w01a/locker/w01alc_tobira_nu2.kms
+
+// デバッグ用
+goods		bottle glass
+
+// ドアと水密ドア
+world/door	w01f_dr.kms w01a_dr.kms w01asdr_handle.kms w01asdr_body_r.kms
+
+// 水密ドアモーション
+mtn				sna_hatch.mls
+mtn				hatch_door_sna.mls
+mtn				hatch_handle_sna.mls
+
+// エフェクト 半透明テクスチャ 後に一つにまとめる
+pack_trnall     fun.tri effect/fur effect/rain debug/morita/tv/tv_00c.bmp debug/morita/tv/tv_white.bmp \
+				debug/morita/tv/tv_00a.bmp
+
+
+// ライト＆ハザード
+lt2				w01f.lt2
+hazard			w01f.hzx
+
+debug/morita    tv icebox tsubo shaker
+cvd             world/w01f/goods/book_naka.cv2 vn
+
+// ビデオ撮影用スネーク顔表情
+// rmt	sna_rmt
+
+// パッドデモ
+#ifdef MGS2_VMODE_PAL
+	rpd				w01f_paddemo_1f_pal.rpd
+#else
+	rpd				w01f_paddemo_1f.rpd
+#endif
+rpd				w01f_paddemo_2f.rpd
+
+// 強制モーション sna_w01fを作成する必要あり
+mtn				sna_w01f.mls
+
+// 敵兵固有モーション
+mtn 			gbs_w01f.mls
+
+// リネーム
+rename			aks_sp.cv2	aks_sp_1.cv2
+rename 			gbs_w01f.mar gbsstage.mar
+#ifdef MGS2_VMODE_PAL
+	rename		w01f_paddemo_1f_pal.rpd		w01f_paddemo_1f.rpd
+#endif

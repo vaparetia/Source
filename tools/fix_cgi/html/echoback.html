@@ -1,0 +1,70 @@
+Content-type: text/html;charset=EUC-JP
+
+<HTML>
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+<!-焼肉定食->
+
+<BODY BGCOLOR=gray TEXT=white LINK=pink VLINK=pink ALINK=purple BACKGROUND="/runtime.xbox/images/bg.gif">
+<hr>
+<center><H1><B>_tag_title</B></H1></center>
+<hr>
+<TABLE>
+_tag_incomment
+</TABLE>
+<P>
+
+<FORM ACTION="/cgi-bin/_tag_version/post.cgi" METHOD="post">
+<INPUT TYPE=HIDDEN NAME="from"      VALUE="_tag_from"     >
+<INPUT TYPE=HIDDEN NAME="to"        VALUE="_tag_to"       >
+<INPUT TYPE=HIDDEN NAME="locate"    VALUE="_tag_locate"   >
+<INPUT TYPE=HIDDEN NAME="files"     VALUE="_tag_files"    >
+<INPUT TYPE=HIDDEN NAME="date"      VALUE="_tag_date"     >
+<INPUT TYPE=HIDDEN NAME="destinate" VALUE="_tag_destinate">
+<INPUT TYPE=HIDDEN NAME="type"      VALUE="_tag_type"     >
+<INPUT TYPE=HIDDEN NAME="reason"    VALUE="_tag_reason"   >
+<INPUT TYPE=HIDDEN NAME="bbs"       VALUE=0               >
+<INPUT TYPE=HIDDEN NAME="style"     VALUE="_tag_style"    >
+<INPUT TYPE=HIDDEN NAME="send_ip"   VALUE="_tag_send_ip"  >
+<INPUT TYPE=HIDDEN NAME="send_fix"  VALUE="_tag_send_fix" >
+<INPUT TYPE=HIDDEN NAME="change"    VALUE="_tag_change"   >
+
+<FONT SIZE=2>
+以下の情報で更新します。<BR>
+
+<TABLE>
+<TR><TD><FONT COLOR=yellow>差出人            </FONT></TD> <TD>_tag_from     </TD></TR>
+<TR><TD><FONT COLOR=yellow>受取人            </FONT></TD> <TD>_tag_to       </TD></TR>
+<TR><TD><FONT COLOR=yellow>ジャンル          </FONT></TD> <TD>_tag_type     </TD></TR>
+<TR><TD><FONT COLOR=yellow>更新理由          </FONT></TD> <TD>_tag_reason   </TD></TR>
+<TR><TD><FONT COLOR=yellow>日時              </FONT></TD> <TD>_tag_date     </TD></TR>
+<TR><TD><FONT COLOR=yellow>移す元ディレクトリ</FONT></TD> <TD>_tag_locate   </TD></TR>
+<TR><TD><FONT COLOR=yellow>移す元ファイル    </FONT></TD> <TD>_tag_files    </TD></TR>
+<TR><TD><FONT COLOR=yellow>移す先            </FONT></TD> <TD>_tag_destinate</TD></TR>
+
+<TR><TD><FONT COLOR=yellow>コメント発信      </FONT></TD>
+    <TD>ランタイム更新時に
+     <FONT COLOR=pink>_tag_send_ip </FONT> 宛に
+     <FONT COLOR=pink>_tag_send_fix</FONT> 発信する</TD>
+</TR>
+
+_tag_include::html/comment/_tag_change_tag_style.html
+
+</TABLE>
+
+</FONT>
+
+<INPUT TYPE=HIDDEN NAME=success VALUE=1>
+</FORM>
+
+</BODY>
+</HTML>

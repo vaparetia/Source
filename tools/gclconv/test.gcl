@@ -1,0 +1,27 @@
+//
+// test.gcl
+//
+
+string table {
+	greek1:
+		'hello'
+		'hohoho'
+	greek2:
+		'本日は晴天なり'
+	greek3:
+		'good morning'
+};
+
+proc test1 {
+	print [table:greek3]
+}
+
+proc test2 {
+	print [table:greek1]
+}
+
+proc test3 {
+	print [table:greek2]
+}
+
+@test3

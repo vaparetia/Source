@@ -1,0 +1,110 @@
+;
+;	trans0.dsm
+;	ノーマルモデルパケット処理プログラム
+;
+;	1999/07/07 K.Takabe
+;	$Id: trans0.dsm,v 1.1.1.3 2002/11/19 11:42:31 Yoshizawa1 Exp $
+;
+
+; 固定パラメータ類
+FV_MIN		= 0		; プリミティブ座標クランプ値（最小値）
+FV_MAX		= 1		; プリミティブ座標クランプ値（最大値）
+FV_FOG		= 2		; フォグパラメータ
+FV_PRM		= 3		; 各種定数
+FV_SCN		= 4		; プリミティブ座標へのスケーリングパラメータ
+FV_OFT		= 5		; プリミティブ座標へのオフセット値
+FV_PRM2		= 6		; 各種定数２
+FV_PD2		= 7		; リザーブ
+; オブジェクト処理パラメータ類
+M_PRS0		= 32	; 透視変換マトリクス０
+M_PRS1		= 33	; 透視変換マトリクス１
+M_PRS2		= 34	; 透視変換マトリクス２
+M_PRS3		= 35	; 透視変換マトリクス３
+M_LIT0		= 36	; ローカルライトマトリクスＸ = lit0_x,lit1_x,lit2_x,supecular_x
+M_LIT1		= 37	; ローカルライトマトリクスＹ = lit0_y,lit1_y,lit2_y,supecular_y
+M_LIT2		= 38	; ローカルライトマトリクスＺ = lit0_z,lit1_z,lit2_z,supecular_z
+M_LIT3		= 39	; 未使用
+M_COL0		= 40	; ローカルカラー０ = lit0_r,lit0_g,lit0_b
+M_COL1		= 41	; ローカルカラー１ = lit1_r,lit1_g,lit1_b
+M_COL2		= 42	; ローカルカラー２ = lit2_r,lit2_g,lit2_b
+M_COL3		= 43	; アンビエントカラー = amb_r amb_g amb_b
+M_SUP0		= 44	; エンベロープ補償マトリクス
+M_SUP1		= 45	; エンベロープ補償マトリクス
+M_SUP2		= 46	; エンベロープ補償マトリクス
+M_SUP3		= 47	; エンベロープ補償マトリクス
+
+
+.global Vu1DrawObject0
+.global Vu1DrawObject0_Func
+
+; プログラム呼び出しＶＩＦコード一覧
+Vu1DrawObject0_Func:
+	.word	( FastTransStart / 8 )				; 描画１回目
+	.word	( FastTransNext / 8 )				; 描画２回目以降
+	.word	( ClipTransStart / 8 )				; クリップ処理付き描画１回目
+	.word	( ClipTransNext / 8 )				; クリップ処理付き描画２回目以降
+	.word	( FastTransEnvelopeStart / 8 )		; エンベロープ処理付き描画１回目
+	.word	( FastTransEnvelopeNext / 8 )		; エンベロープ処理付き描画２回目以降
+	.word	( ClipTransEnvelopeStart / 8 )		; エンベロープ・クリップ処理付き描画１回目
+	.word	( ClipTransEnvelopeNext / 8 )		; エンベロープ・クリップ処理付き描画２回目以降
+
+	.word	( FastPreshadeTransStart / 8 )		; プリシェード・描画１回目
+	.word	( FastPreshadeTransNext / 8 )		; プリシェード・描画２回目以降
+	.word	( ClipPreshadeTransStart / 8 )		; プリシェード・クリップ処理付き描画１回目
+	.word	( ClipPreshadeTransNext / 8 )		; プリシェード・クリップ処理付き描画２回目以降
+	.word	( FastTransEnvelopeStart / 8 )		; プリシェード・エンベロープ処理付き描画１回目
+	.word	( FastTransEnvelopeNext / 8 )		; プリシェード・エンベロープ処理付き描画２回目以降
+	.word	( ClipTransEnvelopeStart / 8 )		; プリシェード・エンベロープ・クリップ処理付き描画１回目
+	.word	( ClipTransEnvelopeNext / 8 )		; プリシェード・エンベロープ・クリップ処理付き描画２回目以降
+
+	.word	( ShadowFastTransStart / 8 )	;
+	.word	( ShadowFastTransNext / 8 )		;
+	.word	( ShadowClipTransStart / 8 )	;
+	.word	( ShadowClipTransNext / 8 )		;
+	.word	( WaitGif / 8 )
+
+.data
+.DmaPackVif 1			; タグ中のＶＩＦコード有効
+
+;Vu1DrawObject0:		; この方法は失敗した
+;	DMAret *			; この方法は失敗した
+;	MPG 0,*				; この方法は失敗した
+
+
+; プログラム転送ＤＭＡタグ定義
+Vu1DrawObject0:		; マイクロプログラム読み込み用タグ記憶ポインタ
+	DMAref *, _trans0	; DMArefによるデータ転送を行う
+	.EndDmaData			; DMAパケットの終了
+
+
+; プログラム記述部
+.DmaData _trans0		; DMArefで転送するデータの宣言
+	MPG 0,*				; マイクロプログラム転送VIFcode
+
+.vu
+
+.include "t0_fast.vu1"
+
+.include "t0_clip.vu1"
+
+.include "t0_shdw.vu1"
+
+WaitGif:
+;	nop								xtop		vi13				; 
+;	nop								iaddiu		vi13,vi13,1			; 
+;	nop								xgkick		vi13				; 
+;	nop								nop								;
+;	nop								xgkick		vi13				; 
+;	nop								nop								;
+;	nop[e]							nop								; 
+;	nop								nop								;
+
+
+.EndMPG					; マイクロプログラム転送の終了
+.EndDmaData				; DMAref転送データの終了
+
+
+
+
+
+

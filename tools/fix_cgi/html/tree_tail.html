@@ -1,0 +1,23 @@
+<HR>
+
+<FORM ACTION=/cgi-bin/delete.cgi METHOD=post>
+<INPUT TYPE=hidden NAME=cur_dir   VALUE=_tag_cur_dir  >
+<INPUT TYPE=hidden NAME=showdirs  VALUE=_tag_showdirs >
+<INPUT TYPE=hidden NAME=directive VALUE=_tag_directive>
+
+<H3>正気で消去（_tag_directive編）</H3>
+
+<TABLE>
+<TR><TD><FONT COLOR=pink>現在のディレクトリ</FONT></TD>
+    <TD><A HREF="/cgi-bin/tree.cgi?directive=_tag_directive">_tag_directive</A>/_tag_cur_dir</TD></TR>
+<TR><TD><FONT COLOR=pink>ファイル          </FONT></TD>
+    <TD><INPUT TYPE=submit VALUE="ほかす"></TD></TR>
+<TR><TD></TD>
+    <TD><SELECT SIZE=15 NAME=files MULTIPLE>
+_tag_include::_tag_tmpfile
+<OPTION>====================End of list=====================</OPTION>
+</SELECT></TD></TR>
+</TABLE>
+
+</FORM>
+</BODY>

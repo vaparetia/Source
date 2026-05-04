@@ -1,0 +1,90 @@
+#
+#  IOP module ilb makefile
+#
+
+OBJECTS = cdbios.o
+HDEOBJS = cdbios_hde.o
+
+ifeq ($(wildcard PathDefs),)
+PathDefs:
+	iop-path-setup > PathDefs || (rm -f PathDefs ; exit 1)
+	$(MAKE) all
+else
+include PathDefs
+endif
+
+#----------- defines --------------
+
+OBJDIR = obj_iop
+
+TARGET   = cdbios.irx
+OBJS     = $(addprefix $(OBJDIR)/, $(OBJECTS))
+TABLE    = cdbios.tbl
+ENTRYOBJ = $(OBJDIR)/entry.o
+ILB_FILE   = cdbios.ilb
+
+HTARGET  = cdbiosh.irx
+HOBJS    = $(addprefix $(OBJDIR)/, $(HDEOBJS))
+HTABLE   = cdbios.tbl
+HILB_FILE   = cdbiosh.ilb
+
+ENTRYPOINT = cdbios_start
+
+ifeq ($(MGS2_MASTER),1)
+DEFINES  = -DMASTER
+else
+DEFINES  =
+endif
+
+CFLAGS   = -O2 -g -Wall -D IOP -G0 -I $(IOP_INCDIR) $(DEFINES)
+ASFLAGS  = 
+LDFLAGS  = 
+LOADLIBES= -ilb=../jsifman/jsifman.ilb -ilb=cdvdman.ilb -ilb=../usbfs/usbfs.ilb
+
+#----------- customize section --------------
+
+all: $(TARGET) $(ILB_FILE) $(HTARGET) $(HILB_FILE) copy
+
+clean:
+	-rm -f *.o *.irx *.ilb *.map $(OBJDIR)/*.o
+
+copy:
+	cp $(TARGET) $(HTARGET) $(IOP_IRXDIR)
+
+#----------- rules --------------
+
+#%.irx: $(OBJDIR)/%.o
+#	$(LINK.o) $^ $(LOADLIBES) $(LDLIBS) -o $@
+
+$(OBJDIR)/%.o : %.c
+	$(CC) $(CFLAGS) -c $< -o $(OBJDIR)/$*.o
+
+$(OBJDIR)/cdbios_hde.o : cdbios.c
+	$(CC) $(CFLAGS) -DHD_EMU -c $< -o $*.o
+
+# 常駐ライブラリのコンパイル ===============================================
+
+$(TARGET) : $(OBJS) $(TABLE)
+#	  ライブラリエントリテーブルの作成
+	$(ILBGEN) $(TABLE) -e __tmp.s
+	$(AS) -o $(ENTRYOBJ) __tmp.s
+	-rm -f __tmp.s
+#	$(ILBGEN) $(TABLE) -e - | $(AS) -o $(ENTRYOBJ)
+#	   常駐ライブラリの本体のコンパイルとエントリテーブルとのリンク
+# 	   -e オプションで初期化エントリを指定してください
+	$(LINK.o) $(LDFLAGS) -e $(ENTRYPOINT) $(OBJS) $(ENTRYOBJ) $(LOADLIBES) $(LDLIBS) -o $@
+
+# ライブラリを利用するプログラムのリンク時に必要な mylib.ilb ファイルの作成
+$(ILB_FILE): $(TABLE)
+	$(ILBGEN) $(TABLE) -d $(ILB_FILE)
+
+
+$(HTARGET) : $(HOBJS) $(HTABLE)
+	$(ILBGEN) $(HTABLE) -e __tmp.s
+	$(AS) -o $(ENTRYOBJ) __tmp.s
+	-rm -f __tmp.s
+	$(LINK.o) $(LDFLAGS) -e $(ENTRYPOINT) $(HOBJS) $(ENTRYOBJ) $(LOADLIBES) $(LDLIBS) -o $@
+
+# ライブラリを利用するプログラムのリンク時に必要な mylib.ilb ファイルの作成
+$(HILB_FILE): $(HTABLE)
+	$(ILBGEN) $(HTABLE) -d $(HILB_FILE)

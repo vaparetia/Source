@@ -1,0 +1,60 @@
+//
+//	emma.mls (手繋ぎ用 ＆ 狙撃イベント用 モーションリスト)
+//
+//	2001/2/14 T.Morita
+//	$Id: emma.mls,v 1.29 2001/08/07 01:28:44 usr04098 Exp $
+
+// NPC基本モーション（絶対いじるな）
+ee/ema_rai_idle.mt3			NPC_IDLE
+ee/ema_rai_squat_idle.mt3		NPC_SQUAT_IDLE
+
+//手繋ぎ
+ee/ema_rai_idle.mt3			RAI_IDLE         DEL_SNIPER
+ee/ema_rai_squat_idle.mt3		RAI_SQUAT_IDLE   DEL_SNIPER
+ee/ema_rai_outreach.mt3			RAI_REACH        DEL_SNIPER
+ee/ema_rai_outreach_park_it.mt3		RAI_GETUP        DEL_SNIPER
+ee/ema_rai_run.mt3			RAI_RUN          DEL_SNIPER
+ee/ema_rai_walk.mt3			RAI_WALK         DEL_SNIPER
+ee/ema_rai_walk_on_corpse.mt3		RAI_WALK_CORPS   DEL_SNIPER
+ee/ema_rai_free.mt3			RAI_FREE         DEL_SNIPER
+
+// 単独行動
+ee/ema_single_idle.mt3			PAL_IDLE         DEL_SNIPER
+ee/ema_single_idle2parkit.mt3		PAL_SITDOWN      DEL_SNIPER
+ee/ema_single_park_it_idle.mt3		PAL_SQUAT_IDLE   DEL_SNIPER
+ee/ema_single_squeezed_f.mt3		PAL_PUSHED_LF    DEL_SNIPER
+ee/ema_single_squeezed_b.mt3		PAL_PUSHED_LB    DEL_SNIPER
+ee/ema_single_afraid_idle.mtn		PAL_OHMY_GOD     DEL_SNIPER
+ee/ema_single_eroticbook_kick.mtn	PAL_EROKICK      DEL_SNIPER
+ee/ema_single_dislike.mtn		PAL_DISLIKE      DEL_SNIPER
+ee/ema_snp_dam.mt3			PAL_SCREEM       DEL_SNIPER
+ee/ema_single_escape.mt3		AFRAID_WALK      DEL_SNIPER
+ee/ema_snp_squat_afraid_idle.mt3	AFRAID_IDLE      DEL_SNIPER
+
+//ダメージ
+ee/ema_single_down.mt3			DAMG_DOWN
+ee/ema_rai_outreach_down.mt3		DAMG_WAKE	
+ee/ema_single_dam2down.mt3		DAMG_FALL       
+ee/ema_single_sleep.mt3			DAMG_SLEEP   
+ee/ema_single_dam_out_down.mtn		DAMG_DOWN_OVER
+ee/ema_single_dam_out.mtn		DAMG_OVER
+ee/ema_snp_dam.mt3			DAMG_IDLE
+ee/ema_snp_dam_squat.mtn 		DAMG_SQUAT
+ee/ema_snp_dam_tumble.mt3		DAMG_TUMBLE
+ee/ema_snp_dam_fall.mtn			DAMG_DROPOFF     DEL_WITHRAIDEN
+
+//桟橋専用
+ee/ema_snp_idle.mt3			SNIPE_IDLE       DEL_WITHRAIDEN
+ee/ema_snp_squat_idle.mt3		SNIPE_SQUAT_IDLE DEL_WITHRAIDEN
+ee/ema_snp_squat_afraid_idle.mt3	SNIPE_AFRAID     DEL_WITHRAIDEN
+ee/ema_snp_idle2squat.mt3		SNIPE_SITDOWN    DEL_WITHRAIDEN
+ee/ema_snp_idle2afraid.mtn		SNIPE_SITAFRAID  DEL_WITHRAIDEN
+ee/ema_snp_squat2idle.mtn		SNIPE_STANDUP    DEL_WITHRAIDEN
+
+ee/ema_snp_walk.mt3                     SNIPE_WALK       DEL_WITHRAIDEN
+ee/ema_snp_run.mt3			SNIPE_RUN        DEL_WITHRAIDEN
+
+ee/ema_snp_go_down.mt3			SNIPE_GO_DOWN    DEL_WITHRAIDEN
+ee/ema_snp_go_up.mt3			SNIPE_GO_UP      DEL_WITHRAIDEN
+ee/ema_snp_dam_bridge_out.mt3		SNIPE_DOWN_FALL  DEL_WITHRAIDEN
+ee/ema_snp_down_fall.mt3		SNIPE_SLEEP_FALL DEL_WITHRAIDEN

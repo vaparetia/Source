@@ -1,0 +1,1 @@
+for /R %%i in (*.o) do nm %%i | grep " T " 1> %%i.symbols.txt

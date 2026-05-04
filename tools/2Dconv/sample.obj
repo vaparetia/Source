@@ -1,0 +1,57 @@
+obj "基準点"		empty
+
+obj "上枠基準点"	empty	parent "基準点"
+obj "上枠"		lstrip	vertex 4 parent "上枠基準点"
+obj "PTT"		sprite	parent "上枠基準点"
+
+obj "下枠基準点"	empty	parent "基準点"
+obj "下枠"		lstrip	vertex 4 parent "下枠基準点"
+obj "MEMORY"		sprite	parent "下枠基準点"
+obj "TUNING"		sprite	parent "下枠基準点"
+
+obj "全体枠"		box	parent "基準点"
+
+
+reftri  codec.tri
+
+status "基準点"
+	mode "絶対固定"
+		vertex 0 (256, 150)
+		tex "mem_ovl_alp"
+		size 160 80
+		uv 0.5 0.5
+		uvsize 0.5 0.5
+		color 0 { 128, 128, 128, 128 }
+		show
+
+	endmode
+	mode "ちょっと上に"
+		vertex 0 (256, 100)
+		hide
+	endmode
+endstat
+
+status "上枠"
+	mode "上枠定位置"
+		vertex 0 (-40, 10)!(-40,0)!(40,0)!(40,10)
+	endmode
+endstat
+
+
+
+action  "開く"
+	track  "基準点"
+		set "絶対固定"
+		wait 100
+		morf 300 "ちょっと上に"
+	trend
+actend
+
+action  "閉じる"
+	track  "基準点"
+		set "ちょっと上に"
+		wait 100
+		morf 300 "絶対固定"
+	trend
+actend
+

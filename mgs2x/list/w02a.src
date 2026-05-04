@@ -1,0 +1,134 @@
+//
+//	w02a.src
+//
+//	written by H.Yoshiike 1999.Oct
+//
+//	$Id: w02a.src,v 1.81 2001/08/26 07:42:12 usr04249 Exp $
+
+// 2D_tex.h 用のDefine
+#define WN_W02A
+
+// 常駐データ
+block .use r_tnk0
+
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include "t_common.h"
+#include "common.h"
+include		c_effect.h
+
+//include		gover.h
+
+// キャラクタ
+include		ene_tank.h
+
+// アイテム
+include		item_box_tank.h
+
+//タンカークルーモデル
+	human		tnc_def
+// ロッカー死体モーション
+	mtn			locker_cp.mls
+
+// 強制モーション
+	mtn			sna_w02a.mls
+	mtn			sna_locker.mls
+	mtn			locker.mls
+
+//死体捨て用強制モーション
+	mtn			corpse_w02a.mls
+
+
+// エンジンルーム本体
+	pack_all	hontai.tri	world/w02a/w02a1 \
+							world/w02a/w02a1r
+
+	world		w02a/w02a1
+	world		w02a/w02a1r
+
+	world		w02a/w02a2
+
+
+// 小部屋でのみ出現
+	world		w02a/w02a0
+	world		w02a/w02a3
+
+	pack_all	kobeya.tri	goods/dbg_val \
+							meca/ir_sensor \
+							world/w02a/w02a_locker \
+							world/door/w02a3sdr_body.dar \
+							world/door/w02a3sdr_handle.dar \
+							world/w01f/b1/w01f3.dar \
+							world/w01f/roof/w01fr4.dar \
+							debug/yoshiike/w02a
+
+	goods		dbg_val
+	meca		ir_sensor
+	world		w02a/w02a_locker
+	world		door/w02a3sdr_body.kms
+	world		door/w02a3sdr_handle.kms
+	world		w01f/b1/w01f3.kms
+	world		w01f/roof/w01fr4.kms
+	debug		yoshiike/w02a
+
+
+// 両方で使用
+	world		door/w02a_r_dr.kms
+	world		door/w02a_l_dr.kms
+	goods		flashlight/flashlight2.kms
+	goods		flashlight/flashlight_koware.kms
+	goods		locker/neo_locker_door.kms
+//	world		w01a/locker/w01alc_tobira_nu.kms
+//	world		w01a/locker/w01alc_tobira_nu2.kms
+	world		w02a/w02a_pos/w02a_pos01.kms
+	world		w02a/w02a_pos/w02a_pos02.kms
+
+	weapon		cfr/cfr_trp.kms
+
+
+// ライト＆ハザード
+	lt2			w02a.lt2
+	hazard		w02a.hzx
+
+	debug		shibata/vibration/both_vib.vib
+	debug		shibata/vibration/high_vib.vib
+	debug		shibata/vibration/low_vib.vib
+
+
+// 水密ドアモーション
+mtn				sna_hatch.mls
+mtn				hatch_door_sna.mls
+mtn				hatch_handle_sna.mls
+
+
+// ビデオ撮影用スネークモデル
+// human	sna_def/sna_mmt.evm
+
+// ビデオ撮影用スネーク顔表情
+//rmt	sna_rmt
+
+// 死体モーション
+//mtn			corps.mls
+mtn		corps_locker.mls
+
+// パッドデモ
+rpd			w02a_paddemo.rpd
+
+// 敵兵固有モーション
+mtn 		gbs_w02a.mls
+
+// サイファー
+meca		cypher/cyp.kms
+
+// エルードワイヤー
+debug		mogi/w04_test_bou.kms
+
+vib			program/tnc_down.vib
+
+// リネーム
+rename 		gbs_w02a.mar 		gbsstage.mar
+rename		corps_locker.mar	corps.mar
+
+

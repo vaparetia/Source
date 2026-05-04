@@ -1,0 +1,105 @@
+#-----------------------------------------------------------
+#	MGS2X-Gnumake用 仮メイクファイル
+#-----------------------------------------------------------
+
+
+#-----------------------------------------------------------
+#	デバッグバージョン
+#-----------------------------------------------------------
+
+OUTDIR=.
+INTDIR=.
+
+LIB_NAME = libdg
+
+# gnumakeは "   "をうまく認識してくれない？
+OUTPUT_LIB_GNU = ..\..\lib\Debug\$(LIB_NAME).lib
+OUTPUT_LIB = "$(OUTPUT_LIB_GNU)"
+
+
+PCH = $(LIB_NAME).pch
+
+
+
+# インクルードファイルフォルダへのパス
+SYS_INCLUDE_DIR=/I "C:\Program Files\Microsoft Xbox SDK\xbox\include"
+
+INCLUDE_DIR=/I "..\..\include" /I "..\..\system\libgv" /I "..\..\system\libdg" /I "..\..\system\libgcl" /I "..\..\system\libfs" /I "..\..\system\libhzx" /I "..\..\game" /I "..\..\system\libmt"
+
+
+
+
+# コンパイラのオプション設定
+CPP=cl.exe
+CPP_PROJ=/nologo /MTd /W3 /Gm /GX /Zi /Od $(SYS_INCLUDE_DIR) $(INCLUDE_DIR) /D "WIN32" /D "_XBOX" /D "_DEBUG" /D "DEBUG" /D "DEBUG_MODE" /D "NTSC" /Fp"$(INTDIR)\$(PCH)" /YX /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /G6 /Zvc6 /c 
+
+
+# リンカのオプション設定
+LIB32=link.exe -lib
+LIB32_FLAGS=/nologo /out:$(OUTPUT_LIB)
+LIB32_OBJS= \
+	$(INTDIR)\2d_prim.obj \
+	$(INTDIR)\callback.obj \
+	$(INTDIR)\chain.obj \
+	$(INTDIR)\chanl.obj \
+	$(INTDIR)\comdl.obj \
+	$(INTDIR)\d3d.obj \
+	$(INTDIR)\dgd.obj \
+	$(INTDIR)\dmapack.obj \
+	$(INTDIR)\evmobjs.obj \
+	$(INTDIR)\frame.obj \
+	$(INTDIR)\light.obj \
+	$(INTDIR)\loader.obj \
+	$(INTDIR)\m_weight.obj \
+	$(INTDIR)\objs.obj \
+	$(INTDIR)\particle.obj \
+	$(INTDIR)\patch.obj \
+	$(INTDIR)\plugin.obj \
+	$(INTDIR)\pos.obj \
+	$(INTDIR)\prim2.obj \
+	$(INTDIR)\pshade.obj \
+	$(INTDIR)\screen.obj \
+	$(INTDIR)\shadowvl.obj \
+	$(INTDIR)\shdwchin.obj \
+	$(INTDIR)\text.obj \
+	$(INTDIR)\vanime.obj
+
+
+all : $(OUTPUT_LIB_GNU) shader 
+
+
+$(OUTPUT_LIB_GNU) :  $(LIB32_OBJS)
+    $(LIB32) $(LIB32_FLAGS) $(DEF_FLAGS) $(LIB32_OBJS)
+
+
+
+%.obj :: %.cpp
+	$(CPP) $(CPP_PROJ) "$<"
+
+
+%.obj :: %.c
+	$(CPP) $(CPP_PROJ) "$<"
+
+
+	
+	
+# 頂点シェーダ&ピクセルシェーダ
+shader : test.u shadow.v plight.u patchl.v patchbl.v patchbl.u patch.v objwl.v objw.v objp.v objl.v objawl.v objaw.v objal.v obja.v obj.v normal.u evml.v evm.v comdl.v 
+
+%.v :: %.vsh
+	xsasm -nologo -D _XBOX "$<"  "$@"
+
+%.u :: %.psh
+	xsasm -nologo -D _XBOX "$<"  "$@"
+
+
+
+#-----------------------------------------------------------
+
+clean :
+	rm -f  $(INTDIR)/*.obj
+	rm -f  $(INTDIR)/*.v
+	rm -f  $(INTDIR)/*.u
+	rm -f  $(OUTPUT_LIB)
+
+

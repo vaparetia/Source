@@ -1,0 +1,210 @@
+//
+//	a02a.src
+//
+//	written by H.Yoshiike 1999.Oct
+//
+//	$Id: a02a.src,v 1.20 2002/08/16 08:02:34 usr04549 Exp $
+
+// 2D_tex.h 用のDefine
+#define WN_W02A
+
+// 常駐データ
+block .use r_vr_s
+
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include 	"t_common.h"
+#include 	"common.h"
+
+	#define EFFECT_CUSTUM	// 必要なエフェクトのみ使用する
+
+	//#define	E_GLASS_DANKON			// グラス系弾痕
+	#define	E_KOGETUKI				// 壁への焦げ付き
+	#define	E_FOOTSTAMP				// 足跡
+	#define	E_ENEMY					// 敵兵系
+	#define	E_ENEMY_LIGHT			// 敵兵ライト、スティンガー、ニキータ、剣の火花、しょんべん兵
+	#define	E_SLING					// スリング
+	#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+	//#define	E_MANHATTAN_LIGHT		// マンハッタンライト
+	#define	E_C4BOMB				// Ｃ４爆弾、赤外線センサー
+	#define	E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷 解体Ｃ４
+	//#define	E_CROSS_FADE_LIGHT		// クロスフェード（甲板のライトで使用）
+	#define	E_CHARA_DENTOU			// chara 懐中電灯、フォーチュン戦
+	//#define	E_WATER					// 水関係
+	//#define	E_CHARA_HAMON			// chara 波紋
+	//#define	E_BROKEN_OBJECT			// 壊れ物
+	//#define	E_BROKEN_PAPEROBJECT	// 壊れ物紙
+	#define	E_BROKEN_PLATE			// 壊れ物皿
+	//#define	E_HIMATU				// 水飛沫
+	//#define	E_CHARA_MADOAME			// chara 窓雨
+	#define	E_STEAM					// 粉 & 水蒸気
+	#define	E_POWDER				// 小麦粉
+	//#define	E_SKY_NORMAL			// 空
+	//#define	E_LINEAR_GUN			// リニアガン
+	//#define	E_TENKYUU				// 天球ドーム
+	//#define	E_SUN					// 太陽
+	//#define	E_DOOR_LUMP				// ドアランプ
+	#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+	//#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+	//#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+	//#define	BONBORI					// ぼんぼり
+	//#define	NODE_LAMP				// ノードディスプレイランプ
+
+
+#include	"c_effect.h"
+// オルタナティブミッション用追加エフェクト
+#include	"alt_effect.h"
+
+//include		gover.h
+
+// キャラクタ
+//include		ene_tank.h
+//------------------------------
+// ELIMINATE ALL LEVEL 10 (a02a/機関室)にてショットガン兵を使用するため変更（2002/08/09 M.Uehara）
+#define ENE_T_SHOTGUN_GOL
+#include		"ene_gol1.h"
+mtn 		gbs.mls '-DDEL_TNG=DUMMY'	// モーション
+//------------------------------
+
+
+//タンカークルーモデル
+	//human		tnc_def
+// ロッカー死体モーション
+	//mtn			locker_cp.mls
+
+// 強制モーション
+	mtn			sna_a02a.mls
+	mtn			rai_a02a.mls
+	mtn			sna_locker.mls
+	mtn			locker.mls
+
+	//死体捨て用強制モーション
+	//mtn			corpse_w02a.mls
+
+
+// エンジンルーム本体
+	pack_all	hontai.tri	world/w02a/w02a1 \
+							world/w02a/w02a1r
+
+	world		w02a/w02a1
+	world		w02a/w02a1r
+
+	world		w02a/w02a2
+
+
+// 小部屋でのみ出現
+	world		w02a/w02a0
+	world		w02a/w02a3
+
+	pack_all	kobeya.tri	goods/dbg_val \
+							meca/ir_sensor \
+							world/w02a/w02a_locker \
+							world/door/w02a3sdr_body.dar \
+							world/door/w02a3sdr_handle.dar \
+							world/w01f/b1/w01f3.dar \
+							world/w01f/roof/w01fr4.dar \
+							debug/yoshiike/w02a
+
+	goods		dbg_val
+	meca		ir_sensor
+	world		w02a/w02a_locker
+	world		door/w02a3sdr_body.kms
+	world		door/w02a3sdr_handle.kms
+	world		w01f/b1/w01f3.kms
+	world		w01f/roof/w01fr4.kms
+	debug		yoshiike/w02a
+
+
+// 両方で使用
+	world		door/w02a_r_dr.kms
+	world		door/w02a_l_dr.kms
+	goods		flashlight/flashlight2.kms
+	goods		flashlight/flashlight_koware.kms
+	goods		locker/neo_locker_door.kms
+//	world		w01a/locker/w01alc_tobira_nu.kms
+//	world		w01a/locker/w01alc_tobira_nu2.kms
+	world		w02a/w02a_pos/w02a_pos01.kms
+	world		w02a/w02a_pos/w02a_pos02.kms
+
+	weapon		cfr/cfr_trp.kms
+
+
+// ライト＆ハザード
+	lt2			w02a.lt2
+	hazard		a02a.hzx
+
+	debug		shibata/vibration/both_vib.vib
+	debug		shibata/vibration/high_vib.vib
+	debug		shibata/vibration/low_vib.vib
+
+
+// 水密ドアモーション
+mtn				sna_hatch.mls
+mtn				rai_wt_hatch.mls
+mtn				hatch_door_sna.mls
+mtn				hatch_handle_sna.mls
+
+// 死体モーション
+mtn			corps.mls
+	//mtn		corps_locker.mls
+
+// パッドデモ
+rpd			w02a_paddemo.rpd
+
+// 敵兵固有モーション
+mtn 		gbs_w02a.mls
+
+// エルードワイヤー
+debug		mogi/w04_test_bou.kms
+
+vib			program/tnc_down.vib
+
+// リネーム
+rename 		gbs_w02a.mar 		gbsstage.mar
+	//rename		corps_locker.mar	corps.mar
+
+// 追加アイテム
+	#define MND
+	#define PSG1
+	#define PSG1T
+	#define COLD		//	風邪薬
+	#define NGL			//	暗視ゴーグル
+	#define PSG1_AM
+	#define M9
+	#define M9_AM
+	#define	DZP			//	ジアゼパム
+	#define	USP_AM		//	ＵＳＰ弾薬
+//------------------------------
+// 追加（2002/08/12 M.Uehara）
+	#define	SCM_AM		//	ソコム弾薬
+	#define	USP			//	ＵＳＰ本体
+	#define	M4			//	Ｍ４本体
+	#define	M4_AM		//	Ｍ４弾薬
+	#define	TGL			//	サーマルゴーグル
+//------------------------------
+
+	#include "a_item.h"
+	
+	// 煙草
+	//pack_all cigarette.tri	itembox/item/cigarette_ibox.dar \
+							//itembox/item/cigarette_sh.dar \
+							//itembox/item/cigarette_label.dar
+	//itembox	item/cigarette_ibox.kms
+	//itembox	item/cigarette_sh.kms 
+	//itembox	item/cigarette_label.kms
+
+//------------------------------
+// 追加したい...（2002/08/12 M.Uehara）
+//pack_all obj_camera.tri meca/sv_camera
+//meca	sv_camera
+//------------------------------
+
+// 解体Ｃ４セット 最後に描画させるためにＴＲＩ名にＺをつける
+pack_all	z_object.tri \
+			goods/c4_kaitai_a \
+			goods/c4_kaitai_b
+
+goods		c4_kaitai_a
+goods		c4_kaitai_b

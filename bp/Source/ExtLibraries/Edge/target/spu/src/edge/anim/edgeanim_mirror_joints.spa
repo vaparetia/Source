@@ -1,0 +1,130 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2007 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+.cfunc void _edgeAnimMirrorJoints(EdgeAnimJointTransform* joints, 
+                           uint8_t* weights, 
+                           const EdgeAnimMirrorSpec* specs,
+                           unsigned int count)
+
+	//----------------------------------------------------------------------------------------------
+	// Early out
+	//----------------------------------------------------------------------------------------------    
+
+   	brz			count, NoLoop
+	
+    //----------------------------------------------------------------------------------------------
+    // Constants
+    //----------------------------------------------------------------------------------------------    
+   	
+   	.reg		jointsR, jointsT, jointsS 
+   	mov			jointsR, joints
+   	ai			jointsT, joints, 0x10
+   	ai			jointsS, joints, 0x20
+   	
+	ai			specs, specs, -8
+    
+	// Constants
+	.reg		signMask, specMask, _F000, idxMask
+	ilhu    	signMask, 0x80000000@h
+	ilh			specMask, 0x0C0C
+    fsmbi		_F000, 0x8000
+    fsmbi		idxMask, 0x3000
+
+	// Shuffle masks
+	.reg		shufAAAA, shufEEEEFFFFGGGGHHHH
+	il128		shufAAAA, "AAAA"
+	il128		shufEEEEFFFFGGGGHHHH, "EEEEFFFFGGGGHHHH"
+
+    //----------------------------------------------------------------------------------------------
+    // Loop
+    //----------------------------------------------------------------------------------------------    
+	
+	// ensure order of load/stores is preserved
+	.memgroup	joint_mem, weights_mem
+	
+Loop:
+	ai			count, count, -1
+	ai			specs, specs, 8
+
+	// load mirroring spec and the two joint indices
+	.reg		spec, idx0, idx1, offset0, offset1
+	lqd			spec, 0x00(specs)
+	rotqby		spec, spec, specs
+	rotmai		idx0, spec, -16
+	and			idx1, spec, idxMask
+	shufb		spec, spec, spec, shufEEEEFFFFGGGGHHHH
+
+	// get joint offsets
+	mpyi		offset0, idx0, 0x30
+	mpyi		offset1, idx1, 0x30
+	
+	// get rotation & translation sign flips from spec
+	.reg		signR, signT
+	and			signR, spec, signMask
+	shli		signT, spec, 4
+	and			signT, signT, signMask
+	
+	// build rotation and translation shuffle masks from spec
+	.reg		specR, specT, shufR, shufT
+	rotmi		specR, spec, -2
+	shli		specT, spec, 2
+	and			specR, specR, specMask
+	and			specT, specT, specMask
+	a			shufR, specR, shufAAAA
+	a			shufT, specT, shufAAAA
+
+	// load joints
+	.reg		r0, t0, s0, r1, t1, s1
+	lqx			[joint_mem] r0, jointsR, offset0
+	lqx			[joint_mem] t0, jointsT, offset0
+	lqx			[joint_mem] s0, jointsS, offset0
+	lqx			[joint_mem] r1, jointsR, offset1
+	lqx			[joint_mem] t1, jointsT, offset1
+	lqx			[joint_mem] s1, jointsS, offset1
+	
+	// shuffle components
+	shufb		r0, r0, r0, shufR
+	shufb		t0, t0, t0, shufT
+	shufb		r1, r1, r1, shufR
+	shufb		t1, t1, t1, shufT
+	
+	// do sign flips
+	xor			r0, r0, signR
+	xor			t0, t0, signT
+	xor			r1, r1, signR
+	xor			t1, t1, signT
+	
+	// swap joints and store
+	stqx		[joint_mem] r1, jointsR, offset0
+	stqx		[joint_mem] t1, jointsT, offset0
+	stqx		[joint_mem] s1, jointsS, offset0
+	stqx		[joint_mem] r0, jointsR, offset1
+	stqx		[joint_mem] t0, jointsT, offset1
+	stqx		[joint_mem] s0, jointsS, offset1
+	
+	// swap weights
+	.reg		q0, q1, q2, shift0, shift1, shiftm0, shiftm1, w0, w1, mask0, mask1, q0final, q1final
+	lqx			[weights_mem] q0, weights, idx0
+	lqx			[weights_mem] q1, weights, idx1
+	sf			shift1, idx0, idx1
+	sfi			shift0, shift1, 16
+	sfi			shiftm0, idx0, 16
+	sfi			shiftm1, idx1, 16
+	rotqby		w0, q0, shift0
+	rotqby		w1, q1, shift1
+	rotqby		mask0, _F000, shiftm0
+	rotqby		mask1, _F000, shiftm1
+	selb		q0final, q0, w1, mask0
+	stqx		[weights_mem] q0final, weights, idx0
+	lqx			[weights_mem] q2, weights, idx1
+	selb		q1final, q2, w0, mask1
+	stqx		[weights_mem] q1final, weights, idx1
+
+    brnz		count, Loop
+
+NoLoop:
+
+.endfunc

@@ -1,0 +1,114 @@
+//	w24d.src
+//	written by S.Kaneyoshi 2001/02/02
+//	$Id: w24d.src,v 1.40 2002/09/11 12:05:12 usr03682 Exp $
+
+// ロード時テクスチャ
+#define WN_W24D
+
+// 敵兵タイプ
+#define		ENE_T_GOL
+#define		ENE_ATTACKER
+
+// 特殊兵
+#define		ENE_SHOT
+#define		ENE_SHIELD
+#define 	ENE_MAR '-DDEL_TNG=DUMMY -DDEL_WALKMAN=DUMMY'
+
+// 常駐データ
+block .use r_plt0
+
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include 	"p_common.h"
+#include	"common.h"
+include		c_effect.h
+
+// キャラクタ
+#include	"ene_plant.h"
+
+// 強制モーション
+mtn		rai_w24d.mls		// ステージ固有モーション
+mtn		sna_locker.mls		// ロッカー開閉モーション
+mtn		locker.mls			// ロッカー扉開閉モーション
+
+// ワールド
+// マルチテクスチャモデル
+
+// それ以外のモデル
+option makexti6 -l 1024 -f PAL8
+pack_all	w24d.tri world/elevator/elv_2 world/door/w02a_l_dr.dar
+
+// w24d0
+world		w24d/w24d0
+// w24d1
+world/w24d/w24d1	w24d1_a.kms \
+					w24d1_b.kms
+world/w24d/w24d1 	w24d1r.kms
+// w24d1
+world/w24d/w24d2	w24d2.kms \
+					w24d2_wall.kms
+world/w24d/w24d2	w24d2_tes_sita_v01.kms \
+					w24d2_pos.kms \
+					w24d2r.kms
+option makexti6
+
+
+// アーセナル
+world/w24d/w24d_lamp	w24d_lamp_alp.bmp
+
+world		elevator/elv_2
+//world		door/w24d_dr01.kms
+world		door/dr_free.kms
+
+lt2			w24d.lt2
+hazard		w24d.hzx
+
+// オブジェクト
+pack_all	object.tri goods/locker/neo_locker_door.dar
+goods		locker/neo_locker_door.kms
+
+// 壊れコンピューター	T.Morita 2001.07.06
+pack_trnall	button.tri	effect/button/button_alp.bmp
+pack_trnall	monitor.tri	world/w24d/w24d2/w24d2_moni
+
+// 壊れ書類		T.Morita 2001.07.06
+world		w24d/w24d2/w24d2_ppepar.kms
+goods		dust/paper_a.kms
+world		w01d/dining/paperBro_S_cm.kms
+
+// 壊れガラス		T.Morita 2001.07.06
+world		w24d/w24d2/w24a2_win_bro
+cvd		world/w24d/w24d2/w24a2_win_bro/w24d2_glass1_bro.cv2 v
+cvd		world/w24d/w24d2/w24a2_win_bro/w24d2_glass2_bro.cv2 v
+cvd		world/w24d/w24d2/w24a2_win_bro/w24d2_glass3_bro.cv2 v
+cvd		world/w24d/w24d2/w24a2_win_bro/w24d2_glass4_bro.cv2 v
+cvd		world/w24d/w24d2/w24a2_win_bro/w24d2_glass5_bro.cv2 v
+cvd		world/w24d/w24d2/w24a2_win_bro/w24d2_glass6_bro.cv2 v
+pack_all	allcm_cm.tri	goods/bottle/btl_piece.dar
+pack_trnall	glass.tri	debug/morita/break/dbx_dust_alp_ovl.bmp
+goods		bottle/btl_piece.kms
+
+// 曇りガラス
+effect	frost/frost02_alp.bmp
+
+
+// アイテム
+itembox
+
+//オウム
+human	par_def/par_def_mh.evm
+human	par_def/bird_cage.kms
+human	par_def/par_hane.kms
+mtn	parrot.mls
+
+// 敵兵固有モーション
+mtn gbs_w24d.mls
+
+// リネーム
+rename 		gbs_w24d.mar gbsstage.mar
+
+vib       etc/core_ele_01.vib
+vib       etc/core_ele_02.vib
+vib       etc/core_ele_03.vib

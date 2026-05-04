@@ -1,0 +1,29 @@
+//
+//	init.gcl
+//	$Id: init.gcl,v 1.2 2002/02/06 05:24:04 usr04098 Exp $
+
+#ifdef d:FIX_MODE
+#define DEBUGFLAG 0
+#else
+#define DEBUGFLAG 1
+#endif
+
+chara MGSシステム初期化 init -debug d:DEBUGFLAG
+
+//command VRAM初期化
+//load 'select'
+
+command 常駐シェーダ初期化
+eval ( $w:コンフィグ設定 = $w:コンフィグ設定 | d:CONFIG_STORY_TANKER )
+
+#if 0
+chara セッション確立 session -proc ステージロード
+
+proc ステージロード {
+	load 't00a'
+}
+#else
+//	load 'w00a'
+	load 't00a'
+#endif
+

@@ -1,0 +1,357 @@
+//
+//	w51a.src	
+//	アーセナルギア上
+//
+//	written by H.Yoshiike 2001.May
+//
+//	$Id: P080_11_p06.w51a.src,v 1.16 2002/06/20 07:18:59 usr02774 Exp $
+
+#define WN_W51A
+
+block .use r_plt0
+block .nocache
+block .cache
+
+//#include	"w51a_common.h"
+
+// c_effect用define
+#define	EFFECT_CUSTUM			// c_effectのデフォルトdefineを使用しない
+
+
+//#define	E_GLASS_DANKON			// グラス系弾痕
+//#define	E_KOGETUKI				// 壁への焦げ付き
+//#define	E_FOOTSTAMP				// 足跡
+//#define	E_ENEMY					// 敵兵系
+#define	E_ENEMY_LIGHT			// 敵兵ライト
+//#define	E_SLING					// スリング
+//#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+//#define	E_MANHATTAN_LIGHT		// マンハッタンライト
+//#define	E_C4BOMB				// Ｃ４爆弾、赤外線センサー
+//#define	E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷
+//#define	E_CROSS_FADE_LIGHT		// クロスフェード（甲板のライトで使用）
+//#define	E_CHARA_DENTOU			// chara 懐中電灯、フォーチュン戦
+//#define	E_WATER					// 水関係
+//#define	E_CHARA_HAMON			// chara 波紋
+//#define	E_BROKEN_OBJECT			// 壊れ物
+//#define	E_BROKEN_PAPEROBJECT	// 壊れ物紙
+//#define	E_BROKEN_PLATE			// 壊れ物皿
+#define	E_HIMATU				// 水飛沫
+//#define	E_CHARA_MADOAME			// chara 窓雨
+//#define	E_STEAM					// 粉 & 水蒸気
+//#define	E_POWDER				// 小麦粉
+//#define	E_SKY_NORMAL			// 空
+#define	E_LINEAR_GUN			// リニアガン
+//#define	E_TENKYUU				// 天球ドーム
+#define	E_SUN					// 太陽
+//#define	E_DOOR_LUMP				// ドアランプ
+#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、
+								// ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+//#define	ENV						// 天球
+
+#include	"c_effect.h"
+
+// 海面(MIPMAP)
+#ifndef MGS2_XBOX_1
+mipmap w51a/w51a_sea.tri
+#else
+pack_mip w51a_sea.tri \
+	effect/sea_mipmap/w51a_sea_256_alp_ovl.bmp \
+	effect/sea_mipmap/w51a_sea_128_alp_ovl.bmp \
+	effect/sea_mipmap/w51a_sea_64_alp_ovl.bmp \
+	effect/sea_mipmap/w51a_sea_32_alp_ovl.bmp 
+#endif
+
+// 以下ポリデモ用
+//ライデン
+pack_all	demo_rai_def.tri \
+	human/rai_def/rai_def_mt.dar \
+	human/rai_def/rai_def_mh_mt.dar
+human	rai_def/rai_def_mt.kms
+human	rai_def/rai_def_mh_mt.evm
+
+// リアル影投影モデル
+world	w51a/w51a_kage/w51a0k.kms
+world	w51a/w51a_kage/w51a1k.kms
+
+//----------------------------------------------------------------------- 追加小林ここから
+//レイコクピット関連
+pack_all	demo_ray_w04c1.tri \
+	meca/ray_w04c1/raycp_t12a1d.dar \
+	meca/ray_w04c1/raycp_canopy2_t12a1d_mt.dar \
+	meca/ray_w04c1/raycp_canopy1_t12a1d_mt.dar \
+	meca/ray_cockpit/ray_cockpit.dar \
+	meca/pdray/pdray_backmsl.dar \
+	meca/harrier/hri_clst_warhead_cm.dar
+
+meca	ray_w04c1/raycp_t12a1d.kms
+meca	ray_w04c1/raycp_canopy2_t12a1d_mt.kms
+meca	ray_w04c1/raycp_canopy1_t12a1d_mt.kms
+meca	ray_cockpit/ray_cockpit.kms
+
+meca	pdray/pdray_backmsl.kms	//背中ミサイル
+meca	harrier/hri_clst_warhead_cm.kms	//拡散ミサイルの子
+
+// レイのコクピット＋コクピットエフェクト
+pack_all	ckpt_and_ckpt_efct.tri \
+			meca/ray_cockpit/ray_cockpit.dar \
+			effect/ray_display
+effect		ray_display/raycp_cover.kms
+
+
+//リキッド化オセロット
+pack_all	demo_rev_liq.tri \
+	human/rev_liq/rev_liq_p_addhand_mh_mt.dar \
+	human/rev_liq/rev_hair_liq_mh.dar \
+	human/rev_liq/rev_liq_boundhing.dar
+human	rev_liq/rev_liq_p_addhand_mh_mt.evm
+human	rev_liq/rev_hair_liq_mh.evm
+human	rev_liq/rev_liq_boundhing.kms
+
+
+pack_all	demo_weapon.tri \
+	weapon/snakearm_missile/sol_msl.dar \
+	weapon/saa/saa.dar \
+	weapon/minsyutou/mst_l_mt.dar \
+	weapon/kyowatou/kwt_r_mt.dar \
+	weapon/minsyutou/mst_hl_cm.dar \
+	weapon/kyowatou/kwt_hl_cm.dar \
+	weapon/p90/p90_amo.dar \
+	weapon/linearrifle/lnr_bul.dar
+//蛇手の弾
+weapon	snakearm_missile/sol_msl.kms
+//ＳＡＡ
+weapon	saa/saa.kms
+//民主刀・共和刀
+weapon	minsyutou/mst_l_mt.kms	//民主刀
+weapon	kyowatou/kwt_r_mt.kms	//共和刀
+weapon	minsyutou/mst_hl_cm.kms	//民主刀鞘（抜刀時）	
+weapon	kyowatou/kwt_hl_cm.kms	//共和刀鞘（抜刀時）
+//P90
+weapon	p90/p90_amo.kms
+//リニアライフルの弾（弾きエフェクトで使用）
+weapon	linearrifle/lnr_bul.kms
+
+
+pack_all	demo_goods.tri \
+	goods/demo_tejyou/demo_tjo_sna_broken_l.dar \
+	goods/demo_tejyou/demo_tjo_sna_broken_r.dar \
+	goods/demo_katana_sol/demo_mst_uni_mount.dar \
+	goods/demo_katana_sol/demo_kwt_uni_mount.dar \
+	goods/demo_ray_msl/ray_clst_warhead_cm.dar \
+	goods/demo_ray_msl/ray_backmsl_open.dar \
+	goods/demo_ray_msl/ray_backmsl_close.dar \
+	goods/demo_p90_sol/demo_p90_sol.dar 
+//壊れ手錠
+//ソリダス刀
+goods	demo_tejyou/demo_tjo_sna_broken_l.kms
+goods	demo_tejyou/demo_tjo_sna_broken_r.kms
+goods	demo_katana_sol/demo_mst_uni_mount.kms
+goods	demo_katana_sol/demo_kwt_uni_mount.kms
+//ミサイル関係
+goods	demo_ray_msl/ray_clst_warhead_cm.kms
+goods	demo_ray_msl/ray_backmsl_open.kms	//拡散ミサイルの親ＯＰＥＮ
+goods	demo_ray_msl/ray_backmsl_close.kms	//拡散ミサイルの親ＣＬＯＳＥ
+//weapon	p90/p90.kms
+goods	demo_p90_sol/demo_p90_sol.kms
+
+
+//蛇手エフェクト
+pack_trnall trn.tri effect/bonbori/w_bonbori.bmp
+
+//プロトレイ目エフェクト
+pack_trnall trn.tri effect/ray_effect/ray_eye_blur_alp.bmp
+pack_trnall trn.tri effect/ray_effect/ray_eye_bonbori_alp.bmp
+
+//振動
+vib	demo/P080_13_p07_quake_01.vib
+vib	demo/P080_13_p07_rai_01.vib
+vib	demo/P080_13_p07_quake_07.vib
+vib	demo/P080_13_p07_splash_01.vib
+vib	demo/P080_13_p07_quake_06.vib
+vib	demo/P080_13_p07_ray_02.vib
+vib	demo/P080_13_p07_quake_05.vib
+vib	demo/P080_13_p07_quake_04.vib
+vib	demo/P080_13_p07_quake_03.vib
+vib	demo/P080_13_p07_quake_02.vib
+vib	demo/P080_13_p07_ray_01.vib
+vib	demo/P080_13_p07_sol_01.vib
+
+//----------------------------------------------------------------------- 追加田中（修）ここから
+
+//フォーチュン（女神）指骨入り
+//フォーチュンの口血
+pack_all	demo_for_def.tri \
+	human/for_def/for_last_addhand_mh_mt.dar \
+	human/for_def/for_blood_face_mh.dar \
+	human/rev_plant/rev_plant_addhand_mh_mt.dar \
+	human/sol_def/sol_faceguard.dar 
+
+human	for_def/for_last_addhand_mh_mt.evm
+human	for_def/for_blood_face_mh.evm
+//プラントオセロットの指骨入り
+human	rev_plant/rev_plant_addhand_mh_mt.evm
+//ソリダスフェイスガード
+human	sol_def/sol_faceguard.kms
+
+//デモダミー（いろんな事に使用）
+goods	demo_dummy/demo_dummy.kms
+
+
+//エフェクトテクスチャ
+pack_trnall trn.tri effect/smoke/smoke_lp3_alp.bmp
+pack_trnall trn.tri effect/bakuha/bombsphere01_alp.bmp
+pack_trnall trn.tri effect/bakuha/bombsphere03_alp.bmp
+pack_trnall trn.tri effect/bakuha/bombsphere04_alp.bmp
+pack_trnall trn.tri effect/smoke/smoke_lp1_alp.bmp
+pack_trnall trn.tri effect/splash/splash03_alp.bmp
+//勝手に追加されるもの
+pack_trnall trn.tri debug/shibata/staffroll/alpha03_alp_ovl.bmp
+
+//レイコクピット主観
+l2d 2D/sight/ray_view/ray_view.l2d 
+
+/* mgdemo added ----from here (Tue Sep  4 02:20:39 2001) ---- */
+vib	demo/P080_11_p06_effect_02.vib
+vib	demo/P080_11_p06_effect_04.vib
+pack_trnall trn.tri effect/splash/splash05_alp.bmp
+vib	demo/P080_11_p06_effect_03.vib
+vib	demo/P080_11_p06_sol_04.vib
+vib	demo/P080_11_p06_sol_05.vib
+vib	demo/P080_11_p06_sol_03.vib
+vib	demo/P080_11_p06_ray_01.vib
+vib	demo/P080_11_p06_sol_02.vib
+vib	demo/P080_11_p06_sol_01.vib
+vib	demo/P080_11_p06_effect_01.vib
+//----------------------------------------------------------------------- 追加小林
+//スネークアームの影
+human	sol_def/sol_sarm_shadow.kms
+
+
+// ＲＡＹ
+pack_all	rey.tri	\
+			meca/ray/ray_def_mt.dar \
+			meca/ray/ray_canopy_mt.dar
+meca		ray/ray_def_mt.kms
+meca		ray/ray_canopy_mt.kms
+
+//オセロットのＳＡＡ
+weapon	saa/saa_lefthand.kms
+
+//電磁バリア装置（オセロット装備）
+goods	demo_denji_varia/demo_denji_varia.kms
+
+// フォーチュン
+pack_all	fort_mh.tri	\
+			human/for_def/for_def_addhand_mh_mt.dar \
+			human/for_def/for_hair_def_mh.dar
+//			human/for_def/for_def_mh_mt.dar \
+
+
+//human		for_def/for_def_mh_mt.evm
+human		for_def/for_def_addhand_mh_mt.evm
+human		for_def/for_hair_def_mh.evm
+//human		for_def/for_def_sh_mt.kms
+human		for_def/for_def_bounding.kms
+human		for_def/for_kizu_mh.evm
+//weapon		linearrifle/lnr.kms 
+goods		demo_linearrifle/demo_lnr.kms
+//human		for_def/for_mag.kms
+//フォーチュンのスリングTEX
+pack_trnall trn.tri human/for_coat/for_lnr_sling.bmp
+
+
+// ソリダス
+pack_all	sol_mh.tri	\
+			human/sol_def/sol_def_mh_mt.dar \
+			human/sol_def/sol_gantai_mh_mt.dar \
+			human/sol_def/sol_snakearm_2_mh_mt.dar
+
+pack_all	sol.tri	\
+			human/sol_def/sol_gantai_obj.dar \
+			goods/demo_katana_sol/demo_mst_sht.dar \
+			goods/demo_katana_sol/demo_kwt_sht.dar \
+			human/sol_def/sol_katana_w_sdw.dar
+//			goods/demo_katana_sol/demo_mst_uni_mount.dar \
+//			goods/demo_katana_sol/demo_kwt_uni_mount.dar \
+
+pack_trnall	effect.tri \
+			effect/bonbori/w_bonbori.bmp
+
+human	sol_def/sol_def_mh_mt.evm
+human	sol_def/sol_gantai_mh_mt.evm
+human	sol_def/sol_snakearm_2_mh_mt.evm
+//human	sol_def/sol_katana_w_sdw.kms
+//goods	demo_katana_sol/demo_mst_uni_mount.kms
+goods	demo_katana_sol/demo_mst_sht.kms
+//goods	demo_katana_sol/demo_kwt_uni_mount.kms
+goods	demo_katana_sol/demo_kwt_sht.kms
+
+// スネーク
+pack_all sna_nm.tri \
+	human/sna_def/sna_def.dar \
+	human/sna_shaved/sna_shaved_mt.dar \
+	human/sna_def/sna_def.dar \
+	human/sna_def/sna_bdn2.dar \
+	human/sna_def/sna_bdn1.dar \
+	human/sna_def/sna_mag1.dar \
+	human/sna_def/sna_mag2.dar \
+	human/sna_def/sna_mag3.dar \
+	human/sna_def/sna_mag4.dar
+
+pack_all sna_mw.tri \
+	human/sna_def/sna_def_mh.dar \
+	human/sna_def/sna_def_addhand_mh_mt.dar \
+	human/sna_shaved/sna_shaved_mh_mt.dar
+
+human		sna_def/sna_def_mh.evm
+human		sna_def/sna_def.kms
+//スネーク指付き
+human		sna_def/sna_def_addhand_mh_mt.evm
+human		sna_def/sna_bdn2.kms
+human		sna_def/sna_bdn1.kms
+human		sna_def/sna_mag1.kms
+human		sna_def/sna_mag2.kms
+human		sna_def/sna_mag3.kms
+human		sna_def/sna_mag4.kms
+
+//エフェクトテクスチャ
+//pack_trnall trn.tri effect/blood/chi01_alp.bmp
+//pack_trnall trn.tri effect/bakuha/bombgas6_alp.bmp
+//pack_trnall trn.tri effect/blood/chi01_msk.bmp
+//pack_trnall trn.tri effect/color/col256_bld100.bmp
+pack_trnall trn.tri effect/drop/drop01_msk.bmp
+
+//手錠（スネークとライデン）
+goods	demo_tejyou/demo_tjo_rai_link.kms
+goods	demo_tejyou/demo_tjo_sna_link.kms
+
+// オセロット
+pack_all	rev_mh.tri	\
+			human/rev_coat/rev_hair_fix.dar
+//			human/rev_plant/rev_plant_mh_mt.dar \
+//			human/rev_plant/rev_plant_sh_mt.dar \
+//			human/rev_def/rev_def_shadow.dar \
+
+//human		rev_plant/rev_plant_mh_mt.evm
+//human		rev_plant/rev_plant_sh_mt.kms
+//human		rev_def/rev_def_shadow.kms
+human		rev_coat/rev_hair_fix.kms
+human		rev_coat/rev_coat_bounding.kms
+
+world		w51a
+lt2		w51a.lt2
+hazard		w51a.hzx
+
+pack_trnall trn.tri \
+		effect/plant_sky/sky_n1_alp.bmp \
+		effect/plant_sky/sky_n2_alp.bmp \
+		effect/plant_sky/sky_n4_alp.bmp \
+		effect/plant_sky/sky_sun_n_alp.bmp 
+
+world	common_sky/w51a_sky_wall1.kms
+world	common_sky/w51a_sky_wall2.kms
+world	common_sky/w51a_sky_wall3.kms
+world	common_sky/w51a_sky_wall4.kms
+

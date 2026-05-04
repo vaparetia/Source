@@ -1,0 +1,39 @@
+/*
+	CD、HD上のファイル情報
+*/
+
+#ifdef KP_XBOX
+
+FS_FILE_INFO fs_file_info[] = {
+	{ "stage.dat", 0, 0, 0, 0, 0 },
+	{ "codec.dat", 0, 0, 0, 0, 0 },
+	{ "face.dat",  0, 0, 0, 0, 0 },
+	{ "movie.dat", 0, 0, 0, 0, 0 },
+	{ "vox.dat",   0, 0, 0, 0 ,0 },
+	{ "demo.dat",  0, 0, 0, 0, 0 },
+	{ "movievr.dat",  0, 0, 0, 0, 0 },
+	{ NULL, 0, 0 }
+};
+
+#endif
+
+#ifdef PSX2
+// dual layer 対応
+
+FS_FILE_INFO fs_file_info[] = {
+	{ "stage.dat", 0, 0, 1, 7, 0 },
+	{ "codec.dat", 0, 0, 1, 1, 0 },
+	{ "face.dat",  0, 0, 1, 2, 0 },
+	{ "movie.dat", 0, 0, 1, 6, 0 },
+	{ "vox.dat",   0, 0, 1, 8 ,0 },
+	{ "demo.dat",  0, 0, 1, 9, 0 },
+
+	{ "movievr.dat",  0, 0, 0, 6, 0 },  // 6
+	{ "stage2.dat",   0, 0, 0, 0, 0 },
+	{ "vox2.dat",     0, 0, 0, 0, 0 },
+	{ "demo2.dat",    0, 0, 0, 0, 0 },
+	{ NULL, 0, 0 }
+};
+
+#endif
+

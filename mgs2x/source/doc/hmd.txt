@@ -1,0 +1,68 @@
+HMD動作環境の作り方
+
+module/usbhmdをmakeする。
+
+source/main/ioppak.ilsに、以下の行を追加.
+
+ #ifdef USBFS
+ $(SYSPATH)/usbd.irx dev=5 gtd=8 itd=3 ioreq=128 conf=256 hub=1 port=4
+ $(USRPATH)/usbfs.irx
+ $(USRPATH)/usbkbd.irx
++$(USRPATH)/usbhmd.irx
+ #endif
+
+ #ifdef NOUSBFS
+ $(SYSPATH)/usbd.irx dev=5 gtd=8 itd=3 ioreq=128 conf=256 hub=1 port=4
+ $(USRPATH)/usbkbd.irx
++$(USRPATH)/usbhmd.irx
+ #endif
+
+サンプルソースは、
+
+#include "usbhmd.h"
+
+
+	{
+		USBHMD_DATA hmd;
+		SVECTOR rot;
+		FVECTOR pt;
+		float angle;
+
+		FMATRIX		mat, mat2, m ;
+		DG_MakeCameraMatrix( &mat, &pos, &trg );
+
+		usbhmd_read( &hmd );
+		rot.vx = hmd.pitch * 2048.0F / 0x8000;
+		rot.vy = - hmd.yaw * 2048.0F / 0x8000;
+		rot.vz = 0.0F;
+		DG_SetPos2( &DG_ZeroVector, &rot );
+		DG_GetPos( &m );
+
+		_sceVu0MulMatrix( &mat, &mat, &m );
+
+		pos.vw = pos.vw + hmd.roll * M_PI / 0x8000;
+//		pos.vw = 0.0F;
+		/*
+			カメラ逆行列を計算する
+		*/
+		_sceVu0InversMatrix( &mat2, &mat );
+
+		/* Ｚ回転 */
+		_sceVu0RotMatrixZ( &mat2, &mat2, pos.vw ) ;
+		_sceVu0InversMatrix( &mat, &mat2 ) ;
+		/* カメラ設定 */
+		DG_SetCamera( DG_Chanls + i, &mat, cam->angle );
+	}
+
+game/camerad.c に埋め込んだ時はこんな感じ。
+現状、イニシャライズ等は必要ありません。
+コードは #ifdef USE_HMD で囲んで下さい。
+
+makefile.defで、PS2の時だけ、USE_HMDを-Dするようにして下さい。
+(ローカルのみでOK）
+
+
+
+
+
+

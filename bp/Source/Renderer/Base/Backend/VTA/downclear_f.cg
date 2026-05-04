@@ -1,0 +1,20 @@
+sampler2D depthBuffer : register(s0);
+
+half4 main (
+   float4 col : COLOR0,
+   float2 tex0 : TEXCOORD0,
+   float2 tex1 : TEXCOORD1,
+   float2 tex2 : TEXCOORD2,
+   float2 tex3 : TEXCOORD3,
+   out float depth : DEPTH0) : COLOR0
+{
+   half4 color = col;
+   float2 depth0, depth1;
+   depth0.x = tex2D<float>(depthBuffer, tex0).r;
+   depth0.y = tex2D<float>(depthBuffer, tex1).r;
+   depth1.x = tex2D<float>(depthBuffer, tex2).r;
+   depth1.y = tex2D<float>(depthBuffer, tex3).r;
+   float2 result = max(depth0, depth1);
+   depth = max(result.x, result.y);
+   return color;
+}

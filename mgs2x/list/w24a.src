@@ -1,0 +1,100 @@
+//
+//	w24a.src
+//
+//	written by H.Yoshiike 2000.Nov
+//
+//	$Id: w24a.src,v 1.28 2002/09/11 12:02:38 usr03682 Exp $
+
+// ロード時テクスチャ
+#define WN_W24A
+
+// 敵兵タイプ
+#define		ENE_T_GOL
+#define		ENE_ATTACKER
+
+#define		ENE_SHOT
+#define		ENE_SHIELD
+#define 	ENE_MAR '-DDEL_TNG=DUMMY -DDEL_WALKMAN=DUMMY'
+
+
+// 常駐データ
+block .use r_plt0
+
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"p_common.h"
+#include	"common.h"
+include		c_effect.h
+#include 	"goverpic.h"
+
+// キャラクタ
+#include	"ene_plant.h"
+
+// 強制モーション
+mtn		rai_w24a.mls		// ステージ固有モーション
+mtn		sna_locker.mls		// ロッカー開閉モーション
+mtn		locker.mls			// ロッカー扉開閉モーション
+
+// ワールド
+// マルチテクスチャモデル
+
+// それ以外のモデル
+//pack_all	w24a.tri world/w24a world/elevator/elv_2.dar world/door/w02a_l_dr.dar world/door/w01f_dr.dar
+
+option makexti6 -l 1024 -f PAL8
+world		w24a/w24a0
+world		w24a/w24a1
+world		elevator/elv_2
+option makexti6
+
+world		w24a/other
+world		door/w24a_dr00.kms
+//world		door/w24a_dr01.kms
+world		door/dr_free.kms
+lt2			w24a.lt2
+hazard		w24a.hzx
+
+// オブジェクト
+//pack_all	object.tri meca/sv_camera goods/locker/neo_locker_door.dar meca/svc_plant meca/svc_unbreak
+pack_all	object.tri goods/locker/neo_locker_door.dar meca/svc_plant meca/svc_unbreak
+
+// プラント用監視カメラ
+meca		svc_plant
+
+// 破壊不可能監視カメラ
+meca		svc_unbreak
+
+goods		locker/neo_locker_door.kms
+
+
+// アイテム
+itembox
+
+// デバッグ用
+	// テスト用ショットガン 後に wp_plant 等に移動する事
+		//weapon		spas12
+	// タンカー用監視カメラ 後に削除
+		//meca		sv_camera
+
+// 消火器
+debug		okajima/hose_test/hose_cone.kms
+debug		okajima/hose_test/hose_new2.kms
+cvd  		debug/okajima/hose_test/hose_new2.cvd vn
+
+// ふなむし
+//human	hnm_hunamushi/hnm_low_cm.kms
+pack_all	funa.tri \
+					human/hnm_hunamushi/hnm_low_cm.dar \
+					human/hnm_hunamushi/hnm_def.dar
+
+	human	hnm_hunamushi/hnm_low_cm.kms
+	human	hnm_hunamushi/hnm_def.kms
+
+	pack_trnall effect.tri \
+			human/hnm_hunamushi/hnm_death_00_ovl_alp.bmp
+
+vib       etc/core_ele_01.vib
+vib       etc/core_ele_02.vib
+vib       etc/core_ele_03.vib

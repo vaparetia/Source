@@ -1,0 +1,308 @@
+/*
+	libhzx.txt
+	libhzxリファレンス
+
+	2001/03/12	M.Sonoyama
+	$Id: libhzx.txt,v 1.1.1.3 2002/11/19 11:41:42 Yoshizawa1 Exp $
+*/
+
+■libhzx概要
+	libhzxは、当たり判定関連のライブラリです。
+	大きく分類すると、以下の内容から構成されています。
+
+		・近接壁判定
+		・床・天井判定
+		・移動直線上壁床判定
+		・動的壁・床
+		・トラップイベント処理
+		・ゾーン追従処理
+
+■libhzx定義
+	libhzxでは、以下の事項が定義、制限されています。
+
+		・hzxファイル内のグループ数は３１まで。
+		・1グループ内のゾーン数は２５５まで。
+		・１つのゾーンに隣接するゾーンは５つまで。
+			リンクゾーン（グループ間を接続するゾーン）の場合は４つまで。
+		・１つのリンクゾーンは１つのグループ接続しかもてない。
+		・ある座標に重なっておけるトラップは１０まで。
+
+■libhzx構造体
+	system/libhzx/libhzx.h 及び、 include/fmt_hzx.h 内に定義。
+
+■HZX_ADDRESS(ゾーンアドレス,以下アドレス)ってなに？
+
+アドレスは、以下の構成になっています。
+	31------ 16 15---------8 7----------0 (ビット番号)
+	マップ番号  ゾーン番号Ｂ ゾーン番号Ａ
+
+	マップは、それぞれのデータが一まとまりにしている単位です。それ
+	につけた番号がマップ番号(０以上の値,必ず連番です)です。つまり、
+	住所(アドレス)は、県(マップ番号)と市内番地(ゾーン番号)が必要っ
+	てことです。他の県(マップ番号)でも市内番地(ゾーン番号)が同じ場
+	合があります。
+
+マップ番号とグループＩＤの違いは？
+
+	グループＩＤは、ビット数値です。マップ番号の所に１を立てたもの
+		です。(1<<マップ番号)したがって、グループＩＤに複数の
+		ビットが立つことはありません。
+
+	マップ番号は、数値です。VRSのグループ番号(シナリオ班に通じる言
+		葉)から１を引いた数値と同じです。
+
+ゾーン番号？？
+
+	基本的には、ゾーン番号Ａ と ゾーン番号Ｂ は同じになります。つ
+	まり、そのゾーン内にいることになります。
+
+	ゾーン番号Ｂ が 0xffのときのアドレスは、ゾーンの間ではなく、最
+	もゾーン番号Ａに近いことを示します。つまり、貼られているゾーン
+	領域のなかで端にいることになります
+
+	ゾーン番号Ａ が ゾーン番号Ｂ 異なると ゾーン番号Ａ と ゾーン番
+	号Ｂ の間に存在することになります。
+
+
+■じゃあ、New???( int name, int where )の where って何だ？
+複数のマップに対応したビット数値です。
+
+おさらいしておきますとこのwhereやHZXのグループID、DGのグループIDは、ビッ
+ト数値です。この中で、複数のビットが立たないのが HZXのグループID のみ
+です。
+
+GCLのマップ番号        ＝ VRSのグループ番号
+Actorマップ番号(where) ＝ 1<< (VRSのグループ番号)  複数可
+DGのグループID         ＝ 1<< (VRSのグループ番号)  複数可
+HZXのグループID        ＝ 1<< (VRSのグループ番号) 
+
+■ハザード検出タイプ
+	#define HZX_CHK_F_FLOOR		0x01	/* 固定床チェック */
+	#define HZX_CHK_D_FLOOR		0x02	/* 動的床チェック */
+	#define HZX_CHK_F_SEGMENT	0x04	/* 固定壁チェック */
+	#define HZX_CHK_D_SEGMENT	0x08	/* 動的壁チェック */
+	#define	HZX_CHK_RECOIL_TYPE_ONLY	0x40	/* 跳弾属性のみチェック */
+	#define	HZX_CHK_RECOIL_TYPE			0x80	/* 跳弾属性もチェック */
+	#define	HZX_CHK_CYPHER				0x0100	/* サイファー当たりをチェック */
+
+	#define HZX_CHK_ALL			(HZX_CHK_F_FLOOR|HZX_CHK_D_FLOOR| \
+							  	 HZX_CHK_F_SEGMENT|HZX_CHK_D_SEGMENT)
+	#define	HZX_CHK_SEGMENT		(HZX_CHK_F_SEGMENT|HZX_CHK_D_SEGMENT)
+	#define	HZX_CHK_FLOOR		(HZX_CHK_F_FLOOR|HZX_CHK_D_FLOOR)
+
+■壁・床属性
+
+	１）壁属性
+	#define HZX_SEG_NO_PLAYER     0x0010	/* プレイヤーの当たりチェックをしない */
+	#define HZX_SEG_NO_ENEMY      0x0020	/* 敵兵の当たりチェックをしない */
+	#define HZX_SEG_NO_BULLET     0x0040	/* ショットの当たりをチェックしない */
+	#define HZX_SEG_NO_MISSILE    0x0080	/* ミサイル系の当たり判定をしない */
+	#define HZX_SEG_NO_C4         0x0100	/* C4爆弾がセットできない */
+	#define HZX_SEG_NO_RECOIL     0x0200	/* ショットが跳弾しない */
+	#define HZX_SEG_NO_HARITSUKI  0x0400	/* 張り付かない */
+	#define HZX_SEG_NO_DISP_RADAR 0x0800	/* レーダーに写らない */
+	#define HZX_SEG_NO_BULLETHOLE 0x1000	/* 弾痕つかない */
+	#define HZX_SEG_NO_SPRAY      0x2000	/* スプレーつかない */
+	#define	HZX_SEG_NO_ENEMY_EYES 0x00010000	/* 敵兵視線通り抜ける */
+	#define	HZX_SEG_NO_KNOCK_SE	  0x00020000	/* ノック音しない */
+	#define	HZX_SEG_CYPHER 		  0x00040000	/* サイファー専用 */
+	#define HZX_SEG_RECOIL_TYPE   0x0004	/* 跳弾専用壁 */
+	#define	HZX_SEG_SKIP	      0x0008	/* チェックをしない（動的壁専用） */
+	#define	HZX_SEG_NO_PEEPINTRPT 0x00100000	/* 覗き込みの邪魔にならない */
+	#define	HZX_SEG_DYNAMIC	      0x01000000	/* 動的壁 */
+	
+	２）床属性
+	#define HZX_FLOOR_NO_PLAYER           	0x0010	/* プレイヤーの当たりチェックをしない */
+	#define HZX_FLOOR_NO_ENEMY            	0x0020	/* 敵兵の当たりチェックをしない */
+	#define HZX_FLOOR_NO_BULLET           	0x0040	/* ショットの当たりをチェックしない */
+	#define HZX_FLOOR_NO_MISSILE          	0x0080	/* ミサイル系の当たり判定をしない */
+	#define HZX_FLOOR_NO_C4              	0x0100	/* C4爆弾がセットできない */
+	#define HZX_FLOOR_NO_RECOIL           	0x0200	/* ショットが跳弾しない */
+	#define HZX_FLOOR_NO_CLAYMORE     		0x0400	/* クレイモアがセットできない */
+	#define HZX_FLOOR_NO_BLOOD            	0x0800	/* 血痕つかない */
+	#define HZX_FLOOR_NO_BULLETHOLE  		0x1000	/* 弾痕つかない */
+	#define HZX_FLOOR_NO_SPRAY            	0x2000	/* スプレーつかない */
+	#define HZX_FLOOR_IK 					0x4000	/* インバース・キネマティクスを適用する */
+	#define HZX_FLOOR_STEP               	0x8000	/* ここの床は階段である */
+	#define	HZX_FLOOR_NO_ENEMY_EYES			0x00010000	/* 敵兵視線通りぬける */
+	#define	HZX_FLOOR_NO_OBJECT				0x00020000	/* オブジェクトつかない（薬莢、マガジンなど） */
+	#define	HZX_FLOOR_CYPHER 		  		0x00040000	/* サイファー専用 */
+	#define	HZX_FLOOR_RECOIL_TYPE			0x0004	/* 跳弾専用 */
+	#define	HZX_FLOOR_SKIP		        	0x0008	/* チェックをしない（動的床専用） */
+	#define	HZX_FLOOR_DYNAMIC	        	0x01000000	/* 動的床 */
+
+■libhzx関数リファレンス
+
+	とりあえず良く使いそうなものだけ。
+
+	----------------------------------------------------------------
+
+	int		HZX_GetGroupNo( HZX_GROUP_ID hzx_id ) 
+
+	引数	：	HZX_GROUP_ID	hzx_id			:	グループＩＤ
+
+	HZX_GROUP_ID を 通し番号（０，１，２・・）に変換する。
+	ＩＤで2グループ以上指定されているときはＡＳＳＥＲＴを起こす。
+
+	----------------------------------------------------------------
+
+	HZX_HDL		*HZX_GetCurrentHzx( void )
+
+	カレントのHZX_HDLを取得
+
+	----------------------------------------------------------------
+
+	int			HZX_GetSeCode( int atr )
+
+	引数	：	int	atr				:	ハザード属性
+
+	ハザード属性から音声番号を返す。	
+
+	----------------------------------------------------------------
+
+	int			HZX_SeCode( int seNo )
+
+	引数	：	int	seNo				:	音声番号
+
+	音声番号を属性にセットする。
+
+	----------------------------------------------------------------
+
+	int			HZX_Address( int id, int zone1, int zone2 )
+
+	引数	：	int	id					: HZX_GROUP_ID
+				int zone1, zone2		: ゾーン番号
+
+	アドレスに変換する。	
+
+	----------------------------------------------------------------
+
+	int			HZX_AddressNo( int no, int zone1, int zone2 )
+
+	引数	：	int	no					: グループ通し番号（HZX_GROUP_IDではない！）
+				int zone1, zone2		: ゾーン番号
+
+	アドレスに変換する。	
+
+	----------------------------------------------------------------
+
+	int			HZX_NearHazardCheck( HZX_GROUP_ID id, FVECTOR *from, int sphere,
+								  	 int chk_flag, int seg_flag, int r_sphere ) ;
+
+	返り血	：	検出壁数（０～２）
+	引数	：	HZX_GROUP_ID	id			: 検索ＩＤ（０のときは全検索）
+				FVECTOR			*from		: 検索位置
+				int				sphere		: 検索半径
+				int				chk_flag	: ハザード検出タイプ
+				int				seg_flag	: 検索しない壁属性
+				int				r_sphere	: 反発距離
+
+	from の位置から半径sphereの円内の壁を検出する。最大2枚まで。
+	chk_flag は上述の検出タイプ。
+	seg_flag で指定された属性を持つ壁は検索対象にならない。	
+	r_sphere は、検出された壁からr_sphereだけ離れた位置にいくべき
+	ベクトルの計算に必要。
+
+	以下の関数は、この関数の実行結果の取得に用いる。
+	結果はスクラッチパッド上においてあるので、結果が欲しい場合は
+	直後に取得しておくこと。
+
+		----------------------------------------------------
+
+		void	HZX_GetNearHazard( HZX_HZD *segs, int *atrs )
+
+		segs[ 0 ], atr[ 0 ] に最近検出壁データが、
+		segs[ 1 ], atr[ 1 ] に2番目に近い検出壁データが入る。
+
+		----------------------------------------------------
+
+		void	HZX_GetNearVector( FVECTOR *vect_ptr )
+
+		検出壁へのベクトルを取得。
+		vect_ptr[ 0 ] に最近検出壁へのベクトル、
+		vect_ptr[ 1 ] に２番目へのベクトルが入る。
+
+		----------------------------------------------------
+
+		void	HZX_GetReactVector( FVECTOR *react )
+
+		検出壁からr_sphereだけ離れるためのベクトルを取得する。
+
+	----------------------------------------------------------------
+
+	int 		HZX_OnlineHazardCheck( HZX_GROUP_ID id, FVECTOR *from, FVECTOR *to,
+			    					   int chk_flag, int seg_flag, int flr_flag ) ;
+
+	返り血	：	0:ハザードなし 1:ハザードあり
+	引数	：	HZX_GROUP_ID	id			: 検索ＩＤ（０のときは全検索）
+				FVECTOR			*from		: 検索開始位置
+				FVECTOR			*to			: 検索終了位置
+				int				chk_flag	: ハザード検出タイプ
+				int				seg_flag	: 検索しない壁属性
+				int				flr_flag	: 検索しない床属性
+
+	from 位置からto位置の間の壁＆床を検出する。
+	chk_flag は上述の検出タイプ。
+	seg_flag で指定された属性を持つ壁は検索対象にならない。	
+	flr_flag で指定された属性を持つ床は検索対象にならない。	
+
+	以下の関数は、この関数の実行結果の取得に用いる。
+	結果はスクラッチパッド上においてあるので、結果が欲しい場合は
+	直後に取得しておくこと。
+
+		----------------------------------------------------
+
+		void	HZX_GetOnlineHazard( HZX_HZD *seg, int *atr )
+
+		seg に最近検出ハザードデータが、
+		atr に検出ハザード属性が入る。
+		
+		検出されたのが壁か床かは、seg->type が、HZX_TYPE_SEGMENTかHZX_TYPE_FLOORかで
+		判定することが出来る。
+
+		----------------------------------------------------
+
+		void	HZX_GetOnlineVector( FVECTOR *vect_ptr )
+
+		検出ハザードへのベクトルを取得。
+
+		----------------------------------------------------
+
+		void	HZX_GetOnlinePoint( FVECTOR *ptp_ptr )
+
+		検出ハザードと検索直線の交点を取得。
+
+	----------------------------------------------------------------
+
+	int 		HZX_LevelHazardCheck( HZX_GROUP_ID id, FVECTOR *from, 
+			    				      int chk_flag, int flr_flag ) ;
+
+	返り血	：	0:床天井なし 1:床あり 2:天井あり 3:床天井あり
+	引数	：	HZX_GROUP_ID	id			: 検索ＩＤ（０のときは全検索）
+				FVECTOR			*from		: 検索位置
+				int				chk_flag	: ハザード検出タイプ
+				int				flr_flag	: 検索しない床属性
+
+	from 位置の床と天井を検出する。
+	chk_flag は上述の検出タイプ。
+	flr_flag で指定された属性を持つ床は検索対象にならない。	
+
+	以下の関数は、この関数の実行結果の取得に用いる。
+	結果はスクラッチパッド上においてあるので、結果が欲しい場合は
+	直後に取得しておくこと。
+
+		----------------------------------------------------
+
+		void	HZX_GetLevelHazard( HZX_HZD *flrs, int *atrs )
+
+		flrs[ 0 ], atrs[ 0 ] に床のデータが、
+		flrs[ 1 ], atrs[ 1 ] に天井のデータが入る。
+		
+		----------------------------------------------------
+
+		void	HZX_GetLevelHeight( FVECTOR *lvl_ptr )
+
+		lvl_ptr[ 0 ] に床の高さが、
+		lvl_ptr[ 1 ] に天井の高さが入る。
+
+	----------------------------------------------------------------

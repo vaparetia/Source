@@ -1,0 +1,908 @@
+/*
+	w51a.gcl                     
+		アーセナルギア上
+
+	2001/05/28 H.Yoshiike         
+	$Id: w51a.gcl,v 1.43 2002/10/04 04:46:06 usr04761 Exp $                      
+
+	
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+// ステージ名
+#define		STAGE_W51A		1		// 共通プロック切り分け用
+// 敵兵、ＮＰＣ状況（薬莢を呼び分けるのに必要）
+#define		NO_YAKKYOU		1		// 薬莢すべていらない
+
+
+// 各種スイッチ用define
+// ------------------------------------
+// サウンド
+#define		SOUND			1		// サウンドデータは最初に呼ぶ
+#define		BGM				1		// BGMは敵兵コマンダーの後に呼ぶ
+// デモ
+#define		DEMO			0
+#define		POLYDEMO_LOAD	1		// ポリゴンデモロードを使用するのに必要
+// キャラクター関係
+#define		RAIDEN			1		// SNAKEとは排他
+// ルートデモ人形
+#define		DOLL			1
+// 入出トラップ
+#define		LOAD_TRAP		1
+#define		STAGE_END		1		// ステージ終了時処理を使用可にする
+// フォグ
+#define		FOG				1
+// エフェクト関係
+// ライト関係
+#define		CHARA_LIGHT		1		// キャラ専用ライト
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+	#define		NO_POLYDEMO		0		// ポリデモなしフラグ
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+	#define		NO_POLYDEMO		0		// ポリデモなしフラグ
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME			w51a
+#define		KMS_NAME0			w51a0
+#define		KMS_NAME1			w51a1
+#define		KMS_NAME2			w51a2_scale10
+#define		LT2_NAME			w51a
+
+// キャラクター関係
+#if d:RAIDEN
+	#define		PLAYER		ライデン	// モーションができるまで名前はスネーク
+#else
+	#define		PLAYER		スネーク
+#endif
+
+// ローカル変数
+
+
+// モーション関係
+// ------------------------------------
+enum ソリダスモーションリスト {
+	sol_idle_b = 0,
+	sol_turn,
+	sol_idle_f,
+	sol_arm_ready,
+	sol_arm_go,
+	sol_arm_idle
+}
+
+
+// include
+// ------------------------------------
+#include "commdef.h"		// infキャラ名define
+#include "stdch.h"
+#include "sload.h"
+#include "sound.h"
+#include "w51a_common.h"
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+// マップ設定
+// ------------------------------------
+chara マップ アーセナルギア上 -k d:KMS_NAME0 -k d:KMS_NAME1 -h d:HZX_NAME,0 -l d:LT2_NAME
+
+#include "polydemo_w51a.h"	// ポリデモ（位置はここ）
+							// ポリデモ終了後、$s:d_num = not_demoになりrestartをかけ、ゲームに戻る
+
+command マップ設定 アーセナルギア上 -set {
+	if($s:d_num == not_demo) {
+		// サウンド、キャラクターのセット
+		// ------------------------------------
+		#if d:SOUND	
+			@サウンド設定			// データは最初に呼ぶ。
+		#endif
+	}
+
+	@常駐キャラ設定			// stdch.hで定義
+	command	プレイヤーパッド設定 //プレイヤーのパッドタイプを設定する(実質ＸＢＯＸ版のみに意味があるがＰＳ２であってもＯＫ)
+
+	// ステージ、オブジェクト関連(ゲームとポリデモ共通)
+	// ------------------------------------
+
+	//@夜空 0 -36000 0		// stdproc.hで定義
+	//@巨大海面セット
+	@ローカル海面
+	@空セット
+	@アーセナル胴体設置
+	#if d:FOG
+		@フォグ設定				
+	#endif
+
+	if($s:d_num == not_demo) {
+		@設定値変更
+		@シナリオデモキャラセット	// stdproc.hで定義
+		@ソリダス設定
+		@髭剃りスネークテクスチャ入れ替え処理	// スネークの前で設定
+		@スネーク設定
+		@フォーチュン設定
+		@オセロット設定
+		@ＲＡＹ設定
+		@ＲＡＹ影セット				// polydemo_w51a.gclで定義
+		@キャラ影セット
+		@主観デモ設定			
+//		#endif
+
+		// ステージ、オブジェクト関連
+		// ------------------------------------
+			@カメラセット			
+		#if d:CHARA_LIGHT
+			@キャラ用ライト設置				// マップ設定の最後に呼ぶ。w31ad_common.hで定義
+		#endif
+
+		// ポリデモ関係
+		// ------------------------------------
+		// デバッグ関係
+		// ------------------------------------
+		#if d:DEBUG_CHARA
+		//	@デバッグキャラセット		// w31ad_common.hで定義
+		#endif
+	}
+}
+
+
+// 無線用include ※位置は動かさないこと
+#include "cdc_common.h"
+
+
+// 全てのセットが終わったところでフェードイン
+if($s:d_num == not_demo) {
+// 主観デモ時
+	if( $s:登場ポイント == sp_w46a_w51a_0 ) {
+	// メタル戦後の主観デモ
+		//初期マップの表示
+		command マップ表示 -show アーセナルギア上
+		eval($f:ロードチェックＯＮフラグ = 1);
+		chara フェードインアウト フェードイン \
+			-i 0,0,0 128 \
+			-c 0,0,0 0 \
+			-t 180
+	}
+} else {
+// ポリデモ表示
+	command マップ表示 -show アーセナルギア上
+}
+
+
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// 全マップ共通
+	// ポリデモ後変数設定
+	// ------------------------------------
+	proc ポリデモ後変数設定 {
+		#if d:DEBUG_PRINT
+			print 'polydemo_end_var_change!'
+		#endif
+	}
+
+	// サウンド
+	// ------------------------------------
+	proc サウンド設定 {
+		#if d:DEBUG_PRINT 
+			print 'sound_set'
+		#endif
+
+		chara サウンドマネージャー ＳＤマネ -pak 0
+		mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_PLAY_05
+	}
+
+	// ＢＧＭ
+	// ------------------------------------
+	proc ＢＧＭ設定 {
+		#if d:DEBUG_PRINT 
+			print 'bgm_set'
+		#endif
+
+		chara ＢＧＭマネージャー ＢＧＭマネ
+	}
+
+	// 設定値を変更
+	// ------------------------------------
+	proc 設定値変更 {
+		#if d:DEBUG_PRINT 
+			print 'status_set'
+		#endif
+
+		#ifndef d:PAL
+		// NTSC環境はこっち
+			eval( $w:Ｏ２最大 = (300*6)/5 );
+		#else
+		// PAL環境はこっち
+			eval( $w:Ｏ２最大 = 300 );
+		#endif
+	}
+
+	// 主観デモ設定
+	// ------------------------------------
+	proc 主観デモ設定 {
+		#if d:DEBUG_PRINT 
+			print 'ownview_demo_set'
+		#endif
+
+		//	ストーリーフラグで分岐
+		if ($w:p_story <= d:ST:P080_04_I01ＡＧ浮上４インタラクティブ主観デモ１開始) {
+			// 振動実行時間を初期化
+			eval( $w:ローカル変数Ｗ１ = $w:w51a_イベント継続時間 );
+
+			//	主観プレイヤー起動
+			chara 主観デモプレイヤー 主観ライデン \
+				-k rah_def_dummy \
+				-e rah_def_mh_mt \
+				-m raiden \
+				-p 0,750,0 \
+				-r 0,1024,0
+
+			//	プレイヤー視界制限
+			mesg 主観デモプレイヤー 主観ライデン ry_limit 1200 1024
+			mesg 主観デモプレイヤー 主観ライデン rx_limit 256 325
+
+			// パッド操作を奪う(無線やポーズも不許可にする)
+			command パッド操作 -release
+			command メニュー設定 -menu off -gage off -radar off -subwin off -radio off -pause off
+//			command メニュー設定 -menu off -gage off -radar off -subwin off -radio off
+			chara delay パッドディレイ \
+				-time 120 \
+				-exec {
+					command パッド操作 -cancel
+//					command メニュー設定 -pause on
+					eval($f:ロードチェックＯＮフラグ = 1);
+				}
+
+			// 手錠音を起動
+			chara プロック連続実行 拷問枷音管理人 \
+				-t -1 \
+				-e {
+					if (`command パッドチェック -press` & (d:PAD_L | d:PAD_R | d:PAD_U | d:PAD_D) ) {
+						command ＳＥセットモード -s d:se_code:SD_A_TEJOHGT1 \
+						-p	$i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ \
+						-m 1
+					}
+				}
+
+			// 霧雨
+			chara 霧雨 霧雨
+
+			// 風
+			chara 風制御 wind \
+				-i 300 \
+				-j 500 \
+				-r -1024 3584 0 \
+				-a 256 \
+				-b 10 \
+				-c 150
+
+			// 最初はぼんやり映像
+#ifndef d:XBOX     //XBOXで引きつってしまうと簡単になるため、削除。T.Morita
+			chara 遠景ぼかし ライデンぼんやり視界 \
+				-plane	8 \
+				-near	500 \
+				-far	2000 \
+				-enable // 起動時にオン
+			mesg 遠景ぼかし ライデンぼんやり視界 set (300*7) 0 100000 300000
+#endif
+			chara カメラ前曇り カメラ曇り -t 30
+			chara ブラー ブラー -i 70
+
+			chara 台詞発生源君 発生源君 -n ソリダス フォーチュン -m d:STRFAD_MODE_NO_JIMAKU
+			eval( $i:STREAM_ID = `%Stream t:vc108001 -p ＡＧ浮上４インタラクティブ主観デモ２開始` );
+		}
+	}
+
+	proc ＡＧ浮上４インタラクティブ主観デモ２開始 {
+		mesg ルートデモ人形 ソリダス アクション終了
+	}
+
+	proc ソリダス音声２スタート {
+		eval( $i:STREAM_ID = `%Stream t:vc108002 -p 首絞めスタート` );
+	}
+
+	proc 首絞めスタート {
+		mesg ルートデモ人形 ソリダス アクション終了
+		mesg デモ蛇手 ソリダス蛇手 motion 1
+		chara delay ででででで -time 32 -p 蛇手にあわせて位置移動開始
+		mesg デモ蛇手 ソリダス蛇手 flow 1
+
+#ifdef d:XBOX		//XBOXで引きつってしまうと簡単になるため、削除。T.Morita
+		mesg ブラー ブラー キャラ削除
+#endif
+
+		// 首絞め音を起動
+		chara delay 首絞め音ディレイ -time 19 -exec {
+				command ＳＥセットモード -s d:se_code:SD_A_HEBSIME2 \
+					-p	$i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ \
+					-m 1
+
+				return 64;
+			}
+	}
+
+	proc 蛇手にあわせて位置移動開始 {
+		chara プロック連続実行 蛇手にあわせて位置移動連続実行 \
+			-proc 蛇手にあわせて位置移動 \
+			-time -1 
+
+		chara パッド振動 捕まれ振動 -vibfile snake_arm_02
+	}	
+
+	proc 蛇手にあわせて位置移動	{
+		command デモ蛇手つかみ位置取得 $i:蛇手Ｘ $i:蛇手Ｙ $i:蛇手Ｚ
+		mesg 主観デモプレイヤー 主観ライデン position $i:蛇手Ｘ $i:蛇手Ｚ ($i:蛇手Ｙ+300)
+	}
+
+	proc ソリダス蛇手終了 {
+		if ($1 == 1) {
+			//	蛇手伸びたあとのループ
+			mesg デモ蛇手 ソリダス蛇手 motion 2
+			//	プラズマずしゃ～んオフ
+			mesg デモ蛇手 ソリダス蛇手 flow 0
+
+			command メニュー設定 -gage on
+
+			//	Ｏ２が減っていく
+			chara Ｏ２ゲージ ソリダス首締めくん \
+				-max $w:Ｏ２最大 -length d:O2_GAGE
+			command Ｏ２ゲージ表示
+			// NTSCもPALも同じでＯＫ（プログラム内で処理してる）
+			command Ｏ２ゲージ回復力設定 ($w:Ｏ２最大/19)
+			mesg 主観デモプレイヤー 主観ライデン rotate 408 1013 1
+			mesg 主観デモプレイヤー 主観ライデン rx_limit (408-408) (408-200)
+			mesg 主観デモプレイヤー 主観ライデン ry_limit (2355-1013) 1013
+
+			// 我慢ボタン表示
+				if ( $w:言語 == d:LANG_ENGLISH_ENGLAND ) {
+					chara 簡易レイアウトプレイヤ 息我慢ボタン \
+						-c 4					\
+						-l breath				\
+						-i DefaultAction		\
+						-b OpenBreath			\
+						-e Close_Breath
+				} else if ( $w:言語 == d:LANG_FRENCH ) {
+					chara 簡易レイアウトプレイヤ 息我慢ボタン \
+						-c 4					\
+						-l breath				\
+						-i DefaultAction		\
+						-b OpenBreath-fr		\
+						-e CloseBreath-fr
+				} else if ( $w:言語 == d:LANG_GERMANY ) {
+					chara 簡易レイアウトプレイヤ 息我慢ボタン \
+						-c 4					\
+						-l breath				\
+						-i DefaultAction		\
+						-b OpenBreath-de		\
+						-e CloseBreath-de
+				} else if ( $w:言語 == d:LANG_ITALY ) {
+					chara 簡易レイアウトプレイヤ 息我慢ボタン \
+						-c 4					\
+						-l breath				\
+						-i DefaultAction		\
+						-b OpenBreath-it		\
+						-e CloseBreath-it
+				} else if ( $w:言語 == d:LANG_SPANISH ) {
+					chara 簡易レイアウトプレイヤ 息我慢ボタン \
+						-c 4					\
+						-l breath				\
+						-i DefaultAction		\
+						-b OpenBreath-es		\
+						-e CloseBreath-es
+				} else if ( $w:言語 == d:LANG_JAPANESE ) {
+					chara 簡易レイアウトプレイヤ 息我慢ボタン \
+						-c 4					\
+						-l breath				\
+						-i DefaultAction		\
+						-b OpenBreath-jp		\
+						-e CloseBreath-jp
+				}
+
+//			mesg 簡易レイアウトプレイヤ 息我慢ボタン アクション起動 1 Idol_Breath
+
+			// ぶるぶるカメラ揺れる
+			chara シナリオカメラ振動 首締めカメラ振動 \
+				-xlevel 20 \
+				-ylevel 40 \
+				-time $w:w51a_イベント継続時間 \
+				-mode 0
+
+			// 振動も出す
+			chara パッド振動 首絞め振動 -vibfile snake_arm_03
+			eval( $w:ローカル変数Ｗ１ =  $w:ローカル変数Ｗ１ - 60 );
+			chara delay 振動ディレイ -time 60 -exec {
+				eval( $w:ローカル変数Ｗ１ =  $w:ローカル変数Ｗ１ - 60 );
+				chara パッド振動 首絞め振動 -vibfile snake_arm_03
+				if ( $w:ローカル変数Ｗ１ > 60 ) {
+					// 残り時間が60フレより長ければ次のターンも出す
+					return 60
+				} else {
+					return 0
+				}
+			}
+
+			//続けてみる
+#if 0			
+			//ループモーションへの移行を待ってkillする
+			chara delay 位置移動終了待ち -time 60 -exec {
+				mesg プロック連続実行 蛇手にあわせて位置移動連続実行 kill
+				mesg デモ蛇手 ソリダス蛇手 flow 0
+			}
+#endif
+
+			@０２設定
+			command ＳＥセットモード -s d:SD_V_PDMG01 -p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1			
+
+			chara delay ゲーム終了 \
+				-time $w:w51a_イベント継続時間 \
+				-exec {
+					mesg シナリオカメラ振動 シナリオカメラ振動 kill
+					mesg 簡易レイアウトプレイヤ 息我慢ボタン 再生終了 d:L2D_BREAK
+					mesg プロック連続実行 Ｏ２管理人 kill
+					mesg delay 首絞め音ディレイ kill
+				}
+
+			chara delay ストリームスタート \
+				-time ($w:w51a_イベント継続時間+1) \
+				-exec {
+					if (`command ゲームオーバーチェック` == 0 ) {
+						eval( $i:STREAM_ID = `%Stream t:vc108004 -p ＡＧ浮上４インタラクティブ主観デモ３開始` );
+					}
+				}
+		}
+	}
+
+	proc ０２設定 {
+		chara プロック連続実行 Ｏ２管理人 \
+			-t -1 \
+			-e {
+				if ( $w:Ｏ２ > 0 ) {
+					// NTSCもPALも同じでＯＫ
+					eval($w:Ｏ２ = $w:Ｏ２ - 3);
+				} else if ( $w:体力 > 0 ){
+					command プレイヤーライフ値操作 -type 0 -mode 0 -value -4
+
+				} else if ( $w:体力 <= 0 ) {
+					command ゲームオーバー処理開始 \
+						-exec {
+							mesg シナリオカメラ振動 シナリオカメラ振動 kill
+							mesg 簡易レイアウトプレイヤ 息我慢ボタン 再生終了 d:L2D_BREAK
+							command ＳＥセットモード -s d:SD_V_PVOMIT01 \
+								-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1			
+	
+							chara delay ゲーム終了 \
+								-time 1 \
+								-exec {
+									command ゲームオーバー処理終了
+								}
+						}
+
+				}
+			}
+	}
+
+	proc ＡＧ浮上４インタラクティブ主観デモ３開始 {
+		eval( $i:STREAM_ID = `%Stream t:vc108003 -p ＡＧ浮上４インタラクティブ主観デモ３終了` );
+	}
+
+	proc カットインカメラプロック $:ストリームＩＤ $:話者名 $:アクションコード {
+		if ( $:アクションコード == 0 ) {
+		// 「いったい何を聞くつもり」
+			mesg ブラー ブラー キャラ削除
+			mesg シネマスクリーン シネマ フェードアウト 1
+			command メニュー設定 -menu off -gage off -radar off -subwin off
+//			command パッド操作 -release
+			chara カメラ設定 シナリオデモカメラ \
+				-c 1 \	
+				-p 629,1596,-10389 -t -100,1199,-12055 \
+				-r 140,2317,0 -f 1861 \
+				-a 200 \
+				-i 0 0 0 0 \
+				-s 1
+
+			chara カメラ設定 シナリオデモカメラ \
+				-c 1 \
+				-p 519,1535,-10646 -t -212,1138,-12310 \
+				-r 140,2318,0 -f 1860 \
+				-a 200 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time 120 \ // 補完時間を指定
+				-s 1
+
+		} else if ( $:アクションコード == 1 ) {
+		// 「彼が何も知らないのは知っているはず」のカメラ
+			chara カメラ設定 シナリオデモカメラ \
+				-c 1 \	
+				-p -1808,1062,-12456 -t -140,1139,-11061 \
+				-r -23,570,0 -f 2176 \
+				-a 200 \
+				-i 0 0 0 0 \
+				-s 1
+
+			chara カメラ設定 シナリオデモカメラ \
+				-c 1 \
+				-p -1468,1044,-12795 -t 10,1180,-11219 \
+				-r -41,491,0 -f 2165 \
+				-a 200 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time 120 \ // 補完時間を指定
+				-s 1
+
+		} else if ( $:アクションコード == 2 ) {
+			// 「聞くのはこいつにではない」のカメラ
+//			chara カメラ設定 シナリオデモカメラ -s -1
+			chara カメラ設定 シナリオデモカメラ \
+				-c 1 \	
+				-p 2546,1177,-957 -t 3614,1381,-116 \
+				-r -97,589,0 -f 1375 \
+				-a 200 \
+				-i 0 0 0 0 \
+				-s 1
+
+			chara カメラ設定 シナリオデモカメラ \
+				-c 1 \
+				-p 2419,1177,-796 -t 3487,1381,45 \
+				-r -97,589,0 -f 1375 \
+				-a 200 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time 120 \ // 補完時間を指定
+				-s 1
+		}
+
+	}
+
+
+	proc ＡＧ浮上４インタラクティブ主観デモ３終了 {
+		mesg delay ライデンスーハーループ kill
+		command セットサウンドコード -c d:SNG_FOUTS_S
+		command メニュー設定 -radio on -pause on
+		if($w:アイテム == d:アイテム:ゴル兵制服){
+			preseek 'r_plt5'
+		} else {
+			preseek 'w51a'
+		}
+		@ポリデモアイテムチェック後スタート d:ST:P080_05_P03ＡＧ浮上５ポリゴンデモ３開始
+	}
+
+	proc ポリデモロードスタート {
+		load "w51a" -r 'r_plt5'
+	}
+
+
+	// スネーク設定
+	// ------------------------------------
+	proc スネーク設定 {
+		#if d:DEBUG_PRINT 
+			print 'snake_set'
+		#endif
+
+		@髭剃りスネークテクスチャ入れ替え処理
+
+		chara プットモーションモデル スネーク \
+			-pos -1500,-50,-14000 \
+			-dir 0 \
+			-kms sna_def \ /*evmを表示する場合はダミーKMSが必要*/
+			-mar sna_w51a
+
+		//バンダナ
+		chara ロープモデル３ バンダナ１ \
+			-n sna_bdn1 \
+			-d 1 \
+			-y スネーク \
+			-z 12 \
+			-x 0,60,-90 \
+			-m 12 \
+			-p 250 \
+			-k 350 \
+			-o 110 \
+			-f 1
+
+		chara ロープモデル３ バンダナ２ \
+			-n sna_bdn2 \
+			-d 1 \
+			-y スネーク \
+			-z 12 \
+			-x 0,50,-90 \
+			-m 22 \
+			-p 250 \
+			-k 350 \
+			-o 110 \
+			-f 1
+
+		// マガジン
+		chara 装備品Ｃ マガジン１ \
+			-n sna_mag1 \
+			-y スネーク \
+			-z 2 \
+			-x 95,85,108 \
+			-r 0,0,0 \
+			-f 1
+
+		chara 装備品Ｃ マガジン２ \
+			-n sna_mag2 \
+			-y スネーク \
+			-z 2 \
+			-x -95,85,108 \
+			-r 0,0,0 \
+			-f 1
+
+		chara 装備品Ｃ マガジン３ \
+			-n sna_mag3 \
+			-y スネーク \
+			-z 2 \
+			-x 73,38,120 \
+			-r 0,0,0 \
+			-f 1
+
+		chara 装備品Ｃ マガジン４ \
+			-n sna_mag4 \
+			-y スネーク \
+			-z 2 \
+			-x 73,38,120 \
+			-r 0,0,0 \
+			-f 1
+
+	}
+
+	// ソリダス設定
+	// ------------------------------------
+	proc ソリダス設定 {
+		#if d:DEBUG_PRINT 
+			print 'sol_set'
+		#endif
+
+		chara ルートデモ人形 ソリダス \
+			-route 0 0 \ 
+			-kms rai_def \
+			-evm sol_def_mh_mt \
+			-mar sol_w51a \
+			-number 4 \
+			-item sol_katana_w_sdw 1 \
+			-proc ソリダス音声２スタート 2 \
+			-face ソリダス
+//			-debug	d:DBG_MOT_NUM
+
+		chara ルートデモ人形 ソリダス \
+			-route 0 0 \ 
+			-kms rai_def \
+			-evm sol_gantai_mh_mt \
+			-mar sol_w51a \
+			-number 4
+
+		chara デモ蛇手 ソリダス蛇手 \
+			-model sol_snakearm_2_mh_mt \
+			-motion sol_snakearm_w51a \
+			-parent ソリダス \
+			-unit 2 \
+			-proc ソリダス蛇手終了 \
+			-shadow sol_sarm_shadow
+
+	}
+
+	// フォーチュン設定
+	// ------------------------------------
+	proc フォーチュン設定 {
+		#if d:DEBUG_PRINT 
+			print 'fortune_set'
+		#endif
+
+		chara プットモーションモデル フォーチュン \
+			-pos 0,-50,-12000 \
+			-dir 128 \
+			-kms for_def_sh_mt \ /*evmを表示する場合はダミーKMSが必要*/
+			-evm for_def_mh_mt \ /*KMSを表示する場合は不要*/
+			-mar fort_w51a \
+			-item lnr 6 \
+			-face フォーチュン
+
+		// フォーチュン髪の毛
+		chara マルチウェイト髪の毛モデル フォーチュン髪の毛 \
+			-n for_hair_def_mh \
+			-b for_def_bounding \
+			-d 7 \
+			-y フォーチュン \
+			-z 12 \
+			-x 0,0,0 \
+			-o 100 \
+			-f 1 \
+			-c 2 { 11 12 } \
+			-q 0
+
+		// フォーチュン装備品
+		chara 装備品Ｃ リニアガンマガジン \
+			-n for_mag \
+			-y フォーチュン \
+			-z 0 \
+			-x 110,7,55 \
+			-r 0,0,0 \
+			-f 1
+	}
+
+	// オセロット設定
+	// ------------------------------------
+	proc オセロット設定 {
+		#if d:DEBUG_PRINT 
+			print 'rev_set'
+		#endif
+
+		chara プットモーションモデル オセロット \
+			-pos -5000,-50,-5000 \
+			-dir 512 \
+			-kms rev_plant_sh_mt \ /*evmを表示する場合はダミーKMSが必要*/
+			-mar rev_w51a
+
+	}
+
+	// ＲＡＹ設定
+	// ------------------------------------
+	proc ＲＡＹ設定 {
+		#if d:DEBUG_PRINT 
+			print 'ray_set'
+		#endif
+
+		chara プットモーションモデル ＲＡＹ \
+			-pos 0,-50,20000 \
+			-dir 0 \
+			-kms ray_def_mt \ /*evmを表示する場合はダミーKMSが必要*/
+			-mar ray_w51a
+
+		chara 装備品Ｃ ＣＡＮＯＰＹ \
+			-n ray_canopy_mt \
+			-y ＲＡＹ \
+			-z 14 \
+			-x 0,0,0 \
+			-r 0,0,0 \
+			-f 1
+	}
+	
+
+
+	// キャラ投影影設定 
+	// ------------------------------------
+	proc キャラ影セット {
+		chara 影投影モデル アーセナル頭の影もでる \
+			-m w51a0k \
+			-p 0 0 0
+
+		chara 影管理 影かんり \
+			-t 0 \
+			-p -3800 -3000 -1300
+
+		mesg 影管理 影かんり demo_add スネーク アーセナル頭の影もでる		// スネーク
+		mesg 影管理 影かんり demo_add ソリダス蛇手 アーセナル頭の影もでる		// 蛇手
+		mesg 影管理 影かんり demo_add 共和刀鞘 アーセナル頭の影もでる		// ソリダス共和刀
+		mesg 影管理 影かんり demo_add 民主刀鞘 アーセナル頭の影もでる		// ソリダス民主刀
+		mesg 影管理 影かんり add ソリダス アーセナル頭の影もでる			// ソリダス
+		mesg 影管理 影かんり demo_add フォーチュン アーセナル頭の影もでる	// フォーチュン
+		mesg 影管理 影かんり demo_add リニアガン アーセナル頭の影もでる		// フォーチュン
+		mesg 影管理 影かんり demo_add オセロット アーセナル頭の影もでる		// オセロット
+
+	}
+
+
+	// ステージカメラ設定 
+	// ------------------------------------
+	proc カメラセット {
+		#if d:DEBUG_PRINT
+			print 'stage_camera_set'
+		#endif
+
+		chara カメラ ステージカメラ			-c 0 -l 3 -p 0 
+		// カットイン用カメラ設定
+		chara カメラ シナリオデモカメラ		-c 0 -l 0 -p 1 
+
+		// デフォルトカメラ
+		chara カメラ設定 ステージカメラ \
+			-c 0 \	
+			-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-r 250,2048,0 \
+			-f 6500 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s 1
+	}
+//柴田追加
+	proc 空セット {
+		chara 汎用空 空_w60a_sky_wall \
+			-c 12 18 22 \
+			-pos 0 -25000 0 \ 
+			-f 0 \
+			-t 4 \
+				sky_n1_alp 78 83 83 0 \
+				sky_n2_alp 74 77 77 0 \
+				0 0 0 0 0 \
+				sky_n4_alp 74 76 76 0 \
+			-m 4 \
+				w51a_sky_wall1  10  13  15 0 0 \
+				w51a_sky_wall2 100 100 100 0 0 \
+				w51a_sky_wall3 100 100 100 0 0 \
+				w51a_sky_wall4 128 128 128 0 0
+
+		chara 太陽 ソル \
+			-p 0 -25000 0 \ 		//中心の位置
+			-f (-1667-512) (-2032*2) -4252 \	//平行光源の-pと同じ値
+			-a 2 \   //alpha
+			-w (512*32) \
+			-h (512*32) \
+			-t sky_sun_n_alp \
+			-g 0
+
+	}
+
+//柴田追加
+proc ローカル海面 {
+	chara 巨大海面 seaseasea \
+		-mipmap 3 50000 0 \
+		-size (400000*2/3) 500000 \
+		-light_enable \
+		-tex w51a_sea \
+		w51a_sea_256_alp_ovl \
+		w51a_sea_128_alp_ovl \
+		w51a_sea_64_alp_ovl \
+		w51a_sea_32_alp_ovl \
+		-pos 0,-35000,0 
+}
+
+
+
+
+
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下仮キャラ用proc
+// -----------------------------------------------------------------------------------
+// 仮キャラ
+// ------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------

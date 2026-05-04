@@ -1,0 +1,1040 @@
+/*
+	Windows Stream Driver
+
+	I Picture Only Stream,
+	I Picture Only Memory Stream,
+	MPEG Stream
+
+	2002/05/20 M.Kobayashi
+	$Id: winstream.c,v 1.17 2003/01/05 06:08:11 Yoshizawa1 Exp $
+*/
+
+
+#if 0	//@ コンパイルがとおらなかったので修正
+#include	<sfvsjd.h>
+#endif
+// 上記２つは後にinclude してはいけない( #define long 問題 )
+
+#include	"mgs_type.h"
+#include	"libgv.h"
+#include	"libgv.cnf"
+#include	"libfs.h"
+#include	"libdg.h"
+#include	"stream.h"
+#include	"g_define.h"
+
+#include	"strctrl.h"
+
+#include	"wincriemu.h"
+#include	"windecode.h"
+#include	"filtergraph.h"
+//#define DECODE_OTHER_THREAD
+
+#define	__MPEG_BY_EXFILE__	(1)		// MPEGは外部ファイル(winstream_mpeg.c)で担当する
+
+#if	__MPEG_BY_EXFILE__
+/* Mpeg外部関数定義 */
+extern void GM_StreamCriDriverInit_Mpeg( int dummy ) ;
+extern void GM_StreamCriDriverEnd_Mpeg( void );
+extern int GM_StreamGetCriInfo_Mpeg( int *width, int *height, int *frame );
+extern	void* GM_StreamGetCri_Mpeg( void ) ;
+extern	void GM_StreamCopyCriImage_Mpeg( void *dst, int dst_width, int dst_height, int dst_x, int dst_y, int flag ) ;
+extern	void GM_StreamFreeCri_Mpeg(void);
+extern	BOOL	GM_StreamIsEndCri_Mpeg(void);
+#endif
+
+typedef struct MPEG_HEADER {
+	short	width;
+	short	height;
+	int		nFrames;
+	float	fFps;
+	int		pad;
+} MPEG_HEADER;
+
+typedef struct {
+	GV_ACT_EX	actor;
+	/* 通常ストリーム用ワーク */
+	int			type;			/* ストリームタイプ */
+	GM_STREAM_CONTROL* pctrl;	/* ストリームコントロール */
+
+	//@ コンパイルがとおらなかったので修正
+	/* ドライバ固有ワーク */
+	SJ			sji;		// 入力ストリームジョイント
+	char		sji_work[ SJUNI_CALC_WORK( 16 ) ];	// ジョイントワーク
+
+	u_int		flag;
+	int			state;
+	MPEG_HEADER	mh;
+	
+	// IPIC 用
+	
+	SFVSJD 		sjd;		// デコーダ
+	SJ			sjo;		// 出力ストリームジョイント
+	char		sjo_work[ SJUNI_CALC_WORK( 16 ) ];	// ジョイントワーク
+	int		sjd_worksize;	// デコーダワークサイズ
+	char*		pSjd_work;		// デコーダワーク
+	char*		pYuv420Image;
+
+	SJCK		ckout;		// 出力チャンク
+
+	// OnMemory IPIC 用
+	STREAM_TAG* 		pTopmem;
+	STREAM_TAG* 		pCurrentmem;
+
+	// MPEG 用
+	MWPLY		ply;		// デコーダハンドル
+	MWS_PLY_FRM	frm;		// 取得フレーム
+	void*		pPlyWork;	// デコーダワーク
+	int			f_cnt;
+	int			send_size;
+	int			send_cnt;
+	int			send_flag;
+
+	int					start_tick ;
+	int					pre_tick ;
+	int					cur_tick ;
+
+} CRI_STR_WORK;
+
+
+/* ---------------------------------------------------------------- */
+
+/* ストリームドライバ登録情報 */
+void *NewStreamIpicDriver( GM_STREAM_CONTROL *ctrl, int type );
+#if !__MPEG_BY_EXFILE__
+void *NewStreamCriMpegDriver( GM_STREAM_CONTROL *ctrl, int type );
+#else
+extern void *NewStreamCriMpegDriver( GM_STREAM_CONTROL *ctrl, int type );
+
+#endif
+
+static GM_STREAM_DRIVER driver = {
+	NULL,
+	0,
+	NewStreamIpicDriver,
+};
+
+#if !__MPEG_BY_EXFILE__
+static GM_STREAM_DRIVER drivermpg = {
+	NULL,
+	0,
+	NewStreamCriMpegDriver,
+};
+#endif
+
+enum {
+	STATE_READY,	// ヘッダ読み込み中
+	STATE_DEC,		// デコード中
+	STATE_END,		// 終了待ち
+};
+
+
+static int	DriverRefCtr = 0 ;
+static CRI_STR_WORK	*pWork = NULL ;
+
+
+/* ---------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------- */
+static BOOL CodeIsEnd( u_char* code ) {
+	return code[ 0 ] == 0x00 &&
+			code[ 1 ] == 0x00 &&
+			code[ 2 ] == 0x01 &&
+			code[ 3 ] == 0xb7;
+}
+
+static void *StreamGetData( CRI_STR_WORK *pw ,int sync)
+{
+	if( pw->flag & FLAG_ON_MEMORY ) {
+//		return NULL;
+		if( pw->pTopmem == NULL || pw->pCurrentmem == NULL ) return NULL;
+		return pw->pCurrentmem + 1;
+	} else {
+		/* フレームデータ取得中の場合 */
+		void	*data_ptr = NULL, *old_ptr = NULL ;
+		/* タイムアジャスト処理 */
+		while ( 1 ){
+			/* とりあえずデータの取得 */
+			data_ptr = FS_StreamGetData( pw->pctrl->stream_h, pw->type );
+			if ( data_ptr == NULL ) return ( old_ptr );
+
+			if(sync){
+				/* 時間の整合チェック */
+				if ( FS_STREAM_GET_TIME( data_ptr ) > pw->pctrl->tick ){
+					/* 先のデータを取得してしまったのでそれを戻し、前のデータポインタを返す */
+					FS_StreamUngetData( pw->pctrl->stream_h, data_ptr );
+					return ( old_ptr );
+				}
+			}
+
+			// MPEG時は全データが必要 IPicのときも最初のフレームは飛ばせない
+			if ( (pw->flag & ( FLAG_MPEG | FLAG_NO_SKIP ) ) ) return data_ptr; 
+				 
+			if( (FS_STREAM_GET_OPTION( data_ptr ) & OPT_FLAG_PRECIOUS) ) {
+				// スキップ不可データ
+				if ( old_ptr != NULL ) {
+					FS_StreamFreeData( pw->pctrl->stream_h, old_ptr );
+				}
+				return data_ptr;
+			}
+			
+			//printf("%s:stream time = %d\n", __FILE__, FS_STREAM_GET_TIME( data_ptr ) );
+			/* 取得したデータには問題がないので前のデータポインタを破棄する */
+			if ( old_ptr != NULL ){
+				printf("%s:frame skip! %d/%d\n", __FILE__, FS_STREAM_GET_TIME( old_ptr ), pw->pctrl->tick );
+//				printf( "skip%d/%d!", FS_STREAM_GET_TIME( old_ptr ), pw->pctrl->tick );
+				FS_StreamFreeData( pw->pctrl->stream_h, old_ptr );
+				/* 一つスキップしたことになるので内部処理フレーム数もインクリメントする */
+				//if ( FS_STREAM_GET_OPTION( data_ptr ) != 0 ) pw->frame++ ;
+				//pw->frame++ ;
+			}
+			/* データポインタのバックアップを保存する */
+			old_ptr = data_ptr ;
+		}
+	}		
+}
+static void StreamFreeData( CRI_STR_WORK* pw, void* pData )
+{
+	if ( pw->flag & FLAG_ON_MEMORY ){
+		pw->pCurrentmem = (STREAM_TAG*)( (int)pw->pCurrentmem + pw->pCurrentmem->size );
+		// リピート処理
+		if( CodeIsEnd( (u_char*)(pw->pCurrentmem + 1 ))) pw->pCurrentmem = pw->pTopmem;
+		return ;
+	} else {
+		FS_StreamFreeData( pw->pctrl->stream_h, pData );
+	}
+}
+static int StreamIsEnd( CRI_STR_WORK* pw )
+{
+	if ( pw->flag & FLAG_ON_MEMORY ){
+		return 0;
+	} else {
+		return ( GM_IS_STREAM_END( pw->pctrl ) );
+	}
+}
+
+static void ReleaseRes( CRI_STR_WORK* pw )
+{	// Act 中に確保したリソースの解放
+	if( pw->flag & FLAG_MPEG ) {
+		if( pw->ply != NULL ) mwPlyDestroy( pw->ply );
+		if( pw->pPlyWork != NULL ) free( pw->pPlyWork );
+		pw->ply = NULL;
+		pw->pPlyWork = NULL;
+	} else {
+		if( pw->sjd != NULL ) SFVSJD_Destroy( pw->sjd );
+		if( pw->sji != NULL ) SJ_Destroy( pw->sji );
+		if( pw->sjo != NULL ) SJ_Destroy( pw->sjo );
+		if( pw->pSjd_work != NULL) GV_Free( pw->pSjd_work );
+		if( pw->pYuv420Image != NULL ) GV_Free( pw->pYuv420Image );
+		pw->sjd = NULL;
+		pw->sji = pw->sjo = NULL;
+		pw->pSjd_work = NULL;
+		pw->pYuv420Image = NULL;
+	}
+}
+
+static void ActIpic( CRI_STR_WORK* pw )
+{
+	void* pData;
+	SJCK	ck;
+	int		tick ;
+#if 0
+	int intime, outtime;
+	intime = GET_HSYNC_TIMER();
+#endif	
+	
+	switch( pw->state ) {
+	case STATE_READY:
+		// ヘッダ読み込み待ち
+		if ( (pData = (STREAM_TAG*)StreamGetData( pw,FALSE ) )!= NULL ) {
+			MWS_PLY_CPRM_SFD cprm;		//	Creating parameter
+
+			if( *(char *)pData != 0 )
+			{
+				char	str[1024];
+				sprintf(str,"%s/pac/%s",pcGetStreamFilePath(),pData);
+
+				pw->start_tick = FS_STREAM_GET_TIME(pData) ;
+				pw->pre_tick   = pw->pctrl->tick ;
+				pw->cur_tick   = 0 ;
+
+				GM_InitFilterGraphMan() ;	// フィルタグラフマネージャ初期化
+				GM_CreateFilterGraph(str);
+
+				pw->state = STATE_DEC ;
+#ifdef DEBUG_MODE
+				printf("start tick :%d\n", pw->start_tick) ;
+				printf("pre   tick :%d\n", pw->pre_tick) ;
+#endif
+			}
+			else
+			{
+				memcpy( &pw->mh, pData, sizeof( pw->mh ) );
+				printf("CRI Stream %dx%d, %ffps\n", pw->mh.width, pw->mh.height, pw->mh.fFps );
+				pw->state = STATE_DEC;
+				pw->flag |= FLAG_NO_SKIP;	// 最初のデータはスキップしない
+				
+
+				// サイズが決まったのでメモリ準備
+			
+				memset(&cprm, 0, sizeof(cprm));
+				cprm.ftype			= MWD_PLY_FTYPE_MPV;
+				cprm.max_bps		= 5*1000*1000;
+				cprm.max_width		= pw->mh.width;
+				cprm.max_height		= pw->mh.height;
+				cprm.nfrm_pool_wk	= 2;
+				cprm.wksize			= mwPlyCalcWorkCprmSfd(&cprm);
+				cprm.work			= (char *)pw->pPlyWork = malloc(cprm.wksize);
+				if( cprm.work == NULL ) {
+					// メモリ確保できず
+					GV_DestroyActor( pw );
+					return;
+				}
+				ZeroMemory(cprm.work, cprm.wksize) ;
+				pw->f_cnt = 0				;
+				pw->ply				= mwPlyCreateSofdec(&cprm,1);
+			
+				// リングバッファ取得
+				pw->sji = mwPlyGetInputSj( pw->ply );
+				
+				mwPlyStartSj( pw->ply, pw->sji );
+
+			}
+
+			StreamFreeData(pw, pData) ;
+
+
+
+
+		} else {
+			// ヘッダ読み込み待ち
+			if ( !(pw->flag & FLAG_ON_MEMORY) && StreamIsEnd( pw ) ) {
+				GV_DestroyActor( pw );
+				break;
+			}
+			break;
+		}
+
+	case STATE_DEC:
+		if(pw->pPlyWork){
+			// 通常デコード
+			if ( (pData = (STREAM_TAG*)StreamGetData( pw,TRUE ) )!= NULL ) {
+				DWORD	chank_code;
+				int size = GET_MPEG_STREAM_SIZE( pData );
+				char* pDataCur = (char*)pData;
+	
+				ck.data = (char*)pData;
+				ck.len = GET_MPEG_STREAM_SIZE( pData );	// ここに実際のサイズが入ってる
+				pw->flag &= ~FLAG_NO_SKIP;	// スキップ可能にする
+	
+	#ifdef DEBUG_MODE
+				printf("CRI Stream Size %d \n", size );
+	#endif
+	#ifdef DEBUG_MODE
+				printf("Pic %02x%02x%02x%02x\n",((char*)pData)[0],((char*)pData)[1],((char*)pData)[2],((char*)pData)[3]);
+	#endif
+				chank_code = (((BYTE*)pData)[2]<<8) | ((BYTE*)pData)[3];
+	
+				WinstrmSendIPic(pw->ply, &pw->frm, pData,GET_MPEG_STREAM_SIZE( pData ),chank_code);
+	
+				StreamFreeData( pw, pData );
+			
+	//			SJ_GetChunk( pw->sjo, SJ_LIN_DATA, 0x7fffffff, &pw->ckout );
+	//			// 入力データ回収
+	//			SJ_Reset( pw->sji );
+	
+	
+	//			if( SFVSJD_GetStat( pw->sjd ) == SFVSJD_STAT_DECEND ) 
+				if(chank_code == 0x01b7)
+				{
+					pw->state = STATE_END;
+				}
+			} 
+		}else{
+			switch( FS_StreamGetStatus(pw->pctrl) )
+			{
+			  case FS_STR_STOP :
+				if( !GM_FilterGraphGetPauseState() ){ GM_FilterGraphPauseOn() ; }
+				break ;
+	
+			  default :
+				/* 時間同期 */
+				tick          = pw->pctrl->tick ;
+				pw->cur_tick += tick - pw->pre_tick ;
+				pw->pre_tick  = tick ;
+				if( pw->start_tick > tick  )
+				{
+					/* Start待ち */
+					if( !GM_FilterGraphGetPauseState() ){ GM_FilterGraphPauseOn() ; }
+				}
+				else
+				{
+					/* 同期再生 */
+					if( GM_FilterGraphGetPauseState() ){ GM_FilterGraphPauseOff() ; }
+					GM_FilterGraphSyncTime(pw->cur_tick) ;
+				}
+				break ;
+			}
+	
+			/* 終了判定 */
+			if( GM_FilterGraphIsEnd() ){ pw->state = STATE_END ; }
+		}
+
+		break;
+
+	case STATE_END:	// 終了待ち
+
+		printf("MPEG stream end\n");
+		// 最初に戻って待機
+		pw->state = STATE_READY;
+		ReleaseRes( pw );
+
+		if(!pw->pPlyWork){
+			GM_ReleaseFilterGraph() ;		// フィルタグラフ解放処理
+			GM_ReleaseFilterGraphMan() ;	// フィルタグラフマネージャ終了処理
+		}
+
+//		FS_StreamDump( pw->pctrl->stream_h );
+	}
+
+#if 0	
+	outtime = GET_HSYNC_TIMER();
+	printf("%3d ", DIFF_HSYNC_TIMER( outtime, intime ) );
+#endif	
+}
+/*---------------------------------------------------------------------------
+|
+|		チャンクコード検索コールバック
+|
+|	Parameters
+|
+|	Returns
+|
+*----------------------------------------------------------------------------*/
+typedef struct {
+	int	size;
+	int	cnt;
+	int	p_pic_flag;
+}CHANK_WORK,*LPCHANK_WORK;
+static int chank_callback( LPBYTE lpsrc, DWORD size ,DWORD	pos, void *work)
+{
+	LPCHANK_WORK	lpcw;
+	int code = *((int*)&lpsrc[pos]);
+	
+	lpcw = (LPCHANK_WORK)work;
+
+	switch(code){
+	case	0xb7010000:
+	case	0xb8010000:
+		if((lpcw->size + pos)> 100){
+			lpcw->size += pos;
+			return(TRUE);
+		}
+		break;
+		
+	case	0x00010000:
+//		if( ((((BYTE*)lpsrc)[5]>>3) & 0x7) == 0x2){
+//			lpcw->p_pic_flag = TRUE;
+//		}else{
+//			if(lpcw->p_pic_flag){
+//				lpcw->size = pos;
+//				return(TRUE);
+//			}
+//		}
+		lpcw->cnt ++;
+		break;
+	}
+	return(FALSE);
+	
+}
+/*---------------------------------------------------------------------------
+|
+|		ＭＰＥＧアクター
+|
+|	Parameters
+|
+|	Returns
+|
+*----------------------------------------------------------------------------*/
+#if !__MPEG_BY_EXFILE__
+static void ActMpeg( CRI_STR_WORK* pw )
+{
+	void* pData;
+	SJCK	ck;
+	DWORD	chank_code;
+#if 0
+	int intime, outtime;
+
+	intime = GET_HSYNC_TIMER();
+#endif	
+	
+	switch( pw->state ) {
+	case STATE_READY:
+		// ヘッダ読み込み待ち
+		if ( (pData = (STREAM_TAG*)StreamGetData( pw,FALSE ) )!= NULL ) {
+			MWS_PLY_CPRM_SFD cprm;		//	Creating parameter
+			
+			memcpy( &pw->mh, pData, sizeof( pw->mh ) );
+			printf("CRI Stream %dx%d, %ffps\n", pw->mh.width, pw->mh.height, pw->mh.fFps );
+			pw->state = STATE_DEC;
+			StreamFreeData( pw, pData );
+			// サイズが決まったのでメモリ準備
+			
+			memset(&cprm, 0, sizeof(cprm));
+			cprm.ftype			= MWD_PLY_FTYPE_MPV;
+			cprm.max_bps		= 5*1000*1000;
+			cprm.max_width		= pw->mh.width;
+			cprm.max_height		= pw->mh.height;
+			cprm.nfrm_pool_wk	= 1;
+			cprm.wksize			= mwPlyCalcWorkCprmSfd(&cprm);
+			cprm.work			= (char *)pw->pPlyWork = malloc(cprm.wksize);
+			if( cprm.work == NULL ) {
+				// メモリ確保できず
+				GV_DestroyActor( pw );
+				return;
+			}
+			pw->f_cnt = 0				;
+			pw->ply				= mwPlyCreateSofdec(&cprm,0);
+			
+			pw->send_size	= 0;
+			pw->send_cnt	= 0;
+			pw->send_flag	= 0;
+			
+			// リングバッファ取得
+			pw->sji = mwPlyGetInputSj( pw->ply );
+			
+			mwPlyStartSj( pw->ply, pw->sji );
+		} else {
+			if ( !(pw->flag & FLAG_ON_MEMORY) && StreamIsEnd( pw ) ) {
+				GV_DestroyActor( pw );
+			}
+			break;
+		}
+	case STATE_DEC:
+		// 通常デコード
+
+		if ( (pData = (STREAM_TAG*)StreamGetData( pw,TRUE ) )!= NULL ) {
+			CHANK_WORK	cw;
+//			printf("%s:frame %d/%d\n", __FILE__, FS_STREAM_GET_TIME( pData ), pw->pctrl->tick );
+			// 入力データあり
+			
+			// データをリングバッファにコピー
+			int size = GET_MPEG_STREAM_SIZE( pData );
+			char* pDataCur = (char*)pData;
+
+			chank_code = (((BYTE*)pData)[2]<<8) | ((BYTE*)pData)[3];
+			
+#ifdef DEBUG_MODE
+			if(chank_code == 0x100 ){
+				printf("Pic %08x No.%d pic %d\n",chank_code,(((BYTE*)pData)[4]<<2) + (((BYTE*)pData)[5]>>6) , (((BYTE*)pData)[5]>>3) & 0x7 );
+			}else{
+				printf("Pic %08x\n",chank_code);
+			}
+#endif
+			
+
+#ifdef DEBUG_MODE
+			printf("CRI Stream Size %d \n", size );
+#endif
+			if( SJ_GetNumData( pw->sji, SJ_LIN_FREE ) < size ) {
+				FS_StreamUngetData( pw->pctrl->stream_h, pData );
+			} else {
+				// PPic検索
+				if(pw->send_flag==FALSE){
+					GV_ZeroMemory( &cw, sizeof(cw));
+					cw.size  = SJ_GetNumData( pw->sji, SJ_LIN_DATA );
+					cw.cnt   = pw->send_cnt;
+					
+					if(SearchChankCode( pData,size,chank_callback,(void*)&cw ) == TRUE){
+						pw->send_size = cw.size;
+						pw->send_flag = TRUE;
+					}else{
+						pw->send_size = cw.size;
+						if(cw.p_pic_flag ){
+							pw->send_flag = TRUE;
+						}
+					}
+					pw->send_cnt = cw.cnt;
+				}
+				do {
+					SJ_Lock(pw->sji);
+					SJ_GetChunk( pw->sji, SJ_LIN_FREE, size, &ck );
+//					printf("free %x-%x\n", ck.data, ck.len);
+					memcpy( ck.data, pDataCur, ck.len );
+					SJ_PutChunk( pw->sji, SJ_LIN_DATA, &ck );
+					SJ_Unlock(pw->sji);
+
+					size -= ck.len;
+					pDataCur += ck.len;
+				} while ( size > 0 );
+				// データをフリー
+				StreamFreeData( pw, pData );
+			}
+		}
+		pw->f_cnt ++;				
+#ifdef DEBUG_MODE
+#if 0
+		{	// test
+			SJ_Lock(pw->sji);
+			SJ_GetChunk( pw->sji, SJ_LIN_DATA, 0x7fffffff, &ck );
+			printf("data %x-%x\n", ck.data, ck.len);
+			SJ_UngetChunk( pw->sji, SJ_LIN_DATA, &ck );
+			SJ_Unlock(pw->sji);
+
+		}
+#endif
+#endif
+		
+		mwPlyRelCurFrm( pw->ply );
+		ADXM_ExecMain();	//	decoding image data when you select MAIN decode mode
+		if(pw->send_flag){
+			if(mwPlyGetCurFrm( pw->ply, &pw->frm, pw->pctrl->tick,pw->send_size)){
+				pw->send_flag = FALSE;
+				pw->send_size = 0;
+				pw->send_cnt = 0;
+			}
+		}else{
+			mwPlyGetCurFrm( pw->ply, &pw->frm, pw->pctrl->tick,0);
+		}
+
+		if( mwPlyGetStat( pw->ply ) == MWE_PLY_STAT_PLAYEND ) {
+			pw->state = STATE_END;
+		} else { // デコーダは信頼できないので自分で終了コードを見る
+#if 1			// 最終フレームがBピクチャじゃないと起こる？
+			u_char code[4];
+			if( SJ_GetNumData( pw->sji, SJ_LIN_DATA ) >=4 ) {
+				SJ_Lock(pw->sji);
+				SJ_GetChunk( pw->sji, SJ_LIN_DATA, 4, &ck );
+				memcpy( code, ck.data, ck.len );
+				if( ck.len < 4 ) {
+					SJCK ck2;
+					SJ_GetChunk( pw->sji, SJ_LIN_DATA, 4 - ck.len , &ck2 );
+					memcpy( code + ck.len, ck2.data, ck2.len );
+					SJ_UngetChunk( pw->sji, SJ_LIN_DATA, &ck2 ); 
+				}
+				SJ_UngetChunk( pw->sji, SJ_LIN_DATA, &ck );
+				SJ_Unlock(pw->sji);
+
+				if( CodeIsEnd( code ) ) pw->state = STATE_END;
+			}
+#endif			
+		}
+		break;
+	case STATE_END:	// 終了待ち
+//		if( pw->frm.bufadr == NULL ) {
+			printf("MPEG stream end\n");
+			// 最初に戻って待機
+			pw->state = STATE_READY;
+			ReleaseRes( pw );
+//			GV_DestroyActor( pw );
+			break;
+//		}
+//		FS_StreamDump( pw->pctrl->stream_h );
+	}
+#if 0	
+	outtime = GET_HSYNC_TIMER();
+	printf("%3d ", DIFF_HSYNC_TIMER( outtime, intime ) );
+#endif	
+}
+#endif	// !__MPEG_BY_EXFILE__
+
+
+static void Die( CRI_STR_WORK* pw )
+{
+	ReleaseRes( pw );
+
+	if( pw->flag & FLAG_MPEG ) {
+	//	Shutting down configurations of file system, sound system and thread mechanism
+		mwPlyFinishSfdFx();
+#ifdef DECODE_OTHER_THREAD		
+		ADXM_ShutdownThrd();
+		ADXXB_ShutdownSound();
+		ADXXB_ShutdownDvdFs();
+#endif		
+	} else {
+		SFVSJD_Finish();
+	}
+
+	if ( pWork == pw ){
+		pWork = NULL ;
+	}
+}
+
+
+void errfunc(void *obj, char *msg)
+{
+//@	printf(msg);
+//	HANGUP();
+}
+
+
+static void GetResources( CRI_STR_WORK* pw, GM_STREAM_CONTROL* pctrl, int type )
+{
+
+	GV_ActorEX( &pw->actor );
+	pWork = pw ;
+	pw->type = type;
+	pw->pctrl = pctrl;
+
+	pw->pSjd_work = NULL;
+	pw->pYuv420Image = NULL;
+	pw->pPlyWork = NULL;
+	
+	pw->sji = pw->sjo = NULL;
+	pw->sjd = NULL;
+	pw->ply = NULL;
+	
+	pw->frm.bufadr = NULL;
+//@	pw->frm.sample = NULL;
+	pw->ckout.len = 0;
+
+	pw->state = STATE_READY;
+}
+
+void *NewStreamIpicDriver( GM_STREAM_CONTROL *pctrl, int type )
+{
+	CRI_STR_WORK* pw = NULL ;
+
+	if( ( pw = GV_CreateActor( GV_ACTOR_MANAGER, GV_CLASS_SYSTEM, sizeof( CRI_STR_WORK ), 0xf2 ) ) != NULL ){
+		MWS_PLY_INIT_SFD iprm;
+		
+		GV_SetActor( &pw->actor, ActIpic, Die );
+		GetResources( pw, pctrl, type );
+		
+		pw->flag = 0;
+		
+		// SFVSJD イニシャライズ
+		SFVSJD_Init();
+
+////////
+		pw->flag = FLAG_MPEG;
+
+		memset(&iprm, 0, sizeof(iprm));
+		iprm.vhz			= MWSFD_VHZ_59_94;
+		iprm.disp_cycle		= 1;
+		iprm.disp_latency	= 2;
+#ifdef DECODE_OTHER_THREAD		
+		iprm.dec_svr		= MWSFD_DEC_SVR_IDLE;
+#else		
+		iprm.dec_svr		= MWSFD_DEC_SVR_MAIN;
+#endif		
+		mwPlyInitSfdFx(&iprm);
+////////		
+	}
+	return pw;
+}
+
+
+void *NewMemStreamIpic( void *ipu_data, int mode )
+{
+	CRI_STR_WORK* pw = NULL ;
+
+	if( ( pw = GV_NewActorPrio( GV_ACTOR_MANAGER, sizeof( CRI_STR_WORK ), 0xf2 ) ) != NULL ){
+		MWS_PLY_INIT_SFD iprm;
+		
+		GV_SetActor( &pw->actor, ActIpic, Die );
+		GetResources( pw, NULL, 0 );
+		
+		pw->flag = FLAG_ON_MEMORY;
+		
+		pw->pTopmem = pw->pCurrentmem = ipu_data ;
+
+		// SFVSJD イニシャライズ
+		SFVSJD_Init();
+////////
+		pw->flag |= FLAG_MPEG;
+
+		memset(&iprm, 0, sizeof(iprm));
+		iprm.vhz			= MWSFD_VHZ_59_94;
+		iprm.disp_cycle		= 1;
+		iprm.disp_latency	= 2;
+#ifdef DECODE_OTHER_THREAD		
+		iprm.dec_svr		= MWSFD_DEC_SVR_IDLE;
+#else		
+		iprm.dec_svr		= MWSFD_DEC_SVR_MAIN;
+#endif		
+		mwPlyInitSfdFx(&iprm);
+////////		
+	}
+	return pw;
+}
+
+
+#if !__MPEG_BY_EXFILE__
+void *NewStreamCriMpegDriver( GM_STREAM_CONTROL *pctrl, int type )
+{	// 通常ＭＰＥＧの入り口
+	CRI_STR_WORK* pw = NULL ;
+
+	if( ( pw = GV_CreateActor( GV_ACTOR_MANAGER, GV_CLASS_SYSTEM, sizeof( CRI_STR_WORK ), 0xf2 ) ) != NULL ){
+		extern LPDIRECTSOUND  p_DSound;                          // DirectSound object
+		MWS_PLY_INIT_SFD iprm;
+		
+		GV_SetActor( &pw->actor, ActMpeg, Die );
+		GetResources( pw, pctrl, type );
+		
+		pw->flag = FLAG_MPEG;
+		ADXM_SetCbErr(errfunc, NULL);
+		
+		memset(&iprm, 0, sizeof(iprm));
+		iprm.vhz			= MWSFD_VHZ_59_94;
+		iprm.disp_cycle		= 1;
+		iprm.disp_latency	= 2;
+#ifdef DECODE_OTHER_THREAD		
+		iprm.dec_svr		= MWSFD_DEC_SVR_IDLE;
+#else		
+		iprm.dec_svr		= MWSFD_DEC_SVR_MAIN;
+#endif		
+		mwPlyInitSfdFx(&iprm);
+	}
+	return pw;
+}
+#endif	// !__MPEG_BY_EXFILE__
+
+/* ---------------------------------------------------------------------- */
+/*
+	ドライバ登録 
+*/
+
+/* IPIC,MPEGストリームドライバ登録 */
+
+void GM_StreamCriDriverInit( int dummy )
+{
+	if( DriverRefCtr++ == 0 ) {
+		GM_StreamAddDriver( &driver, CHANK_TYPE_CRI_IPIC );
+		Sleep(1);
+#if	__MPEG_BY_EXFILE__
+		GM_StreamCriDriverInit_Mpeg(dummy) ;
+#else
+		GM_StreamAddDriver( &drivermpg, CHANK_TYPE_CRI_MPEG );
+#endif
+		Sleep(1);
+	}
+}
+
+/* IPIC,MPEGストリームドライバ停止 */
+void GM_StreamCriDriverEnd( void )
+{	// Init を呼ばずに End だけ呼ばれることがある
+	if( DriverRefCtr > 0 && --DriverRefCtr == 0 ) {
+#if	__MPEG_BY_EXFILE__
+		GM_StreamCriDriverEnd_Mpeg() ;
+#else
+		GM_StreamRemoveDriver( &drivermpg );
+#endif
+		GM_StreamRemoveDriver( &driver );
+	}
+}
+
+#define AvoidCriBug()
+
+/* ---------------------------------------------------------------------- */
+/*
+	外部呼び出しインターフェイス
+*/
+
+/* ストリームの映像幅・高さ・最大フレーム数を取得 */
+int GM_StreamGetCriInfo( int *width, int *height, int *frame )
+{
+#if	__MPEG_BY_EXFILE__
+	if( !pWork ) {		// Ipicではなければ、Mpeg側で判定
+		return( GM_StreamGetCriInfo_Mpeg(width, height, frame) ) ;
+	}
+#endif
+
+	if( pWork == NULL ) return -1;
+	if( pWork->state == STATE_READY ) return -1;
+	if( pWork->pPlyWork){
+		if ( width != NULL ) *width = pWork->mh.width;
+		if ( height != NULL ) *height = pWork->mh.height;
+		if ( frame != NULL ) *frame = 0;	// 返せない
+	}else{
+		GM_FG_BUFFER_INFO	info ;
+
+		if( !GM_FilterGraphGetCurrentBufferInfo(&info) ) return -1 ;
+
+		if ( width != NULL )  *width  = info.width;
+		if ( height != NULL ) *height = info.height;
+		if ( frame != NULL )  *frame  = 0;	// 返せない
+	}
+	/* 終了なら真を返す */
+	return FALSE;
+}
+
+void* GM_StreamGetCri( void )
+{
+#if	__MPEG_BY_EXFILE__
+	if( !pWork ) {		// Ipicではなければ、Mpeg側で判定
+		return( GM_StreamGetCri_Mpeg() ) ;
+	}
+#endif
+
+	if ( pWork == NULL ) return ( NULL );
+	if( pWork->pPlyWork){
+		if ( pWork->flag & FLAG_MPEG ) {
+			return ( pWork->frm.bufadr );
+		} else {
+			return ( pWork->ckout.data );
+		}
+	}else{
+		return( GM_FilterGraphGetCurrentBuffer() ) ;
+	}
+
+}
+
+/* 展開後Ycc420をラスタイメージに変換 */
+void GM_StreamCopyCriImage( void *dst, int dst_width, int dst_height, int dst_x, int dst_y, int flag )
+{
+#if	__MPEG_BY_EXFILE__
+	if( !pWork ) {		// Ipicではなければ、Mpeg側で処理
+		GM_StreamCopyCriImage_Mpeg(dst, dst_width, dst_height, dst_x, dst_y, flag) ;
+		return ;
+	}
+#endif
+
+	if ( pWork == NULL ) return ;
+
+
+	if( pWork->flag & FLAG_MPEG ) {
+		if( pWork->pPlyWork){
+			if ( pWork->frm.bufadr != NULL ) {
+				
+				int	y,i;
+	 			BYTE	*pd;
+	 			BYTE	*ps;
+	 			int		s_width_tmp;
+	 			int		d_width_tmp;
+				s_width_tmp = pWork->mh.width * 4;
+				d_width_tmp = dst_width * 4;
+				
+				printf("IMAGE adr 0x%08x \n",pWork->frm.bufadr);
+	
+				ps = (BYTE*)(BYTE*)pWork->frm.bufadr;
+				pd = (BYTE*)dst + dst_x * 4 + dst_y * d_width_tmp;
+				for(y = 0 ; y <  pWork->mh.height ; y ++){
+					i=pWork->f_cnt;
+					memcpy(pd,ps,s_width_tmp);
+					ps += s_width_tmp;
+					pd += d_width_tmp;
+				}
+				pWork->frm.bufadr = NULL;
+			}
+		}else{
+			DWORD	*src_buff ;
+			src_buff = GM_FilterGraphGetCurrentBuffer() ;
+		
+			if ( src_buff != NULL ) {
+				int	x,y;
+		 		BYTE	*pd;
+		 		BYTE	*ps;
+		 		int		sw, sh;
+		 		int		s_width_tmp;
+		 		int		d_width_tmp;
+		
+				{
+					GM_FG_BUFFER_INFO	info ;
+		
+					if( GM_FilterGraphGetCurrentBufferInfo(&info) )
+					{
+						sw = info.width ;
+						sh = info.height ;
+					}
+					else
+					{
+						sw = 512 ;	// 安全策
+						sh = 320 ;
+					}
+				}
+		
+				s_width_tmp = sw * 3;
+				d_width_tmp = dst_width * 4;
+				
+				ps = (BYTE*)src_buff;
+				for(y = 0 ; y <  sh ; y ++){
+					pd = (BYTE*)dst + dst_x * 4 + (dst_y + ((sh - y) - 1)) * d_width_tmp;
+					for(x=0; x<sw; x++)
+					{
+						pd[0] = ps[0] ;
+						pd[1] = ps[1] ;
+						pd[2] = ps[2] ;
+						pd[3] = 0xff ;
+						ps += 3;
+						pd += 4;
+					}
+				}
+			}
+		}
+
+	} else {
+		if ( pWork->ckout.len > 0 ) {
+			// 32の倍数の横サイズにしか対応してないっぽい
+//@			AvoidCriBug();
+//@			mwPlyYcc420plnToArgb8888( (BYTE*)pWork->ckout.data, (BYTE*)dst + dst_x * 4 + dst_y * dst_width * 4,
+//@									  pWork->mh.width, pWork->mh.height, dst_width * 4 );
+			int	x,y,i;
+			BYTE	*pd,*pd2;;
+
+			pd = (BYTE*)dst + dst_x * 4 + dst_y * dst_width * 4;
+			for(y = 0 ; y <  pWork->mh.height ; y ++){
+				i=pWork->f_cnt;
+				pd2 = pd;
+				for(x = 0 ; x < pWork->mh.width ; x++){
+					*pd2++ = i;
+					*pd2++ = i;
+					*pd2++ = i;
+					*pd2++ = i;
+				}
+				pd += dst_width * 4;
+			}
+		}
+	}
+}
+
+/* 展開後バッファの開放 */
+void GM_StreamFreeCri( void )
+{
+#if	__MPEG_BY_EXFILE__
+	if( !pWork ) {		// Ipicではなければ、Mpeg側で処理
+		GM_StreamFreeCri_Mpeg() ;
+		return ;
+	}
+#endif
+
+	if ( pWork == NULL ) return ;
+
+	if( pWork->pPlyWork){
+
+		if ( pWork->flag & FLAG_MPEG ) {
+			if ( pWork->frm.bufadr != NULL ) {
+				mwPlyRelCurFrm( pWork->ply );
+				pWork->frm.bufadr = NULL;
+			}
+	//@		pWork->frm.sample = NULL;
+		} else {		
+			if ( pWork->ckout.len > 0 ) {
+				SJ_PutChunk( pWork->sjo, SJ_LIN_FREE, &pWork->ckout );
+				pWork->ckout.data = NULL;
+				pWork->ckout.len = 0;
+			}
+		}
+	}else{
+		GM_FilterGraphUnLockBuffer() ;
+	}
+}
+
+BOOL	GM_StreamIsEndCri( void )
+{
+#if	__MPEG_BY_EXFILE__
+	if( !pWork ) {		// Ipicではなければ、Mpeg側で判定
+		return(GM_StreamIsEndCri_Mpeg() ) ;
+	}
+#endif
+
+	if( pWork == NULL ) return TRUE;
+	if( pWork->pPlyWork){
+		return pWork->state != STATE_DEC;
+	}else{
+		return( GM_FilterGraphIsEnd() ) ;
+	}
+}
+
+

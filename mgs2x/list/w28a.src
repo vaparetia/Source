@@ -1,0 +1,33 @@
+//
+//	w28a.src
+//
+//	written by Y.Matsuhana 2000.Nov
+//
+//	$Id: w28a.src,v 1.30 2001/08/25 12:16:53 usr13079 Exp $
+
+block .use r_plt0
+block .nocache
+block .cache
+
+#include "w28a_game.h"
+
+/* 以下デモ用。*/
+// デモで使う海面モデル
+#include	"e_surface.h"
+
+// ライデン
+human		rai_def/rai_def_mh_mt.evm
+
+// ダミー水密ドアモデル
+//goods		demo_w00_sdr/demo_w00_sdr_r.kms
+world	door/w28a_sdr_r.kms/* mgdemo added ----from here (Fri Aug 24 16:43:23 2001) ---- */
+goods	null/null.kms
+human	ema_def/ema_id_rope3_mh_mt.evm
+world	door/w25c_dr00.kms
+human	ema_def/ema_idrope2_mh_mt.evm
+human	ema_def/ema_id_rope3_mh_mt.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Sat Aug 25 21:08:51 2001) ---- */
+vib	demo/P065_01_p01_wind_01.vib
+vib	demo/P065_01_p01_rai_01.vib
+/* mgdemo added ----upto here ---- */

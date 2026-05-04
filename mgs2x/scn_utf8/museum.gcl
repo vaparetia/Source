@@ -1,0 +1,64 @@
+/*
+	museum.gcl
+
+	2001/06/03 S.Kaneyoshi
+	$Id: museum.gcl,v 1.7 2002/10/08 10:48:17 usr04761 Exp $
+*/
+
+
+// command	フォント初期化
+
+//#include "stdch.h"
+#include "vardef.h"
+
+#include "sload.h"
+#include "sound.h"
+#include "varinit.h"
+
+	chara 2Dレイアウトドライバ ２Ｄドライバ
+
+/***************************************************************************************************/
+// 歴史博物館紹介テキスト表示
+/***************************************************************************************************/
+
+// 表示してオープニングデモへ飛ぶ
+@表示実行
+
+// プロック準備
+proc 表示実行 {
+
+		if( $w:言語 == d:LANG_ENGLISH_ENGLAND ) {
+			eval( $s:n_titile_テクスチャ名 = museum_e_alp_ovl )
+		} else if( $w:言語 == d:LANG_FRENCH ) {
+			eval( $s:n_titile_テクスチャ名 = museum_fr_alp_ovl )
+		} else if( $w:言語 == d:LANG_GERMANY ) {
+			eval( $s:n_titile_テクスチャ名 = museum_de_alp_ovl )
+		} else if( $w:言語 == d:LANG_ITALY ) {
+			eval( $s:n_titile_テクスチャ名 = museum_it_alp_ovl )
+		} else if( $w:言語 == d:LANG_SPANISH ) {
+			eval( $s:n_titile_テクスチャ名 = museum_es_alp_ovl )
+		} else if( $w:言語 == d:LANG_JAPANESE ) {
+			eval( $s:n_titile_テクスチャ名 = museum_j_alp_ovl )
+		}
+
+		chara コナミロゴ表示 歴史博物館テキスト \
+			-t 60 540 60 \
+			-p ボタン押した押さない \
+			-b museum \						// ＴＲＩファイル名
+			   $s:n_titile_テクスチャ名		// テクスチャ名
+}
+
+proc ボタン押した押さない $:返り値 {
+	if( $:返り値 == 0 ){
+		/* 通常終了 */
+		@プラント編オープニングデモへ
+	} else {
+		/* なにかしらボタンが押された */
+		@プラント編オープニングデモへ
+	}
+}
+
+proc プラント編オープニングデモへ {
+	load "d001p01"
+}
+

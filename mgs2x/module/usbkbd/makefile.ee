@@ -1,0 +1,57 @@
+#
+#	KCEJ USB KEYBOARD( for DEBUG ) for EE 
+#
+
+OBJECTS = usbkbd_ee.o
+
+SHELL       = /bin/sh
+
+TOP         = /usr/local/sce/ee
+LIBDIR      = $(TOP)/lib
+INCDIR      = $(TOP)/include 
+SYSINCDIR      = $(TOP)/src/kernel/include
+
+OBJDIR		= obj_ee
+
+#TARGET      = usbkbd.a
+TARGET      = 
+OBJS		= $(addprefix $(OBJDIR)/, $(OBJECTS))
+HEADER		= usbkbd.h
+
+PREFIX      = ee
+AS          = $(PREFIX)-gcc
+CC          = $(PREFIX)-gcc
+LD          = $(PREFIX)-gcc
+DVPASM      = $(PREFIX)-dvp-as
+OBJDUMP     = $(PREFIX)-objdump
+RUN         = dsedb -r run
+RM          = /bin/rm -f
+AR          = $(PREFIX)-ar
+
+CFLAGS      = -O2 -Wall -fno-common -D EE -G0 -I $(IOP_INCDIR)
+ASFLAGS     = -c -xassembler-with-cpp -Wa,-al
+DVPASMFLAGS = -g 
+
+.SUFFIXES: .a .c .s .cc .dsm
+
+all: $(TARGET) copy
+
+clean:
+	$(RM) $(TARGET) $(OBJS)
+
+#$(TARGET) : $(OBJS)
+#	$(AR) r $(TARGET) $(OBJS)
+
+copy:
+#	cp $(TARGET) $(IOP_LIBDIR)
+	cp $(HEADER) $(IOP_INCDIR)
+
+.s.o:
+	$(AS) $(ASFLAGS) $(TMPFLAGS) -I$(INCDIR) -o $@ $< > $*.lst
+
+.dsm.o:
+	$(DVPASM) $(DVPASMFLAGS) -I$(INCDIR) -o $@ $< > $*.lst
+
+#$(OBJDIR)/%.o: %.c
+#	$(CC) $(CFLAGS) $(TMPFLAGS) -I$(INCDIR) -c $< -o $(OBJDIR)/$*.o
+

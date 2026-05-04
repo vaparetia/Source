@@ -1,0 +1,147 @@
+//
+//	w51a.src	
+//	アーセナルギア上
+//
+//	written by H.Yoshiike 2001.May
+//
+//	$Id: w51a.src,v 1.24 2002/07/17 12:02:39 usr04098 Exp $
+
+#define WN_W51A
+
+block .use r_plt0
+block .nocache
+block .cache
+
+#include	"w51a_common.h"
+
+// 強制モーション
+mtn		sna_w51a.mls
+mtn		sol_w51a.mls
+mtn		sol_snakearm_w51a.mls
+mtn		fort_w51a.mls
+mtn		rev_w51a.mls
+mtn		ray_w51a.mls
+
+
+// 海面(MIPMAP)
+#ifndef MGS2_XBOX_1
+mipmap w51a/w51a_sea.tri
+#else
+pack_mip w51a_sea.tri \
+	effect/sea_mipmap/w51a_sea_256_alp_ovl.bmp \
+	effect/sea_mipmap/w51a_sea_128_alp_ovl.bmp \
+	effect/sea_mipmap/w51a_sea_64_alp_ovl.bmp \
+	effect/sea_mipmap/w51a_sea_32_alp_ovl.bmp 
+#endif
+
+// 以下ポリデモ用
+//ライデン
+pack_all demo_raiden.tri \
+		human/rai_def/rai_def_mt.dar \
+		human/rai_def/rai_def_mh_mt.dar
+human	rai_def/rai_def_mt.kms
+human	rai_def/rai_def_mh_mt.evm
+
+// リアル影投影モデル
+world	w51a/w51a_kage/w51a0k.kms
+world	w51a/w51a_kage/w51a1k.kms
+
+// 息我慢ボタン用Ｌ２Ｄ
+#if defined(MGS2_XBOX)
+//	XBOX版
+l2d		2D/demo/hold_breath/xbreath.l2d
+#elif defined(MGS2_KOREA)
+//	韓国版
+l2d		2D/demo/hold_breath/breath_kr.l2d
+#else
+//	韓国版以外
+l2d		2D/demo/hold_breath/breath.l2d
+#endif
+
+// 振動データ
+vib	program/snake_arm_02.vib
+vib	program/snake_arm_03.vib
+
+// リネーム
+#if defined(MGS2_XBOX)
+//	XBOX版
+rename	xbreath.o2d breath.o2d
+#elif defined(MGS2_KOREA)
+//	韓国版
+rename	breath_kr.o2d breath.o2d
+#endif
+
+
+pack_all demo_human.tri \
+		human/rev_liq/rev_liq_p_addhand_mh_mt.dar \
+		human/rev_liq/rev_hair_liq_mh.dar \
+		human/rev_liq/rev_liq_boundhing.dar \
+		human/for_def/for_last_addhand_mh_mt.dar
+human	rev_liq/rev_liq_p_addhand_mh_mt.evm
+human	rev_liq/rev_hair_liq_mh.evm
+human	rev_liq/rev_liq_boundhing.kms
+human	for_def/for_last_addhand_mh_mt.evm
+
+pack_all demo_raycp.tri \
+		meca/ray_w04c1/raycp_canopy2_t12a1d_mt.dar \
+		meca/ray_w04c1/raycp_canopy1_t12a1d_mt.dar \
+		meca/ray_w04c1/raycp_t12a1d.dar \
+		debug/act_guy/ray_cockpit.dar \
+		effect/ray_display/raycp_cover.dar
+meca	ray_w04c1/raycp_canopy2_t12a1d_mt.kms
+meca	ray_w04c1/raycp_canopy1_t12a1d_mt.kms
+meca	ray_w04c1/raycp_t12a1d.kms
+debug	act_guy/ray_cockpit.kms
+effect	ray_display/raycp_cover.kms
+
+
+pack_all demo_other.tri \
+		goods/demo_dummy/demo_dummy.dar \
+		goods/demo_tejyou/demo_tjo_sna_broken_r.dar \
+		goods/demo_tejyou/demo_tjo_sna_broken_l.dar \
+		debug/toyota/tmp/saa.dar \
+		weapon/snakearm_missile/sol_msl.dar 
+goods	demo_dummy/demo_dummy.kms
+goods	demo_tejyou/demo_tjo_sna_broken_r.kms
+goods	demo_tejyou/demo_tjo_sna_broken_l.kms
+debug	toyota/tmp/saa.kms
+weapon	snakearm_missile/sol_msl.kms
+
+pack_trnall trn.tri effect/splash/splash03_alp.bmp
+pack_trnall trn.tri debug/shibata/.ray_eye_test.000000/ray_eye_blur_alp.bmp
+pack_trnall trn.tri effect/ray_effect/ray_eye_bonbori_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_yajirushi1_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_holograph1_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_touchp_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_hanyoutex_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_circle1_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_text1_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_conpane1_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_circle2_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_scaler_r_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_circle3_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_scaler_l_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_display1_add_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_rearview_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_display1_dammy_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_liner_alp.bmp
+pack_trnall trn.tri effect/ray_display/raycp_canopy_liner_alp.bmp
+
+// デモ振動
+vib	demo/P080_13_p07_sol_01.vib
+vib	demo/P080_13_p07_quake_04.vib
+vib	demo/P080_13_p07_quake_03.vib
+vib	demo/P080_13_p07_quake_02.vib
+vib	demo/P080_13_p07_ray_01.vib
+vib	demo/P080_13_p07_quake_01.vib
+vib	demo/P080_13_p07_ray_02.vib
+vib	demo/P080_13_p07_quake_05.vib
+vib	demo/P080_13_p07_rai_01.vib
+vib	demo/P080_13_p07_quake_07.vib
+vib	demo/P080_13_p07_splash_01.vib
+vib	demo/P080_13_p07_quake_06.vib
+vib	demo/P080_05_p03_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Sep  6 13:53:03 2001) ---- */
+human	sol_def/sol_sarm_shadow.kms
+/* mgdemo added ----upto here ---- */

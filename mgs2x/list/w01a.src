@@ -1,0 +1,73 @@
+//	w01a.src
+//	written by 	M.Uehara 1999.Oct
+//				S.Kaneyoshi	2000/04/01
+//	$Id: w01a.src,v 1.49 2001/10/01 07:55:04 usr04249 Exp $
+
+#define WN_W01A
+
+// 常駐データ
+block .use r_tnk0
+
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include "t_common.h"
+#include "common.h"
+include	c_effect.h
+
+// キャラクタ
+include		ene_tank.h
+
+// アイテム
+include		item_box_tank.h
+
+// ワールド
+world/w01a		base
+world/w01a		floor
+world/w01a		locker
+world/w01a		load_model
+
+// コンテナ
+world/w01f			base/w01f_box.kms
+
+// 羽虫コモデル
+goods		fly/fly_cm.kms
+
+// 水密ドアとドア
+world/door		w01asdr_handle.kms w01asdr_body_l.kms w01asdr_body_r.kms \
+				w01a_dr.kms w01asdr_handle2.kms w01asdr_handle3.kms
+
+// 水密ドアモーション
+mtn				sna_hatch.mls
+mtn				hatch_door_sna.mls
+mtn				hatch_handle_sna.mls
+
+// ロッカー
+mtn					sna_locker.mls
+mtn					locker.mls
+
+// 強制モーション
+mtn			sna_w01a.mls
+
+// ライト & ハザード
+lt2			w01a.lt2
+hazard		w01a.hzx
+
+// デバッグ用
+//goods		sling_test clear_test corpse_a corpse_u
+
+// リネーム
+rename		aks_sp.cv2	aks_sp_1.cv2
+
+
+
+// ハッチ壊れ
+mtn			wtdoor_break.mls
+
+// 消火器
+debug		okajima/hose_test/hose_cone.kms
+debug		okajima/hose_test/hose_new2.kms
+cvd  		debug/okajima/hose_test/hose_new2.cvd vn
+
+texrename w01a.kms w01a0_pp02.bmp w01a_rename1.bmp

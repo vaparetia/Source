@@ -1,0 +1,202 @@
+// a14a.src
+// Ｂ脚・変電室(アナザーミッション用)
+// 2002/02/12 H.Yoshiike
+// $Id$
+
+
+
+// ステージ名
+#define		WN_W14A
+
+// エフェクトを整理
+#define	EFFECT_CUSTUM
+#define	E_GLASS_DANKON			// グラス系弾痕
+#define	E_KOGETUKI				// 壁への焦げ付き
+#define	E_FOOTSTAMP				// 足跡
+#define	E_ENEMY					// 敵兵系
+#define	E_ENEMY_LIGHT			// 敵兵ライト、スティンガー、ニキータ、剣の火花、しょんべん兵
+#define	E_SLING					// スリング
+#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+#define	E_MANHATTAN_LIGHT		// マンハッタンライト
+#define	E_C4BOMB				// Ｃ４爆弾、赤外線センサー
+#define	E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷 解体Ｃ４
+#define	E_CHARA_DENTOU			// chara 懐中電灯、フォーチュン戦
+#define	E_CHARA_HAMON			// chara 波紋
+#define	E_BROKEN_OBJECT			// 壊れ物
+#define	E_BROKEN_PAPEROBJECT	// 壊れ物紙
+#define	E_BROKEN_PLATE			// 壊れ物皿
+#define	E_HIMATU				// 水飛沫
+#define	E_STEAM					// 粉 & 水蒸気
+#define	E_POWDER				// 小麦粉
+#define	E_LINEAR_GUN			// リニアガン
+#define	E_DOOR_LUMP				// ドアランプ
+#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+#define	BONBORI					// ぼんぼり
+#define	NODE_LAMP				// ノードディスプレイランプ
+
+
+
+// 敵兵タイプ
+#define		ENE_P_GOL
+#define		ENE_ATTACKER
+#define		ENE_HIGH_TECH
+#define		ENE_SHADOW 1
+
+// 特殊兵
+
+// 特殊兵のモーション設定
+#define		ENE_MAR '-DDEL_SHOTGUN=DUMMY -DDEL_TNG=DUMMY -DDEL_SHIELD=DUMMY -DDEL_WALKMAN=DUMMY'
+
+
+block .use r_vr_s
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"common.h"
+#include	"c_effect.h"
+// オルタナティブミッション用追加エフェクト
+#include	"alt_effect.h"
+
+// キャラクタ
+#include	"ene_plant.h"
+
+
+// 強制モーション
+mtn			sna_a14a.mls
+mtn			rai_a14a.mls
+mtn			sna_locker.mls		// ロッカー開閉モーション
+mtn			locker.mls			// ロッカー扉開閉モーション
+
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+
+pack_all	object1.tri \
+				world/door/w14a_dr00.dar \
+				world/door/w14a_dr01.dar \
+				world/door/dr_free.dar
+
+world		door/w14a_dr00.kms
+world		door/w14a_dr01.kms
+world		door/dr_free.kms
+
+option makexti6 -l 1024 -f PAL8
+world		w14a/w14a0
+option makexti6
+world		w14a/w14a1
+world		w14a/w14a_load
+lt2			w14a.lt2
+hazard		a14a.hzx
+
+
+
+
+
+// オブジェクト
+// 小さいサイズのテクスチャはまとめておく
+
+// 電灯虫
+pack_all	obj_cm.tri \
+				goods/fly/fly_cm.dar
+
+goods		fly/fly_cm.kms
+
+// 解体Ｃ４・監視カメラ・消火器(一番最後に描画してもらうためにzからはじめる)
+pack_all	z_object2.tri \
+			goods/c4_kaitai_a \
+			goods/c4_kaitai_b \
+			meca/svc_plant/svc_plant.dar \
+			meca/svc_plant/svc_plant_brk1.dar \
+			debug/okajima/hose_test/hose_cone.dar \
+			debug/okajima/hose_test/hose_new2.dar
+
+goods		c4_kaitai_a
+goods		c4_kaitai_b
+meca		svc_plant
+debug		okajima/hose_test/hose_cone.kms
+debug		okajima/hose_test/hose_new2.kms
+cvd  		debug/okajima/hose_test/hose_new2.cvd vn
+
+// ＳＥＡＬＳ・海軍大佐
+pack_all	object3.tri \
+				human/sel_dead/sel_dead_ac.dar \
+				human/sel_dead/sel_dead_acm4.dar \
+				human/sel_dead/sel_dead_b.dar
+//				human/sel_dead/sel_dead_bm4.dar
+
+pack_all	object4.tri \
+				human/sel_dead/sel_dead_indoor.dar \
+				human/sel_dead/sel_dead_indoorm4.dar
+
+human		sel_dead/sel_dead_ac.kms
+human		sel_dead/sel_dead_acm4.kms
+human		sel_dead/sel_dead_b.kms
+human		sel_dead/sel_dead_indoor.kms
+human		sel_dead/sel_dead_indoorm4.kms
+
+// アイテム
+itembox
+
+//	pack_all	itembox.tri \
+//					itembox/item/dogtag_ibox.dar \
+//					itembox/item/dogtag_ibox_sh.dar \
+//					itembox/item/dogtag_ibox.dar \
+//					itembox/amo/handgun_amo_ibox.dar \
+//					itembox/amo/handgun_amo_ibox_sh.dar \
+//					itembox/amo/scm_amo_label.dar \
+//					itembox/amo/m92_amo_label.dar \
+//					itembox/item/ration_ibox.dar \
+//					itembox/item/ration_ibox_sh.dar \
+//					itembox/item/rtn_label.dar \
+//					itembox/weapon/handgun_ibox.dar \
+//					itembox/weapon/handgun_ibox_sh.dar \
+//					itembox/weapon/scm_sp_label.dar \
+//					itembox/weapon/grenade_ibox.dar \
+//					itembox/weapon/grenade_ibox_sh.dar \
+//					itembox/weapon/cgr_label.dar \
+//					itembox/weapon/sgr_label.dar \
+//					itembox/item/medicine_ibox.dar \
+//					itembox/item/medicine_ibox_sh.dar \
+//					itembox/item/sbs_label.dar
+//
+//	// ドッグタグ
+//	itembox		item/dogtag_ibox.kms			// モデル：箱本体
+//	itembox		item/dogtag_ibox_sh.kms			// モデル：箱影
+//	itembox		item/dogtag_ibox.kms			// モデル：ラベル
+//	// 弾薬_ソコム
+//	itembox		amo/handgun_amo_ibox.kms		// モデル：箱本体
+//	itembox		amo/handgun_amo_ibox_sh.kms		// モデル：箱影
+//	itembox		amo/scm_amo_label.kms			// モデル：ラベル
+//	// 弾薬_Ｍ９
+////	itembox		amo/handgun_amo_ibox.kms		// モデル：箱本体
+////	itembox		amo/handgun_amo_ibox_sh.kms		// モデル：箱影
+//	itembox		amo/m92_amo_label.kms			// モデル：ラベル
+//	// レーション
+//	itembox		item/ration_ibox.kms			// モデル：箱本体
+//	itembox		item/ration_ibox_sh.kms			// モデル：箱影
+//	itembox		item/rtn_label.kms				// モデル：ラベル
+//	// ソコムサプレッサ
+//	itembox		weapon/handgun_ibox.kms			// モデル：箱本体
+//	itembox		weapon/handgun_ibox_sh.kms		// モデル：箱影
+//	itembox		weapon/scm_sp_label.kms			// モデル：ラベル
+//	// チャフ
+//	itembox		weapon/grenade_ibox.kms			// モデル：箱本体
+//	itembox		weapon/grenade_ibox_sh.kms		// モデル：箱影
+//	itembox		weapon/cgr_label.kms			// モデル：ラベル
+//	// スタン
+////	itembox		weapon/grenade_ibox.kms			// モデル：箱本体
+////	itembox		weapon/grenade_ibox_sh.kms		// モデル：箱影
+//	itembox		weapon/sgr_label.kms			// モデル：ラベル
+//	// 止血剤
+//	itembox		item/medicine_ibox.kms			// モデル：箱本体
+//	itembox		item/medicine_ibox_sh.kms		// モデル：箱影
+//	itembox		item/sbs_label.kms				// モデル：ラベル
+
+
+
+//パッドデモテクスチャ
+// リネーム

@@ -1,0 +1,55 @@
+ifeq ($(wildcard PathDefs),)
+PathDefs:
+	iop-path-setup > PathDefs || (rm -f PathDefs ; exit 1)
+	$(MAKE) all
+else
+include PathDefs
+endif
+
+LOADLIBES = -ilb=../jsifman/jsifman.ilb -ilb=../usbfs/usbfs.ilb -ilb=../cdbios/cdbios.ilb
+
+#----------- rules --------------
+%.irx: %.o
+	$(LINK.o) $^ -L../../../lib -L./ $(LOADLIBES) $(LDLIBS) \
+	-ilb=libsd.ilb  -o $@
+
+#----------- customize section --------------
+ifeq ($(MGS2_MASTER),1)
+LDLIBS   = -s
+DEFINES  = -DMASTER
+else
+LDLIBS   =
+DEFINES  =
+endif
+
+CFLAGS   =  -Wall -g -G0 -I../../../include $(DEFINES)
+ASFLAGS  =
+PROGNAME = iop_main.irx
+OBJS     = iop_main.o \
+           sd_wk.o \
+           sd_file.o \
+           sd_sub1.o \
+           sd_sub2.o \
+           sd_ioset.o \
+           sd_drv.o \
+           sd_main.o \
+           sd_cli.o \
+           sd_mstr.o \
+           sd_str2.o \
+           sd_str3.o 
+#           se_tbl.o
+
+all: $(PROGNAME) copy
+
+$(PROGNAME): $(OBJS)
+	$(LINK.o)  -o $@ $(OBJS) -G0 $(LDLIBS) -L$(TOP)/lib -L./  -ilb=libsd.ilb $(LOADLIBES)
+
+copy: 
+	cp $(PROGNAME) $(IOP_IRXDIR)
+
+clean:
+	rm -f *.o $(PROGNAME) *.map
+
+run: all
+	dsistart $(PROGNAME)
+#	dsidb -r dsreset 0 2;dsistart $(PROGNAME)

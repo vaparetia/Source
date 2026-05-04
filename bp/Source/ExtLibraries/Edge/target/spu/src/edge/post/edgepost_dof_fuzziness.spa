@@ -1,0 +1,145 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+	@fn			extern "C" void edgePostExtractDofFuzziness( qword output, qword depth, qword count )
+**/
+//--------------------------------------------------------------------------------------------------
+
+.include "edgepost_helpers.inc"
+
+
+
+// Extract near fuzziness
+.cfunc void edgePostExtractNearFuzziness( qword output, qword depth, qword count, qword nearFuzzy, qword nearSharp, qword maxFuzziness )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+
+	// splats inputs
+	shufb		nearFuzzy, nearFuzzy, nearFuzzy, kEdgePostReplicateX
+	shufb		nearSharp, nearSharp, nearSharp, kEdgePostReplicateX
+	shufb		maxFuzziness, maxFuzziness, maxFuzziness, kEdgePostReplicateX
+	
+	// fabs()
+	.reg		kAbsMask
+	il128		kAbsMask, 0x7FFFFFFF_7FFFFFFF_7FFFFFFF_7FFFFFFF
+	
+	// calculate factors
+	.reg		k0, k0i, m0
+	fs			k0, nearSharp, nearFuzzy
+	fceq		m0, k0, kEdgePostFloatZero
+	frest		k0i, k0
+	fi			k0, k0, k0i
+	selb		k0, k0, kEdgePostFloatZero, m0
+	
+loop:
+	ai			output, output, 0x10
+	ai			depth, depth, 0x10
+	ai			count, count, -4
+	
+	// Load (linear) depth
+	.reg		linearDepth, m
+	lqd			linearDepth, -0x10( depth )
+
+	// calculate fuzziness
+	.reg		nearFuzziness
+	fs			nearFuzziness, linearDepth, nearSharp
+	fm			nearFuzziness, nearFuzziness, k0
+	and			nearFuzziness, nearFuzziness, kAbsMask
+	
+	// select correct fuzziness zone
+	.reg		fuzziness
+	fcgt		m, nearSharp, linearDepth
+	selb		fuzziness, kEdgePostFloatZero, nearFuzziness, m
+	
+	// clamp
+	fcgt		m, fuzziness, maxFuzziness
+	selb		fuzziness, fuzziness, maxFuzziness, m
+	fcgt		m, fuzziness, kEdgePostFloatZero
+	selb		fuzziness, kEdgePostFloatZero, fuzziness, m
+	
+	//	Store ( as floating point )
+	stqd		fuzziness, -0x10( output )
+	brnz		count, loop
+.endfunc
+
+
+// Extract Far fuzziness
+.cfunc void edgePostExtractFarFuzziness( qword output, qword depth, qword nearFuzziness, qword count, qword farSharp, qword farFuzzy, qword maxFuzziness, qword defaultLeakFactor )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+
+	// splats inputs
+	shufb		farSharp, farSharp, farSharp, kEdgePostReplicateX
+	shufb		farFuzzy, farFuzzy, farFuzzy, kEdgePostReplicateX
+	shufb		maxFuzziness, maxFuzziness, maxFuzziness, kEdgePostReplicateX
+	shufb		defaultLeakFactor, defaultLeakFactor, defaultLeakFactor, kEdgePostReplicateX
+	
+	// calculate factors
+	.reg		k1, k1i, m1
+	fs			k1, farFuzzy, farSharp
+	fceq		m1, k1, kEdgePostFloatZero
+	frest		k1i, k1
+	fi			k1, k1, k1i
+	selb		k1, k1, kEdgePostFloatZero, m1
+	
+	.reg		kFFFF, kFF
+	ilf32		kFFFF, 65535.f
+	ilf32		kFF, 255.f
+	
+loop:
+	ai			output, output, 0x10
+	ai			depth, depth, 0x10
+	ai			nearFuzziness, nearFuzziness, 0x10
+	ai			count, count, -4
+	
+	// Load (linear) depth
+	.reg		linearDepth, fuzziness, m, nearFuzz
+	lqd			linearDepth, -0x10( depth )
+	lqd			nearFuzz, -0x10( nearFuzziness )
+	ilf32		fuzziness, .0f
+	
+	// far zone maps to 0..1
+	.reg		farFuzziness
+	fs			farFuzziness, linearDepth, farSharp
+	fm			farFuzziness, farFuzziness, k1
+	
+	// select correct fuzziness zone
+	fcgt		m, linearDepth, farSharp
+	selb		fuzziness, fuzziness, farFuzziness, m
+	
+	// combine with near fuzziness
+	fa			fuzziness, fuzziness, nearFuzz
+	
+	// clamp to maxFuzziness
+	fcgt		m, fuzziness, maxFuzziness
+	selb		fuzziness, fuzziness, maxFuzziness, m
+	
+	// this sample is allowed to "leak" into foreground object only if it's part of near fuzziness
+	// the "leakFactor" encodes this value
+	.reg		leakFactor
+	fcgt		m, nearFuzz, kEdgePostFloatZero
+	selb		leakFactor, defaultLeakFactor, kEdgePostFloatOne, m
+	
+	// pack values together as they are expected by DOF effect
+	fm			fuzziness, fuzziness, kFFFF
+	fm			linearDepth, linearDepth, kFF
+	fm			leakFactor, leakFactor, kFF
+	cfltu		fuzziness, fuzziness, 0
+	cfltu		linearDepth, linearDepth, 0
+	cfltu		leakFactor, leakFactor, 0
+	shli		fuzziness, fuzziness, 16
+	shli		leakFactor, leakFactor, 8
+	or			fuzziness, fuzziness, linearDepth
+	or			fuzziness, fuzziness, leakFactor
+	
+	//	Store
+	stqd		fuzziness, -0x10( output )
+	brnz		count, loop
+.endfunc

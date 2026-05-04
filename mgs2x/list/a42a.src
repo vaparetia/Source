@@ -1,0 +1,119 @@
+// a42a.src
+// ＡＧ・第一メタルハンガー（アナザーミッション用）
+// 2001/02/05 S.Yamashita
+// $Id: a42a.src,v 1.8 2002/08/12 12:27:06 usr04549 Exp $
+
+
+
+// ステージ名
+#define		WN_W42A
+// アナザーミッション明示
+#define		WN_ANOTHER
+
+
+
+block .use r_vr_s
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"common.h"
+#include	"c_effect.h"
+//include		wp_plant.h
+
+//	オルタナティブ追加エフェクト
+#include	"alt_effect.h"
+
+// キャラクタ
+#include		"ene_tng42.h"
+
+
+
+// 強制モーション
+mtn			rai_a42a.mls
+mtn			sna_a42a.mls
+
+
+
+
+
+// ワールド
+// マルチテクスチャモデル
+
+// それ以外のモデル
+pack_all	apdray.tri \
+				world/w42a/w42a_pdray/w42a_pdray_high.dar \
+				world/w42a/w42a_pdray/w42a_pdray_low.dar
+
+pack_all	zribbon.tri \
+				world/w42a/other/w42a_efct.dar
+
+pack_all	door.tri \
+				world/door/w42a_dr_left.dar \
+				world/door/w42a_dr_right.dar
+
+world		door/w42a_dr_left.kms
+world		door/w42a_dr_right.kms
+
+world		w42a/other
+world		w42a/w42a
+world		w42a/w42a_pdray
+lt2			w42a.lt2
+hazard		a42a.hzx
+
+
+
+
+
+// オブジェクト
+// 小さいサイズのテクスチャはまとめておく
+
+// リボン
+pack_trnall	stage_effect.tri \
+				world/w42a/effect/w42a_efct_disp_01_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_01_scr_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_01_noiz_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_02_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_02_scr_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_02_noiz_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_03_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_03_scr_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_03_noiz_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_04_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_04_scr_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_04_noiz_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_05_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_05_scr_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_05_noiz_alp_add_ovl.bmp
+
+
+// 監視カメラ
+pack_all	object.tri meca/svc_plant
+meca		svc_plant
+
+// カメマップ
+l2d			2D/mapbug/mapbug.l2d
+
+// アイテム
+itembox
+
+
+
+//パッドデモ（E3用）
+rpd			e3_a42a_00.rpd
+rpd			e3_a42a_01.rpd
+rpd			e3_a42a_02.rpd
+
+
+// リネーム
+
+
+
+// 解体Ｃ４セット 最後に描画させるためにＴＲＩ名にＺをつける
+pack_all	z_object.tri \
+			goods/c4_kaitai_a \
+			goods/c4_kaitai_b
+
+goods		c4_kaitai_a
+goods		c4_kaitai_b
+

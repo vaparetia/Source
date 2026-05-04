@@ -1,0 +1,6470 @@
+/*
+	w22a.gcl                     
+		Ｆ脚
+
+	2000/10/16 H.Yoshiike         
+	$Id: w22a.gcl,v 1.119 2002/09/25 09:43:48 usr03682 Exp $                      
+
+	
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+// ステージ名
+#define		STAGE_W22A		1		// 共通プロック切り分け用
+// 敵兵、ＮＰＣ状況（薬莢を呼び分けるのに必要）
+#define		ENE_P_GOL		1		// 都市迷彩ゴル兵
+#define		ENE_SHOT		1		// ショットガン兵
+#define		ENE_HIGH_TECH	1		// ハイテク兵
+#define		ENE_SHIELD		1		// 盾兵
+
+
+// 各種スイッチ用define
+// ------------------------------------
+// サウンド
+#define		SOUND			1		// サウンドデータは最初に呼ぶ
+#define		BGM				1		// BGMは敵兵コマンダーの後に呼ぶ
+// デモ
+// ノード端末
+#define		NODE			1		// ノードcharaを使用するのに必要
+// キャラクター関係
+#define		RAIDEN			1		// SNAKEとは排他
+#define		SNAKE			0
+#define		ENEMY			1		// コマンダーと警備兵(敵を出すときは必須)
+#define		ATTACKER		1		// 攻撃兵
+// ドア
+#define		SLIDE_DOOR		1		// スライドドア
+// 入出トラップ
+#define		LOAD_TRAP		1
+#define		STAGE_END		1		// ステージ終了時処理を使用可にする
+// フォグ
+#define		FOG				1
+// ライト関係
+#define		CHARA_LIGHT		1		// キャラ専用ライト
+// エフェクト関係
+#define		EFFECT			0		// エフェクト全般
+#define		BLUR			0		// ブラー
+#define		Z_MANAGER		0		// Ｚフォーカス管理(敵のライト等で仕様)
+#define		BODY_SHADOW		0		// 敵のライトによって出る影
+// 子画面
+#define		SUB_CAMERA		1
+// カメラ関係
+#define		START_CAMERA	1		// ステージ開始時のカメラ
+#define		CLEAR_CAMERA	1		// クリアリング専用カメラ(要子画面)
+
+// 天井
+#define		CHARA_CEIL		1		// 天井君
+// 透明壁
+#define		TR_WALL			1		// シナリオ置きの透明壁
+// オブジェ関係
+#define		LOCKER			1		// ロッカー
+#define		SD_LOCKER_FLR	4		// ロッカー扉SE番号(倒れバージョン)
+#define		SD_LOCKER_HZD	4		// ロッカー扉SE番号(扉バージョン)
+#define		IR_SENSOR		1		// 赤外線センサー
+#define		C4_BOMB			1		// 解体用
+#define		BOMB_STAGE		w22a	// 爆弾解体後処理を呼ぶのに必要
+// 爆弾タイマー
+#define		CTDOWN_TIMER_P	1		// 爆弾タイマー開始procを呼ぶのに必要
+// アイテム
+#define		ITEM			1
+// 強制モーション
+#define		JP_MOTION		1		// ジャンプモーション
+#define		BY_MOTION		1		// ビヨンドモーション
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME			w22a
+#define		KMS_NAME0A			w22a0a
+#define		KMS_NAME0B			w22a0b
+#define		KMS_NAME0C			w22a0c
+#define		KMS_NAME0D			w22a0d
+#define		KMS_NAME0E			w22a0e
+#define		KMS_NAME0F			w22a0f
+#define		KMS_NAME0G			w22a0g
+#define		KMS_NAME0H			w22a0h
+#define		KMS_NAME0_21		w22a_21a
+#define		KMS_NAME0_23		w22a_23b1 
+#define		KMS_NAME1G			w22a1g
+#define		KMS_NAME1H			w22a1h
+#define		KMS_NAME1I			w22a1i
+#define		KMS_NAME1J			w22a1j
+#define		KMS_NAME1_23		w22a_23b0 
+#define		CEIL_NAME0			w22a0r_d
+#define		CEIL_NAME1			w22a1r_d
+#define		CEIL_NAME0AR		w22a0ar
+#define		CEIL_NAME0BR		w22a0br
+#define		CEIL_NAME0CR		w22a0cr
+#define		CEIL_NAME0DR		w22a0dr
+#define		CEIL_NAME0ER		w22a0er
+#define		CEIL_NAME0FR		w22a0fr
+#define		CEIL_NAME0GR		w22a0gr
+#define		CEIL_NAME0HR		w22a0hr
+#define		CEIL_NAME1GR		w22a1gr
+#define		CEIL_NAME1HR		w22a1hr
+#define		CEIL_NAME1IR		w22a1ir
+#define		DUCT_NAME0			w22a0_duct
+#define		DUCT_NAME1			w22a1_duct
+
+#define		DOOR_NAME_LV0		dr_free			// カードレベルなし室内共通ドア
+#define		DOOR_NAME_LV1_R		dr_lv1_01		// カード１向かって右開きドア
+#define		DOOR_NAME_LV1_L		dr_lv1_02		// カード１向かって左開きドア
+#define		DOOR_NAME_LV2_R		dr_lv2_01		// カード２向かって右開きドア
+#define		DOOR_NAME_LV2_L		dr_lv2_02		// カード２向かって左開きドア
+#define		DOOR_NAME_LV3_L		dr_lv3_02		// カード３向かって左開きドア
+#define		DOOR_NAME_LOAD00	w22a_dr00		// 外周用(EF側)
+#define		DOOR_NAME_LOAD01	w22a_dr01		// 外周用(FA側)
+#define		LT2_NAME			w22a
+
+
+// キャラクター関係
+#if d:RAIDEN
+	#define		PLAYER		ライデン
+#else
+	#define		PLAYER		スネーク
+#endif
+
+// 敵兵ルート番号
+enum E_R {
+	攻撃兵待機ルート上 = 0,
+	攻撃兵待機ルート下,
+	解体前ＶＥ用ルート上,
+	解体前ＶＥ用ルート下,
+	解体前定時連絡ルート上,
+	解体前定時連絡ルート下,
+	解体前ＨＤ用追加ルート上,
+	解体前ＨＤ用追加ルート下,
+	解体前定時連絡ルート上ＥＸ,
+	解体前定時連絡ルート下ＥＸ,
+	解体前ＨＤ用追加ルート上ＥＸ,
+	解体前ＨＤ用追加ルート下ＥＸ,
+	解体中ＶＥ用ルート上,
+	解体中定時連絡ルート上,
+	解体中ルート上,
+	解体中ルート下,
+	解体中ＨＤ用追加ルート下,
+	解体中定時連絡ルート上ＥＸ,
+	解体中ルート上ＥＸ,
+	解体中ルート下南ＥＸ,
+	解体中ルート下西ＥＸ,
+	Ｇ倉庫ルートＥＸ
+}
+
+
+// クリアリングルート
+// クリアリングエリア０ Ａ倉庫
+enum C_R0 {
+	先頭兵標準ルート = 0,
+	２番兵ルート,
+	３番兵ルート,
+	４番兵ルート,
+	先頭兵スタンルート,
+	先頭兵ロッカー開けルート,
+	２番兵ＥＸルート
+}
+
+// クリアリングエリア１ Ｂ倉庫
+enum C_R1 {
+	先頭兵標準ルート = 0,
+	２番兵ルート,
+	３番兵ルート,
+	４番兵ルート,
+	先頭兵スタンルート,
+	２番兵ロッカー開けルート下,
+	２番兵ロッカー開けルート上,
+	２番兵隙間のぞきルート
+}
+
+// クリアリングエリア２ Ｃ倉庫
+enum C_R2 {
+	先頭兵標準ルート = 0,
+	２番兵ルート,
+	３番兵ルート,
+	４番兵ルート,
+	先頭兵スタンルート,
+	先頭兵ダクトのぞきルート,
+	２番兵ロッカー開けルート,
+	２番兵ロッカーしまってたときルート
+}
+
+// クリアリングエリア３ Ｄ倉庫
+enum C_R3 {
+	先頭兵標準ルート = 0,
+	２番兵ルート,
+	３番兵ルート,
+	４番兵ルート,
+	先頭兵スタンルート,
+	２番兵ロッカー開けルート,
+	２番兵隙間のぞきルート,
+	２番兵ダクトのぞきルート,
+	２番兵直帰ルート
+}
+
+// クリアリングエリア４ Ｅ倉庫
+enum C_R4 {
+	先頭兵標準ルート = 0,
+	２番兵ルート,
+	３番兵ルート,
+	４番兵ルート,
+	先頭兵スタンルート,
+	２番兵ロッカー開けルート
+}
+
+// クリアリングエリア５ Ｆ倉庫
+enum C_R5 {
+	先頭兵標準ルート = 0,
+	２番兵ルート,
+	３番兵ルート,
+	４番兵ルート,
+	先頭兵奥までルート,
+	２番兵ダクトのぞきルート,
+	先頭兵ダクトのぞきルート
+}
+
+// クリアリングエリア６ Ｇ倉庫
+enum C_R6 {
+	先頭兵右ルート = 0,
+	２番兵右ルート,
+	３番兵右ルート,
+	４番兵右ルート,
+	先頭兵左ルート,
+	２番兵左ルート,
+	３番兵左ルート,
+	４番兵左ルート,
+	先頭兵右ルート２,
+	２番兵左ルート２,
+	３番兵左ルート２,
+	４番兵右ルート２
+}
+
+// クリアリングエリア７ Ｈ倉庫
+enum C_R7 {
+	先頭兵ルート = 0,
+	２番兵ルート,
+	３番兵ルート,
+	４番兵ルート,
+	先頭兵ロッカー開けルート右,
+	先頭兵ロッカー開けルート左,
+	２番兵ロッカー開けルート
+}
+
+// クリアリングエリア８ Ｉ倉庫
+enum C_R8 {
+	先頭兵ルート = 0,
+	２番兵ルート,
+	３番兵ルート,
+	４番兵ルート,
+}
+
+
+
+// アイテム番号（アイテムが多いのでenumで）
+enum I_NO {
+	M9 = 0,
+	M9_R01,
+	M9_R02,
+	M9_R03,
+	M9_R04,
+	SOCOM_R01,
+	SOCOM_R02,
+	SOCOM_R03,
+	SOCOM_R04,
+	SOCOM_R05,
+	SOCOM_R06,
+	M4,
+	M4_R01,
+	M4_R02,
+	M4_R03,
+	M4_R04,
+	M4_R05,
+	AKS,
+	AKS_R01,
+	AKS_R02,
+	AKS_R03,
+	PSG1,
+	PSG1_R01,
+	PSG1_R02,
+	PSG1_R03,
+	PSG1T,
+	PSG1T_R01,
+	PSG1T_R02,
+	RGB6,
+	RGB6_R01,
+	RGB6_R02,
+	C4_01,
+	C4_02,
+	C4_03,
+	CLAY_01,
+	CLAY_02,
+	GRE_01,
+	GRE_02,
+	GRE_03,
+	STUN_01,
+	CHAFF_01,
+	RATION_01,
+	RATION_02,
+	DIAZE_01,
+	MAG_01,
+	MAG_02
+}
+
+// 壊れライト番号
+enum L_NO {
+	A_L = 0,
+	A_R,
+	B_L,
+	B_R,
+	C_L,
+	C_R,
+	D_L,
+	D_R,
+	E_L,
+	E_R,
+	F_L,
+	F_R
+}
+
+
+
+// include
+// ------------------------------------
+#include "rai_w22a.mh"		// 強制モーションリスト
+#include "stdch.h"
+#include "sload.h"
+#include "jump.h"
+#include "beyond.h"
+#include "sound.h"
+#include "enevoice.h"
+#include "item_info.h"
+#include "node_res.h"
+#include "ene_item.h"
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+
+// マップ設定
+// ------------------------------------
+chara マップ １Ｆ左上小部屋 -k d:KMS_NAME0A -h d:HZX_NAME,0 -l d:LT2_NAME
+chara マップ １Ｆ右上小部屋 -k d:KMS_NAME0B -h d:HZX_NAME,1 -l d:LT2_NAME
+chara マップ １Ｆ中央左小部屋 -k d:KMS_NAME0C -h d:HZX_NAME,2 -l d:LT2_NAME
+chara マップ １Ｆ中央右小部屋 -k d:KMS_NAME0D -h d:HZX_NAME,3 -l d:LT2_NAME
+chara マップ １Ｆ左下小部屋 -k d:KMS_NAME0E -h d:HZX_NAME,4 -l d:LT2_NAME
+chara マップ １Ｆ右下小部屋 -k d:KMS_NAME0F -h d:HZX_NAME,5 -l d:LT2_NAME
+chara マップ １Ｆ北通路 -k d:KMS_NAME0G -k d:KMS_NAME0_21 -h d:HZX_NAME,6 -l d:LT2_NAME
+chara マップ １Ｆ中央広場 -k d:KMS_NAME0H -k d:KMS_NAME0_23 -h d:HZX_NAME,7 -l d:LT2_NAME
+
+chara マップ Ｂ１上小部屋 -k d:KMS_NAME1G -h d:HZX_NAME,8 -l d:LT2_NAME
+chara マップ Ｂ１左下小部屋 -k d:KMS_NAME1H -h d:HZX_NAME,9 -l d:LT2_NAME
+chara マップ Ｂ１右下小部屋 -k d:KMS_NAME1I -h d:HZX_NAME,10 -l d:LT2_NAME
+chara マップ Ｂ１中央広場 -k d:KMS_NAME1J -k d:KMS_NAME1_23 -h d:HZX_NAME,11 -l d:LT2_NAME
+
+chara マップ接合 １Ｆ北／中央 １Ｆ北通路 １Ｆ中央広場
+chara マップ接合 １Ｆ北／Ｂ１中央 １Ｆ北通路 Ｂ１中央広場
+
+chara マップ接合 １Ｆ中央／左上小部屋 １Ｆ中央広場 １Ｆ左上小部屋
+chara マップ接合 １Ｆ中央／右上小部屋 １Ｆ中央広場 １Ｆ右上小部屋
+chara マップ接合 １Ｆ中央／中央左小部屋 １Ｆ中央広場 １Ｆ中央左小部屋
+chara マップ接合 １Ｆ中央／中央右小部屋 １Ｆ中央広場 １Ｆ中央右小部屋
+chara マップ接合 １Ｆ中央／左下小部屋 １Ｆ中央広場 １Ｆ左下小部屋
+chara マップ接合 １Ｆ中央／右下小部屋 １Ｆ中央広場 １Ｆ右下小部屋
+chara マップ接合 Ｂ１中央／上小部屋左 Ｂ１中央広場 Ｂ１上小部屋
+chara マップ接合 Ｂ１中央／上小部屋右 Ｂ１中央広場 Ｂ１上小部屋
+chara マップ接合 Ｂ１中央／左下小部屋 Ｂ１中央広場 Ｂ１左下小部屋
+chara マップ接合 Ｂ１中央／右下小部屋 Ｂ１中央広場 Ｂ１右下小部屋
+chara マップ接合 Ｂ１左下／右下小部屋 Ｂ１左下小部屋 Ｂ１右下小部屋
+
+
+command マップ設定 １Ｆ左上小部屋 １Ｆ右上小部屋 １Ｆ中央左小部屋 １Ｆ中央右小部屋 １Ｆ左下小部屋 １Ｆ右下小部屋 １Ｆ北通路 １Ｆ中央広場 Ｂ１上小部屋 Ｂ１左下小部屋 Ｂ１右下小部屋 Ｂ１中央広場 -set {
+	// サウンド、キャラクターのセット
+	// ------------------------------------
+#if d:SOUND	
+	@サウンド設定	// データは最初に呼ぶ
+#endif
+	@レーダーオンオフチェック $f:w22a_ノードフラグ	// stdch.hで定義
+	@常駐キャラ設定
+	@ローカル変数初期化
+	@設定値変更
+	@プラグイン設定
+	@プレイヤー設定
+	@ダンボール柄設定
+#if d:ENEMY
+	@コマンダー設定
+#endif
+#if d:BGM	
+	@ＢＧＭ設定	// プレイヤー→敵兵→BGMの順で呼ぶ
+#endif
+	@弾痕跳弾設定
+	// マップ切り替え、ロード、ドア
+	// ------------------------------------
+#if d:SLIDE_DOOR
+	@ドア設置
+#endif
+	// ステージ、オブジェクト関連
+	// ------------------------------------
+	@プラント編全体マップ設定 d:Ｆ脚マップ	// stdproc.hで定義
+	@爆弾タイマー設置			// stdproc.hで定義（ストリーフラグで自動判別）
+#if d:FOG
+	@フォグ設定
+#endif
+#if d:EFFECT
+	@エフェクト設定
+#endif
+#if d:LOCKER
+	@ロッカー管理人設置
+#endif
+	@カメラセット
+	@子画面設定
+#if d:DEBUG_CHARA
+//	@デバッグキャラセット
+#endif
+}
+
+command マップ設定 １Ｆ北通路 １Ｆ中央広場 Ｂ１中央広場 -set {
+#if d:LOAD_TRAP
+	@ロード設定
+#endif
+}
+
+command マップ設定 １Ｆ中央右小部屋 １Ｆ中央広場 １Ｆ右下小部屋 -set {
+	@１Ｆダクト表示切り替え
+}
+
+command マップ設定 １Ｆ北通路 １Ｆ中央広場 -set {
+	@１Ｆ黒天井表示切り替え
+} 
+
+command マップ設定 Ｂ１上小部屋 Ｂ１左下小部屋 Ｂ１右下小部屋 Ｂ１中央広場  -set {
+	@Ｂ１共通１Ｆ＆小部屋マップ切り替え
+} 
+
+command マップ設定 Ｂ１左下小部屋 Ｂ１右下小部屋 Ｂ１中央広場 -set {
+	@Ｂ１ダクト表示切り替え
+} 
+
+command マップ設定 Ｂ１中央広場 -set {
+	@Ｂ１黒天井表示切り替え
+}
+
+command マップ設定 １Ｆ左上小部屋 -set {
+#if d:CHARA_CEIL
+	@天井設置 d:CEIL_NAME0AR 4000 d:LT2_NAME
+#endif
+	@Ｆ脚１Ｆ壊れライト設定 Ａ倉庫左ライト 45294 -38550 1024 d:L_NO:A_L
+	@Ｆ脚１Ｆ壊れライト設定 Ａ倉庫右ライト 50206 -38450 3072 d:L_NO:A_R
+	@Ｆ脚１Ｆ消火器設置 消火器:01 49325 -41100 3072 47500 -41250 50250 -38500
+#if d:TR_WALL
+	@１Ｆ左上小部屋透明壁設置
+#endif
+#if d:LOCKER
+	@１Ｆ左上小部屋ロッカー設置
+#endif
+#if d:ITEM
+	@１Ｆ左上小部屋アイテム設置
+#endif
+#if d:JP_MOTION
+	@１Ｆ左上小部屋ジャンプ設定
+#endif
+	@１Ｆ左上小部屋カメラ設定
+}
+
+command マップ設定 １Ｆ右上小部屋 -set {
+#if d:CHARA_CEIL
+	@天井設置 d:CEIL_NAME0BR 4000 d:LT2_NAME
+#endif
+	@Ｆ脚１Ｆ壊れライト設定 Ｂ倉庫左ライト 53794 -38550 1024 d:L_NO:B_L
+	@Ｆ脚１Ｆ壊れライト設定 Ｂ倉庫右ライト 58706 -38450 3072 d:L_NO:B_R
+	@Ｆ脚１Ｆ消火器設置 消火器:11 54700 -35900 1024 53750 -38500 57000 -34000
+#if d:TR_WALL
+	@１Ｆ右上小部屋透明壁設置
+#endif
+#if d:LOCKER
+	@１Ｆ右上小部屋ロッカー設置
+#endif
+#if d:ITEM
+	@１Ｆ右上小部屋アイテム設置
+#endif
+	@１Ｆ右上小部屋カメラ設定
+}
+
+command マップ設定 １Ｆ中央左小部屋 -set {
+#if d:CHARA_CEIL
+	@天井設置 d:CEIL_NAME0CR 4000 d:LT2_NAME
+#endif
+	@Ｆ脚１Ｆ壊れライト設定 Ｃ倉庫左ライト 41294 -30050 1024 d:L_NO:C_L
+	@Ｆ脚１Ｆ壊れライト設定 Ｃ倉庫右ライト 46206 -29950 3072 d:L_NO:C_R
+	@Ｆ脚１Ｆ消火器設置 消火器:21 45200 -27400 1024 42750 -30000 46250 -25500
+#if d:LOCKER
+	@１Ｆ中央左小部屋ロッカー設置
+#endif
+#if d:IR_SENSOR
+	@１Ｆ中央左小部屋赤外線センサー設置
+#endif
+#if d:ITEM
+	@１Ｆ中央左小部屋アイテム設置
+#endif
+	@１Ｆ中央左小部屋カメラ設定
+}
+
+command マップ設定 １Ｆ中央右小部屋 -set {
+#if d:CHARA_CEIL
+	@天井設置 d:CEIL_NAME0DR 4000 d:LT2_NAME
+#endif
+	@Ｆ脚１Ｆ壊れライト設定 Ｄ倉庫左ライト 57794 -30050 1024 d:L_NO:D_L
+	@Ｆ脚１Ｆ壊れライト設定 Ｄ倉庫右ライト 62706 -29950 3072 d:L_NO:D_R
+	@Ｆ脚１Ｆ消火器設置 消火器:31 61700 -27400 1024 59250 -30000 62750 -25500
+#if d:TR_WALL
+	@１Ｆ中央右小部屋透明壁設置
+#endif
+#if d:LOCKER
+	@１Ｆ中央右小部屋ロッカー設置
+#endif
+#if d:ITEM
+	@１Ｆ中央右小部屋アイテム設置
+#endif
+	@１Ｆ中央右小部屋カメラ設定
+}
+
+command マップ設定 １Ｆ左下小部屋 -set {
+#if d:CHARA_CEIL
+	@天井設置 d:CEIL_NAME0ER 4000 d:LT2_NAME
+#endif
+	@Ｆ脚１Ｆ壊れライト設定 Ｅ倉庫左ライト 45294 -21550 1024 d:L_NO:E_L
+	@Ｆ脚１Ｆ壊れライト設定 Ｅ倉庫右ライト 50206 -21450 3072 d:L_NO:E_R
+	@Ｆ脚１Ｆ消火器設置 消火器:41 49200 -18900 1024 46750 -21500 50250 -17000
+#if d:LOCKER
+	@１Ｆ左下小部屋ロッカー設置
+#endif
+#if d:ITEM
+	@１Ｆ左下小部屋アイテム設置
+#endif
+	@１Ｆ左下小部屋カメラ設定
+}
+
+command マップ設定 １Ｆ右下小部屋 -set {
+	@１Ｆ右下小部屋マップ切り替え
+#if d:CHARA_CEIL
+	@天井設置 d:CEIL_NAME0FR 4000 d:LT2_NAME
+#endif
+	@Ｆ脚１Ｆ壊れライト設定 Ｆ倉庫左ライト 53794 -21550 1024 d:L_NO:F_L
+	@Ｆ脚１Ｆ壊れライト設定 Ｆ倉庫右ライト 58706 -21450 3072 d:L_NO:F_R
+	@Ｆ脚１Ｆ消火器設置 消火器:51 54700 -18900 1024 53750 -21500 57250 -17000
+#if d:ITEM
+	@１Ｆ右下小部屋アイテム設置
+#endif
+	@１Ｆ右下小部屋カメラ設定
+}
+
+command マップ設定 １Ｆ北通路 -set {
+#if d:CHARA_CEIL
+	@天井設置 d:CEIL_NAME0GR 4000 d:LT2_NAME
+#endif
+	@主観禁止壁設定１Ｆ北通路
+	@１Ｆ北通路カメラ設定
+}
+
+command マップ設定 １Ｆ中央広場 -set {
+#if d:CHARA_CEIL
+	@天井設置 d:CEIL_NAME0HR 4000 d:LT2_NAME
+#endif
+	@１Ｆ中央広場マップ切り替え
+	@主観禁止壁設定１Ｆ中央広場
+#if d:BY_MOTION
+	@１Ｆ中央広場ビヨンド設定
+#endif
+#if d:ITEM
+	@１Ｆ中央広場アイテム設置
+#endif
+	@１Ｆ中央広場カメラ設定
+}
+
+command マップ設定 Ｂ１上小部屋 -set {
+	@Ｇ倉庫ガラス弾痕設定
+#if d:CHARA_CEIL
+	@天井設置 d:CEIL_NAME1GR -500 d:LT2_NAME
+#endif
+#if d:TR_WALL
+	@Ｂ１上小部屋透明壁設置
+#endif
+#if d:ITEM
+	@Ｂ１上小部屋アイテム設置
+#endif
+	@Ｂ１上小部屋カメラ設定
+}
+
+command マップ設定 Ｂ１左下小部屋 -set {
+	@Ｈ倉庫ガラス弾痕設定
+#if d:NODE
+	@ノード端末設定 2048
+#endif
+#if d:CHARA_CEIL
+	@天井設置 d:CEIL_NAME1HR -500 d:LT2_NAME
+#endif
+#if d:LOCKER
+	@Ｂ１左下小部屋ロッカー設置
+#endif
+#if d:ITEM
+	@Ｂ１左下小部屋アイテム設置
+#endif
+	@Ｂ１左下小部屋カメラ設定
+}
+
+command マップ設定 Ｂ１右下小部屋 -set {
+#if d:CHARA_CEIL
+	@天井設置 d:CEIL_NAME1IR -500 d:LT2_NAME
+#endif
+#if d:JP_MOTION
+	@Ｂ１右下小部屋ジャンプ設定
+#endif
+#if d:ITEM
+	@Ｂ１右下小部屋アイテム設置
+#endif
+	@Ｂ１右下小部屋カメラ設定
+}
+
+command マップ設定 Ｂ１中央広場 -set {
+#if d:C4_BOMB
+	@解体Ｃ４設置
+#endif
+	@主観禁止壁設定Ｂ１中央広場
+#if d:TR_WALL
+	@Ｂ１中央広場透明壁設置
+#endif
+#if d:JP_MOTION
+	@Ｂ１中央広場ジャンプ設定
+#endif
+#if d:ITEM
+	@Ｂ１中央広場アイテム設置
+#endif
+	@Ｂ１中央広場カメラ設定
+}
+
+// キャラ用ライトは最後に設定 ダークエリアを起動するかもこのときチェック
+command マップ設定 １Ｆ左上小部屋 １Ｆ右上小部屋 １Ｆ中央左小部屋 １Ｆ中央右小部屋 １Ｆ左下小部屋 １Ｆ右下小部屋 １Ｆ北通路 １Ｆ中央広場 Ｂ１上小部屋 Ｂ１左下小部屋 Ｂ１右下小部屋 Ｂ１中央広場 -set {
+
+		@暗闇トラップ起動チェック
+	#if d:CHARA_LIGHT
+		@キャラ用ライト設置
+	#endif
+}
+
+
+// 無線用include ※位置は動かさないこと
+#include "w22a_cdc.ch"
+#include "p_force_cdc.ch"
+
+
+if( $s:登場ポイント == sp_w23a_w22a0h_0 ) {
+	// ＦＡ連絡橋１Ｆから
+	//初期マップの表示
+	command マップ表示 -show １Ｆ北通路
+	command マップ表示 -show １Ｆ中央広場
+	command マップ表示 -show Ｂ１中央広場
+
+	mesg マップ接合 １Ｆ北／中央 on
+	mesg マップ接合 １Ｆ北／Ｂ１中央 on
+
+	eval ( $f:w22a_Ｂ１いるフラグ = 0 );
+
+	// 全てのセットが終わったところでフェードイン
+	if ( $f:w22a_パッドデモフラグ == 0 && `@シナリオデモ用安全チェック` == 1 && \
+		 $w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了 ) {
+		@シナリオデモキャラセット	// stdproc.hで定義
+		#ifndef d:PAL
+			@ステージ開始時処理（デモ表示）\
+				d:LOAD_TYPE:SL_DOOR_TYPE １Ｆ下ドア 2000 d:DEFAULT_M_TYPE \
+				d:wn_Ｆ脚倉庫１Ｆ w22a_paddemo_01 d:ALL_OFF 50045 1065 -18026 0 d:FA_END_STAND
+		#else
+			@ステージ開始時処理（デモ表示）\
+				d:LOAD_TYPE:SL_DOOR_TYPE １Ｆ下ドア 2000 d:DEFAULT_M_TYPE \
+				d:wn_Ｆ脚倉庫１Ｆ w22a_paddemo_01_p d:ALL_OFF 50045 1065 -18026 0 d:FA_END_STAND
+		#endif
+	} else { 
+		@ステージ開始時処理（ステージ名表示）\
+			d:LOAD_TYPE:SL_DOOR_TYPE １Ｆ下ドア 2000 d:DEFAULT_M_TYPE \
+			d:wn_Ｆ脚倉庫１Ｆ
+	}
+	eval( $f:w22a_パッドデモフラグ = 1 );
+} else if( $s:登場ポイント == sp_w23a_w22a1c_0 ) {
+	// ＦＡ連絡橋Ｂ１から
+	//初期マップの表示
+	command マップ表示 -show Ｂ１中央広場
+
+	mesg マップ接合 １Ｆ北／中央 on
+	mesg マップ接合 １Ｆ北／Ｂ１中央 on
+
+	eval ( $f:w22a_Ｂ１いるフラグ = 1 );
+
+	// 全てのセットが終わったところでフェードイン
+	if ( $f:w22a_パッドデモフラグ == 0 && `@シナリオデモ用安全チェック` == 1 && \
+		 $w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了 ) {
+		@シナリオデモキャラセット	// stdproc.hで定義
+		#ifndef d:PAL
+			@ステージ開始時処理（デモ表示）\
+				d:LOAD_TYPE:SL_DOOR_TYPE Ｂ１下ドア 2000 d:DEFAULT_M_TYPE \
+				d:wn_Ｆ脚倉庫Ｂ１ w22a_paddemo_02 d:ALL_OFF 46526 -3951 -25145 3072 d:FA_END_STAND
+		#else
+			@ステージ開始時処理（デモ表示）\
+				d:LOAD_TYPE:SL_DOOR_TYPE Ｂ１下ドア 2000 d:DEFAULT_M_TYPE \
+				d:wn_Ｆ脚倉庫Ｂ１ w22a_paddemo_02_p d:ALL_OFF 46526 -3951 -25145 3072 d:FA_END_STAND
+		#endif
+	} else {
+		@ステージ開始時処理（ステージ名表示）\
+			d:LOAD_TYPE:SL_DOOR_TYPE Ｂ１下ドア 2000 d:DEFAULT_M_TYPE \
+			d:wn_Ｆ脚倉庫Ｂ１
+	}
+	eval( $f:w22a_パッドデモフラグ = 1 );
+} else if( $s:登場ポイント == sp_w21a_w22a0g_0 ) {
+	// ＥＦ連絡橋から
+	//初期マップの表示
+	command マップ表示 -show １Ｆ北通路
+	command マップ表示 -show １Ｆ中央広場
+	command マップ表示 -show Ｂ１中央広場
+
+	mesg マップ接合 １Ｆ北／中央 on
+	mesg マップ接合 １Ｆ北／Ｂ１中央 on
+
+	eval ( $f:w22a_Ｂ１いるフラグ = 0 );
+
+	// 全てのセットが終わったところでフェードイン
+	@ステージ開始時処理（ステージ名表示） \
+		d:LOAD_TYPE:SL_DOOR_TYPE １Ｆ上ドア 2000 d:DEFAULT_M_TYPE \
+		d:wn_Ｆ脚倉庫１Ｆ
+} else if( $s:登場ポイント == sp_w20a_w22a_0 ) {
+	// Ｅ脚から
+	//初期マップの表示
+	command マップ表示 -show Ｂ１中央広場
+
+	mesg マップ接合 １Ｆ北／中央 on
+	mesg マップ接合 １Ｆ北／Ｂ１中央 on
+
+	eval ( $f:w22a_Ｂ１いるフラグ = 1 );
+
+	// 全てのセットが終わったところでフェードイン
+	@ステージ開始時処理（ダンボールワープ） d:wn_Ｆ脚倉庫Ｂ１
+}
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// 全マップ共通
+	// サウンド
+	// ------------------------------------
+	proc サウンド設定 {
+		#if d:DEBUG_PRINT 
+			print 'sound_set'
+		#endif
+
+		if(    (   ($w:p_story >= d:ST:P024_01_R01爆弾解体センサーＢ入手１無線デモ１終了) \
+				&& ($w:p_story <  d:ST:P026_01_R01爆弾解体終了１無線デモ１開始)) \
+			|| (   ($w:p_story >= d:ST:P031_01_P01フォーチュン戦終了１ポリゴンデモ１終了) \
+				&& ($w:p_story <  d:ST:P032_01_P01ファットマン登場１ポリゴンデモ１開始)) ) {
+
+			chara サウンドマネージャー ＳＤマネ -pak 1
+		} else {
+			#ifdef d:ENGLISH
+				if ( $w:p_story >= d:ST:P041_02_R01エイムズ死亡後２無線デモ１終了 ) {
+					// ハイテク兵用のサウンドを呼ぶ
+					chara サウンドマネージャー ＳＤマネ -pak 2
+				} else {
+					chara サウンドマネージャー ＳＤマネ -pak 0
+				}
+			#else
+				chara サウンドマネージャー ＳＤマネ -pak 0
+			#endif
+		}
+
+		@サウンド効果音設定
+	}
+
+	// ローカル変数初期化
+	// ------------------------------------
+	proc ローカル変数初期化 {
+		#if d:DEBUG_PRINT 
+			print 'localvar_init'
+		#endif
+
+		// ダクトの中にいるときに１にする
+		eval( $f:ローカルフラグ１ = 0 );
+		// １Ｆ右下小部屋のドアが開いているときに1にする
+		eval( $f:ローカルフラグ２ = 0 );
+
+		// 入っているロッカーの名前
+		eval( $s:プレイヤーがいるロッカー名 = なし );
+
+		// クリアリング用子画面を初期化
+		eval( $f:クリアリング子画面フラグ = 0 );
+		// ゲームステータスを格納するための変数
+		eval( $i:ローカル変数Ｉ１ = 0 );
+	}
+
+	// 設定値を変更
+	// ------------------------------------
+	proc 設定値変更 {
+		#if d:DEBUG_PRINT 
+			print 'status_set'
+		#endif
+	}
+
+	// ポリデモ
+	// ------------------------------------
+	// ノード端末
+	// ------------------------------------
+	proc ノード接続時プロック {
+		#if d:DEBUG_PRINT
+			print 'node_set'
+		#endif
+
+		eval($f:ノードフラグ = $f:w22a_ノードフラグ);
+	}
+
+	proc ノード接続後プロック {
+		#if d:DEBUG_PRINT
+			print 'node_event_go'
+		#endif
+
+		eval($f:w22a_ノードフラグ = 1);
+		command メニュー設定 -node_access on 
+	}
+
+	// プラグインプログラム
+	// ------------------------------------
+	proc プラグイン設定 {
+		#if d:DEBUG_PRINT
+			print 'plugin_set'
+		#endif
+
+		#if d:JP_MOTION
+			command プラグイン自動ジャンプ
+		#endif
+	}
+
+
+	// プレイヤー 
+	// ------------------------------------
+	proc プレイヤー設定 {
+		#if d:DEBUG_PRINT
+			print 'player_set'
+		#endif
+
+		chara プレイヤー d:PLAYER \
+			-p $i:プレイヤー初期Ｘ位置,$i:プレイヤー初期Ｙ位置,$i:プレイヤー初期Ｚ位置 \
+			-d 0,$i:プレイヤー初期方向,0 \
+			-s 0 \
+			-m rai_def -a raiden -o rai_w22a
+
+		@プレイヤーＬＯＤ設定 d:C_DISTANCE_TYPE 7000
+
+		@ライデン髪の毛設定 d:NORMAL_HAIR
+
+	}
+
+	proc ダンボール柄設定 {
+		#if d:DEBUG_PRINT
+			print 'cb_box_area_set'
+		#endif
+
+		// マクファーレンダンボールエリア
+		chara ダンボール柄トラップ設定 ダンボールエリア \
+			-name d:PLAYER \
+			-traps d:アイテム:ダンボールＤ bx001
+	}
+
+	// 敵兵 
+	// ------------------------------------
+	proc 警備兵０ {
+		#if d:DEBUG_PRINT
+			print 'watcher_set'
+		#endif
+
+		if ( $w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了 ) {
+		// ピーターに会うまでは少なめ
+			if ( $w:ゲーム設定 == d:LEVEL_VERYEASY ) {
+			// VERY EASYの設定
+				if( $s:登場ポイント == sp_w23a_w22a1c_0 ) {
+					// 下からきたときは下ルートで
+					chara 警備兵 敵兵:01 \
+						-r d:E_R:解体前ＶＥ用ルート下 -n 1 -d 50750,-5000,-30000 Ｂ１中央広場 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+						-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+						-s (d:ENE_STATUS_GUNLIGHT) \
+						-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+						-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+						-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_01] \
+							[dogtag:plt_w22a_guard_ea_01] [dogtag:plt_w22a_guard_no_01] \
+							[dogtag:plt_w22a_guard_ha_01] [dogtag:plt_w22a_guard_vh_01]
+				} else {
+					// それ以外は上ルート
+					chara 警備兵 敵兵:01 \
+						-r d:E_R:解体前ＶＥ用ルート上 -n 1 -d 50750,-5000,-30000 Ｂ１中央広場 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+						-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+						-s (d:ENE_STATUS_GUNLIGHT) \
+						-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+						-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+						-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_01] \
+							[dogtag:plt_w22a_guard_ea_01] [dogtag:plt_w22a_guard_no_01] \
+							[dogtag:plt_w22a_guard_ha_01] [dogtag:plt_w22a_guard_vh_01]
+				}
+			
+			} else if ( $w:ゲーム設定 == d:LEVEL_EASY ) {
+			// EASYの設定
+				if( $s:登場ポイント == sp_w23a_w22a1c_0 ) {
+					// 下からきたときは下ルートで
+					chara 警備兵 敵兵:01 \
+						-r d:E_R:解体前定時連絡ルート下 -n 1 -d 50750,-5000,-30000 Ｂ１中央広場 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+						-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+						-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_REPORT) \
+						-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+						-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+						-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_01] \
+							[dogtag:plt_w22a_guard_ea_01] [dogtag:plt_w22a_guard_no_01] \
+							[dogtag:plt_w22a_guard_ha_01] [dogtag:plt_w22a_guard_vh_01]
+				} else {
+					// それ以外は上ルート
+					chara 警備兵 敵兵:01 \
+						-r d:E_R:解体前定時連絡ルート上 -n 1 -d 50750,-5000,-30000 Ｂ１中央広場 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+						-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+						-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_REPORT) \
+						-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+						-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+						-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_01] \
+							[dogtag:plt_w22a_guard_ea_01] [dogtag:plt_w22a_guard_no_01] \
+							[dogtag:plt_w22a_guard_ha_01] [dogtag:plt_w22a_guard_vh_01]
+				}
+
+			} else if ( $w:ゲーム設定 == d:LEVEL_NORMAL ) {
+			// NORMALの設定
+				if( $s:登場ポイント == sp_w23a_w22a1c_0 ) {
+					// 下からきたときは下ルートで
+					chara 警備兵 敵兵:01 \
+						-r d:E_R:解体前定時連絡ルート下 -n 1 -d 50750,-5000,-30000 Ｂ１中央広場 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+						-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+						-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_REPORT) \
+						-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+						-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+						-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_01] \
+							[dogtag:plt_w22a_guard_ea_01] [dogtag:plt_w22a_guard_no_01] \
+							[dogtag:plt_w22a_guard_ha_01] [dogtag:plt_w22a_guard_vh_01]
+				} else {
+					// それ以外は上ルート
+					chara 警備兵 敵兵:01 \
+						-r d:E_R:解体前定時連絡ルート上 -n 1 -d 50750,-5000,-30000 Ｂ１中央広場 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+						-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+						-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_REPORT) \
+						-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+						-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+						-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_01] \
+							[dogtag:plt_w22a_guard_ea_01] [dogtag:plt_w22a_guard_no_01] \
+							[dogtag:plt_w22a_guard_ha_01] [dogtag:plt_w22a_guard_vh_01]
+				}
+
+			} else if ( $w:ゲーム設定 == d:LEVEL_HARD ) {
+			// HARDの設定
+				if( $s:登場ポイント == sp_w23a_w22a1c_0 ) {
+					// 下からきたときは下ルートで
+					chara 警備兵 敵兵:01 \
+						-r d:E_R:解体前定時連絡ルート下 -n 1 -d 50750,-5000,-30000 Ｂ１中央広場 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+						-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+						-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_REPORT) \
+						-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+						-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+						-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_01] \
+							[dogtag:plt_w22a_guard_ea_01] [dogtag:plt_w22a_guard_no_01] \
+							[dogtag:plt_w22a_guard_ha_01] [dogtag:plt_w22a_guard_vh_01]
+				} else {
+					// それ以外は上ルート
+					chara 警備兵 敵兵:01 \
+						-r d:E_R:解体前定時連絡ルート上 -n 1 -d 50750,-5000,-30000 Ｂ１中央広場 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+						-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+						-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_REPORT) \
+						-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+						-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+						-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_01] \
+							[dogtag:plt_w22a_guard_ea_01] [dogtag:plt_w22a_guard_no_01] \
+							[dogtag:plt_w22a_guard_ha_01] [dogtag:plt_w22a_guard_vh_01]
+				}
+
+				chara 警備兵 敵兵:02 \
+					-r d:E_R:解体前ＨＤ用追加ルート上 -n 0 -d 51250,0,-26000 １Ｆ中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s d:ENE_STATUS_GUNLIGHT \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_02] \
+						[dogtag:plt_w22a_guard_ea_02] [dogtag:plt_w22a_guard_no_02] \
+						[dogtag:plt_w22a_guard_ha_02] [dogtag:plt_w22a_guard_vh_02]
+
+				chara 警備兵 敵兵:03 \
+					-r d:E_R:解体前ＨＤ用追加ルート下 -n 0 -d 56750,-5000,-26750 Ｂ１中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s d:ENE_STATUS_GUNLIGHT \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:dummy] \
+						[dogtag:plt_w22a_guard_ea_03] [dogtag:plt_w22a_guard_no_03] \
+						[dogtag:plt_w22a_guard_ha_03] [dogtag:plt_w22a_guard_vh_03]
+
+			} else {
+			// EXTREMEの設定
+				if( $s:登場ポイント == sp_w23a_w22a1c_0 ) {
+					// 下からきたときは下ルートで
+					chara 警備兵 敵兵:01 \
+						-r d:E_R:解体前定時連絡ルート下ＥＸ -n 1 -d 50750,-5000,-30000 Ｂ１中央広場 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+						-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+						-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_REPORT) \
+						-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+						-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+						-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_01] \
+							[dogtag:plt_w22a_guard_ea_01] [dogtag:plt_w22a_guard_no_01] \
+							[dogtag:plt_w22a_guard_ha_01] [dogtag:plt_w22a_guard_vh_01]
+				} else {
+					// それ以外は上ルート
+					chara 警備兵 敵兵:01 \
+						-r d:E_R:解体前定時連絡ルート上ＥＸ -n 1 -d 50750,-5000,-30000 Ｂ１中央広場 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+						-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+						-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_REPORT) \
+						-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+						-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+						-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_01] \
+							[dogtag:plt_w22a_guard_ea_01] [dogtag:plt_w22a_guard_no_01] \
+							[dogtag:plt_w22a_guard_ha_01] [dogtag:plt_w22a_guard_vh_01]
+				}
+
+				chara 警備兵 敵兵:02 \
+					-r d:E_R:解体前ＨＤ用追加ルート上ＥＸ -n 0 -d 51250,0,-26000 １Ｆ中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s d:ENE_STATUS_GUNLIGHT \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_02] \
+						[dogtag:plt_w22a_guard_ea_02] [dogtag:plt_w22a_guard_no_02] \
+						[dogtag:plt_w22a_guard_ha_02] [dogtag:plt_w22a_guard_vh_02]
+
+				chara 警備兵 敵兵:03 \
+					-r d:E_R:解体前ＨＤ用追加ルート下ＥＸ -n 0 -d 56750,-5000,-26750 Ｂ１中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s d:ENE_STATUS_GUNLIGHT \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:dummy] \
+						[dogtag:plt_w22a_guard_ea_03] [dogtag:plt_w22a_guard_no_03] \
+						[dogtag:plt_w22a_guard_ha_03] [dogtag:plt_w22a_guard_vh_03]
+
+			}
+
+		} else {
+		// 爆弾解体中は多め
+			if ( $w:ゲーム設定 == d:LEVEL_VERYEASY ) {
+			// VERY EASYの設定
+				chara 警備兵 敵兵:01 \
+					-r d:E_R:解体中ＶＥ用ルート上 -n 25 -d 52000,0,-42000 １Ｆ中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s (d:ENE_STATUS_GUNLIGHT) \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_01] \
+						[dogtag:plt_w22a_guard_ea_01] [dogtag:plt_w22a_guard_no_01] \
+						[dogtag:plt_w22a_guard_ha_01] [dogtag:plt_w22a_guard_vh_01]
+
+				chara 警備兵 敵兵:02 \
+					-r d:E_R:解体中ルート下 -n 0 -d 54500,-5000,-30750 Ｂ１中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s d:ENE_STATUS_GUNLIGHT \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_02] \
+						[dogtag:plt_w22a_guard_ea_02] [dogtag:plt_w22a_guard_no_02] \
+						[dogtag:plt_w22a_guard_ha_02] [dogtag:plt_w22a_guard_vh_02]
+
+			} else if ( $w:ゲーム設定 == d:LEVEL_EASY ) {
+			// EASYの設定
+				chara 警備兵 敵兵:01 \
+					-r d:E_R:解体中定時連絡ルート上 -n 25 -d 52000,0,-42000 １Ｆ中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_REPORT) \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_01] \
+						[dogtag:plt_w22a_guard_ea_01] [dogtag:plt_w22a_guard_no_01] \
+						[dogtag:plt_w22a_guard_ha_01] [dogtag:plt_w22a_guard_vh_01]
+
+				chara 警備兵 敵兵:02 \
+					-r d:E_R:解体中ルート上 -n 0 -d 51250,0,-26000 １Ｆ中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s d:ENE_STATUS_GUNLIGHT \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_02] \
+						[dogtag:plt_w22a_guard_ea_02] [dogtag:plt_w22a_guard_no_02] \
+						[dogtag:plt_w22a_guard_ha_02] [dogtag:plt_w22a_guard_vh_02]
+
+				chara 警備兵 敵兵:03 \
+					-r d:E_R:解体中ルート下 -n 0 -d 54500,-5000,-30750 Ｂ１中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s d:ENE_STATUS_GUNLIGHT \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:dummy] \
+						[dogtag:plt_w22a_guard_ea_03] [dogtag:plt_w22a_guard_no_03] \
+						[dogtag:plt_w22a_guard_ha_03] [dogtag:plt_w22a_guard_vh_03]
+
+			} else if ( $w:ゲーム設定 == d:LEVEL_NORMAL ) {
+			// NORMALの設定
+				chara 警備兵 敵兵:01 \
+					-r d:E_R:解体中定時連絡ルート上 -n 25 -d 52000,0,-42000 １Ｆ中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_REPORT) \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_01] \
+						[dogtag:plt_w22a_guard_ea_01] [dogtag:plt_w22a_guard_no_01] \
+						[dogtag:plt_w22a_guard_ha_01] [dogtag:plt_w22a_guard_vh_01]
+
+				chara 警備兵 敵兵:02 \
+					-r d:E_R:解体中ルート上 -n 0 -d 51250,0,-26000 １Ｆ中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s d:ENE_STATUS_GUNLIGHT \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_02] \
+						[dogtag:plt_w22a_guard_ea_02] [dogtag:plt_w22a_guard_no_02] \
+						[dogtag:plt_w22a_guard_ha_02] [dogtag:plt_w22a_guard_vh_02]
+
+				chara 警備兵 敵兵:03 \
+					-r d:E_R:解体中ルート下 -n 0 -d 54500,-5000,-30750 Ｂ１中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s d:ENE_STATUS_GUNLIGHT \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:dummy] \
+						[dogtag:plt_w22a_guard_ea_03] [dogtag:plt_w22a_guard_no_03] \
+						[dogtag:plt_w22a_guard_ha_03] [dogtag:plt_w22a_guard_vh_03]
+
+			} else if ( $w:ゲーム設定 == d:LEVEL_HARD ) {
+			// HARDの設定
+				chara 警備兵 敵兵:01 \
+					-r d:E_R:解体中定時連絡ルート上 -n 25 -d 52000,0,-42000 １Ｆ中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_REPORT) \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_01] \
+						[dogtag:plt_w22a_guard_ea_01] [dogtag:plt_w22a_guard_no_01] \
+						[dogtag:plt_w22a_guard_ha_01] [dogtag:plt_w22a_guard_vh_01]
+
+				chara 警備兵 敵兵:02 \
+					-r d:E_R:解体中ルート上 -n 0 -d 51250,0,-26000 １Ｆ中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s d:ENE_STATUS_GUNLIGHT \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_02] \
+						[dogtag:plt_w22a_guard_ea_02] [dogtag:plt_w22a_guard_no_02] \
+						[dogtag:plt_w22a_guard_ha_02] [dogtag:plt_w22a_guard_vh_02]
+
+				chara 警備兵 敵兵:03 \
+					-r d:E_R:解体中ルート下 -n 0 -d 56750,-5000,-26750 Ｂ１中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s d:ENE_STATUS_GUNLIGHT \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:dummy] \
+						[dogtag:plt_w22a_guard_ea_03] [dogtag:plt_w22a_guard_no_03] \
+						[dogtag:plt_w22a_guard_ha_03] [dogtag:plt_w22a_guard_vh_03]
+
+				chara 警備兵 敵兵:04 \
+					-r d:E_R:解体中ＨＤ用追加ルート下 -n 0 -d 50750,-5000,-30000 Ｂ１中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s d:ENE_STATUS_GUNLIGHT \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:dummy] \
+						[dogtag:dummy] [dogtag:dummy] \
+						[dogtag:plt_w22a_guard_ha_04] [dogtag:plt_w22a_guard_vh_04]
+
+			} else {
+			// EXTREMEの設定
+				chara 警備兵 敵兵:01 \
+					-r d:E_R:解体中定時連絡ルート上ＥＸ -n 23 -d 52000,0,-42000 １Ｆ中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s (d:ENE_STATUS_GUNLIGHT | d:ENE_STATUS_REPORT) \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_01] \
+						[dogtag:plt_w22a_guard_ea_01] [dogtag:plt_w22a_guard_no_01] \
+						[dogtag:plt_w22a_guard_ha_01] [dogtag:plt_w22a_guard_vh_01]
+
+				chara 警備兵 敵兵:02 \
+					-r d:E_R:解体中ルート上ＥＸ -n 0 -d 51250,0,-26000 １Ｆ中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s d:ENE_STATUS_GUNLIGHT \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:plt_w22a_guard_ve_02] \
+						[dogtag:plt_w22a_guard_ea_02] [dogtag:plt_w22a_guard_no_02] \
+						[dogtag:plt_w22a_guard_ha_02] [dogtag:plt_w22a_guard_vh_02]
+
+				chara 警備兵 敵兵:03 \
+					-r d:E_R:解体中ルート下南ＥＸ -n 0 -d 52000,-5000,-19500 Ｂ１中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s d:ENE_STATUS_GUNLIGHT \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:dummy] \
+						[dogtag:plt_w22a_guard_ea_03] [dogtag:plt_w22a_guard_no_03] \
+						[dogtag:plt_w22a_guard_ha_03] [dogtag:plt_w22a_guard_vh_03]
+
+				chara 警備兵 敵兵:04 \
+					-r d:E_R:解体中ルート下西ＥＸ -n 0 -d 50750,-5000,-30000 Ｂ１中央広場 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-s d:ENE_STATUS_GUNLIGHT \
+					-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+					-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+					-j ドッグタグ_敵兵 [dogtag:dummy] \
+						[dogtag:dummy] [dogtag:dummy] \
+						[dogtag:plt_w22a_guard_ha_04] [dogtag:plt_w22a_guard_vh_04]
+
+				// カード２をもらったら登場させる
+				if ( $w:p_story >= d:ST:P036_13_R04忍者登場１３無線デモ４終了 ) {
+					chara 警備兵 敵兵:05 \
+						-r d:E_R:Ｇ倉庫ルートＥＸ -n 0 -d 59250,-5000,-32000 Ｂ１中央広場 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+						-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+						-s d:ENE_STATUS_GUNLIGHT \
+						-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+						-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+						-j ドッグタグ_敵兵 [dogtag:dummy] \
+							[dogtag:dummy] [dogtag:dummy] \
+							[dogtag:dummy] [dogtag:plt_w22a_guard_vh_05]
+				}
+
+			}
+		}
+	}
+
+	proc 攻撃兵０ {
+		#if d:DEBUG_PRINT
+			print 'attacker_set'
+		#endif
+
+		if ( $w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了 ) {
+		// ピーターに会うまでは少なめ
+			if( $s:登場ポイント == sp_w23a_w22a1c_0 ) {
+				if ( $w:ゲーム設定 >= d:LEVEL_NORMAL ) {
+					chara アタッカー 敵兵:61 -r d:E_R:攻撃兵待機ルート下 -b 敵兵:01 -s ( d:ENE_STATUS_GUNLIGHT | 0x40000000 ) \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				} else {
+					chara アタッカー 敵兵:61 -r d:E_R:攻撃兵待機ルート下 -s d:ENE_STATUS_GUNLIGHT \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				}
+				chara アタッカー 敵兵:62 -r d:E_R:攻撃兵待機ルート下 -s d:ENE_STATUS_GUNLIGHT \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				chara アタッカー 敵兵:63 -r d:E_R:攻撃兵待機ルート下 -s d:ENE_STATUS_GUNLIGHT \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				chara アタッカー 敵兵:64 -r d:E_R:攻撃兵待機ルート下 -s d:ENE_STATUS_GUNLIGHT \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+			} else {
+				if ( $w:ゲーム設定 >= d:LEVEL_NORMAL ) {
+					chara アタッカー 敵兵:61 -r d:E_R:攻撃兵待機ルート上 -b 敵兵:01 -s ( d:ENE_STATUS_GUNLIGHT | 0x40000000 ) \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				} else {
+					chara アタッカー 敵兵:61 -r d:E_R:攻撃兵待機ルート上 -s d:ENE_STATUS_GUNLIGHT \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				}
+				chara アタッカー 敵兵:62 -r d:E_R:攻撃兵待機ルート上 -s d:ENE_STATUS_GUNLIGHT \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				chara アタッカー 敵兵:63 -r d:E_R:攻撃兵待機ルート上 -s d:ENE_STATUS_GUNLIGHT \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				chara アタッカー 敵兵:64 -r d:E_R:攻撃兵待機ルート上 -s d:ENE_STATUS_GUNLIGHT \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+			}
+		} else if ( $w:p_story >= d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了 && \
+					$w:p_story < d:ST:P041_02_R01エイムズ死亡後２無線デモ１終了 ) {
+		// 爆弾解体中
+			if( $s:登場ポイント == sp_w23a_w22a1c_0 ) {
+				if ( $w:ゲーム設定 >= d:LEVEL_NORMAL ) {
+					chara アタッカー 敵兵:61 -r d:E_R:攻撃兵待機ルート下 -b 敵兵:01 -s ( d:ENE_STATUS_GUNLIGHT | 0x40000000 ) \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				} else {
+					chara アタッカー 敵兵:61 -r d:E_R:攻撃兵待機ルート下 -s d:ENE_STATUS_GUNLIGHT \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				}
+				chara アタッカー 敵兵:62 -r d:E_R:攻撃兵待機ルート下 -s d:ENE_STATUS_GUNLIGHT \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				chara アタッカー 敵兵:63 -r d:E_R:攻撃兵待機ルート下 -s d:ENE_STATUS_GUNLIGHT -e d:ENE_EQUIP_TYPE_LIGHT_SHIELD \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				chara アタッカー 敵兵:64 -r d:E_R:攻撃兵待機ルート下 -s d:ENE_STATUS_GUNLIGHT -e 3 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+			} else {
+				if ( $w:ゲーム設定 >= d:LEVEL_NORMAL ) {
+					chara アタッカー 敵兵:61 -r d:E_R:攻撃兵待機ルート上 -b 敵兵:01 -s ( d:ENE_STATUS_GUNLIGHT | 0x40000000 ) \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				} else {
+					chara アタッカー 敵兵:61 -r d:E_R:攻撃兵待機ルート上 -s d:ENE_STATUS_GUNLIGHT \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				}
+				chara アタッカー 敵兵:62 -r d:E_R:攻撃兵待機ルート上 -s d:ENE_STATUS_GUNLIGHT \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				chara アタッカー 敵兵:63 -r d:E_R:攻撃兵待機ルート上 -s d:ENE_STATUS_GUNLIGHT -e d:ENE_EQUIP_TYPE_LIGHT_SHIELD \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				chara アタッカー 敵兵:64 -r d:E_R:攻撃兵待機ルート上 -s d:ENE_STATUS_GUNLIGHT -e 3 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+			}
+		} else {
+		// 人質イベント後はハイテク兵
+			if( $s:登場ポイント == sp_w23a_w22a1c_0 ) {
+				if ( $w:ゲーム設定 >= d:LEVEL_NORMAL ) {
+					chara アタッカー 敵兵:61 -r d:E_R:攻撃兵待機ルート下 -b 敵兵:01 -s ( d:ENE_STATUS_GUNLIGHT | 0x40000000 ) -e 4 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+					chara アタッカー 敵兵:62 -r d:E_R:攻撃兵待機ルート下 -b 敵兵:03 -s ( d:ENE_STATUS_GUNLIGHT | 0x40000000 ) -e 4 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				} else {
+					chara アタッカー 敵兵:61 -r d:E_R:攻撃兵待機ルート下 -s d:ENE_STATUS_GUNLIGHT -e 4 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+					chara アタッカー 敵兵:62 -r d:E_R:攻撃兵待機ルート下 -s d:ENE_STATUS_GUNLIGHT -e 4 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				}
+				chara アタッカー 敵兵:63 -r d:E_R:攻撃兵待機ルート下 -s d:ENE_STATUS_GUNLIGHT -e 4 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				chara アタッカー 敵兵:64 -r d:E_R:攻撃兵待機ルート下 -s d:ENE_STATUS_GUNLIGHT -e 4 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+			} else {
+				if ( $w:ゲーム設定 >= d:LEVEL_NORMAL ) {
+					chara アタッカー 敵兵:61 -r d:E_R:攻撃兵待機ルート上 -b 敵兵:01 -s ( d:ENE_STATUS_GUNLIGHT | 0x40000000 ) -e 4 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+					chara アタッカー 敵兵:62 -r d:E_R:攻撃兵待機ルート上 -b 敵兵:03 -s ( d:ENE_STATUS_GUNLIGHT | 0x40000000 ) -e 4 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				} else {
+					chara アタッカー 敵兵:61 -r d:E_R:攻撃兵待機ルート上 -s d:ENE_STATUS_GUNLIGHT -e 4 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+					chara アタッカー 敵兵:62 -r d:E_R:攻撃兵待機ルート上 -s d:ENE_STATUS_GUNLIGHT -e 4 \
+						-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				}
+				chara アタッカー 敵兵:63 -r d:E_R:攻撃兵待機ルート上 -s d:ENE_STATUS_GUNLIGHT -e 4 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+				chara アタッカー 敵兵:64 -r d:E_R:攻撃兵待機ルート上 -s d:ENE_STATUS_GUNLIGHT -e 4 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 -l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶
+			}
+		}
+	}
+
+
+	proc 警備兵コマンダー {
+		#if d:DEBUG_PRINT
+			print 'wccomm_set'
+		#endif
+
+		chara 警備コマンダー wccomm -e {警備兵０}
+	}
+
+	proc 攻撃兵コマンダー {
+		#if d:DEBUG_PRINT
+			print 'atcomm_set'
+		#endif
+
+		chara 攻撃コマンダー atcomm -e 攻撃兵０
+	}
+
+	// 司令官、危険モード時の音声リソース
+	resource ghq_area_alert_voice {
+		w22a:
+			$t{
+				// PLAREA0 Ａ倉庫
+				t:vc040208,		// 指揮官「了解。増援部隊、Ｆ脚１Ｆ・Ａ倉庫に向かえ！敵を包囲せよ！」
+				t:vc040209,		// 指揮官「了解。バックアップ、Ｆ脚１Ｆに向かえ！Ａ倉庫を守れ！」
+				-2, // PLAREA0の登録終了
+				// PLAREA1 Ｂ倉庫
+				t:vc040210,		// 指揮官「了解。応援部隊、Ｆ脚１Ｆ・Ｂ倉庫に向かえ！敵を逃がすな！」
+				t:vc040211,		// 指揮官「了解。増援部隊、Ｆ脚１Ｆに急行せよ！敵をＢ倉庫に追い込め！」
+				-2, // PLAREA1の登録終了
+				// PLAREA2 Ｃ倉庫
+				t:vc040212,		// 指揮官「了解。増援部隊、Ｆ脚１Ｆ・Ｃ倉庫に向かえ！侵入者を仕留めろ！」
+				t:vc040213,		// 指揮官「了解。バックアップ、Ｆ脚１Ｆに向かえ！Ｃ倉庫を包囲せよ！」
+				-2, // PLAREA2の登録終了
+				// PLAREA3 Ｄ倉庫
+				t:vc040214,		// 指揮官「了解。増援部隊、Ｆ脚１Ｆ・Ｄ倉庫に向かえ！敵を逃がすな」
+				t:vc040215,		// 指揮官「了解。増援部隊、Ｆ脚１Ｆに向かえ！Ｄ倉庫で敵を仕留めろ」
+				-2, // PLAREA3の登録終了
+				// PLAREA4 Ｅ倉庫
+				t:vc040216,		// 指揮官「了解。応援部隊、Ｆ脚１Ｆ・Ｅ倉庫に向かえ！侵入者を逃がすな！」
+				t:vc040217,		// 指揮官「了解。応援部隊、Ｆ脚１Ｆに向かえ！Ｅ倉庫から敵を逃がすな」
+				-2, // PLAREA4の登録終了
+				// PLAREA5 Ｆ倉庫
+				t:vc040218,		// 指揮官「了解。バックアップ、Ｆ脚１Ｆ・Ｆ倉庫に向かえ！敵を追い込め！」
+				t:vc040219,		// 指揮官「了解。バックアップ、Ｆ脚１Ｆに向かえ！Ｆ倉庫を包囲しろ」
+				-2, // PLAREA5の登録終了
+				// PLAREA6 ＥＦ連絡橋
+				t:vc040200,		// 指揮官「了解。増援部隊、Ｆ脚Ｂ１・Ｇ倉庫に向かえ！侵入者を包囲せよ！」
+				t:vc040201,		// 指揮官「了解。増援部隊、Ｆ脚Ｂ１に急行！Ｇ倉庫で敵を仕留めろ！」
+				-2, // PLAREA6の登録終了
+				// PLAREA7 全体
+				t:vc040226,		// 指揮官「了解。増援部隊、Ｆ脚に向かえ！敵を逃がすな！」
+				t:vc040227,		// 指揮官「了解。増援部隊をＦ脚に送る！侵入者を逃がすな！」
+				-2, // PLAREA7の登録終了
+				// PLAREA8 ＦＡ連絡橋
+				t:vc040202,		// 指揮官「了解。増援部隊、Ｆ脚・ＦＡ連絡橋への扉付近に向かえ！敵の前進を阻止せよ！」
+				t:vc040203,		// 指揮官「了解。応援部隊、Ｆ脚へ急行せよ！ＦＡ連絡橋への扉を守れ！」
+				-2, // PLAREA8の登録終了
+				// PLAREA9 Ｇ倉庫
+				t:vc040220,		// 指揮官「了解。増援部隊、Ｆ脚Ｂ１・Ｇ倉庫に向かえ！侵入者を包囲せよ！」
+				t:vc040221,		// 指揮官「了解。増援部隊、Ｆ脚Ｂ１に急行！Ｇ倉庫で敵を仕留めろ！」
+				-2, // PLAREA9の登録終了
+				// PLAREA10 Ｈ倉庫
+				t:vc040222,		// 指揮官「了解。応援部隊、Ｆ脚Ｂ１・Ｈ倉庫に向かえ！敵を逃がすな！」
+				t:vc040223,		// 指揮官「了解。応援部隊、Ｆ脚Ｂ１に向かえ！Ｈ倉庫を固めろ！」
+				-2, // PLAREA10の登録終了
+				// PLAREA11 Ｉ倉庫
+				t:vc040224,		// 指揮官「了解。バックアップ、Ｆ脚Ｂ１・Ｉ倉庫に向かえ！敵を仕留めろ！」
+				t:vc040225,		// 指揮官「了解。増援部隊、Ｆ脚Ｂ１に向かえ！Ｉ倉庫を囲め！」
+				-2, // PLAREA11の登録終了
+				// PLAREA12 階段
+				t:vc040204,		// 指揮官「了解。増援部隊をＦ脚・階段に派遣する！敵を仕留めろ！」
+				t:vc040205,		// 指揮官「了解。応援部隊、Ｆ脚に出動！階段を固めろ！」
+				-1 // 全ての登録終了
+			}
+	}
+
+	// 司令官、警戒モード時の音声リソース
+	resource ghq_caution_voice {
+		w22a:
+			$t{
+				t:vc040383,		// 指揮官「了解。Ｆ脚を増員する。警備を強化しろ」
+				t:vc040384,		// 指揮官「了解。Ｆ脚に増員を派遣する。警戒を強化しろ」
+				-2
+				t:vc040430,		// 指揮官「Ｆ脚との連絡が途絶えた」
+				-1
+			}
+	}
+
+	proc コマンダー設定 {
+		#if d:DEBUG_PRINT
+			print 'commander_set'
+		#endif
+
+		chara コマンダー 敵兵セット \
+			-w 警備兵コマンダー \
+			-a 攻撃兵コマンダー \
+			-m $w:スタートアラートモード \
+			-r	36875,0,-22500,１Ｆ中央広場 \
+				38500,-5000,-19500,Ｂ１中央広場 \
+			-c	36875,0,-22500,１Ｆ中央広場 \
+				38500,-5000,-19500,Ｂ１中央広場 \
+			-x [ghq_area_alert_voice:w22a] \
+			-y [ghq_caution_voice:w22a] \
+			-v [ene_plant_voice:01] \
+			-z $i:敵標準麻酔持続 \
+			-o $i:敵標準気絶持続 \
+			-b $w:敵標準再発生数 \
+			-f	d:E_R:解体前定時連絡ルート上 2 t:vc044023 t:vc044023_len \
+				d:E_R:解体前定時連絡ルート下 2 t:vc044023 t:vc044023_len \
+				d:E_R:解体前定時連絡ルート上ＥＸ 2 t:vc044023 t:vc044023_len \
+				d:E_R:解体前定時連絡ルート下ＥＸ 2 t:vc044023 t:vc044023_len \
+				d:E_R:解体中定時連絡ルート上 2 t:vc044023 t:vc044023_len \
+				d:E_R:解体中定時連絡ルート上ＥＸ 2 t:vc044023 t:vc044023_len \
+			-s d:ENE_STAGE_GPS \
+			-d １Ｆ中央広場 \
+			-h $i:標準警戒時間 \		// 警戒時間
+			-p 	0, -1, -1 クリアリングエリア０初期設定 \
+				1, -1, -1 クリアリングエリア１初期設定 \
+				2, -1, -1 クリアリングエリア２初期設定 \
+				3, -1, -1 クリアリングエリア３初期設定 \
+				4, -1, -1 クリアリングエリア４初期設定 \
+				5, -1, -1 クリアリングエリア５初期設定 \
+				6, -1, -1 クリアリングエリア６初期設定 \
+				7, -1, -1 クリアリングエリア７初期設定 \
+				8, -1, -1 クリアリングエリア８初期設定 \
+				0, -3, -3 クリアリング回避回数処理 \
+				1, -3, -3 クリアリング回避回数処理 \
+				2, -3, -3 クリアリング回避回数処理 \
+				3, -3, -3 クリアリング回避回数処理 \
+				4, -3, -3 クリアリング回避回数処理 \
+				5, -3, -3 クリアリング回避回数処理 \
+				6, -3, -3 クリアリング回避回数処理 \
+				7, -3, -3 クリアリング回避回数処理 \
+				8, -3, -3 クリアリング回避回数処理 \
+				-2, -2, -2 クリアリングカメラオフ
+
+		// クリアリング子画面チェック
+		@クリアリング子画面チェック
+
+		// 指定されたトラップ内に入ったときはクリアリングをキャンセルする
+		@クリアリングキャンセル設定
+	}
+
+
+	// １Ｆ-Ａ倉庫のクリアリング
+	//---------------------------------------
+	proc クリアリングエリア０初期設定 {
+
+		eval( $b:クリアリングエリア番号 = 0 );
+		#if d:DEBUG_PRINT
+			print '$b:クリアリングエリア番号='$b:クリアリングエリア番号
+			print '$b:w22a_クリアリング回避回数['$b:クリアリングエリア番号']='$b:w22a_クリアリング回避回数[$b:クリアリングエリア番号]
+		#endif
+
+		if ( $b:w22a_クリアリング回避回数[0] >= $w:クリアリングレベルアップ回数 ) {
+			// 規定数を超えるとスタングレネードを投げてくる
+			command セットクリアリング \
+				-i	d:C_R0:先頭兵スタンルート, \
+					d:C_R0:２番兵ルート, \
+					d:C_R0:３番兵ルート, \
+					d:C_R0:４番兵ルート \
+				-p	0, d:C_R0:先頭兵スタンルート, 0 スタンチェック０ \
+					0, d:C_R0:先頭兵スタンルート, 11 ロッカーチェック０ \
+					0, d:C_R0:２番兵ルート, 13 コース選択０ \
+					0, d:C_R0:先頭兵スタンルート, 0 子画面オンオフチェック０ \
+					0, d:C_R0:先頭兵スタンルート, 0 クリアリングカメラ０－１ \
+					0, d:C_R0:先頭兵スタンルート, 6 クリアリングカメラ０－２
+		} else {
+			// はじめのうちはこっち
+			command セットクリアリング \
+				-i	d:C_R0:先頭兵標準ルート, \
+					d:C_R0:２番兵ルート, \
+					d:C_R0:３番兵ルート, \
+					d:C_R0:４番兵ルート \
+				-p	0, d:C_R0:２番兵ルート, 13 コース選択０ \
+					0, d:C_R0:先頭兵標準ルート, 0 子画面オンオフチェック０ \
+					0, d:C_R0:先頭兵標準ルート, 0 クリアリングカメラ０－１ \
+					0, d:C_R0:先頭兵標準ルート, 4 クリアリングカメラ０－２
+		}
+	}
+
+	proc スタンチェック０ {
+		// マップ外に出ていたらスタン投げキャンセル
+		if ( `command プレイヤーマップ名` != １Ｆ左上小部屋 ) {
+			command チェンジクリアリングルート 敵兵:61 -r d:C_R0:先頭兵スタンルート -p 3
+		}
+	}
+
+	proc ロッカーチェック０ {
+		if ( $b:w22a_クリアリング回避回数[0] >= $w:クリアリングレベルアップ回数 + 1 ) {
+			// 規定数+1を超えるとロッカー開けルートへチェンジ
+			command ロッカー状態 -n ロッカー01
+			if ( !($status & 0x2000) && ($status & 0x0001) ) {
+				// ノーマル以下では中に入っていたら開けない
+				if ( $w:ゲーム設定 >= d:LEVEL_HARD || $s:プレイヤーがいるロッカー名 != ロッカー01 ) {
+					command チェンジクリアリングルート 敵兵:61 -r d:C_R0:先頭兵ロッカー開けルート -p 0
+				}
+			}
+		}
+	}
+
+	proc コース選択０ {
+		// EXTREMEは無条件にちょっときつめ
+		if ( $w:ゲーム設定 >= d:LEVEL_EXTREME ) {
+			command チェンジクリアリングルート 敵兵:62 -r d:C_R0:２番兵ＥＸルート -p 0
+		}
+	}
+
+	proc 子画面オンオフチェック０ {
+		eval( $f:クリアリング子画面フラグ = 1 );
+	}
+
+	proc クリアリングカメラ０－１ {
+		command カメラマップ設定 -chanl 1 -map １Ｆ中央広場
+		eval( $f:クリアリング中フラグ = 1 );
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 50628,3119,-32780 -t 49050,644,-36157 \
+				-r 382,2333,0 -f 4475 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 49616,3113,-32302 -t 48119,644,-35721 \
+				-r 381,2317,0 -f 4475 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*2) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+	proc クリアリングカメラ０－２ {
+		command カメラマップ設定 -chanl 1 -map １Ｆ左上小部屋
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 45942,3868,-41113 -t 47423,2002,-37474 \
+				-r 289,252,0 -f 4349 \
+				-a 339 \
+				-i 0 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 45942,3868,-41114 -t 47685,778,-38598 \
+				-r 515,395,0 -f 4349 \
+				-a 167 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*10) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+	// １Ｆ-Ｂ倉庫のクリアリング
+	//---------------------------------------
+	proc クリアリングエリア１初期設定 {
+
+		eval( $b:クリアリングエリア番号 = 1 );
+		#if d:DEBUG_PRINT
+			print '$b:クリアリングエリア番号='$b:クリアリングエリア番号
+			print '$b:w22a_クリアリング回避回数['$b:クリアリングエリア番号']='$b:w22a_クリアリング回避回数[$b:クリアリングエリア番号]
+		#endif
+
+		if ( $b:w22a_クリアリング回避回数[1] >= $w:クリアリングレベルアップ回数 ) {
+			// 規定数を超えるとスタングレネードを投げてくる
+			command セットクリアリング \
+				-i	d:C_R1:先頭兵スタンルート, \
+					d:C_R1:２番兵ルート, \
+					d:C_R1:３番兵ルート, \
+					d:C_R1:４番兵ルート \
+				-p	1, d:C_R1:先頭兵スタンルート, 0 スタンチェック１ \
+					1, d:C_R1:２番兵ルート, 4 ロッカーチェック１下 \
+					1, d:C_R1:２番兵ロッカー開けルート下, 4 通常ルート１－５へ復帰 \
+					1, d:C_R1:２番兵ルート, 5 ロッカーチェック１上 \
+					1, d:C_R1:２番兵ロッカー開けルート上, 4 通常ルート１－６へ復帰 \
+					1, d:C_R1:２番兵ルート, 10 隙間チェック１ \
+					1, d:C_R1:先頭兵スタンルート, 0 子画面オンオフチェック１ \
+					1, d:C_R1:先頭兵スタンルート 0 クリアリングカメラ１－１ \
+					1, d:C_R1:先頭兵スタンルート 3 クリアリングカメラ１－２
+		} else {
+			// はじめのうちはこっち
+			command セットクリアリング \
+				-i	d:C_R1:先頭兵標準ルート, \
+					d:C_R1:２番兵ルート, \
+					d:C_R1:３番兵ルート, \
+					d:C_R1:４番兵ルート \
+				-p	1, d:C_R1:先頭兵標準ルート, 0 子画面オンオフチェック１ \
+					1, d:C_R1:先頭兵標準ルート 0 クリアリングカメラ１－１ \
+					1, d:C_R1:先頭兵標準ルート 3 クリアリングカメラ１－２
+		}
+	}
+
+	proc スタンチェック１ {
+		// マップ外に出ていたらスタン投げキャンセル
+		if ( `command プレイヤーマップ名` != １Ｆ右上小部屋 ) {
+			command チェンジクリアリングルート 敵兵:61 -r d:C_R1:先頭兵スタンルート -p 2
+		}
+	}
+
+	proc ロッカーチェック１下 {
+		if ( $b:w22a_クリアリング回避回数[1] >= $w:クリアリングレベルアップ回数 + 1 ) {
+			// 規定数+1を超えるとロッカー開けルートへチェンジ
+			command ロッカー状態 -n ロッカー12
+			if ( !($status & 0x2000) && ($status & 0x0001) ) {
+				// ノーマル以下では中に入っていたら開けない
+				if ( $w:ゲーム設定 >= d:LEVEL_HARD || $s:プレイヤーがいるロッカー名 != ロッカー12 ) {
+					command チェンジクリアリングルート 敵兵:62 -r d:C_R1:２番兵ロッカー開けルート下 -p 0
+				}
+			}
+		}
+	}
+
+	proc 通常ルート１－５へ復帰 {
+		command チェンジクリアリングルート 敵兵:62 -r d:C_R1:２番兵ルート -p 5
+	}
+
+	proc ロッカーチェック１上 {
+		if ( $b:w22a_クリアリング回避回数[1] >= $w:クリアリングレベルアップ回数 + 1 ) {
+			// 規定数+1を超えるとロッカー開けルートへチェンジ
+			command ロッカー状態 -n ロッカー11
+			if ( !($status & 0x2000) && ($status & 0x0001) ) {
+				// ノーマル以下では中に入っていたら開けない
+				if ( $w:ゲーム設定 >= d:LEVEL_HARD || $s:プレイヤーがいるロッカー名 != ロッカー11 ) {
+					command チェンジクリアリングルート 敵兵:62 -r d:C_R1:２番兵ロッカー開けルート上 -p 0
+				}
+			}
+		}
+	}
+
+	proc 通常ルート１－６へ復帰 {
+		command チェンジクリアリングルート 敵兵:62 -r d:C_R1:２番兵ルート -p 6
+	}
+
+	proc 隙間チェック１ {
+		if ( $b:w22a_クリアリング回避回数[1] >= $w:クリアリングレベルアップ回数 + 2 ) {
+			// 規定数+2を超えると隙間のぞきへチェンジ
+			// ノーマル以下では隙間に隠れていたら見ない
+			if ( $w:ゲーム設定 >= d:LEVEL_HARD || $i:プレイヤー位置Ｚ > -40875 ) {
+				command チェンジクリアリングルート 敵兵:62 -r d:C_R1:２番兵隙間のぞきルート -p 0
+			}
+		}
+	}
+
+	proc 子画面オンオフチェック１ {
+		eval( $f:クリアリング子画面フラグ = 1 );
+	}
+
+	proc クリアリングカメラ１－１ {
+		command カメラマップ設定 -chanl 1 -map １Ｆ中央広場
+		eval( $f:クリアリング中フラグ = 1 );
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 54897,2748,-32526 -t 57818,660,-34175 \
+				-r 363,1359,0 -f 3951 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 54448,2737,-33311 -t 57520,961,-35046 \
+				-r 304,1359,0 -f 3950 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*2) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+	proc クリアリングカメラ１－２ {
+		command カメラマップ設定 -chanl 1 -map １Ｆ右上小部屋
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 58214,3286,-41236 -t 55947,1373,-36247 \
+				-r 219,3818,0 -f 5804 \
+				-a 285 \
+				-i 0 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 58214,3286,-41237 -t 54895,54,-37740 \
+				-r 385,3601,0 -f 5804 \
+				-a 163 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*10) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+	// １Ｆ-Ｃ倉庫のクリアリング
+	//---------------------------------------
+	proc クリアリングエリア２初期設定 {
+
+		eval( $b:クリアリングエリア番号 = 2 );
+		#if d:DEBUG_PRINT
+			print '$b:クリアリングエリア番号='$b:クリアリングエリア番号
+			print '$b:w22a_クリアリング回避回数['$b:クリアリングエリア番号']='$b:w22a_クリアリング回避回数[$b:クリアリングエリア番号]
+		#endif
+
+		if ( $b:w22a_クリアリング回避回数[2] >= $w:クリアリングレベルアップ回数 ) {
+			// 規定数を超えるとスタングレネードを投げてくる
+			command セットクリアリング \
+				-i	d:C_R2:先頭兵スタンルート, \
+					d:C_R2:２番兵ルート, \
+					d:C_R2:３番兵ルート, \
+					d:C_R2:４番兵ルート \
+				-p	2, d:C_R2:先頭兵スタンルート, 0 スタンチェック２ \
+					2, d:C_R2:２番兵ルート, 3 ロッカーチェック２ \
+					2, d:C_R2:先頭兵スタンルート, 0 子画面オンオフチェック２ \
+					2, d:C_R2:先頭兵スタンルート, 0 クリアリングカメラ２－１ \
+					2, d:C_R2:先頭兵スタンルート, 4 クリアリングカメラ２－２
+
+		} else {
+			// はじめのうちはこっち
+			command セットクリアリング \
+				-i	d:C_R2:先頭兵標準ルート, \
+					d:C_R2:２番兵ルート, \
+					d:C_R2:３番兵ルート, \
+					d:C_R2:４番兵ルート \
+				-p	2, d:C_R2:２番兵ルート, 3 ロッカーチェック２ \
+					2, d:C_R2:先頭兵標準ルート, 0 子画面オンオフチェック２ \
+					2, d:C_R2:先頭兵標準ルート, 0 クリアリングカメラ２－１ \
+					2, d:C_R2:先頭兵標準ルート, 4 クリアリングカメラ２－２
+		}
+	}
+
+	proc スタンチェック２ {
+		// マップ外に出ていたらスタン投げキャンセル
+		if ( `command プレイヤーマップ名` != １Ｆ中央左小部屋 ) {
+			command チェンジクリアリングルート 敵兵:61 -r d:C_R2:先頭兵スタンルート -p 2
+		}
+	}
+
+	proc ロッカーチェック２ {
+		if ( $b:w22a_クリアリング回避回数[2] >= $w:クリアリングレベルアップ回数 + 1 ) {
+			// 規定数+1を超えると厳しいルートへチェンジ
+			command チェンジクリアリングルート 敵兵:61 -r d:C_R2:先頭兵ダクトのぞきルート -p 0
+			
+			// ノーマル以下でプレイヤーがロッカーに隠れていた場合は無条件にロッカー開けないルート
+			if ( $w:ゲーム設定 <= d:LEVEL_NORMAL && $s:プレイヤーがいるロッカー名 == ロッカー21 ) {
+				command チェンジクリアリングルート 敵兵:62 -r d:C_R2:２番兵ロッカーしまってたときルート -p 0
+			} else {
+				command ロッカー状態 -n ロッカー21
+				if ( !($status & 0x2000) && ($status & 0x0001) ) {
+					command チェンジクリアリングルート 敵兵:62 -r d:C_R2:２番兵ロッカー開けルート -p 0
+				} else {
+					command チェンジクリアリングルート 敵兵:62 -r d:C_R2:２番兵ロッカーしまってたときルート -p 0
+				}
+			}
+		}
+	}
+
+	proc 子画面オンオフチェック２ {
+		eval( $f:クリアリング子画面フラグ = 1 );
+	}
+
+	proc クリアリングカメラ２－１ {
+		command カメラマップ設定 -chanl 1 -map １Ｆ中央広場
+		eval( $f:クリアリング中フラグ = 1 );
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 41178,3487,-25020 -t 46305,262,-27349 \
+				-r 339,1302,0 -f 6489 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 40973,3089,-24927 -t 46165,-4,-27286 \
+				-r 324,1302,0 -f 6488 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*2) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+	proc クリアリングカメラ２－２ {
+		command カメラマップ設定 -chanl 1 -map １Ｆ中央左小部屋
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 45675,3619,-32713 -t 43312,415,-27596 \
+				-r 337,3814,0 -f 6483 \
+				-a 254 \
+				-i 0 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 45671,3623,-32722 -t 42173,105,-28551 \
+				-r 374,3641,0 -f 6482 \
+				-a 177 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*3) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+	// １Ｆ-Ｄ倉庫のクリアリング
+	//---------------------------------------
+	proc クリアリングエリア３初期設定 {
+
+		eval( $b:クリアリングエリア番号 = 3 );
+		#if d:DEBUG_PRINT
+			print '$b:クリアリングエリア番号='$b:クリアリングエリア番号
+			print '$b:w22a_クリアリング回避回数['$b:クリアリングエリア番号']='$b:w22a_クリアリング回避回数[$b:クリアリングエリア番号]
+		#endif
+
+		if ( $b:w22a_クリアリング回避回数[3] >= $w:クリアリングレベルアップ回数 ) {
+			// 規定数を超えるとスタングレネードを投げてくる
+			command セットクリアリング \
+				-i	d:C_R3:先頭兵スタンルート, \
+					d:C_R3:２番兵ルート, \
+					d:C_R3:３番兵ルート, \
+					d:C_R3:４番兵ルート \
+				-p	3, d:C_R3:先頭兵スタンルート, 0 スタンチェック３ \
+					3, d:C_R3:２番兵ルート, 5 ダクトちょっとだけチェック \
+					3, d:C_R3:２番兵ルート, 7 ロッカーチェック３ \
+					3, d:C_R3:２番兵ロッカー開けルート, 5 隙間チェック３ \
+					3, d:C_R3:２番兵ロッカー開けルート, 9 ダクトチェック３ \
+					3, d:C_R3:２番兵隙間のぞきルート, 4 ダクトチェック３ \
+					3, d:C_R3:先頭兵スタンルート, 0 子画面オンオフチェック３ \
+					3, d:C_R3:先頭兵スタンルート, 0 クリアリングカメラ３－１ \
+					3, d:C_R3:先頭兵スタンルート, 4 クリアリングカメラ３－２
+				
+		} else {
+			// はじめのうちはこっち
+			command セットクリアリング \
+				-i	d:C_R3:先頭兵標準ルート, \
+					d:C_R3:２番兵ルート, \
+					d:C_R3:３番兵ルート, \
+					d:C_R3:４番兵ルート \
+				-p	3, d:C_R3:２番兵ルート, 5 ダクトちょっとだけチェック \
+					3, d:C_R3:２番兵ルート, 7 ロッカーチェック３ \
+					3, d:C_R3:２番兵ロッカー開けルート, 5 隙間チェック３ \
+					3, d:C_R3:２番兵ロッカー開けルート, 9 ダクトチェック３ \
+					3, d:C_R3:２番兵隙間のぞきルート, 4 ダクトチェック３ \
+					3, d:C_R3:先頭兵標準ルート, 0 子画面オンオフチェック３ \
+					3, d:C_R3:先頭兵標準ルート, 0 クリアリングカメラ３－１ \
+					3, d:C_R3:先頭兵標準ルート, 4 クリアリングカメラ３－２
+		}
+	}
+
+	proc スタンチェック３ {
+		// マップ外に出ていたらスタン投げキャンセル
+		if ( `command プレイヤーマップ名` != １Ｆ中央右小部屋 ) {
+			command チェンジクリアリングルート 敵兵:61 -r d:C_R3:先頭兵スタンルート -p 2
+		}
+	}
+
+	proc ダクトちょっとだけチェック {
+		if ( $b:w22a_クリアリング回避回数[3] < $w:クリアリングレベルアップ回数 ) {
+			// 規定数を超えるまではダクトちょっとだけチェックをしない
+			command チェンジクリアリングルート 敵兵:62 -r d:C_R3:２番兵ルート -p 7
+		}
+	}
+
+	proc ロッカーチェック３ {
+		if ( $b:w22a_クリアリング回避回数[3] >= $w:クリアリングレベルアップ回数 + 1 ) {
+			// 規定数+1を超えるとロッカー開けルートか隙間のぞきルートへチェンジ（ノーマル以上）
+			
+			if ( $w:ゲーム設定 <= d:LEVEL_NORMAL && $s:プレイヤーがいるロッカー名 == ロッカー31 ) {
+			// ノーマル以下でプレイヤーがロッカーに隠れていた場合は無条件に隙間のぞきルートへ
+				command チェンジクリアリングルート 敵兵:62 -r d:C_R3:２番兵隙間のぞきルート -p 0
+			} else {
+				command ロッカー状態 -n ロッカー31
+				if ( !($status & 0x2000) && ($status & 0x0001) ) {
+					command チェンジクリアリングルート 敵兵:62 -r d:C_R3:２番兵ロッカー開けルート -p 0
+				} else {
+					if ( $w:ゲーム設定 <= d:LEVEL_NORMAL && $i:プレイヤー位置Ｚ < -32375 ) {
+					// ノーマル以下では隙間に隠れていたらダクトを見るルートに変更
+						command チェンジクリアリングルート 敵兵:62 -r d:C_R3:２番兵ロッカー開けルート -p 5
+					} else {
+						command チェンジクリアリングルート 敵兵:62 -r d:C_R3:２番兵隙間のぞきルート -p 0
+					}
+				}
+			}
+		}
+	}
+
+	proc 隙間チェック３ {
+		if ( $w:ゲーム設定 <= d:LEVEL_NORMAL && $i:プレイヤー位置Ｚ < -32375 ) {
+			// ノーマル以下では隙間に隠れていたらダクトを見るルートに変更
+			command チェンジクリアリングルート 敵兵:62 -r d:C_R3:２番兵ダクトのぞきルート -p 1
+		}
+	}
+
+	proc ダクトチェック３ {
+		if ( $w:ゲーム設定 <= d:LEVEL_NORMAL && $i:プレイヤー位置Ｘ > 62750 ) {
+			// ノーマル以下ではダクトに隠れていたら直帰ルートに変更
+			command チェンジクリアリングルート 敵兵:62 -r d:C_R3:２番兵直帰ルート -p 0
+		} else {
+			command チェンジクリアリングルート 敵兵:62 -r d:C_R3:２番兵ダクトのぞきルート -p 0
+		}
+	}
+
+	proc 子画面オンオフチェック３ {
+		eval( $f:クリアリング子画面フラグ = 1 );
+	}
+
+	proc クリアリングカメラ３－１ {
+		command カメラマップ設定 -chanl 1 -map １Ｆ中央広場
+		eval( $f:クリアリング中フラグ = 1 );
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 62725,2546,-25205 -t 59892,1378,-26566 \
+				-r 232,2780,0 -f 3353 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 62896,2034,-25117 -t 60066,860,-26483 \
+				-r 233,2779,0 -f 3354 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*2) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+	proc クリアリングカメラ３－２ {
+		command カメラマップ設定 -chanl 1 -map １Ｆ中央右小部屋
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 58522,4589,-32654 -t 60308,771,-27737 \
+				-r 411,227,0 -f 6477 \
+				-a 205 \
+				-i 0 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 58524,4589,-32655 -t 60319,-584,-29195 \
+				-r 603,312,0 -f 6477 \
+				-a 170 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*10) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+
+	// １Ｆ-Ｅ倉庫のクリアリング
+	//---------------------------------------
+	proc クリアリングエリア４初期設定 {
+
+		eval( $b:クリアリングエリア番号 = 4 );
+		#if d:DEBUG_PRINT
+			print '$b:クリアリングエリア番号='$b:クリアリングエリア番号
+			print '$b:w22a_クリアリング回避回数['$b:クリアリングエリア番号']='$b:w22a_クリアリング回避回数[$b:クリアリングエリア番号]
+		#endif
+
+		if ( $b:w22a_クリアリング回避回数[4] >= $w:クリアリングレベルアップ回数 ) {
+			// 規定数を超えるとスタングレネードを投げてくる
+			command セットクリアリング \
+				-i	d:C_R4:先頭兵スタンルート, \
+					d:C_R4:２番兵ルート, \
+					d:C_R4:３番兵ルート, \
+					d:C_R4:４番兵ルート \
+				-p	4, d:C_R4:先頭兵スタンルート, 0 スタンチェック４ \
+					4, d:C_R4:２番兵ルート, 9 ロッカーチェック４ \
+					4, d:C_R4:先頭兵スタンルート, 0 子画面オンオフチェック４ \
+					4, d:C_R4:先頭兵スタンルート, 0 クリアリングカメラ４－１ \
+					4, d:C_R4:先頭兵スタンルート, 3 クリアリングカメラ４－２
+				
+		} else {
+			// はじめのうちはこっち
+			command セットクリアリング \
+				-i	d:C_R4:先頭兵標準ルート, \
+					d:C_R4:２番兵ルート, \
+					d:C_R4:３番兵ルート, \
+					d:C_R4:４番兵ルート \
+				-p	4, d:C_R4:先頭兵標準ルート, 0 子画面オンオフチェック４ \
+					4, d:C_R4:先頭兵標準ルート, 0 クリアリングカメラ４－１ \
+					4, d:C_R4:先頭兵標準ルート, 3 クリアリングカメラ４－２
+		}
+	}
+
+	proc スタンチェック４ {
+		// マップ外に出ていたらスタン投げキャンセル
+		if ( `command プレイヤーマップ名` != １Ｆ左下小部屋 ) {
+			command チェンジクリアリングルート 敵兵:61 -r d:C_R4:先頭兵スタンルート -p 2
+		}
+	}
+
+	proc ロッカーチェック４ {
+		if ( $b:w22a_クリアリング回避回数[4] >= $w:クリアリングレベルアップ回数 + 1 ) {
+			// 規定数+1を超えるとロッカー開けルートへチェンジ
+			command ロッカー状態 -n ロッカー41
+			if ( !($status & 0x2000) && ($status & 0x0001) ) {
+				// ノーマル以下では中に入っていたら開けない
+				if ( $w:ゲーム設定 >= d:LEVEL_HARD || $s:プレイヤーがいるロッカー名 != ロッカー41 ) {
+					command チェンジクリアリングルート 敵兵:62 -r d:C_R4:２番兵ロッカー開けルート -p 0
+				}
+			}
+		}
+	}
+
+	proc 子画面オンオフチェック４ {
+		eval( $f:クリアリング子画面フラグ = 1 );
+	}
+
+	proc クリアリングカメラ４－１ {
+		command カメラマップ設定 -chanl 1 -map １Ｆ中央広場
+		eval( $f:クリアリング中フラグ = 1 );
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 50314,2840,-15722 -t 49145,462,-20613 \
+				-r 288,2201,0 -f 5563 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 49063,2841,-15422 -t 47901,462,-20316 \
+				-r 288,2200,0 -f 5564 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*2) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+	proc クリアリングカメラ４－２ {
+		command カメラマップ設定 -chanl 1 -map １Ｆ左下小部屋
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 49257,4539,-23951 -t 47075,965,-19049 \
+				-r 383,3823,0 -f 6447 \
+				-a 273 \
+				-i 0 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 49258,4539,-23952 -t 46159,-278,-20992 \
+				-r 550,3569,0 -f 6447 \
+				-a 186 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*7) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+	// １Ｆ-Ｆ倉庫のクリアリング
+	//---------------------------------------
+	proc クリアリングエリア５初期設定 {
+
+		eval( $b:クリアリングエリア番号 = 5 );
+		#if d:DEBUG_PRINT
+			print '$b:クリアリングエリア番号='$b:クリアリングエリア番号
+			print '$b:w22a_クリアリング回避回数['$b:クリアリングエリア番号']='$b:w22a_クリアリング回避回数[$b:クリアリングエリア番号]
+		#endif
+
+		command セットクリアリング \
+			-i	d:C_R5:先頭兵標準ルート, \
+				d:C_R5:２番兵ルート, \
+				d:C_R5:３番兵ルート, \
+				d:C_R5:４番兵ルート \
+			-p	5, d:C_R5:先頭兵標準ルート, 1 スタンチェック５ \
+				5, d:C_R5:２番兵ルート, 3 プレイヤー位置チェック５ \
+				5, d:C_R5:先頭兵標準ルート, 1 子画面オンオフチェック５ \
+				5, d:C_R5:先頭兵標準ルート, 1 クリアリングカメラ５－１ \
+				5, d:C_R5:先頭兵標準ルート, 5 クリアリングカメラ５－２
+	}
+
+	proc スタンチェック５ {
+		// 規定回数に行くまではスタン投げを飛ばす
+		if ( $b:w22a_クリアリング回避回数[5] < $w:クリアリングレベルアップ回数 || \
+			`command プレイヤーマップ名` != １Ｆ右下小部屋 ) {
+			command チェンジクリアリングルート 敵兵:61 -r d:C_R5:先頭兵標準ルート -p 3
+		}
+	}
+
+	proc プレイヤー位置チェック５ {
+		if ( $b:w22a_クリアリング回避回数[5] >= $w:クリアリングレベルアップ回数 ) {
+			// 規定数+1を超えると厳しいルートへチェンジ
+			if ( $w:ゲーム設定 <= d:LEVEL_NORMAL && $i:プレイヤー位置Ｚ < -22750 ) {
+				// ノーマル以下では荷物裏に隠れていたらダクトルートのみ発動
+				command チェンジクリアリングルート 敵兵:61 -r d:C_R5:先頭兵ダクトのぞきルート -p 0
+			} else {
+				command チェンジクリアリングルート 敵兵:61 -r d:C_R5:先頭兵奥までルート -p 0
+				command チェンジクリアリングルート 敵兵:62 -r d:C_R5:２番兵ダクトのぞきルート -p 0
+			}
+		}
+
+	}
+
+	proc 子画面オンオフチェック５ {
+		eval( $f:クリアリング子画面フラグ = 1 );
+	}
+
+	proc クリアリングカメラ５－１ {
+		command カメラマップ設定 -chanl 1 -map １Ｆ中央広場
+		eval( $f:クリアリング中フラグ = 1 );
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 57661,2942,-16065 -t 56058,1818,-17883 \
+				-r 283,2519,0 -f 2672 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 57882,2206,-15831 -t 56196,1369,-17725 \
+				-r 208,2522,0 -f 2670 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*2) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+	proc クリアリングカメラ５－２ {
+		command カメラマップ設定 -chanl 1 -map １Ｆ右下小部屋
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 54339,3242,-24128 -t 56126,1381,-20350 \
+				-r 273,288,0 -f 4575 \
+				-a 266 \
+				-i 0 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 54341,3242,-24129 -t 56814,860,-21106 \
+				-r 357,447,0 -f 4575 \
+				-a 195 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*5) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+
+	// Ｂ１-Ｇ倉庫のクリアリング
+	//---------------------------------------
+	proc クリアリングエリア６初期設定 {
+
+		eval( $b:クリアリングエリア番号 = 6 );
+		#if d:DEBUG_PRINT
+			print '$b:クリアリングエリア番号='$b:クリアリングエリア番号
+			print '$b:w22a_クリアリング回避回数['$b:クリアリングエリア番号']='$b:w22a_クリアリング回避回数[$b:クリアリングエリア番号]
+		#endif
+
+		if ( $b:w22a_クリアリング回避回数[6] <= $w:クリアリングレベルアップ回数 + 1 || $w:ゲーム設定 <= d:LEVEL_NORMAL ) {
+			if ( $i:プレイヤー位置Ｘ > 52000 ) {
+				command セットクリアリング \
+					-i	d:C_R6:先頭兵右ルート, \
+						d:C_R6:２番兵右ルート, \
+						d:C_R6:３番兵右ルート, \
+						d:C_R6:４番兵右ルート \
+					-p	6, d:C_R6:先頭兵右ルート, 1 スタンチェック６右
+			} else {
+				command セットクリアリング \
+					-i	d:C_R6:先頭兵左ルート, \
+						d:C_R6:２番兵左ルート, \
+						d:C_R6:３番兵左ルート, \
+						d:C_R6:４番兵左ルート \
+					-p	6, d:C_R6:先頭兵左ルート, 1 スタンチェック６左
+			}
+		} else {
+		// ハード以上で規定回数を超えると両側からクリアリングを起動
+			command セットクリアリング \
+				-i	d:C_R6:先頭兵右ルート２, \
+					d:C_R6:２番兵左ルート２, \
+					d:C_R6:３番兵左ルート２, \
+					d:C_R6:４番兵右ルート２ \
+				-p	6, d:C_R6:先頭兵右ルート２, 1 スタンチェック６右２ \
+					6, d:C_R6:２番兵左ルート２, 1 スタンチェック６左２
+		}
+	} 
+
+	proc スタンチェック６右 {
+		// 規定回数に行くまではスタン投げを飛ばす
+		if ( $b:w22a_クリアリング回避回数[6] < $w:クリアリングレベルアップ回数 || \
+			`command プレイヤーマップ名` != Ｂ１上小部屋 ) {
+			command チェンジクリアリングルート 敵兵:61 -r d:C_R6:先頭兵右ルート -p 3
+		}
+	}
+
+	proc スタンチェック６左 {
+		// 規定回数に行くまではスタン投げを飛ばす
+		if ( $b:w22a_クリアリング回避回数[6] < $w:クリアリングレベルアップ回数 || \
+			`command プレイヤーマップ名` != Ｂ１上小部屋 ) {
+			command チェンジクリアリングルート 敵兵:61 -r d:C_R6:先頭兵左ルート -p 3
+		}
+	}
+
+	proc スタンチェック６右２ {
+		// 規定回数に行くまではスタン投げを飛ばす
+		if ( $b:w22a_クリアリング回避回数[6] < $w:クリアリングレベルアップ回数 || \
+			`command プレイヤーマップ名` != Ｂ１上小部屋 ) {
+			command チェンジクリアリングルート 敵兵:61 -r d:C_R6:先頭兵右ルート２ -p 3
+		}
+	}
+
+	proc スタンチェック６左２ {
+		// 規定回数に行くまではスタン投げを飛ばす
+		if ( $b:w22a_クリアリング回避回数[6] < $w:クリアリングレベルアップ回数 || \
+			`command プレイヤーマップ名` != Ｂ１上小部屋 ) {
+			command チェンジクリアリングルート 敵兵:62 -r d:C_R6:２番兵左ルート２ -p 3
+		}
+	}
+
+
+	// Ｂ１-Ｈ倉庫のクリアリング
+	//---------------------------------------
+	proc クリアリングエリア７初期設定 {
+
+		eval( $b:クリアリングエリア番号 = 7 );
+		#if d:DEBUG_PRINT
+			print '$b:クリアリングエリア番号='$b:クリアリングエリア番号
+			print '$b:w22a_クリアリング回避回数['$b:クリアリングエリア番号']='$b:w22a_クリアリング回避回数[$b:クリアリングエリア番号]
+		#endif
+
+		command セットクリアリング \
+			-i	d:C_R7:先頭兵ルート, \
+				d:C_R7:２番兵ルート, \
+				d:C_R7:３番兵ルート, \
+				d:C_R7:４番兵ルート \
+			-p	7, d:C_R7:先頭兵ルート, 0 スタンチェック７ \
+				7, d:C_R7:先頭兵ルート, 8 ロッカーチェック７右 \
+				7, d:C_R7:先頭兵ロッカー開けルート右, 4 先頭兵ルート７－９へ復帰 \
+				7, d:C_R7:先頭兵ルート, 9 ロッカーチェック７左 \
+				7, d:C_R7:２番兵ルート, 6 ロッカーチェック７下 \
+				7, d:C_R7:先頭兵ルート, 0 子画面オンオフチェック７ \
+				7, d:C_R7:先頭兵ルート, 0 クリアリングカメラ７－１ \
+				7, d:C_R7:先頭兵ルート, 3 クリアリングカメラ７－２
+	}
+
+	proc スタンチェック７ {
+		// 規定回数に行くまではスタン投げを飛ばす
+		if ( $b:w22a_クリアリング回避回数[7] < $w:クリアリングレベルアップ回数 || \
+			`command プレイヤーマップ名` != Ｂ１左下小部屋 ) {
+			command チェンジクリアリングルート 敵兵:61 -r d:C_R7:先頭兵ルート -p 2
+		}
+	}
+
+	proc ロッカーチェック７右 {
+		if ( $b:w22a_クリアリング回避回数[7] >= $w:クリアリングレベルアップ回数 + 1 ) {
+			// 規定数+1を超えるとロッカー開けルートへチェンジ
+			command ロッカー状態 -n ロッカー74
+			if ( !($status & 0x2000) && ($status & 0x0001) ) {
+				// ノーマル以下では中に入っていたら開けない
+				if ( $w:ゲーム設定 >= d:LEVEL_HARD || $s:プレイヤーがいるロッカー名 != ロッカー74 ) {
+					command チェンジクリアリングルート 敵兵:61 -r d:C_R7:先頭兵ロッカー開けルート右 -p 0
+				}
+			}
+		}
+	}
+
+	proc 先頭兵ルート７－９へ復帰 {
+		command チェンジクリアリングルート 敵兵:61 -r d:C_R7:先頭兵ルート -p 9
+	}
+
+	proc ロッカーチェック７左 {
+		if ( $b:w22a_クリアリング回避回数[7] >= $w:クリアリングレベルアップ回数 + 1 ) {
+			// 規定数+1を超えるとロッカー開けルートへチェンジ
+			command ロッカー状態 -n ロッカー73
+			if ( !($status & 0x2000) && ($status & 0x0001) ) {
+				// ノーマル以下では中に入っていたら開けない
+				if ( $w:ゲーム設定 >= d:LEVEL_HARD || $s:プレイヤーがいるロッカー名 != ロッカー73 ) {
+					command チェンジクリアリングルート 敵兵:61 -r d:C_R7:先頭兵ロッカー開けルート左 -p 0
+				}
+			}
+		}
+	}
+
+	proc ロッカーチェック７下 {
+		if ( $b:w22a_クリアリング回避回数[7] >= $w:クリアリングレベルアップ回数 + 1 ) {
+			// 規定数+1を超えるとロッカー開けルートへチェンジ
+			command ロッカー状態 -n ロッカー71
+			if ( !($status & 0x2000) && ($status & 0x0001) ) {
+				// ノーマル以下では中に入っていたら開けない
+				if ( $w:ゲーム設定 >= d:LEVEL_HARD || $s:プレイヤーがいるロッカー名 != ロッカー71 ) {
+					command チェンジクリアリングルート 敵兵:62 -r d:C_R7:２番兵ロッカー開けルート -p 0
+				}
+			}
+		}
+	}
+
+	proc 子画面オンオフチェック７ {
+		eval( $f:クリアリング子画面フラグ = 1 );
+	}
+
+	proc クリアリングカメラ７－１ {
+		command カメラマップ設定 -chanl 1 -map Ｂ１中央広場
+		eval( $f:クリアリング中フラグ = 1 );
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 52384,-2218,-20610 -t 51185,-3247,-23468 \
+				-r 209,2307,0 -f 3265 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 52460,-2753,-20452 -t 51244,-3710,-23325 \
+				-r 194,2309,0 -f 3263 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*2) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+	proc クリアリングカメラ７－２ {
+		command カメラマップ設定 -chanl 1 -map Ｂ１左下小部屋
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 45804,-1432,-18287 -t 48822,-3632,-22000 \
+				-r 281,1603,0 -f 5266 \
+				-a 290 \
+				-i 0 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 45805,-1432,-18288 -t 47442,-4920,-21877 \
+				-r 472,1769,0 -f 5266 \
+				-a 172 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*7) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+	// Ｂ１-Ｉ倉庫のクリアリング
+	//---------------------------------------
+	proc クリアリングエリア８初期設定 {
+
+		eval( $b:クリアリングエリア番号 = 8 );
+		#if d:DEBUG_PRINT
+			print '$b:クリアリングエリア番号='$b:クリアリングエリア番号
+			print '$b:w22a_クリアリング回避回数['$b:クリアリングエリア番号']='$b:w22a_クリアリング回避回数[$b:クリアリングエリア番号]
+		#endif
+
+		command セットクリアリング \
+			-i	d:C_R8:先頭兵ルート, \
+				d:C_R8:２番兵ルート, \
+				d:C_R8:３番兵ルート, \
+				d:C_R8:４番兵ルート \
+			-p	8, d:C_R8:先頭兵ルート, 1 スタンチェック８ \
+				8, d:C_R8:先頭兵ルート, 1 子画面オンオフチェック８ \
+				8, d:C_R8:先頭兵ルート, 1 クリアリングカメラ８－１ \
+				8, d:C_R8:先頭兵ルート, 4 クリアリングカメラ８－２
+	}
+
+	proc スタンチェック８ {
+		// 規定回数に行くまではスタン投げを飛ばす
+		if ( $b:w22a_クリアリング回避回数[8] < $w:クリアリングレベルアップ回数 || \
+			 `command プレイヤーマップ名` != Ｂ１右下小部屋 ) {
+			command チェンジクリアリングルート 敵兵:61 -r d:C_R8:先頭兵ルート -p 3
+		}
+	}
+
+	proc 子画面オンオフチェック８ {
+		eval( $f:クリアリング子画面フラグ = 1 );
+	}
+
+	proc クリアリングカメラ８－１ {
+		command カメラマップ設定 -chanl 1 -map Ｂ１中央広場
+		eval( $f:クリアリング中フラグ = 1 );
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 51170,-2872,-19793 -t 51994,-3723,-22262 \
+				-r 206,1838,0 -f 2738 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 51862,-3014,-19512 -t 52685,-3877,-21977 \
+				-r 209,1838,0 -f 2739 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*2) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+	proc クリアリングカメラ８－２ {
+		command カメラマップ設定 -chanl 1 -map Ｂ１右下小部屋
+		#if d:CLEAR_CAMERA
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 56010,-318,-19510 -t 55244,-2694,-21683 \
+				-r 522,2269,0 -f 3309 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+
+			chara カメラ設定 クリアリングカメラ \
+				-c 1 \	
+				-p 55532,-319,-19396 -t 55080,-2662,-21688 \
+				-r 513,2175,0 -f 3308 \
+				-a 234 \
+				-i 0 -1 0 0 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time (60*3) \ // 補完時間を指定
+				-s 1
+		#endif
+	}
+
+	// クリアリングが終了したら呼ぶプロック
+	//---------------------------------------
+	proc クリアリング回避回数処理 {
+		// クリアリング回避回数をカウントする
+		if ( $b:クリアリングエリア番号 == 0 ) {
+			if ( $b:w22a_クリアリング回避回数[0] < 255 ) {
+				eval( $b:w22a_クリアリング回避回数[0] = $b:w22a_クリアリング回避回数[0] + 1 );
+			}
+		} else if ( $b:クリアリングエリア番号 == 1 ) {
+			if ( $b:w22a_クリアリング回避回数[1] < 255 ) {
+				eval( $b:w22a_クリアリング回避回数[1] = $b:w22a_クリアリング回避回数[1] + 1 );
+			}
+		} else if ( $b:クリアリングエリア番号 == 2 ) {
+			if ( $b:w22a_クリアリング回避回数[2] < 255 ) {
+				eval( $b:w22a_クリアリング回避回数[2] = $b:w22a_クリアリング回避回数[2] + 1 );
+			}
+		} else if ( $b:クリアリングエリア番号 == 3 ) {
+			if ( $b:w22a_クリアリング回避回数[3] < 255 ) {
+				eval( $b:w22a_クリアリング回避回数[3] = $b:w22a_クリアリング回避回数[3] + 1 );
+			}
+		} else if ( $b:クリアリングエリア番号 == 4 ) {
+			if ( $b:w22a_クリアリング回避回数[4] < 255 ) {
+				eval( $b:w22a_クリアリング回避回数[4] = $b:w22a_クリアリング回避回数[4] + 1 );
+			}
+		} else if ( $b:クリアリングエリア番号 == 5 ) {
+			if ( $b:w22a_クリアリング回避回数[5] < 255 ) {
+				eval( $b:w22a_クリアリング回避回数[5] = $b:w22a_クリアリング回避回数[5] + 1 );
+			}
+		} else if ( $b:クリアリングエリア番号 == 6 ) {
+			if ( $b:w22a_クリアリング回避回数[6] < 255 ) {
+				eval( $b:w22a_クリアリング回避回数[6] = $b:w22a_クリアリング回避回数[6] + 1 );
+			}
+		} else if ( $b:クリアリングエリア番号 == 7 ) {
+			if ( $b:w22a_クリアリング回避回数[7] < 255 ) {
+				eval( $b:w22a_クリアリング回避回数[7] = $b:w22a_クリアリング回避回数[7] + 1 );
+			}
+		} else if ( $b:クリアリングエリア番号 == 8 ) {
+			if ( $b:w22a_クリアリング回避回数[8] < 255 ) {
+				eval( $b:w22a_クリアリング回避回数[8] = $b:w22a_クリアリング回避回数[8] + 1 );
+			}
+		}
+	}
+
+	// すべてのクリアリングのキャンセル＆終了プロック
+	//---------------------------------------
+	proc クリアリングカメラオフ {
+		eval( $f:クリアリング中フラグ = 0 );
+		chara カメラ設定 クリアリングカメラ -s -1
+		eval( $f:クリアリング子画面フラグ = 0 );
+		#if d:SUB_CAMERA
+			mesg サブ画面 子画面 off
+		#endif
+	}
+
+
+	// クリアリング子画面チェック
+	//---------------------------------------
+	proc クリアリング子画面チェック {
+		#if d:DEBUG_PRINT 
+			print 'clearing_sub_camera_check'
+		#endif
+
+		chara プロック連続実行 子画面チェック \
+			-time -1 \
+			-exec { \
+				if ( $f:クリアリング子画面フラグ == 1 ) {
+					command ゲットゲームステータス $i:ローカル変数Ｉ１
+
+					if ( $b:クリアリングエリア番号 == 0 ) {
+						if ( $s:プレイヤーがいるロッカー名 == ロッカー01 ) {
+							if ( $i:ローカル変数Ｉ１ & d:STATE_CLEARING ) {
+								#if d:SUB_CAMERA
+									mesg サブ画面 子画面 on
+								#endif
+							}
+						} else {
+							#if d:SUB_CAMERA
+								mesg サブ画面 子画面 off
+							#endif
+						}
+
+					} else if ( $b:クリアリングエリア番号 == 1 ) {
+						if ( $s:プレイヤーがいるロッカー名 == ロッカー11 || \
+							 $s:プレイヤーがいるロッカー名 == ロッカー12 ) {
+							if ( $i:ローカル変数Ｉ１ & d:STATE_CLEARING ) {
+								#if d:SUB_CAMERA
+									mesg サブ画面 子画面 on
+								#endif
+							}
+						} else {
+							#if d:SUB_CAMERA
+								mesg サブ画面 子画面 off
+							#endif
+						}
+
+					} else if ( $b:クリアリングエリア番号 == 2 ) {
+						if ( $s:プレイヤーがいるロッカー名 == ロッカー21 || \
+							((`command プレイヤー状態取得` & d:PFLAG_INTRUDE) && \
+							`command プレイヤーマップ名` == １Ｆ中央左小部屋) ) {
+							if ( $i:ローカル変数Ｉ１ & d:STATE_CLEARING ) {
+								#if d:SUB_CAMERA
+									mesg サブ画面 子画面 on
+								#endif
+							}
+						} else {
+							#if d:SUB_CAMERA
+								mesg サブ画面 子画面 off
+							#endif
+						}
+
+					} else if ( $b:クリアリングエリア番号 == 3 ) {
+						if ( $s:プレイヤーがいるロッカー名 == ロッカー31 || \
+							((`command プレイヤー状態取得` & d:PFLAG_INTRUDE) && \
+							`command プレイヤーマップ名` == １Ｆ中央右小部屋) ) {
+							if ( $i:ローカル変数Ｉ１ & d:STATE_CLEARING ) {
+								#if d:SUB_CAMERA
+									mesg サブ画面 子画面 on
+								#endif
+							}
+						} else {
+							#if d:SUB_CAMERA
+								mesg サブ画面 子画面 off
+							#endif
+						}
+
+					} else if ( $b:クリアリングエリア番号 == 4 ) {
+						if ( $s:プレイヤーがいるロッカー名 == ロッカー41 ) {
+							if ( $i:ローカル変数Ｉ１ & d:STATE_CLEARING ) {
+								#if d:SUB_CAMERA
+									mesg サブ画面 子画面 on
+								#endif
+							}
+						} else {
+							#if d:SUB_CAMERA
+								mesg サブ画面 子画面 off
+							#endif
+						}
+
+					} else if ( $b:クリアリングエリア番号 == 5 ) {
+						if ( (`command プレイヤー状態取得` & d:PFLAG_INTRUDE) && \
+							 `command プレイヤーマップ名` == １Ｆ右下小部屋 ) {
+							if ( $i:ローカル変数Ｉ１ & d:STATE_CLEARING ) {
+								#if d:SUB_CAMERA
+									mesg サブ画面 子画面 on
+								#endif
+							}
+						} else {
+							#if d:SUB_CAMERA
+								mesg サブ画面 子画面 off
+							#endif
+						}
+
+					} else if ( $b:クリアリングエリア番号 == 6 ) {
+					} else if ( $b:クリアリングエリア番号 == 7 ) {
+						if ( $s:プレイヤーがいるロッカー名 == ロッカー71 || \
+							 $s:プレイヤーがいるロッカー名 == ロッカー73 || \
+							 $s:プレイヤーがいるロッカー名 == ロッカー74 || \
+							((`command プレイヤー状態取得` & d:PFLAG_INTRUDE) && \
+							`command プレイヤーマップ名` == Ｂ１左下小部屋 ) ) {
+							if ( $i:ローカル変数Ｉ１ & d:STATE_CLEARING ) {
+								#if d:SUB_CAMERA
+									mesg サブ画面 子画面 on
+								#endif
+							}
+						} else {
+							#if d:SUB_CAMERA
+								mesg サブ画面 子画面 off
+							#endif
+						}
+
+					} else if ( $b:クリアリングエリア番号 == 8 ) {
+						if ( ((`command プレイヤー状態取得` & d:PFLAG_INTRUDE) && \
+							 `command プレイヤーマップ名` == Ｂ１右下小部屋 ) ) {
+							if ( $i:ローカル変数Ｉ１ & d:STATE_CLEARING ) {
+								#if d:SUB_CAMERA
+									mesg サブ画面 子画面 on
+								#endif
+							}
+						} else {
+							#if d:SUB_CAMERA
+								mesg サブ画面 子画面 off
+							#endif
+						}
+
+					}
+
+
+
+				}
+			}
+		
+	}
+
+
+
+	// クリアリングキャンセル設定
+	//---------------------------------------
+	proc クリアリングキャンセル設定 {
+		#if d:DEBUG_PRINT 
+			print 'clearing_cancel_set'
+		#endif
+
+		// 指定トラップに入ったときはクリアリングを発生させない
+		trap cl002 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if ($3 == 入る) {
+					mesg コマンダー 敵兵セット クリアリングエリアスキップオン 2
+				} else if ($3 == 出る) {
+					mesg コマンダー 敵兵セット クリアリングエリアスキップオフ 2
+				}
+			}
+
+		trap cl003 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if ($3 == 入る) {
+					mesg コマンダー 敵兵セット クリアリングエリアスキップオン 3
+				} else if ($3 == 出る) {
+					mesg コマンダー 敵兵セット クリアリングエリアスキップオフ 3
+				}
+			}
+
+	}
+
+	// ＢＧＭ
+	// ------------------------------------
+	proc ＢＧＭ設定 {
+		#if d:DEBUG_PRINT 
+			print 'bgm_set'
+		#endif
+
+		chara ＢＧＭマネージャー ＢＧＭマネ
+	}
+
+
+	// 弾痕跳弾関係の設定
+	// ------------------------------------
+	proc 弾痕跳弾設定 {
+		#if d:DEBUG_PRINT 
+			print 'recoil_set'
+		#endif
+
+		command 弾痕ノーマル -n 0	// 通常
+		command 弾痕ノーマル -n 1	// ダンボール
+		command 弾痕ノーマル -n 2	// 階段、木箱
+		command 弾痕ノーマル -n 3	// 鉄床、鉄筋
+		command 弾痕ノーマル -n 4	// ロッカー扉、鉄板
+		command 弾痕ノーマル -n 6	// パイプ
+		command 弾痕ノーマル -n 7	// ホロ
+
+		command 跳弾ノーマル -n 0
+		command 跳弾ＳＥのみ -n 1
+		command 跳弾ＳＥのみ -n 2
+		command 跳弾ノーマル -n 3
+		command 跳弾ノーマル -n 4
+		command 跳弾ＳＥのみ -n 7
+
+		command 跳弾水蒸気中 -n 6
+	}
+
+	proc Ｇ倉庫ガラス弾痕設定 {
+		#if d:DEBUG_PRINT 
+			print 'w22a1g_recoil_set'
+		#endif
+
+		// ガラス弾痕
+		chara ガラス弾痕 ガラス弾痕 \
+			-flag   0 \
+			-thick  1 \
+			-size   60 \
+			-number 8 \
+			-point	50625,-3525,-41525 51175,-4125,-41525 \
+			-point	51325,-3525,-41525 51875,-4125,-41525 \
+			-point	52125,-3525,-41525 52675,-4125,-41525 \
+			-point	52825,-3525,-41525 53375,-4125,-41525 \
+			-point	50625,-3525,-42975 51175,-4125,-42975 \
+			-point	51325,-3525,-42975 51875,-4125,-42975 \
+			-point	52125,-3525,-42975 52675,-4125,-42975 \
+			-point	52825,-3525,-42975 53375,-4125,-42975
+	}
+
+	proc Ｈ倉庫ガラス弾痕設定 {
+		#if d:DEBUG_PRINT 
+			print 'w22a1h_recoil_set'
+		#endif
+
+		// ガラス弾痕
+		chara ガラス弾痕 ガラス弾痕 \
+			-flag   0 \
+			-thick  1 \
+			-size   60 \
+			-number 4 \
+			-point	48850,-3100,-23650 49475,-4000,-23650 \
+			-point	49525,-3100,-23650 50150,-4000,-23650 \
+			-point	49645,-3100,-21400 49645,-4000,-20775 \
+			-point	49645,-3100,-20725 49645,-4000,-20100
+	}
+
+	// ドア＆マップ切り替え関係
+	// ------------------------------------
+	proc １Ｆ右下小部屋マップ切り替え {
+		#if d:DEBUG_PRINT
+			print 'w22a0f_map_change_set'
+		#endif
+
+		// 中央広場の表示非表示
+		trap dr000 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					// ダクトの中にいるときに１にする
+					eval( $f:ローカルフラグ１ = 1 );
+					mesg マップ接合 １Ｆ中央／右下小部屋 on
+				} else if ( $3 == 出る ) {
+					// ダクトからでたら０にする
+					eval( $f:ローカルフラグ１ = 0 );
+					// ダクトから出てきて右下小部屋の扉が閉まっていたらオフにする
+					if ( $f:ローカルフラグ２ == 0 ) {
+						mesg マップ接合 １Ｆ中央／右下小部屋 off
+					}
+				}
+			}
+	}
+
+	proc １Ｆ中央広場マップ切り替え {
+		#if d:DEBUG_PRINT
+			print 'w22a0h_map_change_set'
+		#endif
+		// エルード落下用
+		command マップチェンジトラップ登録 \
+			-trap dr072 \
+			-map １Ｆ中央広場 Ｂ１中央広場
+
+		// 右下小部屋の表示非表示
+		trap dr000 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if ($3 == 入る) {
+					// ダクトの中にいるときに１にする
+					eval( $f:ローカルフラグ１ = 1 );
+					mesg マップ接合 １Ｆ中央／右下小部屋 on
+				} else if ( $3 == 出る ) {
+					// ダクトからでたら０にする
+					eval( $f:ローカルフラグ１ = 0 );
+					// ダクトから出てきて右下小部屋の扉が閉まっていたらオフにする
+					if ( $f:ローカルフラグ２ == 0 ) {
+						mesg マップ接合 １Ｆ中央／右下小部屋 off
+					}
+				}
+			}
+	}
+
+	proc １Ｆダクト表示切り替え {
+		#if d:DEBUG_PRINT
+			print 'w22a0_duct_change_set'
+		#endif
+
+		chara プットオブジェ １Ｆダクト -m d:DUCT_NAME0 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+
+		// 右下小部屋ダクトの表示非表示
+		trap ob000 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if ($3 == 入る) {
+					mesg プットオブジェ １Ｆダクト on
+				} else if ($3 == 出る) {
+					mesg プットオブジェ １Ｆダクト off
+				}
+			}
+		
+	}
+
+	proc １Ｆ黒天井表示切り替え {
+		#if d:DEBUG_PRINT
+			print 'w22a0_ceil_change_set'
+		#endif
+
+		chara プットオブジェ １Ｆ黒天井 -m d:CEIL_NAME0 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+		mesg プットオブジェ １Ｆ黒天井 off
+
+		// 小部屋上黒天井の表示非表示
+		trap ob001 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if ($3 == 入る) {
+					mesg プットオブジェ １Ｆ黒天井 on
+				} else if ($3 == 出る) {
+					mesg プットオブジェ １Ｆ黒天井 off
+				}
+			}
+	}
+
+	proc Ｂ１共通１Ｆ＆小部屋マップ切り替え {
+		#if d:DEBUG_PRINT
+			print 'w22a1b_1F_map_change_set'
+		#endif
+
+		// キャラはずっと呼びっぱなしでフラグで切り分ける
+		chara プロック連続実行 １Ｆチェック \
+			-time -1 \
+			-exec { \
+				if ( $f:w22a_Ｂ１いるフラグ == 1 ) {
+					if ( `command プレイヤー状態取得` & d:PFLAG_SUBJECT && $i:プレイヤー位置Ｙ > -1900 ) {
+						// 箱の上の主観状態は無条件にマップオン
+						// マップをオンにするときはエフェクトを再びつけるために範囲外にバウンドを移動させる
+						command エフェクトバウンド追加 0 0 0 2 2 2 1
+						eval( $f:エフェクトバウンドフラグ = 0 );
+//						command 即時マップ接合変更 １Ｆ北／Ｂ１中央 on
+//						command 即時マップ接合変更 １Ｆ北／中央 on
+						mesg マップ接合 １Ｆ北／Ｂ１中央 on
+						mesg マップ接合 １Ｆ北／中央 on
+
+					} else if ( $i:カメラＹ位置 > -500 ) {
+						command 即時マップ接合変更 １Ｆ北／Ｂ１中央 off
+						// エフェクトバウンドを指定し、範囲内のエフェクトを消す
+						if ( $f:エフェクトバウンドフラグ == 0 ) {
+							command エフェクトバウンド追加 44000 -500 -45000 59000 4000 -35500 1
+							command エフェクトバウンド追加 41000 -500 -35500 60500 4000 -16000 0
+							command エフェクトバウンド実行
+							eval( $f:エフェクトバウンドフラグ = 1 );
+						}
+
+					} else {
+						// マップをオンにするときはエフェクトを再びつけるために範囲外にバウンドを移動させる
+						command エフェクトバウンド追加 0 0 0 2 2 2 1
+						eval( $f:エフェクトバウンドフラグ = 0 );
+						mesg マップ接合 １Ｆ北／Ｂ１中央 on
+						mesg マップ接合 １Ｆ北／中央 on
+					}
+				}
+			}
+
+		// １Ｆ北通路・１Ｆ中央広場の表示非表示
+		// プレイヤーチェックがカメラチェックよりも先に入るためカメラ位置を取るときには連続実行を使用する。
+		trap dr100 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					eval ( $f:w22a_Ｂ１いるフラグ = 1 );
+				} else {
+					eval ( $f:w22a_Ｂ１いるフラグ = 0 );
+					command エフェクトバウンド追加 0 0 0 2 2 2 1
+					eval( $f:エフェクトバウンドフラグ = 0 );
+					mesg マップ接合 １Ｆ北／Ｂ１中央 on
+				}
+			}
+
+
+		// Ｂ１左下小部屋・右下小部屋の表示非表示
+		trap dr110 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if ($3 == 入る) {
+					mesg マップ接合 Ｂ１左下／右下小部屋 on
+				} else if ($3 == 出る) {
+					mesg マップ接合 Ｂ１左下／右下小部屋 off
+				}
+			}
+	}
+
+	proc Ｂ１ダクト表示切り替え {
+		#if d:DEBUG_PRINT
+			print 'w22a1_duct_change_set'
+		#endif
+
+		chara プットオブジェ Ｂ１ダクト -m d:DUCT_NAME1 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+
+		// Ｂ１ダクトの表示非表示
+		trap ob100 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if ($3 == 入る) {
+					mesg プットオブジェ Ｂ１ダクト on
+				} else if ($3 == 出る) {
+					mesg プットオブジェ Ｂ１ダクト off
+				}
+			}
+		
+	}
+
+	proc Ｂ１黒天井表示切り替え {
+		#if d:DEBUG_PRINT
+			print 'w22a1_ceil_change_set'
+		#endif
+
+		chara プットオブジェ Ｂ１黒天井 -m d:CEIL_NAME1 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+
+		// 小部屋上黒天井の表示非表示
+		trap ob111 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if ($3 == 入る) {
+					mesg プットオブジェ Ｂ１黒天井 on
+				} else if ($3 == 出る) {
+					mesg プットオブジェ Ｂ１黒天井 off
+				}
+			}
+	}
+
+	proc ドア設置 {
+		#if d:DEBUG_PRINT
+			print 'slide_door_set'
+		#endif
+
+		@ドアランプ設定 １Ｆ左上小部屋ドアランプ 2048 48500 0 -35625 1
+		chara ドア １Ｆ左上小部屋ドア \
+			-m d:DOOR_NAME_LV3_L \
+			-d 0,2048,0 \
+			-p 48500,0,-35625 \
+			-slide d:SD_SLIDE_INSIDE \
+			-time d:SD_OPEN_TIME \
+			-between １Ｆ左上小部屋 １Ｆ中央広場 \
+			-A １Ｆ左上小部屋ドアランプ \
+			-card_level 3 \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 １Ｆ中央／左上小部屋 off
+				} else {
+					mesg マップ接合 １Ｆ中央／左上小部屋 on
+				}
+			}
+		trap dr001 ？ \
+			-mask ？ \
+			-exec {
+				if($3==入る){
+					mesg ドア １Ｆ左上小部屋ドア open $2
+				}else{
+					mesg ドア １Ｆ左上小部屋ドア close $2
+				}
+			}
+
+		@ドアランプ設定 １Ｆ右上小部屋ドアランプ 2048 57000,0,-35625 1
+		chara ドア １Ｆ右上小部屋ドア \
+			-m d:DOOR_NAME_LV2_L \
+			-d 0,2048,0 \
+			-p 57000,0,-35625 \
+			-slide d:SD_SLIDE_INSIDE \
+			-time d:SD_OPEN_TIME \
+			-between １Ｆ右上小部屋 １Ｆ中央広場 \
+			-card_level 2 \
+			-A １Ｆ右上小部屋ドアランプ \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 １Ｆ中央／右上小部屋 off
+				} else {
+					mesg マップ接合 １Ｆ中央／右上小部屋 on
+				}
+			}
+		trap dr011 ？ \
+			-mask ？ \	
+			-exec {
+				if($3==入る){
+					mesg ドア １Ｆ右上小部屋ドア open $2
+				}else{
+					mesg ドア １Ｆ右上小部屋ドア close $2
+				}
+			}
+
+		@ドアランプ設定 １Ｆ中央左小部屋ドアランプ 2048 44500,0,-27125 1
+		chara ドア １Ｆ中央左小部屋ドア \
+			-m d:DOOR_NAME_LV2_L \
+			-d 0,2048,0 \
+			-p 44500,0,-27125 \
+			-slide d:SD_SLIDE_INSIDE \
+			-time d:SD_OPEN_TIME \
+			-between １Ｆ中央左小部屋 １Ｆ中央広場 \
+			-card_level 2 \
+			-A １Ｆ中央左小部屋ドアランプ \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 １Ｆ中央／中央左小部屋 off
+				} else {
+					mesg マップ接合 １Ｆ中央／中央左小部屋 on
+				}
+			}
+		trap dr021 ？ \
+			-mask ？ \	
+			-exec {
+				if($3==入る){
+					mesg ドア １Ｆ中央左小部屋ドア open $2
+				}else{
+					mesg ドア １Ｆ中央左小部屋ドア close $2
+				}
+			}
+
+		@ドアランプ設定 １Ｆ中央右小部屋ドアランプ 2048 61000,0,-27125 1
+		chara ドア １Ｆ中央右小部屋ドア \
+			-m d:DOOR_NAME_LV3_L \
+			-d 0,2048,0 \
+			-p 61000,0,-27125 \
+			-slide d:SD_SLIDE_INSIDE \
+			-time d:SD_OPEN_TIME \
+			-between １Ｆ中央右小部屋 １Ｆ中央広場 \
+			-card_level 3 \
+			-A １Ｆ中央右小部屋ドアランプ \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 １Ｆ中央／中央右小部屋 off
+				} else {
+					mesg マップ接合 １Ｆ中央／中央右小部屋 on
+				}
+			}
+		trap dr031 ？ \
+			-mask ？ \	
+			-exec {
+				if($3==入る){
+					mesg ドア １Ｆ中央右小部屋ドア open $2
+				}else{
+					mesg ドア １Ｆ中央右小部屋ドア close $2
+				}
+			}
+
+		@ドアランプ設定 １Ｆ左下小部屋ドアランプ 2048 48500,0,-18625 1
+		chara ドア １Ｆ左下小部屋ドア \
+			-m d:DOOR_NAME_LV3_L \
+			-d 0,2048,0 \
+			-p 48500,0,-18625 \
+			-slide d:SD_SLIDE_INSIDE \
+			-time d:SD_OPEN_TIME \
+			-between １Ｆ左下小部屋 １Ｆ中央広場 \
+			-card_level 3 \
+			-A １Ｆ左下小部屋ドアランプ \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 １Ｆ中央／左下小部屋 off
+				} else {
+					mesg マップ接合 １Ｆ中央／左下小部屋 on
+				}
+			}
+		trap dr041 ？ \
+			-mask ？ \	
+			-exec {
+				if($3==入る){
+					mesg ドア １Ｆ左下小部屋ドア open $2
+				}else{
+					mesg ドア １Ｆ左下小部屋ドア close $2
+				}
+			}
+
+		@ドアランプ設定 １Ｆ右下小部屋ドアランプ 2048 57000,0,-18625 1
+		chara ドア １Ｆ右下小部屋ドア \
+			-m d:DOOR_NAME_LV0 \
+			-d 0,2048,0 \
+			-p 57000,0,-18625 \
+			-slide d:SD_SLIDE_INSIDE \
+			-time d:SD_OPEN_TIME \
+			-between １Ｆ右下小部屋 １Ｆ中央広場 \
+			-A １Ｆ右下小部屋ドアランプ \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					// 扉が閉まったら０
+					eval( $f:ローカルフラグ２ = 0 );
+
+					// 扉が閉まって、プレイヤーがダクトにいないときにオフにする
+					if ( $f:ローカルフラグ１ == 0 ) {
+						mesg マップ接合 １Ｆ中央／右下小部屋 off
+					}
+				} else {
+					// 扉が開いてたら１
+					eval( $f:ローカルフラグ２ = 1 );
+
+					mesg マップ接合 １Ｆ中央／右下小部屋 on
+				}
+			}
+		trap dr051 ？ \
+			-mask ？ \	
+			-exec {
+				if($3==入る){
+					mesg ドア １Ｆ右下小部屋ドア open
+				}else{
+					mesg ドア １Ｆ右下小部屋ドア close
+				}
+			}
+
+		@ドアランプ設定 １Ｆ上ドアランプ 0 57000,0,-43625 2
+		chara ドア １Ｆ上ドア \
+			-m d:DOOR_NAME_LOAD00 \
+			-d 0,0,0 \
+			-p 57000,0,-43625 \
+			-slide d:SD_SLIDE_OUTSIDE \
+			-time d:SD_OPEN_TIME \
+			-between １Ｆ北通路 １Ｆ北通路 \
+			-card_level 1 \
+			-A １Ｆ上ドアランプ \
+			-exec {
+			}
+		trap dr061 ？ \
+			-mask ？ \	
+			-exec {
+				if($3==入る){
+					mesg ドア １Ｆ上ドア open $2
+				}else{
+					mesg ドア １Ｆ上ドア close $2
+				}
+			}
+		trap dr061 d:PLAYER -mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if($3 == 入る) {
+					mesg 透明壁 １Ｆ上ドアへの透明壁 on
+				} else if($3 == 出る) {
+					mesg 透明壁 １Ｆ上ドアへの透明壁 off
+				}
+			}
+
+		@ドアランプ設定 １Ｆ下ドアランプ 1024 44875,0,-16500 2
+		chara ドア １Ｆ下ドア \
+			-m d:DOOR_NAME_LOAD01 \
+			-d 0,1024,0 \
+			-p 44875,0,-16500 \
+			-slide d:SD_SLIDE_OUTSIDE \
+			-time d:SD_OPEN_TIME \
+			-between １Ｆ中央広場 １Ｆ中央広場 \
+			-A １Ｆ下ドアランプ \
+			-exec {
+			}
+		trap dr071 ？ \
+			-mask ？ \	
+			-exec {
+				if($3==入る){
+					mesg ドア １Ｆ下ドア open
+				}else{
+					mesg ドア １Ｆ下ドア close
+				}
+			}
+		trap dr071 d:PLAYER -mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if($3 == 入る) {
+					mesg 透明壁 １Ｆ下ドアへの透明壁 on
+				} else if($3 == 出る) {
+					mesg 透明壁 １Ｆ下ドアへの透明壁 off
+				}
+			}
+
+		@ドアランプ設定 Ｂ１上小部屋左ドアランプ 0 47000,-5000,-35625 0
+		chara ドア Ｂ１上小部屋ドア左 \
+			-m d:DOOR_NAME_LV2_R \
+			-d 0,0,0 \
+			-p 47000,-5000,-35625 \
+			-slide d:SD_SLIDE_INSIDE \
+			-time d:SD_OPEN_TIME \
+			-between Ｂ１上小部屋 Ｂ１中央広場 \
+			-card_level 2 \
+			-A Ｂ１上小部屋左ドアランプ \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 Ｂ１中央／上小部屋左 off
+				} else {
+					mesg マップ接合 Ｂ１中央／上小部屋左 on
+				}
+			}
+		trap dr101 ？ \
+			-mask ？ \	
+			-exec {
+				if($3==入る){
+					mesg ドア Ｂ１上小部屋ドア左 open $2
+				}else{
+					mesg ドア Ｂ１上小部屋ドア左 close $2
+				}
+			}
+
+		@ドアランプ設定 Ｂ１上小部屋右ドアランプ 2048 57000,-5000,-35625 1
+		chara ドア Ｂ１上小部屋ドア右 \
+			-m d:DOOR_NAME_LV2_L \
+			-d 0,2048,0 \
+			-p 57000,-5000,-35625 \
+			-slide d:SD_SLIDE_INSIDE \
+			-time d:SD_OPEN_TIME \
+			-between Ｂ１上小部屋 Ｂ１中央広場 \
+			-card_level 2 \
+			-A Ｂ１上小部屋右ドアランプ \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 Ｂ１中央／上小部屋右 off
+				} else {
+					mesg マップ接合 Ｂ１中央／上小部屋右 on
+				}
+			}
+		trap dr102 ？ \
+			-mask ？ \	
+			-exec {
+				if($3==入る){
+					mesg ドア Ｂ１上小部屋ドア右 open $2
+				}else{
+					mesg ドア Ｂ１上小部屋ドア右 close $2
+				}
+			}
+
+		@ドアランプ設定 Ｂ１左下小部屋ドアランプ 3072 50375,-5000,-23000 1
+		chara ドア Ｂ１左下小部屋ドア \
+			-m d:DOOR_NAME_LV1_L \
+			-d 0,3072,0 \
+			-p 50375,-5000,-23000 \
+			-slide d:SD_SLIDE_INSIDE \
+			-time d:SD_OPEN_TIME \
+			-between Ｂ１中央広場 Ｂ１左下小部屋 \
+			-card_level 1 \
+			-A Ｂ１左下小部屋ドアランプ \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 Ｂ１中央／左下小部屋 off
+				} else {
+					mesg マップ接合 Ｂ１中央／左下小部屋 on
+				}
+			}
+		trap dr111 ？ \
+			-mask ？ \	
+			-exec {
+				if($3==入る){
+					mesg ドア Ｂ１左下小部屋ドア open $2
+				}else{
+					mesg ドア Ｂ１左下小部屋ドア close $2
+				}
+			}
+
+		@ドアランプ設定 Ｂ１右下小部屋ドアランプ 3072 53625,-5000,-23000 0
+		chara ドア Ｂ１右下小部屋ドア \
+			-m d:DOOR_NAME_LV1_R \
+			-d 0,3072,0 \
+			-p 53625,-5000,-23000 \
+			-slide d:SD_SLIDE_INSIDE \
+			-time d:SD_OPEN_TIME \
+			-between Ｂ１中央広場 Ｂ１右下小部屋 \
+			-card_level 1 \
+			-A Ｂ１右下小部屋ドアランプ \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 Ｂ１中央／右下小部屋 off
+				} else {
+					mesg マップ接合 Ｂ１中央／右下小部屋 on
+				}
+			}
+		trap dr121 ？ \
+			-mask ？ \	
+			-exec {
+				if($3==入る){
+					mesg ドア Ｂ１右下小部屋ドア open $2
+				}else{
+					mesg ドア Ｂ１右下小部屋ドア close $2
+				}
+			}
+
+		@ドアランプ設定 Ｂ１下ドアランプ 2048 45000,-5000,-24375 5
+		chara ドア Ｂ１下ドア \
+			-m d:DOOR_NAME_LOAD01 \
+			-d 0,2048,0 \
+			-p 45000,-5000,-24375 \
+			-slide d:SD_SLIDE_OUTSIDE \
+			-time d:SD_OPEN_TIME \
+			-between Ｂ１中央広場 Ｂ１中央広場 \
+			-A Ｂ１下ドアランプ \
+			-exec {
+			}
+		trap dr131 ？ \
+			-mask ？ \	
+			-exec {
+				if($3==入る){
+					mesg ドア Ｂ１下ドア open
+				}else{
+					mesg ドア Ｂ１下ドア close
+				}
+			}
+		trap dr131 d:PLAYER -mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if($3 == 入る) {
+					mesg 透明壁 Ｂ１下ドアへの透明壁 on
+				} else if($3 == 出る) {
+					mesg 透明壁 Ｂ１下ドアへの透明壁 off
+				}
+			}
+
+	}
+
+	proc 主観禁止壁設定１Ｆ北通路 {
+		@主観禁止壁 １Ｆ上ドアへの透明壁 57000,0,-43625 0 d:SD_SLIDE_OUTSIDE
+	}
+
+	proc 主観禁止壁設定１Ｆ中央広場 {
+		@主観禁止壁 １Ｆ下ドアへの透明壁 44875,0,-16500 1024 d:SD_SLIDE_OUTSIDE
+	}
+
+	proc 主観禁止壁設定Ｂ１中央広場 {
+		@主観禁止壁 Ｂ１下ドアへの透明壁 45000,-5000,-24375 2048 d:SD_SLIDE_OUTSIDE
+	}
+
+
+
+
+	// 入出トラップ
+	// ------------------------------------
+	proc ロードプロック {
+		#if d:DEBUG_PRINT 
+			print 'load_proc'
+		#endif
+
+		if ($s:呼び出しプロック == mv_w22a0h_w23a_0) {
+			// ＦＡ連絡橋１Ｆへ
+			@mv_w22a0h_w23a_0
+		} else if ($s:呼び出しプロック == mv_w22a1c_w23a_0) {
+			// ＦＡ連絡橋Ｂ１へ
+			@mv_w22a1c_w23a_0
+		} else if ($s:呼び出しプロック == mv_w22a0g_w21a_0) {
+			// ＥＦ連絡橋へ
+			@mv_w22a0g_w21a_0
+		}
+	}
+
+	proc ロード設定 {
+		#if d:DEBUG_PRINT 
+			print 'load_set'
+		#endif
+
+		trap ld061 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if( $f:ロードチェックＯＮフラグ == 1 ) {
+					// ＥＦ連絡橋へ
+					@エンドカメラセット ＥＦ連絡橋
+					@爆弾タイマー残り時間保存			// ストーリーフラグは自動で
+					//	狙撃イベントまでは昼なので"a"に飛ばす
+					if ($w:p_story < d:ST:P069_04_R02ヴァンプ狙撃終了４無線機デモ２終了) {
+						preseek 'w21a'
+					//	狙撃イベント後は夕なので"b"に飛ばす
+					} else {
+						preseek 'w21b'
+					}
+					@ステージ終了時処理（ステージ名表示） \
+						57750 0 -44750 2048 mv_w22a0g_w21a_0 d:DEFAULT_M_TYPE \
+						d:wn_ＥＦ連絡橋
+				}
+			}
+
+		trap ld071 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if( $f:ロードチェックＯＮフラグ == 1 ) {
+					// ＦＡ連絡橋１Ｆへ
+					@エンドカメラセット ＦＡ連絡橋１Ｆ
+					@爆弾タイマー残り時間保存			// ストーリーフラグは自動で
+					//	ピーターと会うまでは朝なので"a"に飛ばす
+					if ($w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了) {
+						preseek 'w23a'
+					//	ピーターと会ったあとは昼なので"b"に飛ばす
+					} else {
+						preseek 'w23b'
+					}
+					@ステージ終了時処理（ステージ名表示） \
+						43500 0 -17500 3072 mv_w22a0h_w23a_0 d:DEFAULT_M_TYPE \
+						d:wn_ＦＡ連絡橋
+				}
+			}
+
+		trap ld131 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if( $f:ロードチェックＯＮフラグ == 1 ) {
+					// ＦＡ連絡橋Ｂ１へ
+					@エンドカメラセット ＦＡ連絡橋Ｂ１
+					@爆弾タイマー残り時間保存			// ストーリーフラグは自動で
+					if ($w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了) {
+						preseek 'w23a'
+					//	ピーターと会ったあとは昼なので"b"に飛ばす
+					} else {
+						preseek 'w23b'
+					}
+					@ステージ終了時処理（ステージ名表示） \
+						44250 -5000 -23000 0 mv_w22a1c_w23a_0 d:DEFAULT_M_TYPE \
+						d:wn_ＦＡ連絡橋
+				}
+			}
+	}
+
+
+	// アイテム
+	// ------------------------------------
+	proc アイテム取得時番号設定 $:ボックス名 {
+		#if d:DEBUG_PRINT
+			print 'item_no_set'
+		#endif
+
+		if ( $:ボックス名 == ＲＧＢ６本体 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:RGB6] = $w:グローバルロード回数);	// Ａ倉庫
+		} else if ( $:ボックス名 == ＲＧＢ６弾:01 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:RGB6_R01] = $w:グローバルロード回数);	// Ａ倉庫
+		} else if ( $:ボックス名 == ＲＧＢ６弾:02 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:RGB6_R02] = $w:グローバルロード回数);	// Ａ倉庫
+		} else if ( $:ボックス名 == ＰＳＧ１－Ｔ弾:01 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:PSG1T_R01] = $w:グローバルロード回数);	// Ａ倉庫
+
+		} else if ( $:ボックス名 == Ｃ４:01 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:C4_01] = $w:グローバルロード回数);	// Ｂ倉庫
+		} else if ( $:ボックス名 == Ｃ４:02 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:C4_02] = $w:グローバルロード回数);	// Ｂ倉庫
+		} else if ( $:ボックス名 == Ｃ４:03 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:C4_03] = $w:グローバルロード回数);	// Ｂ倉庫
+		} else if ( $:ボックス名 == クレイモア:01 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:CLAY_01] = $w:グローバルロード回数);	// Ｂ倉庫
+		} else if ( $:ボックス名 == クレイモア:02 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:CLAY_02] = $w:グローバルロード回数);	// Ｂ倉庫
+
+		} else if ( $:ボックス名 == Ｍ４本体 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:M4] = $w:グローバルロード回数);	// Ｃ倉庫
+		} else if ( $:ボックス名 == Ｍ４弾:01 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:M4_R01] = $w:グローバルロード回数);	// Ｃ倉庫
+		} else if ( $:ボックス名 == Ｍ４弾:02 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:M4_R02] = $w:グローバルロード回数);	// Ｃ倉庫
+		} else if ( $:ボックス名 == Ｍ４弾:03 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:M4_R03] = $w:グローバルロード回数);	// Ｃ倉庫
+		} else if ( $:ボックス名 == Ｍ４弾:04 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:M4_R04] = $w:グローバルロード回数);	// Ｃ倉庫
+		} else if ( $:ボックス名 == ＰＳＧ１弾:01 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:PSG1_R01] = $w:グローバルロード回数);	// Ｃ倉庫
+
+		} else if ( $:ボックス名 == ＰＳＧ１本体 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:PSG1] = $w:グローバルロード回数);	// Ｄ倉庫
+		} else if ( $:ボックス名 == ＰＳＧ１弾:02 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:PSG1_R02] = $w:グローバルロード回数);	// Ｄ倉庫
+		} else if ( $:ボックス名 == ＰＳＧ１弾:03 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:PSG1_R03] = $w:グローバルロード回数);	// Ｄ倉庫
+		} else if ( $:ボックス名 == ＰＳＧ１－Ｔ本体 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:PSG1T] = $w:グローバルロード回数);	// Ｄ倉庫
+
+		} else if ( $:ボックス名 == グレネード:01 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:GRE_01] = $w:グローバルロード回数);	// Ｅ倉庫
+		} else if ( $:ボックス名 == グレネード:02 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:GRE_02] = $w:グローバルロード回数);	// Ｅ倉庫
+		} else if ( $:ボックス名 == グレネード:03 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:GRE_03] = $w:グローバルロード回数);	// Ｅ倉庫
+		} else if ( $:ボックス名 == ＰＳＧ１－Ｔ弾:02 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:PSG1T_R02] = $w:グローバルロード回数);	// Ｅ倉庫
+		} else if ( $:ボックス名 == ソコム弾:01 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:SOCOM_R01] = $w:グローバルロード回数);	// Ｅ倉庫
+
+		} else if ( $:ボックス名 == Ｍ９本体 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:M9] = $w:グローバルロード回数);	// Ｆ倉庫
+		} else if ( $:ボックス名 == Ｍ９弾:01 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:M9_R01] = $w:グローバルロード回数);	// Ｆ倉庫
+		} else if ( $:ボックス名 == Ｍ９弾:02 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:M9_R02] = $w:グローバルロード回数);	// Ｆ倉庫
+
+		} else if ( $:ボックス名 == ソコム弾:02 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:SOCOM_R02] = $w:グローバルロード回数);	// １Ｆ中央広場
+		} else if ( $:ボックス名 == レーション:01 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:RATION_01] = $w:グローバルロード回数);	// １Ｆ中央広場
+
+		} else if ( $:ボックス名 == ＡＫＳ本体 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:AKS] = $w:グローバルロード回数);	// Ｇ倉庫
+		} else if ( $:ボックス名 == ＡＫＳ弾:01 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:AKS_R01] = $w:グローバルロード回数);	// Ｇ倉庫
+		} else if ( $:ボックス名 == ＡＫＳ弾:02 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:AKS_R02] = $w:グローバルロード回数);	// Ｇ倉庫
+		} else if ( $:ボックス名 == ＡＫＳ弾:03 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:AKS_R03] = $w:グローバルロード回数);	// Ｇ倉庫
+		} else if ( $:ボックス名 == ソコム弾:03 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:SOCOM_R03] = $w:グローバルロード回数);	// Ｇ倉庫
+		} else if ( $:ボックス名 == Ｍ４弾:05 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:M4_R05] = $w:グローバルロード回数);	// Ｇ倉庫
+
+		} else if ( $:ボックス名 == レーション:02 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:RATION_02] = $w:グローバルロード回数);	// Ｈ倉庫
+		} else if ( $:ボックス名 == ジアゼパム:01 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:DIAZE_01] = $w:グローバルロード回数);	// Ｈ倉庫
+		} else if ( $:ボックス名 == 雑誌:01 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:MAG_01] = $w:グローバルロード回数);		// Ｈ倉庫
+
+		} else if ( $:ボックス名 == Ｍ９弾:03 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:M9_R03] = $w:グローバルロード回数);		// Ｉ倉庫
+		} else if ( $:ボックス名 == ソコム弾:04 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:SOCOM_R04] = $w:グローバルロード回数);	// Ｉ倉庫
+		} else if ( $:ボックス名 == ソコム弾:05 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:SOCOM_R05] = $w:グローバルロード回数);	// Ｉ倉庫
+
+		} else if ( $:ボックス名 == 雑誌:02 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:MAG_02] = $w:グローバルロード回数);	// Ｂ１中央広場
+		} else if ( $:ボックス名 == スタン:01 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:STUN_01] = $w:グローバルロード回数);	// Ｂ１中央広場
+		} else if ( $:ボックス名 == チャフ:01 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:CHAFF_01] = $w:グローバルロード回数);	// Ｂ１中央広場
+		} else if ( $:ボックス名 == Ｍ９弾:04 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:M9_R04] = $w:グローバルロード回数);	// Ｂ１中央広場
+		} else if ( $:ボックス名 == ソコム弾:06 ) {
+			eval($b:w22a_取得ロード回数[d:I_NO:SOCOM_R06] = $w:グローバルロード回数);	// Ｂ１中央広場
+		}
+
+		#ifdef d:DEBUG_PRINT
+			print $:ボックス名
+			print $w:グローバルロード回数
+		#endif
+	}
+
+	proc １Ｆ左上小部屋アイテム設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a0a_item_set'
+		#endif
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:RGB6]
+		if ($f:再セットフラグ) {
+			// 本体を持っていたときは自動的に弾になる
+			@ＲＧＢ６_初期設置 ＲＧＢ６本体 45875 0 -39375 0 ＲＧＢ６弾薬	// Ａ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:RGB6_R01]
+		if ($f:再セットフラグ) {
+			@弾薬_ＲＧＢ６_初期設置 ＲＧＢ６弾:01 47000 750 -38250 0		// Ａ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:RGB6_R02]
+		if ($f:再セットフラグ) {
+			@弾薬_ＲＧＢ６_初期設置 ＲＧＢ６弾:02 49750 0 -40250 0			// Ａ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:PSG1T_R01]
+		if ($f:再セットフラグ) {
+			@弾薬_ＰＳＧ１－Ｔ_初期設置 ＰＳＧ１－Ｔ弾:01 49940 0 -37250 0		// Ａ倉庫
+		}
+	}
+
+	proc １Ｆ右上小部屋アイテム設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a0b_item_set'
+		#endif
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:C4_01]
+		if ($f:再セットフラグ) {
+			@Ｃ４_初期設置 Ｃ４:01 54250 0 -39500 0			// Ｂ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:C4_02]
+		if ($f:再セットフラグ) {
+			@Ｃ４_初期設置 Ｃ４:02 54060 0 -38000 0			// Ｂ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:C4_03]
+		if ($f:再セットフラグ) {
+			@Ｃ４_初期設置 Ｃ４:03 58000 0 -40000 0			// Ｂ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:CLAY_01]
+		if ($f:再セットフラグ) {
+			@クレイモア_初期設置 クレイモア:01 54060 0 -37000 0		// Ｂ倉庫
+		}
+
+		if ( $w:p_story >= d:ST:P041_02_R01エイムズ死亡後２無線デモ１終了 ) {
+			@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:CLAY_02]
+			if ($f:再セットフラグ) {
+				@クレイモア_初期設置 クレイモア:02 58000 0 -37375 0		// Ｂ倉庫
+			}
+		}
+	}
+
+	proc １Ｆ中央左小部屋アイテム設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a0c_item_set'
+		#endif
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:M4]
+		if ($f:再セットフラグ) {
+			// 本体を持っていたときは自動的に弾になる
+			@Ｍ４_初期設置 Ｍ４本体 43750 0 -32000 0 Ｍ４弾薬	// Ｃ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:M4_R01]
+		if ($f:再セットフラグ) {
+			@弾薬_Ｍ４_初期設置 Ｍ４弾:01 42500 0 -31500 0		// Ｃ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:M4_R02]
+		if ($f:再セットフラグ) {
+			@弾薬_Ｍ４_初期設置 Ｍ４弾:02 41560 0 -28500 0		// Ｃ倉庫
+		}
+
+		if ( $w:p_story >= d:ST:P041_02_R01エイムズ死亡後２無線デモ１終了 ) {
+			@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:M4_R03]
+			if ($f:再セットフラグ) {
+				@弾薬_Ｍ４_初期設置 Ｍ４弾:03 44500 0 -31000 0		// Ｃ倉庫
+			}
+		}
+
+		if ( $w:p_story >= d:ST:P041_02_R01エイムズ死亡後２無線デモ１終了 ) {
+			@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:M4_R04]
+			if ($f:再セットフラグ) {
+				@弾薬_Ｍ４_初期設置 Ｍ４弾:04 45500 0 -28250 0		// Ｃ倉庫
+			}
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:PSG1_R01]
+		if ($f:再セットフラグ) {
+			@弾薬_ＰＳＧ１_初期設置 ＰＳＧ１弾:01 38250 -250 -31000 0		// Ｃ倉庫
+		}
+	}
+
+	proc １Ｆ中央右小部屋アイテム設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a0d_item_set'
+		#endif
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:PSG1]
+		if ($f:再セットフラグ) {
+			// 本体を持っていたときは自動的に弾になる
+			@ＰＳＧ１_初期設置 ＰＳＧ１本体 60000 0 -32000 0 ＰＳＧ１弾薬	// Ｄ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:PSG1_R02]
+		if ($f:再セットフラグ) {
+			@弾薬_ＰＳＧ１_初期設置 ＰＳＧ１弾:02 58250 0 -30250 0			// Ｄ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:PSG1_R03]
+		if ($f:再セットフラグ) {
+			@弾薬_ＰＳＧ１_初期設置 ＰＳＧ１弾:03 58060 0 -31250 0 			// Ｄ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:PSG1T]
+		if ($f:再セットフラグ) {
+			// 本体を持っていたときは自動的に弾になる
+			@ＰＳＧ１－Ｔ_初期設置 ＰＳＧ１－Ｔ本体 66750 -250 -31000 0 なし	// Ｄ倉庫
+		}
+	}
+
+	proc １Ｆ左下小部屋アイテム設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a0e_item_set'
+		#endif
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:GRE_01]
+		if ($f:再セットフラグ) {
+			@グレネード_初期設置 グレネード:01 48250 0 -23250 0		// Ｅ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:GRE_02]
+		if ($f:再セットフラグ) {
+			@グレネード_初期設置 グレネード:02 47250 0 -22000 0		// Ｅ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:GRE_03]
+		if ($f:再セットフラグ) {
+			@グレネード_初期設置 グレネード:03 48250 0 -20875 0		// Ｅ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:PSG1T_R02]
+		if ($f:再セットフラグ) {
+			@弾薬_ＰＳＧ１－Ｔ_初期設置 ＰＳＧ１－Ｔ弾:02 46250 0 -23940 0		// Ｅ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:SOCOM_R01]
+		if ($f:再セットフラグ) {
+			@弾薬_ソコム_初期設置 ソコム弾:01 49500 0 -19750 0		// Ｅ倉庫
+		}
+	}
+
+	proc １Ｆ右下小部屋アイテム設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a0f_item_set'
+		#endif
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:M9]
+		if ($f:再セットフラグ) {
+			// 本体を持っていたときは自動的に弾になる
+			@Ｍ９_初期設置 Ｍ９本体 55250 0 -23250 0 なし		// Ｆ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:M9_R01]
+		if ($f:再セットフラグ) {
+			@弾薬_Ｍ９_初期設置 Ｍ９弾:01 56500 0 -23750 0		// Ｆ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:M9_R02]
+		if ($f:再セットフラグ) {
+			@弾薬_Ｍ９_初期設置 Ｍ９弾:02 57500 0 -22250 0		// Ｆ倉庫
+		}
+	}
+
+	proc １Ｆ中央広場アイテム設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a0g_item_set'
+		#endif
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:SOCOM_R02]
+		if ($f:再セットフラグ) {
+			@弾薬_ソコム_初期設置 ソコム弾:02 63000 0 -25000 0			// １Ｆ中央広場
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:RATION_01]
+		if ($f:再セットフラグ) {
+			@レーション_初期設置 レーション:01 58750 0 -18000 0			// １Ｆ中央広場
+		}
+	}
+
+	proc Ｂ１上小部屋アイテム設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a1g_item_set'
+		#endif
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:AKS]
+		if ($f:再セットフラグ) {
+			// 本体を持っていたときは自動的に弾になる
+			@ＡＫＳ_初期設置 ＡＫＳ本体 57125 -5000 -44250 0 ＡＫＳ弾薬	// Ｇ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:AKS_R01]
+		if ($f:再セットフラグ) {
+			@弾薬_ＡＫＳ_初期設置 ＡＫＳ弾:01 46875 -5000 -44250 0		// Ｇ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:AKS_R02]
+		if ($f:再セットフラグ) {
+			@弾薬_ＡＫＳ_初期設置 ＡＫＳ弾:02 50000 -5000 -36250 0		// Ｇ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:AKS_R03]
+		if ($f:再セットフラグ) {
+			@弾薬_ＡＫＳ_初期設置 ＡＫＳ弾:03 54000 -5000 -36250 0		// Ｇ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:SOCOM_R03]
+		if ($f:再セットフラグ) {
+			@弾薬_ソコム_初期設置 ソコム弾:03 51250 -5000 -44375 0		// Ｇ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:M4_R05]
+		if ($f:再セットフラグ) {
+			@弾薬_Ｍ４_初期設置 Ｍ４弾:05 56750 -5000 -40500 0		// Ｇ倉庫
+		}
+
+		// ＡＫサプレッサ_初期設置は持ってないときは無条件に設置(VERYEASYのみ。ロード回数は関係なし)
+		if ( $w:アイテム数Ｒ[ d:アイテム:ＡＫサプレッサ ] == 0 && !($w:プレイヤーフラグ & d:PL_AK_SPPRSR_ATTACHED) && \
+			 $w:ゲーム設定 == d:LEVEL_VERYEASY ) {
+			@ＡＫサプレッサ_初期設置 ＡＫサプレッサ 46750 -5000 -40375 0	// Ｇ倉庫
+		}
+	}
+
+	proc Ｂ１左下小部屋アイテム設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a1h_item_set'
+		#endif
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:RATION_02]
+		if ($f:再セットフラグ) {
+			@レーション_初期設置 レーション:02 45560 -5000 -20500 0		// Ｈ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:DIAZE_01]
+		if ($f:再セットフラグ) {
+			@ジアゼパム_初期設置 ジアゼパム:01 48250 -5000 -23940 0		// Ｈ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:MAG_01]
+		if ($f:再セットフラグ) {
+			@雑誌_初期設置 雑誌:01 45560 -5000 -21500 0					// Ｈ倉庫
+		}
+
+		// ダンボールは持ってなかった時点で再発生
+		@ダンボールＢ_初期設置 電化製品ダンボール 46500 -5000 -18750 0 25	// Ｈ倉庫
+	}
+
+	proc Ｂ１右下小部屋アイテム設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a1i_item_set'
+		#endif
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:M9_R03]
+		if ($f:再セットフラグ) {
+			@弾薬_Ｍ９_初期設置 Ｍ９弾:03 57500 -5250 -23250 0					// Ｉ倉庫
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:SOCOM_R04]
+		if ($f:再セットフラグ) {
+			@弾薬_ソコム_初期設置 ソコム弾:04 54250 -5000 -19375 0		// Ｇ倉庫
+		}
+
+		// 地雷探知機は持ってないときは無条件に設置(ロード回数は関係なし)
+		if ( $w:アイテム数Ｒ[ d:アイテム:地雷探知器 ] == 0 ) {
+			@地雷探知器_初期設置 地雷探知器 55375 -5000 -23625 0				// Ｉ倉庫
+		}
+
+		// ソコムサプレッサ_初期設置は持ってないときは無条件に設置(ロード回数は関係なし)
+		if ( $w:アイテム数Ｒ[ d:アイテム:ソコムサプレッサ ] == 0 && !($w:プレイヤーフラグ & d:PL_SOCOM_SPPRSR_ATTACHED) ) {
+			@ソコムサプレッサ_初期設置 ソコムサプレッサ_初期設置 57625 -5000 -20375 0	// Ｉ倉庫
+		} else {
+			if ( $w:p_story >= d:ST:P031_01_P01フォーチュン戦終了１ポリゴンデモ１終了 ) {
+				@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:SOCOM_R05]
+				if ($f:再セットフラグ) {
+					@弾薬_ソコム_初期設置 ソコム弾:05 57625 -5000 -20375 0		// Ｉ倉庫
+				}
+			}
+		}
+	}
+
+	proc Ｂ１中央広場アイテム設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a1j_item_set'
+		#endif
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:MAG_02]
+		if ($f:再セットフラグ) {
+			@雑誌_初期設置 雑誌:02 53000 -3250 -29000 0				// 南の大荷物の上
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:STUN_01]
+		if ($f:再セットフラグ) {
+			@スタン_初期設置 スタン:01 52500 -5000 -33250 0			// 北の荷物の間
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:CHAFF_01]
+		if ($f:再セットフラグ) {
+			@チャフ_初期設置 チャフ:01 51000 -5000 -18625 0			// 南の通路奥
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:M9_R04]
+		if ($f:再セットフラグ) {
+			@弾薬_Ｍ９_初期設置 Ｍ９弾:04 59000 -3250 -26000 0		// 南西の荷物の上
+		}
+
+		@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:SOCOM_R06]
+		if ($f:再セットフラグ) {
+			@弾薬_ソコム_初期設置 ソコム弾:06 58625 -4250 -28500 0		// Ｇ倉庫
+		}
+	}
+
+	// 壊れライト設定
+	// ------------------------------------
+	#define		LIGHT_NORMAL	0
+	#define		LIGHT_BROKEN	1
+
+	proc Ｆ脚１Ｆ壊れライト設定 $:名前 $:Ｘ座標 $:Ｚ座標 $:Ｙ角度 $:番号 {
+		#if d:DEBUG_PRINT
+			print 'bk_light_set'
+		#endif
+
+
+		chara プットスポットライトオブジェ $:名前 \
+			-m w22a_light_1 w22a_light_2 \
+			-t $:Ｘ座標 3059 $:Ｚ座標 250 500 750 \
+			-s 750 100 100 \
+			-r 0 $:Ｙ角度 0 \
+			-l d:LT2_NAME \
+			-b ライト破壊後処理 \
+			-p $:Ｘ座標 3059 $:Ｚ座標 \
+			-f ( d:BRK_LGT_OBJ_TARGET )
+//			-f ( d:BRK_LGT_SHOWTRGT | d:BRK_LGT_OBJ_TARGET )
+
+		@壊れ物再セットチェック $b:w22a_破壊ロード回数[$:番号]
+		if ( $f:再セットフラグ == 0 ) {
+			command プットスポットライトオブジェライト消す -n $:名前
+			eval( $f:w22a_ライト破壊状態フラグ[$:番号] = d:LIGHT_BROKEN );
+		} else {
+			eval( $f:w22a_ライト破壊状態フラグ[$:番号] = d:LIGHT_NORMAL );
+		}
+	}
+
+	proc ライト破壊後処理 {
+		#if d:DEBUG_PRINT
+			print 'w22a_light_broken'
+		#endif
+
+		if ( $1 == Ａ倉庫左ライト ) {
+			eval( $b:w22a_破壊ロード回数[d:L_NO:A_L] = $w:グローバルロード回数 );
+			eval( $f:w22a_ライト破壊状態フラグ[d:L_NO:A_L] = d:LIGHT_BROKEN );
+		} else if ( $1 == Ａ倉庫右ライト ) {
+			eval( $b:w22a_破壊ロード回数[d:L_NO:A_R] = $w:グローバルロード回数 );
+			eval( $f:w22a_ライト破壊状態フラグ[d:L_NO:A_R] = d:LIGHT_BROKEN );
+		} else if ( $1 == Ｂ倉庫左ライト ) {
+			eval( $b:w22a_破壊ロード回数[d:L_NO:B_L] = $w:グローバルロード回数 );
+			eval( $f:w22a_ライト破壊状態フラグ[d:L_NO:B_L] = d:LIGHT_BROKEN );
+		} else if ( $1 == Ｂ倉庫右ライト ) {
+			eval( $b:w22a_破壊ロード回数[d:L_NO:B_R] = $w:グローバルロード回数 );
+			eval( $f:w22a_ライト破壊状態フラグ[d:L_NO:B_R] = d:LIGHT_BROKEN );
+		} else if ( $1 == Ｃ倉庫左ライト ) {
+			eval( $b:w22a_破壊ロード回数[d:L_NO:C_L] = $w:グローバルロード回数 );
+			eval( $f:w22a_ライト破壊状態フラグ[d:L_NO:C_L] = d:LIGHT_BROKEN );
+		} else if ( $1 == Ｃ倉庫右ライト ) {
+			eval( $b:w22a_破壊ロード回数[d:L_NO:C_R] = $w:グローバルロード回数 );
+			eval( $f:w22a_ライト破壊状態フラグ[d:L_NO:C_R] = d:LIGHT_BROKEN );
+		} else if ( $1 == Ｄ倉庫左ライト ) {
+			eval( $b:w22a_破壊ロード回数[d:L_NO:D_L] = $w:グローバルロード回数 );
+			eval( $f:w22a_ライト破壊状態フラグ[d:L_NO:D_L] = d:LIGHT_BROKEN );
+		} else if ( $1 == Ｄ倉庫右ライト ) {
+			eval( $b:w22a_破壊ロード回数[d:L_NO:D_R] = $w:グローバルロード回数 );
+			eval( $f:w22a_ライト破壊状態フラグ[d:L_NO:D_R] = d:LIGHT_BROKEN );
+		} else if ( $1 == Ｅ倉庫左ライト ) {
+			eval( $b:w22a_破壊ロード回数[d:L_NO:E_L] = $w:グローバルロード回数 );
+			eval( $f:w22a_ライト破壊状態フラグ[d:L_NO:E_L] = d:LIGHT_BROKEN );
+		} else if ( $1 == Ｅ倉庫右ライト ) {
+			eval( $b:w22a_破壊ロード回数[d:L_NO:E_R] = $w:グローバルロード回数 );
+			eval( $f:w22a_ライト破壊状態フラグ[d:L_NO:E_R] = d:LIGHT_BROKEN );
+		} else if ( $1 == Ｆ倉庫左ライト ) {
+			eval( $b:w22a_破壊ロード回数[d:L_NO:F_L] = $w:グローバルロード回数 );
+			eval( $f:w22a_ライト破壊状態フラグ[d:L_NO:F_L] = d:LIGHT_BROKEN );
+		} else if ( $1 == Ｆ倉庫右ライト ) {
+			eval( $b:w22a_破壊ロード回数[d:L_NO:F_R] = $w:グローバルロード回数 );
+			eval( $f:w22a_ライト破壊状態フラグ[d:L_NO:F_R] = d:LIGHT_BROKEN );
+		}
+ 
+		@暗闇トラップ起動チェック
+	}
+	
+	proc 暗闇トラップ起動チェック {
+		#if d:DEBUG_PRINT
+			print 'dark_area_check'
+		#endif
+		
+		// 小部屋のライトが二つとも消えたらダークトラップＯＮ
+		if ( $f:w22a_ライト破壊状態フラグ[d:L_NO:A_L] && $f:w22a_ライト破壊状態フラグ[d:L_NO:A_R] ) {
+			command トラップ切り替え -trap dark:01 -switch 1
+		} else {
+			command トラップ切り替え -trap dark:01 -switch 0
+		}
+
+		if ( $f:w22a_ライト破壊状態フラグ[d:L_NO:B_L] && $f:w22a_ライト破壊状態フラグ[d:L_NO:B_R] ) {
+			command トラップ切り替え -trap dark:02 -switch 1
+		} else {
+			command トラップ切り替え -trap dark:02 -switch 0
+		}
+/* Ｃ倉庫は進入禁止フラグがあるためダークトラップを起動させない
+		if ( $f:w22a_ライト破壊状態フラグ[d:L_NO:C_L] && $f:w22a_ライト破壊状態フラグ[d:L_NO:C_R] ) {
+			command トラップ切り替え -trap dark:03 -switch 1
+		} else {
+			command トラップ切り替え -trap dark:03 -switch 0
+		}
+*/
+		if ( $f:w22a_ライト破壊状態フラグ[d:L_NO:D_L] && $f:w22a_ライト破壊状態フラグ[d:L_NO:D_R] ) {
+			command トラップ切り替え -trap dark:04 -switch 1
+		} else {
+			command トラップ切り替え -trap dark:04 -switch 0
+		}
+
+		if ( $f:w22a_ライト破壊状態フラグ[d:L_NO:E_L] && $f:w22a_ライト破壊状態フラグ[d:L_NO:E_R] ) {
+			command トラップ切り替え -trap dark:05 -switch 1
+		} else {
+			command トラップ切り替え -trap dark:05 -switch 0
+		}
+
+		if ( $f:w22a_ライト破壊状態フラグ[d:L_NO:F_L] && $f:w22a_ライト破壊状態フラグ[d:L_NO:F_R] ) {
+			command トラップ切り替え -trap dark:06 -switch 1
+		} else {
+			command トラップ切り替え -trap dark:06 -switch 0
+		}
+
+	}
+
+
+
+	// 消火器設定
+	// ------------------------------------
+	proc Ｆ脚１Ｆ消火器設置 $:名前 $:Ｘ座標 $:Ｚ座標 $:Ｙ角度 $:範囲Ｘ１ $:範囲Ｚ１ $:範囲Ｘ２ $:範囲Ｚ２ {
+		#if d:DEBUG_PRINT
+			print 'hose_set'
+		#endif
+
+		if ( $:名前 == 消火器:21 ) {
+			chara 消火器 $:名前 \
+				-r 0 $:Ｙ角度 0 \
+				-p $:Ｘ座標 0 $:Ｚ座標 \
+				-l d:LT2_NAME \
+				-i 1 \
+//				-d 1 \	// デバッグ表示ＯＮ
+				-e 赤外線可視 \ //
+				-b $:範囲Ｘ１ 0  $:範囲Ｚ１ \
+				   $:範囲Ｘ２ 2000 $:範囲Ｚ２
+		} else {
+			chara 消火器 $:名前 \
+				-r 0 $:Ｙ角度 0 \
+				-p $:Ｘ座標 0 $:Ｚ座標 \
+				-l d:LT2_NAME \
+				-i 1 \
+//				-d 1 \	// デバッグ表示ＯＮ
+				-b $:範囲Ｘ１ 0  $:範囲Ｚ１ \
+				   $:範囲Ｘ２ 2000 $:範囲Ｚ２
+		}
+	}
+
+
+	// フォグ
+	// ------------------------------------
+	proc フォグ設定 {
+		#if d:DEBUG_PRINT
+			print 'fog_set'
+		#endif
+
+		chara フォグ 霧\
+			-c 31, 31, 20 \
+			-n -5000 \
+			-f 36000 
+	}
+
+	// キャラ用光源(マップの設置が終わってから設定することで、キャラだけに光を当てる)
+	// ------------------------------------
+	proc キャラ用ライト設置 {
+		#if d:DEBUG_PRINT
+			print 'chara_light_set'
+		#endif
+
+		chara 環境光 環境光源 \
+			 -c 51 63 68
+
+		chara 平行光 平行光源 \
+			 -c 44 64 62 \
+			 -p 2488 -3705 -2255
+	}
+
+	// エフェクト関係
+	// -----------------------------------
+	proc エフェクト設定 {
+		#if d:DEBUG_PRINT
+			print 'effect_set'
+		#endif
+
+		#if d:BLUR
+			chara ブラー ブラー
+		#endif
+
+		#if d:Z_MANAGER
+			chara Ｚフォーカス管理 Z_manager
+			mesg Ｚフォーカス管理 Z_manager パラメータ 5000 30
+		#endif
+
+		#if d:BODY_SHADOW
+			chara ＯＦＦ制御 off_man
+			mesg ＯＦＦ制御 off_man ボディシャドウＯＦＦ
+		#endif
+	}
+
+
+	// 子画面設定 
+	// ------------------------------------
+	proc 子画面設定 {
+		#if d:DEBUG_PRINT
+			print 'sub_camera_set'
+		#endif
+
+		chara サブ画面 子画面 \
+			-w (512-d:SUB_MARGIN-d:SUB_WIDTH),d:SUB_MARGIN (512-d:SUB_MARGIN),(d:SUB_HEIGHT+d:SUB_MARGIN)
+	}
+
+	// ステージカメラ設定 
+	// ------------------------------------
+	proc カメラセット {
+		#if d:DEBUG_PRINT
+			print 'stage_camera_set'
+		#endif
+
+		chara カメラ ステージカメラ		-c 0 -l 3 -p 0 
+		chara カメラ メインカメラ		-c 0 -l 2 -p 40
+		chara カメラ サブカメラ１		-c 0 -l 2 -p 30
+		chara カメラ サブカメラ２		-c 0 -l 2 -p 20
+		chara カメラ サブカメラ３		-c 0 -l 2 -p 15
+		chara カメラ モーションカメラ	-c 0 -l 2 -p 10 
+		chara カメラ モーションカメラ２	-c 0 -l 2 -p 5 
+		chara カメラ クリアリングカメラ	-c 1 -l 2 -p 0
+
+		// デフォルトカメラ
+		chara カメラ設定 ステージカメラ \
+			-c 0 \	
+			-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-r 740,2048,0 \
+			-f 6500 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s 1
+	}
+
+
+	// ステージ開始時カメラ 
+	// ------------------------------------
+	proc スタートカメラセット {
+		#if d:DEBUG_PRINT
+			print 'start_camera_set'
+		#endif
+
+		if( $s:登場ポイント == sp_w23a_w22a0h_0 ) {
+			// ＦＡ連絡橋１Ｆから
+			chara カメラ設定 モーションカメラ２ \
+				-c 1 \
+				-p 47638,2473,-15175 -t 46150,1544,-17227 \
+				-r 229,2457,0 -f 2700 \
+				-a 200 \
+				-i 0 2 0 0 \
+				-s 1
+		} else if( $s:登場ポイント == sp_w23a_w22a1c_0 ) {
+			// ＦＡ連絡橋Ｂ１から
+			chara カメラ設定 モーションカメラ２ \
+				-c 1 \
+				-p 44024,-519,-24985 -t 44024,-3485,-25176 \
+				-r 982,2048,0 -f 2972 \
+				-a 200 \
+				-i 0 2 0 0 \
+				-s 1
+		} else if( $s:登場ポイント == sp_w21a_w22a0g_0 ) {
+			// ＥＦ連絡橋から
+			chara カメラ設定 モーションカメラ２ \
+				-c 1 \
+				-p 58515,4505,-41755 -t 57803,452,-43559 \
+				-r 733,2293,0 -f 4493 \
+				-a 200 \
+				-i 0 2 0 0 \
+				-s 1
+		} else if( $s:登場ポイント == sp_w20a_w22a_0 ) {
+			// Ｅ脚から
+			chara カメラ設定 モーションカメラ２ \
+				-c 1 \
+				-p 58821,81,-24850 -t 59504,-2127,-25929 \
+				-r 682,1680,0 -f 2551 \
+				-a 200 \
+				-i 0 2 0 0 \
+				-s 1
+		}
+	}
+
+	proc スタートカメラオフ {
+		#if d:DEBUG_PRINT
+			print 'start_camera_off'
+		#endif
+
+		chara カメラ設定 モーションカメラ２ -s -1
+	}
+
+	// ステージ終了時カメラ 
+	// ------------------------------------
+	proc エンドカメラセット $:エンドポイント {
+		#if d:DEBUG_PRINT
+			print 'end_camera_set'
+		#endif
+
+		if( $:エンドポイント == ＦＡ連絡橋１Ｆ ) {
+			// ＦＡ連絡橋１Ｆへ
+			chara カメラ設定 モーションカメラ２ \
+				-c 1 \
+				-p 47638,2473,-15175 -t 46150,1544,-17227 \
+				-r 229,2457,0 -f 2700 \
+				-a 200 \
+				-i 0 2 0 0 \
+				-s 1
+		} else if( $:エンドポイント == ＦＡ連絡橋Ｂ１ ) {
+			// ＦＡ連絡橋Ｂ１へ
+			chara カメラ設定 モーションカメラ２ \
+				-c 1 \
+				-p 44024,-519,-24985 -t 44024,-3485,-25176 \
+				-r 982,2048,0 -f 2972 \
+				-a 200 \
+				-i 0 2 0 0 \
+				-s 1
+		} else if( $:エンドポイント == ＥＦ連絡橋 ) {
+			// ＥＦ連絡橋へ
+			chara カメラ設定 モーションカメラ２ \
+				-c 1 \
+				-p 58515,4505,-41755 -t 57803,452,-43559 \
+				-r 733,2293,0 -f 4493 \
+				-a 200 \
+				-i 0 2 0 0 \
+				-s 1
+		}
+	}
+
+
+// 各マップ別設定
+// ------------------------------------
+	// ロッカー関係
+	// -----------------------------------
+	proc ロッカー管理人設置 {
+		#if d:DEBUG_PRINT
+			print 'locker_set'
+		#endif
+
+		chara ロッカー管理 管理人さん -n 11
+		command ロッカーモーション -motion locker
+		command プレイヤーロッカーモーション -motion sna_locker
+	}
+
+
+// １Ｆ左上小部屋
+	// 透明壁の設定
+	// ------------------------------------
+	proc １Ｆ左上小部屋透明壁設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a0a_tr_wall_set'
+		#endif
+
+		@東西５０ｃｍ幅透明壁設置 １Ｆ左上小部屋上壁 45250 0 -38750 2000
+		@東西５０ｃｍ幅透明壁設置 １Ｆ左上小部屋下壁 45250 0 -37750 2000
+
+		trap wl001 d:PLAYER \
+			-mask ？ \
+			-state 4 \	
+			-exec {
+				if ($3 == 入る) {
+					command パッド操作 -mask d:PAD_B
+					mesg 透明壁 １Ｆ左上小部屋上壁 off
+					mesg 透明壁 １Ｆ左上小部屋下壁 off
+				} else {
+					command パッド操作 -cancel 0
+					mesg 透明壁 １Ｆ左上小部屋上壁 on
+					mesg 透明壁 １Ｆ左上小部屋下壁 on
+				}
+			}
+	}
+
+	// ロッカー関係
+	// -----------------------------------
+	proc ロッカーチェック $:番号 {
+		@壊れ物再セットチェック $b:w22a_ロッカー破壊ロード回数[$:番号]
+		if($f:再セットフラグ) {
+			eval( $i:w22a_ロッカー状態[$:番号] = 0 );
+		}
+	}
+
+	proc ロッカー状態保存 $:番号 $:行動 $:ロッカー名 {
+		if(($:行動 != 6) && ($:行動 != 8)) {
+			// 状態変化時
+			eval($b:w22a_ロッカー破壊ロード回数[$:番号] = $w:グローバルロード回数);
+		} else if($:行動 == 8) {
+			// ステージ終了時
+			command ロッカー状態 -n $:ロッカー名
+			eval($i:w22a_ロッカー状態[$:番号] = $status)
+		}
+	}
+
+	proc １Ｆ左上小部屋ロッカー設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a0a_locker_set'
+		#endif
+
+		@ロッカーチェック 0
+		chara ロッカー ロッカー01 \
+			-kms neo_locker_door \
+			-p 49625,0,-37800 \
+			-r 0,3072,0 \
+			-down_rot 0,3000,0 \
+			-down_shift 125,0,0 \
+			-s d:LOCKER_STATE_CLOSE \
+			-seno d:SD_LOCKER_HZD \
+			-sefloor d:SD_LOCKER_FLR \
+			-load_state $i:w22a_ロッカー状態[0] \
+			-exec {
+				@プレイヤーロッカーに入ったかチェック $2 $3 $4
+				@ロッカー状態保存 0 $3 $4
+			}
+		trap lk001 d:PLAYER \
+			-and \
+			-mask いる \
+			-state 0,4 \
+			-dir 1024,512 3072,512 \
+			-key d:PAD_ACTION,-1 \				//アクションボタン
+			-exec {
+				command ロッカー状態 -n ロッカー01
+				mesg プレイヤー d:PLAYER locker ロッカー01 $status 1024,512 49625,-37800
+			}
+		trap lk001 d:PLAYER \
+			-mask ？ \
+			-state 6 \
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 1 \
+					-p 48244,4583,-36809 -t 49346,1635,-38207 \
+					-r 670,1613,0 -f 3444 \
+					-a 200 \
+					-i 0 2 0 0 \
+					-s $3
+			}
+
+		@ロッカーチェック 1
+		chara ロッカー ロッカー02 \
+			-kms neo_locker_door \
+			-p 49625,0,-36800 \
+			-r 0,3072,0 \
+			-down_rot 0,3072,0 \
+			-down_shift 125,0,250 \
+			-s d:LOCKER_STATE_DESTROY \
+			-f d:LOCKER_FLAG_DOWNOUTSIDE \
+			-seno d:SD_LOCKER_HZD \
+			-sefloor d:SD_LOCKER_FLR \
+			-load_state $i:w22a_ロッカー状態[1] \
+			-exec {
+				@プレイヤーロッカーに入ったかチェック $2 $3 $4
+				@ロッカー状態保存 1 $3 $4
+			}
+		trap lk002 d:PLAYER \
+			-and \
+			-mask いる \
+			-state 0,4 \
+			-dir 1024,512 3072,512 \
+			-key d:PAD_ACTION,-1 \				//アクションボタン
+			-exec {
+				command ロッカー状態 -n ロッカー02
+				mesg プレイヤー d:PLAYER locker ロッカー02 $status 1024,512 49625,-36800
+			}
+		trap lk002 d:PLAYER \
+			-mask ？ \
+			-state 6 \
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 1 \
+					-p 48145,4277,-36197 -t 49341,1263,-37347 \
+					-r 696,1523,0 -f 3440 \
+					-a 200 \
+					-i 0 2 0 0 \
+					-s $3
+			}
+	}
+
+	// ジャンプ設定
+	// ------------------------------------
+	proc １Ｆ左上小部屋ジャンプ設定 {
+		#if d:DEBUG_PRINT
+			print 'w22a0a_jump_set'
+		#endif
+
+		trap ky001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				@ジャンプ発動 ky001 1000 10
+			}
+	}
+
+	// 各種カメラの設定
+	// ------------------------------------
+	proc １Ｆ左上小部屋カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w22a0a_camera_set'
+		#endif
+
+		trap ca001 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ２ \
+					-c 1 \	
+					-p 47750,8564,(-35750-761) -t 47750,1304,(-35750-2782) \
+					-r 847,2048,0 -f 7536 \
+					-a 170 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+	}
+
+
+// １Ｆ右上小部屋
+	// 透明壁の設定
+	// ------------------------------------
+	proc １Ｆ右上小部屋透明壁設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a0b_tr_wall_set'
+		#endif
+
+		@南北５０ｃｍ幅透明壁設置 １Ｆ右上小部屋右壁 55600 0 -41250 2000
+
+		trap wl011 d:PLAYER \
+			-mask ？ \
+			-state 4 \	
+			-exec {
+					if ($3 == 入る) {
+						command パッド操作 -mask d:PAD_B
+						mesg 透明壁 １Ｆ右上小部屋右壁 off
+					} else {
+						command パッド操作 -cancel 0
+						mesg 透明壁 １Ｆ右上小部屋右壁 on
+					}
+				}
+
+		trap wl011 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_BEHINDCAMERA_ENABLE \	
+			-exec {
+				// 張り付いたときのカメラ
+				chara カメラ設定 モーションカメラ \
+					-c 1 \	
+					-p 56250,7614,-39418 -t 56250,1122,-39607 \
+					-r 1005,2048,0 -f 6495 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3
+			}
+	}
+
+	// ロッカー関係
+	// -----------------------------------
+	proc １Ｆ右上小部屋ロッカー設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a0b_locker_set'
+		#endif
+
+		@ロッカーチェック 2
+		chara ロッカー ロッカー11 \
+			-kms neo_locker_door \
+			-p 54375,0,-38450 \
+			-r 0,1024,0 \
+			-s d:LOCKER_STATE_CLOSE \
+			-seno d:SD_LOCKER_HZD \
+			-sefloor d:SD_LOCKER_FLR \
+			-load_state $i:w22a_ロッカー状態[2] \
+			-exec {
+				@プレイヤーロッカーに入ったかチェック $2 $3 $4
+				@ロッカー状態保存 2 $3 $4
+			}
+		trap lk011 d:PLAYER \
+			-and \
+			-mask いる \
+			-state 0,4 \
+			-dir 3072,512 1024,512 \
+			-key d:PAD_ACTION,-1 \				//アクションボタン
+			-exec {
+				command ロッカー状態 -n ロッカー11
+				mesg プレイヤー d:PLAYER locker ロッカー11 $status 3072,512 54375,-38450
+			}
+		trap lk011 d:PLAYER \
+			-mask ？ \
+			-state 6 \
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 1 \
+					-p 56016,4684,-36198 -t 54251,-755,-39183 \
+					-r 654,2396,0 -f 6451 \
+					-a 200 \
+					-i 0 2 0 0 \
+					-s $3
+			}
+
+		@ロッカーチェック 3
+		chara ロッカー ロッカー12 \
+			-kms neo_locker_door \
+			-p 54375,0,-37450 \
+			-r 0,1024,0 \
+			-down_rot 0,800,0 \
+			-down_shift 100,0,100 \
+			-s d:LOCKER_STATE_CLOSE \
+			-seno d:SD_LOCKER_HZD \
+			-sefloor d:SD_LOCKER_FLR \
+			-load_state $i:w22a_ロッカー状態[3] \
+			-exec {
+				@プレイヤーロッカーに入ったかチェック $2 $3 $4
+				@ロッカー状態保存 3 $3 $4
+			}
+		trap lk012 d:PLAYER \
+			-and \
+			-mask いる \
+			-state 0,4 \
+			-dir 3072,512 1024,512 \
+			-key d:PAD_ACTION,-1 \				//アクションボタン
+			-exec {
+				command ロッカー状態 -n ロッカー12
+				mesg プレイヤー d:PLAYER locker ロッカー12 $status 3072,512 54375,-37450
+			}
+		trap lk012 d:PLAYER \
+			-mask ？ \
+			-state 6 \
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 1 \
+					-p 55701,4806,-36006 -t 54203,-1047,-38255 \
+					-r 742,2431,0 -f 6446 \
+					-a 200 \
+					-i 0 2 0 0 \
+					-s $3
+			}
+	}
+
+	// 各種カメラの設定
+	// ------------------------------------
+	proc １Ｆ右上小部屋カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w22a0b_camera_set'
+		#endif
+
+		trap ca011 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ２ \
+					-c 1 \	
+					-p 56250,8564,(-35750-761) -t 56250,1304,(-35750-2782) \
+					-r 847,2048,0 -f 7536 \
+					-a 170 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+	}
+
+
+// １Ｆ中央左小部屋
+	// ロッカー関係
+	// -----------------------------------
+	proc １Ｆ中央左小部屋ロッカー設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a0c_locker_set'
+		#endif
+
+		@ロッカーチェック 4
+		chara ロッカー ロッカー21 \
+			-kms neo_locker_door \
+			-p 41875,0,-28950 \
+			-r 0,1024,0 \
+			-s d:LOCKER_STATE_CLOSE \
+			-seno d:SD_LOCKER_HZD \
+			-sefloor d:SD_LOCKER_FLR \
+			-load_state $i:w22a_ロッカー状態[4] \
+			-exec {
+				@プレイヤーロッカーに入ったかチェック $2 $3 $4
+				@ロッカー状態保存 4 $3 $4
+			}
+		trap lk021 d:PLAYER \
+			-and \
+			-mask いる \
+			-state 0,4 \
+			-dir 3072,512 1024,512 \
+			-key d:PAD_ACTION,-1 \				//アクションボタン
+			-exec {
+				command ロッカー状態 -n ロッカー21
+				mesg プレイヤー d:PLAYER locker ロッカー21 $status 3072,512 41875,-28950
+			}
+		trap lk021 d:PLAYER \
+			-mask ？ \
+			-state 6 \
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 1 \
+					-p 43346,4502,-27525 -t 42120,-1443,-29673 \
+					-r 767,2386,0 -f 6439 \
+					-a 193 \
+					-i 0 2 0 0 \
+					-s $3
+			}
+	}
+
+	// 赤外線センサーの設定
+	// ------------------------------------
+	proc １Ｆ中央左小部屋赤外線センサー設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a0c_ir_sensor_set'
+		#endif
+		
+		// センサーとスイッチの設定
+		if ( $f:w22a_赤外線センサーフラグ == 0 ) {
+			chara 複数赤外線 赤外線センサー \
+				-p 41386,2250,-28120 0,1024,0 スイッチ君 \		//$v:スイッチ座標 $v:スイッチ方向 $s:スイッチ名前 ...7
+				-n 1 \											//$i:スイッチの数 \
+				-a	41400,0,-30100 0,0,0 \
+					46100,0,-30100 0,0,0 \		//$v:センサー座標 $v:センサー方向 ...6
+				-e Ｃ４爆発ゲームオーバー \
+				-s スイッチ破壊 \
+				-m irs_box irs_box2 irs \
+				-b 1 \
+				-d 1						//$i:１を指定すると下部のセンサー無し（50cmの隙間ができる）\
+
+			// 敵兵が引っかかった場合の処理
+			trap ev021 敵兵 \
+				-mask 入る \
+				-exec {
+					if ( $f:ゲームオーバー処理フラグ == 0 ) {
+						mesg マップ接合 １Ｆ北／中央 on
+						mesg マップ接合 １Ｆ北／Ｂ１中央 on
+						mesg マップ接合 １Ｆ中央／左上小部屋 on
+						mesg マップ接合 １Ｆ中央／右上小部屋 on
+						mesg マップ接合 １Ｆ中央／中央左小部屋 on
+						mesg マップ接合 １Ｆ中央／中央右小部屋 on
+						mesg マップ接合 １Ｆ中央／左下小部屋 on
+						mesg マップ接合 １Ｆ中央／右下小部屋 on
+						mesg マップ接合 Ｂ１中央／上小部屋左 on
+						mesg マップ接合 Ｂ１中央／上小部屋右 on
+						mesg マップ接合 Ｂ１中央／左下小部屋 on
+						mesg マップ接合 Ｂ１中央／右下小部屋 on
+						mesg マップ接合 Ｂ１左下／右下小部屋 on
+
+/* ほとんどの場合、赤外線のendprocの方が先に呼ばれ紛らわしい＋カメラが黒天井の上なので、はずします。2001.11.19
+						chara カメラ設定 モーションカメラ２ \
+							-c 1 \
+							-p 44750,5538,-27236 -t 43804,1570,-30846 \
+							-r 532,2215,0 -f 5448 \
+							-a 170 \
+							-i 0 0 0 0 \
+							-s $3
+*/
+						
+						@Ｃ４爆発ゲームオーバー
+					}
+				}
+		} else {
+			chara プットオブジェ 赤外線スイッチ１ -m irs_box2 -r 0 1024 0 -p 41386,2250,-28120 -l d:LT2_NAME -s 100 100 100
+			chara プットオブジェ 赤外線センサーＬ１ -m irs -r 0 0 0 -p 41400,0,-30100 -l d:LT2_NAME -s 100 100 100
+			chara プットオブジェ 赤外線センサーＲ１ -m irs -r 0 0 0 -p 46100,0,-30100 -l d:LT2_NAME -s 100 100 100
+			command トラップ切り替え -trap ev021 -switch 0
+		}
+
+		// セムテックスの設置
+		command foreach -argc 6 -repeat 5 \
+			-data { \
+					{45024,1675,-32575, 1024,0,0} \
+					{44770,1675,-32225, 1024,2048,0} \
+					{45560,1675,-31652, 1024,1024,0} \
+					{45910,1675,-31398, 1024,3072,0} \
+					{41325,2250,-28400, 0,1024,0}
+			} \
+			-exec { \
+				chara トラップ専用C4 ＢＩＧＣ４ -p $1,$2,$3 -r $4,$5,$6 \
+					-e Ｃ４爆発ゲームオーバー \
+					-n 1	// 爆発音敵兵に聞こえない
+			}
+	}
+
+	proc Ｃ４爆発ゲームオーバー {
+		#if d:DEBUG_PRINT
+			print 'w22a0c_irs_switch_on'
+		#endif
+
+		if ( $f:ゲームオーバー処理フラグ == 0 && `command ゲームオーバーチェック` == 0 ) {
+			eval( $f:ゲームオーバー処理フラグ = 1 );
+			mesg 複数赤外線 赤外線センサー on
+			mesg トラップ専用C4 ＢＩＧＣ４ on
+			@爆発ゲームオーバー処理 d:BOMB_EFFECT_ON
+		}
+	}
+
+	proc スイッチ破壊 {
+		#if d:DEBUG_PRINT
+			print 'w22a0c_switch_broken'
+		#endif
+		
+		eval ( $f:w22a_赤外線センサーフラグ = 1 );
+		command トラップ切り替え -trap ev021 -switch 0
+		mesg トラップ専用C4 ＢＩＧＣ４ lamp_off
+	}
+
+	proc 赤外線可視 {
+		#if d:DEBUG_PRINT
+			print 'irs_on'
+		#endif
+
+		mesg 複数赤外線 赤外線センサー on
+	}
+
+
+	// 各種カメラの設定
+	// ------------------------------------
+	proc １Ｆ中央左小部屋カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w22a0c_camera_set'
+		#endif
+
+		trap ca021 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ２ \
+					-c 1 \	
+					-p 43750,8564,(-27250-761) -t 43750,1304,(-27250-2782) \
+					-r 847,2048,0 -f 7536 \
+					-a 170 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+	}
+
+
+// １Ｆ中央右小部屋
+	// 透明壁の設定
+	// ------------------------------------
+	proc １Ｆ中央右小部屋透明壁設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a0d_tr_wall_set'
+		#endif
+
+		@南北５０ｃｍ幅透明壁設置 １Ｆ中央右小部屋左壁 60875 0 -32750 2000
+
+		trap wl031 d:PLAYER \
+			-mask ？ \
+			-state 4 \	
+			-exec {
+				if ($3 == 入る) {
+					command パッド操作 -mask d:PAD_B
+					mesg 透明壁 １Ｆ中央右小部屋左壁 off
+				} else {
+					command パッド操作 -cancel 0
+					mesg 透明壁 １Ｆ中央右小部屋左壁 on
+				}
+			}
+
+		trap wl031 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_BEHINDCAMERA_ENABLE \	
+			-exec {
+				// 張り付いたときのカメラ
+				chara カメラ設定 モーションカメラ \
+					-c 1 \	
+					-p 60714,7541,-30309 -t 60714,1133,-30950 \
+					-r 958,2048,0 -f 6439 \
+					-a 193 \
+					-i 2 2 0 0 \
+					-s $3
+			}
+
+	}
+
+	// ロッカー関係
+	// -----------------------------------
+	proc １Ｆ中央右小部屋ロッカー設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a0d_locker_set'
+		#endif
+
+		@ロッカーチェック 5
+		chara ロッカー ロッカー31 \
+			-kms neo_locker_door \
+			-p 58375,0,-31700 \
+			-r 0,1024,0 \
+			-s d:LOCKER_STATE_CLOSE \
+			-seno d:SD_LOCKER_HZD \
+			-sefloor d:SD_LOCKER_FLR \
+			-load_state $i:w22a_ロッカー状態[5] \
+			-exec {
+				@プレイヤーロッカーに入ったかチェック $2 $3 $4
+				@ロッカー状態保存 5 $3 $4
+			}
+		trap lk031 d:PLAYER \
+			-and \
+			-mask いる \
+			-state 0,4 \
+			-dir 3072,512 1024,512 \
+			-key d:PAD_ACTION,-1 \				//アクションボタン
+			-exec {
+				command ロッカー状態 -n ロッカー31
+				mesg プレイヤー d:PLAYER locker ロッカー31 $status 3072,512 58375,-31700
+			}
+		trap lk031 d:PLAYER \
+			-mask ？ \
+			-state 6 \
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 1 \
+					-p 59571,4765,-29428 -t 58702,-862,-32424 \
+					-r 694,2232,0 -f 6434 \
+					-a 200 \
+					-i 0 2 0 0 \
+					-s $3
+			}
+	}
+
+	// 各種カメラの設定
+	// ------------------------------------
+	proc １Ｆ中央右小部屋カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w22a0d_camera_set'
+		#endif
+
+		trap ca031 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ２ \
+					-c 1 \	
+					-p 60250,8564,(-27250-761) -t 60250,1304,(-27250-2782) \
+					-r 847,2048,0 -f 7536 \
+					-a 170 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+	}
+
+
+// １Ｆ左下小部屋
+	// ロッカー関係
+	// -----------------------------------
+	proc １Ｆ左下小部屋ロッカー設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a0e_locker_set'
+		#endif
+
+		@ロッカーチェック 6
+		chara ロッカー ロッカー41 \
+			-kms neo_locker_door \
+			-p 46700,0,-23625 \
+			-r 0,0,0 \
+			-s d:LOCKER_STATE_CLOSE \
+			-seno d:SD_LOCKER_HZD \
+			-sefloor d:SD_LOCKER_FLR \
+			-load_state $i:w22a_ロッカー状態[6] \
+			-exec {
+				@プレイヤーロッカーに入ったかチェック $2 $3 $4
+				@ロッカー状態保存 6 $3 $4
+			}
+		trap lk041 d:PLAYER \
+			-and \
+			-mask いる \
+			-state 0,4 \
+			-dir 2048,512 0,512 \
+			-key d:PAD_ACTION,-1 \				//アクションボタン
+			-exec {
+				command ロッカー状態 -n ロッカー41
+				mesg プレイヤー d:PLAYER locker ロッカー41 $status 2048,512 46700,-23625
+			}
+		trap lk041 d:PLAYER \
+			-mask ？ \
+			-state 6 \
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 1 \
+					-p 47208,4600,-20713 -t 46308,-585,-24401 \
+					-r 612,2204,0 -f 6427 \
+					-a 200 \
+					-i 0 2 0 0 \
+					-s $3
+			}
+	}
+
+	// 各種カメラの設定
+	// ------------------------------------
+	proc １Ｆ左下小部屋カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w22a0e_camera_set'
+		#endif
+
+		trap ca041 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ２ \
+					-c 1 \	
+					-p 47750,8564,(-18750-761) -t 47750,1304,(-18750-2782) \
+					-r 847,2048,0 -f 7536 \
+					-a 170 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+	}
+
+
+// １Ｆ右下小部屋
+	// 各種カメラの設定
+	// ------------------------------------
+	proc １Ｆ右下小部屋カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w22a0f_camera_set'
+		#endif
+
+		trap ca051 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ２ \
+					-c 1 \	
+					-p 56250,8564,(-18750-761) -t 56250,1304,(-18750-2782) \
+					-r 847,2048,0 -f 7536 \
+					-a 170 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+	}
+
+// １Ｆ北通路
+	// 各種カメラの設定
+	// ------------------------------------
+	proc １Ｆ北通路カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w22a0g_camera_set'
+		#endif
+
+		// 北横通路
+		trap ca061 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ２ \
+					-c 0 \	
+					-b 52000,5868,-41714 58998,5868,-41714 \
+					-l 52000,1750,-42773 58998,d:CAM_MAX,-42773 \
+					-r 870,2048,0 \
+					-f 4500 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-slide 0 5 750 750 30 0 \
+					-s $3
+			}
+
+		// 中央南北通路
+		trap ca062 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -36500 -41500 52000 52000
+				eval( $i:補完ＰＸ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -36500 -41500 5986 4134
+				eval( $i:補完ＰＹ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -36500 -41500 -29473 -31805
+				eval( $i:補完ＰＺ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -36500 -41500 52000 52000
+				eval( $i:補完ＴＸ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -36500 -41500 903 -1070
+				eval( $i:補完ＴＹ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -36500 -41500 -35686 -40546
+				eval( $i:補完ＴＺ = $i:CS_結果１ );
+
+				chara カメラ設定 サブカメラ１ \
+					-c 1 \	
+					-p $i:補完ＰＸ,$i:補完ＰＹ,$i:補完ＰＺ -t $i:補完ＴＸ,$i:補完ＴＹ,$i:補完ＴＺ \
+					-r 358,2048,0 -f 8032 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 階段部分上
+		trap ca063 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -38500 -40250 60290 60291
+				eval( $i:補完ＰＸ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -38500 -40250 2747 2747
+				eval( $i:補完ＰＹ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -38500 -40250 -33195 -33196
+				eval( $i:補完ＰＺ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -38500 -40250 59554 59465
+				eval( $i:補完ＴＸ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -38500 -40250 -1217 238
+				eval( $i:補完ＴＹ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -38500 -40250 -39163 -39896
+				eval( $i:補完ＴＺ = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 1 \	
+					-p $i:補完ＰＸ,$i:補完ＰＹ,$i:補完ＰＺ -t $i:補完ＴＸ,$i:補完ＴＹ,$i:補完ＴＺ \
+					-r 224,2128,0 -f 6486 \
+					-a 220 \
+					-i 0 0 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+	}
+
+
+// １Ｆ中央広場
+	// ビヨンド設定
+	// ------------------------------------
+	proc １Ｆ中央広場ビヨンド設定 {
+		#if d:DEBUG_PRINT
+			print 'w22a0h_beyond_set'
+		#endif
+
+		// 一番北側
+		trap by071 d:PLAYER \
+			-mask いる \
+			-key d:PAD_ACTION \	//アクションボタン
+			-state 0,4 \		//立ち状態or張り付き
+			-exec {
+				@南向きビヨンド発動 by071 -33000 $4 49000 55000 0x00000002
+			}
+		trap by071 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 0 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 815,2243,0 -f 6222 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		trap by071 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN 54615,d:CAM_MAX,-29522 \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN 53737,d:CAM_MAX,-32976 \
+					-r 617,2188,0 -f 6199 \
+					-a 225 \
+					-i 3 2 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 中央左
+		trap by072 d:PLAYER \
+			-mask いる \
+			-key d:PAD_ACTION \		//アクションボタン
+			-state 0,4 \	//立ち状態or張り付き
+			-exec {
+				@東向きビヨンド発動 by072 48000 $6 -30750 -29250 0x00000002
+			}
+		trap by072 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 1024 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b 48413,5000,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l 48163,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 859,2182,0 -f 4893 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		trap by072 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 3072 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,-27061 d:CAM_MAX,4774,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,-30027 d:CAM_MAX,663,d:CAM_MAX \
+					-r 394,2732,0 -f 7235 \
+					-a 250 \
+					-i 3 2 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 一番南側
+		trap by073 d:PLAYER \
+			-mask いる \
+			-key d:PAD_ACTION \		//アクションボタン
+			-state 0,4 \	//立ち状態or張り付き
+			-exec {
+				@北向きビヨンド発動 by073 -27000 $4 49000 55000 0x00000002
+			}
+		trap by073 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b 49937,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-25654 \
+					-l 49348,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-27216 \
+					-r 802,2283,0 -f 5000 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		trap by073 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 0 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-26100 \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-26738 \
+					-r 966,2048,0 -f 7287 \
+					-a 250 \
+					-i 3 2 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 中央右
+		trap by074 d:PLAYER \
+			-mask いる \
+			-key d:PAD_ACTION \		//アクションボタン
+			-state 0,4 \	//立ち状態or張り付き
+			-exec {
+				@西向きビヨンド発動 by074 56000 $6 -30750 -29250 0x00000002
+			}
+		trap by074 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 3072 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN 55351,d:CAM_MAX,-29187 \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN 55608,d:CAM_MAX,-30188 \
+					-r 902,1884,0 -f 5557 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		trap by074 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 1024 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,-26603 d:CAM_MAX,4758,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,-29774 d:CAM_MAX,136,d:CAM_MAX \
+					-r 458,1428,0 -f 7153 \
+					-a 225 \
+					-i 3 2 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 階段上
+		trap by075 d:PLAYER \
+			-mask いる \
+			-key d:PAD_ACTION \		//アクションボタン
+			-state 0,4 \	//立ち状態or張り付き
+			-exec {
+				@北向きビヨンド発動 by075 -35500 $4 59250 60250 0x00000002
+			}
+		trap by075 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b 59449,d:CAM_MIN,d:CAM_MIN 59535,d:CAM_MAX,-34735 \
+					-l 59700,d:CAM_MIN,d:CAM_MIN 59785,d:CAM_MAX,-35408 \
+					-r 881,1816,0 -f 3301 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		trap by075 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 0 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN 59884,5134,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN 59798,-19,d:CAM_MAX \
+					-r 970,2180,0 -f 5170 \
+					-a 230 \
+					-i 3 2 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+	}
+
+	// 各種カメラの設定
+	// ------------------------------------
+	proc １Ｆ中央広場カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w22a0h_camera_set'
+		#endif
+
+		// 中央広場
+		trap ca071 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -27000 -30000 50051 50425
+				eval( $i:補完ＢＸ = $i:CS_結果１ );
+				eval( $i:補完ＬＸ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -27000 -30000 53877 53602
+				eval( $i:補完ＢＸ２ = $i:CS_結果１ );
+				eval( $i:補完ＬＸ２ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -27000 -30000 10021 8494
+				eval( $i:補完ＢＹ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -27000 -30000 -25341 -23813
+				eval( $i:補完ＢＺ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -27000 -30000 870 650
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b $i:補完ＢＸ,$i:補完ＢＹ,-27880 $i:補完ＢＸ２,$i:補完ＢＹ, $i:補完ＢＺ \
+					-l $i:補完ＬＸ,1745,-32358 $i:補完ＬＸ２,d:CAM_MAX,-27284 \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 8250 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 中央広場右上
+		trap ca072 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b d:CAM_MIN,6730,-33309 58841,6730,-33309 \
+					-l d:CAM_MIN,1702,-34684 58841,d:CAM_MAX,-34684 \
+					-r 850,2048,0 \
+					-f 5213 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-slide 0 5 1000 1000 60 0 \
+					-s $3
+			}
+
+		// 中央広場左下
+		trap ca073 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \	
+					-b (39500+1658),6910,-24816 d:CAM_MAX,6910,-24816 \
+					-l (39500+1658),1761,-26224 d:CAM_MAX,d:CAM_MAX,-26224 \
+					-r 850,2048,0 \
+					-f 5337 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-slide 0 5 1000 1000 60 0 \
+					-s $3
+			}
+
+		// 中央広場右下
+		trap ca074 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \	
+					-b d:CAM_MIN,6910,-24816 (64500-1658),6910,-24816 \
+					-l d:CAM_MIN,1761,-26224 (64500-1658),d:CAM_MAX,-26224 \
+					-r 850,2048,0 \
+					-f 5337 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-slide 0 5 1000 1000 60 0 \
+					-s $3
+			}
+
+		// 中央通路南
+		trap ca075 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -19000 -24000 52000 52000
+				eval( $i:補完ＰＸ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -19000 -24000 4894 2834
+				eval( $i:補完ＰＹ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -19000 -24000 -12701 -14997
+				eval( $i:補完ＰＺ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -19000 -24000 52000 52000
+				eval( $i:補完ＴＸ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -19000 -24000 1508 628
+				eval( $i:補完ＴＹ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -19000 -24000 -18491 -21315
+				eval( $i:補完ＴＺ = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 1 \	
+					-p $i:補完ＰＸ,$i:補完ＰＹ,$i:補完ＰＺ -t $i:補完ＴＸ,$i:補完ＴＹ,$i:補完ＴＺ \
+					-r 358,2048,0 -f 8032 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 南側通路
+		trap ca076 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \	
+					-b 47883,5465,-12997 56380,5465,-12997 \
+					-l 47883,1674,-17621 56380,1674,-17621 \
+					-r 450,2048,0 \
+					-f 5997 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// エルード落下中のカメラ
+		trap ca077 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_ELUDE \
+			-camera \
+			-exec {
+				chara カメラ設定 モーションカメラ２ \
+					-c 0 \	
+					-b d:CAM_MIN,-1250,d:CAM_MIN d:CAM_MAX,-1000,-24500 \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-25500 \
+					-r 350,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 0 3 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 南壁の張り付きカメラ
+		trap ca078 d:PLAYER \
+			-mask ？ \
+			-dir 2048 512 \
+			-state d:TRP_STATE_CAUTION \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ２ \
+					-c 0 \	
+					-b 47000,6536,-16253 56500,6536,-16253 \
+					-l 47000,1737,-17669 56500,1737,-17669 \
+					-r 837,2048,0 \
+					-f 5000 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+		// 手すり張り付きカメラ(北側柵)
+		trap ca079 d:PLAYER \
+			-mask ？ \
+			-dir 2048 512 \
+			-state d:TRP_STATE_CAUTION \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \	
+					-b 50250,9921,-31406 54000,9921,-31406 \
+					-l 50250,1717,-33193 54000,1717,-33193 \
+					-r 885,2048,0 \
+					-f 8500 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3
+			}
+
+		// 手すり張り付きカメラ(東側柵)
+		trap ca080 d:PLAYER \
+			-mask ？ \
+			-dir 3072 512 \
+			-state d:TRP_STATE_CAUTION \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \	
+					-b 48505,7500,d:CAM_MIN 55408,7500,-28805 \
+					-l 48505,1717,d:CAM_MIN 55408,1717,-30057 \
+					-r 887,2048,0 \
+					-f 6000 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3
+			}
+
+		// 手すり張り付きカメラ(西側柵)
+		trap ca081 d:PLAYER \
+			-mask ？ \
+			-dir 1024 512 \
+			-state d:TRP_STATE_CAUTION \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \	
+					-b 48505,7500,d:CAM_MIN 55408,7500,-28805 \
+					-l 48505,1717,d:CAM_MIN 55408,1717,-30057 \
+					-r 887,2048,0 \
+					-f 6000 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3
+			}
+
+		// 手すり張り付きカメラ(南側柵)
+		trap ca082 d:PLAYER \
+			-mask ？ \
+			-dir 0 512 \
+			-state d:TRP_STATE_CAUTION \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \	
+					-b 48750,7500,d:CAM_MIN d:CAM_MAX,7500,-26503 \
+					-l 48750,1717,d:CAM_MIN d:CAM_MAX,1717,-27964 \
+					-r 866,2048,0 \
+					-f 6000 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3
+			}
+
+		// 手すり張り付きカメラ(階段部分柵)
+		trap ca083 d:PLAYER \
+			-mask ？ \
+			-dir 0 512 \
+			-state d:TRP_STATE_CAUTION \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ１ \
+					-c 1 \	
+					-p 59766,4222,-35113 -t 59766,1696,-35708 \
+					-r 873,2048,0 -f 2596 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3
+			}
+
+		// 匍匐カメラ(中央広場)
+		trap ca084 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SQUAT d:TRP_STATE_GROUND \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \	
+					-b d:CAM_MIN,9583,-31472 52000,9583,d:CAM_MAX \
+					-l d:CAM_MIN,1500,-33493 52000,d:CAM_MAX,d:CAM_MAX \
+					-r 880,2048,0 \
+					-f 9161 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3
+			}
+
+		// 匍匐カメラ(南通路)
+		trap ca085 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SQUAT d:TRP_STATE_GROUND \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \	
+					-c 0 \	
+					-b 52000,2500,-18357 52000,4905,d:CAM_MAX \
+					-l 52000,1500,-22799 52000,d:CAM_MAX,d:CAM_MAX \
+					-r 457,2048,0 \
+					-f 5813 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-s $3
+			}
+
+	}
+
+
+
+
+// Ｂ１上小部屋
+	// 透明壁の設定
+	// ------------------------------------
+	proc Ｂ１上小部屋透明壁設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a1a_tr_wall_set'
+		#endif
+
+		@東西５０ｃｍ幅透明壁設置 Ｂ１上小部屋左上壁 46250 -5000 -42500 2000
+		@東西５０ｃｍ幅透明壁設置 Ｂ１上小部屋左下壁 46250 -5000 -41000 2000
+
+		@東西５０ｃｍ幅透明壁設置 Ｂ１上小部屋右上壁 57250 -5000 -42500 2000
+		@東西５０ｃｍ幅透明壁設置 Ｂ１上小部屋右下壁 57250 -5000 -41000 2000
+
+		@南北５０ｃｍ幅透明壁設置 Ｂ１上小部屋左壁 51500 -5000 -41500 2000
+		@南北５０ｃｍ幅透明壁設置 Ｂ１上小部屋右壁 52500 -5000 -41500 2000
+
+		trap wl101 d:PLAYER \
+			-mask ？ \
+			-state 4 \	
+			-exec {
+				if ($3 == 入る) {
+					command パッド操作 -mask d:PAD_B
+					mesg 透明壁 Ｂ１上小部屋左上壁 off
+					mesg 透明壁 Ｂ１上小部屋左下壁 off
+				} else {
+					command パッド操作 -cancel 0
+					mesg 透明壁 Ｂ１上小部屋左上壁 on
+					mesg 透明壁 Ｂ１上小部屋左下壁 on
+				}
+			}
+
+		trap wl101 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_BEHINDCAMERA_ENABLE \	
+			-exec {
+				// 張り付いたときのカメラ
+				chara カメラ設定 モーションカメラ \
+					-c 0 \	
+					-b 48000,2440,d:CAM_MIN d:CAM_MAX,2440,d:CAM_MAX \
+					-l 48000,-3000,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 870,2048,0 \
+					-f 6000 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		trap wl102 d:PLAYER \
+			-mask ？ \
+			-state 4 \	
+			-exec { 
+				if ($3 == 入る) {
+					command パッド操作 -mask d:PAD_B
+					mesg 透明壁 Ｂ１上小部屋右上壁 off
+					mesg 透明壁 Ｂ１上小部屋右下壁 off
+				} else {
+					command パッド操作 -cancel 0
+					mesg 透明壁 Ｂ１上小部屋右上壁 on
+					mesg 透明壁 Ｂ１上小部屋右下壁 on
+				}
+			}
+
+		trap wl102 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_BEHINDCAMERA_ENABLE \	
+			-exec {
+				// 張り付いたときのカメラ
+				chara カメラ設定 モーションカメラ \
+					-c 0 \	
+					-b d:CAM_MIN,2440,d:CAM_MIN 56000,2440,d:CAM_MAX \
+					-l d:CAM_MIN,-3000,d:CAM_MIN 56000,d:CAM_MAX,d:CAM_MAX \
+					-r 870,2048,0 \
+					-f 6000 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		trap wl103 d:PLAYER \
+			-mask ？ \
+			-state 4 \	
+			-exec {
+				if ($3 == 入る) {
+					command パッド操作 -mask d:PAD_B
+					mesg 透明壁 Ｂ１上小部屋左壁 off
+					mesg 透明壁 Ｂ１上小部屋右壁 off
+				} else {
+					command パッド操作 -cancel 0
+					mesg 透明壁 Ｂ１上小部屋左壁 on
+					mesg 透明壁 Ｂ１上小部屋右壁 on
+				}
+			}
+
+		trap wl103 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_BEHINDCAMERA_ENABLE \	
+			-exec {
+				// 張り付いたときのカメラ
+				chara カメラ設定 モーションカメラ \
+					-c 0 \	
+					-b d:CAM_MIN,2440,d:CAM_MIN d:CAM_MAX,2440,d:CAM_MAX \
+					-l d:CAM_MIN,-3000,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 870,2048,0 \
+					-f 6000 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+	}
+
+	// 各種カメラの設定
+	// ------------------------------------
+	proc Ｂ１上小部屋カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w22a1a_camera_set'
+		#endif
+
+		trap ca101 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -36500 -39500 49500 50000
+				eval( $i:補完ＢＸ = $i:CS_結果１ );
+				eval( $i:補完ＬＸ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -36500 -39500 54500 54000
+				eval( $i:補完ＢＸ２ = $i:CS_結果１ );
+				eval( $i:補完ＬＸ２ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -36500 -39500 900 650
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				chara カメラ設定 サブカメラ２ \
+					-c 0 \	
+					-b $i:補完ＢＸ,4500,-37561 $i:補完ＢＸ２,4500,-36644 \
+					-l $i:補完ＬＸ,-3000,-41903 $i:補完ＬＸ２,d:CAM_MAX,-38192 \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 8000 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+		// 匍匐カメラ
+		trap ca102 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SQUAT d:TRP_STATE_GROUND \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ３ \
+					-c 0 \	
+					-b 49250,4500,-40968 54750,4500,-36644 \
+					-l 49250,-3000,-42845 54750,d:CAM_MAX,-38192 \
+					-r 875,2048,0 \
+					-f 8000 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3
+			}
+	}
+
+
+// Ｂ１左下小部屋
+	// ロッカー関係
+	// -----------------------------------
+	proc Ｂ１左下小部屋ロッカー設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a1b_locker_set'
+		#endif
+
+		@ロッカーチェック 7
+		chara ロッカー ロッカー71 \
+			-kms neo_locker_door \
+			-p 45875,-5000,-20950 \
+			-r 0,1024,0 \
+			-down_rot 0,700,0 \
+			-down_shift 250,0,250 \
+			-s d:LOCKER_STATE_CLOSE \
+			-seno d:SD_LOCKER_HZD \
+			-sefloor d:SD_LOCKER_FLR \
+			-load_state $i:w22a_ロッカー状態[7] \
+			-exec {
+				@プレイヤーロッカーに入ったかチェック $2 $3 $4
+				@ロッカー状態保存 7 $3 $4
+			}
+		trap lk111 d:PLAYER \
+			-and \
+			-mask いる \
+			-state 0,4 \
+			-dir 3072,512 1024,512 \
+			-key d:PAD_ACTION,-1 \				//アクションボタン
+			-exec {
+				command ロッカー状態 -n ロッカー71
+				mesg プレイヤー d:PLAYER locker ロッカー71 $status 3072,512 45875,-20950
+			}
+		trap lk111 d:PLAYER \
+			-mask ？ \
+			-state 6 \
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 1 \
+					-p 47830,-52,-18902 -t 46063,-5606,-21750 \
+					-r 670,2410,0 -f 6487 \
+					-a 200 \
+					-i 0 2 0 0 \
+					-s $3
+			}
+
+		@ロッカーチェック 8
+		chara ロッカー ロッカー72 \
+			-kms neo_locker_door \
+			-p 45875,-5000,-21950 \
+			-r 0,1024,0 \
+			-down_rot 0,600,0 \
+			-down_shift 500,0,0 \
+			-s d:LOCKER_STATE_DESTROY \
+			-f d:LOCKER_FLAG_DOWNOUTSIDE \
+			-seno d:SD_LOCKER_HZD \
+			-sefloor d:SD_LOCKER_FLR \
+			-load_state $i:w22a_ロッカー状態[8] \
+			-exec {
+				@プレイヤーロッカーに入ったかチェック $2 $3 $4
+				@ロッカー状態保存 8 $3 $4
+			}
+		trap lk112 d:PLAYER \
+			-and \
+			-mask いる \
+			-state 0,4 \
+			-dir 3072,512 1024,512 \
+			-key d:PAD_ACTION,-1 \				//アクションボタン
+			-exec {
+				command ロッカー状態 -n ロッカー72
+				mesg プレイヤー d:PLAYER locker ロッカー72 $status 3072,512 45875,-21950
+			}
+		trap lk112 d:PLAYER \
+			-mask ？ \
+			-state 6 \
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 1 \
+					-p 47965,332,-19736 -t 46190,-5216,-22589 \
+					-r 669,2411,0 -f 6486 \
+					-a 200 \
+					-i 0 2 0 0 \
+					-s $3
+			}
+
+		@ロッカーチェック 9
+		chara ロッカー ロッカー73 \
+			-kms neo_locker_door \
+			-p 47700,-5000,-23625 \
+			-r 0,0,0 \
+			-down_rot 0,128,0 \
+			-down_shift 0,0,-100 \
+			-s d:LOCKER_STATE_CLOSE \
+			-seno d:SD_LOCKER_HZD \
+			-sefloor d:SD_LOCKER_FLR \
+			-load_state $i:w22a_ロッカー状態[9] \
+			-exec {
+				@プレイヤーロッカーに入ったかチェック $2 $3 $4
+				@ロッカー状態保存 9 $3 $4
+			}
+		trap lk113 d:PLAYER \
+			-and \
+			-mask いる \
+			-state 0,4 \
+			-dir 2048,512 0,512 \
+			-key d:PAD_ACTION,-1 \				//アクションボタン
+			-exec {
+				command ロッカー状態 -n ロッカー73
+				mesg プレイヤー d:PLAYER locker ロッカー73 $status 2048,512 47700,-23625
+			}
+		trap lk113 d:PLAYER \
+			-mask ？ \
+			-state 6 \
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 1 \
+					-p 48237,-910,-20161 -t 47100,-5392,-24700 \
+					-r 498,2208,0 -f 6479 \
+					-a 200 \
+					-i 0 2 0 0 \
+					-s $3
+			}
+
+		@ロッカーチェック 10
+		chara ロッカー ロッカー74 \
+			-kms neo_locker_door \
+			-p 48700,-5000,-23625 \
+			-r 0,0,0 \
+			-down_rot 0,128,0 \
+			-down_shift 100,0,-100 \
+			-s d:LOCKER_STATE_CLOSE \
+			-seno d:SD_LOCKER_HZD \
+			-sefloor d:SD_LOCKER_FLR \
+			-load_state $i:w22a_ロッカー状態[10] \
+			-exec {
+				@プレイヤーロッカーに入ったかチェック $2 $3 $4
+				@ロッカー状態保存 10 $3 $4
+			}
+		trap lk114 d:PLAYER \
+			-and \
+			-mask いる \
+			-state 0,4 \
+			-dir 2048,512 0,512 \
+			-key d:PAD_ACTION,-1 \				//アクションボタン
+			-exec {
+				command ロッカー状態 -n ロッカー74
+				mesg プレイヤー d:PLAYER locker ロッカー74 $status 2048,512 48700,-23625
+			}
+		trap lk114 d:PLAYER \
+			-mask ？ \
+			-state 6 \
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 1 \
+					-p 49050,-1049,-20227 -t 47922,-5539,-24761 \
+					-r 499,2207,0 -f 6480 \
+					-a 200 \
+					-i 0 2 0 0 \
+					-s $3
+			}
+	}
+
+	// 各種カメラの設定
+	// ------------------------------------
+	proc Ｂ１左下小部屋カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w22a1b_camera_set'
+		#endif
+
+		trap ca111 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -19500 -21500 47500 47500
+				eval( $i:補完ＰＸ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -19500 -21500 3272 2561
+				eval( $i:補完ＰＹ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -19500 -21500 -18824 -18406
+				eval( $i:補完ＰＺ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -19500 -21500 47500 47500
+				eval( $i:補完ＴＸ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -19500 -21500 -3366 -3417
+				eval( $i:補完ＴＹ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -19500 -21500 -20315 -21685
+				eval( $i:補完ＴＺ = $i:CS_結果１ );
+
+				chara カメラ設定 サブカメラ２ \
+					-c 1 \	
+					-p $i:補完ＰＸ,$i:補完ＰＹ,$i:補完ＰＺ -t $i:補完ＴＸ,$i:補完ＴＹ,$i:補完ＴＺ \
+					-r 375,2048,0 -f 4977 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+	}
+
+// Ｂ１右下小部屋
+	// ジャンプ設定
+	// ------------------------------------
+	proc Ｂ１右下小部屋ジャンプ設定 {
+		#if d:DEBUG_PRINT
+			print 'w22a1b2_jump_set'
+		#endif
+
+		trap ky001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				@ジャンプ発動 ky001 1000 10
+			}
+	}
+
+	// 各種カメラの設定
+	// ------------------------------------
+	proc Ｂ１右下小部屋カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w22a1b2_camera_set'
+		#endif
+
+		trap ca121 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -19500 -21500 56250 56250
+				eval( $i:補完ＰＸ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -19500 -21500 3272 2561
+				eval( $i:補完ＰＹ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -19500 -21500 -18824 -18406
+				eval( $i:補完ＰＺ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -19500 -21500 56250 56250
+				eval( $i:補完ＴＸ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -19500 -21500 -3366 -3417
+				eval( $i:補完ＴＹ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -19500 -21500 -20315 -21685
+				eval( $i:補完ＴＺ = $i:CS_結果１ );
+
+				chara カメラ設定 サブカメラ２ \
+					-c 1 \	
+					-p $i:補完ＰＸ,$i:補完ＰＹ,$i:補完ＰＺ -t $i:補完ＴＸ,$i:補完ＴＹ,$i:補完ＴＺ \
+					-r 375,2048,0 -f 4977 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 匍匐カメラ
+		trap ca122 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SQUAT d:TRP_STATE_GROUND \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ３ \
+					-c 1 \	
+					-p 55543,2490,-20295 -t 55543,-3335,-21697 \
+					-r 870,2048,0 -f 5992 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3
+			}
+	}
+
+
+
+// Ｂ１中央広場
+	// 解体Ｃ４設置
+	// ------------------------------------
+	proc 解体Ｃ４設置 {
+		if ( $f:w22a_爆弾処理完了 == 0 ) {
+			if ( $w:ゲーム設定 <= d:LEVEL_HARD ) {
+				chara 解体Ｃ４ 解体Ｃ４ \
+					-position 46000,-4000,-29500 \
+					-rotate 0,1024,0 \
+					-type 0 \
+					-state 0 \
+					-proc 爆弾解体後処理
+			} else {
+				chara 解体Ｃ４ 解体Ｃ４ \
+					-position 46500,-4000,-28875 \
+					-rotate 0,2048,0 \
+					-type 0 \
+					-state 0 \
+					-proc 爆弾解体後処理
+			}
+
+			chara 爆弾検知領域 Bomb_Type_A \
+				-trap bm000
+		} else {
+			if ( $w:ゲーム設定 <= d:LEVEL_HARD ) {
+				chara 解体Ｃ４ 解体Ｃ４ \
+					-position 46000,-4000,-29500 \
+					-rotate 0,1024,0 \
+					-type 0 \
+					-state 1
+			} else {
+				chara 解体Ｃ４ 解体Ｃ４ \
+					-position 46500,-4000,-28875 \
+					-rotate 0,2048,0 \
+					-type 0 \
+					-state 1
+			}
+		}
+	}
+
+	proc Ｂ１中央広場透明壁設置 {
+		#if d:DEBUG_PRINT
+			print 'w22a1d_tr_wall_set'
+		#endif
+
+		@南北５０ｃｍ幅透明壁設置 Ｂ１中央広場左壁 51000 -5000 -35500 4000
+		@南北５０ｃｍ幅透明壁設置 Ｂ１中央広場右壁 53000 -5000 -35500 4000
+
+		@東西５０ｃｍ幅透明壁設置 Ｂ１中央広場上壁 60000 -5000 -30000 4000
+		@東西５０ｃｍ幅透明壁設置 Ｂ１中央広場下壁 60000 -5000 -28000 4000
+
+
+		trap wl131 d:PLAYER \
+			-mask ？ \
+			-state 4 \
+			-exec {
+				if ($3 == 入る) {
+					command パッド操作 -mask d:PAD_B
+					mesg 透明壁 Ｂ１中央広場左壁 off
+					mesg 透明壁 Ｂ１中央広場右壁 off
+				} else {
+					command パッド操作 -cancel 0
+					mesg 透明壁 Ｂ１中央広場左壁 on
+					mesg 透明壁 Ｂ１中央広場右壁 on
+				}
+			}
+
+		trap wl131 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_BEHINDCAMERA_ENABLE \	
+			-exec {
+				// 張り付いたときのカメラ
+				chara カメラ設定 モーションカメラ \
+					-c 0 \	
+					-b d:CAM_MIN,4172,-32000 d:CAM_MAX,4172,d:CAM_MAX \
+					-l d:CAM_MIN,-3000,-33393 d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 910,2048,0 \
+					-f 7980 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		trap wl132 d:PLAYER \
+			-mask ？ \
+			-state 4 \	
+			-exec { 
+				if ($3 == 入る) {
+					command パッド操作 -mask d:PAD_B
+					mesg 透明壁 Ｂ１中央広場上壁 off
+					mesg 透明壁 Ｂ１中央広場下壁 off
+				} else {
+					command パッド操作 -cancel 0
+					mesg 透明壁 Ｂ１中央広場上壁 on
+					mesg 透明壁 Ｂ１中央広場下壁 on
+				}
+			}
+
+		trap wl132 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_BEHINDCAMERA_ENABLE \	
+			-exec {
+				// 張り付いたときのカメラ
+				chara カメラ設定 モーションカメラ \
+					-c 0 \	
+					-b d:CAM_MIN,2764,d:CAM_MIN 58580,2764,d:CAM_MAX \
+					-l d:CAM_MIN,-3000,d:CAM_MIN 58580,d:CAM_MAX,d:CAM_MAX \
+					-r 870,2048,0 \
+					-f 6357 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+	}
+
+	// 強制モーション用トラップ
+	// ------------------------------------
+	// ジャンプ設定
+	// ------------------------------------
+	proc Ｂ１中央広場ジャンプ設定 {
+		#if d:DEBUG_PRINT
+			print 'w22a1c_jump_set'
+		#endif
+
+		trap ky001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				@ジャンプ発動 ky001 1000 10
+			}
+	}
+	// 各種カメラの設定
+	// ------------------------------------
+	proc Ｂ１中央広場カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w22a1c_camera_set'
+		#endif
+
+		// ロードドア前
+		trap ca131 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ２ \
+					-c 0 \	
+					-b 44756,1452,-25034 d:CAM_MAX,1452,-25034 \
+					-l 44756,-3000,-25849 d:CAM_MAX,d:CAM_MAX,-25849 \
+					-r 920,2048,0 \
+					-f 5000 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-slide 0 5 500 500 30 0 \
+					-s $3
+			}
+
+		// 中央広場
+		trap ca132 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -26000 -29000 48769 49777
+				eval( $i:補完ＢＸ = $i:CS_結果１ );
+				eval( $i:補完ＬＸ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -26000 -29000 57643 57000
+				eval( $i:補完ＢＸ２ = $i:CS_結果１ );
+				eval( $i:補完ＬＸ２ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -26000 -29000 880 700
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \	
+					-b $i:補完ＢＸ,-700,-28769 $i:補完ＢＸ２,4332,-25207 \
+					-l $i:補完ＬＸ,-3000,-32822 $i:補完ＬＸ２,-2500,-26884 \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 8500 \
+					-a 200 \
+					-i 2 1 0 0 \
+					-s $3
+			}
+
+		// 南通路
+		trap ca133 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -21000 -24000 52000 52000
+				eval( $i:補完ＰＸ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -21000 -24000 1577 -143
+				eval( $i:補完ＰＹ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -21000 -24000 -18665 -18114
+				eval( $i:補完ＰＺ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -21000 -24000 52000 52000
+				eval( $i:補完ＴＸ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -21000 -24000 -3247 -3261
+				eval( $i:補完ＴＹ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -21000 -24000 -19889 -22923
+				eval( $i:補完ＴＺ = $i:CS_結果１ );
+
+				chara カメラ設定 サブカメラ２ \
+					-c 1 \	
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-18114 \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-19889 \
+					-p $i:補完ＰＸ,$i:補完ＰＹ,$i:補完ＰＺ -t $i:補完ＴＸ,$i:補完ＴＹ,$i:補完ＴＺ \
+					-r 375,2048,0 -f 4977 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-z (d:CAMERA_NO_CUSHION | d:CAMERA_LIMITBOUND_EXIST) \
+					-s $3
+			}
+
+		// 階段下部
+		trap ca134 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -34000 -36500 59611 60083
+				eval( $i:補完ＰＸ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -34000 -36500 -2649 -2921
+				eval( $i:補完ＰＹ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -34000 -36500 -29558 -30040
+				eval( $i:補完ＰＺ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -34000 -36500 58753 59209
+				eval( $i:補完ＴＸ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -34000 -36500 -3653 -2328
+				eval( $i:補完ＴＹ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -34000 -36500 -35802 -36398
+				eval( $i:補完ＴＺ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -34000 -36500 200 250
+				eval( $w:補完画角 = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 1 \	
+					-p $i:補完ＰＸ,$i:補完ＰＹ,$i:補完ＰＺ -t $i:補完ＴＸ,$i:補完ＴＹ,$i:補完ＴＺ \
+					-r -41,2154,0 -f 6479 \
+					-a $w:補完画角 \
+					-i 0 -1 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 階段上部
+		trap ca063 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -38500 -40250 60290 60291
+				eval( $i:補完ＰＸ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -38500 -40250 2747 2747
+				eval( $i:補完ＰＹ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -38500 -40250 -33195 -33196
+				eval( $i:補完ＰＺ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -38500 -40250 59554 59465
+				eval( $i:補完ＴＸ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -38500 -40250 -1217 238
+				eval( $i:補完ＴＹ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -38500 -40250 -39163 -39896
+				eval( $i:補完ＴＺ = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 1 \	
+					-p $i:補完ＰＸ,$i:補完ＰＹ,$i:補完ＰＺ -t $i:補完ＴＸ,$i:補完ＴＹ,$i:補完ＴＺ \
+					-r 224,2128,0 -f 6486 \
+					-a 220 \
+					-i 0 0 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 左側荷物内
+		trap ca135 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ２ \
+					-c 1 \	
+					-p 48881,3065,-27480 -t 48881,-868,-29123 \
+					-r 766,2048,0 -f 4262 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-z (d:CAMERA_NO_CUSHION | d:CAMERA_BOUNDCHANGE_QUICK) \
+					-s $3
+			}
+
+		// 匍匐カメラ
+		trap ca136 d:PLAYER \
+			-mask ＊ \
+			-state d:TRP_STATE_SQUAT d:TRP_STATE_GROUND \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -26000 -29000 48769 49777
+				eval( $i:補完ＢＸ = $i:CS_結果１ );
+				eval( $i:補完ＬＸ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -26000 -29000 57643 57000
+				eval( $i:補完ＢＸ２ = $i:CS_結果１ );
+				eval( $i:補完ＬＸ２ = $i:CS_結果１ );
+
+				chara カメラ設定 サブカメラ２ \
+					-c 0 \	
+					-b $i:補完ＢＸ,3612,d:CAM_MIN $i:補完ＢＸ２,4332,-25207 \
+					-l $i:補完ＬＸ,-3000,d:CAM_MIN $i:補完ＬＸ２,d:CAM_MAX,-26884 \
+					-r 910,2048,0 \
+					-f 8500 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3
+			}
+
+
+		// エルード落下中のカメラ
+		trap ca077 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_ELUDE \
+			-camera \
+			-exec {
+				chara カメラ設定 モーションカメラ２ \
+					-c 0 \	
+					-b d:CAM_MIN,-1250,d:CAM_MIN d:CAM_MAX,-1000,-24500 \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,-2500,-25500 \
+					-r 350,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 0 3 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+	}
+
+
+
+
+
+
+
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下仮キャラ用proc
+// -----------------------------------------------------------------------------------
+// 仮キャラ
+// ------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------
+proc デバッグキャラセット {
+	#if d:DEBUG_PRINT
+		print 'debug_chara_set'
+	#endif
+
+	#if d:CHARA_CAMERA
+		chara キャラカメラ 敵兵カメラ \
+			-c d:TARGET_CHARA \
+			-s -920,610,200 \
+			-r -200,1024,0 
+	#endif
+
+	#if d:SCREENSHOT
+		chara スクリーンショット shot
+	#endif
+
+	#if d:USB_KEY
+		chara USBキーボード実行 test \
+			-e d:KBD_ESC {	
+				mesg プレイヤー d:PLAYER position -5500, -13000, -500
+			} \
+	#endif
+/*
+	command 配列セット $w:武器弾数Ｒ[0] {
+		1,				/* 素手 */
+		30,				/* Ｍ９ */
+		-1,				/* ＵＳＰ */
+		30,				/* ソコム */
+		-1,				/* ＰＳＧ－１ */
+		-1,				/* ＲＧＢ６ */
+		-1,				/* ニキータ */
+		-1,				/* スティンガー */
+		-1,				/* クレイモア */
+		-1,				/* Ｃ４ */
+		-1,				/* チャフ */
+		-1,				/* スタン */
+		-1,				/* マイク */
+		-1,				/* ブレード */
+		-1,				/* 凍結スプレー */
+		-1,				/* ＡＫ */
+		-1,				/* 空マガジン */
+		-1,				/* グレネード */
+		-1,				/* Ｍ４ */
+		-1,				/* ＰＳＧ１－Ｔ */
+		-1,				/* 特殊マイク */
+		-1,				/* 雑誌 */
+	}
+*/
+}

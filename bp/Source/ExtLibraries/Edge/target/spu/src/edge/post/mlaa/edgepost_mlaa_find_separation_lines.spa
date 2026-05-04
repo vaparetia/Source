@@ -1,0 +1,219 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2010 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+/*
+ * Separation line information comes in several ways:
+ * -For every pixel, we store it's position in the separation line
+ * -For every separation line, we store its start offset and length.
+ *
+ * In addition we copy the original (marked) image data into the blendBuffer.
+ * This has the advantage of being able to fetch new data while blending is performed
+ */
+ 
+ // JDW: Duplicated macros for memory compression.  If you change one of these, you have to update the duplicates in
+ // edgepost_mlaa_memory_layout.h and any derived values.
+.set EDGE_MLAA_SUPPORT_1080, 0
+.if EDGE_MLAA_SUPPORT_1080
+	.set LINE_WIDTH,               1920
+	.set EDGE_MLAA_SEPLINEQWORDS,  480   // = (LINE_WIDTH/4)
+	.set LINE_BUF_LIMIT,           7664  // = (EDGE_MLAA_SEPLINEQWORDS-1)*16
+.endif //.if EDGE_MLAA_SUPPORT_1080
+
+.macro PROCESS_PIXEL4(lineBuffer, lineLen, m, lineStart, index, lineGroup0, lineGroup1, lineGroup2, lineGroup3)
+	.localreg		lineLenPlusOne
+	
+	ai				lineLenPlusOne, lineLen, 1								// prepare len+1
+	selb			lineLen, minusOne, lineLenPlusOne, m					// dependending on mask we set len to be len+1 or -1	
+
+	.localreg		nextLineMask
+	ceqi			nextLineMask, lineLen, 0								// if lineLen=0 it's a linestart	
+	mpya			lineBuffer, minusSixteen, nextLineMask, lineBuffer		// increment lineBuffer by 0x10 if nextLineMask.
+	
+.if EDGE_MLAA_SUPPORT_1080
+	// JDW: Clamp lineBuf to the EDGE_MLAA_SEPLINEQWORDS limit.
+	.localreg		lineBufClampMask
+	cgt				lineBufClampMask, lineBuffer, lineBufLimit             // = (lineBuffer.w[i] > lineBufLimit.w[i])
+	selb			lineBuffer, lineBuffer, lineBufLimit, lineBufClampMask // = (lineBuffer.w[i] > lineBufLimit.w[i]) ? lineBufLimit.w[i] : lineBuffer.w[i]
+.endif //.if EDGE_MLAA_SUPPORT_1080
+	
+	selb			lineStart, lineStart, index,  nextLineMask				// if this is the first valid pixel of a line, store the index	
+
+	.localreg		offset_and_length
+	.localreg		shifted_offset
+	shli			shifted_offset, lineStart, 16
+	selb			offset_and_length, shifted_offset, lineLen, kSelb01010101
+	
+		
+	// This one is tricky:
+	// -lineBuffer points behind the current target. 
+	// -stq* aligns a store to the next smaller qword boundary
+	// Thus, when m is true, lineBuffer+m is truncated
+	// to the qword boundary before lineBuffer. Basically this means that
+	// for an invalid pixel, the write goes behind the actual target and
+	// thus out of the way.
+	
+	.localreg		lineBuffer0, lineBuffer1, lineBuffer2, lineBuffer3
+	a				lineBuffer0, lineBuffer, m
+	shlqbyi			lineBuffer1, lineBuffer0, 4
+	shlqbyi			lineBuffer2, lineBuffer0, 8
+	shlqbyi			lineBuffer3, lineBuffer0, 12
+	
+	stqd			[lineGroup0]offset_and_length, 0x00(lineBuffer0)
+	stqd			[lineGroup1]offset_and_length, 0x00(lineBuffer1)
+	stqd			[lineGroup2]offset_and_length, 0x00(lineBuffer2)
+	stqd			[lineGroup3]offset_and_length, 0x00(lineBuffer3)	
+.endmacro
+
+
+.macro TRANSPOSE_BLOCK(dst0, dst1, dst2, dst3, src0, src1, src2, src3)
+	//if anyone can come up with one that has less shufs, I'd be interested.
+	//for naming: src0 = {a,b,c,d), src1 = {e,f,g,h}, etc.
+	
+	.localreg	acik, geom, bdjl, hfpn
+	
+	shufb		acik, src0, src2, kShufACac
+	shufb		geom, src1, src3, kShufCAca
+	shufb		bdjl, src0, src2, kShufBDbd
+	shufb		hfpn, src1, src3, kShufDBdb
+	selb		dst0, acik, geom, kSelb0101
+	selb		dst1, bdjl, hfpn, kSelb0101
+	shufb		dst2, acik, geom, kShufBaDc
+	shufb		dst3, bdjl, hfpn, kShufBaDc
+.endmacro
+
+
+.cfunc qword edgePostMlaaFindSeparationLines
+	(	qword line0, qword line1, qword line2, qword line3,
+		qword lineBuf0, qword lineBuf1, qword lineBuf2, qword lineBuf3,
+		qword copy0, qword copy1, qword copy2, qword copy3,
+		qword length, qword mask)
+
+	// writes to lineBuf need to be ordered	
+	.memgroup		lineGroup0, lineGroup1, lineGroup2, lineGroup3
+	
+	/// shuffle masks
+	.reg			shuf_AAAA
+	il128			shuf_AAAA, "AAAA"
+	
+	
+	// transpose shuffles.
+	.reg		kShufACac, kShufBDbd, kShufCAca, kShufDBdb, kShufBaDc
+	il128		kShufACac, "ACac"
+	il128		kShufBDbd, "BDbd"
+	il128		kShufCAca, "CAca"
+	il128		kShufDBdb, "DBdb"
+	il128		kShufBaDc, "BaDc"
+	.reg		kSelb0101
+	il128		kSelb0101, 0x00000000_FFFFFFFF_00000000_FFFFFFFF
+			
+	.reg			kSelb01010101
+	il32			kSelb01010101, 0x0000FFFF
+	
+	
+	// consts
+	.reg			minusOne, minusSixteen
+	il				minusOne, -1
+	il				minusSixteen, -16
+		
+	// splat the mask
+	shufb			mask, mask, mask, shuf_AAAA
+	
+	// state
+	
+	.reg			lineLen
+	il				lineLen, -1
+	
+	.reg			lineBufA, lineBufB, lineBuf, shuf_Aa00, shuf_ABab
+	il128			shuf_Aa00, "Aa00"
+	il128			shuf_ABab, "ABab"
+	shufb			lineBufA, lineBuf0, lineBuf1, shuf_Aa00
+	shufb			lineBufB, lineBuf2, lineBuf3, shuf_Aa00
+	shufb			lineBuf, lineBufA, lineBufB, shuf_ABab
+
+.if EDGE_MLAA_SUPPORT_1080
+	// JDW: Get the maximum lineBuf value to clamp to the EDGE_MLAA_SEPLINEQWORDS limit.
+	.reg			lineBufLimit
+	il32			lineBufLimit, LINE_BUF_LIMIT
+	a				lineBufLimit, lineBufLimit, lineBuf
+.endif //.if EDGE_MLAA_SUPPORT_1080
+
+	// loop over pixels (four a time)
+	.reg			index
+	il32			index, -0x10
+		
+	.reg			lineStart
+	il				lineStart, 0
+			
+	
+loop:
+	// update pointer and counter
+	ai				length,	length, -4
+	ai				index, index, 0x10
+	
+	// load pixels
+	.reg			p0, p1, p2, p3
+	lqx				p0, line0, index
+	lqx				p1, line1, index
+	lqx				p2, line2, index
+	lqx				p3, line3, index
+
+	// write copy
+	stqx			p0, copy0, index
+	stqx			p1, copy1, index
+	stqx			p2, copy2, index
+	stqx			p3, copy3, index
+
+	TRANSPOSE_BLOCK(p0,p1,p2,p3,p0,p1,p2,p3)
+
+	// test flag
+	.reg			m0, m1, m2, m3
+	and				m0, p0, mask
+	and				m1, p1, mask
+	and				m2, p2, mask
+	and				m3, p3, mask
+	ceq				m0, m0, mask
+	ceq				m1, m1, mask
+	ceq				m2, m2, mask
+	ceq				m3, m3, mask
+
+	
+	// process pixels
+	
+	.reg			index1, index2, index3
+
+	ai				index1, index, 4
+	ai				index2, index, 8
+	ai				index3, index, 12
+	
+	.reg			paramLine0, paramLine1, paramLine2, paramLine3
+	
+	PROCESS_PIXEL4(lineBuf, lineLen, m0, lineStart, index, lineGroup0, lineGroup1, lineGroup2, lineGroup3)
+	selb			paramLine0, p0, lineLen, kSelb01010101
+	
+	PROCESS_PIXEL4(lineBuf, lineLen, m1, lineStart, index1, lineGroup0, lineGroup1, lineGroup2, lineGroup3)
+	selb			paramLine1, p1, lineLen, kSelb01010101
+	
+	PROCESS_PIXEL4(lineBuf, lineLen, m2, lineStart, index2, lineGroup0, lineGroup1, lineGroup2, lineGroup3)
+	selb			paramLine2, p2, lineLen, kSelb01010101
+	
+	PROCESS_PIXEL4(lineBuf, lineLen, m3, lineStart, index3, lineGroup0, lineGroup1, lineGroup2, lineGroup3)
+	selb			paramLine3, p3, lineLen, kSelb01010101
+	
+
+	.reg			paramLine0_t, paramLine1_t, paramLine2_t, paramLine3_t	
+	TRANSPOSE_BLOCK(paramLine0_t, paramLine1_t, paramLine2_t, paramLine3_t, paramLine0, paramLine1, paramLine2, paramLine3)
+	
+	stqx			paramLine0_t, line0, index
+	stqx			paramLine1_t, line1, index
+	stqx			paramLine2_t, line2, index
+	stqx			paramLine3_t, line3, index
+	
+	// loop
+	brnz			length, loop : $mintrip<4>
+	
+	mov				@result,lineBuf
+	
+.endfunc

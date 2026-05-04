@@ -1,0 +1,45 @@
+//
+// test.gcl
+// テストのシナリオ
+//
+// 2000/04/17 M.Sonoyama
+// $Id: test.gcl,v 1.12 2000/04/17 03:58:08 usr02011 Exp $
+
+#include	"stdch.h"
+#include	"sound.h"
+
+chara マップ プレビュー -k stage -h stage,0 -l stage
+
+command マップ設定 プレビュー -set {
+	@常駐キャラ設定
+	chara サウンドマネージャー ＳＤマネ \
+		-b 0x01000011 -e 0x0200007c -w 0xFE00007c,0xFE000080 -a 0xFE00007F
+	chara カメラ ステージカメラ	-c 0 -l 3 -p 0 
+	chara カメラ設定 ステージカメラ \
+		-c 0 \	
+		-b -32000,-32000,-32000 32000,32000,32000 \
+		-l -32000,-32000,-32000 32000,32000,32000 \	
+		-r 512,2048,0 \
+		-f 8000 \
+		-a 200 \
+		-i 1 -1 0 0 \
+		-s 1
+	chara プレイヤー スネーク \
+		-m sna_def \
+		-a snake \
+		-p 0,2000,0 \
+		-d 0,2048,0 \
+		-l 4000 \
+		-f 0x00000000 \
+		-s 0
+	@エフェクト設定
+} 
+
+command マップ表示 -show プレビュー
+
+proc エフェクト設定 {
+	chara 課題雛形 ffff
+	chara delay ディレイ \
+		-time 60 \
+		-proc エフェクト設定
+}

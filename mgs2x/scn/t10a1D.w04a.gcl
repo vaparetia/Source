@@ -1,0 +1,738 @@
+/*
+	t10a1D.w04a.gcl
+	    第１船倉デモ用
+
+	1999/02/02 S.Nojiri
+	$Id: t10a1D.w04a.gcl,v 1.7 2001/09/04 12:27:56 usr01717 Exp $
+
+
+*/
+
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_TANKER	1		// 共通プロック切り分け用
+#define		DEMO_STAGE		1		// デモステージかどうかで起動するキャラを切り分ける
+
+// 調整用Define
+// ------------------------------------
+#define	PLAYER		スネーク
+#define	RADAR		0
+#define SCREENSHOT	0
+#define KEYBOARD	0
+#define SOUND_FG	1
+#define SEALS_1_FG	1
+#define MULTI_MODEL	0		/* E3ビデオ用特別仕様(2000.4.8) */
+#define PITHOLE		1
+
+#define LT2_NAME	w04a
+#define LD_FADEOUT	1
+#define PAN_CAMERA	1
+#define STAGE_END	1
+#define ピット自動脱出	1
+#define ピットで自動ホフク	1
+#define debug_timer	0
+#define movie		1
+#define CTDOWN_TIMER		1		//w04.hでのタイマー選択
+#define STAGE_W04A	1							//通信機・デジカメ用
+#define IN_RAIL_HZD	1				//エルード位置補正
+
+#define 開発中です	0	// 開発中に暫定的に使用する処理群
+#define 空中ワイヤ	1
+
+// includes
+// ------------------------------------
+#include "5sec_bfr_demo.h"
+#include "demo_vardef.h"
+#include "demo_stdch.h"
+#include "demo_stdch2.h"
+#include "story.h"
+#include "enevoice.h"
+#include "sload.h"
+#include "story.h"
+#include "d04a_cdc.ch"
+
+#include "w04.h"
+
+#define CINEMA_SCREEN	1
+
+#define SCREEN_SHOT_DEMO 0
+
+#if d:PLANT_DEMO_ALL_SKIP
+	#define		DEMO_SKIP_ENABLE 1
+#else
+	#define		DEMO_SKIP_ENABLE 0
+#endif
+
+
+//###################################################################################
+//						ストーリーフラグ & 強制無線 & ポリデモ再生
+//###################################################################################
+// マップ設定
+// ------------------------------------
+chara マップ 船倉１ -k w04a1 0 0 0 -h w04a 0 -l w04a
+chara マップ 通路１ -k w04a2 0 0 0 -h w04a 1 -l w04a
+chara マップ 長廊下小部屋 -k w04a1 0 0 0 -h w04a 2 -l w04a
+
+command マップ設定 船倉１ 通路１ 長廊下小部屋 -set {
+
+#if d:SCREEN_SHOT_DEMO
+	chara スクリーンショット screen
+#endif
+
+	chara サウンドマネージャー ＳＤマネ -pak -1
+
+// デモ環境かどうか。
+#if d:MGS2_DEMO
+
+// 不要プログラムの起動阻害
+	eval($s:d_num = DEMO_ENV)
+
+// chara船倉兵、デモ時対応
+	eval($w:船倉兵モード = 1)
+
+chara デモアクトデバッグ demodebug  -i t:t10a1D -d 't10a1D' -l   \
+	-p  dummy_proc
+
+#else
+
+if($w:t_story < d:ST_T09b1R船倉無線機デモ１開始) {
+
+// chara船倉兵、デモ時対応。無線も１にする必要有り。
+	eval($w:船倉兵モード = 1)
+
+	#if d:開発中です
+
+		chara デバッグポーズ debgupause 'ST_T09b_CODEC_DEMO' -p 開発中ST_T09b終了
+
+	#else
+
+		@rt_強制ＣＡＬＬ_T_09b1R船倉無線機デモ１
+
+	#endif
+
+} else if($w:t_story < d:ST_T10a1D船倉兵士を見るポリゴンデモ開始) {
+
+print 'テスト_テスト_テスト_テスト_テスト_テスト_テスト_テスト_テスト_000'
+
+	// デモ特有の変数代入
+	eval($s:d_num = t10a1D)
+
+// chara船倉兵、デモ時対応
+	eval($w:船倉兵モード = 1)
+
+	chara デモキャンセルチェック デモキャンセル \
+		-p demo_cancel
+
+	@デモモデル差し替え処理
+	proc デモ再生_t10a1D {
+		#if d:デモ前五秒間待ち
+chara デモアクトデバッグ demodebug  -i t:t10a1D -d 't10a1D' -l   \
+				-next t10a1D終了 \
+				-p dummy_proc
+		#else
+			chara demo デモ再生 \
+				-i t:t10a1D \
+				-p dummy_proc \
+				-next t10a1D終了
+		#endif
+	}
+
+	#if d:デモ前五秒間待ち
+		eval($w:t_story = d:ST_T10a1D船倉兵士を見るポリゴンデモ開始-1)
+		@global_五秒待ちセット
+		if($f:global_デバッグポーズ通過){
+			@デモ再生_t10a1D
+		}
+	#else
+		@デモ再生_t10a1D
+	#endif
+
+} else if($w:t_story < d:ST_T10b1R船倉無線機デモ２開始) {
+
+// chara船倉兵、デモ時対応。無線も１にする必要有り。
+	eval($w:船倉兵モード = 1)
+
+	#if d:開発中です
+
+		chara デバッグポーズ debgupause 'ST_T10b1R_CODEC_DEMO' -p 開発中ST_T10b1R終了
+
+	#else
+
+		@rt_強制ＣＡＬＬ_T_10b1R船倉無線機デモ２
+
+	#endif
+
+}
+
+#endif
+
+// デモ仕様のセット
+if($s:d_num != not_demo){
+	@常駐キャラ設定						// stdch.hで定義
+	@シネマスクリーンセット
+	@デモ中のムービー再生セット
+}
+
+} // < 「command マップ設定 船倉１ 通路１」 の閉じカッコ
+
+
+
+
+//###################################################################################
+//									デモのみ仕様各種
+//###################################################################################
+//---------------------
+// 開発中のみ仕様
+//---------------------
+proc 開発中ST_T09b終了 {
+	eval($w:t_story = d:ST_T09b1R船倉無線機デモ１終了)
+	restart -s
+}
+
+proc 開発中ST_T10b1R終了 {
+	eval($w:t_story = d:ST_T10b1R船倉無線機デモ２終了)
+
+	// デモが終わったので、0に戻す（レーダー表示のため）
+	eval($f:global_polygon_demo = 0)
+	restart -s
+}
+
+
+//---------------------
+// 製品版用仕様
+//---------------------
+// ダミープロック
+proc dummy_proc {}
+
+// デモキャンセル
+proc demo_cancel {
+	command StreamStopAll
+}
+
+// デモ終了時プロック
+proc t10a1D終了 {
+print 't10a1D終了_000'
+	mesg デモキャンセルチェック デモキャンセル kill
+	eval($w:t_story = d:ST_T10a1D船倉兵士を見るポリゴンデモ終了)
+	print '$w:t_story = d:ST_T10a1D船倉兵士を見るポリゴンデモ終了'
+
+// chara船倉兵、デモ時対応終了
+// 無線の方で１にしないと落ちるので、０に戻すのは
+// rt_強制ＣＡＬＬ_10b1R船倉無線機デモ２終了　の中で実施。
+//	eval($w:船倉兵モード = 0)
+
+print 't10a1D終了_001'
+	chara delay ディレイ \
+		-time 1 \
+		-exec{
+print 't10a1D終了_002'
+			restart
+		}
+}
+
+// シネマスクリーン
+proc シネマスクリーンセット {
+	#if d:CINEMA_SCREEN
+		chara シネマスクリーン シネマ \
+			-top d:CINEMA_BELT_UPPER \
+			-bottom d:CINEMA_BELT_LOWER \
+			-ftime 60	//デフォルト値（ゼロは駄目）
+		mesg シネマスクリーン シネマ フェードアウト 1
+	#endif
+}
+
+//デモのとき
+if($s:d_num != not_demo) {
+
+	// 船倉巡回兵のパラメータ
+	//<船倉兵:a0> vrs->3
+	eval($i:w04a_sola0_x = -7000)
+	eval($i:w04a_sola0_y = -17000)
+	eval($i:w04a_sola0_z = -17500)
+	//<船倉兵:a1> vrs->3
+	eval($i:w04a_sola1_x = -7000)
+	eval($i:w04a_sola1_y = -17000)
+	eval($i:w04a_sola1_z = -17500)
+	//<船倉兵:a2> vrs->5
+	eval($i:w04a_sola2_x = -8000)
+	eval($i:w04a_sola2_y = -17000)
+	eval($i:w04a_sola2_z = -6000)
+	//<船倉兵:a3> vrs->1
+	eval($i:w04a_sola3_x = -7000)
+	eval($i:w04a_sola3_y = -17000)
+	eval($i:w04a_sola3_z = -21250)
+	//<船倉兵:a4> vrs->7
+	eval($i:w04a_sola4_x = 11000)
+	eval($i:w04a_sola4_y = -9000)
+	eval($i:w04a_sola4_z = -18750)
+
+	command マップ設定 船倉１ 通路１ 長廊下小部屋 -set {
+		/* サウンドマネージャー＞敵兵コマンダー＞ＢＧＭマネージャー
+		   の順番は、遵守すること */
+	print '順番順番_000'
+		@エフェクト設定
+	print '順番順番_001'
+		@ぼかしセット
+	print '順番順番_002'
+		@ドア設置／船倉１−通路１
+	print '順番順番_003'
+		@船倉１箱設置
+	print '順番順番_004'
+	}
+
+	command マップ設定 船倉１ -set {
+	print '順番順番_005'
+		@プロジェクタライト設定
+	print '順番順番_006'
+#if 1
+		@船倉１水密ドア設置
+#endif
+	print '順番順番_007'
+//		@長廊下壊れライト設定
+	print '順番順番_008'
+
+		#if d:SEALS_1_FG
+	print '順番順番_009'
+			@デモ用船倉１海兵隊
+	print '順番順番_010'
+		#endif
+	}
+
+
+	//※※通信機のincludeは移動させないこと！！※※
+	#include "w04a_cdc.ch"
+
+
+	//初期マップの表示
+	command マップ表示 	-add 船倉１
+
+}
+
+//###################################################################################
+//									デモ用海兵隊設定
+//###################################################################################
+	proc デモ用船倉１海兵隊セット {
+		chara コマンダー 敵兵セット -w 	デモ用船倉１海兵隊 \
+			-v [ene_tank_voice:01]
+
+	}
+
+	// 設置オブジェクト
+	// ------------------------------------
+	proc デモ用船倉１海兵隊 {
+
+		command カメラチェックキャラワーク確保
+
+		if($w:ゲーム設定 <= d:LEVEL_NORMAL){
+
+			chara 船倉兵 SEALS_1 -a { \
+				#include "w04a_seals_matrix.h"		//船倉兵の配列（共通）
+				船倉兵:a0,{$i:w04a_sola0_x,$i:w04a_sola0_y,$i:w04a_sola0_z},{0,2048,0 },11,	101, 0, 0x0014 \
+				船倉兵:a4,{$i:w04a_sola4_x,$i:w04a_sola4_y,$i:w04a_sola4_z},{0,2048,0 },11,	101, 0, 0x0014 \
+
+				// デモ時はパンツ兵でなくて普通兵
+				船倉兵:14,{( 2250+10*2),-17000,(-14500+08*2)},{0,2048,0 },	10,	100, 2, 0x0020 \
+
+			} \
+			-t 100000,100000 \
+			-s 4000,-10000,-22000 \
+			-p 140,-15600,-1300 -104,1894,0 256 \
+			-m $w:船倉兵モード
+
+		}else if($w:ゲーム設定 == d:LEVEL_HARD){
+
+			chara 船倉兵 SEALS_1 -a { \
+				#include "w04a_seals_matrix.h"		//船倉兵の配列（共通）
+				船倉兵:a1,{$i:w04a_sola1_x,$i:w04a_sola1_y,$i:w04a_sola1_z},{0,2048,0 },11,	101, 0, 0x0014 \
+				船倉兵:a2,{$i:w04a_sola2_x,$i:w04a_sola2_y,$i:w04a_sola2_z},{0,2048,0 },11,	101, 0, 0x0014 \
+				船倉兵:a4,{$i:w04a_sola4_x,$i:w04a_sola4_y,$i:w04a_sola4_z},{0,2048,0 },11,	101, 0, 0x0014 \
+
+				// デモ時はパンツ兵でなくて普通兵
+				船倉兵:14,{( 2250+10*2),-17000,(-14500+08*2)},{0,2048,0 },	10,	100, 2, 0x0020 \
+
+			} \
+			-t 100000,100000 \
+			-s 4000,-10000,-22000 \
+			-p 140,-15600,-1300 -104,1894,0 256 \
+			-m $w:船倉兵モード
+
+
+		}else{
+
+			chara 船倉兵 SEALS_1 -a { \
+				#include "w04a_seals_matrix.h"		//船倉兵の配列（共通）
+				船倉兵:a3,{$i:w04a_sola3_x,$i:w04a_sola3_y,$i:w04a_sola3_z},{0,2048,0 },11,	101, 0, 0x0014 \
+				船倉兵:a4,{$i:w04a_sola4_x,$i:w04a_sola4_y,$i:w04a_sola4_z},{0,2048,0 },11,	101, 0, 0x0014 \
+
+				// デモ時はパンツ兵でなくて普通兵
+				船倉兵:14,{( 2250+10*2),-17000,(-14500+08*2)},{0,2048,0 },	10,	100, 2, 0x0020 \
+
+			} \
+			-t 100000,100000 \
+			-s 4000,-10000,-22000 \
+			-p 140,-15600,-1300 -104,1894,0 256 \
+			-m $w:船倉兵モード
+
+		}
+
+	}
+
+// プロジェクタへのムービー再生用に必要
+proc デモ中のムービー再生セット {
+	chara スポットライト背景イメージ指定 ムービー
+}
+
+	proc エフェクト設定 {
+		print 'エフェクト設定'
+
+		#if d:SCREENSHOT
+			chara スクリーンショット scrshot
+		#endif
+		#if d:KEYBOARD
+			chara USBキーボード実行 keyboard \
+				-e d:KBD_ESC {	mesg 臨時顔アニメキャラ アニメキャラ モーション再生 normal 30
+						mesg 臨時顔アニメキャラ アニメキャラ 視線変更 -1 } \
+				-e d:KBD_F1  {	mesg 臨時顔アニメキャラ アニメキャラ モーション再生 test_01 30 } \
+				-e d:KBD_F2  {	mesg 臨時顔アニメキャラ アニメキャラ モーション再生 test_02 30 } \
+				-e d:KBD_F3  {	mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_teeth 30 } \
+				-e d:KBD_F4  {	mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_scream 0 } \
+				-e d:KBD_F5  {	mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_relax 30 } \
+				-e d:KBD_F6  {	mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_surprise 30 } \
+				-e d:KBD_F7  {	mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_sigh 30 } \
+				-e d:KBD_F10 {	mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_teeth 30
+							  chara delay カメラディレイ -time 20 \
+								-exec { mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_surprise 20
+								}
+							  chara delay カメラディレイ -time 40 \
+								-exec { mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_teeth 20
+								}
+							} \
+				-e d:KBD_F11 {	mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_teeth 20
+							  chara delay カメラディレイ -time 30 \
+								-exec { mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_relax 20
+								}
+							  chara delay カメラディレイ -time 60 \
+								-exec { mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_surprise 20
+								}
+							  chara delay カメラディレイ -time 90 \
+								-exec {	mesg 臨時顔アニメキャラ アニメキャラ モーション再生  normal 20
+								}
+							} \
+				-e d:KBD_F12 {	mesg 臨時顔アニメキャラ アニメキャラ 視線変更 2 } \
+				-e d:KBD_F8  {	mesg プレイヤー d:PLAYER shadow 1 } \
+				-e d:KBD_F9  {	mesg プレイヤー d:PLAYER shadow 0 } \
+				-e d:KPD_0   { 	mesg 遠景ぼかし far_deforcus off
+						mesg 近景ぼかし near_deforcus  off } \
+				-e d:KPD_1   {	mesg 遠景ぼかし far_deforcus  off } \
+				-e d:KPD_2   {	mesg 遠景ぼかし far_deforcus  on  } \
+				-e d:KPD_3   {	mesg 遠景ぼかし far_deforcus  set 300 0 6000 9000 } \
+				-e d:KPD_4   {	mesg 近景ぼかし near_deforcus off } \
+				-e d:KPD_5   {	mesg 近景ぼかし near_deforcus on  } \
+				-e d:KPD_6   {	mesg 近景ぼかし near_deforcus set 300 0 0 5000 } \
+				-e d:KBD_Q   {	mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_sneeze 30
+					 	mesg プレイヤー d:PLAYER motion \
+							d:モーションリスト:e3_sneeze -1 -1 -1 d:FA_NO_CHECK_SEG
+					  	chara delay ディレイ -time 18 -exec {
+						command セットノイズ -n 3 -p $i:プレイヤー位置Ｘ $i:プレイヤー位置Ｙ $i:プレイヤー位置Ｚ -m 船倉１ // "-n 4"で危険モードへ
+						}
+					}
+		#endif
+
+#if 1
+		print 'フォグフォグ君！！'
+
+		chara フォグ fog \
+			 -c 0 10 15 \
+			 -n -5000 \
+			 -f 50000
+
+		print 'フォグフォグ君終了！！'
+
+#else
+		chara フォグ fog \
+			 -c 0 0 1 \
+			 -n 0 \
+			 -f 50000
+#endif
+
+
+	}
+
+	// ぼかしセット
+	// ------------------------------------
+	proc ぼかしセット {
+		print 'ぼかしセット！！！！'
+
+		chara 遠景ぼかし far_deforcus \
+			-plane	4 \
+			-near	6000 \
+			-far	9000
+
+		chara 近景ぼかし near_deforcus \
+			-plane	3 \
+			-near	0 \
+			-far	3000
+
+
+		@船倉敵兵発見ぼかし設定	//発見時カメラ用。w04.hにあります。
+
+	}
+
+	// ドアオブジェクト
+	// ------------------------------------
+	proc ドア設置／船倉１−通路１ {
+		print 'ドア設置！！！！'
+
+		chara ドア 右舷ドア１１ \
+			-m w04_dr \
+			-d 0,0,0 \
+ 			-p 7250,-17000,-24050 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 船倉接合右舷１Ｆ off
+				} else {
+					mesg マップ接合 船倉接合右舷１Ｆ on
+				}
+			}
+
+		trap dr100 ？ -mask ？\
+			-exec {
+				if ( $3 == 入る ) {
+					mesg ドア 右舷ドア１１ open
+				} else {
+					mesg ドア 右舷ドア１１ close
+				}
+
+			}
+
+		chara ドア 右舷ドア１１奥 \
+			-m w04_dr \
+			-d 0,2048,0 \
+ 			-p 8750,-17000,-28450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+		trap dr200 ？ -mask ？\
+			-exec {
+				if ( $3 == 入る ) {
+					mesg ドア 右舷ドア１１奥 open
+				} else {
+					mesg ドア 右舷ドア１１奥 close
+				}
+			}
+
+
+		chara ドア 左舷ドア１１ \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p -8750,-17000,-24050 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 船倉接合左舷１Ｆ off
+				} else {
+					mesg マップ接合 船倉接合左舷１Ｆ on
+				}
+			}
+
+		trap dr101 ？ -mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					mesg ドア 左舷ドア１１ open
+				} else {
+					mesg ドア 左舷ドア１１ close
+				}
+
+			}
+
+		chara ドア 左舷ドア１１奥 \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p -7250,-17000,-28450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+		trap dr201 ？ -mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					mesg ドア 左舷ドア１１奥 open
+				} else {
+					mesg ドア 左舷ドア１１奥 close
+				}
+			}
+
+
+
+		chara ドア 右舷上部ドア１１ \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p 10250,-9000,-24050 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 船倉接合２Ｆ off
+				} else {
+					mesg マップ接合 船倉接合２Ｆ on
+				}
+			}
+
+		trap dr102 ？ -mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					mesg ドア 右舷上部ドア１１ open
+				} else {
+					mesg ドア 右舷上部ドア１１ close
+				}
+
+			}
+
+
+		chara ドア 右舷上部ドア１１奥 \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p 11750,-9000,-28450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+		trap dr202 ？ -mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					mesg ドア 右舷上部ドア１１奥 open
+				} else {
+					mesg ドア 右舷上部ドア１１奥 close
+				}
+			}
+
+		chara ドア 左舷上部ドア１１ \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p -11750,-9000,-24050 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 船倉接合２Ｆ off
+				} else {
+					mesg マップ接合 船倉接合２Ｆ on
+				}
+			}
+
+		trap dr103 ？ -mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					mesg ドア 左舷上部ドア１１ open
+				} else {
+					mesg ドア 左舷上部ドア１１ close
+				}
+			}
+
+
+
+		chara ドア 左舷上部ドア１１奥 \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p -10250,-9000,-28450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+
+		trap dr203 ？ -mask ？ \
+			-exec { if ( $3 == 入る ) {
+					mesg ドア 左舷上部ドア１１奥 open
+				} else {
+					mesg ドア 左舷上部ドア１１奥 close
+				}
+			}
+
+
+
+	}
+
+
+proc 船倉１箱設置{
+	print '船倉１箱設置'
+
+
+	chara プットオブジェ スピーカーボックス -m w04_box -r 0 1024 0 \
+		-s 100,120,100 \
+		-p -9500 -17000 -15500 -l w04a
+
+
+#if 1
+	chara プットオブジェ スピーカー -m w04_box2 -r 0 2048 0 \
+		-p -5000 -17000 -3000 -l w04a
+
+
+	chara プットオブジェ スピーカー -m w04_box2 -r 0 2048 0 \
+		-p 3000 -17000 -3000 -l w04a
+
+#else
+	chara プットオブジェ スピーカー -m sp -r 0 2048 0 \
+		-p -5000 -17000 -3000 -l w04a
+
+
+	chara プットオブジェ スピーカー -m sp -r 0 2048 0 \
+		-p 3000 -17000 -3000 -l w04a
+#endif
+
+}
+
+	//プロジェクタ光設定
+	// ------------------------------------
+
+	proc プロジェクタライト設定 {
+		print 'プロジェクタライト設定'
+
+		chara スポットライト投影モデル プロジェクタライト \
+			-m w04a1_k1 \
+			-p 0,0,0
+
+		chara 静止スポットライト設置 プロジェクタライト \
+			-pos 140,-15600,-1300 \
+			-dir -184,1894,0 \
+			-range 30000 \
+			-angle 15 \
+			-color 255,255,255 \
+			-option 0x8001
+
+
+
+
+//	( DX , DY , DZ )のベクトルの算出は、
+//	( atan( DY / sqr( DX^2 + DZ^2 ) ) * ( -4096 / 360 ) , 1024 + atan( DY/DX ) * ( -4096 / 360 ) , 0 )
+
+		chara プロジェクタライト プロジェクタライト \
+			-p 140,-15600,-1300 \
+			-d 4000,-10000,-22000
+
+
+#if d:movie
+#if 1
+		chara スポットライト背景イメージ指定 テストムービー
+#else
+		chara スポットライト背景イメージ指定 テストムービー \
+			//-image $s:テクスチャ名（raw形式イメージなので注意！（RGBARGBA・・・））\
+			-movie t:iputest1
+			//-file 'host0:testmovie256_16.ipu'
+#endif
+#endif
+
+	}
+
+
+	proc 船倉１水密ドア設置 {
+		print '船倉１水密ドア設定'
+
+		chara プットオブジェ 第一船倉水密ドア \
+			-m demo_w00_sdr_l \
+			-r 0 0 0 \
+			-p 8675,-5000,550 \
+			-l w04a
+	}
+

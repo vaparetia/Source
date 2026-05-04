@@ -1,0 +1,71 @@
+/*
+    prez.def
+    ニキータイベント用大統領関連宣言
+    2001/04/24 Masafumi Okuta
+    $Id: prez.def,v 1.1.1.3 2002/11/19 11:48:08 Yoshizawa1 Exp $
+*/
+
+// prezparty.c
+static void PREZ_SetThink1( Work*, int, int, int);
+static void PREZ_SetThink2( Work*, int, int);
+static void PREZ_SetThink3( Work*, int);
+static void PREZ_SetNextThink3( Work*, int);
+static void PREZ_SetThink3FromNext( Work*, int);
+static int  PREZ_CheckNearZoneIn( int, int);
+//static int  PREZ_GetZoneFromInnerMin( NPCWORK*, int, FVECTOR*, float*);
+//static int  PREZ_GetZoneFromInnerMax( NPCWORK*, int, FVECTOR*, float*);
+
+// preznoise.c
+static void PREZ_SetKnockMode(Work*);
+static int  PREZ_CheckNoise(Work*);
+
+// prezarea.c
+static int  PREZ_GetArea( FVECTOR*);
+
+// prezsound.c
+static void 	PREZ_SeManager( Work*);
+static int 	PREZ_Say( Work*, int, int);
+static int 	PREZ_CallSe( Work*, int, FVECTOR*, int);
+static void	PREZ_StreamRequest( Work*, int);
+//static void 	PREZ_StreamRequestWithProc( Work*, int, int);
+static void 	PREZ_StreamUpdate( Work* );
+
+// prezdbg.c
+#ifdef DEBUG_MODE
+static void PREZ_CallDbgDump(void);
+static void PREZ_CallDbgLevel(void);
+static void PREZ_CallDbgTrg(void);
+static void PREZ_CallDbgMuteki(void);
+static void PREZ_DrawTarget( Work*);
+//static int  PREZ_GetDifficult(void);
+//static void PREZ_DbgSound(Work* work);
+static void PREZ_DbgDrawTrgBox( Work* work );
+#endif
+#ifdef DEBUG
+static void PREZ_DbgSetTrg( Work*);
+static void PREZ_DbgSetMuteki( Work*);
+static void PREZ_DbgDrawInfo( Work*);
+#endif
+
+static void PREZ_SetFaceFlag( Work* work, int nType);
+static void PREZ_SendFaceMess( Work* work, int nType);
+
+// 外部関数
+extern void 	NPC_IK_Control( NPCWORK*);
+extern int 	ENE_GetRouteDis(FVECTOR*, FVECTOR*, int, int, u_int);
+extern int 	ENE_GetNearZone( int, int, int );
+extern int      ENE_ZoneDir( FVECTOR*, int, int );
+extern int 	ENE_EyeOnlineCheck( int, FVECTOR*, FVECTOR* );
+extern HZX_ZON*	ENE_HZX_GetZone( int);
+extern void 	ENE_SetNextnode( ROUTENAVI*);
+extern int   	GM_GetKaitaiC4Status( int id );
+extern void  	GM_StartCountDownKaitaiC4( int id );
+extern void	GM_DestroyKaitaiC4( int id );
+extern int	GM_GetZIntrptZ2Z( HZX_ZONE_ADD from_addr, HZX_ZONE_ADD to_addr );
+extern void 	AN_CartridgeGLK_E( FMATRIX *world , OBJECT *weapon , CONTROL *control );
+extern void 	AN_Test_Eye2( FVECTOR *, int );
+extern void 	AN_MazzleGLK( FMATRIX*, int, int);
+extern int 	KR_GclGetInt( char *top, int *buff );
+extern int	KR_CameraDis( FVECTOR*);
+extern void 	SIG_NumPrint(FVECTOR *pos ,int disp);
+

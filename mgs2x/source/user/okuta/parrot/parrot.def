@@ -1,0 +1,49 @@
+/*
+    parrot.def
+    オウム関連宣言
+    2001/05/12 Masafumi Okuta
+    $Id: parrot.def,v 1.1.1.3 2002/11/19 11:48:07 Yoshizawa1 Exp $
+*/
+
+// paract.c
+static void PAR_AdjustAimPoint( PARROT*, FVECTOR*);
+static void PAR_ClearAdjust( PARROT*);
+
+// parparty.c
+static void PAR_SetThink1( PARROT*, int, int, int);
+static void PAR_SetThink2( PARROT*, int, int);
+static void PAR_SetThink3( PARROT*, int);
+//static void PAR_SetNextThink3( PARROT*, int);
+//static void PAR_SetThink3FromNext( PARROT*, int);
+
+// parsound.c
+static void 	PAR_SeManager( PARROT*);
+static int 	PAR_Say( PARROT*, int, int);
+static int 	PAR_CallSe( PARROT*, int, FVECTOR*, int);
+static void	PAR_StreamReq( PARROT*, int);
+//static void 	PAR_StreamRequestWithProc( PARROT*, int, int);
+static void 	PAR_StreamUpdate( PARROT* );
+
+// pardbg.c
+static void 	PAR_DbgSoundCheck( PARROT* );
+static void 	PAR_DbgStrmMode( PARROT* );
+
+// 外部関数
+extern void 	NPC_IK_Control( NPCWORK*);
+extern int 	ENE_GetRouteDis(FVECTOR*, FVECTOR*, int, int, u_int);
+extern int 	ENE_GetNearZone( int, int, int );
+extern int      ENE_ZoneDir( FVECTOR*, int, int );
+extern int 	ENE_EyeOnlineCheck( int, FVECTOR*, FVECTOR* );
+extern HZX_ZON*	ENE_HZX_GetZone( int);
+extern void 	ENE_SetNextnode( ROUTENAVI*);
+extern int   	GM_GetKaitaiC4Status( int id );
+extern void  	GM_StartCountDownKaitaiC4( int id );
+extern void	GM_DestroyKaitaiC4( int id );
+extern int	GM_GetZIntrptZ2Z( HZX_ZONE_ADD from_addr, HZX_ZONE_ADD to_addr );
+extern void 	AN_CartridgeGLK_E( FMATRIX *world , OBJECT *weapon , CONTROL *control );
+extern void 	AN_Test_Eye2( FVECTOR *, int );
+extern void 	AN_MazzleGLK( FMATRIX*, int, int);
+extern int 	KR_GclGetInt( char *top, int *buff );
+extern int	KR_CameraDis( FVECTOR*);
+extern void 	SIG_NumPrint(FVECTOR *pos ,int disp);
+

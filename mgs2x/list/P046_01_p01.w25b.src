@@ -1,0 +1,294 @@
+//
+//	P046_01_p01.w25b.src
+//
+//	written by Y.Matsuhana 2000.Nov
+//
+//	$Id: P046_01_p01.w25b.src,v 1.29 2001/11/07 06:57:15 usr03635 Exp $
+
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 不要エフェクト切り分け定義
+#define EFFECT_CUSTUM
+
+//#define	E_GLASS_DANKON			// グラス系弾痕
+//#define	E_KOGETUKI				// 壁への焦げ付き
+//#define	E_FOOTSTAMP				// 足跡
+//#define	E_ENEMY					// 敵兵系
+//#define	E_ENEMY_LIGHT			// 敵兵ライト
+//#define	E_SLING					// スリング
+//#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+//#define	E_MANHATTAN_LIGHT		// マンハッタンライト
+//#define	E_C4BOMB				// Ｃ４爆弾、赤外線センサー
+//#define	E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷
+//#define	E_CROSS_FADE_LIGHT		// クロスフェード（甲板のライトで使用）
+//#define	E_CHARA_DENTOU			// chara 懐中電灯、フォーチュン戦
+#define	E_WATER					// 水関係
+//#define	E_CHARA_HAMON			// chara 波紋
+#define	E_BROKEN_OBJECT			// 壊れ物
+//#define	E_BROKEN_PAPEROBJECT	// 壊れ物紙
+//#define	E_BROKEN_PLATE			// 壊れ物皿
+#define	E_HIMATU				// 水飛沫
+//#define	E_CHARA_MADOAME			// chara 窓雨
+#define	E_STEAM					// 粉 & 水蒸気
+//#define	E_POWDER				// 小麦粉
+#define	E_SKY_NORMAL			// 空
+//#define	E_LINEAR_GUN			// リニアガン
+#define	E_TENKYUU				// 天球ドーム
+#define	E_SUN					// 太陽
+#define	E_DOOR_LUMP				// ドアランプ
+#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、
+								// ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+#define	ENV						// 天球
+
+// 汎用空用テクスチャのためのデファイン（c_effect.h の前で）
+//#define MORNING_SKY
+#define DAY_SKY
+//#define EVENING_SKY
+//#define NIGHT_SKY_DEMO
+
+// 各ステージ共通要素
+#include	"common.h"
+#include	"c_effect.h"
+
+// ワールド
+// w25a 分
+pack_all w25a_models.tri \
+	world/w25a/w25a/w25a0.dar \
+	world/w25a/w25a/w25a0_obj01.dar \
+	world/w25a/w25a/w25a1.dar \
+	world/w25a/w25a/w25a1_obj01.dar
+world	w25a/w25a/w25a0.kms
+world	w25a/w25a/w25a0_obj01.kms
+world	w25a/w25a/w25a1.kms
+world	w25a/w25a/w25a1_obj01.kms
+world	w25a/w25a/w25a_brk00b.kms
+world	w25a/w25a/w25a_brk01b.kms
+world	w25a/w25a/w25a_brk02b.kms
+
+// w25b 分
+world	w25b/w25b
+
+// w25ab
+pack_all w25ab_common.tri \
+	world/w25ab_common/w25ab_14a.dar \
+	world/w25ab_common/w25ab_17a.dar \
+	world/w25ab_common/w25ab_18a.dar \
+	world/w25ab_common/w25ab_19a.dar \
+	world/w25ab_common/w25ab_20a.dar \
+	world/w25ab_common/w25ab_21a.dar \
+	world/w25ab_common/w25ab_24a.dar \
+	world/w25ab_common/w25ab_31a.dar \
+	world/w25ab_common/w25ab_32a.dar \
+	world/w25ab_common/w25ab_32b.dar \
+	world/w25ab_common/w25ab_32c.dar \
+	world/w25ab_common/w25ab_crane.dar \
+	world/w25ab_common/w25ab_gh.dar \
+	world/w25ab_common/w25ab_i1.dar \
+	world/w25ab_common/w25ab_i2.dar \
+	world/w25ab_common/w25ab_kl.dar \
+//	world/w25ab_common/w25ab_l.dar \
+	world/w25ab_common/w25ab_other00.dar \
+	world/w25ab_common/w25ab_other01.dar \
+	world/w25ab_common/w25ab_other02.dar \
+	world/w25ab_common/w25a_g.dar \
+	world/w25ab_common/w25a_gl.dar \
+	world/w25ab_common/w25b_g.dar \
+	world/w25ab_common/w25b_jk.dar
+
+world	w25ab_common/w25ab_14a.kms
+world	w25ab_common/w25ab_17a.kms
+world	w25ab_common/w25ab_18a.kms
+world	w25ab_common/w25ab_19a.kms
+world	w25ab_common/w25ab_20a.kms
+world	w25ab_common/w25ab_21a.kms
+world	w25ab_common/w25ab_24a.kms
+world	w25ab_common/w25ab_31a.kms
+world	w25ab_common/w25ab_32a.kms
+world	w25ab_common/w25ab_32b.kms
+world	w25ab_common/w25ab_32c.kms
+world	w25ab_common/w25ab_crane.kms
+world	w25ab_common/w25ab_gh.kms
+world	w25ab_common/w25ab_i1.kms
+world	w25ab_common/w25ab_i2.kms
+world	w25ab_common/w25ab_kl.kms
+//world	w25ab_common/w25ab_l.kms
+world	w25ab_common/w25ab_other00.kms
+world	w25ab_common/w25ab_other01.kms
+world	w25ab_common/w25ab_other02.kms
+world	w25ab_common/w25a_g.kms
+world	w25ab_common/w25a_gl.kms
+world	w25ab_common/w25b_g.kms
+world	w25ab_common/w25b_jk.kms
+
+//w25b_demo
+pack_all w25b_demo.tri \
+	world/w25b/w25b_demo/w25demo_14a.dar \
+	world/w25b/w25b_demo/w25demo_16a.dar \
+	world/w25b/w25b_demo/w25demo_18a.dar \
+	world/w25b/w25b_demo/w25demo_20a.dar \
+	world/w25b/w25b_demo/w25demo_21a.dar \
+	world/w25b/w25b_demo/w25demo_24a.dar \
+	world/w25b/w25b_demo/w25demo_31a.dar \
+	world/w25b/w25b_demo/w25demo_h.dar \
+	world/w25b/w25b_demo/w25demo_hi.dar \
+	world/w25b/w25b_demo/w25demo_i.dar \
+	world/w25b/w25b_demo/w25demo_ij.dar \
+	world/w25b/w25b_demo/w25demo_kl.dar \
+	world/w25b/w25b_demo/w25demo_l.dar \
+	world/w25b/w25b_demo/w25demo_g.dar
+
+world	w25b/w25b_demo/w25demo_14a.kms
+world	w25b/w25b_demo/w25demo_16a.kms
+world	w25b/w25b_demo/w25demo_18a.kms
+world	w25b/w25b_demo/w25demo_20a.kms
+world	w25b/w25b_demo/w25demo_21a.kms
+world	w25b/w25b_demo/w25demo_24a.kms
+world	w25b/w25b_demo/w25demo_31a.kms
+world	w25b/w25b_demo/w25demo_h.kms
+world	w25b/w25b_demo/w25demo_hi.kms
+world	w25b/w25b_demo/w25demo_i.kms
+world	w25b/w25b_demo/w25demo_ij.kms
+world	w25b/w25b_demo/w25demo_kl.kms
+world	w25b/w25b_demo/w25demo_l.kms
+world	w25b/w25b_demo/w25demo_g.kms
+
+world	door/w25a_dr00.kms
+
+// リアル影投影モデル
+world		w25b/w25b_demo/w25demo_sdw01.kms
+// 海とオイル
+#include "d_surface.h"
+
+lt2		w25a.lt2
+hazard		d00a3.hzx
+
+// オブジェクト
+//meca	ir_sensor
+
+//メカ類
+// 例とハリアーのコクピット（マルチテクスチャ）
+pack_all ray_hri_mt.tri \
+	meca/ray/ray_canopy_mt.dar \			//RAYのキャノピー部
+	meca/ray/ray_def_mt.dar \				//RAY本体
+	meca/harrier/hri_canopy_high_brk_50hlf_mt.dar		//ハリアーのキャノピー部
+meca	ray/ray_canopy_mt.kms					//RAYのキャノピー部
+meca	ray/ray_def_mt.kms					//RAY本体
+goods	demo_ray_msl/ray_backmsl_close.kms			//RAYミサイル（閉じ）
+goods	demo_ray_msl/ray_backmsl_open.kms			//RAYミサイル（開き）
+
+// ハリアー
+pack_all harrier_etc.tri \
+	meca/harrier_brk/hri_mwing_brk1.dar \	//ハリアーの翼、途中橋にぶつかったところでモゲル
+	meca/harrier_brk/hri_brk2.dar \			//壊れハリアー第一段階
+	meca/harrier_brk/hri_brk3.dar \			//壊れハリアー第二段階、hri_brk2.kmsと差し替え
+	meca/kacatka_plant/kck_plant_mt.dar \
+	meca/kacatka_plant/kck_plant_trot.dar \
+	meca/kacatka_plant/kck_plant_mrot.dar \
+	meca/kacatka_plant/kck_chair.dar
+
+meca	harrier_brk/hri_mwing_brk1.kms			//ハリアーの翼、途中橋にぶつかったところでモゲル
+meca	harrier_brk/hri_brk2.kms				//壊れハリアー第一段階
+meca	harrier_brk/hri_brk3.kms				//壊れハリアー第二段階、hri_brk2.kmsと差し替え
+meca	harrier/hri_canopy_high_brk_50hlf_mt.kms		//ハリアーのキャノピー部
+meca	harrier/hri_canopy_frame_high.kms		//ハリアーキャノピーの縁
+//カサッカ
+meca	kacatka_plant/kck_plant_mt.kms
+meca	kacatka_plant/kck_plant_trot.kms
+meca	kacatka_plant/kck_plant_mrot.kms
+meca	kacatka_plant/kck_chair.kms
+
+
+//人間
+
+// ヴァンプ
+pack_all zzz_vmp_kizu.tri \
+	human/vmp_coat/vmp_kizu_mh.dar \		//ヴァンプの胸の傷のみ
+	human/vmp_coat/vmp_jyuusou_p046_mh.dar \		//ヴァンプの胸の銃創のみ
+	human/vmp_coat/vmp_coat_mh_mt.dar \		//ヴァンプ本体
+	human/vmp_coat/vmp_hair_coat_mh_mt.dar \	//ヴァンプ髪の毛
+	human/vmp_def/vmp_parts_vkpa_mh.dar \		//ヴァンプナイフ
+	human/vmp_coat/vmp_parts_coat_mh.dar \		//ヴァンプコート
+	human/vmp_coat/vmp_parts_coat_p046_mh.dar \
+	human/vmp_coat/vmp_coat_bounding.dar 		//ヴァンプ当たり
+
+human	vmp_coat/vmp_kizu_mh.evm		//ヴァンプの胸の傷のみ
+human	vmp_coat/vmp_jyuusou_p046_mh.evm		//ヴァンプの胸の銃創のみ
+human	vmp_coat/vmp_coat_mh_mt.evm
+
+human	vmp_coat/vmp_coat_mh_mt.evm		//ヴァンプ本体
+human	vmp_coat/vmp_hair_coat_mh_mt.evm	//ヴァンプ髪の毛
+human	vmp_def/vmp_parts_vkpa_mh.evm		//ヴァンプナイフ
+human	vmp_coat/vmp_parts_coat_mh.evm		//ヴァンプコート
+human	vmp_coat/vmp_parts_coat_p046_mh.evm
+human	vmp_coat/vmp_coat_bounding.kms		//ヴァンプ当たり
+
+//ソリダス（ノーマル）
+pack_all zzz_sol_blood_eye.tri \
+		human/sol_def/sol_blood_eye_mh_mt.dar \
+		human/sol_def/sol_def_addhand_mh_mt.dar
+human	sol_def/sol_blood_eye_mh_mt.evm			//ソリダスの目の血のみ
+human	sol_def/sol_def_addhand_mh_mt.evm
+
+pack_all demo_iro_rai.tri \
+		human/iro_def/iro_def_mh_mt.dar \
+		human/rai_def/rai_def_addhand_mh_mt.dar
+//プリスキン
+human	iro_def/iro_def_mh_mt.evm
+//ライデン
+human	rai_def/rai_def_addhand_mh_mt.evm
+
+
+
+
+//武器
+weapon	usp/usp_sub.kms
+//Ｍ４グレネード
+goods	demo_m4_grn_sna/demo_m4_grn_sna.kms
+
+// 小さいサイズのテクスチャはまとめておく
+pack_trnall trn.tri effect/smoke/smoke_lp3_alp.bmp
+pack_trnall trn.tri effect/bakuha/bombgas2_alp.bmp
+pack_trnall trn.tri effect/smoke/smoke_lp1_alp.bmp
+pack_trnall trn.tri effect/splash/splash05_alp.bmp
+
+/* 田中追加・拡張海 */
+pack_trnall	kakutyou.tri \
+		effect/plant_sea/entyou_oil_sea.bmp
+
+// リネーム
+
+/* mgdemo added ----from here (Sat Jul  7 19:57:25 2001) ---- */
+pack_trnall trn.tri effect/ray_effect/ray_eye_blur_alp.bmp
+pack_trnall trn.tri effect/ray_effect/ray_eye_bonbori_alp.bmp
+/* mgdemo added ----upto here ---- */
+texrename w25ab_24a.kms w10c_cntw04.bmp w10c_cntw04aaaa.bmp
+item	c_box/cbx_a_frg1_cm.kms
+/* mgdemo added ----from here (Tue Aug 14 13:43:01 2001) ---- */
+goods	demo_dummy/demo_dummy.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Wed Aug 15 17:44:06 2001) ---- */
+vib	demo/P046_01_p01_rai_04.vib
+vib	demo/P046_01_p01_rai_03.vib
+vib	demo/P046_01_p01_effect_02.vib
+vib	demo/P046_01_p01_effect_01.vib
+vib	demo/P046_01_p01_rai_02.vib
+vib	demo/P046_01_p01_harrier_01.vib
+vib	demo/P046_01_p01_rai_01.vib
+vib	demo/P046_01_p01_ray_03.vib
+vib	demo/P046_01_p01_ray_02.vib
+vib	demo/P046_01_p01_ray_01.vib
+vib	demo/P046_01_p01_ray_04.vib
+/* mgdemo added ----upto here ---- */
+
+// 優先問題解決のためサングラスを入れておく
+pack_all zzz_iro_mw.tri \
+	human/iro_def/iro_glass_black_mh_mt.dar 
+human		iro_def/iro_glass_black_mh_mt.evm
+
+
+

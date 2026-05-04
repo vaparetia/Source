@@ -1,0 +1,74 @@
+/*
+	Capture.txt
+	キャプチャーの仕組み
+
+	2001/10/23	S.Kobayashi
+	$Id: capture.txt,v 1.1.1.3 2002/11/19 11:50:03 Yoshizawa1 Exp $
+
+*/
+
+1 処理手順
+	Jpeg保存領域の確保
+		↓
+	初期化
+		↓
+	チャンネル0,1を非表示
+		↓
+	画面切替を停止
+		↓
+	Jpegを作成
+		↓
+	メモリ解放
+		↓
+	終了
+
+2 関数説明
+	void *NewCaptureStart( int save_flag, void *thumbnail, void *code, int max_code )
+		メイン関数
+
+	static int InitToPhotoSave(Work *work)
+		写真データをメモりーカードにセーブする時に使用する初期化関数
+
+	static void ParentDie( Parent_Work *pWork )
+		親アクト用Die関数
+
+	static void ParentAct( Parent_Work *pWork )
+		親アクト用Act関数
+
+	static void Die( Work *work )
+		子アクト用Die関数
+
+	static void Act( Work *work )
+		子アクト用Act関数
+
+	static void Step(Work *work)
+		キャプチャー進行管理関数
+
+	static int PortSelSubStep(Work *work)
+		メモりーカード進行管理関数
+
+	static int InitStep(Work *work)
+		L2D、表示周り初期化関数
+
+	static int Parent_SignalFunc(void *pWork,int sign,int value)
+		親アクト用シグナルファンクション
+
+	static int SignalFunc(void *pWork,int sign,int value)
+		子アクト用シグナルファンクション
+
+	static void CaptureEnd( Work *work )
+		最低限必要な終了処理をする関数
+
+	static void Capture( Work *work, int max_code )
+		JpegEncode関数
+
+	static inline int Qcheck( int size_a , int size_b )
+		簡易二分探索関数
+
+
+	
+
+
+
+
+

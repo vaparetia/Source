@@ -1,0 +1,82 @@
+
+
+顔アニメサーバ リファレンス
+
+
+§1: 顔アニメサーバの起動
+
+     void * NewFaceManager(int name, int where)
+     void * NewFaceManager_forProg(void)
+
+     顔アニメサーバを起動し、初期化する。
+     NewFaceManager() は GCL 用、NewFaceManager_forProg() はプログラムからの
+     起動用。
+
+     既に起動されている、メモリ不足等の要因で起動できなかった場合NULLを返す。
+
+
+§2: API 関数リファレンス
+
+   以下の API は、顔アニメサーバが動作していない状態で呼び出すと、
+   何もせずにエラー値(NULL もしくは 非0) を返す。
+
+
+[1] 顔アニメを適用する EVM モデルの登録
+
+    FC_EVM_FACE * FC_NewFaceControl(DG_EVMOBJ * evm, int name_id, int flag)
+
+	evm     顔アニメを適用したい evm オブジェクトのポインタ
+	name_id 顔アニメ ID
+	flag    顔アニメフラグ
+
+    顔アニメサーバに、顔アニメを適用する evm オブジェクトを登録する。
+    サーバ側で顔アニメ用ワークが確保され、そのポインタが返される。
+
+    name_id, flag は、MT_InitFaceControl() 関数に渡すものと同じ。
+
+
+[2] 顔アニメワークの開放
+
+    int FC_ReleaseFaceControl(FC_EVM_FACE * face)
+
+	face    顔アニメ用ワーク
+
+    FC_NewFaceControl() 関数で確保された顔アニメワーク領域を開放する。
+
+
+[3] 顔アニメの起動
+
+    int FC_ExecFaceAnim(FC_EVM_FACE * face, int id,
+			int wait_time, int bias_time)
+
+	face       顔アニメ用ワーク
+	id         モーション番号
+	wait_time  最低間隔時間
+	bias_time  ランダム時間幅
+
+	
+    指定された番号をもつモーションを起動する。
+    以後そのモーションは、時動的に対応する evm モデルに適用される。
+
+    最低間隔時間 wait_time が 0 以上の場合、モーションは繰り返し再生される。
+    この場合、モーションが終了してから、次の再生が開始されるまでの時間は、
+    0〜nまでの乱数を RAND(n) と表記するとした場合、
+
+        wait_time + RAND(bias_time)    [1/300 sec.]
+
+    となる。bias_time を 0 にすれば、確実に wait_time の間隔でモーションが
+    再生されることになる。
+
+    wait_time が負の値の場合は、ループ無しのワンショットモーションとして
+    扱われる。この場合、bias_time は意味を持たない。
+
+
+[4] 顔アニメの停止
+
+    int FC_StopFaceAnim(FC_EVM_FACE * face)
+
+	face       顔アニメ用ワーク
+
+    指定された顔アニメワークにて再生中のモーションを中断する。
+
+

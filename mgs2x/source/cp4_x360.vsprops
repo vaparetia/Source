@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="BPE X360"
+	InheritedPropertySheets=".\cp4_common.vsprops"
+	>
+	<Tool
+		Name="VCBscMakeTool"
+		OutputFile="$(OutDir)/$(ProjectName).bsc"
+	/>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalOptions="/MP"
+		EnableFiberSafeOptimizations="true"
+		PreprocessorDefinitions="_XBOX;XBOX360;_HAS_EXCEPTIONS=0;USE_DLL=0;BOOST_DISABLE_THREADS;ICE_NO_DLL;NO_GETENV"
+		ExceptionHandling="0"
+		RuntimeLibrary="2"
+		EnableEnhancedInstructionSet="2"
+		DebugInformationFormat="3"
+		DisableSpecificWarnings="4251;4275;4793;4065"
+	/>
+   <Tool
+		Name="VCCLX360CompilerTool"
+		AdditionalOptions="/MP"
+		EnableFiberSafeOptimizations="true"
+		PreprocessorDefinitions="_XBOX;XBOX360;_HAS_EXCEPTIONS=0;USE_DLL=0;BOOST_DISABLE_THREADS;ICE_NO_DLL;NO_GETENV"
+		ExceptionHandling="0"
+		RuntimeLibrary="2"
+		EnableEnhancedInstructionSet="2"
+		DebugInformationFormat="3"
+		DisableSpecificWarnings="4251;4275;4793;4065"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		AdditionalLibraryDirectories=""
+		GenerateDebugInformation="true"
+		SubSystem="2"
+		ImportLibrary="$(BPE_ROOT)/Bin/$(ProjectName)_$(ConfigurationName).lib"
+		TargetMachine="1"
+	/>
+   <Tool
+		Name="VCX360LinkerTool"
+		AdditionalLibraryDirectories=""
+		GenerateDebugInformation="true"
+		SubSystem="2"
+		ImportLibrary="$(BPE_ROOT)/Bin/$(ProjectName)_$(ConfigurationName).lib"
+		TargetMachine="1"
+	/>
+</VisualStudioPropertySheet>

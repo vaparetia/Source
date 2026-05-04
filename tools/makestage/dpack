@@ -1,0 +1,51 @@
+#!/usr/bin/perl
+#
+#  dpack selector
+#
+#  $Id: dpack,v 5.7 2002/06/20 07:15:03 usr04098 Exp $
+#
+
+if ( $ENV{'MGS2_MAKING'} ){
+    $ENV{'MGS2_FIXPATH'} = "/u/develop/mj001data/fix.making" ; 
+    $ENV{'MGS2_RUNPATH'} = "/u/develop/mj001data/runtime.making" ;
+} elsif ( $ENV{'MGS2_SUBSTANCE'} ){
+    $ENV{'MGS2_FIXPATH'} = "/u/develop/mj001data/fix.xbox" ; 
+    $ENV{'MGS2_RUNPATH'} = "/u/develop/mj001data/runtime.xbox" ;
+}
+
+if ( $ENV{'MGS2_KMYTEST'} ){
+    $cmd = "dpack.kmy" ;
+}elsif ( $ENV{'MGS2_XBOX'} ){
+    $cmd = "dpack.kmy" ;
+}else{
+    $cmd = "dpack.def" ;
+}
+
+for( $i=0 ; $i<=$#ARGV ; $i++ )
+{
+    $cmd .= " $ARGV[$i]" ;
+}
+
+exit( 1 ) if ( &fork( $cmd ) ) ;
+exit( 0 ) ;
+
+
+
+
+
+
+
+
+sub fork
+{
+    local $pid ;
+
+    unless ( $pid = fork )
+    {
+        exec( $_[0] ) ;
+        exit 0 ;
+    }
+    waitpid( $pid, 0 ) ;
+
+    return $? ;
+}

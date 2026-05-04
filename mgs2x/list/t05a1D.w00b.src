@@ -1,0 +1,250 @@
+//
+//	t05a1D.w00b.src	
+//
+//	written by S.Hirano 2000.Sep
+//
+//	$Id: t05a1D.w00b.src,v 1.55 2002/07/29 02:11:19 usr04098 Exp $
+
+// デファイン
+
+block .use r_tnk0
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+include		common.h
+include		a_effect.h
+
+// キャラクタ 
+pack_all sna_merge.tri \
+	human/sna_def/sna_def_mh.dar \
+	human/sna_def/sna_def_addhand_mh_mt.dar
+
+pack_all org_merge.tri \
+	human/org_def/org_def.dar \
+	human/org_def/org_def_addhand_mh_mt.dar 
+include		orga_demo.h
+//寝ているオルガ映り込み
+human		org_def/org_def_sleepface_sh_mt.kms	//t06のオルガ用
+//human		org_def/org_def_sh_mt.kms	//t06のオルガ用
+
+
+//高波用
+option makexti6 -l 128
+pack_all	wave.tri effect/wave/wave06.bmp effect/wave/wave09_alp_ovl.bmp
+option makexti6
+
+// タンカー部分モデル（ホロ関係を先に）
+//world		w00a
+
+// ほかタンカー関係共通部分。
+world		w00
+
+// 座標が+500ずれたスネーク隠れ場所影モデルに対応したモデル
+world	w00/w00k2.kms // (５F左舷メイン)
+world	w00/w00k5.kms // (上に積まれた鉄箱用)
+
+// ライトファイル（ステージ用）
+lt2			d00a.lt2
+lt2			w00b.lt2
+
+// ライトファイル（スケールかけたモデル用）
+
+// ハザード
+hazard		w00b.hzx
+
+// 小物類
+
+
+
+
+
+
+
+
+
+
+
+
+meca	ir_sensor/irs_box.kms
+
+// クルー死体
+world	w01e/tnc_died_obj.kms
+
+// タンカー部分モデル
+
+
+
+
+
+
+
+
+
+
+// 蒼い月 煙
+
+
+
+
+
+
+
+
+pack_trnall trn.tri effect/smoke/smoke_lp1_alp.bmp
+pack_trnall trans_moon.tri effect/moon_w00
+
+// 水密ドア
+goods	demo_w00_sdr
+
+// 窓雨
+debug	mizutani/rain
+
+// ホロ関係
+pack_all aac.tri \
+	world/w00b/obs_irs.dar \
+	world/w00b/horo1.dar \
+	world/w00b/obs_box1.dar \
+	world/w00b/obs_box2.dar \
+	world/w00b/obs_box3.dar \
+	world/w00b/obs_box4.dar 
+
+world	w00b/obs_irs.kms
+world	w00b/horo1.kms
+world	w00b/obs_box1.kms
+world	w00b/obs_box2.kms
+world	w00b/obs_box3.kms
+world	w00b/obs_box4.kms
+
+pack_all	zzz.tri \
+	world/w00b/w00b_floor.dar
+pack_all	aaa.tri \
+	world/w00b 
+
+
+//ホロアニメーション
+
+cvd	world/w00b/horo1.cv2    v
+anm	w00b_horo.xsi -n -N -R 1
+
+
+
+//ワイヤー／旗 頂点アニメーション
+
+
+
+
+
+
+
+
+
+cvd	world/w00/w00_vfg.cv2 vn
+cvd	world/w00/w00_vw1.cv2 vn
+cvd	world/w00/w00_vw2.cv2 vn
+cvd	world/w00/w00_vw3.cv2 vn
+cvd	world/w00/w00_vw4.cv2 vn
+cvd	world/w00/w00_vw5.cv2 vn
+cvd	world/w00/w00_vw6.cv2 vn
+
+
+// その他タンカー部分モデル
+
+
+
+
+
+
+
+
+
+world		w00b
+
+//水飛沫エフェクトで使用するCV2
+cvd		human/sna_skl/sna_skl3.cvd vn
+cvd		meca/cypher/cyp.cv2 vn
+cvd		meca/cypher_demo/cyp_sh.cv2 vn
+
+// ショックと弾丸
+weapon	ssk/ssk_bul.kms 
+effect	shock/shock1.kms
+effect	shock/shock2.kms
+cvd		effect/shock/shock1.cv2  vn
+cvd		effect/shock/shock2.cv2  vn
+
+
+//振動データ（全デモ必須）
+// データ数が多すぎてロード時に落ちるステージが出たので、一時的にカット。010729（平野）
+// 振動ファイルは一つにまとまるようになったので組み込み。010803
+vib		demo
+
+//デモダミー（全デモ必須）
+goods	demo_dummy/demo_dummy.kms
+
+// 体験版用
+// クリアコードテクスチャ
+#ifdef MGS2_TRIAL
+pack_all clear_code.tri \
+		menu/ending_trial \
+		effect/font/clr_font_alp_ovl.bmp
+#endif
+
+//テロップ
+pack_all	staff.tri \
+		menu/staffroll/sht/jpn/sr17j_alp_ovl.bmp \
+		menu/staffroll/sht/eng/sr17e_alp_ovl.bmp \
+		debug/shibata/staffroll/alpha03_alp_ovl.bmp
+
+
+// デバッグ用（実験終了次第外すよう、心がけること）
+
+// 以下、mgdemoによる自動追加 一部修正
+
+# Add Demo Model List by mgdemo. by t05a1D.w00b/t05a1D.lst
+
+human	gbs_demo/gbs_def_mt.kms
+meca	kacatka/kck_504.kms
+
+// PAL版ではカサッカローターは別モデル
+#ifdef MGS2_VMODE_PAL
+meca	kacatka_pal/kck_trot.kms
+meca	kacatka_pal/kck_mrot.kms
+#else
+meca	kacatka/kck_trot.kms
+meca	kacatka/kck_mrot.kms
+#endif
+
+human	sna_def/sna_def_mh.evm
+human	sna_def/sna_def_addhand_mh_mt.evm
+//weapon	m92_sna/m92_sna_sub.kms
+//weapon	usp/usp_sub.kms
+
+human	org_def/org_def.evm
+human	org_def/org_def_addhand_mh_mt.evm
+human	org_def/org_sgl.kms
+item	radio/rad.kms
+goods	demo_usp/demo_usp.kms
+goods	demo_goods/demo_org_hut.kms
+goods	demo_pss/demo_pss.kms
+goods	demo_goods/demo_org_skcover.kms
+weapon	ssk/ssk_mt.kms
+
+human	crg_def/crg_hut_mt.kms
+human	crg_def/crg_def_mh_mt.evm
+
+meca	cypher_demo/cyp_sh.kms
+meca	cypher/cyp.kms
+
+#ifdef MGS2_XBOX_1
+pack_trnall	effect.tri \
+	effect/cloud/w00_sky_add.bmp /* XBOXの「thunder_flash.c」でのみ使用 */
+#endif
+
+# End Demo Model List.
+
+rename		ssk_mt.kms ssk.kms
+// 常駐部でも同じリネームをしているか？
+//rename		m92_sna_sub.kms m92_sub.kms
+/* mgdemo added ----from here (Tue Oct  9 12:47:18 2001) ---- */
+weapon	m92_sna_1piece/m92_sna_1piece.kms
+/* mgdemo added ----upto here ---- */

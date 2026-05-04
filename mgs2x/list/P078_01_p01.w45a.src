@@ -1,0 +1,174 @@
+//
+//	P078_01_p01.w45a.src
+//
+//	written by H.Yoshiike 2000.Aug
+//
+//	$Id: P078_01_p01.w45a.src,v 1.14 2001/11/07 08:25:10 usr03635 Exp $
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include		"common.h"
+include		c_effect.h
+
+// キャラクタ 
+// 天狗兵
+pack_trnall katana_eft.tri \
+	debug/shibata/staffroll/alpha03_alp_ovl.bmp
+weapon/p90
+weapon	tbl/tbl_katana.kms
+
+// スネーク
+	//	髭剃りスネーク対応
+
+pack_all sna_nm.tri \
+	human/sna_def/sna_def.dar \
+	human/sna_shaved/sna_shaved_mt.dar
+
+pack_all sna_mw.tri \
+	human/sna_def/sna_def_mh.dar \
+	human/sna_def/sna_def_addhand_mh_mt.dar \
+	human/sna_shaved/sna_shaved_mh_mt.dar
+
+human		sna_def/sna_def.kms
+human	sna_def/sna_def_addhand_mh_mt.evm
+//human	sna_def/sna_def_mh.evm
+
+
+//スネーク装備
+
+human	sna_def/sna_bdn1.kms
+human	sna_def/sna_bdn2.kms
+human	sna_def/sna_mag1.kms
+human	sna_def/sna_mag2.kms
+human	sna_def/sna_mag3.kms
+human	sna_def/sna_mag4.kms
+
+weapon	usp/usp_sub.kms
+
+// ワールド
+// それ以外のモデル 
+world		w45a
+lt2			w45a.lt2
+hazard		d00a3.hzx
+//hazard		w45a.hzx
+
+// オブジェ関係
+// 小さいサイズのテクスチャはまとめておく
+pack_all	w45a_dr.tri \
+			world/door/w45a_dr_left_oku.dar \
+			world/door/w45a_dr_right_oku.dar \
+			world/door/w45a_dr_left_temae.dar \
+			world/door/w45a_dr_right_temae.dar
+
+//world		door/w01f_dr.kms
+world		door/w45a_dr_left_oku.kms
+world		door/w45a_dr_right_oku.kms
+world		door/w45a_dr_left_temae.kms
+world		door/w45a_dr_right_temae.kms
+
+
+
+//	空中文字
+pack_trnall	f_window.tri world/w45a/other/w45a_efct_rbn_01_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_rbn_02_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_rbn_smt01_2_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_rbn_smt01_3_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_rbn_smt01_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_disp_01_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_disp_02_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_disp_03_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_disp_04_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_disp_05_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_disp_06_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_disp_01_scr_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_disp_02_scr_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_disp_03_scr_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_disp_04_scr_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_disp_05_scr_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_caution_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_disp_01_noiz_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_disp_02_noiz_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_disp_03_noiz_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_disp_04_noiz_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_disp_05_noiz_alp_add_ovl.bmp \
+			world/w45a/other/w45a_efct_disp_06_noiz_alp_add_ovl.bmp
+
+
+//カタナ
+pack_all	hfb_mt.tri weapon/hfb/hfb_mt.dar weapon/hfb/hfb_mineuchi.dar
+weapon		hfb/hfb_mt.kms
+weapon		hfb/hfb_mineuchi_mt.kms
+mtn		rai_blade.mls
+
+//スネーク用Ｍ４
+weapon/m4	m4a_nm.kms
+goods	demo_m4_sna/demo_m4_sna.kms
+
+//血だまり
+pack_all	zzz.tri \
+			goods/demo_w45a_blood/tng_blood.dar
+goods	demo_w45a_blood/tng_blood.kms
+
+
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム
+
+// ライデン
+human	rai_def/rai_def_mh_mt.evm
+
+// フォーチュン（マント無し）
+human	for_def/for_def_addhand_mh_mt.evm
+human	for_def/for_def_mh_mt.evm
+human	for_def/for_hair_def_mh.evm
+human	for_def/for_def_bounding.kms
+human	for_coat/for_tears_mh_mt.evm
+
+// フォーチュン装備
+goods	demo_linearrifle/demo_lnr.kms
+
+//天狗兵死体４パターン（追加：田中修平）
+human	tng_def/tng_dead_1.kms 
+human	tng_def/tng_dead_2.kms 
+human	tng_def/tng_dead_3.kms 
+human	tng_def/tng_dead_4.kms
+
+//天狗兵死体装備品（追加：田中修平）
+human	tng_def/tng_dead4_parts.kms
+human	tng_def/tng_dead3_parts.kms
+human	tng_def/tng_dead1_parts.kms
+
+//	ステージ切り分けまでの暫定処置
+
+pack_trnall  transparancy.tri \
+	human/for_coat/for_lnr_sling.bmp
+
+pack_all for_def.tri \
+	human/for_def/for_def_sh_mt.dar
+
+pack_all for_def_weap.tri \
+	human/for_def/for_mag.dar \
+	weapon/linearrifle
+human for_def/for_def_sh_mt.kms
+human for_def/for_mag.kms
+weapon	linearrifle
+cvd	weapon/linearrifle/lnr.cv2 vn
+
+//開閉ドア
+world	door/w41a_dr_left.kms
+world	door/w41a_dr_right.kms
+
+goods	demo_dummy/demo_dummy.kms
+
+vib	demo/P078_01_p01_rai_01.vib
+
+// 優先問題解決のためサングラスを入れておく
+pack_all zzz_sna_mw.tri \
+	human/sna_def/sna_glass_mh_mt.dar 
+human	sna_def/sna_glass_mh_mt.evm

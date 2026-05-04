@@ -1,0 +1,150 @@
+//
+//	t00a1D.d00a.src	
+//
+//	written by S.Hirano 2000.Aug
+//
+//	$Id: t00a1D.d00a.src,v 1.29 2002/07/29 02:11:19 usr04098 Exp $
+
+// デファイン
+
+
+
+block .use r_tnk0
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+include		common.h
+include		t00a1D_effect.h
+
+// キャラクタ 
+// スネーク常駐化にともない、コメントアウト(00.10.17）
+// include		snake_demo.h
+// cvd			human/sna_skl/sna_skl3.cvd
+
+// スネークテクスチャ統合
+pack_all sna_merge.tri \
+	human/sna_dive/sna_dive_sh_mt.dar \
+	human/sna_coat/sna_coat_mh_mt.dar
+
+// 高波用
+option makexti6 -l 128
+pack_all	wave.tri effect/wave/wave06.bmp effect/wave/wave09_alp_ovl.bmp
+option makexti6
+
+// 橋モデル
+
+// オーバーレイを使うので、マンハッタン部分を先に描画。
+pack_all	aaa_d00a2.tri world/d00a/d00a2.dar world/d00a/d00a3.dar
+world		d00a/d00a2.kms d00a/d00a3.kms
+
+// 描画フェイズの違うテクスチャの切り分け
+world		d00a/d00a_wire_cm.dar
+
+// タンカー部分モデル
+
+//world		d00a/d00a_tanker.kms <- これは、w00a_demo.h内で記述。
+include		w00a_demo.h
+// world		w00a
+
+// その他橋モデル。（include w00a_demo.h の後に置くこと）
+world		d00a
+
+// ほかタンカー関係共通部分。
+world		w00
+
+// ライトファイル（ステージ用）
+lt2			d00a.lt2
+// ライトファイル（個別オブジェ用）
+lt2			w00a.lt2
+// ライトファイル（スケールかけたモデル用）
+lt2			d00a_scale10.lt2
+
+// ハザード
+hazard		d00a.hzx
+
+// 小物類
+pack_all	effects.tri goods/ciga \
+			effect/smoke/smoke_lp1_alp.bmp \
+			effect/smoke/smoke_lp2_alp.bmp \
+			effect/smoke/smoke_lp3_alp.bmp
+goods		ciga
+
+//ダイブ用ワイヤー(追加水谷)
+anm             d00a_divewire/d00a_divewire.xsi -N -S 10
+anm             d00a_divewire/d00a_divewire2.xsi -N -S 10
+anm             sna_poncho/sna_coat_poncho_mt.xsi -N -S 10 //注！！これはマルチテクスチャです。
+
+// 車
+pack_all	ww_car_mdl.tri \
+			goods/car_traffic_effect/car_ban.dar \
+			goods/car_traffic_effect/car_odessey.dar \
+			goods/car_traffic_effect/car_skyline.dar \
+			goods/car_traffic_effect/car_wagon.dar
+goods		car_traffic_effect
+
+//水飛沫エフェクトで使用するCV2等
+cvd	human/sna_skl/sna_skl3.cvd vn
+
+//振動データ
+// データ数が多すぎてロード時に落ちるステージが出たので、一時的にカット。010729（平野）
+// 振動ファイルは一つにまとまるようになったので組み込み。010803
+vib		demo
+
+// テロップ用テクスチャ
+pack_all	staff.tri \
+			menu/staffroll/sht/eng \
+			menu/staffroll/sht/jpn \
+			debug/shibata/staffroll/alpha03_alp_ovl.bmp \
+			menu/title_trial/title_mgs2_alp_ovl.bmp \
+			menu/title_trial/title_sol_alp_ovl.bmp
+
+// デバッグ用（実験終了次第外すよう、心がけること）
+
+// デモ書き出し LSTファイルによる追加
+
+pack_all sna_dive_coat.tri \
+	human/sna_dive/sna_dive_sh_mt.dar \
+	human/sna_coat/sna_coat_mh_mt.dar
+human	sna_dive/sna_dive_sh_mt.kms
+human	sna_coat/sna_coat_mh_mt.evm
+
+pack_all demo_sna_dive.tri \
+	human/rev_def/rev_def_mh_mt.dar \
+	human/rev_coat/rev_hair_fix.dar \
+	human/rev_coat/rev_coat_bounding.dar
+human	rev_def/rev_def_mh_mt.evm
+human	rev_coat/rev_hair_fix.kms
+human	rev_coat/rev_coat_bounding.kms // 追記0906水谷
+
+pack_all demo_kacatka.tri \
+	meca/kacatka/kck_504.dar \
+	meca/kacatka_cargo/kck_cargo.dar
+meca	kacatka/kck_504.kms
+meca	kacatka_cargo/kck_cargo.kms
+
+pack_all demo_other_obj.tri \
+	goods/demo_rev_scope/demo_rev_scope.dar \
+	goods/demo_dummy/demo_dummy.dar \
+	weapon/saa/saa.dar
+goods	demo_rev_scope/demo_rev_scope.kms
+goods	demo_dummy/demo_dummy.kms
+weapon	saa/saa.kms
+
+#ifdef MGS2_XBOX_1
+pack_trnall	effect.tri \
+	effect/cloud/w00_sky_add.bmp /* XBOXの「thunder_flash.c」でのみ使用 */
+#endif
+
+// PAL版ではカサッカローターは別モデル
+#ifdef MGS2_VMODE_PAL
+meca	kacatka_pal/kck_trot.kms
+meca	kacatka_pal/kck_mrot.kms
+#else
+meca	kacatka/kck_trot.kms
+meca	kacatka/kck_mrot.kms
+#endif
+
+/* mgdemo added ----from here (Tue Jul  3 13:54:14 2001) ---- */
+pack_trnall trn.tri effect/splash/splash07_alp.bmp
+/* mgdemo added ----upto here ---- */

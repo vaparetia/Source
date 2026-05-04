@@ -1,0 +1,110 @@
+user/satoyoshi ディレクトリ構成
+
+ |
+ +demoeffect		デモ用エフェクト置き場
+   +har_demoeffect.c	  デモ用のハリアー関連のエフェクト
+ +device		メカ系敵キャラ置き場
+   +cam_act.c		  カメラ系色々な実行関数
+   +cam_alert.c		  カメラ系アラートモード処理
+   +cam_call.c		  カメラ系通報処理
+   +cam_check.c		  カメラ系チェック処理
+   +cam_target.c	  カメラ系ターゲット／当たり処理
+   +cam_wbk.c		  カメラ系白びっくり処理
+   +camera.h		  カメラ系ヘッダファイル
+   +sv_camera.c		  カメラ系メイン関数群
+   +ub_camera.c		  非破壊カメラプログラム
+   +ub_camera.h		  非破壊カメラヘッダファイル
+   +cyp_act.c		  サイファ系色々な実行関数
+   +cyp_alert.c		  サイファ系アラートモード処理
+   +cyp_call.c		  サイファ系通報処理
+   +cyp_funcs.c		  サイファ系諸サブ関数
+   +cyp_target.c	  サイファ系ターゲット／当たり処理
+   +cyp_trace.c		  サイファ系追跡処理
+   +cyp_wbk.c		  サイファ系白びっくり処理
+   +cypher.c		  サイファ系メイン関数群
+   +cypher.h		  サイファ系ヘッダファイル
+   +cypher4snipe.c	  狙撃サイファプログラム
+   +cypher4snipe.h	  狙撃サイファヘッダファイル
+   +eyecheck.c		  視界チェック関数群
+   +eyecheck.h		  視界チェックヘッダファイル
+   +layer_check.h	  行動優先度レイヤー管理ヘッダファイル
+   +satoyoshi.h		  里吉ステップ処理ヘッダファイル
+   +tmp_inc.h		  未使用
+ +doc			ドキュメントフォルダ
+   +satoyoshi.txt	  satoyoshiフォルダ以下の説明文章
+   +harrier.txt		  harrier関連の仕様
+ +effect		  各種エフェクト
+   +sara_umi.c		  皿状拡張海 （未使用）
+   +umi_ex.c		  拡張海
+ +equip
+   +dogtag.c		  ドッグタグ赤外線ゴーグル使用時表示
+   +dogtag3.c		  ドッグタク赤外線ゴーグル表示親３つ
+ +harrier
+   +bos_kasacka.c	  ボスサバイバル用カサッカメインプログラム
+   +bos_kasmove.c	  ボスサバイバル用カサッカ移動プログラム
+   +bos_kastart.c	  ボスサバイバル用カサッカ開始直後移動
+   +bos_kastgt.c	  ボスサバイバル用カサッカターゲットプログラム
+   +boss.def		  ボスサバイバル用プログラムextern宣言
+   +fly_data.c		  ハリアー飛行データ
+   +har_acrobat.c	  ハリアーアクロバット飛行プログラム
+   +har_bakudan.c	  ハリアークラスター爆弾投下挙動プログラム
+   +har_burn.c		  ハリアー焼き攻撃プログラム
+   +har_claster.c	  ハリアークラスター爆弾本体プログラム
+   +har_claster.h	  ハリアークラスター爆弾ヘッダファイル
+   +har_commanc.c	  ハリアー コマンド／プロック間連プログラム
+   +har_damage.c	  ハリアーダメージ挙動プログラム
+   +har_dbg.c		  ハリアーデバッグメニュー登録
+   +har_debug.c		  ハリアーデバッグ関連プログラム
+   +har_flare.c		  フレア関連プログラム
+   +har_hover.c		  ハリアーホヴァー攻撃
+   +har_initfst.h	  ハリアー移動ポイント構造体定義
+   +har_kakitem.c	  カサッカに乗っているスネークの投げるアイテム挙動
+   +har_kasacka.c	  カサッカのメインプログラム
+   +har_kasacka.h	  カサッカのヘッダファイル
+   +har_kascomm.c	  カサッカ関連のコマンド／プロックのプログラム
+   +har_kasmove.c	  カサッカの移動制御プログラム
+   +har_kastgt.c	  カサッカのターゲット／当たり制御プログラム
+   +har_kizyuu.c	  ハリアー機銃攻撃制御プログラム
+   +har_main.c		  ハリアーメインプログラム
+   +har_missile.c	  ハリアーのアムラームミサイル制御プログラム
+   +har_missile.h	  ハリアーのアムラームミサイルのヘッダファイル
+   +har_move.c		  ハリアーの移動制御プログラム
+   +har_mpatack.c	  ハリアーミサイルポッド攻撃制御プログラム（未使用）
+   +har_mphov.c		  ハリアーミサイルポッド攻撃制御プログラム
+   +har_mpmv.c		  ハリアーミサイルポッド移動制御プログラム（未使用）
+   +har_mpod.c		  ハリアーミサイルポッドとその弾／爆発制御プログラム
+   +har_mpod.h		  ハリアーミサイルポッドとその弾／爆発制御ヘッダファイル
+   +har_parts.c		  ハリアーの細かいパーツの動き制御プログラム
+   +har_pirots.c	  ハリアーのパイロットとその動き制御プログラム
+   +har_pirots.h	  ハリアーのパイロットとその動き制御ヘッダファイル
+   +har_pmove.c		  ハリアープログラム移動
+   +har_sdmdg.c		  ハリアーサウンドマネージャー
+   +har_seeffect.c	  ハリアー一部SEと付随エフェクト制御プログラム
+   +har_snake.c		  カサッカに乗っているスネークの制御プログラム
+   +har_snkgrn.c	  スネークの打つグレネードランチャー制御プログラム
+   +har_sound.c		  ハリアーのエンジン音や各種音声制御
+   +har_start.c		  ハリアー戦開始時のハリアーの挙動制御
+   +har_target.c	  ハリアーのターゲット／当たり制御
+   +har_think.c		  ハリアーのゲームステップ管理プログラム
+   +har_vibration.c	  ハリアー戦 パッド振動管理プログラム
+   +har_vulc.c		  ハリアー バルカン攻撃制御プログラム
+   +harp_amram.c	  ハリアーアムラーム攻撃移動制御
+   +harp_clast.c	  ハリアークラスター爆弾攻撃移動制御
+   +harp_norm.c		  ハリアー機銃攻撃移動制御
+   +harrier.def		  ハリアープログラム extern宣言
+   +harrier.h		  ハリアープログラム共通ヘッダファイル
+ +util
+   +sato_util.c		  里吉個人用ユーティリティープログラム
+   +sato_util.h		  里吉個人用ユーティリティーヘッダファイル
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,35 @@
+proc rp_ＳＡＶＥデフォルトセット:01 {
+	selectmenu  2 -m  { 
+		[ＳＡＶＥ選択肢__e:セーブする] 
+		[ＳＡＶＥ選択肢__e:セーブしない] 
+	}
+	eval($w:rfp_ＳＡＶＥ選択肢返り値 = $status)
+	print 'ぐあだららじょぶ$w:rfp_ＳＡＶＥ選択肢返り値:' $w:rfp_ＳＡＶＥ選択肢返り値
+}
+
+proc rt_ＳＡＶＥデフォルトセット:01 {
+print 'ほげほほほ'
+	#ifdef d:EU_TRIAL
+	selectmenu  1 -m  { 
+		[ＳＡＶＥ選択肢__e:セーブしない] 
+	}
+	eval($w:rft_ＳＡＶＥ選択肢返り値 = 1)
+	#else
+	selectmenu  2 -m  { 
+		[ＳＡＶＥ選択肢__e:セーブする] 
+		[ＳＡＶＥ選択肢__e:セーブしない] 
+	}
+	eval($w:rft_ＳＡＶＥ選択肢返り値 = $status)
+	#endif
+print 'ぷにょあよあああ'
+}
+
+proc rp_ＳＡＶＥさせないセット:01 {
+	selectmenu  2 -m  { 
+		[ＳＡＶＥ選択肢__e:セーブさせない] 
+		[ＳＡＶＥ選択肢__e:セーブしない] 
+	}
+	eval($w:rfp_ＳＡＶＥ選択肢返り値 = $status)
+	print 'ぐあだららじょぶ$w:rfp_ＳＡＶＥ選択肢返り値:' $w:rfp_ＳＡＶＥ選択肢返り値
+}
+

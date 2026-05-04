@@ -1,0 +1,881 @@
+/*
+	vs08a.gcl
+		ＶＲスニーキングミッション８面 (主観ステージ)
+
+	2002/03/25 T.Ohtani
+	$Id: vs08a.gcl,v 1.44 2002/09/17 09:21:24 usr13731 Exp $
+
+
+*/
+
+// ------------------------------------
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_VR 		1		// 共通プロック切り分け用
+#define		VR_SNEAKING		1		// 共通プロック切り分け用
+
+// ステージ名
+#define		STAGE_VS08A		1		// 共通プロック切り分け用
+
+// 敵兵、ＮＰＣ状況（薬莢を呼び分けるのに必要）
+#define		ENE_P_GOL		1		// 都市迷彩ゴル兵
+#define		ENE_SHOT		1		// ショットガン兵
+#define		ENE_HIGH_TECH	1		// ハイテク兵
+#define		ENE_SHIELD		1		// 盾兵
+
+// オブジェクト
+
+// ------------------------------------
+// 各種スイッチ用define
+// ------------------------------------
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// ------------------------------------
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME			vs08a
+#define		KMS_NAME			vs08a
+#define		TONBO_KMS_NAME		vs08a_tonbo
+#define		LINE_KMS_NAME		vs08a_line
+
+// キャラクター関係
+#define		PLAYER		ライデン
+
+// ------------------------------------
+// 敵兵音声
+// ------------------------------------
+
+// ------------------------------------
+// 敵兵ルート番号
+// ------------------------------------
+enum E_R {
+	敵増援出現ポイント		= 0, // ゴールのところ。
+	雷電道１西の南北通路	= 1,
+	雷電道２中央通路		= 2,
+	雷電道３ゴール前		= 3,
+	雷電道４増援			= 4, // 増援
+	雷電道５東高台			= 5,
+	蛇道１穴障害物北		= 11,
+	蛇道２階段前障害物北	= 12,
+	蛇道３東高台下南北通路	= 13,
+	蛇道４東高台南北通路	= 14,
+	蛇道５ゴール階段脇増援	= 15, // 増援
+	昔蛇１,
+	昔蛇２,
+	昔蛇３,
+	昔蛇４,
+	昔蛇５,
+};
+// ＶＲウィンドウ スニーキング
+#define WINDOW_SNEAKING_VS08A		[VRMSG_J:VRM_SNK_SNK_vs08a] [VRMSG_E:VRM_SNK_SNK_vs08a] [VRMSG_G:VRM_SNK_SNK_vs08a] \	// 日、英、独
+									[VRMSG_F:VRM_SNK_SNK_vs08a] [VRMSG_I:VRM_SNK_SNK_vs08a] [VRMSG_S:VRM_SNK_SNK_vs08a] \	// 仏、伊、西
+									[VRMSG_K:VRM_SNK_SNK_vs08a] \															// 韓
+									p:ＶＲステージ開始時処理								// 終了プロック
+// ＶＲウィンドウ 全殺し
+#define WINDOW_ELIM_ALL_VS08A		[VRMSG_J:VRM_SNK_ELM_vs08a] [VRMSG_E:VRM_SNK_ELM_vs08a] [VRMSG_G:VRM_SNK_ELM_vs08a] \	// 日、英、独
+									[VRMSG_F:VRM_SNK_ELM_vs08a] [VRMSG_I:VRM_SNK_ELM_vs08a] [VRMSG_S:VRM_SNK_ELM_vs08a] \	// 仏、伊、西
+									[VRMSG_K:VRM_SNK_ELM_vs08a] \															// 韓
+									p:ＶＲステージ開始時処理								// 終了プロック
+
+#define	WATCHER_STATUS		d:ENE_STATUS_NORMAL スニーキング８面
+#define ATTACKER_STATUS		d:E_R:敵増援出現ポイント d:ENE_STATUS_NORMAL d:ENE_EQUIP_TYPE_NORMAL
+
+// アイテム位置
+#define スタート地点北柱左	0 0 -4000
+#define ステージ右下		15000 0 0
+#define 最初右Ｔ字路		6000 0 0
+#define ゴール階段前箱右	8500 0 -22000
+#define 最初北箱上			0 2000 -6000
+#define ステージ右下		15000 0 0
+#define 中央通路中央		7500 0 -6500
+#define 右高台北見張		11000 3000 -22000
+#define 右高台左下			10000 3000 -4000
+#define 右高台中央箱左		13000 3000 -14500
+#define ステージ中央穴北	9500 0 -20000
+// ------------------------------------
+// 弾数設定
+// ------------------------------------
+#define ライデソ弾数 12
+#define スネーク弾数 10
+#define ぷりすき弾数 3
+#define たきへび弾数 4
+// ------------------------------------
+// include
+// ------------------------------------
+#include "rai_vs08a.mh"		// 強制モーションリスト
+#include "stdch.h"
+#include "enevoice.h"
+#include "a_stdproc.h"		// アナザーミッション設定ファイル
+#include "sload.h"
+#include "sound.h"
+#include "beyond.h"			// エルード
+#include "item_info.h"
+#include "a_item_info.h"
+#include "ene_item.h"
+#include "vr_common.h"		// ＶＲステージ共通で使用するプロック
+#include "camproc.h"
+#include "vs08a_common.h"
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+// ------------------------------------
+// マップ設定
+// ------------------------------------
+chara マップ スニーキング８面 -k d:KMS_NAME -h d:HZX_NAME,0 -l $s:ＶＲライトファイル名
+
+command マップ設定 スニーキング８面 -set {
+	// ローカルの初期化
+	// ------------------------------------
+	@ローカル変数初期化		// ローカルで使用する変数で初期化をする場合はここで
+
+	// 設定値を変更する場合は以下のプロック内で設定
+	// ------------------------------------
+	@設定値変更				// 敵兵や的のパラメータをステージ限定で変える時はここで
+
+	// ＶＲで必要な基本プロックのセット(vr_common.hで定義)
+	// サウンドの基本パック、ＶＲの基本システム、プレイヤー、ゴール等を設定します
+	// ※このプロックを使用する時は「ＶＲクリア時処理」というプロックが必要です
+	// ＶＲ共通プロックセット	$:スネークファイル $:雷電ファイル $:クリア条件フラグ
+	//							$:ゴールＸ $:ゴールＹ $:ゴールＺ $:タイマー初期値
+	//	VR_GOAL_TARGET	/*的全滅でゴールが開く*/
+	//	VR_GOAL_FREE	/*ゴールが最初から開いてる*/
+	//	VR_GOAL_ENEMY	/*敵全滅でゴールが開く*/
+	//	VR_GOAL_SNEAK	/*潜入モード中はゴールが開く*/
+	//	VR_GOAL_TIME	/*タイマーがゼロになるとゴールが開く*/
+	//	VR_GOAL_SCN		/*シナリオ定義キャラ戦闘不能でゴールが開く*/
+	// ------------------------------------
+	@ＶＲスニーキング共通プロックセット sna_vs08a rai_vs08a 7000 2000 -34000
+
+	// ＶＲウィンドウの設定
+	// ------------------------------------
+	@スニーキング８面ＶＲウィンドウ設定
+
+	// クリア時に呼ばれるものの設定
+	// ------------------------------------
+//	テイルズＥ以外では
+#ifndef d:E_TALES
+	@ＶＲクリア設定 p:load_vs09a p:A_ＲＥＴＲＹプロック
+//	テイルズＥのときは
+#else
+	@テイルズＥ用ＶＲクリア設定２
+#endif
+
+	// ステージに引かれるライン
+	// ------------------------------------
+	@ＶＲアウトライン d:KMS_NAME d:TONBO_KMS_NAME d:LINE_KMS_NAME
+
+	@プラグイン設定			// プレイヤーのプラグインがいる時はここで
+	@エルード設定
+	// 敵兵・的関係の設定
+	// ------------------------------------
+	@コマンダー設定
+	@監視カメラ設置
+
+	// ＢＧＭの設定(プレイヤー→敵兵→BGMの順で呼ぶ)
+	// ------------------------------------
+	@ＢＧＭ設定
+
+	// アイテムの設定
+	// ------------------------------------
+	@アイテム設定
+
+	// 光源、オブジェクト、カメラ関連の設定
+	// ------------------------------------
+/*
+	default...
+
+	朝Ｎ = 0,
+	朝Ｆ = 50000,
+	夕Ｎ = -3000,
+	夕Ｆ = 40000,
+	夜Ｎ = -500,
+	夜Ｆ = 18000
+*/
+	@ＶＲフォグ設定 d:VR_FOG:朝Ｎ d:VR_FOG:朝Ｆ -5000 60000 -2000 40000
+	@カメラセット					// chara カメラとベースのカメラを設定
+	@vs08aカメラ設定				// ステージ固有のカメラ設定がいる時はこのプロックで
+	@ＶＲキャラ用ライト設置			// 必ず最後に設定
+#if d:DEBUG_CHARA
+//	@デバッグキャラセット
+#endif
+}
+
+//初期マップの表示
+command マップ表示 -show スニーキング８面
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// 全マップ共通
+proc スニーキング８面ＶＲウィンドウ設定 {
+	#if d:DEBUG_PRINT
+		print 'vr_window_set'
+	#endif
+	if( $b:モード番号 == d:SNEAKING:SNEAKING ){
+		@ＶＲウィンドウ設定	d:WINDOW_SNEAKING_VS08A
+	}else{
+		@ＶＲウィンドウ設定	d:WINDOW_ELIM_ALL_VS08A
+	}
+
+
+	// ＶＲウィンドウを表示する
+	mesg ＶＲウィンドウ ＶＲウィンドウ君 開く
+
+	// スタート時とクリア時に使用するカットインカメラ
+	chara カメラ カットインカメラ		-c 0 -l 0 -p  0
+
+	// スタート時のカメラ(必要な場合)
+	chara カメラ設定 カットインカメラ \
+		-c 1 \
+		-p 7010,8223,-30710 -t 7000,2000,-34000 \
+		-r 707,2050,0 -f 7039 \
+		-a 200 \
+		-i 0 -1 0 0 \
+		-s 1
+/*
+面白。
+-p 4344,108575,465599 -t 4344,105880,455975 \
+-r 178,2048,0 -f 9994 \
+-a 20 \
+*/
+}
+
+//------------------------------------------------------------
+// ステージ開始時処理
+//------------------------------------------------------------
+proc ＶＲステージ開始時処理 {
+	#if d:DEBUG_PRINT
+		print 'game_start!!!!!'
+	#endif
+
+	// プレイヤーやパッドの制御等を行う a_stdproc.hで定義
+	@全ミッション共通ステージ開始時処理
+
+	// カメラワークスタート(必要な場合)
+	// 全体図
+	chara カメラ設定 カットインカメラ \
+		-c 1 \
+		-p 7000,19891,19971 -t 7000,-9738,-28278 \
+		-r 359,2048,0 -f 56620 \
+		-a 200 \
+		-i 4 4 d:START_CAMERA_CHANGE_TIME d:START_CAMERA_CHANGE_TIME \
+		-s 1
+
+	chara delay ディレイ \
+		-time d:START_CAMERA_CHANGE_TIME \
+		-exec {
+			chara カメラ設定 カットインカメラ -s -1
+		}
+}
+
+// ------------------------------------
+// クリア時の処理
+// ------------------------------------
+proc ＶＲクリア時処理 {
+	#if d:DEBUG_PRINT
+		print 'clear'
+	#endif
+	// 強制モーションを発動
+	@全ミッション共通クリアモーション発動 d:モーションリスト:non_mclr_1 2048
+
+	// クリア時にカメラアングルを変える
+	chara カメラ設定 クリア時カメラ \
+		-c 1 \
+		-p 6144,3624,-38000 -t 7208,3015,-33991 \
+		-r 95,169,0 -f 4192 \
+		-a 200 \
+		-i 2 2 0 0 \
+		-s 1
+}
+
+// ------------------------------------
+// パラメータ系の変更
+// ------------------------------------
+// ローカル変数初期化
+// ------------------------------------
+proc ローカル変数初期化 {
+	#if d:DEBUG_PRINT
+		print 'localvar_init'
+	#endif
+
+}
+// 設定値を変更
+// ------------------------------------
+proc 設定値変更 {
+	#if d:DEBUG_PRINT
+		print 'status_set'
+	#endif
+	// スニーキングモード時
+	// このステージは主観撃ちを練習するステージなので
+	// 武器を持っているのですよ。
+	@スニーキング用キャラ別標準装備設定 d:ライデソ弾数 d:スネーク弾数 d:ぷりすき弾数 d:たきへび弾数
+	if ( $b:モード番号 == d:SNEAKING:SNEAKING ) {
+		#if d:DEBUG_PRINT
+			print 'mode_sneaking'
+		#endif
+		//$:ELM_ライデン弾数 $:ELM_スネーク弾数 $:ELM_プリスキン弾数 $:ELM_タキシードスネーク弾数
+		switch($s:選択プレイヤー){
+			case(ライデン){
+				@A_弾数設定 d:武器:Ｍ９ 16
+				@A_弾数設定 d:アイテム:ソコムサプレッサ 13
+
+				// 初期装備武器
+				@A_装備武器 d:武器:Ｍ９
+			}
+			case(スネーク){
+				@A_弾数設定 d:武器:Ｍ９ 16
+				@A_弾数設定 d:アイテム:ＵＳＰサプレッサ 16
+
+				// 初期装備武器
+				@A_装備武器 d:武器:Ｍ９
+			}
+			case(プリスキン){
+				// 無し?
+			}
+			case(タキシードスネーク){
+				// 無し?
+			}
+			case( 刀ライデン ){
+				// 無し
+			}
+			case( 前作スネーク ){
+				// 無し?
+				@A_弾数設定 d:武器:ＵＳＰ 3
+				@A_装備武器 d:武器:ＵＳＰ
+			}
+			default{
+				// ライデン
+				@A_弾数設定 d:武器:Ｍ９ 16
+				@A_弾数設定 d:アイテム:ソコムサプレッサ 12
+
+				// 初期装備武器
+				@A_装備武器 d:武器:Ｍ９
+			}
+		}
+	}
+}
+// プラグインプログラム
+// ------------------------------------
+proc プラグイン設定 {
+	#if d:DEBUG_PRINT
+		print 'plugin_set'
+	#endif
+}
+//-------------------------------------
+// エルード
+// ------------------------------------
+proc エルード設定 {
+	#if d:DEBUG_PRINT
+		print 'beyond_set'
+	#endif
+
+	// 西向き( W )のエルード
+	//---------------------------------
+	// W 右高台南西向エルード
+	trap by001 d:PLAYER \
+		-mask いる \
+		-key d:PAD_ACTION \	//アクションボタン
+		-state 0,4 \		//立ち状態or張り付き
+		-exec { // トラップ名 手すり位置 プレイヤ位置($4 x座標 $6 z座標) トラップ幅min_z max_z フラグ(2は足影なし)
+			@西向きビヨンド発動 by001 9000 $6 -10750 -3250 0x00000002
+		}
+	trap by001 d:PLAYER \
+		-mask いる \
+		-state 6 \			// 強制モーション時
+		-dir 3072 256 \		// 方向指定
+		-camera \			// カメラトラップであることを明示
+		-exec {
+			chara カメラ設定 モーションカメラ \
+				-c 0 \
+				-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-r 874,1572,0 -f 6000 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+		}
+	trap by001 d:PLAYER \
+		-mask ？ \			// 入出
+		-state d:TRP_STATE_ELUDE \ // エルード時
+		-dir 1024 256 \		//方向指定
+		-camera \			//カメラトラップであることを明示
+		-exec {
+			chara カメラ設定 モーションカメラ \
+				-c 0 \
+				-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-r 700,1880,0 -f 9000 \
+				-a 310 \
+				-i 3 2 0 0 \
+				-z d:CAMERA_NO_CUSHION \
+				-s $3
+		}
+	// 右側高台西向中央エルード
+	trap by002 d:PLAYER \
+		-mask いる \
+		-key d:PAD_ACTION \	//アクションボタン
+		-state 0,4 \		//立ち状態or張り付き
+		-exec { // トラップ名 手すり位置 プレイヤ位置($4 x座標 $6 z座標) トラップ幅min_z max_z フラグ(2は足影なし)
+			@西向きビヨンド発動 by002 12000 $6 -18750 -11250 0x00000002
+		}
+	trap by002 d:PLAYER \
+		-mask いる \
+		-state 6 \			// 強制モーション時
+		-dir 3072 256 \		// 方向指定
+		-camera \			// カメラトラップであることを明示
+		-exec {
+			chara カメラ設定 モーションカメラ \
+				-c 0 \
+				-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-r 874,1572,0 -f 6000 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+		}
+	trap by002 d:PLAYER \
+		-mask ？ \			// 入出
+		-state d:TRP_STATE_ELUDE \ // エルード時
+		-dir 1024 256 \		//方向指定
+		-camera \			//カメラトラップであることを明示
+		-exec {
+			chara カメラ設定 モーションカメラ \
+				-c 0 \
+				-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-r 700,1880,0 -f 8079 \
+				-a 330 \
+				-i 3 2 0 0 \
+				-z d:CAMERA_NO_CUSHION \
+				-s $3
+		}
+	// 右側高台西向北エルード
+	trap by003 d:PLAYER \
+		-mask いる \
+		-key d:PAD_ACTION \	//アクションボタン
+		-state 0,4 \		//立ち状態or張り付き
+		-exec { // トラップ名 手すり位置 プレイヤ位置($4 x座標 $6 z座標) トラップ幅min_z max_z フラグ(2は足影なし)
+			@西向きビヨンド発動 by003 10000 $6 -22750 -21250 0x00000002
+		}
+	trap by003 d:PLAYER \
+		-mask いる \
+		-state 6 \			// 強制モーション時
+		-dir 3072 256 \		// 方向指定
+		-camera \			// カメラトラップであることを明示
+		-exec {
+			chara カメラ設定 モーションカメラ \
+				-c 0 \
+				-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-r 874,1572,0 -f 6000 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+		}
+	trap by003 d:PLAYER \
+		-mask ？ \			// 入出
+		-state d:TRP_STATE_ELUDE \ // エルード時
+		-dir 1024 256 \		//方向指定
+		-camera \			//カメラトラップであることを明示
+		-exec {
+			chara カメラ設定 モーションカメラ \
+				-c 0 \
+				-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-r 700,1880,0 -f 8079 \
+				-a 330 \
+				-i 3 2 0 0 \
+				-z d:CAMERA_NO_CUSHION \
+				-s $3
+		}
+	// 南向き( S )のエルード
+	//---------------------------------
+
+	// S 右側高南階段前
+	trap by011 d:PLAYER \
+		-mask いる \
+		-key d:PAD_ACTION \	//アクションボタン
+		-state 0,4 \		//立ち状態or張り付き
+		-exec { // トラップ名 手すり位置 プレイヤ位置($4 x座標 $6 z座標) トラップ幅min_z max_z フラグ(2は足影なし)
+			@南向きビヨンド発動 by011 -1000 $4 14250 15750 0x00000002
+		}
+	trap by011 d:PLAYER \
+		-mask いる \
+		-state d:TRP_STATE_FORCE \	// 強制モーション中
+		-dir 0 256 \				// 方向指定
+		-camera \					// カメラトラップであることを明示
+		-exec {
+			chara カメラ設定 モーションカメラ \
+				-c 0 \
+				-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-r 672,1618,0 -f 6000 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+		}
+	trap by011 d:PLAYER \
+		-mask ？ \			// 入出
+		-state d:TRP_STATE_ELUDE \ // エルード時
+		-dir 2048 256 \		//方向指定
+		-camera \			//カメラトラップであることを明示
+		-exec {
+			chara カメラ設定 モーションカメラ \
+				-c 0 \
+				-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-r 807,2048,0 -f 5750 \
+				-a 250 \
+				-i 3 2 0 0 \
+				-z d:CAMERA_NO_CUSHION \
+				-s $3
+		}
+
+	// S 右側高南階段登口前
+	trap by012 d:PLAYER \
+		-mask いる \
+		-key d:PAD_ACTION \	//アクションボタン
+		-state 0,4 \		//立ち状態or張り付き
+		-exec { // トラップ名 手すり位置 プレイヤ位置($4 x座標 $6 z座標) トラップ幅min_z max_z フラグ(2は足影なし)
+			@南向きビヨンド発動 by012 -3000 $4 9250 10750 0x00000002
+		}
+	trap by012 d:PLAYER \
+		-mask いる \
+		-state d:TRP_STATE_FORCE \	// 強制モーション中
+		-dir 0 256 \				// 方向指定
+		-camera \					// カメラトラップであることを明示
+		-exec {
+			chara カメラ設定 モーションカメラ \
+				-c 0 \
+				-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-r 672,1618,0 -f 6000 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+		}
+	trap by012 d:PLAYER \
+		-mask ？ \			// 入出
+		-state d:TRP_STATE_ELUDE \ // エルード時
+		-dir 2048 256 \		//方向指定
+		-camera \			//カメラトラップであることを明示
+		-exec {
+			chara カメラ設定 モーションカメラ \
+				-c 0 \
+				-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-r 807,2048,0 -f 5750 \
+				-a 250 \
+				-i 3 2 0 0 \
+				-z d:CAMERA_NO_CUSHION \
+				-s $3
+		}
+	// S 右側高北突出部南
+	trap by013 d:PLAYER \
+		-mask いる \
+		-key d:PAD_ACTION \	//アクションボタン
+		-state 0,4 \		//立ち状態or張り付き
+		-exec { // トラップ名 手すり位置 プレイヤ位置($4 x座標 $6 z座標) トラップ幅min_z max_z フラグ(2は足影なし)
+			@南向きビヨンド発動 by013 -21000 $4 10250 11750 0x00000002
+		}
+	trap by013 d:PLAYER \
+		-mask いる \
+		-state d:TRP_STATE_FORCE \	// 強制モーション中
+		-dir 0 256 \				// 方向指定
+		-camera \					// カメラトラップであることを明示
+		-exec {
+			chara カメラ設定 モーションカメラ \
+				-c 0 \
+				-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-r 672,2363,0 -f 6000 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+		}
+	trap by013 d:PLAYER \
+		-mask ？ \			// 入出
+		-state d:TRP_STATE_ELUDE \ // エルード時
+		-dir 2048 256 \		//方向指定
+		-camera \			//カメラトラップであることを明示
+		-exec {
+			chara カメラ設定 モーションカメラ \
+				-c 0 \
+				-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-r 807,2048,0 -f 5750 \
+				-a 250 \
+				-i 3 2 0 0 \
+				-z d:CAMERA_NO_CUSHION \
+				-s $3
+		}
+	// 北向き( N )のエルード
+	//---------------------------------
+	// 右側高台北向エルード
+	trap by021 d:PLAYER \
+		-mask いる \
+		-key d:PAD_ACTION \	//アクションボタン
+		-state 0,4 \		//立ち状態or張り付き
+		-exec { // トラップ名 手すり位置 プレイヤ位置($4 x座標 $6 z座標) トラップ幅min_z max_z フラグ(2は足影なし)
+			@北向きビヨンド発動 by021 -11000 $4 9250 11750 0x00000002
+		}
+	trap by021 d:PLAYER \
+		-mask いる \
+		-state 6 \
+		-dir 2048 256 \		//方向指定
+		-camera \			//カメラトラップであることを明示
+		-exec {
+			chara カメラ設定 モーションカメラ \
+				-c 0 \
+				-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-r 678,2336,0 -f 7120 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+		}
+	trap by021 d:PLAYER \
+		-mask ？ \			// 入出
+		-state d:TRP_STATE_ELUDE \ // エルード時
+		-dir 0 256 \		//方向指定
+		-camera \			//カメラトラップであることを明示
+		-exec {
+			chara カメラ設定 モーションカメラ \
+				-c 0 \
+				-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-r 861,2048,0 -f 8107 \
+				-a 250 \
+				-i 3 2 0 0 \
+				-z d:CAMERA_NO_CUSHION \
+				-s $3
+		}
+}
+
+// ------------------------------------
+// 敵兵や的の処理
+// ------------------------------------
+// 敵兵に関する設定
+//-------------------------------------
+proc 警備兵セット {
+	#if d:DEBUG_PRINT
+		print 'watcher_set'
+	#endif
+	if(	($s:選択プレイヤー == ライデン)		|| \
+		($s:選択プレイヤー == プリスキン)	|| \
+		($s:選択プレイヤー == 刀ライデン)	){
+		@VR_スニーキング警備兵 敵兵:01 d:E_R:雷電道１西の南北通路	1 d:WATCHER_STATUS // d:WATCHER_STATUS 敵兵ルートの下に定義。
+		@VR_スニーキング警備兵 敵兵:02 d:E_R:雷電道２中央通路		0 d:WATCHER_STATUS
+		@VR_スニーキング警備兵 敵兵:03 d:E_R:雷電道３ゴール前		0 d:WATCHER_STATUS
+		@VR_スニーキング警備兵 敵兵:04 d:E_R:雷電道５東高台			0 d:WATCHER_STATUS
+
+	}else if(($s:選択プレイヤー == スネーク)			|| \
+			 ($s:選択プレイヤー == タキシードスネーク)	){
+		@VR_スニーキング警備兵 敵兵:01 d:E_R:蛇道１穴障害物北		0 d:WATCHER_STATUS
+		@VR_スニーキング警備兵 敵兵:02 d:E_R:蛇道２階段前障害物北	0 d:WATCHER_STATUS
+		@VR_スニーキング警備兵 敵兵:03 d:E_R:蛇道３東高台下南北通路	0 d:WATCHER_STATUS
+		@VR_スニーキング警備兵 敵兵:04 d:E_R:蛇道４東高台南北通路	2 d:WATCHER_STATUS
+
+	}else if( $s:選択プレイヤー == 前作スネーク ){
+		@VR_スニーキング警備兵 敵兵:01 d:E_R:昔蛇１ 1 d:WATCHER_STATUS
+		@VR_スニーキング警備兵 敵兵:02 d:E_R:昔蛇２ 1 d:WATCHER_STATUS
+		@VR_スニーキング警備兵 敵兵:03 d:E_R:昔蛇３ 0 d:WATCHER_STATUS
+		@VR_スニーキング警備兵 敵兵:04 d:E_R:昔蛇４ 1 d:WATCHER_STATUS
+	}else{
+		@VR_スニーキング警備兵 敵兵:01 d:E_R:雷電道１西の南北通路	1 d:WATCHER_STATUS // d:WATCHER_STATUS 敵兵ルートの下に定義。
+		@VR_スニーキング警備兵 敵兵:02 d:E_R:雷電道２中央通路		0 d:WATCHER_STATUS
+		@VR_スニーキング警備兵 敵兵:03 d:E_R:雷電道３ゴール前		0 d:WATCHER_STATUS
+		@VR_スニーキング警備兵 敵兵:04 d:E_R:雷電道５東高台			0 d:WATCHER_STATUS
+	}
+}
+
+proc 攻撃兵セット {
+	#if d:DEBUG_PRINT
+		print 'attacker_set'
+	#endif
+	if(	($s:選択プレイヤー == ライデン)		|| \
+		($s:選択プレイヤー == プリスキン)	|| \
+		($s:選択プレイヤー == 刀ライデン)	){
+		//A_探索攻撃兵 $:名前 $:ルート $:ステータス $:装備 $:探索ルート
+		@VR_探索攻撃兵		攻撃兵:01 d:ATTACKER_STATUS d:E_R:雷電道４増援 // d:ATTACKER_STATUS 敵兵ルートの下に定義。
+		//VR_サポート攻撃兵 $:名前 $:ルート $:ステータス $:装備 $:サポートする敵兵名
+		@VR_サポート攻撃兵	攻撃兵:02 d:ATTACKER_STATUS 敵兵:01
+
+	}else if(($s:選択プレイヤー == スネーク)			|| \
+			 ($s:選択プレイヤー == タキシードスネーク)	){
+		@VR_探索攻撃兵		攻撃兵:01 d:ATTACKER_STATUS d:E_R:蛇道５ゴール階段脇増援
+
+		@VR_サポート攻撃兵	攻撃兵:02 d:ATTACKER_STATUS 敵兵:01
+		@VR_サポート攻撃兵	攻撃兵:03 d:ATTACKER_STATUS 敵兵:04
+
+	}else if( $s:選択プレイヤー == 前作スネーク ){
+		@VR_探索攻撃兵		攻撃兵:01 d:ATTACKER_STATUS d:E_R:昔蛇５
+	}else{
+		//A_探索攻撃兵 $:名前 $:ルート $:ステータス $:装備 $:探索ルート
+		@VR_探索攻撃兵		攻撃兵:01 d:ATTACKER_STATUS d:E_R:雷電道４増援 // d:ATTACKER_STATUS 敵兵ルートの下に定義。
+		//VR_サポート攻撃兵 $:名前 $:ルート $:ステータス $:装備 $:サポートする敵兵名
+		@VR_サポート攻撃兵	攻撃兵:02 d:ATTACKER_STATUS 敵兵:01
+	}
+}
+
+proc 警備兵コマンダー {
+	#if d:DEBUG_PRINT
+		print 'wccomm_set'
+	#endif
+
+	chara 警備コマンダー wccomm -e {警備兵セット}
+}
+
+proc 攻撃兵コマンダー {
+	#if d:DEBUG_PRINT
+		print 'atcomm_set'
+	#endif
+	chara 攻撃コマンダー atcomm	-e {攻撃兵セット}
+}
+
+proc コマンダー設定 {
+	#if d:DEBUG_PRINT
+		print 'commander_set'
+	#endif
+	chara コマンダー 敵兵セット \
+		-w 警備兵コマンダー \
+		-a 攻撃兵コマンダー \
+		-d スニーキング８面 \
+		-r 7000,2000,-34000 スニーキング８面 \
+		-c 7000,2000,-34000 スニーキング８面 \
+		-v [ene_vr_voice:01] \
+		-z $i:敵標準麻酔持続 \
+		-h $i:標準警戒時間 \
+		-o $i:敵標準気絶持続 \
+		-s (d:ENE_STAGE_GPS | d:ENE_STAGE_VR_ANOTHER ) \
+		-b 0 \
+		-m d:ALERT_MODE_SENNYU
+}
+
+proc 監視カメラ設置 {
+	#if d:DEBUG_PRINT
+		print 'svc_camera'
+	#endif
+	switch($s:選択プレイヤー){
+		case(ライデン){
+			//簡易監視カメラ 		名前       		位置 				取付縦 横 中心角 初期角	 振り幅	flg	首振り待ち時間
+			@vs08a_簡易監視カメラ 右高台階段南		12000 2700 -20000	500 3072	3584	0	 200	0	60
+			@vs08a_簡易監視カメラ 左ルート階段北	2000 2700 -19500	500 1024	1024	0	 400	0	60
+			@vs08a_簡易監視カメラ 中央通路			6000 2700 -6000		500 1024	1024	0	 0 		0	60
+		}
+		case( スネーク ) {
+			//簡易監視カメラ 名前       	場所ＸＹＺ 				取付縦  横 	   中心角 初期角  	振り幅 flg 首振り待ち時間
+			@vs08a_簡易監視カメラ 中央通路北 		6000 2700 -6500		500 1024	555  -512 		230 0 60
+			@vs08a_簡易監視カメラ 中央通路南 		6000 2700 -2500		500 1024	1480 512 		230 0 60
+
+			@vs08a_簡易監視カメラ 左ルート階段北	2000 2700 -19500 	500 1024 	1024 0 			650 0 60
+
+			@vs08a_簡易監視カメラ ゴール階段左		4500 2700 -26000 	600 0 		3750 0			350 0 60
+		}
+		case( 前作スネーク ){
+			@vs08a_簡易監視カメラ スタート右		6000 2700 -2000 	525 1024 	512 0			350 0 60
+			@vs08a_簡易監視カメラ ゴール階段左		4500 2700 -26000 	600 0 		3750 0			350 0 30
+			if(`@スニーキング判定` == 0){
+				//簡易監視カメラ 名前					場所ＸＹＺ 			取付縦  横 	   中心角 初期角  	振り幅 flg 首振り待ち時間
+				@vs08a_簡易監視カメラ 右高台階段南		12000 2700 -20000	500 	3072	3584	0		220		0	60
+				@vs08a_簡易監視カメラ ゴール階段右		9500 2700 -26000	500 	0		3584	0		450		0	60
+			}
+		}
+		default{
+			@vs08a_簡易監視カメラ 右高台階段南		12000 2700 -20000	500 3072	3584	0	 220	0	60
+			@vs08a_簡易監視カメラ 左ルート階段北	2000 2700 -19500	500 1024	1024	0	 400	0	60
+			@vs08a_簡易監視カメラ 中央通路			6000 2700 -6000		500 1024	1024	0	 0 		0	60
+		}
+	}
+}
+
+
+// ------------------------------------
+// ＢＧＭの設定
+// ------------------------------------
+proc ＢＧＭ設定 {
+	#if d:DEBUG_PRINT
+		print 'bgm_set'
+	#endif
+
+	chara ＢＧＭマネージャー ＢＧＭマネ
+}
+
+
+// ------------------------------------
+// アイテムの設定
+// ------------------------------------
+// 再発生が必要な時は以下のプロックの中を記述する
+// ------------------------------------
+proc アイテム取得時番号設定 $:ボックス名 {
+	#if d:DEBUG_PRINT
+		print 'item_no_set'
+	#endif
+}
+// アイテムの設置
+// ------------------------------------
+proc アイテム設定 {
+	#if d:DEBUG_PRINT
+		print 'item_set'
+	#endif
+	// このステージは スニーキングでも武器が必要
+	if(`@スニーキング判定`){
+		switch($s:選択プレイヤー){
+			case(ライデン){
+			}
+			case(スネーク){
+			}
+			case( 前作スネーク ){
+				@ＵＳＰサプレッサ_初期設置 ＵＳＰさぷれ d:ステージ右下 0
+			}
+			default{
+			}
+		}
+	}else{// エリミネート
+		switch( $s:選択プレイヤー ){
+			case( ライデン ){
+//				@弾薬_Ｍ９_初期設置 $:ボックス名 $:Ｘ座標 $:Ｙ座標 $:Ｚ座標 $:水飛沫
+				//  A_Ｍ９_初期設置 $:ボックス名 $:Ｘ座標 $:Ｙ座標 $:Ｚ座標 $:水飛沫 $:変更アイテム名 $:初期弾数 {
+				@A_Ｍ９_初期設置		Ｍ９本体	6000	0		0			0 なし 10
+				@弾薬_Ｍ９_初期設置		Ｍ９弾１	8500	0 		-22000		0
+				@弾薬_ソコム_初期設置	ソコム弾１	 0		2000 	-6000		0
+			}
+			case( プリスキン ){
+				@A_Ｍ９_初期設置		Ｍ９本体	d:中央通路中央 0 なし１ 5
+				@弾薬_ＵＳＰ_初期設置	ＵＳＰ弾	d:右高台左下 0
+			}
+			case( 刀ライデン ){
+			}
+			case( スネーク ){
+				@A_Ｍ９_初期設置		Ｍ９本体	d:ステージ右下 0 なし１ 8
+				@弾薬_Ｍ９_初期設置		Ｍ９弾１	d:右高台北見張	0
+				@弾薬_ＵＳＰ_初期設置	ＵＳＰ弾	d:右高台左下	0
+			}
+			case( タキシードスネーク ){
+				// なし
+			}
+			case( 前作スネーク ){
+				@A_Ｍ９_初期設置 Ｍ９ d:ステージ中央穴北 0 なし 4
+				@A_ＵＳＰ_初期設置 ＵＳＰ d:右高台中央箱左 0 なし 4
+				@ＵＳＰサプレッサ_初期設置 さぷれ d:ステージ右下 0
+			}
+			default{
+			}
+		}
+	}
+}
+// ------------------------------------
+// その他オブジェクト関連
+// ------------------------------------

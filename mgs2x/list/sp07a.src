@@ -1,0 +1,80 @@
+//
+//	sp07a.src	
+//	バラエティ ゴルルゴンステージ
+//	written by H.Yoshiike 2002.Apr
+//
+//	$Id$
+
+#define WN_SP07A
+
+block .use r_vr_r
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"vr_def.h"
+#include	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+
+// キャラクタ
+// ゴルルゴンセット一式
+pack_all vrgll_mt.tri \
+	human/gll_gllgon/gll_def.dar \
+	human/gll_gllgon/aks_sp_gll.dar
+
+human	gll_gllgon/gll_def.kms
+human	gll_gllgon/aks_sp_gll.kms
+cvd		human/gll_gllgon/gll_def.cv2 vn
+
+
+// メカゲノラ一式
+pack_all vrmgll_mt.tri \
+	human/gno_meca/gno_meca_mt.dar
+
+human	gno_meca/gno_meca_mt.kms
+cvd		human/gno_meca/gno_meca_mt.cv2 vn
+
+
+// ゲノラ一式
+pack_all vrgno_mt.tri \
+	human/gno_def/gno_def.dar \
+	human/gno_def/fms_4gno.dar
+
+human	gno_def/gno_def.kms
+human	gno_def/fms_4gno.kms
+cvd		human/gno_def/gno_def.cv2 vn
+
+
+// ゴルルゴン系のモーション
+mtn		gll.mls
+vib		gbs/gol_howl.vib
+
+// 強制モーション
+mtn			rai_sp07a.mls
+mtn			sna_sp07a.mls
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル 
+option makexti6 -l 1024 -f PAL8
+pack_all	sp07a.tri \
+	world/vr_variety/sp07a
+option makexti6
+
+world		vr_variety/sp07a
+hazard		sp07a.hzx
+rol			world/vr_variety/sp07a/sp07a_outline.rol
+
+
+// オブジェクト
+
+//	ＶＲ追加エフェクト
+#include	"vr_effect.h"
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム
+rename		sp07a_outline.rol	sp07a.rol

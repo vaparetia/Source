@@ -1,0 +1,317 @@
+#!/usr/bin/perl
+#
+# all right reserved by KCEJ 1999-2001
+#
+# Programmed by T.Morita
+#
+
+require "config.pl" ;
+
+#Flush the buffer immeadiatly
+$| = 1 ;
+
+while( 1 )
+{
+    select( undef, undef, undef, 2.0 ) ;
+
+    open( POOL, "ls -t $fixrundir |" ) ;
+    foreach $files ( <POOL> )
+    {
+	chop( $files ) ;
+
+	open( CHECK, "tail -1 '$fixrundir/$files' | grep -F 'EOF' |" ) ;
+	if ( <CHECK> )
+	{
+	    print "start $files\n" ;
+	    &main_start() ;
+
+	    open( ENT, "$fixrundir/$files" ) ;
+	    chop( $dest_dir=<ENT> ) ;
+	    chop( $rest    =<ENT> ) ;
+	    foreach $ent ( <ENT> )
+	    {
+		$ent =~ s/[\n\r]*$// ;
+		if ( $ent ne "EOF" && $ent )
+		{
+		    &fork( "echo '$ent' > $err_tmpfile" ) ;
+		    &main_convert( $ent ) ;
+		    &main_error( $ent ) if ( $mode eq $MODE_ABORT ) ;
+		    unlink( $err_tmpfile ) ;
+		    &main_renew_bbs( $ent, $mode ) ;
+		}
+		$rest-- ;
+	    }
+	    close ENT ;
+
+	    &main_end() ;
+
+#	    unlink( "$fixrundir/$files" ) ;
+	    print "end $files\n" ;
+	}
+	close( CHECK ) ;
+    }
+    close( POOL ) ;
+}
+exit( 0 ) ;
+
+
+
+
+###############################################################################
+#
+# Main Subroutines 
+#
+#
+sub main_start()
+{
+    $date = substr( localtime, 4) ;
+
+    $logfile = $date ;
+    $logfile =~ s/[ ]+[0-9]+ [0-9]+:[0-9]+:[0-9]+ // ;
+    $logfile = $logdir."/Neofix".$logfile ;
+
+    $errfile = $date ;
+    $errfile =~ s/[0-9]+:[0-9]+:[0-9]+ // ;
+    $errfile =~ s/[ ]+/_/g ;
+    $errfile = $logdir."/err/".$errfile ;
+    $errflag = 0 ;
+
+    &append( $logfile   , substr( localtime, 4)." FixRun 発動\n" ) ;
+    &append( $reportfile, substr( localtime, 4)." FixRun 発動\n" ) ;
+}
+
+sub main_convert
+{
+    local ( $file ) = @_ ;
+    local $name, $cmd ;
+    local $time ;
+
+    $mode = $MODE_FIXED ;
+
+    #ログを残す
+    $time = substr( localtime, 4) ;
+    &append( $reportfile, "$time FixRunは、$entを $dest_dir に更新中\n" ) ;
+    &append( $reportfile, "未更新ファイルの数は、現在のを含め$rest個です。\n");
+    &append( $logfile   , "\t$time FixRunは、$entを $dest_dir に更新\n" ) ;
+
+    $dest_d = $file ;
+    $dest_d =~ s/\/[^\/]*$//g ;
+    &fork( "mkdir -p $dest_dir/$dest_d" ) if ( !-e "$dest_dir/$dest_d" ) ;
+
+    #コンバートを掛ける
+    open( CMD, "fix_cmd $file |" ) ;
+    foreach( split( ';', <CMD> ) )
+    {
+	if ( &fork( "$_ >> $err_tmpfile" ) )
+	{
+	    $mode = $MODE_ABORT ;
+	}
+    }
+    close( CMD ) ;
+#    &fork( "rm -rf $work_dir/*" ) ;
+}
+
+sub main_error()
+{
+    local ( $ent ) = @_ ;
+    local $file, $err_time ;
+
+    if ( $ent =~ "." )
+    {
+#既にファイルがあれば消す
+	open( DUP, "grep -H '$ent<' $entrydir/*  | sed -e 's/:.*\$//' |" ) ;
+	foreach( <DUP> ) { s/[\n\r]*$// ; unlink }
+	close( DUP ) ;
+
+#エントリーを追加しなおす
+	$file = "$entrydir/entry" ;
+	for ( $num=0 ; -e $file.sprintf( ".%04d", $num ) ; $num++ ){}
+	$file .= sprintf( ".%04d", $num ) ;
+	$err_time = localtime ;
+	open( ENT, "> $file" ) ;
+	print ENT "<OPTION>[Err][$err_time]$ent</OPTION>" ;
+	close( ENT ) ;
+    }
+
+#ログにエラーを残す
+    &fork( "echo '-----------------------------------------------------------' >> $errfile" ) ;
+    &fork( "echo '---------Error occur on $date Start---------' >> $errfile" ) ;
+    &fork( "cat $err_tmpfile >> $errfile" ) ;
+    &fork( "echo '---------Error occur on $date End  ---------' >> $errfile" ) ;
+    &fork( "echo '-----------------------------------------------------------' >> $errfile" ) ;
+}
+
+
+sub make_bbstime()
+{
+    local ( $fname, $content ) = @_ ;
+    local $file, $num ;
+
+#古いのを消し、上限(１００個)を設ける
+    open( LS, "ls -t $bbstime/* | sed -e 's/:.*\$//' |" ) ;
+    for( $num=0 ; $file=<LS> ; $num++ )
+    {
+	$file =~ s/[\n\r]*$// ;
+	open( DUP, "grep -H 'file=$fname>' $file |" ) ;
+	unlink( $file ) if ( <DUP> || $num>=100 ) ;
+        close( DUP ) ;
+    }
+    close( LS ) ;
+
+#新しいものを作る
+    $file = "$bbstime/bbs" ;
+    for ( $num=0 ; -e $file.sprintf( ".%04d", $num ) ; $num++ ){}
+    $file .= sprintf( ".%04d", $num ) ;
+
+    #&send_ipmsg( $from, "", $to, "ランタイムに上がっていたのですがFIXされていない" ) ;
+
+    open( BBT, "> $file" ) ;
+    print BBT $content ;
+    close( BBT ) ;
+}
+
+sub main_renew_bbs()
+{
+    local ( $fname, $gif ) = @_ ;
+    local $bbs_time, $bbs_file ;
+    local $num, $msg ;
+    local $tim1, $tim2 ;
+
+    $bbs_file = "$bbsdir/$fname" ;
+
+#BBSファイルがないので作る
+    if ( !-e $bbs_file )
+    {
+    }
+
+#BBSFIXファイルがないので作る
+    if ( !-e "$bbs_file.fix" )
+    {
+	$date = substr( localtime, 4) ;
+	$msg  = "<TR><TD></TD>" ;
+	$msg .= "<TD><IMG SRC=".$where{'gifFix'}."></TD>" ;
+	$msg .= "<TD></TD>" ;
+	$msg .= "<TD>&lt; 更新/Fix &gt;</TD>" ;
+	$msg .= "<TD>[Name: システム]</TD>" ;
+	$msg .= "<TD>$date</TD></TR>" ;
+	$date =~ s/ /+/g ; 
+
+	open( BBS_IN, "$bbs_file" ) ;
+	if ( $_ = <BBS_IN> )
+	{
+	    open( BBS_OUT, ">$bbs_file.fix" ) ;
+	    s/&fname=[^&]*&/&fname=FIXUP&/ ;
+	    s/&fcnmt=[^&]*&/&fcnmt=&/ ;
+	    s/&fdate=[^&]*&/&fdate=$date&/ ;
+	    s/&fhost=[^&]*&/&fhost=mutsu.konami&/ ;
+	    s/&tmp_fix=[^&]*&/&tmp_fix=Fix&/ ;
+	    s/&fix=submit/&fix=hidden/ ;
+	    s/&icmnt=text/&icmnt=hidden/ ;
+	    #FIXがあればその情報をとる
+	    s/<TR><TD><\/TD><TD><IMG SRC=.*gif><\/TD><TD><\/TD><TD>&lt;.*&gt;<\/TD><TD>.+[0-9: ]+<\/TD><\/TR>// ;
+	    s/<TR><TD><\/TD><TD><IMG SRC=.*gif>.+[0-9: ]+<\/TD><\/TR>//      if ( !/fix.gif/ || /fxd.gif/ || /err.gif/ || /tmp.gif/ ) ;
+	    s/<TR><TD><\/TD><TD><\/TD><TD>/$msg<TR><TD><\/TD><TD><\/TD><TD>/ if ( !/fix.gif/ || /fxd.gif/ || /err.gif/ || /tmp.gif/ ) ;
+	    s/fxd\.gif/fix.gif/ if ( /fxd.gif/ ) ;
+	    s/err\.gif/fix.gif/ if ( /err.gif/ ) ;
+	    print BBS_OUT ;
+	    close( BBS_OUT ) ;
+	    
+	    &make_bbstime( $fname, $_ ) ;
+	}
+	close( BBS_IN ) ;
+    }
+
+#BBS更新
+    open( DUP, "grep -H 'file=$fname>' $bbstime/* | sed -e 's/:.*\$//' |" ) ;
+    if ( $bbs_time=<DUP> )
+    {
+	chop $bbs_time ;
+
+	open( BBS_TIM, "+<$bbs_time" ) ;
+	open( BBS_FIX, "+<$bbs_file.fix" ) ;
+	if ( $_ = <BBS_FIX> )
+	{
+	    #ビットマップを書き換える
+	    s/fix\./$gif./ ;
+	    seek( BBS_TIM, 0, 0 ) ;
+	    seek( BBS_FIX, 0, 0 ) ;
+	    print BBS_TIM ;
+	    print BBS_FIX ;
+	    close BBS_TIM ;
+	    close BBS_FIX ;
+
+	    #リネームするか?(アクセスタイムを比較して検討する)
+	    $tim1 = (stat( "$bbs_file.fix" ))[8] ;
+	    $tim2 = (stat(  $bbs_file      ))[8] ;
+	    print STDERR "Time NOT matched on BBS-File($tim1<=$tim2)\n" if ( $tim1 <= $tim2 ) ;
+	    rename( "$bbs_file.fix", $bbs_file ) if ( $tim1 > $tim2 ) ;
+	}
+    }
+    else
+    {
+	open( BBS_FIX, "+<$bbs_file.fix" ) ;
+	if ( $_ = <BBS_FIX> )
+	{
+	    #ビットマップを書き換える
+	    s/fix\./$gif./ ;
+	    seek( BBS_FIX, 0, 0 ) ;
+	    print BBS_FIX ;
+	    close BBS_FIX ;
+
+	    #リネームするか?(アクセスタイムを比較して検討する)
+	    $tim1 = (stat( "$bbs_file.fix" ))[8] ;
+	    $tim2 = (stat(  $bbs_file      ))[8] ;
+	    print STDERR "Time NOT matched on BBS-File($tim1<=$tim2)\n" if ( $tim1 <= $tim2 ) ;
+	    rename( "$bbs_file.fix", $bbs_file ) if ( $tim1 > $tim2 ) ;
+	}
+
+	print STDERR "BBS-File not found, searching('file=$fname>')\n" ;
+    }
+    close( DUP ) ;
+}
+
+sub main_end()
+{
+    unlink( $reportfile ) ;
+    &append( $logfile, substr( localtime, 4)." FixRun 停止\n" ) ;
+}
+
+
+#######################################################################################
+#
+# Subroutines
+#
+#
+sub append
+{
+    local ($in,$literal) = @_ ;
+
+    open( INOUT, ">>$in" ) ;
+    print INOUT $literal ;
+    close INOUT ;
+}
+
+sub fork
+{
+    local $pid ;
+
+#    if ( $mode = $MODE_ABORT )
+#	return 0 ;
+
+    #コマンドをフォークして実行する
+    unless ( $pid = fork )
+    {
+        exec( $_[0] ) ;
+        exit 0 ;
+    }
+    waitpid( $pid, 0 ) ;
+
+    #異常だった場合そのコマンドをログに吐く
+    $_[0] =~ s/\/u\/develop\/mj001b\/bin\/linux\/// ;
+    print STDERR (localtime)." com($_[0])" ;
+    print STDERR "==>$? [$mode]" if ( $? ) ;
+    print STDERR "\n" ;
+
+    return $? ;
+}
+

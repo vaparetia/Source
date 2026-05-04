@@ -1,0 +1,115 @@
+
+void *NewEvmHairModel_called2(int name,int model_name,int sample_num,
+							  OBJECT *target,unsigned char *objnum,int n_objnum,
+							  FVECTOR *x,SVECTOR *r,
+							  float oval_param,int collision_flag,unsigned char *collision_objs,
+							  int visible_flag,int light_flag,int boundmodel_name);
+
+
+	unsigned char hair_objnum[]={ 11,12, };
+	unsigned char id_objnum[]={ 2, };
+	unsigned char hair_colobjs[]={ 11,12, };
+	unsigned char id_colobjs[]={ 2,3,7, };
+
+	NewEvmHairModel_called2(GV_StrCode("エマ髪の毛"),GV_StrCode("ema_hair_mh"),17,
+							ema_object,hair_objnum,sizeof(hair_objnum)/sizeof(hair_objnum[0]),
+							NULL,NULL,
+							1.0f,sizeof(hair_colobjs)/sizeof(hair_colobjs[0]),hair_colobjs,
+							0,0,GV_StrCode("ema_bounding"));
+
+	NewEvmHairModel_called2(GV_StrCode("エマＩＤ"),GV_StrCode("ema_idrope_mh_mt"),18,
+							ema_object,id_objnum,sizeof(id_objnum)/sizeof(id_objnum[0]),
+							NULL,NULL,
+							1.0f,sizeof(id_colobjs)/sizeof(id_colobjs[0]),id_colobjs,
+							0,0,GV_StrCode("ema_bounding"));
+
+
+#if 1
+	chara マルチウェイト髪の毛モデル マルチウェイトエマの髪 \
+		-n ema_hair_mh\
+		-d 0 \
+		-m 25 \
+		-a 300 \
+		-k 1000 \
+		-y ema_def_mh_mt \
+		-z 11 12 \
+		-x 0,0,0 \
+		-o 100 \
+		-q 0 \
+		-f 1 \
+		-c 2 { 11 12 } \
+		-v \
+		-w 80	
+		
+#endif	
+
+#if 1
+	chara マルチウェイト髪の毛モデル マルチウェイトエマＩＤ \
+		-n ema_idrope_mh_mt\
+		-d 0 \
+		-m 25 \
+		-a 300 \
+		-k 1000 \
+		-y ema_def_mh_mt \
+		-z 2 \
+		-x 0,0,0 \
+		-o 100 \
+		-q 0 \
+		-f 1 \
+		-c 3 { 2 3 7 } \
+		-v \
+		-w 90	
+		
+#endif	
+
+#if 1
+	chara マルチウェイト髪の毛モデル マルチウェイト濡れエマの髪 \
+		-n ema_hair_swim_mh\
+		-d 0 \
+		-m 25\
+		-a 50 \
+		-k 7000 \
+		-y ema_def_mh_mt\
+		-z 11 12 \
+		-x 0,0,0 \
+		-o 110 \
+		-q 0 \
+		-f 1 \
+		-c 2 { 11 12 } \
+		-v \
+		-w 30	
+		
+#endif	
+
+#if 1
+	chara マルチウェイト髪の毛モデル マルチウェイトエマＩＤ \
+		-n ema_idrope_mh_mt\
+		-d 0 \
+		-m 25 \
+		-a 300 \
+		-k 1000 \
+		-y ema_def_mh_mt \
+		-z 2 \
+		-x 0,0,0 \
+		-o 100 \
+		-q 0 \
+		-f 1 \
+		-c 3 { 2 3 7 } \
+		-v \
+		-w 90	
+		
+#endif	
+
+#if 1
+	chara マルチウェイト髪の毛モデル マルチウェイトエマＩＤ２\
+		-n ema_id_rope3_mh_mt\
+		-d 0 \
+		-m 25 \
+		-a 300 \
+		-k 1000 \
+		-x 0,0,0 \
+		-o 100 \
+		-q 0 \
+		-f 0 \
+		-v \
+		-w 90	

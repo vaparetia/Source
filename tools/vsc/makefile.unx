@@ -1,0 +1,148 @@
+SHAREDIR	=	/usr/local/share/vsc
+INSTDIR		=	/usr/local/bin
+
+SWITCH		=
+
+INCLUDE		=	
+LIB		=	-lm
+
+PROG		=	vsc
+
+PCM_MODULE	=	wavdata.o \
+			vagdata.o
+
+VXCODEC		=	decode.o \
+			dectbl.o \
+			encode.o \
+			enctbl.o \
+			encxa.o \
+			quantize.o \
+			tools.o
+
+OBJ		=	main.o \
+			fft.o \
+			frame.o \
+			spectrum.o \
+			window.o \
+			analyze.o \
+			segmentation.o \
+			label.o \
+			util.o \
+			text.o \
+			vowel.o \
+			formant.o \
+			estimation.o \
+			ref_load.o \
+			matching.o \
+			token.o \
+			mel.o \
+			cepstrum.o \
+			pickup_vec.o \
+			voice.o \
+			fileutil.o \
+			pcmdata.o \
+			$(PCM_MODULE) \
+			$(VXCODEC) \
+			debug.o
+
+
+
+######################
+#   GNU C Compiler   #
+######################
+ENVIRONMENT	=	-D_GCC_
+CC		=	gcc
+OPTIMIZE	=	-O2
+OUTPUT		=	-o $(PROG)
+OBJECT		=	$(OBJ)
+
+# ##########################################
+# #   Other C Compiler on any UN*X System  #
+# ##########################################
+# ENVIRONMENT	=	
+# CC		=	cc
+# OPTIMIZE	=	-O2
+# OUTPUT	=	-o $(PROG)
+# OBJECT	=	$(OBJ)
+
+
+
+
+
+OPTION		=	$(OPTIMIZE) $(SWITCH) $(ENVIRONMENT) \
+			 -D_SHAREDIR_="\"$(SHAREDIR)\""
+
+all:	$(PROG)
+
+clean:;	rm -f $(OBJECT) $(PROG) *~ ~.bak core
+
+install:
+	install -c $(PROG) $(INSTDIR)
+	mkdir $(SHAREDIR)
+	install -c sample.voice $(SHAREDIR)/Voice
+
+$(PROG):	$(OBJECT)
+	$(CC) $(OUTPUT) $(OBJECT) $(LIB)
+
+.c.o:;	$(CC) $(OPTION) $(INCLUDE) -c $*.c -o $*.o
+
+
+main.o:		main.c main.h pcmdata.h frame.h analyze.h segmentation.h \
+		label.h util.h text.h
+
+
+frame.o:	frame.c frame.h pcmdata.h env.h
+
+fft.o:		fft.c fft.h env.h
+
+spectrum.o:	spectrum.c spectrum.h env.h
+
+analyze.o:	analyze.c analyze.h spectrum.h window.h main.h env.h \
+		pcmdata.h estimation.h
+
+segmentation.o:	segmentation.c segmentation.h analyze.h label.h util.h main.h \
+		text.h voice.h
+
+label.o:	label.c label.h analyze.h text.h main.h vowel.h
+
+util.o:		util.c util.h
+
+text.o:		text.c text.h
+
+vowel.o:	vowel.c vowel.h analyze.h pcmdata.h formant.h
+
+formant.o:	formant.c formant.h pcmdata.h mel.h
+
+ref_load.o:	ref_load.c ref_load.h token.h util.h
+
+matching.o:	matching.c matching.h analyze.h label.h ref_load.h util.h
+
+token.o:	token.c token.h
+
+estimation.o:	estimation.c estimation.h env.h mel.h
+
+mel.o:		mel.c mel.h pcmdata.h
+
+pickup_vec.o:	pickup_vec.c pickup_vec.h env.h analyze.h cepstrum.h
+
+voice.o:	voice.c voice.h analyze.h
+
+debug.o:	debug.c debug.h
+
+fileutil.o:	fileutil.c fileutil.h
+pcmdata.o:	pcmdata.c pcmdata.h fileutil.h pcminfo.h $(PCM_MODULE:.o=.h)
+
+# PCM module
+wavdata.o:	wavdata.c wavdata.h pcminfo.h
+vagdata.o:	vagdata.c vagdata.h pcminfo.h vxcodec.h
+
+
+# vxcodec
+decode.o:	decode.c vxcodec.h
+dectbl.o:	dectbl.c vxcodec.h
+decxa.o:	decxa.c vxcodec.h
+envode.o:	encode.c vxcodec.h
+enctbl.o:	enctbl.c vxcodec.h
+encxa.o:	encxa.c vxcodec.h
+quantize.o:	quantize.c vxcodec.h
+tools.o:	tools.c vxcodec.h

@@ -1,0 +1,1377 @@
+/*
+
+	利用可能な 型の種類	
+		char short int long
+		u_char u_short u_int u_long
+		float void
+		FVECTOR SVECTOR IVECTOR FMATRIX
+
+	2000/08/10	T.Morita
+	$Id: demoeffect.cnf,v 1.1 2001/11/30 04:19:40 usr04098 Exp $
+
+*/
+
+// C++ comment can use
+
+#include "demosce.h"
+#include "demomax.h"
+#include "demo.h"
+
+/*
+  現在あるオプション
+	<id : 数字>	必ず全てのキャラに一意なものをつける。その際
+	<no_birth>	キャラを生まずにそのフレームに関数が呼ばれるもの
+			(全画面 環境光、全画面 平行光など)
+	<efct_on  : メッセージID>	表示メッセージを登録することで可視コントローラで制御できるようになる
+	<efct_off : メッセージID>	非表示メッセージを登録することで可視コントローラで制御できるようになる
+			これらは、efct_on と efct_offでセットとなる。
+	<add_src : "ファイル名,ファイル名">	srcに自動的に追加される。必ず使うモデルや
+			テクスチャーを書き入れる。ファイルが複数ある場合は、スペースまたはカンマで区切る。
+			ファイル名は、パスなしの拡張子付き。
+
+*/
+
+
+
+
+/**************************************************************************************
+
+	デモシステム系    id 0xfff00
+
+****************************************************************************************/
+effect "システム 文字出し" [DM_DebugPrint]<id : 0xfff00 ><no_birth>
+{
+	char *message {
+		%% = MaxInputString( "表示内容", 0 ) ;
+	} ;
+} "入力した内容を開始フレームの時にテレビ画面に表示させる。\n当然、英数字のみが表示可能な文字である。" ;
+
+effect "システム プロック呼出し" [DM_ExecProc]<id : 0xfff01 ><no_birth>
+{
+	int  proc_id {
+		%% = MaxInputStrCode( "GCL中のプロック名", 0, ""/*default*/, "" ) ;
+	} ;
+} "GCLに記述してあるプロックを実行する。これを使えばdelayが必要なくなる。\nこれを使うには、GCLのデモデーモンを起動するところに-pにて実行するプロックを記述しておく必要がある。最大16個まで記述することが可能。" ;
+
+effect "システム クリッピング調整" [DM_SetClipParam]<id : 0xfff02 ><no_birth>
+{
+	float  near {
+		%% = MaxInputFloat( "nearクリップ(mm)", 0,  50.0f/*default*/ ) ;
+	} ;
+	float  far {
+		%% = MaxInputFloat( "farクリップ(mm)", 0,  65536.0F*20.0F/*default*/ ) ;
+	} ;
+} "クリッピングの設定を変えます。単位は、PS2と同じミリメートルです。" ;
+
+effect "システム ３０フレーム再生" [NewDemoFrameCountCall]<id : 0xfff03 >
+{
+	int   name  { %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+	int   start { %% = MaxInputGetKeyRangeMax( "フレーム最大", 0 ) ; } ;
+	int   end   { %% = MaxInputGetKeyRangeMin( "フレーム最小", 0 ) ; } ;
+} "引数は存在しません。エフェクトを置いた所が30フレーム表示となります。30フレームで表示するので、ヒキツリが1フレームごとに起こる場合などには有効です。" ;
+
+
+
+/**************************************************************************************
+
+	水飛沫 系    id 0x100〜0x104
+
+****************************************************************************************/
+effect "水飛沫 モーション連動" [NewSplashMotion_Demo] <id:0x100> <add_src : "splash05_alp.bmp" >
+{
+	void *objs  {
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx ) ;
+		%% = DM_GetObjectDgObjs( handle ) ;
+	} ;
+	float step_limit { %% = MaxInputSlideBarF( "ステップリミット", 0, 0.0f, 100.0f, 10, 5.0f/*deflaut*/ ) ; } ;
+	int   life
+	{
+		max = MaxInputGetKeyRangeMax( "フレーム最大", 0 ) ;
+		min = MaxInputGetKeyRangeMin( "フレーム最小", 0 ) ;
+		%% = (max-min) ;
+	} ;
+} "モーションによって大きく動いた関節点から水飛沫を発生させる。前のフレームの関節点からの距離を調べ、一定以上離れた場合に出る。\n  対象オブジェ：：リンク制御で指定。\n  ステップリミット：：前フレームとどれだけ離れていれば発生させるか\n  寿命：：トラックビューでフレーム数指定" ;
+
+effect "水飛沫 風紋" [NewSplashRipple_Demo] <id:0x101> <add_src : "splash05_alp.bmp" >
+{
+	FVECTOR *center   { %% = &MaxInputFVector( "中心位置", 1,  0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	float   radius    { %% = MaxInputFloat( "発生半径", 0, 200.0f ) ; } ;
+	float   direction { %% = MaxInputSlideBarF( "方向", 4, 0, 360, 8, 0.0f/*default*/ ) ; } ;
+	float   angle     { %% = MaxInputSlideBarF( "角度差分", 4, 0, 180, 4, 30.0f/*default*/  ) ; } ;
+	float   size      { %% = MaxInputFloat( "大きさ", 0, 200.0f/*default*/  ) ; } ;
+	int     multiple  { %% = MaxInputSlideBarI( "発生個数", 0, 10, 150, 10, 10/*default*/ ) ; } ;
+	int	time
+	{
+		max = MaxInputGetKeyRangeMax( "フレーム最大", 0 ) ;
+		min = MaxInputGetKeyRangeMin( "フレーム最小", 0 ) ;
+		%% = (max-min) ;
+	} ;
+} "単発水飛沫を系統立てて呼ぶエフェクト。自殺キャラ。\n発生円内に円弧状に発生し、外周に向かって移動を繰り返す。\n  中心位置：：発生円の中心（高さＹの水平面のみから発生する）\n  発生半径：：発生円の最大半径\n  方向：：Ｙ軸回転角度(°単位)\n  角度差分：：`方向'からの＋−(°単位)\n  大きさ：：水飛沫自体の大きさ\n  発生個数：：発生させる円弧内の水飛沫の数 \nトラックビューで発生させ続けるフレーム数を指定（その後自殺する）" ;
+
+effect "水飛沫 単発" [NewSplashParts_Demo] <id:0x102> <add_src : "splash05_alp.bmp , t.bmp" >
+{
+	FVECTOR *center  { %% = &MaxInputFVector( "中心位置", 1,  0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	SVECTOR *rot     { %% = &MaxInputSVector( "回転", 2,  0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	float   intense  { %% = MaxInputFloat( "大きさ", 0,  100.0f ) ; } ;
+} "発生場所から発生方向（Ｚ軸基準）に水飛沫が飛ぶ。強さは単位フレームに進む距離を現し、大きさもそれに比例する。重力計算あり。" ;
+
+effect "水飛沫 足元" [NewFootSplash] <id:0x103> <add_src : "splash05_alp.bmp" >
+{
+	void  *object {
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx ) ;
+		%% = DM_GetObjectObject( handle ) ;
+	} ;
+	void *control {
+		%% = DM_GetObjectControl( handle ) ;
+	} ;
+} "キャラの足の上下に合わせて足元水飛沫を表示する。一つで両足分を管理する。リンク制御でキャラを指定" ;
+
+effect "水飛沫 身体" [NewBodySplash3] <id:0x104> <add_src : "splash05_alp.bmp" >
+{
+	void *objs    {
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx ) ;
+		%% = DM_GetObjectDgObjs( handle ) ;
+	} ;
+	void *control {
+		%% = DM_GetObjectControl( handle ) ;
+	} ;
+	int   model   { %% = MaxInputStrCode( "CV2モデル", 0, "sna_skl3"/*default*/, "cv2" ) ; } ;
+	int   name    { %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+} "身体全体から（風上方向の点に）ペラ水飛沫を発生。一関節当たりの個数が決まっているので注意。要CV２モデル。キャラはリンク制御で指定する。" ;
+
+mesg "水飛沫 身体" 非表示[0] "飛沫の表示を取り止めます" ;
+mesg "水飛沫 身体" 表示[1] "飛沫の表示を始めます" ;
+mesg "水飛沫 身体" 終了[2] "飛沫を終了します" ;
+
+effect "水飛沫 落下" [NewDiveSplash_Parent] <id:0x105>
+{
+	FVECTOR	*center { %% = &MaxInputFVector( "位置", 1,  0.0f,0.0f,0.0f ); };
+}"どっぽーん飛沫\nこのキャラで多重呼びしています。";
+
+mesg "水飛沫 ホロ" 飛沫ＯＦＦ[11] "chara プットホロオブジェの水しぶきを消す" ;
+mesg "水飛沫 ホロ" 飛沫ＯＮ[12]   "chara プットホロオブジェの水しぶきをつける" ;
+
+
+/**************************************************************************************
+
+	メッセージ    id 0x8000
+
+****************************************************************************************/
+effect "メッセージ" [DM_SendEffectMessage] <id:0x8000><no_birth>
+{
+	int name    { %% = MaxInputGetInt( "名前", 0 ) ; } ;
+	int data0   { %% = MaxInputGetInt( "データ０", 0 ) ; } ;
+	int data1   { %% = MaxInputGetInt( "データ１", 0 ) ; } ;
+	int data2   { %% = MaxInputGetInt( "データ２", 0 ) ; } ;
+	int data3   { %% = MaxInputGetInt( "データ３", 0 ) ; } ;
+	int data4   { %% = MaxInputGetInt( "データ４", 0 ) ; } ;
+	int data5   { %% = MaxInputGetInt( "データ５", 0 ) ; } ;
+	int data6   { %% = MaxInputGetInt( "データ６", 0 ) ; } ;
+	int data7   { %% = MaxInputGetInt( "データ７", 0 ) ; } ;
+	int command { %% = MaxInputGetInt( "コマンド", 0 ) ; } ;
+	int num     { %% = MaxInputMessage( "個数", 0 ) ; } ;
+} ;
+
+
+/**************************************************************************************
+
+	モデル系    id 0x4000
+
+****************************************************************************************/
+effect "頂点ストリームアニメ" [NewPutSTanimeObjectCall] <id:0x4000> 
+{
+	int name	{ %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+	int model	{ %% = MaxInputStrCode( "XSI,KMS,CV2モデル", 0, "d00a_divewire"/*default*/, "xsi" ) ; } ;
+	void *obj	{
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectDgObj( handle, link->vy );
+	} ;
+	FVECTOR *pos    { %% = &MaxInputFVector( "位置", 1,  0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	SVECTOR *rot    { %% = &MaxInputSVector( "回転", 2,  0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	FVECTOR *scale  { %% = &MaxInputFVector( "スケール", 3,  1.0f,1.0f,1.0f/*default*/ ) ; } ;
+	FVECTOR *bound_u{ %% = &MaxInputFVector( "バウンド最大", 0, 10000.0f,10000.0f,10000.0f/*default*/ ) ; } ;
+	FVECTOR *bound_l{ %% = &MaxInputFVector( "バウンド最小", 0, -10000.0f,-10000.0f,-10000.0f/*default*/ ) ; } ;
+	int mode	{ %% = MaxInputComboBox( "モード", 0, "普通再生=1&繰返し再生=2", "普通再生" ) ; } ;
+} "モデル名（必須） KMS, ANM, CV2 が必要 名前は共通\nリンク制御によってオブジェクトにリンクします。\n  位置：：ローカル位置\n  回転：：ローカル回転（°単位）\n  スケール：：1.0を等バイトする大きさ\n  バウンド：：再生時に最大状態のバウンダリを指定します。\n  再生モード：：再生＝１ 繰返し表示＝２\n再生は、起動時に必ず掛かります。" ;
+
+mesg "頂点ストリームアニメ" 停止[0] "アニメーションが止まります（ポーズ状態）" ;
+mesg "頂点ストリームアニメ" 再生[1] "アニメーションが再開します（再生）" ;
+mesg "頂点ストリームアニメ" 終了[2] "キャラを終了します。" ;
+mesg "頂点ストリームアニメ" 再生スピード変更[3] $i:スピード "スピードを変更します。遅くにしかなりません。2を入れると2倍遅くなります。整数倍に遅くすることが出来ます。" ;
+mesg "頂点ストリームアニメ" 再生レイト変更[4] $i:レイト "再生レイトを変更します。4096を1/30secに換算した値です。つまり、大きくすると速くなり小さくすると遅くなります。1から4096までしか入りません。デフォルトの値は、2048(1/60sec)です。" ;
+
+
+effect "タバコ" [NewCigarette_Demo] <id:14>
+{
+	int      name     { %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+	FMATRIX *world    {
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectMatrix( handle, link->vy );
+	} ;
+	FMATRIX *sna_head {
+		link = &MaxInputHumanNum( "スネーク頭", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectMatrix( handle, link->vy );
+	} ;
+	FMATRIX *sna_rhand{
+		link = &MaxInputHumanNum( "スネーク右手", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectMatrix( handle, link->vy );
+	} ;
+	float    force    { %% = MaxInputFloat( "投げる強さ", 0,  50.0f/*default*/ ) ; } ;
+	FVECTOR *dir      { %% = &MaxInputFVector( "回転", 2,   0.0f,0.0f,0.0f/*default*/ ) ; } ;
+} ;
+mesg "タバコ" 移動係数調節[0]   $i:速度係数   "10000で1.0fの速度。\n" ;
+mesg "タバコ" タバコを吸う[1]   $i:フレーム数 "明るいままのフレーム数。\n" ;
+mesg "タバコ" タバコを吐く[2]   $i:フレーム数 "煙を口から出すフレーム数。\n" ;
+mesg "タバコ" タバコを投げる[3] "このフレームの瞬間にタバコが投げ出される。\n" ;
+mesg "タバコ" タバコを終了[4]   "エフェクトを終了。\n" ;
+mesg "タバコ" リンクの切替え[5] "リンク先を切替える。\n" ;
+
+effect "モデル 映り込み" [DM_SendEffectMessage] <id:0x4001><no_birth>
+{
+	int name    { %% = MaxInputStrCode( "送り先", 0,  "映り込み", "" ); } ;
+	int data0   { %% = MaxInputStrCode( "追加キャラ", 0,  "sna_def", "kms" ); } ;
+	int data1   { %% = 0; };
+	int data2   { %% = 0; };
+	int data3   { %% = 0; };
+	int data4   { %% = 0; };
+	int data5   { %% = 0; };
+	int data6   { %% = 0; };
+	int data7   { %% = 0; };
+	int command { %% = MaxInputComboBox( "モード", 0, "追加=0&削除=1", "追加" ); };
+	int num     { %% = 2; };
+
+}"鏡面映り込みキャラ";
+
+
+
+effect "モデル 補間残像" [NewInterPoly_Demo] <id:0x4002>
+{
+	FVECTOR		*pos0 {
+		link = &MaxInputHumanNum( "始点１", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectPos( handle, link->vy );
+	};
+
+	FVECTOR		*pos1 {
+		link = &MaxInputHumanNum( "始点２", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectPos( handle, link->vy );
+	};
+
+	int			disp_f {
+		%% = MaxInputSlideBarI( "頂点保存数", 0, 0, 16, 1,  8 );
+	};
+
+	SVECTOR		*color {
+		col = &MaxInputSelectColor("色",0,128,128,128,128);
+		DM_IVecToSVector( col, &cols );
+		%% = &cols;
+	};
+
+}"ナイフの残像などに使用。\n２点で決まる線分の描く平面を、頂点を補完して滑らかに表示する。\n「保存フレーム数」を大きくすると過去の残像を長く残す。\n";
+
+/**************************************************************************************
+
+	物理シミュレーション系    id 0x3000
+
+****************************************************************************************/
+effect "物理シム・バンダナ" [NewRopeModel3_called] <id:0x3000>
+{
+	int model_name    { %% = MaxInputStrCode( "KMSモデル", 0, "sna_bdn1"/*default*/, "kms" ) ; } ;
+	int sample_num    { %% = MaxInputSlideBarI( "動きの種類", 0, 0, 1, 1,  0/*default*/ )+2 ; } ;
+	void *object      {
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectObject( handle );
+	} ;
+	int objnum        { %% = link->vy ; } ;
+	FVECTOR *pos      { %% = &MaxInputFVector( "位置", 1,   0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	SVECTOR *rot      { %% = &MaxInputSVector( "回転", 2,   0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	float oval_param  { %% = MaxInputSlideBarF( "当たり倍率", 0, 0.5f, 2.0f, 10,  1.0f/*default*/ ) ; } ;
+	int collision_flag{ %% = 1 ; } ;
+	int visible_flag  { %% = 1 ; } ;
+	int mode          { %% = 0 ; } ;
+} "バンダナの動きを計算、表示するキャラです。\n以下パラメータの説明\n位置  取り付ける場所のローカル座標値\n回転  取り付けるモデルのローカルの回転値\n当たり倍率   当たりをより大きく取りたい場合に調整します。だいたい、1.00fから1.50fまでの値を使用。\nスネークのバンダナは、2本あるので`動きの種類'および`モデル'を変えて表示させて下さい。sna_bdn1、sna_bdn2がバンダナのモデルです。" ;
+
+effect "物理シム・ワイヤー" [NewRopeModel3_called] <id:0x3002>
+{
+	int model_name    { %% = MaxInputStrCode( "KMSモデル", 0, ""/*default*/, "kms" ) ; } ;
+	int sample_num    { %% = 0 ; } ;
+	void *object      {
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectObject( handle );
+	} ;
+	int objnum        { %% = link->vy ; } ;
+	FVECTOR *pos      { %% = &MaxInputFVector( "位置", 1,   0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	SVECTOR *rot      { %% = &MaxInputSVector( "回転", 2,   0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	float oval_param  { %% = MaxInputSlideBarF( "当たり倍率", 0, 0.5f, 2.0f, 10,  1.0f/*default*/ ) ; } ;
+	int collision_flag{ %% = 1 ; } ;
+	int visible_flag  { %% = 1 ; } ;
+	int mode          { %% = 0 ; } ;
+} "ワイヤーの動きを計算、表示するキャラです。\n以下パラメータの説明\n位置  取り付ける場所のローカル座標値\n回転  取り付けるモデルのローカルの回転値\n当たり倍率   当たりをより大きく取りたい場合に調整します。だいたい、1.00fから1.50fまでの値を使用。" ;
+
+effect "物理シム・紐" [NewRopeModel3_called] <id:0x3003>
+{
+	int model_name    { %% = MaxInputStrCode( "KMSモデル", 0, "sna_bdn1"/*default*/, "kms" ) ; } ;
+	int sample_num    { %% = 1 ; } ;
+	void *object      {
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectObject( handle );
+	} ;
+	int objnum        { %% = link->vy ; } ;
+	FVECTOR *pos      { %% = &MaxInputFVector( "位置", 1,   0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	SVECTOR *rot      { %% = &MaxInputSVector( "回転", 2,   0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	float oval_param  { %% = MaxInputSlideBarF( "当たり倍率", 0, 0.5f, 2.0f, 10,  1.0f/*default*/ ) ; } ;
+	int collision_flag{ %% = 1 ; } ;
+	int visible_flag  { %% = 1 ; } ;
+	int mode          { %% = 0 ; } ;
+} "紐の動きを計算、表示するキャラです。\n以下パラメータの説明\n位置  取り付ける場所のローカル座標値\n回転  取り付けるモデルのローカルの回転値\n当たり倍率   当たりをより大きく取りたい場合に調整します。だいたい、1.00fから1.50fまでの値を使用。" ;
+
+effect "物理シム・髪の毛" [NewRopeModel3_called] <id:0x3004>
+{
+	int model_name    { %% = MaxInputStrCode( "KMSモデル", 0, ""/*default*/, "kms" ) ; } ;
+	int sample_num    { %% = 4 ; } ;
+	void *object      {
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectObject( handle );
+	} ;
+	int objnum        { %% = link->vy ; } ;
+	FVECTOR *pos      { %% = &MaxInputFVector( "位置", 1,   0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	SVECTOR *rot      { %% = &MaxInputSVector( "回転", 2,   0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	float oval_param  { %% = MaxInputSlideBarF( "当たり倍率", 0, 0.5f, 2.0f, 10,  1.0f/*default*/ ) ; } ;
+	int collision_flag{ %% = 1 ; } ;
+	int visible_flag  { %% = 1 ; } ;
+	int mode          { %% = 1 ; } ;
+} "髪の毛の動きを計算、表示するキャラです。\n以下パラメータの説明\n位置  取り付ける場所のローカル座標値\n回転  取り付けるモデルのローカルの回転値\n当たり倍率   当たりをより大きく取りたい場合に調整します。だいたい、1.00fから1.50fまでの値を使用。" ;
+
+effect "物理シム・チェーン" [NewRopeModel2_called] <id:0x3005>
+{
+	int model_name     { %% = MaxInputStrCode( "KMSモデル", 0,  "w00a_ch1"/*default*/, "kms" ) ; } ;
+	int sample_num     { %% = 1 ; } ;
+	FVECTOR *pos       { %% = &MaxInputFVector( "位置", 1,   0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	SVECTOR *rot       { %% = &MaxInputSVector( "回転", 2,   0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	int collision_flag { %% = 1 ; } ;
+} "チェーンの動きを計算、表示するキャラです。両側が何かに固定されている動きをします。\n以下パラメータの説明\n位置  取り付ける場所のローカル座標値\n回転  取り付けるモデルのローカルの回転値" ;
+
+effect "物理シム っっで" [NewRopeModel2_called] <id:0x301d>
+{
+	int sample_num     { %% = 1 ; } ;
+	int collision_flag { %% = 1 ; } ;
+} "チェーンの動きを計算、表示するキャラです。両側が何かに固定されている動きをします。\n以下パラメータの説明\n位置  取り付ける場所のローカル座標値\n回転  取り付けるモデルのローカルの回転値" ;
+
+/*
+effect "物理シム・ロープ3" [NewRopeModel3_called] <id:0x3006>
+{
+	int model_name    { %% = MaxInputStrCode( "KMSモデル", 0, "", "kms" ) ; } ;
+	int sample_num    { %% = MaxInputSlideBarI( "サンプル値", 0, 0, 4, 4, 0 ) ; } ;
+	void *object      {
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectObject( handle );
+	} ;
+	int objnum        { %% = link->vy ; } ;
+	FVECTOR *pos      { %% = &MaxInputFVector( "位置", 1,   0.0f,0.0f,0.0f ) ; } ;
+	SVECTOR *rot      { %% = &MaxInputSVector( "回転", 2,   0.0f,0.0f,0.0f ) ; } ;
+	float oval_param  { %% = MaxInputSlideBarF( "当たり倍率", 0, 0.5f, 2.0f, 10,  1.0f ) ; } ;
+	int   collision { %% = MaxInputSlideBarI( "当たり判定", 0, 0, 1, 1 ) ; } ;
+	int   visible   { %% = MaxInputSlideBarI( "可視", 0, 0, 1, 1 ) ; } ;
+	int mode	{ %% = MaxInputComboBox( "モード", 0, "バンダナ=0&髪の毛=1", "バンダナ" ) ; } ;
+} "バンダナやオセロットの髪の毛の動きを計算、表示するキャラです。\n取り付けるモデルや間接番号はリンク制御で指定する。\n以下それぞれのパラメータについて\nKMSモデル   表示するモデルデータ名\nサンプル値  サンプルデータの番号で、既にいろいろなパラメータを設定してある番号。\n位置  取り付ける場所のローカル座標値\n回転  取り付けるモデルのローカルの回転値\n当たり倍率   だいたい、1.00fから1.50fまでの値を使用。\n当たり判定   0 ･･･ 判定しない  1 ･･･ 判定する\n可視  0 ･･･ 表示は、objectの表示を元にする。 1 ･･･ 強制的に表示する。\nモード  バンダナ(0)  髪の毛(1)選択" ;
+*/
+
+effect "物理シム・マント" [NewWavingClothModelW_called] <id:0x3010>
+{
+	int name	    { %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+	int *model_name     { %% = &MaxInputStrCode( "KMSモデル", 0, "rev_parts_coat"/*default*/, "kms" ) ; } ;
+	int model_name_size { %% = 1 ; } ;
+	int sample_num      { %% = 1 ; } ;
+	void *object      {
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectObject( handle );
+	} ;
+	int objnum        { %% = link->vy ; } ;
+	FVECTOR *pos      { %% = &MaxInputFVector( "位置", 1,   0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	SVECTOR *rot      { %% = &MaxInputSVector( "回転", 2,   0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	int boundmodel_name { %% = MaxInputStrCode( "当たり用モデル", 0, "rev_coat_bounding"/*default*/, "kms" ) ; } ;
+	float oval_param  { %% = MaxInputSlideBarF( "当たり倍率", 0, 0.5f, 2.0f, 10,  1.0f/*default*/ ) ; } ;
+	int force_disp_flag { %% = 1 ; } ;
+} ;
+
+effect "物理シム・オルガ" [NewEvmMMOrga_called] <id:0x3011>
+{
+	void *object {
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetEvmObjObject( handle );
+	};
+
+} "オルガの揺れ物(胸揺れ、服揺れ)を計算します。\nこの関数は、org_def.evm専用です。\norg_def.evmを表示したobjectを用意し、実行してみてください。";
+
+
+/**************************************************************************************
+
+	ヒューマン系    id 0x1000
+
+****************************************************************************************/
+effect "影 キャラ" [NewDropShadow] <id:0x1000>
+{
+	void *objs      {
+		link = &MaxInputHumanNum( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectObject( handle );
+	} ;
+	void *control {
+		%% = DM_GetObjectControl( handle ) ;
+	} ;
+	FMATRIX *lights { /* 光源マトリックス　　　　 */
+		%% = DM_GetObjectLightMtx( handle ) ;
+	} ;
+	int *flag { %% = DM_NULL() ; } ;
+} "プレイヤーの足の下に足影を出し,3つの光源のうち一番強いものを光源の方向に出します。親子関係で起動しているため,親を殺せば自動的に死にます。" ;
+
+effect "影 足元"[NewShadow] <id:0x1001>
+{
+	void *l_foot{/*DG_OBJ*/
+		link = &MaxInputHumanNum( "左足リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectDgObj( handle, link->vy );
+	} ;
+	void *r_foot{/*DG_OBJ*/
+		link = &MaxInputHumanNum( "右足リンク", 0 ) ;
+		%% = DM_GetObjectDgObj( handle, link->vy );
+	} ;
+	void *control {
+		%% = DM_GetObjectControl( handle ) ;
+	} ;
+	FMATRIX *lights { /* 光源マトリックス　　　　 */
+		%% = DM_GetObjectLightMtx( handle ) ;
+	} ;
+	int *flag { %% = DM_NULL() ; } ;
+} ;
+
+effect "影 光源遮り"[NewBodyShadow] <id:0x1004>
+{
+	void *objs      {
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectDgObjs( handle );
+	} ;
+} "フラッシュバック効果を人体から出します。ある特定の光源設定された物に近付くと体の輪郭から影が伸びます。\n対象人体は、リンク制御で設定します。\n常駐キャラとして`chara ライト位置管理'が要ります。" ;
+
+effect "影 ボリューミックシャドーライン" [NewBodyShadowVolume_Demo] <id:0x100a>
+{
+	void *objs {
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectDgObjs( handle );
+	};
+	FVECTOR *light_pos	{
+		link = &MaxInputHumanNum( "ライトの座標", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectPos( handle, link->vy );
+	};
+	
+	float reach  { %% = MaxInputFloat( "光源影響距離", 0,  50.0f/*default*/ ) ; } ;
+	float back_shift  { %% = MaxInputFloat( "光源位置補正距離", 0,  50.0f/*default*/ ) ; } ;
+	int model_name    { %% = MaxInputStrCode( "CV2モデル", 0, ""/*default*/, "cv2" ) ; } ;
+	int	add_sub	{ %% = MaxInputComboBox( "モード", 0, "減算=0&加算=1", "減算" ) ;};
+
+	int life 		{ 
+		max = MaxInputGetKeyRangeMax( "フレーム最大", 0 ) ;
+		min = MaxInputGetKeyRangeMin( "フレーム最小", 0 ) ;
+		%% = (max-min) ;
+	};
+	
+	int color		{
+		col = &MaxInputSelectColor("色",0,128,128,128,128);
+		%% = ((col->vx)|(col->vy*256)|(col->vz*256*256)|(col->vw*256*256*256));
+	};
+}"「光源」から見た「モデル（多関節可：joint ２２まで）」のエッジ（輪郭）から、\n影に模した減算ラインを表示する。\nモデルの中心座標が、光源からreach までの間のみ発生し、その間αを減衰させている。\n光源が「点」の場合、back_shift は ゼロ。\n投光器のように光源が大きい場合 back_shift( 0.0f 以上 ) で仮想光源点をモデルと逆方向にシフトさせる。\n（その時も、reach はあくまでも光源が基点となる）\nプリミティブが「ライン」であるため、接近しすぎると正体がバレる（将来的にポリゴン化する予定）。\nラインの発生点は常にブレている為、このエフェクトを複数置くことによりラインに厚みが出る効果が期待できる。\nlife が 残り６０ フレームを切るとフェードアウトを始める。\n[特殊な使い方]\n　　・モデルエッジからラインが出ること利用して、「集中線」モドキ（いづれ正式に作成します）。\n　　・フェードアウトする事を考慮に入れて、連続爆発のインパクトに使用。\n　　・継続的に影を出したまま「光源」をツールで移動させ「光の移動」を表現できる。";
+
+effect "ゴルルコ兵 発砲エフェクト" [DM_SendEffectMessage] <id:0x100b><no_birth>
+{
+	int name    { %% = MaxInputStrCode( "送り先", 0,  "装備品 ゴルルコビッチ兵", ""); } ;
+	int data0   { %% = MaxInputListBox( "エフェクトフラグ", 0, "左手の武器から=0x0001&SHOOT_NOSPARK=0x0002&軌道がランダム=0x0004&点光源１=0x0008&点光源２=0x0010", 0x0000 ) ; };
+	int data1   { %% = 0; };
+	int data2   { %% = 0; };
+	int data3   { %% = 0; };
+	int data4   { %% = 0; };
+	int data5   { %% = 0; };
+	int data6   { %% = 0; };
+	int data7   { %% = 0; };
+	int command { %% = 0; } ;
+	int num     { %% = 2; };
+
+}"ゴルルコ兵に発砲メッセージを送るエフェクトです。\nモーションは付きません\nハザードがないと薬莢は落ち続けます。";
+
+
+effect "装備品 ゴルルコビッチ兵" [NewEneEquip] <id:0x1002>
+{
+
+	int name { %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+
+	void *parent{ %% = DM_NULL() ; } ;
+	void *object{
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectObject( handle );
+	} ;
+	int  flag   {
+		%% =  MaxInputListBox( "装備フラグ", 0, "銃のホルスター=0x0001&ナイフ=0x0002&ナイフを抜いたケース=0x0004&マガジン入れ=0x0008&バックパック=0x0010&無線機=0x0020&暗視ゴーグル=0x0040&暗視ゴーグル開き=0x0200&右ライトオン=0x0400&左ライトオン=0x0800&武器右手持ち=0x0080&武器ぶら下げる=0x0100&武器左手持ち=0x1000", 0x003b ) ;
+	} ;
+	int  wpname { %% = MaxInputStrCode( "右 器モデル名", 0,  ""/*default*/, "kms" ) ; } ;
+	int  left_wp { %% = MaxInputStrCode( "左 武器モデル名", 0,  ""/*default*/, "kms" ) ; } ;
+	
+} "装備フラグはビットフラグになっています。必要な装備品に対応したビットを立ててください。\n 備品必要モデル\nホルスター：gbs_hlst\nナイフ入りケース：gbs_knif\nマガジンケース：gbs_mag\nバックパック：gbs_bp\n無線機：rad ,rad_m\n暗視ゴーグル：gbs_nvg2, gbs_nvg1\n武器：aks_sp, aks\nスリング：sling,kanagu\n懐中電灯：tnr_frashlight\n兵装備品必要テクスチャ\nスリング：gbs_ak_sling2" ;
+
+mesg "装備品 ゴルルコビッチ兵" マガジンチェンジ[1] $i:フラグ "モーションは付きません。くっ付いたりしてるだけです。\nハザードがないと落ち続けます。\nふらぐ\n　１：銃に装着\n  2：左手に持つ\n  4：銃から外す" ;
+
+
+effect "装備品 スネーク" [NewPutAttachments] <id:0x1006>
+{
+	void *parent{ %% = DM_NULL() ; } ;
+	void *body{
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectObject( handle );
+	} ;
+	int at_id { %% = 1; };
+	int  flag {
+		%% =  MaxInputListBox( "装備フラグ", 0, "胸左上のマガジン=0x00010000&胸右上=0x00020000&胸左下=0x00040000&胸右下=0x00080000",0x000f0000);
+	} ;
+	
+}"装備フラグはビットフラグになっています。必要な装備品に対応したビットを立ててください。";
+
+effect "装備品 オルガ" [NewPutAttachments] <id:0x1007>
+{
+	void *parent{ %% = DM_NULL() ; } ;
+	void *body{
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectObject( handle );
+	} ;
+	int at_id { %% = 2; };
+	int  flag {
+		%% =  MaxInputListBox( "装備フラグ", 0, "ホルスター=0x00000001&スカウトナイフ=0x00000002&無線機=0x00010000",0x00010003);
+	} ;
+
+}"装備フラグはビットフラグになっています。必要な装備品に対応したビットを立ててください。";
+
+effect "装備品 セルゲイ" [NewPutAttachments] <id:0x100c>
+{
+	void *parent{ %% = DM_NULL() ; } ;
+	void *body{
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectObject( handle );
+	} ;
+	int at_id { %% = 3; };
+	int  flag {
+		%% =  MaxInputListBox( "装備フラグ", 0, "ホルスター=0x00000001&スカウトナイフ=0x00000002&ポーチ０=0x00010000&ポーチ１=0x00000004",0x00010007);
+	} ;
+
+}"装備フラグはビットフラグになっています。必要な装備品に対応したビットを立ててください。\n必要モデル\n  crg_hlst\n  crg_skn\n  crg_waist_parts00\n  crg_waist_parts01\n";
+
+effect "装備品 横揺れ" [NewAttachment3_called] <id:0x1003>
+{
+	int model_name    { %% = MaxInputStrCode( "KMSモデル", 0, "sna_mag1"/*default*/, "kms" ) ; } ;
+	SVECTOR *rot      { %% = &MaxInputSVector( "回転", 2,   0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	void *object      {
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectObject( handle );
+	} ;
+	int objnum        { %% = link->vy ; } ;
+	FVECTOR *pos      { %% = &MaxInputFVector( "位置", 1,   0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	int frames        { %% = MaxInputSlideBarI( "遅れフレーム数", 0, 0, 60, 10, 4/*default*/ ) ; } ;
+} ;
+
+effect "装備品 レインコート" [NewRaincoat_called] <id:0x1005>
+{
+	void *body{
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectObject( handle ) ;
+	} ;
+	int  *sg_name   {
+		%%  = &MaxInputStrCode( "アニメモデル名1（CV2/KMS）", 0,  "tnr_coat_up_blood00"/*default*/, "kms,cv2" ) ;
+		nm2 = &MaxInputStrCode( "アニメモデル名2（CV2）", 0,  "tnr_coat_sgl_anim00"/*default*/, "cv2" ) ;
+		nm3 = &MaxInputStrCode( "アニメモデル名3（CV2）", 0,  "tnr_coat_sgl_anim01"/*default*/, "cv2" ) ;
+		nm4 = &MaxInputStrCode( "アニメモデル名4（CV2）", 0,  ""/*default*/, "cv2" ) ;
+		nm5 = &MaxInputStrCode( "アニメモデル名5（CV2）", 0,  ""/*default*/, "cv2" ) ;
+		nm6 = &MaxInputStrCode( "アニメモデル名6（CV2）", 0,  ""/*default*/, "cv2" ) ;
+		nm7 = &MaxInputStrCode( "アニメモデル名7（CV2）", 0,  ""/*default*/, "cv2" ) ;
+		nm8 = &MaxInputStrCode( "アニメモデル名8（CV2）", 0,  ""/*default*/, "cv2" ) ;
+	} ;
+	int   sg_num    { %% = MaxInputSlideBarI( "アニメモデルの個数", 0, 1, 8, 8, 3/*default*/ ) ; } ;
+	int   mt_name   { %% = MaxInputStrCode( "コートモデル名（EVM）", 0,  "tnr_coat_mlch"/*default*/, "evm" ) ; } ;
+	float wind_min  { %% = MaxInputFloat( "風の強さの最小値", 0,  50.0f/*default*/ ) ; } ;
+	float wind_max  { %% = MaxInputFloat( "風の強さの最大値", 0,  250.0f/*default*/ ) ; } ;
+	float frame_min  { %% = MaxInputFloat( "アニメフレーム最大値", 0, 3.0f/*default*/ ) ; } ;
+	float frame_max  { %% = MaxInputFloat( "アニメフレーム最小値", 0, 1.5f/*default*/ ) ; } ;
+} "レインコートモデルを指定する。アニメモデルには、最初のモデルのみCV2,KMSが必要です。残りは、CV2だけでいいです。データとして、デフォルトではtnr_coat_up_blood00.kms\n  tnr_coat_up_blood00.cv2\n  tnr_coat_sgl_anim00.cv2\n  tnr_coat_sgl_anim01.cv2\n  tnr_coat_mlch.evm\nを用意し、tnr_corpse.kmsを表示にリンク制御で指定してみてください。\n風の強さは、ばたばたアニメが影響する風の最大値と最小値を入れて下さい。" ;
+
+effect "ゴルルコ兵 フィンガーサイン" [NewGbsHandDemo] <id:0x1008>
+{
+	void * human   {
+		link = &MaxInputGetLink( "リンク", 0 );
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectObject( handle );
+	}; 
+	int name { %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+
+} "srcに必要な記述は\nゴルルコの左手モデル\nhuman  gbs_hand/gbs_hand_def.kms\n変形用のＣＶ２ファイル\ncvd  human/gbs_hand vn";
+
+mesg "ゴルルコ兵 フィンガーサイン" 制御メッセージ[1] $i:形状ＩＤ $i:変形時間（ミリ秒）"形状ＩＤ\n 0:デフォルト\n 1:グー\n 2:パー\n 3:一指し指立て\n 4:親指立て\n -1:キャラ終了\n";
+
+effect "ゴルルコ兵 目パチ" [NewGbsFaceDemo] <id:0x1009>
+{
+	void * human   {
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectObject( handle );
+	}; 
+	int name       { %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+} "必要データ\n gbs_def/\n gbs_eye0.kms 通常\n gbs_eye1.kms 大開き（ビックリ）\n gbs_eye2.kms 閉じ\n gbs_eye3.kms ダメージ\n gbs_eye4.kms 白目";
+
+
+
+
+mesg "ゴルルコ兵 目パチ" 制御メッセージ[1] $i:形状ＩＤ $i:変形時間（ミリ秒）"形状ＩＤ\n 0:通常\n 1:大開き（ビックリ）\n 2:閉じ\n 3:ダメージ\n 4:白目\n -1:キャラ終了\n";
+
+
+effect "視線制御" [NewEyeControl] <id:0x100d>
+{
+	int name       { %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+
+	void  *body {
+		link = &MaxInputGetLink( "人", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx ) ;
+		%% = DM_GetObjectObject( handle ) ;
+	};
+
+	void *target {
+		link = &MaxInputHumanNum( "注視のオブジェクト", 0 );
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectMatrix( handle, link->vy );
+	};
+	FVECTOR *rmax {
+		DM_GetRotToRadVec(&temp0,
+				MaxInputSlideBarF( "右目最大角度Ｘ", 0, -180.0f, 180.0f, 1.0f, 10.0f/*defualt*/ ),
+				MaxInputSlideBarF( "右目最大角度Ｙ", 0, -180.0f, 180.0f, 1.0f, 20.0f/*defualt*/ ),
+				0.0f,0.0f);
+		%% = &temp0;
+
+	};
+	FVECTOR *rmin {
+		DM_GetRotToRadVec(&temp1,
+				MaxInputSlideBarF( "右目最小角度Ｘ", 0, -180.0f, 180.0f, 1.0f, -10.0f/*defualt*/ ),
+				MaxInputSlideBarF( "右目最小角度Ｙ", 0, -180.0f, 180.0f, 1.0f, -15.0f/*defualt*/ ),
+				0.0f,0.0f);
+		%% = &temp1;
+	};
+	FVECTOR *lmax {
+		DM_GetRotToRadVec(&temp2,
+				MaxInputSlideBarF( "左目最大角度Ｘ", 0, -180.0f, 180.0f, 1.0f, 10.0f/*defualt*/ ),
+				MaxInputSlideBarF( "左目最大角度Ｙ", 0, -180.0f, 180.0f, 1.0f, 15.0f/*defualt*/ ),
+				0.0f,0.0f);
+		%% = &temp2;
+	};
+	FVECTOR *lmin {
+		DM_GetRotToRadVec(&temp3,
+				MaxInputSlideBarF( "左目最小角度Ｘ", 0, -180.0f, 180.0f, 1.0f, -10.0f/*defualt*/ ),
+				MaxInputSlideBarF( "左目最小角度Ｙ", 0, -180.0f, 180.0f, 1.0f, -20.0f/*defualt*/ ),
+				0.0f,0.0f);
+		%% = &temp3;
+	};
+	int		flag {%%=0;};
+
+}"リンクでキャラを指定して、ダミーのオブジェクトを\n注視するエフェクトです。\n角度は０度が正面です。\n横方向がＹで縦がＸです。\n" ;
+
+effect "人体 海兵隊" [NewDemoArkms]<id:0x100f><add_src:"w04a_us_def.kls">
+{
+	void *object  {
+		link = &MaxInputGetLink( "着せ替えオブジェクト", 0  ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectObject( handle );
+	} ;
+	int   frame { 
+		%% = MaxInputSlideBarI( "海兵隊タイプ", 0, 0, 17, 1, 0 ) ;
+	} ;
+
+} "リンク先のモデルを指定した海兵隊のオブジェクトに替えることが出来ます。海兵隊の種類は、18種類あります。０から１７までの値を入れて決めて下さい。注）黒人のモデルだけは、スペキュラーが入っているので別モデルです。" ;
+
+
+effect "人体 モーションモデル" [NewSigPutModel2]<id:0x100e><efct_on : 8><efct_off : 7>
+{
+	int	name	{ %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+	int	where	{ %% = DM_GetCurrentMap() ; } ;
+	int	dir	{ %% = MaxInputSlideBarF( "モデルの方向(360°単位)", 0, -180.0f, 180.0f, 10,  0.0f/*default*/ ) * 4096/360 ; } ;
+	FVECTOR *pos   { %% = &MaxInputFVector( "モデルを置く場所", 1,   0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	int	model	{ %% = MaxInputStrCode( "シングルモデル名(KMS)", 0,  "sna_def"/*default*/, "kms" ) ; } ;
+	int	motion	{ %% = MaxInputStrCode( "モーションファイル名(MAR)", 0,  "snake"/*default*/, "mar" ) ; } ;
+	int	mot_num	{ %% = MaxInputInt( "モーション番号", 0,  0/*default*/ ) ; } ;
+
+	int	status	{ %% = MaxInputListBox( "各種フラグ", 0,"水平移動を無視=0x01&重力処理無し=0x02&壁アタリ判定無し=0x04&モーション停止で待機 (mesgで再生開始)=0x08&再生開始時に座標をリセット=0x10&モーション補完無し=0x20&プリシェード=0x40", 0x5a ) ; } ;
+
+} "指定したシングルモデルに対し、MARファイルに含まれるモーションを再生することが出来ます。再生は、繰返し表示されます。\n推奨する使いかたとして、ステータスの「モーション停止で待機」を立てて起動して、再生開始の所で「モーション再生」のメッセージを送ります。繰返し表示を行ないたくない場合、「終了判定」というメッセージで再生させます。\n各種フラグについて\n  水平移動を無視=モーションで移動していてもモデルは、移動せずに再生する\n  重力処理無し=モデルは、落ちることなく再生する。ハザードがない場合いつまでも落ち続ける\n  壁アタリ判定無し=壁ハザードがあっても反応しない\n  モーション停止で待機=0フレームを表示し、そのまま待機状態にはいる。メッセージを受けることで再生を開始できる\n  再生開始時に座標をリセット=再生を開始する時、再び元の位置に戻る。歩きなどを再生すると元の位置に戻ってくれる\n  モーション補完無し=モーションを切替えた時に補間されない。場面が変わった時などに有効\n  プリシェード=プリシェードモデルで表示される。これを立てなければシェードになる。" ;
+
+
+mesg "人体 モーションモデル" モーション再生[1] $i:モーション番号 "指定した番号のモーションの再生を開始します。番号は、MAR内に書かれているモーションの順番です。" ;
+mesg "人体 モーションモデル" モーション進む[2] "現在再生している番号の次の番号のモーションを再生します" ;
+mesg "人体 モーションモデル" モーション戻る[3] "現在再生している番号の前の番号のモーションを再生します" ;
+mesg "人体 モーションモデル" 初期座標[4] "初期座標に戻します。" ;
+mesg "人体 モーションモデル" 回転[5]  $i:方向  "初期方向を変更します。４０９６を３６０°とした値を入れて下さい。" ;
+mesg "人体 モーションモデル" 終了判定[6]  $i:モーション番号 "指定した番号のモーションを再生し、モーションが終了の際に終了フレームのまま停止します。";
+mesg "人体 モーションモデル" 非表示[7] "モデルを非表示にします。" ;
+mesg "人体 モーションモデル" 表示[8] "モデルを表示します。" ;
+
+
+
+/**************************************************************************************
+
+	野外効果系    id 0x2000
+
+****************************************************************************************/
+effect "稲光" [NewThunder_Demo] <id:0x2000>
+{
+	float sx { %% = MaxInputSlideBarF( "X軸", 0, -2.0f, 2.0f, 10,  0.0f/*default*/ ) ; } ;
+	float sy { %% = MaxInputSlideBarF( "Y軸", 0, -2.0f, 2.0f, 10,  0.0f/*default*/ ) ; } ;
+} "稲光の始点を２次元指定。\nカメラ画面の中心が（０、０）\n   Ｘ軸（左右）： 左端−１〜右端＋１\n   Ｙ軸（左右）： 上端−１〜下端＋１\nＸ、Ｙ共画面外の指定も可。\n稲光の終点は毎回違うが、３次元にした後のＹの最低値をゼロ（水平線）にしている。" ;
+
+effect "風 ローカル" [NewLocalWind_Demo] <id:0x2002>
+{
+	FVECTOR *pos   { %% = &MaxInputFVector( "場所", 1,   0.0f,0.0f,0.0f/*default*/ ) ; } ;
+	FVECTOR *size  { %% = &MaxInputFVector( "大きさ", 0,   3000.0f,1000.0f,3000.0f/*default*/ ) ; } ;
+	float rot_y    { %% = MaxInputSlideBarF( "方向", 2, 0.0f, 360.0f, 8,  0.0f/*defualt*/ ) ; } ;
+	float rot_diff { %% = MaxInputSlideBarF( "振れ幅", 0, 0.0f, 180.0f,  8, 30.0f/*defualt*/ ) ; } ;
+	float intense  { %% = MaxInputSlideBarF( "風速", 0, 1.0f, 500.0f,  5, 200.0f/*defualt*/ ) ; } ;
+	int name       { %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+} "  場所：風が吹く領域の中心位置を表します\n  大きさ：領域の大きさ（幅X、高さY、奥行きZ）\n  方向：風の吹く方向(0〜360°)\n  振れ幅：風の吹く方向がどれだけぶれるかの角度を指定する\n  風速：風の強さを表す\n" ;
+
+mesg "風 ローカル" オフ[0] "風を止めます。" ;
+mesg "風 ローカル" オン[1] "風を吹かせます。" ;
+mesg "風 ローカル" 終了[2] "終了します。" ;
+
+mesg "効果 波涛" 全体Ｙ変化[2]  $i:Ｙ座標 "波涛全体のyを そのフレームで変えますが、もう既に出てしまっている波涛は、瞬時に変わりません。" ;
+mesg "効果 波涛" 波涛だし[1]  $i:Ｘ座標 $i:Ｙ座標 $i:Ｚ座標  $i:向き（３６０°単位） $i:サイズ（％） $i:初期αの差分 "波涛を所定の場所に出します。向きは、0°でワールドのＺ軸の正の方向に出ます。サイズは１００がデフォルトの大きさです。因みにゲーム上の波涛は６００です（個人的には大きすぎる様なきが...）。初期のα差分は、０でデフォルトの濃さになります。薄くしたければ−の値を入れて下さい。あまり大きすぎると変になります（あしからず）。" ;
+
+
+/*
+mesg "風 制御" オフ[0] "風制御を止めます。" ;
+mesg "風 制御" オン[1] "風制御のかぜを吹かせます。" ;
+*/
+
+effect "スローパラメータ制御" [NewSlowParamMan_prog] <id:0x2003>
+{
+	int name {
+		%% = MaxInputGetEffectName( "名前", 0 );
+	};
+	int param {
+		%% = MaxInputSlideBarI( "パーセント", 0, 0, 100, 1, 0 );
+	};
+} "１００でデフォルトと同等";
+
+mesg "スローパラメータ制御" パーセント[0] $i:パーセント $i:変化フレーム "１００でデフォルトと同等";
+
+
+effect "Ｊ・Ｗ橋の交通" [NewTraffic_Demo] <id:2001><efct_on : 0><efct_off : 1>
+{
+	int name    { %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+	float z_crip{ %% = MaxInputFloat( "焼き付き最大距離", 0,  10000.0f/*default*/ ) ; } ;
+	int max_car { %% = MaxInputInt( "車の最大数", 0,  60/*default*/ ) ; } ;
+	int f_speed { %% = MaxInputSlideBarI( "端までのフレーム数", 0, 100, 200, 10,  160/*default*/ ) ; } ;
+} "フレーム数は、車が表示を開始する位置から消える位置までの何フレームで移動するかを指定します。つまり車の速度を表します。１６０が最適です。" ;
+
+mesg "Ｊ・Ｗ橋の交通" 表示[0] "車および、ライトを表示します。" ;
+mesg "Ｊ・Ｗ橋の交通" 非表示[1] "車およびライトを消します。" ;
+mesg "Ｊ・Ｗ橋の交通" スピード変更[2] $i:フレーム数 "車の動くスピードを変更します。\n車が端から端までのフレーム数で調整します。" ;
+mesg "Ｊ・Ｗ橋の交通" 輝度変更[3] $i:輝度値 "車のライトの明るさを変更します。\n尚、０〜２５５までの値です。" ;
+mesg "Ｊ・Ｗ橋の交通" 終了[4] "Ｊ・Ｗ橋の交通を終了します。" ;
+mesg "Ｊ・Ｗ橋の交通" Ｘ座標シフト[5] $i:シフト値"バンダリをＸ方向にシフトします。" ;
+
+
+
+
+/**************************************************************************************
+
+	外部出力系    id 0x9000
+
+****************************************************************************************/
+effect "外部出力 振動再生" [NewPadVibration2]<id : 0x9000 >
+{
+	int   vib_file { %% = MaxInputStrCode( "振動ファイル名（VIB）", 0,  "wtdoor_close.vib"/*default*/, "vib" ) ; } ;
+	int   frame {
+		mode = MaxInputComboBox( "モード", 0, "スケール再生=1&そのまま再生=-1", "スケール再生" ) ;
+		max = MaxInputGetKeyRangeMax( "フレーム最大", 0 ) ;
+		min = MaxInputGetKeyRangeMin( "フレーム最小", 0 ) ;
+		%% = (max - min)*mode ;
+	} ;
+} "VIBのファイル名を入れて下さい。振動データが有効フレームに引き延ばされて再生されます。" ;
+
+/**************************************************************************************
+
+	煙    id 0x7100
+
+****************************************************************************************/
+
+effect "煙 煙型ブラー" [NewSmokeBlurEffect]<id : 0x7100>
+{
+	FMATRIX	*world {		
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectMatrix( handle, link->vy );
+	};
+	int	start_speed { %% = MaxInputInt( "初期スピード", 0,  150 );};
+	int end_speed { %% = MaxInputInt( "最終スピード", 0,  80 );};
+	int	start_size { %% = MaxInputInt( "初期サイズ", 0,  200 );};
+	int end_size { %% = MaxInputInt( "最終サイズ", 0, 400 );};
+	int	spot_size { %% = MaxInputInt( "出現位置半径", 0, 200 );};
+	int spot_angle {
+		angle = MaxInputSlideBarF("最大放射角",0,0.0f,359.9f,0.1f,60.0f);
+//		if(angle == 360.0f) angle = 0.0f;
+		%% = 4096.0f * angle/360.0f;
+	};
+	int n_prims { %% = MaxInputInt( "最大パーティクル数", 0, 64 );};
+	int interval { %% = MaxInputInt( "噴射間隔", 0, 1 );};
+	int color {
+		col = &MaxInputSelectColor("色",0,129,129,129,0);
+		%% = ((col->vx)|(col->vy*256)|(col->vz*256*256));
+	};
+	int flag {%% =  MaxInputListBox( "各種フラグ", 0, "デバッグ表示=0x01&初期位置固定=0x02",0x00);};
+}"煙状にブラーをかけるエフェクトを作成しました\nエフェクトがかかっているかどうかが判別しにくい場合は一度デバッグ表示をＯＮ\nにして確認して見てください\n指定マトリクスに追従してＺ軸方向に対してブラーパーティクルを連続的に生成する\n１つのパーティクルの寿命はn_preim*invervalフレームとなる\n" ;
+
+
+effect "煙 汎用" [NewCommonSmoke]<id : 0x7101>
+{
+	FVECTOR	*center { %% = &MaxInputFVector("発生元", 1, 0.0f, 0.0f, 0.0f); };
+	float	radius { %% = MaxInputFloat( "発生半径", 0, 0.0f ); };
+	int		col_r {
+		col = &MaxInputSelectColor("色",0,128,128,128,128);
+		%% = col->vx;
+	};
+	int		col_g { %% = col->vy; };
+	int		col_b { %% = col->vz; };
+	int		col_a { %% = col->vw; };
+
+	int life { 
+		max = MaxInputGetKeyRangeMax( "フレーム最大", 0 ) ;
+		min = MaxInputGetKeyRangeMin( "フレーム最小", 0 ) ;
+		%% = (max-min) ;
+	};
+	int mode  { %% = MaxInputComboBox( "歪みタイプ", 0, "加算=0&減算=1&加算平均=2&減算平均=3", "加算" ) ; } ;
+
+}"汎用煙です。\nライフの１/５でアルファ値マックス\nその後減ります\n";
+
+
+/**************************************************************************************
+
+	血    id 0x7000
+
+****************************************************************************************/
+
+effect "血 敵兵滲み血" [NewOozeBloodDemo]<id : 0x7000 >
+{
+	int name    { %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+
+	void *objs  {
+		link = &MaxInputGetLink( "適応オブジェクト", 0  ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectDgObjs( handle );
+	};
+
+	int   model   { %% = MaxInputStrCode( "CV2モデル", 0, "sna_def"/*default*/, "cv2" ) ; } ;
+}"指定したオブジェクトに滲み血を発生させることができるように\nキャラクタを起動。滲み血エフェクトをかけるオブジェクトは\nマルチテクスチャシングルウェイトモデルであり、\n同名のＣＶ２データファイルが必要になるので注意\n指定したオブジェクトに対して滲み血エフェクトキャラを起動し、そのキャラに対してメッセージを送ってください\n" ;
+
+mesg "血 敵兵滲み血" 滲み血発生[0] $i:基本関節番号 $i:滲み発生Ｘ座標 $i:滲み発生Ｙ座標 $i:滲み発生Ｚ座標 $i:有効半径 "メッセージを送ることで指定した中心から広がるように頂点カラーを変更する。\n一度設定した色はプログラム終了まで持続する。\n基準ジョイント番号には実際に色を付けたい関節の番号を\n指定するようにしてください。（頭、腕など）" ;
+
+effect "血 任意血" [NewBlood_Demo]<id : 0x7001 >
+{
+	FMATRIX *world {
+		link = &MaxInputGetLink( "リンク", 0  ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectMatrix(handle,link->vy);
+	};
+	FVECTOR *force {
+		%% = &MaxInputFVector("フォース", 0, 0.0f, 1.0f, 0.0f);
+	};
+
+	int size { %% = MaxInputInt( "大きさ", 0, 100 ); };
+	int time { 
+		max = MaxInputGetKeyRangeMax( "フレーム最大", 0 ) ;
+		min = MaxInputGetKeyRangeMin( "フレーム最小", 0 ) ;
+		%% = (max-min) ;
+	};
+	int pat { %% = MaxInputInt( "パターン（未使用）", 0, 0 ); };
+}"マトリクスに追従する形で、任意の時間、任意のサイズで放出。\n呼び出し時に与えたフォースはマトリクスによって毎フレーム再計算され、\n（位置だけでなく）方向も追従する。" ;
+
+effect "血 血飛沫" [NewBlood2_Demo]<id : 0x7002 >
+{
+	FMATRIX *world    {
+		link = &MaxInputHumanNum( "リンク", 0 );
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectMatrix( handle, link->vy );
+	} ;
+
+	FVECTOR *pos	{
+		%% = &MaxInputFVector("発生ポイント", 1, 0.0f, 0.0f, 0.0f);
+	};
+	FVECTOR *force {
+		%% = &MaxInputFVector("フォース", 0, 0.0f, 1.0f, 0.0f);
+	};
+	int size { %% = MaxInputInt( "大きさ", 0, 100 ); };
+}"発生ポイントは絶対座標で指定。\nその後リンク先に追従します。\n";
+
+effect "血 血煙" [AN_Blood_Mist]<id : 0x7003 >
+{
+	FVECTOR *pos	{
+		%% = &MaxInputFVector("発生ポイント", 1, 0.0f, 0.0f, 0.0f);
+	};
+}"１６フレームで消える";
+
+effect "血 落ちる血" [NewBloodDropsSize]<id : 0x7004 >
+{
+	FVECTOR *pos	{
+		%% = &MaxInputFVector("発生ポイント", 1, 0.0f, 0.0f, 0.0f);
+	};
+
+	int decay {
+		%% = MaxInputInt( "タイム", 0, 100 );
+	};
+
+	int white {
+		%% = MaxInputInt( "白（未使用）", 0, 0 );
+	};
+	int spread_size {
+		%% = MaxInputInt( "落ちた時サイズ", 0, 100 );
+	};
+	int add {
+		%% = -1;
+	};
+}"今のところ落ちてる時の血は表示していません。\nタイムは落ちてから消えるまでの時間です。\n白かどうかは未対応(１で白になる予定)" ;
+
+effect "血 カメラ血（常駐）" [NewBloodCamera]<id:0x7005><add_src : "chi01msu.bmp" >
+"これをセットしてから起動を呼んでください";
+
+effect "血 カメラ血（起動）" [PutCameraBlood]<id:0x7006><no_birth>
+{
+	FVECTOR *pos_pers {
+		%% = &MaxInputFVector("発生ポイント", 0, 0.0f, 0.0f, 0.0f);
+	};
+	int white {
+		%% = MaxInputInt( "白（未使用）", 0, 0 );
+	};
+} "これを起動するには「血 カメラ血（常駐）」をセットしてください。\nポジション(x,yのみ使用)は1.0から-1.0のカメラ座標です\n白かどうかは未対応(１で白になる予定)";
+
+effect "血 壁血（常駐）" [NewBloodWall]<id:0x7007><add_src : "chi01msu.bmp">
+{ 
+	int name    { %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+	int map		{ %% = DM_GetCurrentMap(); };
+} "これをセットしてから起動を呼んでください";
+
+effect "血 壁血（起動）" [PutWallBlood]<id:0x7008><no_birth><add_src : "chi01msu.bmp">
+{
+	FVECTOR *pos{
+		%% = &MaxInputFVector("発生ポイント", 1, 0.0f, 0.0f, 0.0f);
+	};
+	SVECTOR *rot {
+		%% = &MaxInputSVector("方向",2,0,0,0);
+	};
+	int white {
+		%% = MaxInputInt( "白（未使用）", 0, 0 );
+	};
+} "これを起動するには「血 壁血（常駐）」をセットしてください。\nポジションから方向の壁を探してそこに憑きます\n方向はＺ軸からの回転です。\n白かどうかは未対応(１で白になる予定)";
+
+/**************************************************************************************
+
+	効果    id 0x6000
+
+****************************************************************************************/
+effect "効果 跳弾" [NewSpark]<id : 0x6000 >
+{
+	FMATRIX *world
+	{
+		sceVu0UnitMatrix( &mat ) ;
+		pos = &MaxInputFVector( "位置", 1,   0.0f,0.0f,0.0f/*default*/ ) ;
+		rot = &MaxInputFVector( "回転", 2,   0.0f,0.0f,0.0f/*default*/ ) ;
+		sceVu0RotMatrix( &mat, &mat, rot ) ;
+		sceVu0TransMatrix( &mat, &mat, pos ) ;
+		%% = &mat ;
+	} ;
+	FVECTOR *color
+	{
+		c_ivec = &MaxInputSelectColor( "色", 0,  255, 255, 255, 128 ) ;
+		sceVu0ITOF0Vector( &c_fvec, c_ivec ) ;
+		%% = &c_fvec ;
+	} ;
+} "このコメントはでましたか？エフェクト用のコメントです。" ;
+
+effect "効果 光学迷彩" [NewOpticalCamouflageBreakDemo] <id:0x6001>
+{
+	void *objs      {
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectDgObjs( handle );
+		fps = MaxInputGetFrameRate( "フレームレート", 0 )/5 ;
+	} ;
+	int    type	   { %% = MaxInputComboBox( "歪みタイプ", 0, "横歪み=0&縦縮小=1", "横歪み" ) ; } ;
+	int    start_time  { %% = MaxInputGetKeyRangeMin( "開始フレーム", 0 )*fps ; } ;
+	int    end_time    { %% = MaxInputGetKeyRangeMax( "終了フレーム", 0 )*fps ; } ;
+	int    color       { 
+		col = &MaxInputSelectColor( "迷彩色", 0,  255, 255, 255, 128 ) ;
+		%% = (col->vx) | (col->vy * 256) | (col->vz * 256 * 256 ) ;
+	} ;
+} "壊れエフェクト発動前の光学迷彩エフェクト処理も含みます。(起動時には通常の光学迷彩としてエフェクトがかかる)このキャラが起動してから開始時間が経過した後に壊れエフェクトが発動します。壊れエフェクトが終了するのはキャラを起動してから終了時間経過後になります。\n  また、壊れエフェクト発動前の光学迷彩エフェクトに対してメッセージで歪みパラメータを変更可能。\nトラックビューにて開始・終了時間を指定。\nリンク制御によって対象オブジェクトを設定。\n  歪みタイプ：：横歪み＝０ 縦縮小＝１\n  迷彩色：：光学迷彩につく色(RGBのみ)" ;
+
+mesg "効果 光学迷彩" 壊れ発動[0] $i:Ｘ方向ずらし量 $i:Ｙ方向ずらし量 $i:補間時間 "ずらし量（ピクセル単位default=16）\n補間時間（１／３００秒単位。最低でも６以上）\n" ;
+mesg "効果 光学迷彩" 壊れ発動その２[128] $i:Ｘ方向ずらし量 $i:Ｙ方向ずらし量 $i:補間時間 "ずらし量（ピクセル単位default=16）\n補間時間（１／１０００秒単位。最低でも６以上）\n" ;
+
+effect "効果 光学迷彩２" [NewOpticalCamouflageBreakDemo2] <id:0x6006>
+{
+	int	name     { %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+
+	void *objs      {
+		link = &MaxInputGetLink( "リンク", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectDgObjs( handle );
+		fps = 300 / MaxInputGetFrameRate( "フレームレート", 0 );
+	};
+	int    type	   { %% = MaxInputComboBox( "歪みタイプ", 0, "横歪み=0&縦縮小=1", "横歪み" ) ; } ;
+
+	int    start_time  {
+		frame = MaxInputInt( "壊れ開始フレーム", 0, 0 ) * 2 * 5 / fps ;
+		min = MaxInputGetKeyRangeMin( "フレーム最小", 0 );
+		max = MaxInputGetKeyRangeMax( "フレーム最大", 0 );
+
+		%% = (frame - min)*fps;
+	};
+	int    end_time    { 
+		%% = (max - min)*fps;
+	};
+	int    color       { 
+		col = &MaxInputSelectColor( "迷彩色", 0,  255, 255, 255, 128 ) ;
+		%% = (col->vx) | (col->vy * 256) | (col->vz * 256 * 256 ) ;
+	} ;
+} "壊れエフェクト発動前の光学迷彩エフェクト処理も含みます。(起動時には通常の光学迷彩としてエフェクトがかかる)このキャラが起動してから開始時間が経過した後に壊れエフェクトが発動します。壊れエフェクトが終了するのはキャラを起動してから終了時間経過後になります。\n  また、壊れエフェクト発動前の光学迷彩エフェクトに対してメッセージで歪みパラメータを変更可能。\nトラックビューにて開始・終了時間を指定。\nリンク制御によって対象オブジェクトを設定。\n  歪みタイプ：：横歪み＝０ 縦縮小＝１\n  迷彩色：：光学迷彩につく色(RGBのみ)" ;
+
+mesg "効果 光学迷彩２" 壊れ発動[0] $i:Ｘ方向ずらし量 $i:Ｙ方向ずらし量 $i:補間時間 "ずらし量（ピクセル単位default=16）\n補間時間（１／３００秒単位。最低でも６以上）\n" ;
+mesg "効果 光学迷彩２" 壊れ発動その２[128] $i:Ｘ方向ずらし量 $i:Ｙ方向ずらし量 $i:補間時間 "ずらし量（ピクセル単位default=16）\n補間時間（１／１０００秒単位。最低でも６以上）\n" ;
+
+
+effect "効果 プラズマ（ポリ）" [NewPlasmaPoly_Demo] <id:0x6002>
+{
+	FVECTOR *pos0	{
+		//temp = &MaxInputFVector("始点", 1, 0.0f, 0.0f, 0.0f);
+		//%% = temp;
+		link = &MaxInputHumanNum( "始点", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectPos( handle, link->vy );
+	};
+
+	FVECTOR *pos1	{
+		//%% = &MaxInputFVector("終点の中心", 0, 0.0f, 0.0f, 0.0f);
+		link = &MaxInputHumanNum( "終点", 0 ) ;
+		handle = DM_GetObjectHandle( link->vx );
+		%% = DM_GetObjectPos( handle, link->vy );
+	};
+
+	int radius		{ %% = MaxInputInt( "pos1を中心とした球の半径", 0, 0 ); };
+	int width		{ %% = MaxInputInt(	"幅", 0, 0 ); };
+	int branch		{ %% = MaxInputInt( "枝分フラグ", 0, 0 ); };
+	int life 		{ 
+		max = MaxInputGetKeyRangeMax( "フレーム最大", 0 ) ;
+		min = MaxInputGetKeyRangeMin( "フレーム最小", 0 ) ;
+		%% = (max-min) ;
+	};
+} "*pos0 :[ポインタ参照する]発生点\n*pos1 :[ポインタ参照する]\nradius:pos1を中心とした球の半径（この球の内部の点を終点とする）０以上\nwidth :０以下）長さに比例した幅とする １以上）この値を幅とする\nbranch:０）枝分かれ無し １）枝分かれ有り\nlife　:寿命。フレーム指定。０以上。" ;
+
+effect "効果 プラズマ（ライン）" [NewPlasmaLine_Demo] <id:0x6003>
+{
+	FVECTOR *pos0	{
+		temp = &MaxInputFVector("始点", 1, 0.0f, 0.0f, 0.0f);
+		%% = temp;
+	};
+
+	FVECTOR *pos1	{
+		%% = &MaxInputFVector("終点の中心", 0, 0.0f, 0.0f, 0.0f);
+	};
+
+	int radius		{ %% = MaxInputInt( "pos1を中心とした球の半径", 0, 0 ); };
+	int life 		{ 
+		max = MaxInputGetKeyRangeMax( "フレーム最大", 0 ) ;
+		min = MaxInputGetKeyRangeMin( "フレーム最小", 0 ) ;
+		%% = (max-min) ;
+	};
+
+} "*pos0 :[ポインタ参照する]発生点\n*pos1 :[ポインタ参照する]\nradius:pos1を中心とした球の半径（この球の内部の点を終点とする）０以上\nlife　:寿命。フレーム指定。０以上。" ;
+
+effect "効果 頂点アニメブラー" [NewVanimeBullerCall] <id:0x6004>
+{
+	int id {
+		%% = MaxInputStrCode( "モデル名", 0, "shock1"/*default*/, "cv2" );
+	};
+	float rot_y {
+		%% = MaxInputFloat( "Ｙ軸回転速度", 0, 0.0f );
+	};
+	float speed {
+		%% = MaxInputFloat( "速度", 0, 100.0f );
+	};
+	FVECTOR *from	{
+		%% = &MaxInputFVector("始点", 1, 0.0f, 0.0f, 0.0f);
+	};
+	FVECTOR *to	{
+		%% = &MaxInputFVector("終点", 0, 0.0f, 0.0f, 10000.0f);
+	};
+	int base { %% = MaxInputInt( "補間フレーム数", 0, 40 ); };
+	int rand { %% = MaxInputInt( "補間フレーム数の乱数幅", 0, 0 ); };
+	int flag { %% =  MaxInputListBox( "各種フラグ", 0, "デバッグ表示=0x01",0x00);};
+}"[機能]\n  頂点アニメモデルを光学迷彩で表示する。\n[引数について]\n  モデルIDは、同じ名前のKNSおよびCV2が必要です。方向に対する移動速度が設\n  定されていると、その向きに移動します。初期位置は、ワールド座標である。\n  初期位置から目標点に向かってモデルの向きを変えます。そのときY軸の正の\n  方向のものを指定したベクトルの向きに変えます。ベースキーフレームは、頂\n  点アニメのオブジェクト同士を何フレームで補間するかを決めるパラメータです。\n  乱数幅は、ベースフレームからどのくらいバラツキを出すかどうかです。\n  デバッグモードは、０は通常モード、１はデバッグモードとなります。\nKMSのキーフレームとなるモデルは、順序良くOBJとして並んでいなければならず、\n頂点数ポリゴン数ともに同じものでなければなりません。\nモデルは,effect/shock1.kmsです。";
+
+effect "効果 弾丸" [NewDemoBulletCall] <id:0x6005>
+{
+	int id {
+		%% = MaxInputStrCode( "モデル名", 0, "usp_emb"/*default*/, "kms" );
+	};
+	float rot_y {
+		%% = MaxInputFloat( "Ｙ軸回転速度", 0, 0.0f );
+	};
+	float speed {
+		%% = MaxInputFloat( "速度", 0, 100.0f );
+	};
+	FVECTOR *from	{
+		%% = &MaxInputFVector("始点", 1, 0.0f, 0.0f, 0.0f);
+	};
+	FVECTOR *to	{
+		%% = &MaxInputFVector("終点", 0, 0.0f, 0.0f, 10000.0f);
+	};
+	int flag { %% =  MaxInputListBox( "各種フラグ", 0, "デバッグ表示=0x01",0x00);};
+
+}"[機能]\n  スクリュー状に煙を出したながら回転して進む弾丸\n[引数について]\n  モデルIDは、同じ名前のKNSおよびCV2が必要です。方向に対する移動速度が設\n  定されていると、その向きに移動します。初期位置は、ワールド座標である。\n  初期位置から目標点に向かってモデルの向きを変えます。そのときY軸の正の\n  方向のものを指定したベクトルの向きに変えます。\n  デバッグモードは、０は通常モード、１はデバッグモードとなります。\nKMSのキーフレームとなるモデルは、順序良くOBJとして並んでいなければならず、\n頂点数ポリゴン数ともに同じものでなければなりません。\nモデルは,effect/shock1.kmsです。";
+
+
+
+
+/**************************************************************************************
+
+	全画面 系    id 0x000〜0x005
+
+****************************************************************************************/
+
+effect "全画面 環境光" [DM_ChangeAmbient] <id:0x006><no_birth>
+{
+	IVECTOR *rgb { %% = &MaxInputSelectColor( "光源の色", 0, 80,80,80,128/*default*/ ) ; } ;
+} "環境光を設定します。そのフレームで指定した色に変化します。\n  光源の色：環境光として照らされる色" ;
+
+effect "全画面 平行光" [DM_ChangeParallel] <id:0x007><no_birth>
+{
+	IVECTOR *rgb { %% = &MaxInputSelectColor( "光源の色", 0, 128,128,128,128/*default*/ ) ; } ;
+	FVECTOR *dir { %% = &MaxInputFVector( "光源の方向", 0,  1.0f,0.0f,0.0f/*defualt*/ ) ; } ;
+} "平行光を設定します。そのフレームで指定した色に変化します。\n  光源の色：光源が放つ色\n  光源の方向：光源が来る方向\n平行光は、基本的にステージ以外の物(シェード)に対するものです。" ;
+
+
+effect "全画面　双眼鏡" [NewScopeSight] <id:0x00b>
+{
+	float scale { %% = MaxInputFloat( "スケール", 0, 1.0f ) ; } ;
+}
+"ズームレベルグラフの伸び具合がスケールで変化します。\n1.0F : 今までと同じ\n2.0F : 伸びかたが今までの１／２\nという感じになります。" ;
+
+
+effect "フォグ" [NewFogSet_Demo]<id : 0x000 ><no_birth>
+{
+	int r {
+		col = &MaxInputSelectColor( "色", 0,  16,32,27,128/*default*/ ) ;
+		%% = col->vx ;
+	} ;
+	int g { %% = col->vy ; } ;
+	int b { %% = col->vz ; } ;
+	float near { %% = MaxInputFloat( "Near", 0, 50000 ) ; } ;
+	float far  { %% = MaxInputFloat( "Far", 0, 100000 ) ; } ;
+	int time
+	{
+		max = MaxInputGetKeyRangeMax( "フレーム最大", 0 ) ;
+		min = MaxInputGetKeyRangeMin( "フレーム最小", 0 ) ;
+		%% = (max-min) ;
+	} ;
+} "フォグ効果。\n  色：フォグの色\n  Near：フォグが掛かり始める距離\n  Far：指定した色になる距離\nトラックビューで変化時間を設定" ;
+
+effect "遠景ぼかし" [NewFarFocusEffect]<id : 0x001 >
+{
+	int	name     { %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+	int	max_plane{ %% = MaxInputInt( "最大描画枚数", 0,  4/*default*/ ) ; } ;
+	int	near     { %% = MaxInputInt( "ぼかし最小距離", 0, 50000 ) ; } ;
+	int	far      { %% = MaxInputInt( "ぼかし最大距離", 0, 2000000 ) ; } ;
+} "最大描画枚数は４ぐらいが適当かも。\n起動後のコントロールにはメッセージを使用します。また、メッセージで指定する補間時間は１／３００秒単位での指定なので注意してください。メッセージにおいて１／１０００秒単位での指定に対応しました。" ;
+mesg "遠景ぼかし" 機能ＯＦＦ[0] "ぼかし機能をなくします。" ;
+mesg "遠景ぼかし" 機能ＯＮ[1]  "ぼかし機能が有効になります。" ;
+mesg "遠景ぼかし" ぼかし調節[2] $w:補間時間 $b:補間タイプ $i:ぼかし最小距離 $i:ぼかし最大距離
+	"※現在指定できる補間タイプは０のみである。\n" ;
+
+
+effect "近景ぼかし" [NewNearFocusEffect]<id : 0x002 >
+{
+	int	name     { %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+	int	max_plane{ %% = MaxInputInt( "最大描画枚数", 0, 4/*default*/ ) ; } ;
+	int	near     { %% = MaxInputInt( "ぼかし最小距離", 0,  0.0f/*default*/ ) ; } ;
+	int	far      { %% = MaxInputInt( "ぼかし最大距離", 0,  3000.0f/*default*/ ) ; } ;
+} "最大描画枚数は４ぐらいが適当かも。\n起動後のコントロールにはメッセージを使用します。また、メッセージで指定する補間時間は１／３００秒単位での指定なので注意してください。メッセージにおいて１／１０００秒単位での指定に対応しました。" ;
+
+mesg "近景ぼかし" 機能ＯＦＦ[0]	"ぼかし機能をなくします。" ;
+mesg "近景ぼかし" 機能ＯＮ[1]	"ぼかし機能が有効になります。" ;
+mesg "近景ぼかし" ぼかし調節[2] $w:補間時間 $b:補間タイプ $i:ぼかし最小距離 $i:ぼかし最大距離
+		"※現在指定できる補間タイプは０のみである。\n" ;
+
+
+effect "カメラレンズ面効果" [NewRainCamera_Demo] <id:0x004>
+{
+	int	time
+	{
+		max = MaxInputGetKeyRangeMax( "フレーム最大", 0 ) ;
+		min = MaxInputGetKeyRangeMin( "フレーム最小", 0 ) ;
+		%% = (max-min) ;
+	} ;
+} "「プレイヤー主観時のカメラ雨」をデモ用に作成。\nw00aなどにセットされたテクスチャクロスフェードのライトの位置を\nこちらにも反映させる為には\n\tchara カメラ雨 カメラ雨\nがシナリオＧＣＬにセットされている必要がある\nそして、その後にテクスチャクロスフェードがセットされていないと意味が無い）。\n現在w00a.gclでは意味のある配置となっている（そのまま使用するとよい）。\nこの「カメラ前水滴」も風の方向を見るが、こちらはどの方向でも出るようになっている。" ;
+
+
+effect "全画面 CLUTフラッシュ" [NewFlush] <id:0x005>
+{
+	int decay{
+		max = MaxInputGetKeyRangeMax( "フレーム最大", 0 ) ;
+		min = MaxInputGetKeyRangeMin( "フレーム最小", 0 ) ;
+		%% = (max-min) ;
+	} ;
+	int mode { %% = MaxInputComboBox( "モード", 0, "ブラー無し=0&ブラー有り=1", "ブラー無し" ) ; } ;
+} "ゲーム中の爆発に使用しているフラッシュ。\nＣＬＵＴ変更部分が多重に呼ばれると不具合がある為、内部で同時呼びしないように細工している。\nトラックビューでフラッシュ継続時間を設定する。\nモード：フラッシュしている間ブラーさせるどうか  ブラー無し＝０ ブラー有り＝１" ;
+
+
+effect "フェードインアウト" [NewFadeInOut_Demo]<id : 0x003 ><no_birth>
+{
+	int r {
+		col = &MaxInputSelectColor( "色", 0,  0,0,0,128/*default*/ ) ;
+		%% = col->vx ;
+	} ;
+	int g { %% = col->vy ; } ;
+	int b { %% = col->vz ; } ;
+	int a { %% = col->vw ; } ;
+	int time
+	{
+		max = MaxInputGetKeyRangeMax( "フレーム最大", 0 ) ;
+		min = MaxInputGetKeyRangeMin( "フレーム最小", 0 ) ;
+		%% = (max-min) ;
+	} ;
+} "設定時の瞬間のＲＧＢαから指定した最終色まで、指定フレームで変化する。\n" ;
+
+
+effect "フェードＩＯカット" [NewFadeInOutForce_Demo]<id : 0x008 ><no_birth>
+{
+	int ini_r {
+		col = &MaxInputSelectColor( "初期色", 0,  0,0,0,128/*default*/ ) ;
+		%% = col->vx ;
+	} ;
+	int ini_g { %% = col->vy ; } ;
+	int ini_b { %% = col->vz ; } ;
+	int ini_a { %% = col->vw ; } ;
+
+	int r {
+		col = &MaxInputSelectColor( "最終色", 0,  0,0,0,128/*default*/ ) ;
+		%% = col->vx ;
+	} ;
+	int g { %% = col->vy ; } ;
+	int b { %% = col->vz ; } ;
+	int a { %% = col->vw ; } ;
+
+	int time
+	{
+		max = MaxInputGetKeyRangeMax( "フレーム最大", 0 ) ;
+		min = MaxInputGetKeyRangeMin( "フレーム最小", 0 ) ;
+		%% = (max-min) ;
+	} ;
+} "初期色から最終色まで、指定フレームで変化する。\n\n突然フラッシュ\n｛255,255,255,128,\n255,255,255,0\n 60｝など\n" ;
+
+
+effect "コントラスト" [NewContrast_Demo]<id : 0x009 ><no_birth>
+{
+	int r {
+		col = &MaxInputSelectColor( "最終色", 0,  0,0,0,128/*default*/ ) ;
+		%% = col->vx ;
+	} ;
+	int g { %% = col->vy ; } ;
+	int b { %% = col->vz ; } ;
+	int a { %% = col->vw ; } ;
+
+	int nega_posi_flag { %% = MaxInputComboBox( "モード", 0, "ポジ=0&ネガ=1", "ポジ" ) ; } ;
+
+	int time
+	{
+		max = MaxInputGetKeyRangeMax( "フレーム最大", 0 ) ;
+		min = MaxInputGetKeyRangeMin( "フレーム最小", 0 ) ;
+		%% = (max-min) ;
+	} ;
+} "「現在のコントラスト値を初期色として」最終色まで、指定フレームで変化する。\nαの値は「ＲＧＢ共通の」傾き（伸長率）。\nα=128で等倍。α=0で（ポジの場合）真っ黒。α=255で２倍。" ;
+
+
+effect "コントラストカット" [NewContrastForce_Demo]<id : 0x00a ><no_birth>
+{
+	int ini_r {
+		col = &MaxInputSelectColor( "初期色", 0,  0,0,0,128/*default*/ ) ;
+		%% = col->vx ;
+	} ;
+	int ini_g { %% = col->vy ; } ;
+	int ini_b { %% = col->vz ; } ;
+	int ini_a { %% = col->vw ; } ;
+
+	int r {
+		col = &MaxInputSelectColor( "最終色", 0,  0,0,0,128/*default*/ ) ;
+		%% = col->vx ;
+	} ;
+	int g { %% = col->vy ; } ;
+	int b { %% = col->vz ; } ;
+	int a { %% = col->vw ; } ;
+
+	int nega_posi_flag { %% = MaxInputComboBox( "モード", 0, "ポジ=0&ネガ=1", "ポジ" ) ; } ;
+
+	int time
+	{
+		max = MaxInputGetKeyRangeMax( "フレーム最大", 0 ) ;
+		min = MaxInputGetKeyRangeMin( "フレーム最小", 0 ) ;
+		%% = (max-min) ;
+	} ;
+} "「指定した初期色から」最終色まで、指定フレームで変化する。\nαの値は「ＲＧＢ共通の」傾き（伸長率）。\nα=128で等倍。α=0で（ポジの場合）真っ黒。α=255で２倍。" ;
+
+
+
+
+/**************************************************************************************
+
+	常駐系    id 0xa000
+
+****************************************************************************************/
+
+effect "常駐 ＵＳＰ薬莢確保" [NewCartridgeUspALL]<id : 0xa000 >
+{
+	int	name	{ %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+	int map		{ %% = DM_GetCurrentMap(); };
+}"ＵＳＰ薬莢のメモリ確保\nこれをセットしてから薬莢エフェクト\nをセットしてください\n";
+
+effect "常駐 ＡＫＳ薬莢確保" [NewCartridgeAksALL]<id : 0xa001 >
+{
+	int	name	{ %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+	int map		{ %% = DM_GetCurrentMap(); };
+}"ＡＫＳ薬莢のメモリ確保\nこれをセットしてから薬莢エフェクト\nをセットしてください\n";
+
+effect "常駐 テロップ" [NewRunTelop_Trial]<id : 0xa002>
+{
+	int	name	{ %% = MaxInputGetEffectName( "名前", 0 ) ; } ;
+}"体験版用テロップ常駐です。\nメッセージを送る度にテロップは変わります。\n座標系は(0,0)<->(512,384)です。\n最大同時表示枚数は4枚です。\n32フレームでフェードイン、192フレーム待った後、32フレームでフェードアウト（６０フレーム換算）";
+
+mesg "常駐 テロップ" 表示開始[0] $i:Ｘ座標 $i:Ｘ座標 $i:テロップ番号 "テロップを表示します。\n座標系は(0,0)<->(512,384)です。番号はゼロから１７まで\n";

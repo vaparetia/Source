@@ -1,0 +1,125 @@
+//
+//	w11c.src	
+//
+//	written by H.Yoshiike 2000.Aug
+//
+//	$Id: w11c.src,v 1.53 2001/08/22 12:39:40 usr03635 Exp $
+
+#define WN_W11C
+
+block .use r_plt0
+block .nocache
+block .cache
+
+#include "w11c_game.h"
+
+
+
+
+
+// デモ用に延長されたエレベータシャフト
+world	elevator/w11_elv_append
+
+// シールズ
+human	sel_def/sel_def.kms
+
+// フォーチュン
+pack_all fortune_mh_mt.tri \
+		human/for_coat/for_coat_addhand_mh_mt.dar \
+		human/for_coat/for_tears_mh_mt.dar
+human	for_coat/for_coat_addhand_mh_mt.evm
+human	for_coat/for_tears_mh_mt.evm
+
+// ヴァンプ
+human	vmp_def/vmp_parts_vkpb_mh.evm
+// ヴァンプ胸と額の傷
+pack_all zzz_chest_scar.tri \
+		human/vmp_coat/vmp_kizu_mh.dar \
+		human/vmp_coat/vmp_jyuusou_mh.dar
+human	vmp_coat/vmp_kizu_mh.evm
+human	vmp_coat/vmp_jyuusou_mh.evm
+
+// フォーチュンの涙
+// モデル（TRI名に、ema_ooze_blood_mh.tri が欲しいので、まとめない）
+pack_all zzz_tears.tri \
+		human/vmp_coat/vmp_for_tears_mh_mt.dar
+human   vmp_coat/vmp_for_tears_mh_mt.evm
+// アニメテクスチャ
+anmtex tears_sub.rat effect/ter_for_tears_sub
+anmtex tears_rgb.rat effect/ter_for_tears_rgb
+/*
+ema_ooze_blood00_alp.pic
+〜
+ema_ooze_blood89_alp.pic
+*/
+
+
+// 細々したものをまとめる
+pack_all misc_obj.tri \
+		item/shield/shl_frg1.dar \
+		goods/demo_dummy/demo_dummy.dar \
+		weapon/m92_sna/m92_sna_sub.dar \
+		weapon/usp/usp_sub.dar
+
+// misc_obj.tri の各モデル
+// 爆発欠片
+item		shield/shl_frg1.kms
+// デモダミー
+goods	demo_dummy/demo_dummy.kms
+// M92主観
+weapon		m92_sna/m92_sna_sub.kms
+// USP主観
+weapon		usp/usp_sub.kms
+
+//テロップ
+#ifdef MGS2_LANG_ENGLISH
+// 英語
+pack_all	staff.tri \
+		2D/demo_telop/eng/sr04j_alp_ovl.bmp	//フォーチュン紹介
+
+#else
+// 日本語
+pack_all	staff.tri \
+		2D/demo_telop/jpn/sr04j_alp_ovl.bmp	//フォーチュン紹介
+
+#endif
+
+// 2001.7/26 岡嶋追記
+	pack_trnall stage_effect.tri \
+		effect/bakuha/bombsphere01_alp.bmp \
+		effect/bakuha/bombsphere03_alp.bmp \
+		effect/bakuha/bombsphere04_alp.bmp
+
+
+// 振動データ
+// データ数が多すぎてロード時に落ちるステージが出たので、一時的にカット。010729（平野）
+// 振動ファイルは一つにまとまるようになったので組み込み。010803
+vib		demo
+
+/* mgdemo added ----from here (Tue Jun  5 14:08:45 2001) ---- */
+goods	demo_linearrifle/demo_lnr.kms
+goods	demo_linearrifle/demo_lnr_trigger.kms
+human	rai_def/rai_def_mh_mt.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Jun 11 16:30:22 2001) ---- */
+item	c_box/cbx_a_frg1_cm.kms
+/* mgdemo added ----upto here ---- */
+
+
+
+
+
+/* mgdemo added ----from here (Fri Jul 27 12:38:56 2001) ---- */
+human	for_coat/for_cort_shadow.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Sat Jul 28 15:16:32 2001) ---- */
+human	vmp_coat/vmp_parts_coat_dead.kms
+/* mgdemo added ----upto here ---- */
+//フォーチュン涙滴
+effect	drop/drop01_msk.bmp
+/* mgdemo added ----from here (Thu Aug  9 16:44:53 2001) ---- */
+human	vmp_coat/vmp_parts_coat_vmp003a2.kms
+human	vmp_coat/vmp_parts_coat_vmp003a1.kms
+human	vmp_coat/vmp_parts_coat_vmp002a2.kms
+human	vmp_coat/vmp_coat_dead_mh_mt.evm
+/* mgdemo added ----upto here ---- */

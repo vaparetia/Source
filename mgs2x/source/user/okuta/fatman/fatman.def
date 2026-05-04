@@ -1,0 +1,314 @@
+/*
+    fatman.def
+    ファットマン用 関数宣言
+    2001/04/12 Masafumi Okuta
+    $Id: fatman.def,v 1.1.1.3 2002/11/19 11:47:59 Yoshizawa1 Exp $
+*/
+
+// fatdata.c
+
+// fatsound.c
+static void 	FAT_SeManager( Work*);
+static int 	FAT_Say( Work*, int, int);
+static int 	FAT_CallSe( Work*, int, FVECTOR*, int);
+static void	FAT_StreamRequest( Work*, int);
+static void	FAT_StreamRequestJustTime( Work*, int);
+//static void 	FAT_StreamRequestWithProc( Work*, int, int);
+static void 	FAT_StreamUpdate( Work* );
+static void 	FAT_DamageVoice( Work*, long64, int, int);
+static void 	FAT_ResidentRollerSe( Work* work );
+#ifdef DEBUG_MODE
+// fatdebug.c
+static void 	FAT_CallDbgDump(void);
+static void 	FAT_CallDbgViewer(void);
+static void 	FAT_CallDbgStatus(void);
+static void 	FAT_CallDbgThink(void);
+static void 	FAT_CallDbgMotion(void);
+static void 	FAT_CallDbgBomb(void);
+static void 	FAT_DbgPutLevelView( DebugView* );
+static void 	FAT_DbgPutTypeView( DebugView* );
+static void 	FAT_DbgPutContView( DebugView* );
+static void 	DbgViewAct( DebugView* );
+static void 	DbgViewDie( void);
+static void 	Think3_DbgStand( Work* );
+static void 	Think3_DbgMove( Work* );
+static void 	Think3_DbgShoot( Work* );
+static void 	Think3_DbgReload( Work* );
+static void 	FAT_DbgThink( Work* );
+static void 	FAT_DbgBombThink(Work* );
+static void 	FAT_DbgViewStatus( Work* );
+static void 	FAT_DbgDrawRoute( Work*);
+static void 	FAT_DbgDrawTrgBox( Work*);
+static void 	FAT_DbgStatusUpdate( Work*);
+static int 	FAT_UpdatePutPos(Work*);
+static void 	FAT_Debug( Work*);
+#endif
+// fatarea.c
+static void 	FAT_InitAreaPos2Zone( Work* );
+static int  	FAT_GetArea(FVECTOR *vecPos);
+static int  	FAT_GetContArea( int nArea);
+static int 	FAT_GetContAreaBit( int nArea);
+//static void 	FAT_DbgCalcBezierIncMod( FVECTOR*, FVECTOR*, FVECTOR*, FVECTOR*, FVECTOR*);
+
+// fatutil.c
+static void 	FAT_SpillBlood( Work*, FVECTOR*, FVECTOR*);
+static void 	FAT_BlastSuitEvadeShootEffect( Work*, FVECTOR*, FVECTOR*);
+static void 	FAT_SendFaceMess( Work* work, int nType);
+
+#if 0
+// fatbehind.c
+static int 	FvecBoundCheckQuad( FVECTOR*, FVECTOR*, FVECTOR*, FVECTOR*);
+static void 	FAT_GetBehindData( int, int, FAT_BOUND_VECDATA*, FAT_BEHIND_VECDATA*);
+static void 	FAT_DbgDrawBehindData( FAT_BEHIND_VECDATA*);
+static int 	FAT_CheckPlayerBehindBox( FAT_BEHIND_UNIT*, FAT_BEHIND_VECDATA*);
+static void 	FAT_GetGclBehindData( FAT_BEHIND_UNIT* );
+static int      FAT_GetBehindContPoint( Work*, FVECTOR*, int);
+static void 	FAT_DbgViewBehindPos(FAT_BEHIND_UNIT*);
+static void 	FAT_DbgViewBehindArea(FAT_BEHIND_UNIT*);
+static int 	FAT_GetPointFromBehind( Work*, FVECTOR*, FVECTOR, int);
+static int 	FAT_GetPos2FromBehind( Work*, int*, int*, FVECTOR*, FVECTOR*, FVECTOR, int, int);
+#endif
+// fatintrude.c
+static int 	FAT_GetIntrudeArea( void );
+static void 	FAT_InitEscPos2Zone( Work* );
+static int 	FAT_GetIntrudeEscZone( Work*, int );
+
+#if 0
+// fattobidashi.c
+static int 	FAT_GetVectorScalar(FVECTOR vec1, FVECTOR vec2);
+static void 	FAT_InitTobidasiPos2Zone( Work* );
+static void	FAT_InitTobidasiPos2Zone( Work* );
+static int 	FAT_GetTobidasiAimZone( Work*, int*);
+static void 	FAT_SetTobidasiArea( Work* );
+#endif
+
+// fatzone.c
+static int 	GetRandZone( Work*);
+static int 	FAT_GetSafetyZoneNear( Work*);
+static int 	FAT_GetZoneFromInnerMin( NPCWORK*, int, FVECTOR*, float*);
+//static int 	FAT_GetZoneFromInnerMax( NPCWORK*, int, FVECTOR*, float*);
+//static int 	GetFarZoneDir( NPCWORK*, int, FVECTOR, int, int*);	
+//static int 	GetFarZonePlayerDir( NPCWORK*, int, int*);	
+static int 	FAT_GetAreaDataZone( Work* );
+//static void 	FAT_InitBackShootPos2Zone( Work* );
+//static int 	FAT_GetBackShootRefZone( Work* );
+//static int 	FAT_GetBackShootZoneLinePlaFront( Work*, int*);
+
+// fatact.c
+static void 	ActRun( NPCWORK*, int);
+static void 	ActRunReload( NPCWORK*, int);
+static void 	ActPointMove( NPCWORK*, int);
+static void 	ActGunStand( NPCWORK* , int );
+static void 	ActGunShoot( NPCWORK* , int );
+static void 	ActRunShotReady( NPCWORK* , int );
+static void 	ActRunShotAct( NPCWORK* , int );
+static void 	ActReload( NPCWORK*, int );
+static void 	ActWakeup( NPCWORK*, int );
+static void 	ActBombSetStop( NPCWORK* , int );
+static void 	ActBombSetRun( NPCWORK* , int );
+static void 	ActDamage( NPCWORK* , int );
+static void 	ActDownDamage( NPCWORK* , int );
+static void 	ActDown( NPCWORK* , int );
+static void 	ActFall( NPCWORK* , int );
+static void 	ActCountDownStart( NPCWORK* , int );
+static void 	ActFeintShoot( NPCWORK* , int );
+static void 	ActTurnSide( NPCWORK* , int );
+static void 	ActTurn180( NPCWORK* , int );
+static void 	ActStop( NPCWORK* , int );
+static void 	ActTobidasi( NPCWORK* , int );
+static void 	ActSlideShoot( NPCWORK* , int );
+static void 	ActOverLook( NPCWORK* , int );
+static void 	ActOdori( NPCWORK* , int );
+static void 	ActSquat( NPCWORK* , int );
+static int 	SampleCheckPad( NPCWORK* );
+static void 	Action( Work *);
+
+// fatcommon.c
+static int 	FAT_CheckElude( Work* );
+
+// fatnpc.c
+static void 	FAT_SetModeFromPad( NPCWORK *, NPCACTMODE, int, int, int );
+static void 	FAT_SetActMotion( NPCWORK*, int, int);	
+static void 	FAT_SetActMotionEX( NPCWORK*, int, int, int, u_long64, int, float);	
+static void	FAT_Incline( CONTROL*);
+
+// fatparty.c
+static void 	FAT_SetThink1( Work*, int, int, int);
+static void 	FAT_SetThink2( Work*, int, int);
+static void 	FAT_SetTh3( Work*, int);
+//static void 	FAT_SetThink3( Work*, int);
+static void 	FAT_SetNextThink3( Work*, int);
+static void 	FAT_SetThink3FromNext( Work*, int);
+static void 	FAT_SetNZone( Work*, int);	// FAT_SetNextZone
+static void 	FAT_SetNZone2( Work*, int);
+static void 	FAT_SetNZoneFrom2( Work*, int);
+static void 	FAT_SetNewPhase( Work*, int);
+static void 	FAT_AdjustAimPoint( Work*, FVECTOR*);
+static void 	FAT_ShootGlock( NPCWORK*, int, int, int);
+//static int 	FAT_GetAimParts( Work* work );
+static int 	CheckPointLookableObject( FVECTOR*, OBJECT*,	int, int, int);
+static void 	FAT_ChgPhase( Work* );
+//static void 	FAT_GetDirNext( Work* );
+static void     FAT_GetZoneInPoint( FVECTOR*, FVECTOR*, int);
+//static int 	FAT_MngRunningMot( Work* );
+//static void 	FAT_GetSpeed(float*, float*, NPCWORK*, FVECTOR, int, int, float, int);
+static int  	FAT_CheckNearZoneIn( int, int);
+static int 	FAT_CheckMotionMove( Work* );
+//static int 	FAT_BackShoot( Work* );
+static void 	FAT_EvadeIntoWall( NPCWORK*);
+static int 	FAT_IntrptZoneCheck( HZX_GROUP_ID, int, int );
+
+// fateye.c
+static void 	FAT_InitEyeWork( Work* );
+static int 	FAT_CheckEye( Work* );
+static int 	FAT_CheckAimVisible( Work* );
+static int 	FAT_CheckNoise( Work* );
+static void 	CheckFatmanInfo( Work* );
+//static int 	FAT_EyeInfo( Work* );
+
+// fatc4.c
+static void 	InitC4Work( Work* );
+static void 	UpdateC4Work( Work* );
+static int 	SetNewFatmanC4( Work*, FAT_PUTPOINT_DATA*, int, int);
+static void 	FAT_StartBombCount( Work* );
+static FAT_PUTPOINT_DATA* FAT_GetPosData( Work*, int, int, int);
+static int 	FAT_GetCurrentC4PosNum( Work*);
+static void 	FAT_GetGclBombData( Work* );
+//static int 	FAT_PointLevel( FAT_PUTPOINT_DATA* ppoint );
+static int 	FAT_PointType( FAT_PUTPOINT_DATA* ppoint );
+static int 	FAT_GetC4PosAreaPrio( Work*, int); 
+static int 	FAT_GetC4PosDistPrio( Work*, int); 
+static int 	FAT_GetC4PosDirPrio( Work*, int); 
+static int 	FAT_GetC4PosTypePrio( Work*, int); 
+static int 	FAT_GetC4PosOtherPrio( Work*); 
+static int 	FAT_GetC4PosRandom( Work* );
+static int 	FAT_SetNewC4Point( Work* );
+//static int 	FAT_SetNewPutIndex( Work*, int );
+static FAT_PUTPOINT_DATA* FAT_GetCurrPutPosData( Work*);
+static int 	FAT_UpdatePatternInfo( Work*, int );
+static int 	FAT_ChangeC4Difficult( Work*, int);
+static int 	FAT_ChangeC4Pattern( Work*);
+static int 	FAT_ChangeC4Index( Work*, int, int);
+static int 	FAT_SetNewC4Position( Work*, int);
+
+// fatmove.c
+//static int 	FAT_GetEscapeZone( Work* );
+//static int 	AddrSet( int );
+//static int 	GetEscapeZone( Work*, int, int);
+//static void 	Think3_PointMove( Work* );
+static void 	FAT_SetRSphereFromMot( Work* );
+
+// fatpre.c
+static void	CheckMessage( Work* );
+static void	InfoCheck( Work* );
+static void 	BombCheck( Work* );
+static void 	PreProcess( Work* );
+static void 	AfterProcess( Work* );
+
+// fatattack.c
+static void	HitCallBack( TARGET*, TARGET*, void*);
+static void 	Attack( NPCWORK* );
+static void 	Clash( NPCWORK* );
+static void 	CaptureCounter( NPCWORK* );
+static void 	RollerBladeAttack( NPCWORK* );
+static void 	BodyEvade( NPCWORK *npc );
+
+// fatdamage.c
+static void 	FAT_CheckGameClear( Work*, int);
+static void 	FAT_SetWepDmgWork( Work*, long64);
+static void 	FAT_SetChildDmgWork( Work*, int);
+static int 	CheckDamageRun( NPCWORK* );
+static int 	CheckDamageStand( NPCWORK* );
+static int 	CheckDamageDown( NPCWORK* );
+static int 	CheckDamageHeadOnly( NPCWORK* );
+
+// fatbomb.c
+
+// fatafter.c
+static void 	FAT_InitAttractPos2Zone( Work* );
+static int 	FAT_GetAttractZone( Work* );
+
+// fatshoot.c
+//static int 	FAT_AimPosReact( Work*, int, int, FVECTOR, FVECTOR); 
+//static void 	FAT_ReactBehind( Work*);
+//static void 	FAT_ReactLostTrg( Work*);
+//static void 	FAT_AfterAttackJudge( Work* );
+
+// fatthink.c
+static void 	Think2_ShootPhase( Work* );
+static void 	Think2_BombPhase( Work* );
+static void 	Think2_DisposalPhase( Work* );
+static void 	Think2_StartDamage( Work* );
+static void 	Think2_SystemDamage( Work* );
+static int 	DamageCheck( Work* );
+static void 	Think1_Normal( Work* );
+static void 	Think1_Damage( Work* );
+static void 	Think( Work* );
+static void 	StartThink( Work* );
+
+// fatinit.c
+static void FAT_InitStatusWork( Work*);
+static void FAT_InitInfoWork( Work*);
+static void FAT_InitBombWork( Work*);
+static void FAT_InitSoundWork( Work*);
+static void FAT_InitDataWork( Work*);
+static void FAT_InitDebugWork( Work*);
+static void FAT_InitEventWork( Work*);
+static void FAT_CalcPushPlayer( Work*);
+
+// 外部関数
+extern void 	PL_FatmanC4Manager(void);
+extern void 	NPC_IK_Control( NPCWORK*);
+extern int 	ENE_GetRouteDis(FVECTOR*, FVECTOR*, int, int, u_int);
+extern int 	ENE_GetNearZone( int, int, int );
+extern int      ENE_ZoneDir( FVECTOR*, int, int );
+extern int 	ENE_EyeOnlineCheck( int, FVECTOR*, FVECTOR* );
+extern int  	ENE_ReadOnlinInfo( int, int );
+extern HZX_ZON*	ENE_HZX_GetZone(int);
+extern int   	GM_GetKaitaiC4Status( int id );
+extern void  	GM_StartCountDownKaitaiC4( int id );
+extern void	GM_DestroyKaitaiC4( int id );
+extern int	GM_GetZIntrptZ2Z( HZX_ZONE_ADD from_addr, HZX_ZONE_ADD to_addr );
+extern void  	NewProgSetLeftTime( int time );
+extern void 	NewProgSetLeftBomb( int bomb );
+extern int   	NewSetKaitaiC4Prog( FMATRIX *world, int where, int count );
+extern void*	NewCartridgeControl( int*, OBJECT*, OBJECT*, int);
+extern void* 	NewBombAreaP(int name, int r, int g, int b);
+extern void*	NewBullet( FMATRIX *, u_int, u_int, u_int, u_int, u_int, u_int, int ) ;
+extern void*	NewSpark2(int, FMATRIX*, float, float, float, SVECTOR*, SVECTOR*, FVECTOR*, float, int );
+extern void*	NewBlood( FMATRIX *, FVECTOR *, FVECTOR *, int, int );
+extern void*	NewLandingSmoke( FVECTOR*, float);
+extern void*	NewShakeCamera2( int, int, int, FVECTOR* );
+extern void*	NewProgTimer( int time );
+extern void*	NewFatC4PointView( Work*, int , int );
+extern void*	NewFatmanScratch( CONTROL*, int* );
+extern void	NewTs_Min_Fog( FVECTOR* );
+extern void	NewTs_Spark( FVECTOR*, FVECTOR*, float);
+extern void  	HZX_Pos2Zone( FVECTOR* pos, int* g, int* z );
+extern void 	AN_CartridgeGLK_E( FMATRIX *world , OBJECT *weapon , CONTROL *control );
+extern void 	AN_Test_Eye2( FVECTOR *, int );
+extern void 	AN_MazzleGLK( FMATRIX*, int, int);
+extern int 	KR_GclGetInt( char *top, int *buff );
+extern int	KR_CameraDis( FVECTOR*);
+extern void 	SIG_NumPrint(FVECTOR *pos ,int disp);
+extern void 	TS_VecToRot( SVECTOR *rot, FVECTOR *vec );
+extern void  	BOMB_Erase(Work*, int);
+extern void 	Leg_IKcalc( CONTROL*, OBJECT*);
+extern float 	_TS_Sin( int s );
+extern void*	NewPadVibration2( int, int );
+extern void*	NewPadVibration( char *script, int type );
+extern int 	GetConcKamomeNum( void );
+
+// 外部変数
+extern int	DG_TickCount;	// 起動からの総VSyncカウント数 
+
+
+
+
+// かりおきば
+static int FAT_SelectRoute( Work* work, int nAimZone);
+//static int FAT_SelectRouteRev( Work* work, int nAimZone);
+static void FAT_MakeZoneDataFromRoute( Work* work);
+//static void FAT_ChgAimZone( Work* work);
+static int FAT_CheckBezierInTetra( Work* work, int nZone, int nRoute );
+static int FAT_CheckTurnLR( Work* work );

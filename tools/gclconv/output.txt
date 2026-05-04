@@ -1,0 +1,51 @@
+gclconv 出力フォーマット
+
+・基本的にすべての文字列IDは２４ビット化する。
+・オフセットレングスが必要なものは１６ビットレングスを採用する。
+
+/* ----- 型 ------ */
+
+#define GCL_END		0x00
+
+#define GCL_SHORT	0x01		/* 16ビット符合付き整数 */
+#define GCL_BYTE	0x02		/* 8ビット符合なし整数 */
+#define GCL_CHAR	0x03		/* 8ビット文字 */
+#define GCL_BOOL	0x04		/* 1ビットフラグ */
+#define GCL_VECTOR	0x05		/* 32ビット * 3 ベクトル */
+
+#define GCL_STRID	0x06		/* 24ビット文字列ID */
+
+#define GCL_STRING	0x07		/* 文字列へのポインタ(24Bitオフセット) */
+
+#define GCL_PROCID	0x08		/* 24Bit関数ID */
+#define GCL_LONG	0x09		/* 32ビット符合付き整数 */
+
+#define GCL_SYMBOL	0x0a		/* 外部ファイル解決シンボル（32Bit） */
+#define GCL_SYMBOL2	0x0b		/* t:シンボルで解決できないときは-1 */
+#define GCL_SYMBOL3	0x0c		/* t:シンボルで解決できないときはERROR */
+
+#define GCL_CONST	0x00		/* 定数 */
+#define GCL_VAR		0x10		/* 変数 (このあとに24ビットでオフセットがつく) */
+#define GCL_ARRAY	0x20		/* 配列 (24Bitoffset, max, その後は式または数) */
+#define GCL_ARG		0x30		/* 引数文字 */
+
+#define GCL_EXPR	0x40		/* 式 */
+#define GCL_OP		0x41		/* 演算子 */
+
+#define GCL_BLOCK	0x50		/* 実行ブロック */
+
+#define GCL_OPTION	0x60		/* オプション文字 */
+#define GCL_COMMAND	0x70		/* コマンド */
+#define GCL_PROC	0x80		/* ユーザー関数 */
+
+#define GCL_WILD	0xf0		/* ワイルドカード文字 (フォーマット用) */
+#define GCL_REPEAT	0xe0		/* 繰り返し (フォーマット用) */
+
+/* メモリフォーマット */
+
+コマンド
+
+GCL_COMMAND [24BitName] [len] [GCL_STRING name ] ... [GCL_OPTION option len ...] GCL_END
+
+
+

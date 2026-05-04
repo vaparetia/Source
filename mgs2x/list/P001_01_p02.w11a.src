@@ -1,0 +1,203 @@
+//
+//	w11a.src
+//
+//	written by H.Yoshiike 2000.Aug
+//
+//	$Id: P001_01_p02.w11a.src,v 1.8 2002/09/11 11:59:25 usr03682 Exp $
+
+#define WN_W11A
+
+
+block .use r_plt1
+block .nocache
+block .cache
+
+// 不要エフェクト切り分け定義
+#define EFFECT_CUSTUM
+
+//#define	E_GLASS_DANKON			// グラス系弾痕
+//#define	E_KOGETUKI				// 壁への焦げ付き
+//#define	E_FOOTSTAMP				// 足跡
+//#define	E_ENEMY					// 敵兵系
+#define	E_ENEMY_LIGHT			// 敵兵ライト
+//#define	E_SLING					// スリング
+//#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+//#define	E_MANHATTAN_LIGHT		// マンハッタンライト
+//#define	E_C4BOMB				// Ｃ４爆弾、赤外線センサー
+//#define	E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷
+//#define	E_CROSS_FADE_LIGHT		// クロスフェード（甲板のライトで使用）
+#define	E_CHARA_DENTOU			// chara 懐中電灯、フォーチュン戦
+#define	E_WATER					// 水関係
+//#define	E_CHARA_HAMON			// chara 波紋
+//#define	E_BROKEN_OBJECT			// 壊れ物
+//#define	E_BROKEN_PAPEROBJECT	// 壊れ物紙
+//#define	E_BROKEN_PLATE			// 壊れ物皿
+#define	E_HIMATU				// 水飛沫
+//#define	E_CHARA_MADOAME			// chara 窓雨
+//#define	E_STEAM					// 粉 & 水蒸気
+//#define	E_POWDER				// 小麦粉
+//#define	E_SKY_NORMAL			// 空
+//#define	E_LINEAR_GUN			// リニアガン
+//#define	E_TENKYUU				// 天球ドーム
+//#define	E_SUN					// 太陽
+//#define	E_DOOR_LUMP				// ドアランプ
+#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、
+								// ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+//#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+//#define	ENV						// 天球
+
+// 汎用空用テクスチャのためのデファイン（c_effect.h の前で）
+//#define MORNING_SKY
+#define DAY_SKY
+//#define EVENING_SKY
+//#define NIGHT_SKY_DEMO
+
+
+#include	"c_effect.h"
+
+//#include	"w11a_game.h"
+
+// ワールド
+// マルチテクスチャモデル
+pack_all	w11a_mt.tri world/w11a/w11a0/w11a0_speobj2_mt.dar
+// それ以外のモデル
+option makexti6 -l 1024 -f PAL8
+pack_all	w11a.tri world/w11a/w11a0 world/w11a/w11a1
+option makexti6
+
+pack_all	water.tri world/w11a/w11a0_water/w11a0_ref_water_alp_ovl.bmp
+
+world		w11a/w11a0
+world		w11a/w11a1
+
+// ワールド（昇降機ホール部分のみ）
+// それ以外のモデル
+option makexti6 -l 1024 -f PAL8
+pack_all	w11a2.tri world/w11a/w11a2 world/w11_common world/door/w02a_dr.dar
+option makexti6
+
+world		w11a/w11a2
+world		w11_common
+world		door/w02a_dr.kms
+hazard		w11a.hzx
+
+// ライトは共通
+lt2			w11.lt2
+
+
+// オブジェ関係
+// 小さいサイズのテクスチャはまとめておく
+pack_all	object.tri \
+	world/door/w11a_sdr_body_l.dar \
+	world/door/w11a_sdr_handle.dar \
+	world/door/dr_free.dar \
+	goods/locker/neo_locker_door.dar \
+	goods/c4_kaitai_b
+
+world		door/dr_free.kms
+world		door/w11a_sdr_body_l.kms
+world		door/w11a_sdr_handle.kms
+goods		locker/neo_locker_door.kms
+goods		c4_kaitai_b
+
+
+pack_trnall	effect.tri \
+			human/hnm_hunamushi/hnm_death_00_ovl_alp.bmp
+
+human	hnm_hunamushi/hnm_low_cm.kms
+human	hnm_hunamushi/hnm_def.kms
+
+// 水面照り返し
+// テクスチャアニメデータ
+anmtex	w11.rat \
+	effect/w11_hakei
+
+// 気泡
+//debug	kimura/temp/scr_kihou03.kms
+//cvd		debug/kimura/temp/scr_kihou03.cv2 vn
+effect	scr_effect/scr_kihou01.kms
+cvd		effect/scr_effect/scr_kihou01.cv2 vn
+// カメラ水
+effect	scr_effect/scr_waterline01.kms
+cvd		effect/scr_effect/scr_waterline01.cv2 vn
+
+//デモ用水密ドア
+goods		demo_w00_sdr/demo_w00_sdr_r.kms
+
+// ノード画面投影用ダミーモデル
+world		w11a/w11a2/w11a2_node_screen.kms
+// ノード画面投影用ダミーモデル（法線逆バージョン）
+world		w11a/w11a2/w11a2_node_screen_inv.kms
+
+// ノード端末ムービー再生用ダミーデータ
+pack_all screen_dummy.tri \
+	effect/screen_dummy/dummy.bmp
+
+/* mgdemo added ----from here (Wed Jun  6 00:10:27 2001) ---- */
+goods	demo_dummy/demo_dummy.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Jun  7 22:31:47 2001) ---- */
+/* mgdemo added ----from here (Wed Jun 13 20:02:01 2001) ---- */
+human	gps_def/gps_def_mt.kms
+human	sna_skl/sna_skl3.kms
+
+pack_all	sna_def_pack.tri \
+			human/sna_def/sna_def_mh.dar \
+			human/sna_def/sna_bdn1.dar \
+			human/sna_def/sna_mag1.dar \
+			human/sna_def/sna_mag2.dar \
+			human/sna_def/sna_mag3.dar \
+			human/sna_def/sna_mag4.dar \
+			human/sna_def/sna_bdn2.dar \
+			human/sna_def/sna_def_sh.dar
+
+/* デモ用スネーク */
+// 顔は見えないのでシングルウェイト
+human	sna_def/sna_def_sh.kms
+
+human	sna_def/sna_def_mh.evm
+human	sna_def/sna_bdn1.kms
+human	sna_def/sna_mag1.kms
+human	sna_def/sna_mag2.kms
+human	sna_def/sna_mag3.kms
+human	sna_def/sna_mag4.kms
+human	sna_def/sna_bdn2.kms
+
+/* mgdemo added ----upto here ---- */
+pack_all	rai_driver_pack.tri \
+		human/rai_diver/rai_diver_addhand_mh_mt.dar \
+		human/rai_diver/rai_fin_r_mh.dar \
+		human/rai_diver/rai_fin_l_mh.dar
+//		human/rai_diver/rai_nullshadow.dar
+
+human	rai_diver/rai_diver_addhand_mh_mt.evm // rai_diver_mh_mt.evm とテクスチャーまとめたい（常駐？）
+human	rai_diver/rai_fin_r_mh.evm
+human	rai_diver/rai_fin_l_mh.evm
+// ノードモニタにライデンの影が映るのを回避。カイル素材用臨時対策(010728)
+human	rai_diver/rai_nullshadow.kms
+
+/*
+koba4 ここにはいりません r_plt1 に移動
+l2d         2D/demo/equip/equip.l2d /* mgdemo added ----from here (Fri Jul 27 22:17:00 2001) ---- */
+
+*//* mgdemo added ----from here (Wed Aug 15 12:38:47 2001) ---- */
+/* mgdemo added ----from here (Wed Aug 15 12:50:57 2001) ---- */
+debug	shibata/awa_model/awa_model2.kms
+cvd		debug/shibata/awa_model/awa_model2.cv2
+vib	demo/P004_01_p01_rai_01.vib
+vib	demo/P001_01_p02_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Aug 17 18:43:17 2001) ---- */
+pack_trnall trn.tri effect/splash/splash05_alp.bmp
+pack_trnall trn.tri effect/splash/splash07_alp.bmp
+pack_trnall trn.tri effect/ripple/ripple02_alp.bmp
+pack_trnall trn.tri effect/fog/fog02_msk.bmp
+pack_trnall trn.tri effect/bakuha/bombgas6_alp.bmp
+pack_trnall trn.tri effect/blood/chi01_msk.bmp
+pack_trnall trn.tri effect/color/col256_bld100.bmp
+pack_trnall trn.tri effect/drop/drop01_msk.bmp
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Aug 17 19:07:03 2001) ---- */
+world	elevator/elv_1/elv_1.kms
+/* mgdemo added ----upto here ---- */

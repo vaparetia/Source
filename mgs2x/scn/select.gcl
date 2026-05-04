@@ -1,0 +1,1294 @@
+//
+//	select.gcl
+//	$Id: select.gcl,v 1.393 2002/08/27 08:12:31 usr03379 Exp $
+//
+
+#include "varinit.h"
+#include "sload.h"
+
+//シナリオ班環境のみデバッグ入れるびっち。
+#if d:MGS2_SCN
+	#ifdef d:EU_TRIAL
+		#include "cdc_debug.h"
+	#else
+	//ＸＸＸＸＸＸＸＸＸＸＸＸＸｘ
+		#include "cdc_debug.h"
+		#include "cdc_debug_p.h"
+	#endif
+#endif
+
+#include "vox_test.h"
+
+if ( $w:プログラム結果 == 9999 ) {
+	/* デバッグリセットからSELECTにきた */
+	eval ( $w:プログラム結果 = 0 )
+	eval ( $b:res_mode = d:RES_SELECT )
+
+	command 変数初期化
+	eval($w:ゲーム設定 = d:LEVEL_NORMAL)
+	@タンカー編ストーリーフラグ初期化
+	@プラント編ストーリーフラグ初期化
+	@グローバル変数初期化 $w:ゲーム設定
+	@プレイヤー初期設定 $w:ゲーム設定 スネーク
+	@プレイヤー初期設定 $w:ゲーム設定 ライデン
+}
+
+if( $f:sound_test ){
+	@vox_test
+	eval( $f:sound_test = 0 );
+
+	return;
+}
+
+proc mv_vox_test {
+	eval( $f:sound_test = 1 );
+	load 'select' -r 'r_tnk0'
+}
+
+proc mv_ending_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 0 ) ;
+	load "ending" -r r_plt0 ;
+}
+
+proc set_lang_english {
+	eval( $w:言語 = d:LANG_ENGLISH );
+	command 字幕言語設定
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc set_lang_french {
+	eval( $w:言語 = d:LANG_FRENCH );
+	command 字幕言語設定
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc set_lang_german {
+	eval( $w:言語 = d:LANG_GERMANY );
+	command 字幕言語設定
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc set_lang_italian {
+	eval( $w:言語 = d:LANG_ITALY );
+	command 字幕言語設定
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc set_lang_spanish {
+	eval( $w:言語 = d:LANG_SPANISH );
+	command 字幕言語設定
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc set_lang_japanese {
+	eval( $w:言語 = d:LANG_JAPANESE );
+	command 字幕言語設定
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+/* パッドタイプ設定*/
+proc set_padtype0 {
+	$b:プレイヤーパッドタイプ = 0 ;
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+proc set_padtype1 {
+	$b:プレイヤーパッドタイプ = 1 ;
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+proc set_padtype2 {
+	$b:プレイヤーパッドタイプ = 2 ;
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+proc set_padtype3 {
+	$b:プレイヤーパッドタイプ = 3 ;
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+proc set_padtype4 {
+	$b:プレイヤーパッドタイプ = 4 ;
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+//$f:rft_enter_codec_debug_mode_tが立っていたら担架変無線デバッグモードに入ります。
+//$f:rft_enter_codec_debug_mode_pが立っていたら不乱闘遍無線デバッグモードに入ります。
+if((!$f:rft_enter_codec_debug_mode_t) && (!$f:rfp_enter_codec_debug_mode_p) ){
+	if ($b:res_mode == d:RES_SELECT) {
+		// 一番最初はライデンとスネークの選択
+		chara select name -s {
+			'select_tanker(res_snake)'	load_res_snake
+			'select_plant(res_raiden)'	load_res_raiden
+			'select_mission'			mission_player_select
+			'select_snake_tales'		snake_tales_select
+			'n_title' 					mv_init_n_title_0
+
+
+			/* パッドセレクト XBOX用 */
+			'pad_select(default)' set_padtype0
+			'pad_select(type1)\n\nSubject   BK/WH-toggle\nAction/Lockon   A-press\nSquat   Y-toggle' set_padtype1
+			'pad_select(type2)\n\nSubject   L3-toggle\nAction/Lockon   A-press\nSquat   Y-toggle' set_padtype2
+			'pad_select(type3)\n\nSubject   A-press\nLockon   L3-press\nSquat   BK/WH-toggle' set_padtype3
+			'pad_select(type4)\n\nSubject   A-press\nPunch   X-press\nWeapon   B-Release\nLockon   WH-press\nSquat   BK-toggle' set_padtype4
+
+
+			'ending' mv_ending_0
+			'boss_survival'				load_boss_survival
+			'start_e_extreme' 			start_e_extreme
+		#ifdef d:TGS2001F
+			'TGS_2001f_special' 		mv_tgs2001f_special
+		#endif
+			'vox_test' mv_vox_test
+			'memcard' mv_memcard
+			'select_english' set_lang_english
+			'select_french' set_lang_french
+			'select_german' set_lang_german
+			'select_italian' set_lang_italian
+			'select_spanish' set_lang_spanish
+
+			'low_poly_t00a1D'			mv_lowpoly_t00a1D
+			'low_poly_t04a1D'			mv_lowpoly_t04a1D
+			'low_poly_t05a1D'			mv_lowpoly_t05a1D
+			'low_poly_t12a1D'			mv_lowpoly_t12a1D
+			'low_poly_p010_01_p01'		mv_lowpoly_p010_01_p01
+			'low_poly_p012_01_p01'		mv_lowpoly_p012_01_p01
+			'low_poly_p080_03_p02'		mv_lowpoly_p080_03_p02
+			'low_poly_p082_01_p01'		mv_lowpoly_p082_01_p01
+		};
+	} else if ($b:res_mode == d:RES_SNAKE) {
+		// 常駐をスネークにしたときの選択
+
+		eval($s:n_title_ゲームモード = タンカー編);
+		chara select name -s {
+			'stage' snake_stage_select
+			'story' snake_story_select
+		#if d:MGS2_SCN
+			'Tanker:CODEC_motion_debug' enter_codec_debug_mode_t	//めくるめく無線デバッグモードへの扉
+		#endif
+			'return_select' load_select
+		};
+		$b:res_mode_back = d:RES_SELECT; /*一つ前に戻るため前のステータス */
+	} else if ($b:res_mode == d:SNAKE_STAGE) {
+		chara select name -s {
+//			'title' mv_init_title_0
+			'special' mv_init_special_0
+			'config_veryeasy' config_veryeasy_t
+			'config_easy' config_easy_t
+			'config_normal' config_normal_t
+			'config_hard' config_hard_t
+			'config_veryhard' config_veryhard_t
+			'config_e_extreme' config_e_extreme_t
+			'config_itemfull' config_fullitem_p
+			'config_debug' config_debug_t
+			'config_end_if_found'         config_end_if_found
+			'config_not_end_if_found'     config_not_end_if_found
+			'start(veryeasy)' trialgame_start_veryeasy
+			'start(easy)' trialgame_start_easy
+			'start(normal)' trialgame_start_normal
+			'start(hard)' trialgame_start_hard
+			'start(veryhard)' trialgame_start_veryhard
+		#ifdef d:MGS2_TANKER
+			'tanker_demo' mv_tanker_demos_0
+			'w00a_paddemo' mv_init_w00a_0
+			'w00a' mv_init_w00a_1
+			'w00b' mv_w01e_w00b_0
+			'w00c' mv_w01e_w00c_0
+			'w01a' mv_w00a_w01a_0
+			'w01f' mv_w01a_w01f_1x
+			'w01b' mv_w01f_w01b_1
+			'w01c' mv_w01b_w01c_0
+			'w01d' mv_w01c_w01d_0
+			'w01e' mv_w01d_w01e_0
+			'w02a' mv_w01f_w02a0_0
+			'w03a' mv_w02a3_w03a_0
+			'w03b' mv_w03a_w03b_0
+			'w04a' mv_init_w04a_0
+			'w04b' mv_init_w04b_0
+			'w04c' mv_init_w04c_0
+		#endif
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:RES_SNAKE; /*一つ前に戻るため前のステータス */
+	} else if ($b:res_mode == d:SNAKE_STORY) {
+		chara select name -s {
+			'vs_orga' vs_orga
+			'after_orga' mv_story_set_afterorga
+			'corridor' mv_story_corridor
+			'hold' mv_story_hold
+//			'title' mv_init_title_0
+			'special' mv_init_special_0
+			'config_veryeasy' config_veryeasy_t
+			'config_easy' config_easy_t
+			'config_normal' config_normal_t
+			'config_hard' config_hard_t
+			'config_veryhard' config_veryhard_t
+			'config_e_extreme' config_e_extreme_t
+			'config_itemfull' config_fullitem_p
+			'config_debug' config_debug_t
+			'config_end_if_found'         config_end_if_found
+			'config_not_end_if_found'     config_not_end_if_found
+			'start(veryeasy)' trialgame_start_veryeasy
+			'start(easy)' trialgame_start_easy
+			'start(normal)' trialgame_start_normal
+			'start(hard)' trialgame_start_hard
+			'start(veryhard)' trialgame_start_veryhard
+		#ifdef d:MGS2_TANKER
+		#endif
+		#if d:MGS2_SCN
+			'CODEC_motion_debug' enter_codec_debug_mode_t	//めくるめく無線デバッグモードへの扉
+		#endif
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:RES_SNAKE; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:RES_RAIDEN) {
+		// 常駐をライデンにしたときの選択
+
+		eval($s:n_title_ゲームモード = プラント編);
+		chara select name -s {
+			'stage' raiden_stage_select
+			'story' raiden_story_select
+			'demo_test' mv_demotest
+			'movie test' mv_movietest
+			'boss_check' mv_boss_check
+			'count_zero_test 1' mv_bombtest1
+			'count_zero_test 2' mv_bombtest2
+			'count_zero_test 3' mv_bombtest3
+		#if d:MGS2_SCN
+			#ifdef d:EU_TRIAL
+			#else
+	//ＸＸＸＸＸＸＸＸＸＸＸＸＸＸＸＸＸ
+				'PLANT:CODEC_motion_debug' enter_codec_debug_mode_p	//めくるめく無線デバッグモードへの扉
+			#endif
+		#endif
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:RES_SELECT; /*一つ前に戻るため前のステータス */
+	} else if ($b:res_mode == d:RAIDEN_STAGE) {
+		// 常駐をライデンにしたときの選択
+		chara select name -s {
+		#ifdef d:MGS2_PLANT
+			'plant_demo' mv_plant_demos_0
+			'config_veryeasy' config_veryeasy_p
+			'config_easy' config_easy_p
+			'config_normal' config_normal_p
+			'config_hard' config_hard_p
+			'config_veryhard' config_veryhard_p
+			'config_e_extreme' config_e_extreme_p
+			'config_debug' config_debug_p
+			'config_cardlevel_5' config_card5_p
+			'config_itemfull' config_fullitem_p
+			'config_end_if_found'         config_end_if_found
+			'config_not_end_if_found'     config_not_end_if_found
+			'story_set_bombstart' mv_story_set_bombstart
+			'story_set_b_sensor_get' mv_story_set_b_sensor_get
+			'story_set_vs_fortune_end' mv_story_set_vs_fortune_end
+			'story_set_ninjademo_end' mv_story_set_ninjademo_end
+			'story_set_biometrix' mv_story_biometrix
+			'hostage_1st' hostage_1st
+			'hostage_2nd' hostage_2nd
+			'hostage_beauties' hostage_beauties
+			'hostage_old_beauties' hostage_old_beauties
+			'hostage_beasts' hostage_beasts
+			'story_set_ames_died' mv_story_set_ames_died
+			'w11a' mv_init_w11a0_0
+			'w11b' mv_w12a_w11b_0
+			'w11c' mv_w11b_w11c_0
+			'w12a' mv_w11a2_w12a_0
+			'w12b' mv_w12a_w12b0_0
+			'w12c' mv_w12b0_w12a_0
+			'w13a-1' mv_w12b0_w13a_0
+			'w13a-2' mv_w14a_w13a_0
+			'w13b' mv_init_w13b_0
+			'w14a' mv_w13a_w14a_0
+			'w15a-1' mv_w14a_w15a_0
+			'w15a-2' mv_w16a_w15a_0
+			'w15b' mv_init_w15b_0
+			'w16a' mv_w15a_w16a_0
+			'w17a-1' mv_w16a_w17a_0
+			'w17a-2' mv_w18a_w17a_0
+			'w18a' mv_w17a_w18a_0
+			'w19a-1' mv_w18a_w19a_0
+			'w19a-2' mv_w18a_w19a_1
+			'w19a-3' mv_w20a0_w19a_0
+			'w20a' mv_w19a_w20a0_0
+			'w20a_2' mv_w32a_w20a2_0
+			'w20b' mv_w20a1_w20b_0
+			'w21a-1'  mv_w20a0_w21a_0
+			'w21a-2' mv_w22a0g_w21a_0
+			'w21a-3' mv_w24a_w21a_0
+			'w21b' mv_init_w21b_0
+			'w22a' mv_w23a_w22a0h_0
+			'w23a-1' mv_w12b0_w23a_0
+			'w23a-2' mv_w22a0h_w23a_0
+			'w23a-3' mv_w22a1c_w23a_0
+			'w23b' mv_init_w23b_0
+			'w24a' mv_w21a_w24a_0
+			'w24b' mv_w24a_w24b_0
+			'w24b_caution' mv_caution_w24b
+			'w24c' mv_w24b_w24c_0
+			'w24c_eavesdrop' mv_demo_w24c_0
+			'w24c_ocelot_approaching_fast!!!!'mv_demo_w24c_1
+			'w24d' mv_w24a_w24d_0
+			'w25a' mv_w18a_w25a_0
+			'w25a harrier' mv_w18a_w25a_1
+			'w25b' mv_w25a_w25b_0
+			'w25c' mv_w25b_w25c_0
+			'w28a' mv_w25c_w28a_0
+			'w31a' mv_w25c_w31a_0
+			'w31b' mv_w31a_w31b_0
+			'w31c' mv_w31b_w31c0_0
+			'w31d' mv_w31b_w31d_0
+			'w32a' mv_w28a_w32a_0
+			'w32b' mv_w32a_w32b_0
+			'w41a-1' mv_w24d_w41a_0
+			'w41a-AFTER_GOUMON' mv_init_GOUMONGO
+			'w42a' mv_w41a_w42a_0
+			'w43a' mv_w42a_w43a_0
+			'w44a' mv_w43a_w44a_0
+			'w45a' mv_w44a_w45a_0
+			'w46a' mv_w45a_w46a_0
+			'VS_METAL' mv_init_VSMETAL
+			'w51a' mv_w46a_w51a_0
+			'w61a' mv_init_w61a_0
+			'wmovie' mv_init_wmovie_0
+		#endif
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:RES_RAIDEN; /*一つ前に戻るため前のステータス */
+	} else if ($b:res_mode == d:RAIDEN_STORY) {
+		// 常駐をライデンにしたときの選択
+		chara select name -s {
+		#ifdef d:MGS2_PLANT
+			'config_veryeasy'             config_veryeasy_p
+			'config_easy'                 config_easy_p
+			'config_normal'               config_normal_p
+			'config_hard'                 config_hard_p
+			'config_veryhard'             config_veryhard_p
+			'config_e_extreme'            config_e_extreme_p
+			'config_debug'                config_debug_p
+			'config_cardlevel_5'          config_card5_p
+			'config_itemfull'             config_fullitem_p
+			'config_end_if_found'         config_end_if_found
+			'config_not_end_if_found'     config_not_end_if_found
+			'plant_start(w10a)'           load_plant_start
+			'dock_demo_start(w11a)'       load_dock_demo_start
+			'snake_demo_end(w11a)'        load_snake_demo_end
+			'title demo end (w12a)'       load_title_demo_end
+			'before vamp demo (w14a)'     load_before_vamp_demo
+			'after vamp demo (w14a)'      load_after_vamp_demo
+			'after fortune demo (w15a)'   load_after_fortune_demo_w15a
+			'peter sdemo (w16a)'          load_peter_sdemo
+			'bomb event start (w16b)'     load_bomb_event_start
+//			'bomb event (w20b)'           load_bomb_event_w20b
+//			'bomb event (w12b)'           load_bomb_event_w12b
+//			'bomb event (w14a)'           load_bomb_event_w14a
+			'bomb event 2 left (w16b)'    load_bomb_event_2_left_w16b
+			'bomb event 1 left after sensor B Get (w12b)'    load_bomb_event_1_left_w12b
+			'b sensor event start (w16b)' load_b_sensor_event_start
+			'before deep sea dock (w12c)' load_before_deep_sea_dock
+			'vs fortune(w11c)'            load_vs_fortune
+			'after vs fortune (w12c)'     load_after_vs_fortune
+			'before vs fatman (w20c)'     load_before_vs_fatman
+			'vs fatman (w20c)'            load_vs_fatman
+			'after vs fatman (w20c)'      load_after_vs_fatman
+			'after ninja demo (w20c)'     load_after_ninja_demo
+			'story_set_biometrix'         mv_story_biometrix
+			'ames_demo_end'               load_ames_demo_end
+			'after_ames (w12b)'           load_after_ames_w12b
+			'after_ames (w16b)'           load_after_ames_w16b
+			'psg1_event'                  load_psg1_event
+			'vs harrier'                  load_vs_harrier
+			'vs harrier_end'              load_vs_harrier_end
+			'tightrope_L'                 load_tightrope_L
+			'tightrope_L2'                 load_tightrope_L2
+			'shell2_in'                   load_shell2_in
+			'nikita_event_start'          load_nikita_event_start
+			'nikita_event_end'            load_nikita_event_end
+			'prez_demo_end'               load_prez_demo_end
+			'load_water_stage_start'      load_water_stage_start
+			'vs vamp(w31c)'               load_vs_vamp
+			'vs vamp_end(w31f)'           load_vs_vamp_end
+			'emma_find_demo_end'          load_emma_find_demo_end
+			'load_emma_ai_demo_end'       load_emma_ai_demo_end
+			'emma_event_start(w31d)'      load_emma_event_start
+			'emma_event_KL_Bridge'        load_emma_event_kl_bridge
+			'emma_event_L_prop'           load_emma_event_l_prop
+			'sniping_event_start'         load_sniping_event_start
+			'sniping_event_end(w20a)'     load_sniping_event_end
+			'arsenal_event_start'         load_arsenal_event_start
+			'after_goumon_w41a'           load_after_goumon_w41a
+			'arsenal_w43a'                load_arsenal_w43a
+			'meet_snake_w43a'             load_meet_snake_w43a
+			'vs TENGU B (w44a) Very Easy'     load_vs_tengu_B_w44a_VeryEasy
+			'vs TENGU B (w44a) Normal'        load_vs_tengu_B_w44a_Normal
+			'vs TENGU B (w44a) Extreme'       load_vs_tengu_B_w44a_Extreme
+			'vs TENGU B (w44a) Extreme (1/2)' load_vs_tengu_B_w44a_ExtremeHalf
+			'arsenal_w45a'                load_arsenal_w45a
+			'VS_TENG_w45a'                load_VS_TENG_w45a
+			'vs TENG VH'                  mv_vs_teng_vh
+			'vs ray'                      load_vs_ray
+			'arsenal event(w51a)'         load_arsenal_event
+			'arsenal demo'                load_arsenal_demo
+			'vs solidus(w61a)'            load_vs_solidus
+		#endif
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:RES_RAIDEN; /*一つ前に戻るため前のステータス */
+	} else if ($b:res_mode == d:BOSS_SURVIVAL ) {
+		// ボスラッシュモード
+		chara select name -s {
+			'veryeasy'	veryeasy_set
+			'easy'		easy_set
+			'normal'	normal_set
+			'hard'		hard_set
+			'extreme'	extreme_set
+			'snake'		load_boss_survival_snake
+			'raiden'	load_boss_survival_raiden
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:RES_SELECT; /*一つ前に戻るため前のステータス */
+
+//-----------------------------------
+// 以下アナザーミッション専用セレクト
+	} else if ($b:res_mode == d:MISSIONS:PLAYER_SELECT ) {
+		// アナザーミッション用キャラセレクト
+		chara select name -s {
+			'load_raiden'			load_raiden
+			'load_snake'			load_snake
+			'load_pliskin'			load_pliskin
+			'load_snake(tuxedo)'	load_tuxedo
+			'load_ninja(blade_raiden)'	load_blade
+			'load_snake(mgs1)'		load_mgs1
+			'load_raiden_photo'		load_raiden_photo
+			'load_snake_photo'		load_snake_photo
+			'load_x_raiden'			load_x_raiden
+			//	E3テスト用
+			'E3_TEST_1'					E3test_snake
+			'E3_TEST_2'					E3test_myl
+			'E3_TEST_3'					E3test_mylo
+			'E3_TEST_4'					E3test_txds
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:RES_SELECT; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:MISSIONS:SELECT) {
+		//	ミッションの各ミッションセレクト
+		chara select name -s {
+			'vr_missons'			select_vr_missions
+			'alternative_missons'	select_alt_missions
+			'alt_stage'				select_alt_stage
+			'tale_stage'			select_tale_stage
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:PLAYER_SELECT; /*一つ前に戻るため前のステータス */
+
+
+
+	} else if ($b:res_mode == d:MISSIONS:VR_SELECT) {
+	// 以下ＶＲミッション
+		@サウンドデータロード d:VR_SOUND
+
+		// ＶＲミッションのセレクト
+		chara select name -s {
+			'morning'				set_morning
+			'evening'				set_evening
+			'night'					set_night
+			'sneaking'				select_sneaking
+			'weapon'				select_weapon
+			'variety'				select_variety
+			'first_person_view'		select_first_person_view
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:SELECT; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:MISSIONS:SNEAKING_SELECT) {
+		// ＶＲスニーキングミッションの武器セレクト
+		chara select name -s {
+			'sneaking_sneaking'			select_sneaking_no_weapon
+			'sneaking_eliminate_all'	select_sneaking_handgun
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:VR_SELECT; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:MISSIONS:SNEAKING_STAGE_SELECT) {
+		// ＶＲスニーキングミッションのステージセレクト
+		chara select name -s {
+			'config_itemfull'		config_fullitem_p
+			'config_itemfull_n'		config_fullitem_p_normal
+			'own_view_mode_off'		own_view_mode_off
+			'own_view_mode_on_1'	own_view_mode_on_1
+			'own_view_mode_on_2'	own_view_mode_on_2
+			'vs01a'					load_vs01a
+			'vs02a'					load_vs02a
+			'vs03a'					load_vs03a
+			'vs04a'					load_vs04a
+			'vs05a'					load_vs05a
+			'vs06a'					load_vs06a
+			'vs07a'					load_vs07a
+			'vs08a'					load_vs08a
+			'vs09a'					load_vs09a
+			'vs10a'					load_vs10a
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:SNEAKING_SELECT; /*一つ前に戻るため前のステータス */
+
+
+
+	} else if ($b:res_mode == d:MISSIONS:WEAPON_SELECT) {
+	// 以下ウエポンミッション
+		// ウエポンミッションの武器セレクト
+		chara select name -s {
+			'weapon_handgun'				select_weapon_handgun
+			'weapon_machinegun'				select_weapon_machinegun
+			'weapon_traps'					select_weapon_traps
+			'weapon_psg1'					select_weapon_psg1
+			'weapon_granade'				select_weapon_granade
+			'weapon_stinger'				select_weapon_stinger
+			'weapon_nikita'					select_weapon_nikita
+			'weapon_blade or no weapen'		select_weapon_blade
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:VR_SELECT; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:MISSIONS:WEAPON_HANDGUN_SELECT) {
+		// ウエポンミッションのハンドガンのステージセレクト
+		chara select name -s {
+			'config_itemfull'		config_fullitem_p
+			'config_itemfull_n'		config_fullitem_p_normal
+			'own_view_mode_off'		own_view_mode_off
+			'own_view_mode_on_1'	own_view_mode_on_1
+			'own_view_mode_on_2'	own_view_mode_on_2
+			'wp01a'					load_wp01a
+			'wp02a'					load_wp02a
+			'wp03a'					load_wp03a
+			'wp04a'					load_wp04a
+			'wp05a'					load_wp05a
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:WEAPON_SELECT; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:MISSIONS:WEAPON_MACHINEGUN_SELECT) {
+		// ウエポンミッションのマシンガンのステージセレクト
+		chara select name -s {
+			'config_itemfull'		config_fullitem_p
+			'config_itemfull_n'		config_fullitem_p_normal
+			'own_view_mode_off'		own_view_mode_off
+			'own_view_mode_on_1'	own_view_mode_on_1
+			'own_view_mode_on_2'	own_view_mode_on_2
+			'wp11a'					load_wp11a
+			'wp12a'					load_wp12a
+			'wp13a'					load_wp13a
+			'wp14a'					load_wp14a
+			'wp15a'					load_wp15a
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:WEAPON_SELECT; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:MISSIONS:WEAPON_TRAPS_SELECT) {
+		// ウエポンミッションのトラップのステージセレクト
+		chara select name -s {
+			'config_itemfull'		config_fullitem_p
+			'config_itemfull_n'		config_fullitem_p_normal
+			'own_view_mode_off'		own_view_mode_off
+			'own_view_mode_on_1'	own_view_mode_on_1
+			'own_view_mode_on_2'	own_view_mode_on_2
+			'wp21a'					load_wp21a
+			'wp22a'					load_wp22a
+			'wp23a'					load_wp23a
+			'wp24a'					load_wp24a
+			'wp25a'					load_wp25a
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:WEAPON_SELECT; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:MISSIONS:WEAPON_GRANADE_SELECT) {
+		// ウエポンミッションのグレネードのステージセレクト
+		chara select name -s {
+			'config_itemfull'		config_fullitem_p
+			'config_itemfull_n'		config_fullitem_p_normal
+			'own_view_mode_off'		own_view_mode_off
+			'own_view_mode_on_1'	own_view_mode_on_1
+			'own_view_mode_on_2'	own_view_mode_on_2
+			'wp31a'					load_wp31a
+			'wp32a'					load_wp32a
+			'wp33a'					load_wp33a
+			'wp34a'					load_wp34a
+			'wp35a'					load_wp35a
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:WEAPON_SELECT; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:MISSIONS:WEAPON_PSG1_SELECT) {
+		// ウエポンミッションのPSG1のステージセレクト
+		chara select name -s {
+			'config_itemfull'		config_fullitem_p
+			'config_itemfull_n'		config_fullitem_p_normal
+			'own_view_mode_off'		own_view_mode_off
+			'own_view_mode_on_1'	own_view_mode_on_1
+			'own_view_mode_on_2'	own_view_mode_on_2
+			'wp41a'					load_wp41a
+			'wp42a'					load_wp42a
+			'wp43a'					load_wp43a
+			'wp44a'					load_wp44a
+			'wp45a'					load_wp45a
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:WEAPON_SELECT; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:MISSIONS:WEAPON_STINGER_SELECT) {
+		// ウエポンミッションのスティンガーのステージセレクト
+		chara select name -s {
+			'config_itemfull'		config_fullitem_p
+			'config_itemfull_n'		config_fullitem_p_normal
+			'own_view_mode_off'		own_view_mode_off
+			'own_view_mode_on_1'	own_view_mode_on_1
+			'own_view_mode_on_2'	own_view_mode_on_2
+			'wp51a'					load_wp51a
+			'wp52a'					load_wp52a
+			'wp53a'					load_wp53a
+			'wp54a'					load_wp54a
+			'wp55a'					load_wp55a
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:WEAPON_SELECT; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:MISSIONS:WEAPON_NIKITA_SELECT) {
+		// ウエポンミッションのニキータのステージセレクト
+		chara select name -s {
+			'config_itemfull'		config_fullitem_p
+			'config_itemfull_n'		config_fullitem_p_normal
+			'own_view_mode_off'		own_view_mode_off
+			'own_view_mode_on_1'	own_view_mode_on_1
+			'own_view_mode_on_2'	own_view_mode_on_2
+			'wp61a'					load_wp61a
+			'wp62a'					load_wp62a
+			'wp63a'					load_wp63a
+			'wp64a'					load_wp64a
+			'wp65a'					load_wp65a
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:WEAPON_SELECT; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:MISSIONS:WEAPON_BLADE_SELECT) {
+		// ウエポンミッションのブレードのステージセレクト
+		chara select name -s {
+			'config_itemfull'		config_fullitem_p
+			'config_itemfull_n'		config_fullitem_p_normal
+			'own_view_mode_off'		own_view_mode_off
+			'own_view_mode_on_1'	own_view_mode_on_1
+			'own_view_mode_on_2'	own_view_mode_on_2
+			'wp71a'					load_wp71a
+			'wp72a'					load_wp72a
+			'wp73a'					load_wp73a
+			'wp74a'					load_wp74a
+			'wp75a'					load_wp75a
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:WEAPON_SELECT; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:MISSIONS:VARIETY_SELECT) {
+	// 以下バラエティ
+		// バラエティのステージセレクト
+		chara select name -s {
+			'config_itemfull'		config_fullitem_p
+			'config_itemfull_n'		config_fullitem_p_normal
+			'own_view_mode_off'		own_view_mode_off
+			'own_view_mode_on_1'	own_view_mode_on_1
+			'own_view_mode_on_2'	own_view_mode_on_2
+			'sp01a_1'				load_sp01a_01
+			'sp01a_2'				load_sp01a_02
+			'sp02a'					load_sp02a
+			'sp03a'					load_sp03a
+			'sp06a'					load_sp06a
+			'sp07a'					load_sp07a
+			'sp08a'					load_sp08a
+			'STREAKING'				load_st01a
+			'st02a'					load_st02a
+			'st03a'					load_st03a
+			'st04a'					load_st04a
+			'st05a'					load_st05a
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:VR_SELECT; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:MISSIONS:FIRST_PERSON_VIEW_SELECT) {
+	// 以下ファーストパーソンビューモード
+		// ファーストパーソンビューモードのステージセレクト
+		chara select name -s {
+			'config_itemfull'		config_fullitem_p
+			'config_itemfull_n'		config_fullitem_p_normal
+			'own_view_mode_off'		own_view_mode_off
+			'own_view_mode_on_1'	own_view_mode_on_1
+			'own_view_mode_on_2'	own_view_mode_on_2
+			'LEVEL 1-sp21a'				load_sp21a
+			'LEVEL 2-sp22a'				load_sp22a
+			'LEVEL 3-sp23a(sp22a)'		load_sp23a
+			'LEVEL 4-sp24a'				load_sp24a
+			'LEVEL 5-sp25a'				load_sp25a
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:VR_SELECT; /*一つ前に戻るため前のステータス */
+
+
+
+	} else if ($b:res_mode == d:MISSIONS:ALT_SELECT) {
+	// 以下オルタナティブミッション
+		@サウンドデータロード d:PLANT_SOUND
+
+		//	オルタナティブミッションの各セレクト
+		chara select name -s {
+			'bomb_misson'				select_bomb_mission
+			'elim_misson'				select_elim_mission
+			'hold_misson'				select_hold_mission
+			'escape_misson'				select_escape_mission
+			'photo_mission'				select_photo_mission
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:SELECT; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:MISSIONS:BOMB_SELECT) {
+
+		//	オルタナティブミッション爆弾解体のステージセレクト
+		chara select name -s {
+			'config_itemfull'		config_fullitem_p
+			'config_itemfull_n'		config_fullitem_p_normal
+			'load_tanker_sound'		load_tanker_sound
+			'load_plant_sound'		load_plant_sound
+			'BOMB LEVEL1-a31a'		load_alt_bomb_a31a 	// シェル２中央棟
+			'BOMB LEVEL2-a02a'		load_alt_bomb_a02a 	// エンジンルーム
+			'BOMB LEVEL3-a41a'		load_alt_bomb_a41a 	// アーセナル
+			'BOMB LEVEL4-a01f'		load_alt_bomb_a01f 	// タンカー
+			'BOMB LEVEL5-a14a'		load_alt_bomb_a14a 	// Ｂ脚
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:ALT_SELECT; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:MISSIONS:ELIM_SELECT) {
+		@サウンドデータロード d:PLANT_SOUND
+
+		//	オルタナティブミッション敵兵排除のステージセレクト
+		chara select name -s {
+			'config_itemfull'		config_fullitem_p
+			'config_itemfull_n'		config_fullitem_p_normal
+			'load_tanker_sound'		load_tanker_sound
+			'load_plant_sound'		load_plant_sound
+			'ELIM Lv01-a23b'		load_alt_elim_a23b	// ＦＡ連絡橋
+			'ELIM Lv02-a01a'		load_alt_elim_a01a	// 船橋一階居住区
+			'ELIM Lv03-a19a'		load_alt_elim_a19a	// ＤＥ連絡橋
+			'ELIM Lv04-a20a'		load_alt_elim_a20a	// Ｅ脚集配場
+			'ELIM Lv05-a24d'		load_alt_elim_a24d	// 電算室
+			'ELIM Lv06-a24a'		load_alt_elim_a24a	// シェル１中央棟１Ｆ
+			'ELIM Lv07-a31a'		load_alt_elim_a31a	// シェル２中央棟１Ｆ
+			'ELIM Lv08-a22a'		load_alt_elim_a22a	// Ｆ脚倉庫
+			'ELIM Lv09-a42a'		load_alt_elim_a42a	// アーセナルギア空腸
+			'ELIM Lv10-a02a'		load_alt_elim_a02a	// エンジンルーム
+			'return_select' 		restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:ALT_SELECT; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:MISSIONS:HOLD_SELECT) {
+		@サウンドデータロード d:PLANT_SOUND
+
+		// オルタナティブミッション武装解除のステージセレクト
+		chara select name -s {
+			'config_itemfull'		config_fullitem_p
+			'config_itemfull_n'		config_fullitem_p_normal
+			'load_tanker_sound'		load_tanker_sound
+			'load_plant_sound'		load_plant_sound
+			'HOLD LEVEL01-a15b'		load_alt_hold_a15b 	// ＢＣ連絡橋
+			'HOLD LEVEL02-a12a'		load_alt_hold_a12a	// Ａ脚屋上右側
+			'HOLD LEVEL03-a24d'		load_alt_hold_a24d	// 電算室
+			'HOLD LEVEL04-a13b'		load_alt_hold_a13b	// ＡＢ連絡橋
+			'HOLD LEVEL05-a14a'		load_alt_hold_a14a	// Ｂ脚変電室
+			'HOLD LEVEL06-a22a'		load_alt_hold_a22a	// F脚倉庫
+			'HOLD LEVEL07-a01b'		load_alt_hold_a01b	// 船橋二階居住区
+			'HOLD LEVEL08-a42a'		load_alt_hold_a42a	// アーセナルギア空腸
+			'HOLD LEVEL09-a20b'		load_alt_hold_a20b	// E脚ヘリポート
+			'HOLD LEVEL10-a31a'		load_alt_hold_a31a	// シェル2中央棟
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:ALT_SELECT; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:MISSIONS:ESCAPE_SELECT) {
+		if ( $s:選択プレイヤー == ライデン ) {
+			// オルタナティブミッションエスケープのステージセレクト(ライデン編)
+			chara select name -s {
+				'config_itemfull'		config_fullitem_p
+				'config_itemfull_n'		config_fullitem_p_normal
+				'ESCAPE LEVEL2-a20a'	mv_a19a_a20a0_0
+				'return_select' restart_proc
+			};
+			$b:res_mode_back = d:MISSIONS:ALT_SELECT; /*一つ前に戻るため前のステータス */
+		} else if ( $s:選択プレイヤー == スネーク || $s:選択プレイヤー == プリスキン ) {
+			// オルタナティブミッションエスケープのステージセレクト(スネーク編)
+			chara select name -s {
+				'config_itemfull'		config_fullitem_p
+				'config_itemfull_n'		config_fullitem_p_normal
+				'return_select' restart_proc
+			};
+			$b:res_mode_back = d:MISSIONS:ALT_SELECT; /*一つ前に戻るため前のステータス */
+		}
+
+	} else if ($b:res_mode == d:MISSIONS:PHOTO_SELECT) {
+		@サウンドデータロード d:TANKER_SOUND
+
+		// オルタナティブミッション写真撮影のステージセレクト
+		chara select name -s {
+			'config_itemfull'		config_fullitem_p
+			'config_itemfull_n'		config_fullitem_p_normal
+			'load_tanker_sound'		load_tanker_sound
+			'load_plant_sound'		load_plant_sound
+			'PHOTO RAI_LEVEL1-a01a'	load_alt_photo_a01a_r
+			'PHOTO RAI_LEVEL2-a01b'	load_alt_photo_a01b
+			'PHOTO RAI_LEVEL3-a01f'	load_alt_photo_a01f
+			'PHOTO RAI_LEVEL4-a00c'	load_alt_photo_a00c
+			'PHOTO RAI_LEVEL5-a00a'	load_alt_photo_a00a
+			'PHOTO RAI_LEVEL6-a03a'	load_alt_photo_a03a
+
+			'PHOTO SNA_LEVEL1-a01a'	load_alt_photo_a01a_s1
+			'PHOTO SNA_LEVEL2-a24d'	load_alt_photo_a24g
+			'PHOTO SNA_LEVEL3-a24a'	load_alt_photo_a24a
+			'PHOTO SNA_LEVEL4-a02a'	load_alt_photo_a02b
+			'PHOTO SNA_LEVEL5-a41a'	load_alt_photo_a41b
+			'PHOTO SNA_LEVEL6-a24c'	load_alt_photo_a24f
+
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:ALT_SELECT; /*一つ前に戻るため前のステータス */
+
+
+	} else if ($b:res_mode == d:MISSIONS:TALE_STAGE_SELECT) {
+	// 以下スネークテイルズ用箱ステージ選択
+		chara select name -s {
+			'config_itemfull'		config_fullitem_p
+			'config_itemfull_n'		config_fullitem_p_normal
+			'a21a'					mv_a20a0_a21a_0
+			'a22a'					mv_a23a_a22a0h_0
+			'a31c'					mv_a31b_a31c_0
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:SELECT; /*一つ前に戻るため前のステータス */
+
+
+	} else if ($b:res_mode == d:MISSIONS:ALT_STAGE_SELECT) {
+	// 以下オルタナティブミッション用箱ステージ選択(爆弾解体がベース)
+		chara select name -s {
+			'config_itemfull'		config_fullitem_p
+			'config_itemfull_n'		config_fullitem_p_normal
+			'a00a'					mv_a01a_a00a_1
+			'a00b'					load_tal_vs_mrl
+			'a01a'					mv_a00a_a01a_1
+			'a01f'					mv_a01a_a01f_1x
+			'a01b'					mv_a00a_a01b_2
+			'a01c'					mv_a01b_a01c_0
+			'a01d'					mv_a01c_a01d_0
+			'a01e'					mv_a01d_a01e_0
+			'a00c'					mv_a01e_a00c_0
+			'a02a'					mv_a01f_a02a0_0
+			'a03a'					mv_a02a3_a03a_0
+			'a03b'					mv_a03a_a03b_0
+			'a04a'					mv_a03b_a04a_demo
+			'a04b'					mv_a04a_a04b_0
+			'a04c'					mv_a04b_a04c_1
+			'a12a'					mv_a12b0_a12a_0
+			'a12b'					mv_a12a_a12b0_0
+			'a13b'					mv_a12b0_a13a_0
+			'a14a'					mv_a13a_a14a_0
+			'a15b'					mv_a14a_a15a_0
+			'a16a'					mv_a15a_a16a_0
+			'a17a'					mv_a16a_a17a_0
+			'a18a'					mv_a17a_a18a_0
+			'a19a'					mv_a18a_a19a_0
+			'a20a'					mv_a19a_a20a0_0
+			'a20b'					mv_a20a1_a20b_0
+			'a21a'					mv_a20a0_a21a_0
+			'a22a'					mv_a23a_a22a0h_0
+			'a23b'					mv_a12b0_a23a_0
+			'a24b'					mv_a24a_a24b_0
+			'a24c'					mv_a24b_a24c_0
+			'a24d'					mv_a24a_a24d_0
+			'a25d'					mv_a31a_a25d_0
+			'a28a'					mv_a25d_a28a_0
+			'a31a'					mv_a25d_a31a_0
+			'a41a'					mv_init_a41a_0
+			'a42a'					mv_a41a_a42a_0
+			'a43a'					mv_a42a_a43a_0
+			'a44a'					mv_a43a_a44a_0
+			'a45a'					mv_a44a_a45a_0
+			'a61a'					mv_init_a61a_0
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:MISSIONS:SELECT; /*一つ前に戻るため前のステータス */
+	} else if ($b:res_mode == d:MISSIONS:SNAKE_TALES_SELECT) {
+		chara select name -s {
+			'config_itemfull'		config_fullitem_p
+			'config_itemfull_n'		config_fullitem_p_normal
+			'tales_A'				load_tales_a
+			'tales_A_elv_exit_gameover'				load_tales_a_elv_exit_gameover
+			'tales_A_meet_Ames_A2'			load_tales_a_1
+			'tales_A_no_jeniffer_vs_fatman_AF1'				load_tales_a_af1
+			'tales_A_no_jeniffer_kill_fatman_AF2a'				load_tales_a_af2a
+			'tales_A_no_jeniffer_unkill_fatman_AF2a'				load_tales_a_af2b
+			'tales_A_hostage_event_without_mike'	load_tales_a_2a
+			'tales_A_hostage_event_with_mike'	load_tales_a_2b
+			'tales_A_hostage_event_return_with_mike'	load_tales_a_2c
+			'tales_A_meet_jeniffer_AJ1'		load_tales_a_3
+			'tales_A_no_bomb_vs_fatman_ajf1'				load_tales_a_ajf1
+			'tales_A_no_bomb_kill_fatman_ajf2a'				load_tales_a_ajf2a
+			'tales_A_no_bomb_unkill_fatman_ajf2b'				load_tales_a_ajf2b
+			'tales_A_defuse_bomb_ajb1'				load_tales_a_ajb1
+			'tales_A_defuse_bomb_vs_fatman_ajbf1'				load_tales_a_4
+			'tales_A_defuse_bomb_kill_fatman_ajbf2A'				load_tales_a_ajbf2a
+			'tales_A_defuse_bomb_unkill_fatman_ajbf2B'				load_tales_a_ajbf2b
+			'tales_B(a20b)'				load_tales_b
+			'tales_B_DE_bridge_found_B2A(a19a)'	load_tales_b_1_a
+			'tales_B_DE_bridge_unfound_B2B(a19a)'	load_tales_b_1_b
+			'tales_B_CD_bridge_before_ema_event(a17a)'load_tales_b_1b
+			'tales_B_strut_C_ema_event_B3(a16a)'		load_tales_b_2
+			'tales_B_strut_C_after_attacked_damage_B4A(a16a)'load_tales_b_3a
+			'tales_B_strut_C_after_attacked_no_damage_B4B(a16a)'load_tales_b_3b
+			'tales_B_strut_B_node_access_B5(a14b)'	load_tales_b_4
+			'tales_B_shell_1-2_bridge_event(a18a)'load_tales_b_5
+			'tales_B_strut_F_event_B6(a22b)'			load_tales_b_6
+			'tales_B_strut_F_ema_event_B7(a22b)'		load_tales_b_7
+			'tales_B_EF_bridge_after_ema_event(a21a)'		load_tales_b_test
+			'tales_B_shell_1-2_bridge_without_Emma(a18a)'load_tales_b_7_D
+			'tales_B_strut_E_node_access_B8(a20e)'	load_tales_b_8
+			'tales_B_strut_E_exit_without_emma(a20e)'	load_tales_b_8_exit
+			'tales_B_vs_harrier_B9(a25a)'		load_tales_b_9
+			'tales_B_ending_emma_damaged_B10A'		load_tales_b_10a
+			'tales_B_ending_emma_undamaged_B10B'		load_tales_b_10b
+			'tales_C'						load_tales_c
+			'tales_C_meet_mrl_C2'				load_tales_c_1
+			'tales_C_engine_room'			load_tales_engine_room
+			'tales_C_nagarouka'				load_tales_nagarouka
+			'tales_C_a03b_before_buttle_C3'			load_tales_c_2
+			'tales_C_a03b_after_buttle_C4'		load_tales_c_3
+			'tales_C_a03b_colonel_demo_C5'		load_tales_c_4
+			'tales_C_before_buttle_mrl_C6'			load_tales_c_5
+			'tales_C_ending_meril_killed_C6a'			load_tales_c_6a
+			'tales_C_ending_meril_unkilled_C6b'			load_tales_c_6b
+			'tales_D'						load_tales_d
+			'tales_D_SEALS_event(a14b)_D2'			load_tales_d_1
+			'tales_D_strut_D_event(a18a)_D3'			load_tales_d_2
+			'tales_D_strut_E_event(a28a)_D4'			load_tales_d_3
+			'tales_D_shell2_event(a31a)_D5'			load_tales_d_4
+			'tales_D_kaiguntaisa_over_time(a31a)_D6A'		load_tales_d_5a
+			'tales_D_kaiguntaisa_in_time(a31a)_D6B'		load_tales_d_5b
+			'tales_D_elevator(a31c)_D7'				load_tales_d_6
+			'tales_D_endingAA_D8AA'				load_tales_d_endingAA
+			'tales_D_endingAA_D8AB'				load_tales_d_endingAB
+			'tales_D_endingAA_D8BA'				load_tales_d_endingBA
+			'tales_D_endingAA_D8BB'				load_tales_d_endingBB
+			'tales_E'						load_tales_e
+			'tales_E_snakes_recollection(ta02a)_E2'	load_tales_e_snakes_recollection_E2
+			'tales_E_after_bomb_1(ta24a)_E3A'	load_tales_e_after_bomb1_E3A
+			'tales_E_after_bomb_1(ta24a)_E3B'	load_tales_e_after_bomb1_E3B
+			'tales_E_after_bomb_1(ta24a)_E3C'	load_tales_e_after_bomb1_E3C
+			'tales_E_meilin_event(a17a)_E4'	load_tales_e_1
+			'tales_E_strut_C_event(a16a)_E5'	load_tales_e_2
+			'tales_E_AB_bridge_event(a13c)_E6'	load_tales_e_3
+			'tales_E_AB_bridge_attacker_event(a13c)'	load_tales_e_4
+			'tales_E_AB_bridge_orga_event(a13c)'	load_tales_e_5
+			'tales_E_AB_bridge_orga_appears(tsp03a)_E7'	load_tales_e_AB_bridge_orga_appears_E7
+			'tales_E_vs_GORRUGON(tsp03a)'	load_vs_GORRUGON
+			'tales_E_VR_EXIT'	load_tales_e_E_VR_EXIT
+			'tales_E_clear_G0RRUGON(tvs03a)_E8'	load_tales_e_clear_GORRUGON_E8
+			'tales_E_clear_sneaking_3(twp03a)_E9'	load_tales_e_clear_sneaking3_E9
+			'tales_E_retry_handgun_3(twp03a)_E10a'	load_tales_e_retry_handgun3_E10a
+			'tales_E_clear_handgun_3(tvs05a)_E10b'	load_tales_e_clear_handgun3_E10b
+			'tales_E_clear_eliminate_all_5(tvs08a)_E11'	load_tales_e_clear_eliminate_all_5_E11
+			'tales_E_clear_sneaking8_E12a'	load_tales_e_clear_sneaking8_E12a
+			'tales_E_clear_sneaking8_E12b'	load_tales_e_clear_sneaking8_E12b
+			'tales_E_raiden_start_E13(ta31a)_1'	load_tales_e_raiden_start_E13_1
+			'tales_E_raiden_clear_bomb_2(ta12a)_E13_2'	load_tales_e_raiden_clear_bomb_2_E13_2
+			'tales_E_raiden_clear_holdup_2(twp43a)_E13_3'	load_tales_e_raiden_clear_holdup_2_E13_3
+			'tales_E_raiden_clear_PSG1_3(ta20a)_E13_4'	load_tales_e_raiden_clear_PSG1_3_E13_4
+			'tales_E_raiden_clear_elim_4(tvs06a)_E13_5'	load_tales_e_raiden_clear_elim_4_E13_5
+			'tales_E_raiden_clear_sneaking_3(ta01f)_E13_6'	load_tales_e_raiden_clear_sneaking_3_E13_6
+			'tales_E_raiden_clear_bomb_3(ta22a)_E13_7'	load_tales_e_raiden_clear_bomb_3_E13_7
+			'tales_E_raiden_clear_holdup_6(twp34a)_E13_8'	load_tales_e_raiden_clear_holdup_6_E13_8
+			'tales_E_raiden_clear_granade_4_(ta42a)E13_9'	load_tales_e_raiden_clear_granade_4_E13_9
+			'tales_E_raiden_clear_elim_9_E13_10'	load_tales_e_raiden_clear_elim_9_E13_10
+			'tales_E_vs_RAY(a46a)_E14'						load_tales_e_ray
+			'tales_E_vs_SOLIDUS(a61a)_E15'						load_tales_e_sol
+			'tales_E_ending_E16'						load_ending_E16
+			'tales_load'						load_tales_load
+			'select_japanese' set_lang_japanese
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:RES_SELECT; /*一つ前に戻るため前のステータス */
+
+
+// アナザーミッション用セレクトここまで
+//----------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	} else if ($b:res_mode == d:DEMO_TEST) {
+		// 上野用ムービーテスト
+		chara select name -s {
+			'Opening demo'			mv_opening_demo
+			'Snake ELV UP'			mv_snake_elv_up
+			'Raiden Node Access'		mv_node_access
+			'Raiden ELV UP'			mv_raiden_elv_up
+			'Encount Vamp(No Gun)'		mv_encount_vamp_no_gun
+			'Encount Vamp(Gun)'		mv_encount_vamp_gun
+			'Encount Vamp(No Shave)'	mv_encount_vamp_no_shave
+			'Encount Vamp(Shave)'		mv_encount_vamp_shave
+			'Encount Fortune'		mv_encount_fortune
+			'Encount Petar'			mv_encount_petar
+			'Encount Olga'			mv_encount_olga
+			'vs Fortune(before)'		mv_vs_fortune_before
+			'vs Fortune(after)'		mv_vs_fortune_after
+			'vs Foatman(before)'		mv_vs_fatman_before
+			'vs Foatman(after)'		mv_vs_fatman_after
+			'Encount Ninja'			mv_encount_ninja
+			'in Hostage Room'		mv_in_hostage_room
+			'Encount Ames'			mv_encount_ames
+			'vs Harrier(Before)'		mv_vs_harrier_before
+			'vs Harrier(After)'		mv_vs_harrier_after
+			'Olga in front of EFloor'	mv_olga_in_front_of_EFloor
+			'Prez demo'			mv_Prez_demo
+			'Petar Molg'			mv_Petar_molg
+			'vs Vamp(before)'		mv_vs_vamp_before
+			'vs Vamp(after)'		mv_vs_vamp_after
+			'Emma (1)'			mv_emma_1
+			'Emma (2)'			mv_emma_2
+			'Emma (3)'			mv_emma_3
+			'Emma Card 5'			mv_emma_card_5
+			'Emma L prop'			mv_emma_L_prop
+			'Vamp Sniping'			mv_vamp_snaiping
+			'AG_start_up'			mv_ag_start_up
+			'Tube (1)'			mv_tube
+			'Katana'			mv_katana
+			'Tengu'				mv_tengu
+			'AG Fortune'			mv_ag_fortune
+			'vs RAY'			mv_vs_ray
+			'Raise the AG'			mv_raise_the_ag
+			'Ending'			mv_ending
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:RES_RAIDEN; /*一つ前に戻るため前のステータス */
+
+	} else if ($b:res_mode == d:BOSS_CHECK) {
+		// 大森用ボス難易度調整用
+		chara select name -s {
+			'vs FORTUNE VE'			mv_vs_fortune_ve
+			'vs FORTUNE EA'			mv_vs_fortune_ea
+			'vs FORTUNE NO'			mv_vs_fortune_no
+			'vs FORTUNE HA'			mv_vs_fortune_ha
+			'vs FORTUNE VH'			mv_vs_fortune_vh
+			'vs FATMAN VE'			mv_vs_fatman_ve
+			'vs FATMAN EA'			mv_vs_fatman_ea
+			'vs FATMAN NO'			mv_vs_fatman_no
+			'vs FATMAN HA'			mv_vs_fatman_ha
+			'vs FATMAN VH'			mv_vs_fatman_vh
+			'vs HARRIER VE'			mv_vs_harrier_ve
+			'vs HARRIER EA'			mv_vs_harrier_ea
+			'vs HARRIER NO'			mv_vs_harrier_no
+			'vs HARRIER HA'			mv_vs_harrier_ha
+			'vs HARRIER VH'			mv_vs_harrier_vh
+			'vs VAMP VE'			mv_vs_vamp_ve
+			'vs VAMP EA'			mv_vs_vamp_ea
+			'vs VAMP NO'			mv_vs_vamp_no
+			'vs VAMP HA'			mv_vs_vamp_ha
+			'vs VAMP VH'			mv_vs_vamp_vh
+			'vs RAY VE'			mv_vs_ray_ve
+			'vs RAY EA'			mv_vs_ray_ea
+			'vs RAY NO'			mv_vs_ray_no
+			'vs RAY HA'			mv_vs_ray_ha
+			'vs RAY VH'			mv_vs_ray_vh
+			'vs SOLIDUS VE'			mv_vs_solidus_ve
+			'vs SOLIDUS EA'			mv_vs_solidus_ea
+			'vs SOLIDUS NO'			mv_vs_solidus_no
+			'vs SOLIDUS HA'			mv_vs_solidus_ha
+			'vs SOLIDUS VH'			mv_vs_solidus_vh
+			'return_select' load_select
+		};
+	} else if ($b:res_mode == d:BOMB_TEST1) {
+		// RMC カウントゼロテスト
+		// Ａ脚海底へ急げ
+		// いけるステージ：シェル1の中央棟以外全て
+		chara select name -s {
+			'A prop Roof'		mv_count_test1_a_roof
+			'A prop'		mv_count_test1_a
+			'AB Bridge'		mv_count_test1_ab
+			'B prop'		mv_count_test1_b
+			'BC Bridge'		mv_count_test1_bc
+			'C prop'		mv_count_test1_c
+			'CD Bridge'		mv_count_test1_cd
+			'D prop'		mv_count_test1_d
+			'DE Bridge'		mv_count_test1_de
+			'E prop'		mv_count_test1_e
+			'Heriport'		mv_count_test1_heriport
+			'EF Bridge'		mv_count_test1_ef
+			'F prop'		mv_count_test1_f
+			'FA Bridge'		mv_count_test1_fa
+			'return_select' 	load_select
+		};
+	} else if ($b:res_mode == d:BOMB_TEST2) {
+		// RMC カウントゼロテスト
+		// ヘリポートへ急げ
+		// いけるステージ：シェル1の中央棟以外全て
+		chara select name -s {
+			'A prop Roof'		mv_count_test2_a_roof
+			'A prop'		mv_count_test2_a
+			'AB Bridge'		mv_count_test2_ab
+			'B prop'		mv_count_test2_b
+			'BC Bridge'		mv_count_test2_bc
+			'C prop'		mv_count_test2_c
+			'CD Bridge'		mv_count_test2_cd
+			'D prop'		mv_count_test2_d
+			'DE Bridge'		mv_count_test2_de
+			'E prop'		mv_count_test2_e
+			'Heriport'		mv_count_test2_heriport
+			'EF Bridge'		mv_count_test2_ef
+			'F prop'		mv_count_test2_f
+			'FA Bridge'		mv_count_test2_fa
+			'return_select' 	load_select
+		};
+	} else if ($b:res_mode == d:BOMB_TEST3) {
+		// RMC カウントゼロテスト
+		// エマのもとへ急げ
+		// いけるステージ：
+		chara select name -s {
+			'E prop'		mv_count_test3_e
+			'EF Bridge'		mv_count_test3_ef
+			'Center Unit1F'		mv_count_test3_c1f
+			'return_select' 	load_select
+		};
+	} else if ($b:res_mode == d:MOVIE_TEST) {
+		chara select name -s {
+			'p010_06_m02'		mv_p010_06_m02
+			'p014_02_m01'		mv_p014_02_m01
+			'p014_04_m02'		mv_p014_04_m02
+			'p014_07_m03'		mv_p014_07_m03
+			'p049_04_m02'		mv_p049_04_m02
+			'p049_06_m03'		mv_p049_06_m03
+			'p049_09_m05'		mv_p049_09_m05
+			'p055_03_m01'		mv_p055_03_m01
+			'p059_02_m02'		mv_p059_02_m02
+			'p080_02_m01'		mv_p080_02_m01
+			'p080_06_m02'		mv_p080_06_m02
+			'p080_27_m11'		mv_p080_27_m11
+			'p010_02_m01'		mv_p010_02_m01
+			'p010_07_m03'		mv_p010_07_m03
+			'p010_08_m04'		mv_p010_08_m04
+			'p014_14_m04'		mv_p014_14_m04
+			'p036_09_m01'		mv_p036_09_m01
+			'p040_06_r02'		mv_p040_06_r02
+//			'p049_03_m01'		mv_p049_03_m01
+			'p049_07_m04'		mv_p049_07_m04
+			'p050_03_m02'		mv_p050_03_m02
+			'p050_05_m03'		mv_p050_05_m03
+			'p058_05_m01'		mv_p058_05_m01
+			'p062_02_m01'		mv_p062_02_m01
+			'p062_04_m02'		mv_p062_04_m02
+			'p070_06_m01'		mv_p070_06_m01
+			'p070_11_m02'		mv_p070_11_m02
+			'p070_14_m03'		mv_p070_14_m03
+			'p070_19_m05'		mv_p070_19_m05
+			'p080_08_m03'		mv_p080_08_m03
+			'p080_10_m04'		mv_p080_10_m04
+			'p080_12_m05'		mv_p080_12_m05
+			'p080_15_m06'		mv_p080_15_m06
+			'p080_17_m07'		mv_p080_17_m07
+//			'p080_20_m08'		mv_p080_20_m08
+			'p080_22_m09'		mv_p080_22_m09
+			'p080_24_m10'		mv_p080_24_m10
+			'p082_03_m01'		mv_p082_03_m01
+//			'p082_08_m03'		mv_p082_08_m03
+			'p082_09_m04'		mv_p082_09_m04
+			'return_select' restart_proc
+		};
+		$b:res_mode_back = d:RES_RAIDEN; /*一つ前に戻るため前のステータス */
+	}
+
+}else{
+#if d:MGS2_SCN
+	if($f:rft_enter_codec_debug_mode_t){
+		@codec_debug_list_set_t
+	}else {
+print 'プラント編無線デバッグむきき'
+	#ifdef d:EU_TRIAL
+	#else
+//ＸＸＸＸＸＸＸＸＸ
+		@codec_debug_list_set_p
+	#endif
+	}
+#endif
+}
+
+proc movie_end_proc {
+	restart ;
+}
+
+proc restart_proc {
+	$b:res_mode = $b:res_mode_back /*一つ前に戻る */
+	restart ;
+}

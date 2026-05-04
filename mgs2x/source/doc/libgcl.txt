@@ -1,0 +1,132 @@
+★ libgcl リファレンス
+
+--------------------------------------------------------------------------------
+■ 概要
+--------------------------------------------------------------------------------
+
+libgclはgclconv, gclkで変換されたバイナリ形式のgcxスクリプトを解釈するための
+ライブラリである。
+以下の機能を持つ。
+
+・関数登録
+・Proc, Block実行
+・値取得
+・オプション取得
+・変数値取得／設定
+・文字列リソース取得
+・フォントデータ取得
+
+--------------------------------------------------------------------------------
+■ 起動
+--------------------------------------------------------------------------------
+
+void GCL_Initialize( void );
+void GCL_ResetSystem( void );
+
+void GCL_ChangeSenerioCode( int code );
+	// デフォルトはscenario.gcxを読み込むが、この関数でファイル名を変更することが
+	// 可能
+
+--------------------------------------------------------------------------------
+■ 関数登録
+--------------------------------------------------------------------------------
+
+すべてのGCLコマンドはこの関数により登録され、実行される。
+
+typedef struct {
+	int id;
+	GCL_COMMANDFUNC	*func;
+} GCL_COMMANDLIST;
+
+typedef struct _gcl_commanddef {
+	struct _gcl_commanddef *next;
+	int n_commlist;
+	GCL_COMMANDLIST *commlist;
+} GCL_COMMANDDEF;
+
+int GCL_AddCommMulti( GCL_COMMANDDEF *def );
+int GCL_DelCommMulti( GCL_COMMANDDEF *def );
+
+コマンドテーブルをシステムに登録／解除する。
+
+--------------------------------------------------------------------------------
+■ proc, block実行
+--------------------------------------------------------------------------------
+
+void GCL_ExecScript( void );
+	// スクリプトの実行を開始。
+
+int GCL_ExecProc( int proc_id, GCL_ARGS *arg );
+int GCL_ExecBlock( char *top, GCL_ARGS *args );
+
+--------------------------------------------------------------------------------
+■ 値取得
+--------------------------------------------------------------------------------
+
+
+char *GCL_GetNextValue( char *top, int *type_p, int *value_p );
+	// 基本関数。以下の関数はすべてこれを使用。
+
+void GCL_SetArgTop( char *top );
+	// 次のデータへのポインタを設定。以下Next系はこれを内部で使用。
+	// Nextがつかない系もあるが、基本的にNext系を使用する。
+
+int GCL_GetNextInt( void );
+int GCL_GetNextIV( int *vec );
+int GCL_GetNextSV( short *vec );
+char *GCL_GetNextString( void );
+void *GCL_GetNextResource( void );
+int GCL_GetNextResourceNo( void );
+
+--------------------------------------------------------------------------------
+■ オプション取得
+--------------------------------------------------------------------------------
+
+オプションは、command.defで指定した1文字で取得する。
+
+char *GCL_GetOption( char c );
+	// オプションがなかった場合NULLを返す。
+int GCL_GetOptionValue( char c, int default_value );
+	// オプションがなかった場合、default_valueを返す。
+
+int GCL_GetNextOption( void );
+
+--------------------------------------------------------------------------------
+■ 変数値取得／設定
+--------------------------------------------------------------------------------
+
+GCLの変数は、libgcl内でstaticにとられた領域にマップされる。
+通常変数と、link変数( include/linkvar.h によって、プログラム中からも名前で参照が可能 )
+の2つの種類がある。
+
+通常変数には以下の構造体を使って、アクセスすることが可能。
+
+typedef struct _gcl_var_ref {
+	unsigned char code[4];
+	unsigned short max;
+	unsigned short offset;
+} GCL_VAR_REF;
+
+void GCL_GetNextVarRef( GCL_VAR_REF *ref );
+
+void GCL_SetVarRef( GCL_VAR_REF *ref, int offset, int value );
+int GCL_ReadVarRef( GCL_VAR_REF *ref, int offset );
+
+void GCL_SaveVar( void );
+void GCL_RestoreVar( void );
+void GCL_SaveLinkVar( void *ptr, int size ) ;
+
+int GCL_ReadSavedVar( char *top );
+char *GCL_VarSaveBuffer( char *top );
+
+--------------------------------------------------------------------------------
+■ 文字列リソース取得
+--------------------------------------------------------------------------------
+
+char *GCL_GetStringResource( int id );
+
+--------------------------------------------------------------------------------
+■ フォントデータ取得
+--------------------------------------------------------------------------------
+
+char *GCL_GetFontDataTop( void );

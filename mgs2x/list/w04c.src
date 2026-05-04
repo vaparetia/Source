@@ -1,0 +1,135 @@
+//
+//	w04c.src
+//
+//	written by Y.Matsuhana 1999.Dec
+//
+//	$Id: w04c.src,v 1.55 2001/10/01 02:09:41 usr01717 Exp $
+
+
+// 常駐データ
+block .use r_tnk0
+
+block .nocache
+block .cache
+
+
+#define WN_W04C
+
+
+// 各ステージ共通要素
+#include	"t_common.h"
+#include		"common.h"
+
+
+
+
+//エフェクト関連
+#define		EFFECT_CUSTUM
+
+#define		E_KOGETUKI				// 壁への焦げ付き
+#define		E_ENEMY					// 敵兵系
+#define		E_ENEMY_LIGHT			// 敵兵ライト
+//#define		E_DOOR_LUMP				// ドアランプ
+#define		E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define		E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+
+#include		"c_effect.h"
+
+//include		gover.h
+//include		codec.h
+//include		wp_tank.h
+include		item_box_tank.h
+//include		ene_tank.h
+//itembox
+
+// キャラクタ
+include		marine.h
+include		scot.h
+
+//転送端末用レイアウトデータ
+/*
+l2d		debug/kira/photo_term/dummy_phototerm.l2d
+l2d		2D/densou/papet.l2d
+l2d		2D/densou/densou_main.l2d
+*/
+
+// ワールド
+//debug		null
+meca		ray_w04c1/ray_canopy_w04c1_mt.kms
+meca		ray_w04c1/ray_w04c1.kms
+world		w04c/w04c1.kms
+world		w04c/w04c2.kms
+world		door/w04_dr.kms
+world		w02a/w02a1/w02a_chain.kms
+
+lt2			w04c.lt2
+hazard	   	w04c.hzx
+
+// 強制モーション試
+mtn		sna_w04c.mls
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+//pack_all	debug.tri debug/test_door
+
+
+//タイマーテスト
+//pack_all	debug.tri timer_test
+
+//debug		test_door
+//debug		usa_test
+//debug		corpse_a
+//debug		corpse_u
+
+
+
+// ビデオ撮影用スネーク顔表情
+//human		sna_def/sna_mmt.evm
+//rmt	sna_rmt
+
+
+//電送端末ＯＦＦ画面
+world		w04c/w04c1_moni_off.kms
+
+
+// ハイポリスネーク用
+//human	sna_def/sna_def_shmt.kms
+
+//cvd	human/sna_def/sna_def_shmt.cv2
+
+// ハイポリスネーク用リネーム
+//rename	sna_def.kms sna_def_nouse.kms
+//rename	sna_def.cv2 sna_def_nouse.cv2
+//rename	sna_def_shmt.kms sna_def.kms
+//rename	sna_def_shmt.cv2 sna_def.cv2
+
+
+
+
+
+// デモ用スネーク
+//human	sna_def/sna_def_mh.evm
+
+
+
+
+//オセロット
+debug	sasaki/rev_stand_test.kms
+
+
+
+
+//おもしろムービー用敵兵モデル
+//include		ene_tank.h
+
+
+//おもしろムービー用敵兵モーション
+//mtn		gbs_w04c_movie.mls
+
+
+
+//ドッグタグ
+goods	dogtag/dogtag_gps.kms
+//effect	mark/kirari_alp_ovl.bmp
+pack_trnall dogtag_effect.tri \
+	effect/mark/kirari_alp_ovl.bmp

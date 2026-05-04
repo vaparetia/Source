@@ -1,0 +1,1089 @@
+/*
+	w28a.gcl                     
+	    L脚
+
+	2000/11/30 Y.Matsuhana         
+	$Id: w28a.gcl,v 1.77 2002/06/04 07:22:29 usr03682 Exp $                      
+
+*/
+
+
+// 各種スイッチ用define
+// ------------------------------------
+// プラント編識別
+#define STAGE_PLANT			1
+#define STAGE_W28A			1 
+
+// 敵兵、ＮＰＣ状況（薬莢を呼び分けるのに必要）
+#define		ENE_P_GOL		1		// 都市迷彩ゴル兵
+
+// サウンド
+#define		SOUND			1		// サウンドデータは最初に呼ぶ
+#define		BGM			1		// BGMは敵兵コマンダーの後に呼ぶ
+// キャラクター関係
+#define		RAIDEN			1		// SNAKEとは排他
+#define		SNAKE			0
+#define		ENEMY			1		// コマンダーと警備兵(敵を出すときは必須)
+#define		SUPPORT			0		// サポート兵
+#define		ATTACKER		0		// 攻撃兵
+#define		SHIELD			0		// 盾兵(1) or 通常攻撃兵(0)
+// ドア
+#define		WT_DOOR			1		// 水密ドア
+#define		SLIDE_DOOR		1		// スライドドア
+// 入出トラップ
+#define		LOAD_TRAP		1
+#define		STAGE_END		0		// ステージ終了時処理を使用可にする
+// フォグ
+#define		FOG			1
+// エフェクト関係
+#define		BLUR			0		// ブラー
+#define		Z_MANAGER		0		// Ｚフォーカス管理(敵のライト等で仕様)
+#define		BODY_SHADOW		0		// 敵のライトによって出る影
+// ライト関係
+#define		SPOT_LIGHT		0		// スポットライト
+#define		CHARA_LIGHT		1		// キャラ専用ライト
+// アイテム
+#define		ITEM			0
+// 強制モーション
+#define		BY_MOTION		0		// ビヨンドモーション
+#define		FADE_TIME		200		// フェードアウト時間
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA	0		// デバッグキャラ全体(FIX時は0)
+#else
+	#define		DEBUG_CHARA	1		// デバッグキャラ全体
+#endif
+
+#define		TARGET_CHARA		敵兵:01		// キャラ追従カメラのターゲット
+
+#define		EMMA			1		// エマ
+#define		EMMA_GEOVER_CAMERA	1
+// エマ関係
+#define		WITH_EMMA		1		// エマと一緒のロード処理をするのに必要
+#define		EMMA_STAGE		w28a		// エマと一緒のロード処理をするのに必要
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME		w28a
+#define		KMS_NAME0		w28a
+#define		KMS_NAME1		w28a_dummy
+#define		KMS_NAME2		w28a_outside
+#define		DOOR_NAME_LOAD		w28a_dr00	// ロード用
+#define		CIEL_NAME		w28a_roof	// 天井
+#define		LT2_NAME		w28a
+#define		KMS_NAME_SEA		sea
+#define		HATCH_NAME		w28_hatch
+#define		SHADOW_KMS_NAME0	w28a_kage
+
+// キャラクター関係
+#if d:RAIDEN
+	#define		PLAYER		ライデン	// モーションができるまで名前はスネーク
+#else
+	#define		PLAYER		スネーク
+#endif
+
+enum エマモーションリスト {
+	emma_stop = 0,
+	emma_run,
+	emma_squat,
+	emma_iya,
+	emma_down
+};
+
+
+// ローカル変数
+
+
+
+// モーション関係
+// ------------------------------------
+#include "rai_w28a.mh"
+
+// include
+// ------------------------------------
+#include "stdch.h"
+#include "sload.h"
+#include "jump.h"
+#include "beyond.h"
+#include "sound.h"
+#include "enevoice.h"
+#include "item_info.h"
+#include "emavoice.h" /* エマ用の音声 */
+
+
+// マップ設定
+// ------------------------------------
+chara マップ Ｌ脚	-k d:KMS_NAME0 \
+			-k d:KMS_NAME1 \
+			-k d:KMS_NAME2 \
+			-h d:HZX_NAME,0 -l d:LT2_NAME
+
+#include "polydemo_w28a.h"
+
+
+command マップ設定 Ｌ脚 -set {
+	if($s:d_num == not_demo){
+		#if d:SOUND
+		@サウンド設定	// データは最初に呼ぶ
+		#endif
+	} else {
+		// デモ時はＢＧＭを確実に停止する
+		//chara サウンドマネージャー ＳＤマネ -pak -1			// 牧村依頼により削除(2001.8.20)
+		//command セットサウンドコード -c d:SNG_FOUTS_S			// BGM停止
+	}
+	@レーダー設定
+	@常駐キャラ設定
+	if($s:d_num == not_demo){
+		@共通シネマスクリーンセット
+		@ローカル変数初期化
+		@プレイヤー設定
+		@エマ設定
+		@カメラセット
+		@リアル影設定
+		@主観禁止壁設定
+		@Ｌ脚カメラ設定
+		@Ｌ脚天井設置
+		@コマンダー設定
+		@ルート変更処理
+		@ＢＧＭ設定	// プレイヤー→敵兵→BGMの順で呼ぶ
+		@ロード設定
+		@ドア設置
+		@エフェクト設定
+		@ハッチ設定
+		@電灯虫設定
+		@フォグ設定
+		@アイテム設置
+		@プラント編全体マップ設定 d:Ｌ脚マップ	// stdproc.hで定義
+		@キャラ用ライト設置		// マップ設定の最後に呼ぶ
+	}
+}
+// 無線用include ※位置は動かさないこと
+#include "w28a_cdc.ch"
+
+//初期マップの表示
+command マップ表示 -show Ｌ脚
+
+if($s:d_num == not_demo){
+	// 全てのセットが終わったところでフェードイン
+	if( $s:登場ポイント == sp_w25c_w28a_0 ) {
+		// 全てのセットが終わったところでフェードイン
+		@ステージ開始時処理（ステージ名表示） d:LOAD_TYPE:SL_DOOR_TYPE 北側ドア 2500 d:DEFAULT_M_TYPE d:wn_Ｌ脚汚水処理場
+		eval ( $f:ハッチ開けデモ起動 = 0 ) ;
+	}
+}
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// 全マップ共通
+	// サウンド
+	// ------------------------------------
+	proc サウンド設定 {
+		#if d:DEBUG_PRINT 
+			print 'sound_set'
+		#endif
+
+		chara サウンドマネージャー ＳＤマネ -pak 0
+		@サウンド効果音設定
+		@弾痕跳弾設定
+	}
+
+	// 弾痕跳弾関係の設定
+	// ------------------------------------
+	proc 弾痕跳弾設定 {
+		#if d:DEBUG_PRINT 
+			print 'recoil_set'
+		#endif
+
+		command 弾痕ノーマル -n 0	// 通常
+		command 弾痕ノーマル -n 1	// 階段、通常
+		command 弾痕ノーマル -n 2	// 鉄板
+		command 弾痕ノーマル -n 3	// 鉄筋
+		command 弾痕ノーマル -n 4	// ダンボール
+		command 弾痕ノーマル -n 5	// 木箱
+		command 弾痕ノーマル -n 6	// パイプ中
+		command 弾痕ノーマル -n 7	// パイプ大
+
+		command 跳弾ノーマル -n 0
+		command 跳弾ノーマル -n 1
+		command 跳弾ノーマル -n 2
+		command 跳弾ノーマル -n 3
+		command	跳弾水蒸気小 -n 5	// 蒸気パイプ 2001.10.6
+		command	跳弾水蒸気中 -n 6	// 蒸気パイプ 2001.10.6
+		command	跳弾水蒸気大 -n 7	// 蒸気パイプ 2001.10.6
+	}
+
+	// リアル影
+	// ------------------------------------
+	proc リアル影設定 {
+		#if d:DEBUG_PRINT
+			print 'real_shadow'
+		#endif
+		// 影投影モデル
+		command	影投影ハザード -name Ｌ脚 -group 1
+
+		// 影投影モデル -m 影投影専用モデル -p 設置位置
+		chara 影投影モデル 影投影モデル -m d:SHADOW_KMS_NAME0 -p -3,6,-3
+
+		// 影管理 -t 光源タイプ -l 光源距離(並行光源時のみ有効) -p 並行光源方向直接指定
+		//chara 影管理 影管理 -t 0 -l 6000 -p -2700 -3100 -2700
+		chara 影管理 影管理 -t 1
+
+		trap ca004 ？ -mask ？ -exec {
+			if ( $3 == 入る ) {
+				mesg 影管理 影管理 add $2 影投影モデル
+			} else {
+				mesg 影管理 影管理 del $2
+			}
+		}
+
+	}
+	// レーダー
+	// ------------------------------------
+	proc レーダー設定 {
+		#if d:DEBUG_PRINT 
+			print 'menu set'
+		#endif
+		if ($w:ゲーム設定 <= d:LEVEL_VERYEASY) {
+			@レーダーオンオフチェック 1
+		} else {
+			@レーダーオンオフチェック 0
+		}
+	}
+
+	// ローカル変数初期化
+	// ------------------------------------
+	proc ローカル変数初期化 {
+		#if d:DEBUG_PRINT 
+			print 'localvar_init'
+		#endif
+		eval( $f:エマゲームオーバーフラグ = 0 );
+	}
+
+	// 電灯虫設定 
+	// ------------------------------------
+	proc 電灯虫設定 {
+		chara 電灯虫 w28a電灯虫 \
+			-n 32 \ 	
+			-p 48665,2800,-223151 \		// ライト位置 ->> プレイヤー誘導時は無視
+			-b 1 \			// 下のバウンディングボックスで壁との当たり見るか  1 : 判定あり, 0 : 判定なし
+			-s (48665-1500),(        0),(-223151) \	// 最小ボックス座標
+			-l (48665+1500),(2800+1000),(-223151+1000)	// 最大ボックス座標
+		chara 電灯虫 w28a電灯虫 \
+			-n 16 \ 	
+			-p 52000,2750,-214879 \		// ライト位置 ->> プレイヤー誘導時は無視
+			-b 1 \			// 下のバウンディングボックスで壁との当たり見るか  1 : 判定あり, 0 : 判定なし
+			-s (52000-1500),(        0),(-214879-1000) \	// 最小ボックス座標
+			-l (52000+1500),(2750+1000),(-214879)	// 最大ボックス座標
+		chara 電灯虫 w28a電灯虫 \
+			-n 16 \ 	
+			-p 52000,2750,-213474 \		// ライト位置 ->> プレイヤー誘導時は無視
+			-b 1 \			// 下のバウンディングボックスで壁との当たり見るか  1 : 判定あり, 0 : 判定なし
+			-s (52000-1500),(        0),(-213474) \	// 最小ボックス座標
+			-l (52000+1500),(4000+1000),(-213474+1000)	// 最大ボックス座標
+	}
+
+	// ポリデモ
+	// ------------------------------------
+	// ノード端末
+	// ------------------------------------
+
+	// プレイヤー 
+	// ------------------------------------
+	proc プレイヤー設定 {
+		#if d:DEBUG_PRINT
+			print 'player_set'
+		#endif
+
+		#if d:RAIDEN
+			chara プレイヤー d:PLAYER \
+				-p $i:プレイヤー初期Ｘ位置,$i:プレイヤー初期Ｙ位置,$i:プレイヤー初期Ｚ位置 \
+				-d 0,$i:プレイヤー初期方向,0 \
+				-s 0 \
+				-m rai_def -a raiden -o rai_w28a \
+				-f d:PLY_NO_FOOT_SHADOW
+			@ライデン髪の毛設定 d:NORMAL_HAIR
+			@プレイヤーＬＯＤ設定 d:C_DISTANCE_TYPE 4000
+		#else if d:SNAKE
+			chara プレイヤー d:PLAYER \
+				-p $i:プレイヤー初期Ｘ位置,$i:プレイヤー初期Ｙ位置,$i:プレイヤー初期Ｚ位置 \
+				-d 0,$i:プレイヤー初期方向,0 \
+				-s 0 \
+				-m sna_def -a snake -o rai_common
+
+				//バンダナ
+				chara ロープモデル３ バンダナ１ \
+					-n sna_bdn1 \
+					-d 1 \
+					-y スネーク \
+					-z 12 \
+					-x 0,60,-90 \
+					-m 12 \
+					-p 250 \
+					-k 350 \
+					-o 110 \
+					-f 1
+
+				chara ロープモデル３ バンダナ２ \
+					-n sna_bdn2 \
+					-d 1 \
+					-y スネーク \
+					-z 12 \
+					-x 0,50,-90 \
+					-m 22 \
+					-p 250 \
+					-k 350 \
+					-o 110 \
+					-f 1
+		#endif
+	}
+
+	// エマ設定 
+	// ------------------------------------
+	proc エマ設定 {
+		#if d:DEBUG_PRINT
+			print 'emma_set'
+		#endif
+		if ( $f:エマ存在フラグ == 1 && $s:登場ポイント == sp_w25c_w28a_0 ) {
+			// ライデンと一緒に中央棟からきた
+			#if d:DEBUG_PRINT
+				print 'emma_set_1'
+			#endif
+			chara エマ・エメリッヒ 手繋ぎエマ \
+				-pos	($i:プレイヤー初期Ｘ位置),$i:プレイヤー初期Ｙ位置,($i:プレイヤー初期Ｚ位置-500) \
+				-dir	0 \
+				-hide	\
+					56000,(   0+2000),-223000 \
+					53500,(   0+2000),-204000 \
+				-voice [emma_voice:vox_list] \
+				-stage d:EMA_STG_W28A \
+				-vitality $i:エマライフ最大値 $i:エマライフ現在値 \
+				-idcard $f:IDcard \
+				-proc   手繋ぎエマゲームオーバー
+			command プラグインエマ手繋ぎ -motion rai_ee
+		} else if ( $f:エマ存在フラグ == 0 && $s:エマ存在ステージ == w28a ) {
+			// Ｌ脚に置き去りにされていた
+			#if d:DEBUG_PRINT
+				print 'emma_set_2'
+			#endif
+			if ( $f:w28a水密ドア開けた != 0 ) {
+				// 水密ドア開いている
+				chara エマ・エメリッヒ 手繋ぎエマ \
+					-pos	$i:エマ初期位置Ｘ,$i:エマ初期位置Ｙ,$i:エマ初期位置Ｚ \
+					-dir	0 \
+					-hide	\
+						56000,(   0+2000),-223000 \
+						53500,(   0+2000),-204000 \
+					-voice [emma_voice:vox_list] \
+					-stage d:EMA_STG_W28A \
+					-vitality $i:エマライフ最大値 $i:エマライフ現在値 \
+					-idcard $f:IDcard \
+					-proc   手繋ぎエマゲームオーバー 
+			} else {
+				// 水密ドア閉まっているので水密ドア内へエマを退避させない
+				chara エマ・エメリッヒ 手繋ぎエマ \
+					-pos	$i:エマ初期位置Ｘ,$i:エマ初期位置Ｙ,$i:エマ初期位置Ｚ \
+					-dir	0 \
+					-hide	\
+						56000,(   0+2000),-223000 \
+					-voice [emma_voice:vox_list] \
+					-stage d:EMA_STG_W28A \
+					-vitality $i:エマライフ最大値 $i:エマライフ現在値 \
+					-idcard $f:IDcard \
+					-proc   手繋ぎエマゲームオーバー 
+			}
+			command プラグインエマ手繋ぎ -motion rai_ee
+			mesg エマ・エメリッヒ 手繋ぎエマ 強制隠れ位置移動
+		}
+		if ( $s:エマ存在ステージ == w28a ) {
+			trap ld001 手繋ぎエマ \
+				-mask ？ \
+				-exec {
+					if ( $3 == 入る ) {
+						eval( $s:エマ存在ステージ = w25d );
+					} else {
+						eval( $s:エマ存在ステージ = w28a );
+					}
+				}
+		}
+
+		trap ev001 手繋ぎエマ -mask ？ -exec {
+			if ( $3 == 入る ) {
+				print 'Emma into the room!'
+				eval( $f:エマが室内に居る = 1 ) ;
+			} else {
+				print 'Emma out of the room!'
+				eval( $f:エマが室内に居る = 0 ) ;
+			}
+		}
+		trap ev002 d:PLAYER -mask ＊ -exec {
+			if ( $3 == いる ) {
+				mesg エマ・エメリッヒ 手繋ぎエマ 手繋ぎ不可能
+				if (( $f:エマが室内に居る ) && ( $w:アラートモード != d:ALERT_MODE_KIKEN )) {
+					if ( $f:ハッチ開けデモ起動 == 0 ) {
+						eval( $f:ハッチ開けデモ起動 = 1 ) ;
+						if ( $w:アイテム == d:アイテム:ゴル兵制服 ) {
+							preseek 'r_plt5'
+						}
+						chara フェードインアウト  フェードアウト \
+							-c 0,0,0 128 \
+							-t 20 \		// FadeOut 時間
+							-p ハッチ開けポリデモ開始
+						mesg プレイヤー d:PLAYER run \
+							51000 0 -204000 \
+							0 \	// モーション：立ち歩き
+							2048 \	// 終了方向
+							( d:FA_NO_CHECK_SEG | d:FA_DIRECT_MOVE ) \	// フラグ
+							w28aダミープロック
+					}
+				}
+			} else {
+				print 'Enable : Emma Hand in Hand!'
+				mesg エマ・エメリッヒ 手繋ぎエマ 手繋ぎ可能
+			}
+		}
+	}
+	
+	proc エマゲームオーバー時カメラ {
+		eval( $f:エマゲームオーバーフラグ = 1 );
+		if ( $s:エマ存在ステージ == w25d ) {
+			chara カメラ設定 エマ死にカメラ \
+				-c 1 \
+				-p 48272,4233,-221079 -t 48601,765,-223924 \
+				-r 574,1973,0 -f 4498 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+		} else {
+			command ゲットエマ座標 $i:epx , $i:epy , $i:epz ;
+			chara カメラ設定 エマ死にカメラ \
+				-c 1 \
+				-p ($i:epx + 30) , ($i:epy + 2000) , ($i:epz + 30)  \
+				-t $i:epx , $i:epy , $i:epz \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+		}
+	}
+	proc ハッチ開けポリデモ開始 {
+		command セットサウンドコード -c d:SNG_FOUTS_S	// BGM停止
+		eval( $w:p_story = d:ST:P065_01_P01エマＬ脚１ポリゴンデモ１開始 ) ;
+		if ( $w:アイテム == d:アイテム:ゴル兵制服 ) {
+			/* キャップなし */
+			load "w28a" -r 'r_plt5'
+		} else {
+			restart -s ;
+		}
+	}
+	proc w28aダミープロック {
+	}
+	proc エマによるゲームオーバー {
+		eval( $f:pgo_エマ死亡 = 1 ) ;
+	}
+
+	// 敵兵 
+	// ------------------------------------
+	proc 警備兵０ {
+		#if d:DEBUG_PRINT
+			print 'watcher_set'
+		#endif
+
+		if( $s:エマ存在ステージ == w28a ) {
+			eval( $i:警備兵ステータス = ( d:ENE_STATUS_NPC | d:ENE_STATUS_URBAN )) ;
+		} else {
+			eval( $i:警備兵ステータス = ( d:ENE_STATUS_URBAN )) ;
+		}
+		// Ｌ脚からの配置
+		chara 警備兵 敵兵:01 \
+			-r 0 -n 0 -d 52000,0,-212250 Ｌ脚 \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+			-j ドッグタグ_敵兵 [dogtag:plt_w28a_guard_ve_01] \
+				[dogtag:plt_w28a_guard_ea_01] [dogtag:plt_w28a_guard_no_01] \
+				[dogtag:plt_w28a_guard_ha_01] [dogtag:plt_w28a_guard_vh_01] \
+			-s $i:警備兵ステータス
+		chara 警備兵 敵兵:02 \
+			-r 2 -n 0 -d 52500,0,-207000 Ｌ脚 \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+			-j ドッグタグ_敵兵 [dogtag:plt_w28a_guard_ve_02] \
+				[dogtag:plt_w28a_guard_ea_02] [dogtag:plt_w28a_guard_no_02] \
+				[dogtag:plt_w28a_guard_ha_02] [dogtag:plt_w28a_guard_vh_02] \
+			-s $i:警備兵ステータス
+	}
+
+	proc 警備兵コマンダー {
+		#if d:DEBUG_PRINT
+			print 'wccomm_set'
+		#endif
+		chara 警備コマンダー wccomm -e { 警備兵０ }
+	}
+
+	proc 攻撃兵０ {
+		#if d:DEBUG_PRINT
+			print 'attacker_set'
+		#endif
+		chara アタッカー 敵兵:63 -r 3 \
+				-h $w:敵標準聴力 \
+				-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+				-l $w:敵標準体力 \
+				-f $w:敵標準気絶 \
+				-q 弾薬_スティンガー_敵兵 30 \
+				-e d:ENE_EQUIP_TYPE_SHOTGUN
+		chara アタッカー 敵兵:64 -r 3 \
+				-h $w:敵標準聴力 \
+				-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+				-l $w:敵標準体力 \
+				-f $w:敵標準気絶 \
+				-q 弾薬_ＰＳＧ１_敵兵 30 \
+				-e d:ENE_EQUIP_TYPE_HITECH_1
+		if ( $w:ゲーム設定 == d:LEVEL_EXTREME ) {
+			chara アタッカー 敵兵:31 \
+				-r 3 \				//	$b:初期ルート \
+				-h $w:敵標準聴力 \
+				-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+				-l $w:敵標準体力 \
+				-f $w:敵標準気絶 \
+				-q レーション_敵兵 30 \
+				-s 0x40000000 \			//	サポート兵化
+				-b 敵兵:01 \
+				-e d:ENE_EQUIP_TYPE_HITECH_1
+		} else {
+			chara アタッカー 敵兵:61 -r 3 \
+					-h $w:敵標準聴力 \
+					-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+					-l $w:敵標準体力 \
+					-f $w:敵標準気絶 \
+					-q レーション_敵兵 30 \
+					-e d:ENE_EQUIP_TYPE_HITECH_1
+		}
+	}
+
+	proc 攻撃兵コマンダー {
+		#if d:DEBUG_PRINT
+			print 'atcomm_set'
+		#endif
+
+		chara 攻撃コマンダー atcomm -e 攻撃兵０ \
+			-wait	(60*2) \
+			-avoidwait (60*5)  /*回避モードで始まる場合のみ有効*/
+	}
+
+	resource ghq_area_alert_voice {
+	w28a:
+		$t{
+			// PLAREA0
+			t:vc049009	// 指揮官「了解！敵を殲滅せよ！」
+			-1
+		}
+	}
+
+	resource ghq_caution_voice {
+	w28a:
+		$t{
+			// PLAREA0
+			t:vc040601,	// 指揮官　　「了解！僧院警戒を強化せよ！」
+			-2,
+			t:vc040065,	// 指揮官　　「どうした、応答しろ！」
+			-1
+		}
+	}
+
+	proc コマンダー設定 {
+		#if d:DEBUG_PRINT
+			print 'commander_set'
+		#endif
+		if( $s:エマ存在ステージ == w28a ) {
+			eval( $i:コマンダステータス = (d:ENE_STAGE_GPS | d:ENE_STAGE_NPC_EMMA)) ;
+		} else {
+			eval( $i:コマンダステータス = (d:ENE_STAGE_GPS)) ;
+		}
+		chara コマンダー 敵兵セット \
+			-w 警備兵コマンダー \
+			-a 攻撃兵コマンダー \
+			-r 52000 0 -229000 Ｌ脚 \
+			-c 52000 0 -229000 Ｌ脚 \
+			-m $w:スタートアラートモード \
+			-v [ene_plant_voice:04] \
+			-x [ghq_area_alert_voice:w28a] \
+			-y [ghq_caution_voice:w28a] \
+			-z $i:敵標準麻酔持続 \
+			-s $i:コマンダステータス \
+			-b 0  \// 再発生無し
+			-h $i:標準警戒時間 // 警戒時間←ここの行を追加する。
+	}
+
+	proc ルート変更処理 {
+		#if d:DEBUG_PRINT
+			print 'root_change_set'
+		#endif
+		chara delay ディレイ -time (150*3) -exec {
+			mesg 警備兵 敵兵:02 ルート変更 1 52500,0,-207000 Ｌ脚
+		}
+	}
+
+	// ＢＧＭ
+	// ------------------------------------
+	proc ＢＧＭ設定 {
+		#if d:DEBUG_PRINT 
+			print 'bgm_set'
+		#endif
+
+		chara ＢＧＭマネージャー ＢＧＭマネ
+	}
+
+	// ドア＆マップ切り替え関係
+	// ------------------------------------
+	proc ドア設置 {
+		#if d:DEBUG_PRINT
+			print 'slide_door_set'
+		#endif
+
+		chara ドア 北側ドア \
+			-m d:DOOR_NAME_LOAD \
+			-d 0,0,0 \
+			-p 48000,0,-223625 \
+			-slide 1450 \
+			-A 北側ドアランプ \
+			-card_level 5 \
+			-time d:SD_OPEN_TIME \
+			-exec {
+			}
+		@ドアランプ設定 北側ドアランプ 0 48000,0,-223625 0
+		trap dr001 ？ \
+			-mask ？ \	
+			-exec {
+					if($3==入る){
+						mesg ドア 北側ドア open
+					}else{
+						if ( $f:エマゲームオーバーフラグ == 0 ) {
+							mesg ドア 北側ドア close
+						}
+					}
+			}
+		trap dr001 d:PLAYER -mask ？ \
+			-exec {
+				if( $f:ロードチェックＯＮフラグ == 0 ) {
+					chara カメラ設定 ロードカメラ \
+							-c 1 \
+							-p 49080,3864,-222625 -t 48832,1757,-223636 \
+							-r 725,2205,0 -f 2350 \
+							-a 200 \
+							-i 1 2 0 0 \
+							-s $3
+				}
+			}
+		// 南側は水密ドア
+		chara 水密ドア管理 ドア管理モジュール -n 1 -seno 3 \
+			-motions rai_wt_hatch hatch_door_sna hatch_handle_sna // 2002.06.04 ライデン用にモーションが更新されたため修正
+
+		if( $f:w28a水密ドア開けた == 0 ) {
+			// 閉まっている
+			eval( $i:水密ドア状態 = 0 )
+		} else {
+			// 既に開いている
+			eval( $i:水密ドア状態 = d:WT_DOOR_FLAG_OPEN_START )
+		}
+
+		chara 水密ドア 南側ドア \
+			-kms w28a_sdr_r w28_sdr_handle \
+			-position 53250,0,-205850 \
+			-type 1 \	  //０：左軸 １：右軸 省略時は０
+			-rotate 0,2048,0 \
+			-hazard 52000,0,-206000 53125,0,-206000 \
+			-flag $i:水密ドア状態 \
+			-proc 水密ドア開け
+
+		trap dr002 d:PLAYER \
+			-mask いる \
+			-button d:ACTION_BUTTON \
+			-state 0 \
+			-exec {
+				command 水密ドア状態 -n 南側ドア
+				mesg プレイヤー d:PLAYER wt_door \	
+					南側ドア $status \		//$s:水密ドアの名前 $i:そのドアの状態
+					0,1024 \			//$w:ドアに正対した方向 $w:方向幅
+					53125,-206000			//$i:ドア位置Ｘ $i:ドア位置Ｚ
+			}
+		trap dr002 d:PLAYER -mask ？ -state 6 \
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 1 \
+					-p 50604,3790,-210924 -t 52303,1590,-207402 \
+					-r 334,293,0 -f 4486 \
+					-a 287 \
+					-i 0 0 0 0 \
+					-s $3
+				}
+
+
+		// 通過できないドアの壊れエフェクト
+		@壊れドアエフェクト設定 壊れドアエフェクト 1024 46375 0 -221500 0	// Ｇ脚側
+		@壊れドアエフェクト設定 壊れドアエフェクト 1024 57625 0 -221500 1	// 海側
+	}
+	
+	proc 水密ドア開け {
+		eval( $f:w28a水密ドア開けた = 1 ) ;
+	}
+
+	proc 主観禁止壁設定 {
+		@主観禁止壁 北側ドア壁 48000 0 -223625 0 d:SD_SLIDE_OUTSIDE
+		trap dr001 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if( $3 == 入る ) {
+					mesg 透明壁 北側ドア壁 on
+				} else {
+					mesg 透明壁 北側ドア壁 off
+				}
+			}
+	}
+
+
+	// 入出トラップ
+	// ------------------------------------
+	proc ロードプロック {
+		#if d:DEBUG_PRINT 
+			print 'load_proc'
+		#endif
+
+		if ($s:呼び出しプロック == mv_w28a_w25c_0) {
+			// ＫＬ連絡橋へ
+			@mv_w28a_w25c_0
+		} else if ($s:呼び出しプロック == mv_w28a_w32a_0) {
+			// Ｂ１へ
+			//@mv_w28a_w32a_0 // Masked by S.Hirano 010526
+			load 'd065p02' // Added by S.Hirano 010526
+		}
+	}
+
+	proc ロード設定 {
+		#if d:DEBUG_PRINT 
+			print 'load_set'
+		#endif
+		// 
+		trap ld001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if( $f:ロードチェックＯＮフラグ == 1 ) {
+					preseek 'w25d'
+					@ステージ終了時処理（ステージ名表示） 48750 0 -225500 2048 \
+						mv_w28a_w25c_0 d:DEFAULT_M_TYPE d:wn_ＫＬ連絡橋
+				}
+			}
+		// 
+		trap ld002 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if( $f:ロードチェックＯＮフラグ == 1 ) {
+					@ステージ終了時処理 51000 0 -3000 0 \
+						mv_w28a_w32a_0 d:NO_MOVE_M_TYPE
+				}
+			}
+	}
+
+
+	// アイテム
+	// ------------------------------------
+	proc アイテム取得時番号設定 $:ボックス名 {
+		#if d:DEBUG_PRINT
+			print 'item_no_set'
+		#endif
+		if ( $:ボックス名 == ソコム弾 ) {
+			eval($b:w28a_取得ロード回数[0] = $w:グローバルロード回数);	
+		}
+	}
+
+	proc アイテム設置 {
+		#if d:DEBUG_PRINT
+			print 'item_set'
+		#endif
+		@アイテム再セットチェック $b:w28a_取得ロード回数[0]
+		if ($f:再セットフラグ) { @弾薬_ソコム_初期設置 ソコム弾 56750 0 -222250 0 }
+	}
+
+
+	// フォグ
+	// ------------------------------------
+	proc フォグ設定 {
+		#if d:DEBUG_PRINT
+			print 'fog_set'
+		#endif
+
+		chara フォグ 霧\
+			-c 65, 40, 0 \
+			-n 1000 \
+			-f 29000
+	}
+	// キャラ用光源(マップの設置が終わってから設定することで、キャラだけに光を当てる)
+	// ------------------------------------
+	proc キャラ用ライト設置 {
+		#if d:DEBUG_PRINT
+			print 'chara_light_set'
+		#endif
+
+		chara 環境光 環境光源 \
+			 -c 63 63 32
+
+		chara 平行光 平行光源 \
+			 -c 70 79 47 \
+			 -p 3075 -394 -66
+	}
+
+	// エフェクト関係
+	// -----------------------------------
+	proc エフェクト設定 {
+		#if d:DEBUG_PRINT
+			print 'effect_set'
+		#endif
+
+		#if d:BLUR
+			chara ブラー ブラー
+		#endif
+
+		#if d:Z_MANAGER
+			chara Ｚフォーカス管理 Z_manager
+			mesg Ｚフォーカス管理 Z_manager パラメータ 5000 30
+		#endif
+
+		#if d:BODY_SHADOW
+			chara ＯＦＦ制御 off_man
+			mesg ＯＦＦ制御 off_man ボディシャドウＯＦＦ
+		#endif
+	}
+
+
+	// 子画面設定 
+	// ------------------------------------
+	proc 子画面設定 {
+		#if d:DEBUG_PRINT
+			print 'sub_camera_set'
+		#endif
+
+		chara サブ画面 子画面 \
+			-w (512-d:SUB_MARGIN-d:SUB_WIDTH),d:SUB_MARGIN (512-d:SUB_MARGIN),(d:SUB_HEIGHT+d:SUB_MARGIN)
+	}
+
+	// ステージカメラ設定 
+	// ------------------------------------
+	proc カメラセット {
+		#if d:DEBUG_PRINT
+			print 'stage_camera_set'
+		#endif
+
+		chara カメラ ステージカメラ		-c 0 -l 3 -p 0 
+		chara カメラ 通路カメラ			-c 0 -l 2 -p 50
+		chara カメラ 小部屋カメラ		-c 0 -l 2 -p 40
+		chara カメラ ロードカメラ		-c 0 -l 2 -p 30
+		chara カメラ ビヨンドカメラ		-c 0 -l 2 -p 20
+		chara カメラ モーションカメラ		-c 0 -l 2 -p 10
+		chara カメラ エマ死にカメラ		-c 0 -l 1 -p 25 
+		chara カメラ ノードカメラ		-c 0 -l 1 -p 20 
+
+		// デフォルトカメラ
+		chara カメラ設定 ステージカメラ \
+			-c 0 \	
+			-b 47861,-320000,-223338 56379 320000 -221178 \
+			-l 47861,-320000,-223366 56379 320000 -222762 \
+			-r 750,2048,0 \
+			-f 6500 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s 1
+	}
+
+
+// 各マップ別設定
+// ------------------------------------
+// Ｌ脚
+	// 天井設置
+	// ------------------------------------
+	proc Ｌ脚天井設置 {
+		#if d:DEBUG_PRINT
+			print 'w28a0_ceil_set'
+		#endif
+		chara 天井君 Ｌ脚天井 \
+			-m d:CIEL_NAME -p 0 0 0  -l d:LT2_NAME -h 3950
+	}
+
+
+	// ハッチ設定
+	// ------------------------------------
+	proc ハッチ設定 {
+		chara 透明床 ハッチ \
+			-position 50500 0 -205500 \
+				  50500 0 -204500 \
+				  51500 0 -204500 \
+				  51500 0 -205500 \
+			-n_points 4 \
+			-map Ｌ脚
+
+		chara プットモーションモデル w28aハッチ \
+			-pos 51000,0,-205500 \			//$v:配置座標
+			-dir 3072 \				//$i:方向
+			-kms d:HATCH_NAME \			//$s:KMSモデル名
+			-mar rai_hatch \			//$s:モーションファイル名
+			-number 0 \				//$i:基本モーション番号 ... 
+			-status	0x0e 				//$w:ステータス 
+#if 0
+		//東側から
+		trap la001 d:PLAYER -mask いる -button d:ACTION_BUTTON -dir 3072,256 \
+			-state d:TRP_STATE_STAND \
+			-exec { 
+				if (( $f:エマが室内に居る ) && ( $w:アラートモード != d:ALERT_MODE_KIKEN )) {
+					@ハッチ開けカメラ
+					@東からハッチを開ける
+				}
+			}
+		//南側から
+		trap la002 d:PLAYER -mask いる -button d:ACTION_BUTTON -dir 2048,256 \
+			-state d:TRP_STATE_STAND \
+			-exec {
+				if (( $f:エマが室内に居る ) && ( $w:アラートモード != d:ALERT_MODE_KIKEN )) {
+					@ハッチ開けカメラ
+					@南からハッチを開ける
+				}
+			}
+#endif
+		// 注意）
+		// 最終的にはエマが同じ部屋にいることがハッチを開ける条件とする
+	}
+	proc ハッチ開けカメラ {
+		mesg シネマスクリーン シネマ フェードアウト 0		//ゼロでデフォルト値
+		chara カメラ設定 ノードカメラ \
+			-c 1 \	
+			-p 50088,92,-205721 -t 53200,740,-203413 \
+			-r -108,608,0 -f 3928 \
+			-a 134 \
+			-i 0 0 0 0 \
+			-s 1
+	}
+	proc 東からハッチを開ける {
+		mesg プレイヤー d:PLAYER motion \
+			d:モーションリスト:non_ladder_hatch_open_r \
+			3072 \
+			-1 \
+			0 \
+			(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_NO_WEAPON) \
+			52000 -205000	//x,zの順（y省略）
+		mesg プットモーションモデル w28aハッチ 終了判定 d:モーションリスト:non_ladder_hatch_open_l_hatch	// 終了判定つき再生
+		@ハッチ開けフェード処理 ;
+	}
+	proc 南からハッチを開ける {
+		mesg プレイヤー d:PLAYER motion \
+			d:モーションリスト:non_ladder_hatch_open_c2r \
+			2048 \
+			-1 \
+			0 \
+			(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_NO_WEAPON) \
+			51000 -204000	//x,zの順（y省略）
+		mesg プットモーションモデル w28aハッチ 終了判定 d:モーションリスト:non_ladder_hatch_open_c_hatch	// 終了判定つき再生
+		@ハッチ開けフェード処理 ;
+	}
+	proc ハッチ開けフェード処理 {
+		chara delay 遅延 -time 97 \	// 97フレームというのは牧村指示による
+			-exec {
+				command ＳＥセットモード -s d:se_code:SD_A_HO_WIND1 -p 51000,0,-205500 -m 3
+				mesg マルチウェイト髪の毛モデル ライデン髪の毛 髪の毛逆立ちモード 500 -1 0
+			}
+		chara delay 遅延 -time 60 -exec {
+			chara フェードインアウト  フェードアウト \
+				-c 0,0,0 128 \
+				-t d:FADE_TIME \		// FadeOut 時間
+				-p w28a_リスタート処理
+		}
+	}
+	proc 共通シネマスクリーンセット {
+		chara シネマスクリーン シネマ \
+			-top d:CINEMA_BELT_UPPER \
+			-bottom d:CINEMA_BELT_LOWER \
+			-ftime 30	//デフォルト値（ゼロは駄目）
+	}
+	proc w28a_リスタート処理 {
+		if( $f:ロードチェックＯＮフラグ == 1 ) {
+			command セットサウンドコード -c d:SNG_FOUTS_S	// BGM停止
+			eval( $w:p_story = d:ST:P065_01_P01エマＬ脚１ポリゴンデモ１開始 ) ;
+			restart -s ;
+		}
+	}
+
+	// 各種カメラの設定
+	// ------------------------------------
+	proc Ｌ脚カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w28a_camera_set'
+		#endif
+
+		// 廊下部分
+		trap ca001 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 通路カメラ \
+					-c 0 \	
+					-b 52000,2200,-320000 52000 2200 -210000 \
+					-l 52000,-320000,-320000 52000 320000 -210000 \
+					-r 75,2048,0 -f 8842 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+		// シャフト上
+		trap ca002 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 小部屋カメラ \
+					-c 0 \	
+					-b 51382,   7264,-206655 51382,  7264,-206655 \
+					-l 51382,-320000,-210358 51382,320000,-207525 \
+					-r 850,2048,0 -f 6000 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+		// 手前の部屋（はしご部屋）
+		trap ca003 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 通路カメラ \
+					-c 0 \	
+					-b -320000,-320000,-320000 53106 320000 -204002 \
+					-l -320000,-320000,-320000 53106 320000 -204443 \
+					-r 640,2048,0 -f 4500 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+		// 北側の部屋（w25dより入ってきたところ）
+		trap ca004 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 通路カメラ \
+					-c 0 \	
+					-b 47832,5988,-221432 56290 5988 -221432 \
+					-l 47832,1558,-222222 56290 1558 -222222 \
+					-r 909,2048,0 -f 4500 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+	}
+
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+// 以下仮キャラ用proc
+// -----------------------------------------------------------------------------------
+// 仮キャラ
+// ------------------------------------
+
+// 以下デバッグ専用proc

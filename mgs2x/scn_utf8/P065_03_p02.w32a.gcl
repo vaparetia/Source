@@ -1,0 +1,625 @@
+/*
+	P065_03_p02.w32a.gcl
+	    海上デモ用ステージ／ゲームステージのw32a相当分
+
+	2000/09/29 H.Yoshiike         
+	$Id: P065_03_p02.w32a.gcl,v 1.35 2001/09/07 07:52:59 usr03635 Exp $                      
+
+	
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+#define		DEMO_STAGE		1		// デモステージかどうかで起動するキャラを切り分ける
+
+// include
+// ------------------------------------
+#include "5sec_bfr_demo.h"
+#include "demo_stdch.h"
+#include "demo_stdch2.h"
+#include "demo_vardef.h"
+#include "story.h"
+#include "sload.h"
+#include "enevoice.h"
+#include "p_force_cdc.ch"
+
+#include "sea_surface.h"
+
+#include "../source/user/morita/emma/include/emma_flag.h"
+
+#include "w32a_kamome.h"
+
+#include "w32_d_common.h"	//	デモ／ゲーム共通プロック
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME			w32a
+#define		KMS_NAME00			w32a0
+#define		KMS_NAME01			w32a1
+#define		KMS_NAME02			w32a2
+#define		KMS_NAME03			w32a3
+
+#define		KMS_NAME10			w32a_15a
+#define		KMS_NAME11			w32a_17a
+#define		KMS_NAME12			w32a_18a
+#define		KMS_NAME13			w32a_19a
+#define		KMS_NAME14			w32a_20a
+#define		KMS_NAME15			w32a_21a
+#define		KMS_NAME16			w32a_24a
+#define		KMS_NAME17			w32a_31a
+#define		KMS_NAME18			w32a_dg
+#define		KMS_NAME19			w32a_gh
+#define		KMS_NAME1A			w32a_gl
+#define		KMS_NAME1B			w32a_hi
+#define		KMS_NAME1C			w32a_jk
+#define		KMS_NAME1D			w32a_lk
+// 010706 追加
+#define		KMS_NAME20			w32a_23a
+#define		KMS_NAME21			w32a_crane
+#define		KMS_NAME22			w32a_other00
+#define		KMS_NAME23			w32a_other01
+#define		KMS_NAME24			w32a_other02
+
+#define		LT2_NAME			w32a
+
+#if d:PLANT_DEMO_ALL_SKIP
+	#define		DEMO_SKIP_ENABLE 1
+#else
+	#define		DEMO_SKIP_ENABLE 0
+#endif
+
+
+// モーション関係
+// ------------------------------------
+enum エマモーションリスト {
+		NPC_IDLE = 0,
+        NPC_SQUAT_IDLE,
+        RAI_IDLE,
+        RAI_SQUAT_IDLE,
+        RAI_REACH,
+        RAI_GETUP,
+        RAI_RUN,
+        RAI_WALK,
+        RAI_WALK_CORPS,
+        RAI_FREE,
+        PAL_IDLE,
+        PAL_SITDOWN,
+        PAL_SQUAT_IDLE,
+        PAL_PUSHED_LF,
+        PAL_PUSHED_LB,
+        PAL_OHMY_GOD,
+        AFRAID_WALK,
+        AFRAID_IDLE,
+        DAMG_DOWN,
+        DAMG_WAKE,
+        DAMG_WAKESLOW,
+        DAMG_FALL,
+        DAMG_SLEEP,
+        DAMG_DOWN_OVER,
+        DAMG_OVER,
+        DAMG_IDLE,
+        DAMG_TUMBLE,
+        DAMG_DROPOFF,
+        SNIPE_IDLE,
+        SNIPE_SQUAT_IDLE,
+        SNIPE_AFRAID,
+        SNIPE_WALK,
+        SNIPE_RUN,
+};
+
+// マップ設定
+// ------------------------------------
+chara マップ 海上１	-k d:KMS_NAME00 \
+					-k d:KMS_NAME01 \
+					-k d:KMS_NAME02 \
+					-k d:KMS_NAME03 \
+					-k d:KMS_NAME10 -k d:KMS_NAME11 -k d:KMS_NAME12 -k d:KMS_NAME13 \
+					-k d:KMS_NAME14 -k d:KMS_NAME15 -k d:KMS_NAME16 -k d:KMS_NAME17 \
+					-k d:KMS_NAME18 -k d:KMS_NAME19 -k d:KMS_NAME1A -k d:KMS_NAME1B \
+					-k d:KMS_NAME1C -k d:KMS_NAME1D \
+					-k d:KMS_NAME20 \
+					-k d:KMS_NAME21 \
+					-k d:KMS_NAME22 \
+					-k d:KMS_NAME23 \
+					-k d:KMS_NAME24 \
+					-h d:HZX_NAME,0 \
+					-l d:LT2_NAME
+
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 \
+	-add_id 1
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 \
+	-add_id 2
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 \
+	-add_id 3
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 \
+	-add_id 4
+
+
+
+//###################################################################################
+//								ストーリーフラグ & デモ再生
+//###################################################################################
+command マップ設定 海上１ -set {
+
+// デモ環境かどうか。
+#if d:MGS2_DEMO
+
+	// 不要プログラムの起動阻害
+		eval($s:d_num = P065_05_p04)
+//		eval($s:d_num = P065_04_p03)
+//		eval($s:d_num = P065_03_p02) // 中君はこちらを使うこと
+
+chara デモアクトデバッグ demodebug  -i t:p065_05_p04 -d 'p065_05_p04' -l  -s 'p065_05_p04'  \
+			-p  dummy_proc
+
+#else
+
+	// w28aから来る（無線から直接ロードしてくる）
+	if($w:p_story == d:ST:P065_03_P02エマＬ脚３ポリゴンデモ２開始) {
+		print'd:ST:P065_03_P02エマＬ脚３ポリゴンデモ２開始'
+//		eval($w:p_story = d:ST:P065_03_P02エマＬ脚３ポリゴンデモ２開始)
+
+		/* はしごを下りてゆくライデンとエマ */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P065_03_p02)
+
+		@サウンドマネージャーセット
+		@サウンドマネージャー_mesg_1
+
+		//	かつら等対応
+		@デモモデル差し替え処理
+		proc デモ再生_P065_03_p02 {
+			chara demo デモ再生 \
+				-i t:p065_03_p02 \
+				-p dummy_proc \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next P065_03_p02終了
+		}
+
+		@デモ再生_P065_03_p02
+
+	} else if(d:ST:P065_03_P02エマＬ脚３ポリゴンデモ２終了 <= $w:p_story && \
+					$w:p_story < d:ST:P065_04_P03Ｌ脚エマ４ポリゴンデモ３開始) {
+		print'd:ST:P065_04_P03Ｌ脚エマ４ポリゴンデモ３開始'
+		eval($w:p_story = d:ST:P065_04_P03Ｌ脚エマ４ポリゴンデモ３開始)
+
+		/* 夕日のうつくしさに感嘆するエマ */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P065_04_p03)
+
+		//	かつら等対応
+		@デモモデル差し替え処理
+		proc デモ再生_P065_04_p03 {
+			chara demo デモ再生 \
+				-i t:p065_04_p03 \
+				-p dummy_proc \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next P065_04_p03終了
+		}
+
+		@デモ再生_P065_04_p03
+
+	} else if(d:ST:P065_04_P03Ｌ脚エマ４ポリゴンデモ３終了 <= $w:p_story && \
+					$w:p_story < d:ST:P065_05_P04Ｌ脚エマ５ポリゴンデモ４開始) {
+		print'd:ST:P065_05_P04Ｌ脚エマ５ポリゴンデモ４開始'
+		eval($w:p_story = d:ST:P065_05_P04Ｌ脚エマ５ポリゴンデモ４開始)
+
+		/* 双眼鏡主観画面デモ　敵兵の配置をチェック */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P065_05_p04)
+
+		//	かつら等対応
+		@デモモデル差し替え処理
+		proc デモ再生_P065_05_p04 {
+			chara demo デモ再生 \
+				-i t:p065_05_p04 \
+				-p dummy_proc \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next P065_05_p04終了
+		}
+
+		@デモ再生_P065_05_p04
+
+	} else if( d:ST:P065_05_P04Ｌ脚エマ５ポリゴンデモ４終了 <= $w:p_story && \
+					$w:p_story < d:ST:P065_06_R02Ｌ脚エマ６無線機デモ２開始) {
+		print'd:ST:P065_06_R02Ｌ脚エマ６無線機デモ２開始'
+		eval($w:p_story = d:ST:P065_06_R02Ｌ脚エマ６無線機デモ２開始)
+
+		/* スネーク強制センド　スネークが援護を申し出てくる　ゲームへ */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P065_06_r02)
+
+		//	無線機デモへ
+		@rt_P065_06_R02Ｌ脚エマ６無線機デモ２
+
+	}
+
+#endif
+
+	// デモ仕様のセット
+	@常駐キャラ設定						// stdch.hで定義
+	if($s:d_num != not_demo){
+
+		// デモキャンセルは全てのデモで共通につかう
+		chara デモキャンセルチェック デモキャンセル \
+			-p demo_cancel
+
+		//	w32_d_common.h内で記述
+		@浮き橋１
+		@浮き橋２
+		@浮き橋３
+
+		@フォグ設定
+
+		// 無線ではシネマスクリーン起動しない
+		if($s:d_num != P065_06_r02){
+			@シネマスクリーン設定
+		}
+	}
+
+	command 水位設定 -lv -40000
+
+	//	このデモでは海面と空が違う
+	if ($s:d_num == P065_03_p02) {
+		@デモ海面設定
+		@デモ空設定
+
+		//	平野さんの指示で変更しない
+//		@プラントステージでのフォグセット 夕 0
+
+	// 双眼鏡デモの時だけ敵兵を巡回させるために必要。
+	} else if ($s:d_num == P065_05_p04) {
+		// エマの体力ゲージを消すため
+		command メニュー設定 -gage off
+
+		//	プレイヤーがいないと敵が起動できないため
+		@プレイヤー設定	
+		//	エマがいないと…
+		@エマ設定
+		//	敵
+		@コマンダー設定
+		//	ガンサイファー
+		@ガンサイファー設定
+
+		//	w32_d_common.h内で記述
+		@海面設定
+		@拡張海設定
+		@デモ空設定2
+//		@空設定
+
+		// 双眼鏡デモの時は、狙撃イベント用の海面
+//		@プラント海面セット 夕方狙撃イベント w32a 1
+//		@プラントステージでのフォグセット 夕方狙撃イベント 0
+	} else {
+
+		// 2001/08/07 Uehara Masatoshi
+		@デモ海面設定２
+		@拡張海設定
+		//	w32_d_common.h内で記述
+		@デモ空設定2
+//		@空設定
+
+
+		//	平野さんの指示で変更しない
+//		@プラント海面セット 夕 w32a 1
+//		@プラントステージでのフォグセット 夕 0
+	}
+
+}
+
+
+//初期マップの表示
+command マップ表示 -show 海上１
+
+
+
+
+//###################################################################################
+//									デモのみ仕様各種
+//###################################################################################
+// ダミープロック
+proc dummy_proc {}
+
+// デモキャンセル
+proc demo_cancel {
+	command StreamStopAll
+}
+
+// リスタート
+proc restart_proc {
+	restart
+}
+
+// シネマスクリーン
+proc シネマスクリーンセット {
+	chara シネマスクリーン シネマ \
+		-top d:CINEMA_BELT_UPPER \
+		-bottom d:CINEMA_BELT_LOWER \
+		-ftime 60	//デフォルト値（ゼロは駄目）
+	mesg シネマスクリーン シネマ フェードアウト 1
+}
+
+
+proc P065_03_p02終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+	#if d:DEMO_SKIP_ENABLE
+		eval($w:p_story = d:ST:P065_05_P04Ｌ脚エマ５ポリゴンデモ４終了)
+		print '$w:p_story = d:ST:P065_05_P04Ｌ脚エマ５ポリゴンデモ４終了'
+	#else
+		print '$w:p_story = d:ST:P065_03_P02エマＬ脚３ポリゴンデモ２終了'
+		eval($w:p_story = d:ST:P065_03_P02エマＬ脚３ポリゴンデモ２終了)
+	#endif
+
+	chara delay ディレイ \
+		-time 1 \ 
+		-exec{
+			restart
+		}
+}
+
+proc P065_04_p03終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+	#if d:DEMO_SKIP_ENABLE
+		eval($w:p_story = d:ST:P065_05_P04Ｌ脚エマ５ポリゴンデモ４終了)
+		print '$w:p_story = d:ST:P065_05_P04Ｌ脚エマ５ポリゴンデモ４終了'
+	#else
+		print '$w:p_story = d:ST:P065_04_P03Ｌ脚エマ４ポリゴンデモ３終了'
+		eval($w:p_story = d:ST:P065_04_P03Ｌ脚エマ４ポリゴンデモ３終了)
+	#endif
+
+	chara delay ディレイ \
+		-time 1 \ 
+		-exec{
+			restart
+		}
+}
+
+proc P065_05_p04終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+
+	print '$w:p_story = d:ST:P065_05_P04Ｌ脚エマ５ポリゴンデモ４終了'
+	eval($w:p_story = d:ST:P065_05_P04Ｌ脚エマ５ポリゴンデモ４終了)
+
+	chara delay ディレイ \
+		-time 1 \ 
+		-exec{
+			restart
+		}
+}
+
+
+
+//###################################################################################
+//									オブジェクト
+//###################################################################################
+
+	//	d:ST:P065_03_P02エマＬ脚３ポリゴンデモ２のときは空、海を変更する
+	proc デモ海面設定 {
+		chara プラント海面 seaseasea \
+			-tex oil s_oil_sea_alp_ovl_mod0022 s_oil_ref_add_alp_ovl_mod1120 \
+			-w 2,2,6 \
+			-l \
+			-rotate 950 \		//	海の回転
+			-pos 52000,-40000,-210000
+	}
+
+	// 2001/08/07 Uehara Masatoshi
+	// 太陽の海面反射位置を微調整する為、新規追加
+	proc デモ海面設定２ {
+		chara プラント海面 seaseasea \
+			-tex oil s_oil_sea_alp_ovl_mod0022 s_oil_ref_add_alp_ovl_mod1120 \
+			-w 2,2,6 \
+			-l \
+			-rotate 4036 \		//	海の回転
+			-pos 52000,-40000,-210000
+
+	}
+
+	proc 拡張海設定 {
+		chara 拡張海表示 sea_serface_ex		\
+			-t	entyou_oil_sea	\
+			-l 2 \
+			-pos 52000,-40000,-210000
+	}
+
+	proc デモ空設定 {
+		chara 汎用空 空 \
+			-c 50 47 38 \
+			-pos 52000 -40000 -210000 \ //　各ステージの空の位置
+			-f 0 \
+			-l 32 \
+			-t 4 \
+				sky_e1_alp 116 106 96 50 \
+				sky_e2_alp 94 89 79 50 \
+				0 0 0 0 0 \
+				sky_e4_alp 78 73 66 50 \
+			-m 3 \
+				w32a_sky_wall1 47 35 21 -100 (0+950+12900) \
+				w32a_sky_wall2 177 106 55 0  (-400+950+12900) \
+				w32a_sky_wall3 157 114 58 0 (-900+950+12900)
+
+		chara 太陽 ソル \
+			-p 52000 -20000 -210000 \    //中心の位置
+			-f -500000 -210 50000 \	//平行光源の-pと同じ値
+			-a 11 \   //alpha
+			-l 32 \
+			-w (415*32) \
+	//		-h (687*16) \
+			-h (344*32) \
+			-c 128,128,128 8 \		//キラキラの色指定しなければキラキラ起動しません。
+			-t sky_sun_e_alp
+
+	}
+
+	proc デモ空設定2 {
+		chara 汎用空 空 \
+			-c 50 47 38 \
+			-pos 52000 -31000 -210000 \ //　各ステージの空の位置
+			-f 0 \
+			-l 32 \
+			-t 4 \
+				sky_e1_alp 116 106 96 50 \
+				sky_e2_alp 94 89 79 50 \
+				0 0 0 0 0 \
+				sky_e4_alp 78 73 66 50 \
+			-m 3 \
+				w32a_sky_wall1 47 35 21 -100 0 \
+				w32a_sky_wall2 177 106 55 0 -400 \
+				w32a_sky_wall3 157 114 58 0 -900
+
+		chara 太陽 ソル \
+			-p 52000 -31000 -210000 \ 		//中心の位置
+			-f -1000 -210 -4500 \	//平行光源の-pと同じ値
+			-a 11 \   //alpha
+			-l 32 \
+			-w (415*32) \
+//			-h (687*16) \
+			-h (344*32) \
+			-c 143,100,50 8 \		//キラキラの色指定しなければキラキラ起動しません。
+			-t sky_sun_e_alp \
+			-g 4
+	}
+
+	proc 海上兵セット {
+		//	最初からいる敵兵
+		//	詰め所Ａ	２Ｆ
+		chara 海上巡回兵  敵兵:07\
+			-r 32 -s 0x02 \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:敵標準体力 -f $w:敵標準気絶 \
+			-b 1 \								//	詰め所Ａの敵はチーム１
+			-d 100000,-35000,-184000 \			//	回避位置	北西（鉄板の裏）
+			-p  98500,-35000,-182000 \			//	攻撃位置	西
+			-e demo_null \
+			-t エマ
+
+		//	詰め所Ｂ	１Ｆ
+		chara 海上巡回兵  敵兵:08\
+			-r 33 -s 0x02 \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:敵標準体力 -f $w:敵標準気絶 \
+			-b 2 \								//	詰め所Ｂの敵はチーム２
+			-d 100750,-38500,-124250 \			//	回避位置	北西（パイプの裏）
+			-p 101500,-38500,-124750 \			//	攻撃位置	北西
+				98500,-38500,-122000 \			//	攻撃位置	西
+			-e demo_null \
+			-t エマ
+	}
+	proc 警備兵コマンダー {
+		chara 警備コマンダー wccomm -e {海上兵セット}
+	}
+
+	proc コマンダー設定 {
+		chara コマンダー 敵兵セット \
+			-w 警備兵コマンダー \
+			-m $w:スタートアラートモード \
+			-r 99000,-38000,-180000 海上１ \
+			-c 99000,-38000,-180000 海上１ \
+			-v [ene_tank_voice:01] \
+			-z $i:敵標準麻酔持続 \
+			-b $w:敵標準再発生数 
+
+		//	視界カットしておく
+		mesg コマンダー 敵兵セット 視界オフ
+	}
+
+	proc ガンサイファー設定 {
+		//	浮き橋２
+		chara 狙撃サイファ ガンサイファー:11 \
+			-route 26 0 \ 
+			-i 16000 \
+			-s 25
+		//	浮き橋３
+		chara 狙撃サイファ ガンサイファー:12 \
+			-route 27 0 \ 
+			-i 16000 \
+			-s 20
+	}
+
+	proc シネマスクリーン設定 {
+		chara シネマスクリーン シネマ \
+			-top d:CINEMA_BELT_UPPER \
+			-bottom d:CINEMA_BELT_LOWER \
+			-ftime 60	//デフォルト値（ゼロは駄目）
+			mesg シネマスクリーン シネマ フェードアウト 1
+	}
+
+
+	proc プレイヤー設定 {
+		#if 1
+			chara	ダミープレイヤー ダミーライデン \
+				-m rai_def \
+				-p 0 0 0
+		#else
+			chara プレイヤー d:PLAYER \
+				-p 47500,-35500,-213500 \		//	Ｌ脚２階の裏側
+				-d 0,0,0 \
+				-s 0 \
+				-m rai_def -a raiden \
+				-f d:PLY_NO_FOOT_SHADOW
+		#endif
+	}
+
+	proc エマ設定 {
+		chara エマ・エメリッヒ エマ \
+			-pos	56500, -37000, -207000 \
+	        -route  0 2 \
+			-dir	0 \
+			-speed  10 \
+			-damage  5 10 \		//	前が銃、後は爆発物
+			-vitality 100 1 \
+			-proc   demo_null					\	//	0
+
+					demo_null					\	//	1
+		    	    demo_null					\	//	2
+
+		    	    demo_null					\	//	3
+					demo_null					\	//	4
+		    	    demo_null					\	//	5
+					demo_null					\	//	6
+
+		    	    demo_null					\	//	7
+		    	    demo_null					\	//	8
+
+					demo_null					\	//	9
+					demo_null					\	//	10
+					demo_null					\	//	11
+					demo_null					\	//	12
+
+		    	    demo_null					\	//	13
+		    	    demo_null					\	//	14
+					
+					demo_null					\	//	15
+					demo_null					\	//	16
+			-flag   d:emma_t:EMA_F_EVENT_SNIPE
+	
+	//	エマ非表示
+		mesg エマ・エメリッヒ エマ 待機
+	}
+
+	proc demo_null {
+	
+	}
+
+// サウンド
+proc サウンドマネージャーセット {
+	chara サウンドマネージャー ＳＤマネ -pak -1		// パックをロードしない
+}
+
+proc サウンドマネージャー_mesg_1 {
+	command セットサウンドコード -c d:SNG_PLAY_06
+}

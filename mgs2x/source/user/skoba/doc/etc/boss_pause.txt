@@ -1,0 +1,70 @@
+/*
+	boss_pause.txt
+	boss_pauseの仕組み
+
+	2001/11/01	S.Kobayashi
+	$Id: boss_pause.txt,v 1.1.1.3 2002/11/19 11:50:04 Yoshizawa1 Exp $
+
+*/
+
+0 説明
+	ボスラッシュ中のポーズ状態を管理
+
+1 処理手順
+	初期化 各種変数の初期化
+		↓
+	L2Dアニメーションを再生
+		↓
+	表示、ボタンが押されるまで表示す続ける。
+		↓
+		↓ ボタンが押された
+		↓
+	各種処理をしたのち終了
+
+
+2 関数説明
+	void SK_BossPauseVisibleInvisible( void )
+		シナリオから表示/非表示を切り換える関数
+
+	void *NewSK_BossPause( int name )
+		本体
+
+	static int GetResources( Work *work )
+		初期化関数
+
+	static void Die( Work *work )
+		終了処理関数
+
+	static void Act( Work *pWork )
+		通常実行関数
+
+	static inline void Initialize( Work *pWork )
+		キーの初期化をする関数
+
+	static void MorfL2d( int handle , int strcode , int code1 , int code2 , Hokan *hokan )
+		モーフィングを設定してくれる関数
+
+	static inline int MorfAct( Work *pWork , Hokan *pHokan ) // これのみ実行
+		モーフィングを実行する関数
+
+	static void WaitAct( Work *pWork )
+		スタートボタンを押す前のメイン関数
+
+	static void SubWaitAct( Work *pWork )
+		空関数
+
+	static void NormalAct( Work *pWork )
+		通常時メイン関数
+
+	static void SpriteControl( Work *pWork )
+		L2Dスプライト管理関数
+
+	static int AnimationAct( Work *pWork )
+		アニメーション実行関数
+
+	static void PadControlNormal( Work *pWork )
+		通常時パッドコントロール関数
+
+	static void FontDisp( void )
+	static int SprInit( Work *pWork )
+		未使用

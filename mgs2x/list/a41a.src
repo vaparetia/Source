@@ -1,0 +1,89 @@
+//
+//	a41a.src（アナザーミッション用）
+//
+//	written by S.Mukaide 2002.Feb
+//
+//	$Id: a41a.src,v 1.9 2002/08/05 04:35:10 usr04249 Exp $
+
+block .use r_vr_s
+block .nocache
+block .cache
+
+//	ステージ名表記用
+#define		WN_W41A
+// アナザーミッション明示
+#define		WN_ANOTHER
+
+// 各ステージ共通要素
+#include		"p_common.h"
+#include		"common.h"
+#include		"c_effect.h"
+//include		wp_plant.h
+
+//	オルタナティブ追加エフェクト
+#include	"alt_effect.h"
+
+// 敵兵
+//	天狗兵
+include		ene_tng42.h
+
+
+
+//	モーション
+	//	強制モーション
+mtn		rai_a41a.mls
+mtn		sna_a41a.mls
+	//	ロッカー開閉モーション
+mtn 	rai_n_locker.mls
+
+	//	ロッカー扉開閉モーション
+mtn		locker.mls
+
+
+// ワールド
+pack_all	zzz.tri \
+			world/w41a/other
+
+world		w41a/w41a
+world		w41a/other
+
+
+lt2			w41a.lt2
+hazard		a41a.hzx
+
+//	ドア
+pack_all	w41a_dr.tri \
+				world/door/w41a_dr_left.dar \
+				world/door/w41a_dr_right.dar \
+				world/door/w41a_cell_sdr.dar \
+				world/door/w41a_cell_sdr_02.dar
+
+world		door/w41a_dr_left.kms
+world		door/w41a_dr_right.kms
+world		door/w41a_cell_sdr.kms
+world		door/w41a_cell_sdr_02.kms
+
+// オブジェ関係
+goods		locker/neo_locker_door.kms
+
+//	監視カメラ
+meca		svc_plant
+
+// アイテム
+itembox
+
+//	全体マップ
+l2d         2D/mapbug/mapbug.l2d // map bug
+
+//	振動
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+// 解体Ｃ４セット 最後に描画させるためにＴＲＩ名にＺをつける
+pack_all	z_object.tri \
+			goods/c4_kaitai_a \
+			goods/c4_kaitai_b
+
+goods		c4_kaitai_a
+goods		c4_kaitai_b

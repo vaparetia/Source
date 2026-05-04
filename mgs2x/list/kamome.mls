@@ -1,0 +1,97 @@
+//
+//    kamome.mls 
+//    かもめさんもーしょん
+//    2001/05/01 Masafumi Okuta
+//    $Id: kamome.mls,v 1.16 2001/09/25 05:48:21 usr10479 Exp $
+
+#ifdef WN_W32A
+
+kmo/kmo_test_pause02.mt3		kmm_idle01
+//kmo/kmo_nom_idle_b.mt3		kmm_idle02
+kmo/kmo_nom_flying_a_start.mt3 		kmm_flying_a_start
+kmo/kmo_nom_flying_a.mt3 		kmm_flying_a
+kmo/kmo_nom_flying_a_end.mt3 		kmm_flying_a_end
+//kmo/kmo_nom_flying_b.mt3 		kmm_flying_b
+kmo/kmo_nom_flying_c_start.mtn		kmm_flying_c_start
+kmo/kmo_nom_flying_c.mtn		kmm_flying_c
+kmo/kmo_nom_flying_c_end.mtn		kmm_flying_c_end
+kmo/kmo_nom_hovering_a.mt3 		kmm_hover_a
+kmo/kmo_nom_hovering_b.mt3 		kmm_hover_b
+kmo/kmo_nom_flyaway.mt3 		kmm_flyaway
+kmo/kmo_nom_flyaway_quick.mt3		kmm_flyaway_quick
+kmo/kmo_test_pause02.mt3		kmm_landing
+kmo/kmo_test_pause02.mt3		kmm_walk_start
+kmo/kmo_test_pause02.mt3		kmm_walk_end	
+//kmo/kmo_nom_walk_a.mt3		kmm_walk_a
+kmo/kmo_test_pause02.mt3		kmm_walk_b
+//kmo/kmo_nom_pick_a.mt3		kmm_pick_a
+kmo/kmo_test_pause02.mt3		kmm_pick_b
+kmo/kmo_test_pause02.mt3		kmm_surprise
+kmo/kmo_nom_surprise_back.mt3		kmm_surprise_back
+//kmo/kmo_nom_attack_a.mtn		kmm_attack_a
+//kmo/kmo_nom_attack_b.mtn		kmm_attack_b
+kmo/kmo_nom_attack_c.mtn		kmm_attack_c
+kmo/kmo_dam_gun_high_start.mt3		kmm_dam_start_high
+kmo/kmo_dam_gun_high_dead.mt3		kmm_dam_high
+kmo/kmo_dam_gun_high_end.mt3		kmm_dam_end_high
+kmo/kmo_dam_gun_high_falling.mt3	kmm_fall_high
+//kmo/kmo_dam_gun_low_start.mt3		kmm_dam_start_low
+//kmo/kmo_dam_gun_low_dead.mt3		kmm_dam_low
+//kmo/kmo_dam_gun_low_end.mt3		kmm_dam_end_low
+//kmo/kmo_dam_gun_low_falling.mt3	kmm_fall_low
+kmo/kmo_dam_idle_high_sleep.mt3		kmm_sleep_high
+//kmo/kmo_dam_idle_low_sleep.mt3	kmm_sleep_low
+kmo/kmo_dam_wakeup_high.mtn		kmm_wake_high	
+//kmo/kmo_dam_wakeup_low.mt3		kmm_wake_low	
+
+#else
+
+kmo/kmo_nom_idle_a.mt3			kmm_idle01
+//kmo/kmo_nom_idle_b.mt3		kmm_idle02
+kmo/kmo_nom_flying_a_start.mt3 		kmm_flying_a_start
+#ifdef WN_W61A
+pgn/pgn_jhon_woo_1.mt3			pgn_flying_a
+#else
+kmo/kmo_nom_flying_a.mt3 		kmm_flying_a
+#endif
+kmo/kmo_nom_flying_a_end.mt3 		kmm_flying_a_end
+//kmo/kmo_nom_flying_b.mt3 		kmm_flying_b
+kmo/kmo_nom_flying_c_start.mtn		kmm_flying_c_start
+#ifdef WN_W61A
+pgn/pgn_jhon_woo_1.mt3			pgn_flying_a
+#else
+kmo/kmo_nom_flying_c.mtn		kmm_flying_c
+#endif
+kmo/kmo_nom_flying_c_end.mtn		kmm_flying_c_end
+kmo/kmo_nom_hovering_a.mt3 		kmm_hover_a
+kmo/kmo_nom_hovering_b.mt3 		kmm_hover_b
+kmo/kmo_nom_flyaway.mt3 		kmm_flyaway
+kmo/kmo_nom_flyaway_quick.mt3		kmm_flyaway_quick
+kmo/kmo_nom_landing.mt3			kmm_landing
+kmo/kmo_nom_walk_start.mt3		kmm_walk_start
+kmo/kmo_nom_walk_end.mt3		kmm_walk_end	
+kmo/kmo_nom_walk_a.mt3			kmm_walk_a
+//kmo/kmo_nom_walk_b.mt3		kmm_walk_b
+//kmo/kmo_nom_pick_a.mt3		kmm_pick_a
+kmo/kmo_nom_pick_b.mt3			kmm_pick_b
+kmo/kmo_nom_surprise.mt3		kmm_surprise
+kmo/kmo_nom_surprise_back.mt3		kmm_surprise_back
+//kmo/kmo_nom_attack_a.mtn		kmm_attack_a
+//kmo/kmo_nom_attack_b.mtn		kmm_attack_b
+kmo/kmo_nom_attack_c.mtn		kmm_attack_c
+kmo/kmo_dam_gun_high_start.mt3		kmm_dam_start_high
+kmo/kmo_dam_gun_high_dead.mt3		kmm_dam_high
+kmo/kmo_dam_gun_high_end.mt3		kmm_dam_end_high
+kmo/kmo_dam_gun_high_falling.mt3	kmm_fall_high
+//kmo/kmo_dam_gun_low_start.mt3		kmm_dam_start_low
+//kmo/kmo_dam_gun_low_dead.mt3		kmm_dam_low
+//kmo/kmo_dam_gun_low_end.mt3		kmm_dam_end_low
+//kmo/kmo_dam_gun_low_falling.mt3		kmm_fall_low
+kmo/kmo_dam_idle_high_sleep.mt3		kmm_sleep_high
+//kmo/kmo_dam_idle_low_sleep.mt3		kmm_sleep_low
+kmo/kmo_dam_wakeup_high.mtn		kmm_wake_high	
+//kmo/kmo_dam_wakeup_low.mt3		kmm_wake_low	
+
+#endif
+
+

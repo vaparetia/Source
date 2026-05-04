@@ -1,0 +1,1018 @@
+/*
+    w31a_prez.gcl
+    大統領ニキータイベント
+    2001/04/24 Masafumi Okuta
+    $Id: w31a_prez.gcl,v 1.32 2001/10/22 08:36:52 usr03682 Exp $
+*/
+#enum{ // エリア
+PREZ_AREA_1,	// 西壁上
+PREZ_AREA_2,	// 西壁下
+PREZ_AREA_3,	// 北壁上
+PREZ_AREA_4,	// 北壁中
+PREZ_AREA_5,	// 北壁下
+PREZ_AREA_6,	// 電気板への通路
+PREZ_AREA_7,	// 電気板前
+PREZ_AREA_8,	// 電気板前下
+PREZ_AREA_MAX,
+}
+#define PREZ_AREA_N -1 // 該当無し
+
+#enum{ // 逃げエリア
+// 通常
+PR01_NORMAL01,
+PR02_NORMAL01,
+PR03_NORMAL01,
+PR04_NORMAL01,
+PR05_NORMAL01,
+PR06_NORMAL01,
+PR07_NORMAL01,
+PR08_NORMAL01,
+// はりつき
+PR01_BEHIND01,
+PR01_BEHIND02,
+PR01_BEHIND03,
+PR02_BEHIND01,
+PR02_BEHIND02,
+PR02_BEHIND03,
+PR03_BEHIND01,
+PR04_BEHIND01,
+PR05_BEHIND01,
+PR05_BEHIND02,
+PR06_BEHIND01,
+PR06_BEHIND02,
+PR07_BEHIND01,
+PR08_BEHIND01,
+// 横飛び
+PR01_SIDE01,
+PR02_SIDE01,
+PR04_SIDE01,
+PR05_SIDE01,
+PR07_SIDE01,
+// 転倒
+PR01_TUMBLE01,
+PR02_TUMBLE01,
+PR06_TUMBLE01,
+}
+
+// ニキータにやられてゲームオーバー
+proc 大統領ニキータ死亡{
+#if d:DEBUG_PRINT
+    print '*** PRESDENT DEAD'
+#endif
+
+	//　大統領が死んだときにニキータ主観だったときの対処
+	command サイト表示制御 -switch off
+
+	command コントロール座標取得 健康な大統領 $i:ローカル変数Ｉ１ $i:ローカル変数Ｉ２ $i:ローカル変数Ｉ３
+	if ( $i:ローカル変数Ｉ１ > 500 && $i:ローカル変数Ｉ３ > -243000 ) {
+		chara カメラ設定 シナリオデモカメラ \
+			-c 1 \
+			-p -2324,4013,-239557 -t 2034,33,-242206 \
+			-r 432,1380,0 -f 6469 \
+			-a 200 \
+			-i 0 -1 0 0 \
+			-s 1
+	} else if ( $i:ローカル変数Ｉ１ <= 500 && $i:ローカル変数Ｉ３ > -243000 ) {
+		chara カメラ設定 シナリオデモカメラ \
+			-c 1 \
+			-p 3263,4343,-239701 -t -503,-411,-241928 \
+			-r 539,2724,0 -f 6461 \
+			-a 200 \
+			-i 0 -1 0 0 \
+			-s 1
+	} else if ( $i:ローカル変数Ｉ１ < 500 && $i:ローカル変数Ｉ３ <= -243000 ) {
+		chara カメラ設定 シナリオデモカメラ \
+			-c 1 \
+			-p -1012,6069,-240733 -t 295,1247,-244750 \
+			-r 555,1843,0 -f 6410 \
+			-a 200 \
+			-i 0 -1 0 0 \
+			-s 1
+	} else if ( $i:ローカル変数Ｉ１ > 5000 && $i:ローカル変数Ｉ３ <= -243000 ) {
+		chara カメラ設定 シナリオデモカメラ \
+			-c 1 \
+			-p 8420,4105,-243101 -t 5310,-920,-245630 \
+			-r 585,2627,0 -f 6428 \
+			-a 180 \
+			-i 0 -1 0 0 \
+			-s 1
+	} else {
+		chara カメラ設定 シナリオデモカメラ \
+			-c 1 \
+			-p -1140,4178,-239745 -t 1485,352,-244187 \
+			-r 416,1700,0 -f 6423 \
+			-a 200 \
+			-i 0 -1 0 0 \
+			-s 1
+	}
+
+	eval( $f:pgo_大統領死亡 = 1 );
+}
+
+// 大統領が音に反応するところをアップにする
+proc 大統領初回音反応デモ {
+
+	if ( `command ゲームオーバーチェック` == 0 && $f:w31a_大統領ノックデモフラグ == 0 && \
+		 $f:w31a_大統領シナリオデモ中フラグ == 0 ) {
+		eval( $f:w31a_大統領シナリオデモ中フラグ = 1 );
+		eval( $f:w31a_大統領シナリオデモフラグ = 1 );
+		eval( $f:w31a_大統領ノックデモフラグ = 1 );
+		@シナリオデモ開始処理
+		chara ブラー カメラブラー -i 40
+		mesg ブラー カメラブラー パラメータ 100 40
+
+		if ( $1 > 1500 && $3 < -244000 ) {
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p -1859,126,-244173 -t $1,($2+375),$3 \
+				-r 3928,1128,0 -f 3892 \
+				-a 200 \
+				-i 0 0 0 0 \
+				-s 1
+
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p -1859,126,-244173 -t $1,($2+375),$3 \
+				-r 3928,1128,0 -f 3892 \
+				-a 400 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time 50 \ // 補完時間を指定
+				-s 1
+		} else if ( $1 <= 1500 && $3 < -244000 ) {
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p 4396,464,-243245 -t $1,($2+375),$3 \
+				-r -106,2789,0 -f 4780 \
+				-a 200 \
+				-i 0 0 0 0 \
+				-s 1
+
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p 4396,464,-243245 -t $1,($2+375),$3 \
+				-r -106,2789,0 -f 4780 \
+				-a 350 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time 90 \ // 補完時間を指定
+				-s 1
+		} else if ( $1 >= 0 && $3 >= -244000 ) {
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p -1876,310,-239788 -t $1,($2+375),$3 \
+				-r 3943,1295,0 -f 5488 \
+				-a 200 \
+				-i 0 0 0 0 \
+				-s 1
+
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p -1876,310,-239788 -t $1,($2+375),$3 \
+				-r 3943,1295,0 -f 5488 \
+				-a 350 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time 90 \ // 補完時間を指定
+				-s 1
+		} else  {
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p 2978,659,-239939 -t $1,($2+375),$3 \
+				-r 4006,2679,0 -f 5490 \
+				-a 200 \
+				-i 0 0 0 0 \
+				-s 1
+
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p 2978,659,-239939 -t $1,($2+375),$3 \
+				-r 4006,2679,0 -f 5490 \
+				-a 350 \
+				-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+				-interp_time 90 \ // 補完時間を指定
+				-s 1
+		}
+
+		chara delay カメラディレイ \
+			-time 40 \
+			-exec {
+				mesg ブラー カメラブラー パラメータ 10 20
+			}
+
+		chara delay カメラディレイ \
+			-time 150 \
+			-exec {
+				mesg ブラー カメラブラー キャラ削除
+				eval( $f:w31a_大統領シナリオデモ中フラグ = 0 );
+				chara カメラ設定 モーションカメラ -s -1
+				@シナリオデモ終了処理
+			}
+	}
+}
+
+proc 大統領ルート設定 {
+	trap ev051 d:PLAYER \
+		-mask ？ \
+		-exec {
+			if ( $3 == 入る ) {
+				#if d:DEBUG_PRINT
+					print 'ルート変更00000000000000000000000000000000000000000000000000000000000'
+				#endif
+				mesg ニキータイベント大統領 健康な大統領 ルート変更 0
+			} else {
+				#if d:DEBUG_PRINT
+					print 'ルート変更11111111111111111111111111111111111111111111111111111111111'
+				#endif
+				mesg ニキータイベント大統領 健康な大統領 ルート変更 1
+			}
+		}
+}
+
+//--------------------------------------
+// デモ用の大統領
+//--------------------------------------
+proc 大統領設定 {
+	// ルートを付けたHZXに変更すること。
+	chara ルートデモ人形 大統領 \
+		-route 0 0 \ 
+		-kms jam_def_sh_mt \
+		-mar jam \
+		-number d:大統領モーションリスト:jam_walk
+}
+
+//--------------------------------------
+// ゲーム用の大統領
+//--------------------------------------
+proc ニキータイベント大統領_VERYEASY{
+    chara ニキータイベント大統領 健康な大統領 \
+	-pos  1500, 0, -245500 \
+	-m    $i:大統領ライフ最大値 \
+	-hp   $i:大統領ライフ現在値 \
+	-over 大統領ニキータ死亡 \
+	-sknock 大統領初回音反応デモ\ 
+
+	-vox \
+	t:vc104905, t:vc104906, t:vc104907, t:vc104908, t:vc104909, \
+	t:vc104918, t:vc104919, t:vc104920, t:vc104921, t:vc104922, \
+	t:vc104923, t:vc104924, t:vc104925, t:vc104926, t:vc104927, \
+	t:vc104928, t:vc104929 \
+	
+	-flagvox \
+	0, 0, 0, 0, 0, \
+	0, 0, 0, 0, 0, \
+	0, 0, 0, 0, 0, \
+	0, 0 \
+
+	-len_vox \
+	t:vc104905_len, t:vc104906_len, t:vc104907_len, t:vc104908_len, t:vc104909_len, \
+	t:vc104918_len, t:vc104919_len, t:vc104920_len, t:vc104921_len, t:vc104922_len, \
+	t:vc104923_len, t:vc104924_len, t:vc104925_len, t:vc104926_len, t:vc104927_len, \
+	t:vc104928_len, t:vc104929_len \
+
+	-dist 10000 \
+	-bomb 20000 \
+	-noise \
+	     1456, 1100, -247251, \ 
+	    -2251, 1100, -245165, \  
+	     -751, 1100, -242100, \  
+	     -317, 1100, -242149, \  
+	     1640, 1100, -242149, \  
+	-wdir \
+	     2048, \
+	     3064, \
+	     3064, \
+	     0, \
+	     0, \
+	-eave 300 \
+	-keepeye 2600 \
+	-relay 2370, 1047, -244000 \
+	-conf \
+	   /* 通常 0-7 */
+	   -400,   1072, -245051 /* AREA1 */ \
+	   -576,   1077, -241896 /* AREA2 */ \
+	    974,   1061, -247026 /* AREA3 */ \
+	   2055,   1074, -245170 /* AREA4 */ \
+	   1756,   1074, -241896 /* AREA5 */ \
+	   4554,   1077, -245182 /* AREA6 */ \
+	   7075,   1080, -244998 /* AREA7 */ \
+  	   7012,   1059, -243816 /* AREA8 */ \
+
+	  /* 張りつき 8-21 */
+	  -2235,   1059, -245526 /* AREA1 */ \
+	  -2226,   1059, -245152 /*  */ \
+	  -2235,   1059, -244674 /*  */ \
+
+	  -1636,   1059, -242726 /* AREA2 */ \
+	  -2226,   1078, -241414 /*  */ \
+	   -105,   1086, -239574 /*  */ \
+
+	   1501,   1059, -247026 /* AREA3 */ \
+
+	   2748,   1073, -245726 /* AREA4 */ \
+
+	   3000,   1064, -242283 /* AREA5 */ \
+	   1313,   1090, -239774 /*  */ \
+
+	   5890,   1078, -245726 /* AREA6 */ \
+	   5890,   1078, -245726 /*  */ \
+
+	   7704,   1079, -245026 /* AREA7 */ \
+	
+	   6919,   1059, -243234 /* AREA8 */ \
+	
+	   /* 横飛び 22-26 */
+	   -484,   1077, -245222 /* AREA1 */ \
+	   -351,   1074, -241211 /* AREA2 */ \
+	   2033,   1073, -244765 /* AREA4 */ \
+	   1514,   1076, -241081 /* AREA5 */ \
+	   7056,   1075, -245239 /* AREA7 */ \
+
+	   /* 転倒 27-30 */	
+           1051,    993, -244950 /* AREA1 */ \
+	    362,    994, -241424 /* AREA2 */ \
+           4319,   1002, -245331 /* AREA6 */ \
+	-time 1200	\
+	-area \
+	// 西壁上 \
+	d:PR01_NORMAL01, d:PR03_NORMAL01, d:PR03_NORMAL01, d:PR06_BEHIND01, \
+	d:PR05_SIDE01,   d:PR07_NORMAL01, d:PR01_TUMBLE01, d:PR01_TUMBLE01, \
+	// 西壁下 \
+	d:PR05_NORMAL01, d:PR06_TUMBLE01, d:PR05_NORMAL01, d:PR05_NORMAL01, \
+	d:PR06_BEHIND01, d:PR02_BEHIND03, d:PR05_NORMAL01, d:PR05_NORMAL01, \
+	// 北壁上 \
+	d:PR03_BEHIND01, d:PR03_BEHIND01, d:PR03_NORMAL01, d:PR03_BEHIND01, \
+	d:PR03_BEHIND01, d:PR06_NORMAL01, d:PR07_NORMAL01, d:PR07_NORMAL01, \
+	// 北壁中 \
+	d:PR01_BEHIND01, d:PR03_NORMAL01, d:PR03_NORMAL01, d:PR06_TUMBLE01, \
+	d:PR01_BEHIND01, d:PR07_NORMAL01, d:PR07_BEHIND01, d:PR08_NORMAL01, \
+	// 北壁下 \
+	d:PR03_NORMAL01, d:PR05_BEHIND01, d:PR06_BEHIND01, d:PR06_NORMAL01, \
+	d:PR05_NORMAL01, d:PR06_BEHIND01, d:PR04_NORMAL01, d:PR04_NORMAL01, \
+	// 電気板通路 \
+	d:PR08_BEHIND01, d:PR08_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, \
+	d:PR08_NORMAL01, d:PR06_NORMAL01, d:PR01_TUMBLE01, d:PR01_TUMBLE01, \
+	// 電気板上 \
+	d:PR08_BEHIND01, d:PR08_BEHIND01, d:PR08_BEHIND01, d:PR08_BEHIND01, \
+	d:PR08_NORMAL01, d:PR08_NORMAL01, d:PR01_BEHIND01, d:PR01_BEHIND01, \
+	// 電気板下 \
+	d:PR08_BEHIND01, d:PR08_BEHIND01, d:PR08_BEHIND01, d:PR08_BEHIND01, \
+	d:PR08_NORMAL01, d:PR08_NORMAL01, d:PR08_BEHIND01, d:PR01_BEHIND01, \
+
+	-iplayback \
+	// 西壁上 \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_TUMBLE, \
+	// 西壁下 \
+	d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE, \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE, \
+	// 北壁上 \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,   \
+	// 北壁中 \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE, \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,   \
+	// 北壁下 \
+	d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE, \
+	d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BASE, \
+	// 電気板通路  \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_TUMBLE, \
+	// 電気板上 \
+	d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_BASE,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	// 電気板下 \
+	d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_BASE,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	
+	-gtrap knock_area
+	
+}
+
+proc ニキータイベント大統領_EASY{
+    chara ニキータイベント大統領 健康な大統領 \
+	-pos  1500, 0, -245500 \
+	-m    $i:大統領ライフ最大値 \
+	-hp   $i:大統領ライフ現在値 \ 
+	-over 大統領ニキータ死亡 \
+	-sknock 大統領初回音反応デモ\ 
+
+	-vox \
+	t:vc104905, t:vc104906, t:vc104907, t:vc104908, t:vc104909, \
+	t:vc104918, t:vc104919, t:vc104920, t:vc104921, t:vc104922, \
+	t:vc104923, t:vc104924, t:vc104925, t:vc104926, t:vc104927, \
+	t:vc104928, t:vc104929 \
+	
+	-flagvox \
+	0, 0, 0, 0, 0, \
+	0, 0, 0, 0, 0, \
+	0, 0, 0, 0, 0, \
+	0, 0 \
+
+	-len_vox \
+	t:vc104905_len, t:vc104906_len, t:vc104907_len, t:vc104908_len, t:vc104909_len, \
+	t:vc104918_len, t:vc104919_len, t:vc104920_len, t:vc104921_len, t:vc104922_len, \
+	t:vc104923_len, t:vc104924_len, t:vc104925_len, t:vc104926_len, t:vc104927_len, \
+	t:vc104928_len, t:vc104929_len \
+
+	-dist 10000 \
+	-bomb 20000 \
+	-noise \
+	     1456, 1100, -247251, \ 
+	    -2251, 1100, -245165, \  
+	     -751, 1100, -242100, \  
+	     -317, 1100, -242149, \  
+	     1640, 1100, -242149, \  
+	-wdir \
+	     2048, \
+	     3064, \
+	     3064, \
+	     0, \
+	     0, \
+	-eave 300 \
+	-keepeye 2600 \
+	-relay 2370, 1047, -244000 \
+	-conf \
+	   /* 通常 0-7 */
+	   -400,   1072, -245051 /* AREA1 */ \
+	   -576,   1077, -241896 /* AREA2 */ \
+	    974,   1061, -247026 /* AREA3 */ \
+	   2055,   1074, -245170 /* AREA4 */ \
+	   1756,   1074, -241896 /* AREA5 */ \
+	   4554,   1077, -245182 /* AREA6 */ \
+	   7075,   1080, -244998 /* AREA7 */ \
+  	   7012,   1059, -243816 /* AREA8 */ \
+
+	  /* 張りつき 8-21 */
+	  -2235,   1059, -245526 /* AREA1 */ \
+	  -2226,   1059, -245152 /*  */ \
+	  -2235,   1059, -244674 /*  */ \
+
+	  -1636,   1059, -242726 /* AREA2 */ \
+	  -2226,   1078, -241414 /*  */ \
+	   -105,   1086, -239574 /*  */ \
+
+	   1501,   1059, -247026 /* AREA3 */ \
+
+	   2748,   1073, -245726 /* AREA4 */ \
+
+	   3000,   1064, -242283 /* AREA5 */ \
+	   1313,   1090, -239774 /*  */ \
+
+	   5890,   1078, -245726 /* AREA6 */ \
+	   5890,   1078, -245726 /*  */ \
+
+	   7704,   1079, -245026 /* AREA7 */ \
+	
+	   6919,   1059, -243234 /* AREA8 */ \
+	
+	   /* 横飛び 22-26 */
+	   -484,   1077, -245222 /* AREA1 */ \
+	   -351,   1074, -241211 /* AREA2 */ \
+	   2033,   1073, -244765 /* AREA4 */ \
+	   1514,   1076, -241081 /* AREA5 */ \
+	   7056,   1075, -245239 /* AREA7 */ \
+
+	   /* 転倒 27-30 */	
+           1051,    993, -244950 /* AREA1 */ \
+	    362,    994, -241424 /* AREA2 */ \
+           4319,   1002, -245331 /* AREA6 */ \
+	-time 1200	\
+	-area \
+	// 西壁上 \
+	d:PR07_BEHIND01, d:PR06_BEHIND01, d:PR05_NORMAL01, d:PR06_BEHIND01, \
+	d:PR07_SIDE01,   d:PR07_NORMAL01, d:PR01_TUMBLE01, d:PR01_TUMBLE01, \
+	// 西壁下 \
+	d:PR05_NORMAL01, d:PR06_TUMBLE01, d:PR05_NORMAL01, d:PR05_NORMAL01, \
+	d:PR06_BEHIND01, d:PR02_BEHIND03, d:PR05_NORMAL01, d:PR05_NORMAL01, \
+	// 北壁上 \
+	d:PR07_BEHIND01, d:PR06_BEHIND01, d:PR03_NORMAL01, d:PR03_BEHIND01, \
+	d:PR06_TUMBLE01, d:PR06_NORMAL01, d:PR07_NORMAL01, d:PR07_NORMAL01, \
+	// 北壁中 \
+	d:PR01_BEHIND01, d:PR05_NORMAL01, d:PR03_NORMAL01, d:PR06_TUMBLE01, \
+	d:PR05_BEHIND01, d:PR07_NORMAL01, d:PR07_BEHIND01, d:PR08_NORMAL01, \
+	// 北壁下 \
+	d:PR05_NORMAL01, d:PR06_TUMBLE01, d:PR06_BEHIND01, d:PR06_NORMAL01, \
+	d:PR06_NORMAL01, d:PR06_BEHIND01, d:PR04_NORMAL01, d:PR04_NORMAL01, \
+	// 電気板通路 \
+	d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, \
+	d:PR07_NORMAL01, d:PR06_NORMAL01, d:PR01_TUMBLE01, d:PR01_TUMBLE01, \
+	// 電気板上 \
+	d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, \
+	d:PR07_NORMAL01, d:PR07_NORMAL01, d:PR08_BEHIND01, d:PR08_BEHIND01, \
+	// 電気板下 \
+	d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, \
+	d:PR07_NORMAL01, d:PR07_NORMAL01, d:PR08_BEHIND01, d:PR08_BEHIND01, \
+
+	-iplayback \
+	// 西壁上 \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_TUMBLE, \
+	// 西壁下 \
+	d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE, \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE, \
+	// 北壁上 \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,   \
+	// 北壁中 \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE, \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,   \
+	// 北壁下 \
+	d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE, \
+	d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BASE, \
+	// 電気板通路  \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_TUMBLE, \
+	// 電気板上 \
+	d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_BASE,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	// 電気板下 \
+	d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_BASE,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	
+	-gtrap knock_area
+}
+
+proc ニキータイベント大統領_NORMAL{
+    chara ニキータイベント大統領 健康な大統領 \
+	-pos  1500, 0, -245500 \
+	-m    $i:大統領ライフ最大値 \
+	-hp   $i:大統領ライフ現在値 \ 
+	-over 大統領ニキータ死亡 \
+	-sknock 大統領初回音反応デモ\ 
+
+	-vox \
+	t:vc104905, t:vc104906, t:vc104907, t:vc104908, t:vc104909, \
+	t:vc104918, t:vc104919, t:vc104920, t:vc104921, t:vc104922, \
+	t:vc104923, t:vc104924, t:vc104925, t:vc104926, t:vc104927, \
+	t:vc104928, t:vc104929 \
+	
+	-flagvox \
+	0, 0, 0, 0, 0, \
+	0, 0, 0, 0, 0, \
+	0, 0, 0, 0, 0, \
+	0, 0 \
+
+	-len_vox \
+	t:vc104905_len, t:vc104906_len, t:vc104907_len, t:vc104908_len, t:vc104909_len, \
+	t:vc104918_len, t:vc104919_len, t:vc104920_len, t:vc104921_len, t:vc104922_len, \
+	t:vc104923_len, t:vc104924_len, t:vc104925_len, t:vc104926_len, t:vc104927_len, \
+	t:vc104928_len, t:vc104929_len \
+
+	-dist 10000 \
+	-bomb 20000 \
+	-noise \
+	     1456, 1100, -247251, \ 
+	    -2251, 1100, -245165, \  
+	     -751, 1100, -242100, \  
+	     -317, 1100, -242149, \  
+	     1640, 1100, -242149, \  
+	-wdir \
+	     2048, \
+	     3064, \
+	     3064, \
+	     0, \
+	     0, \
+	-eave 300 \
+	-keepeye 2100 \
+	-relay 2370, 1047, -244000 \
+	-conf \
+	   /* 通常 0-7 */
+	   -400,   1072, -245051 /* AREA1 */ \
+	   -576,   1077, -241896 /* AREA2 */ \
+	    974,   1061, -247026 /* AREA3 */ \
+	   2055,   1074, -245170 /* AREA4 */ \
+	   1756,   1074, -241896 /* AREA5 */ \
+	   4554,   1077, -245182 /* AREA6 */ \
+	   7075,   1080, -244998 /* AREA7 */ \
+  	   7012,   1059, -243816 /* AREA8 */ \
+
+	  /* 張りつき 8-21 */
+	  -2235,   1059, -245526 /* AREA1 */ \
+	  -2226,   1059, -245152 /*  */ \
+	  -2235,   1059, -244674 /*  */ \
+
+	  -1636,   1059, -242726 /* AREA2 */ \
+	  -2226,   1078, -241414 /*  */ \
+	   -105,   1086, -239574 /*  */ \
+
+	   1501,   1059, -247026 /* AREA3 */ \
+
+	   2748,   1073, -245726 /* AREA4 */ \
+
+	   3000,   1064, -242283 /* AREA5 */ \
+	   1313,   1090, -239774 /*  */ \
+
+	   5890,   1078, -245726 /* AREA6 */ \
+	   5890,   1078, -245726 /*  */ \
+
+	   7704,   1079, -245026 /* AREA7 */ \
+	
+	   6919,   1059, -243234 /* AREA8 */ \
+	
+	   /* 横飛び 22-26 */
+	   -484,   1077, -245222 /* AREA1 */ \
+	   -351,   1074, -241211 /* AREA2 */ \
+	   2033,   1073, -244765 /* AREA4 */ \
+	   1514,   1076, -241081 /* AREA5 */ \
+	   7056,   1075, -245239 /* AREA7 */ \
+
+	   /* 転倒 27-30 */	
+           1051,    993, -244950 /* AREA1 */ \
+	    362,    994, -241424 /* AREA2 */ \
+           4319,   1002, -245331 /* AREA6 */ \
+	-time 1200	\
+	-area \
+	// 西壁上 \
+	d:PR07_BEHIND01, d:PR05_BEHIND01, d:PR05_NORMAL01, d:PR06_BEHIND01, \
+	d:PR05_SIDE01,   d:PR07_NORMAL01, d:PR01_TUMBLE01, d:PR01_TUMBLE01, \
+	// 西壁下 \
+	d:PR05_NORMAL01, d:PR06_TUMBLE01, d:PR05_NORMAL01, d:PR05_NORMAL01, \
+	d:PR06_BEHIND01, d:PR02_BEHIND03, d:PR05_NORMAL01, d:PR05_NORMAL01, \
+	// 北壁上 \
+	d:PR07_BEHIND01, d:PR06_BEHIND01, d:PR03_NORMAL01, d:PR03_BEHIND01, \
+	d:PR06_TUMBLE01, d:PR06_NORMAL01, d:PR07_NORMAL01, d:PR07_NORMAL01, \
+	// 北壁中 \
+	d:PR01_BEHIND01, d:PR05_NORMAL01, d:PR03_NORMAL01, d:PR06_TUMBLE01, \
+	d:PR05_BEHIND01, d:PR07_NORMAL01, d:PR07_BEHIND01, d:PR08_NORMAL01, \
+	// 北壁下 \
+	d:PR05_NORMAL01, d:PR05_BEHIND01, d:PR06_BEHIND01, d:PR06_NORMAL01, \
+	d:PR06_NORMAL01, d:PR06_BEHIND01, d:PR04_NORMAL01, d:PR04_NORMAL01, \
+	// 電気板通路 \
+	d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, \
+	d:PR07_NORMAL01, d:PR06_NORMAL01, d:PR01_TUMBLE01, d:PR01_TUMBLE01, \
+	// 電気板上 \
+	d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, \
+	d:PR07_NORMAL01, d:PR07_NORMAL01, d:PR08_BEHIND01, d:PR08_BEHIND01, \
+	// 電気板下 \
+	d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, \
+	d:PR07_NORMAL01, d:PR07_NORMAL01, d:PR08_BEHIND01, d:PR08_BEHIND01, \
+
+	-iplayback \
+	// 西壁上 \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_TUMBLE, \
+	// 西壁下 \
+	d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE, \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE, \
+	// 北壁上 \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,   \
+	// 北壁中 \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE, \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,   \
+	// 北壁下 \
+	d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE, \
+	d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BASE, \
+	// 電気板通路  \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_TUMBLE, \
+	// 電気板上 \
+	d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_BASE,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	// 電気板下 \
+	d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_BASE,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+
+	-gtrap knock_area
+}
+
+proc ニキータイベント大統領_HARD{
+    chara ニキータイベント大統領 健康な大統領 \
+	-pos  1500, 0, -245500 \
+	-m    $i:大統領ライフ最大値 \
+	-hp   $i:大統領ライフ現在値 \ 
+	-yrot 4096 \		
+	-over 大統領ニキータ死亡 \
+	-sknock 大統領初回音反応デモ\ 
+
+	-vox \
+	t:vc104905, t:vc104906, t:vc104907, t:vc104908, t:vc104909, \
+	t:vc104918, t:vc104919, t:vc104920, t:vc104921, t:vc104922, \
+	t:vc104923, t:vc104924, t:vc104925, t:vc104926, t:vc104927, \
+	t:vc104928, t:vc104929 \
+	
+	-flagvox \
+	0, 0, 0, 0, 0, \
+	0, 0, 0, 0, 0, \
+	0, 0, 0, 0, 0, \
+	0, 0 \
+
+	-len_vox \
+	t:vc104905_len, t:vc104906_len, t:vc104907_len, t:vc104908_len, t:vc104909_len, \
+	t:vc104918_len, t:vc104919_len, t:vc104920_len, t:vc104921_len, t:vc104922_len, \
+	t:vc104923_len, t:vc104924_len, t:vc104925_len, t:vc104926_len, t:vc104927_len, \
+	t:vc104928_len, t:vc104929_len \
+
+	-dist 10000 \
+	-bomb 20000 \
+	-noise \
+	     1456, 1100, -247251, \ 
+	    -2251, 1100, -245165, \  
+	     -751, 1100, -242100, \  
+	     -317, 1100, -242149, \  
+	     1640, 1100, -242149, \  
+	-wdir \
+	     2048, \
+	     3064, \
+	     3064, \
+	     0, \
+	     0, \
+	-eave 300 \
+	-keepeye 600 \
+	-relay 2370, 1047, -244000 \
+	-conf \
+	   /* 通常 0-7 */
+	   -400,   1072, -245051 /* AREA1 */ \
+	   -576,   1077, -241896 /* AREA2 */ \
+	    974,   1061, -247026 /* AREA3 */ \
+	   2055,   1074, -245170 /* AREA4 */ \
+	   1756,   1074, -241896 /* AREA5 */ \
+	   4554,   1077, -245182 /* AREA6 */ \
+	   7075,   1080, -244998 /* AREA7 */ \
+  	   7012,   1059, -243816 /* AREA8 */ \
+
+	  /* 張りつき 8-21 */
+	  -2235,   1059, -245526 /* AREA1 */ \
+	  -2226,   1059, -245152 /*  */ \
+	  -2235,   1059, -244674 /*  */ \
+
+	  -1636,   1059, -242726 /* AREA2 */ \
+	  -2226,   1078, -241414 /*  */ \
+	   -105,   1086, -239574 /*  */ \
+
+	   1501,   1059, -247026 /* AREA3 */ \
+
+	   2748,   1073, -245726 /* AREA4 */ \
+
+	   3000,   1064, -242283 /* AREA5 */ \
+	   1313,   1090, -239774 /*  */ \
+
+	   5890,   1078, -245726 /* AREA6 */ \
+	   5890,   1078, -245726 /*  */ \
+
+	   7704,   1079, -245026 /* AREA7 */ \
+	
+	   6919,   1059, -243234 /* AREA8 */ \
+	
+	   /* 横飛び 22-26 */
+	   -484,   1077, -245222 /* AREA1 */ \
+	   -351,   1074, -241211 /* AREA2 */ \
+	   2033,   1073, -244765 /* AREA4 */ \
+	   1514,   1076, -241081 /* AREA5 */ \
+	   7056,   1075, -245239 /* AREA7 */ \
+
+	   /* 転倒 27-30 */	
+           1051,    993, -244950 /* AREA1 */ \
+	    362,    994, -241424 /* AREA2 */ \
+           4319,   1002, -245331 /* AREA6 */ \
+	-time 1200	\
+	-area \
+	// 西壁上 \
+	d:PR07_BEHIND01, d:PR06_BEHIND01, d:PR05_NORMAL01, d:PR06_BEHIND01, \
+	d:PR07_SIDE01,   d:PR07_NORMAL01, d:PR01_TUMBLE01, d:PR01_TUMBLE01, \
+	// 西壁下 \
+	d:PR05_NORMAL01, d:PR06_TUMBLE01, d:PR05_NORMAL01, d:PR05_NORMAL01, \
+	d:PR06_BEHIND01, d:PR02_BEHIND03, d:PR05_NORMAL01, d:PR05_NORMAL01, \
+	// 北壁上 \
+	d:PR07_BEHIND01, d:PR06_BEHIND01, d:PR03_NORMAL01, d:PR03_BEHIND01, \
+	d:PR06_TUMBLE01, d:PR06_NORMAL01, d:PR07_NORMAL01, d:PR07_NORMAL01, \
+	// 北壁中 \
+	d:PR01_BEHIND01, d:PR05_NORMAL01, d:PR03_NORMAL01, d:PR06_TUMBLE01, \
+	d:PR05_BEHIND01, d:PR07_NORMAL01, d:PR07_BEHIND01, d:PR08_NORMAL01, \
+	// 北壁下 \
+	d:PR05_NORMAL01, d:PR06_TUMBLE01, d:PR06_BEHIND01, d:PR06_NORMAL01, \
+	d:PR06_NORMAL01, d:PR06_BEHIND01, d:PR04_NORMAL01, d:PR04_NORMAL01, \
+	// 電気板通路 \
+	d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, \
+	d:PR07_NORMAL01, d:PR06_NORMAL01, d:PR01_TUMBLE01, d:PR01_TUMBLE01, \
+	// 電気板上 \
+	d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, \
+	d:PR07_NORMAL01, d:PR07_NORMAL01, d:PR08_BEHIND01, d:PR08_BEHIND01, \
+	// 電気板下 \
+	d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, \
+	d:PR07_NORMAL01, d:PR07_NORMAL01, d:PR08_BEHIND01, d:PR08_BEHIND01, \
+
+	-iplayback \
+	// 西壁上 \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_TUMBLE, \
+	// 西壁下 \
+	d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE, \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE, \
+	// 北壁上 \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,   \
+	// 北壁中 \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE, \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,   \
+	// 北壁下 \
+	d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE, \
+	d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BASE, \
+	// 電気板通路  \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_TUMBLE, \
+	// 電気板上 \
+	d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_BASE,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	// 電気板下 \
+	d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_BASE,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	
+	-gtrap knock_area
+
+	if ( $w:p_story < d:ST:P048_01_P01電源パネル破壊１ポリゴンデモ１開始 ) {
+	     mesg ニキータイベント大統領 健康な大統領 寝かせる  6450, 1098, -245800, 0
+	}
+}
+
+proc ニキータイベント大統領_EXTREME{
+    chara ニキータイベント大統領 健康な大統領 \
+	-pos  1500, 0, -245500 \
+	-m    $i:大統領ライフ最大値 \
+	-hp   $i:大統領ライフ現在値 \ 
+	-yrot 4096 \	
+	-over 大統領ニキータ死亡 \
+	-sknock 大統領初回音反応デモ\ 
+
+	-vox \
+	t:vc104905, t:vc104906, t:vc104907, t:vc104908, t:vc104909, \
+	t:vc104918, t:vc104919, t:vc104920, t:vc104921, t:vc104922, \
+	t:vc104923, t:vc104924, t:vc104925, t:vc104926, t:vc104927, \
+	t:vc104928, t:vc104929 \
+	
+	-flagvox \
+	0, 0, 0, 0, 0, \
+	0, 0, 0, 0, 0, \
+	0, 0, 0, 0, 0, \
+	0, 0 \
+
+	-len_vox \
+	t:vc104905_len, t:vc104906_len, t:vc104907_len, t:vc104908_len, t:vc104909_len, \
+	t:vc104918_len, t:vc104919_len, t:vc104920_len, t:vc104921_len, t:vc104922_len, \
+	t:vc104923_len, t:vc104924_len, t:vc104925_len, t:vc104926_len, t:vc104927_len, \
+	t:vc104928_len, t:vc104929_len \
+
+	-dist 10000 \
+	-bomb 20000 \
+	-noise \
+	     1456, 1100, -247251, \ 
+	    -2251, 1100, -245165, \  
+	     -751, 1100, -242100, \  
+	     -317, 1100, -242149, \  
+	     1640, 1100, -242149, \  
+	-wdir \
+	     2048, \
+	     3064, \
+	     3064, \
+	     0, \
+	     0, \
+	-eave 300 \
+	-keepeye 600 \
+	-relay 2370, 1047, -244000 \
+	-wdir \
+	     2048, \
+	     3064, \
+	     3064, \
+	     0, \
+	     0, \
+	-eave 300 \
+	-keepeye 600 \
+	-relay 2370, 1047, -244000 \
+	-conf \
+	   /* 通常 0-7 */
+	   -400,   1072, -245051 /* AREA1 */ \
+	   -576,   1077, -241896 /* AREA2 */ \
+	    974,   1061, -247026 /* AREA3 */ \
+	   2055,   1074, -245170 /* AREA4 */ \
+	   1756,   1074, -241896 /* AREA5 */ \
+	   4554,   1077, -245182 /* AREA6 */ \
+	   7075,   1080, -244998 /* AREA7 */ \
+  	   7012,   1059, -243816 /* AREA8 */ \
+
+	  /* 張りつき 8-21 */
+	  -2235,   1059, -245526 /* AREA1 */ \
+	  -2226,   1059, -245152 /*  */ \
+	  -2235,   1059, -244674 /*  */ \
+
+	  -1636,   1059, -242726 /* AREA2 */ \
+	  -2226,   1078, -241414 /*  */ \
+	   -105,   1086, -239574 /*  */ \
+
+	   1501,   1059, -247026 /* AREA3 */ \
+
+	   2748,   1073, -245726 /* AREA4 */ \
+
+	   3000,   1064, -242283 /* AREA5 */ \
+	   1313,   1090, -239774 /*  */ \
+
+	   5890,   1078, -245726 /* AREA6 */ \
+	   5890,   1078, -245726 /*  */ \
+
+	   7704,   1079, -245026 /* AREA7 */ \
+	
+	   6919,   1059, -243234 /* AREA8 */ \
+	
+	   /* 横飛び 22-26 */
+	   -484,   1077, -245222 /* AREA1 */ \
+	   -351,   1074, -241211 /* AREA2 */ \
+	   2033,   1073, -244765 /* AREA4 */ \
+	   1514,   1076, -241081 /* AREA5 */ \
+	   7056,   1075, -245239 /* AREA7 */ \
+
+	   /* 転倒 27-30 */	
+           1051,    993, -244950 /* AREA1 */ \
+	    362,    994, -241424 /* AREA2 */ \
+           4319,   1002, -245331 /* AREA6 */ \
+	-time 1200	\
+	-area \
+	// 西壁上 \
+	d:PR07_BEHIND01, d:PR06_BEHIND01, d:PR05_NORMAL01, d:PR06_BEHIND01, \
+	d:PR07_SIDE01,   d:PR07_NORMAL01, d:PR01_TUMBLE01, d:PR01_TUMBLE01, \
+	// 西壁下 \
+	d:PR05_NORMAL01, d:PR06_TUMBLE01, d:PR05_NORMAL01, d:PR05_NORMAL01, \
+	d:PR06_BEHIND01, d:PR02_BEHIND03, d:PR05_NORMAL01, d:PR05_NORMAL01, \
+	// 北壁上 \
+	d:PR07_BEHIND01, d:PR06_BEHIND01, d:PR03_NORMAL01, d:PR03_BEHIND01, \
+	d:PR06_TUMBLE01, d:PR06_NORMAL01, d:PR07_NORMAL01, d:PR07_NORMAL01, \
+	// 北壁中 \
+	d:PR01_BEHIND01, d:PR05_NORMAL01, d:PR03_NORMAL01, d:PR06_TUMBLE01, \
+	d:PR05_BEHIND01, d:PR07_NORMAL01, d:PR07_BEHIND01, d:PR08_NORMAL01, \
+	// 北壁下 \
+	d:PR05_NORMAL01, d:PR06_TUMBLE01, d:PR06_BEHIND01, d:PR06_NORMAL01, \
+	d:PR06_NORMAL01, d:PR06_BEHIND01, d:PR04_NORMAL01, d:PR04_NORMAL01, \
+	// 電気板通路 \
+	d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, \
+	d:PR07_NORMAL01, d:PR06_NORMAL01, d:PR01_TUMBLE01, d:PR01_TUMBLE01, \
+	// 電気板上 \
+	d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, \
+	d:PR07_NORMAL01, d:PR07_NORMAL01, d:PR08_BEHIND01, d:PR08_BEHIND01, \
+	// 電気板下 \
+	d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, d:PR07_BEHIND01, \
+	d:PR07_NORMAL01, d:PR07_NORMAL01, d:PR08_BEHIND01, d:PR08_BEHIND01, \
+
+	-iplayback \
+	// 西壁上 \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_TUMBLE, \
+	// 西壁下 \
+	d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE, \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE, \
+	// 北壁上 \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,   \
+	// 北壁中 \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE, \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE,   \
+	// 北壁下 \
+	d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BASE, \
+	d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BASE, \
+	// 電気板通路  \
+	d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_BASE,     d:PREZ_REACT_BASE,     d:PREZ_REACT_TUMBLE,   d:PREZ_REACT_TUMBLE, \
+	// 電気板上 \
+	d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_BASE,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	// 電気板下 \
+	d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND,   d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	d:PREZ_REACT_BASE,   d:PREZ_REACT_SIDESTEP, d:PREZ_REACT_BEHIND, d:PREZ_REACT_BEHIND, \
+	
+	-gtrap knock_area
+
+	if ( $w:p_story < d:ST:P048_01_P01電源パネル破壊１ポリゴンデモ１開始 ) {
+	     mesg ニキータイベント大統領 健康な大統領 寝かせる  6450, 1098, -245800, 0
+	}
+}
+
+proc 大統領ニキータイベント設定{
+//    command ニキータイベント大統領難易度取得 $i:大統領難易度
+     eval($i:大統領難易度 = $w:ゲーム設定)
+#if d:DEBUG_PRINT
+	print $i:大統領難易度
+#endif
+    if ( $i:大統領難易度 == d:LEVEL_VERYEASY ){
+	@ニキータイベント大統領_VERYEASY;
+    }else if ( $i:大統領難易度 == d:LEVEL_EASY ){
+	@ニキータイベント大統領_EASY;
+    }else if ( $i:大統領難易度 == d:LEVEL_NORMAL ){
+	@ニキータイベント大統領_NORMAL;
+    }else if ( $i:大統領難易度 == d:LEVEL_HARD ){
+	@ニキータイベント大統領_HARD;
+    }else if ( $i:大統領難易度 >= d:LEVEL_EXTREME ){
+	@ニキータイベント大統領_EXTREME;
+    }
+
+	// 大統領ネクタイ
+	chara ロープモデル３ ネクタイ \
+		-n jam_tie \
+		-d 6 \
+		-b jam_bounding \
+		-y 健康な大統領 \
+		-z 2 \
+		-x 0,0,0 \
+		-m 22 \
+		-p 250 \
+		-k 350 \
+		-o 100 \
+		-f 1 \
+		-h 1 \
+		-v
+}
+

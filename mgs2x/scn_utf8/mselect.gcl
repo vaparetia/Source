@@ -1,0 +1,1077 @@
+//=============================================================================
+// vr_select.gcl
+// ＶＲセレクト
+// 2002/07/12 S.Yamashita
+// $Id: mselect.gcl,v 1.50 2002/10/02 07:45:42 usr03692 Exp $
+//
+
+//=============================================================================
+// include
+//=============================================================================
+#include "vardef.h"
+#include "a_vardef.h"
+#include "a_varinit.h"
+#include "sload.h"
+#include "a_sload.h"
+
+#include "ms_sel.rsc"
+#include "name_entry.rsc" // ネームエントリー専用 by koba4
+
+#ifdef d:PSX2
+#include "option.rsc"
+#else
+#include "option_x.rsc"
+#endif
+
+//=============================================================================
+// メイン
+//=============================================================================
+
+#ifdef PSX2
+// PSでは The Document of MGS2 のセーブデータを調べる
+#ifdef d:AREA_JAPAN
+#define DOCUMENT_VR_DATA	'BISLPM-65184000V'
+#elifdef d:AREA_US
+#define DOCUMENT_VR_DATA	'BASLUS-20543000V'
+#else
+#define DOCUMENT_VR_DATA	'BESLES-51092000V'
+#endif
+#endif
+
+$$f:オールオープンフラグ = 0;
+
+command メニュー設定 -pause off
+
+chara 2Dレイアウトドライバ ２ＤＬＤ
+
+
+//これは、ネームエントリーを入れるために必要なのです。
+chara ノードシステム node \
+	 -name_entry_only \
+	 -skin node \
+	 -p 時間クリア \
+	 -file t:node
+
+proc 時間クリア {
+	print 'プレイタイムを０にしました。'
+	$i:プレイタイム = 0;
+	command varsave	// 名前が反映されるように
+	@セレクト画面
+}
+
+
+
+if( $f:ＶＲ／スネークテイルズロードフラグ != 0 ) {
+	// タイトルから来た：レーダーフラグの処理
+	//	$w:ＶＲ時退避レーダーフラグ = $w:コンフィグ設定;
+	// TYPE2 にする
+	$w:コンフィグ設定 = $w:コンフィグ設定 & ~d:CONFIG_RADAR_OFF;
+	$w:コンフィグ設定 = $w:コンフィグ設定 | d:CONFIG_RADAR_OFF_INTRUDE;
+
+	@load_VR
+} else {
+	@セレクト画面
+}
+
+
+
+
+proc セレクト画面 {
+
+//------------------------------------------------------
+// フラグの決定
+//------------------------------------------------------
+	$$i:ＶＲセレクトモードフラグ = 0;
+
+	switch ( $s:選択プレイヤー ) {
+		case ( なし ) {
+			$$i:ＶＲセレクトモードフラグ = d:VRSEL_PLA_NO_PLAYER;
+		}
+		case ( ライデン ) {
+			$$i:ＶＲセレクトモードフラグ = d:VRSEL_PLA_RAIDEN;
+		}
+		case ( 刀ライデン ) {
+			$$i:ＶＲセレクトモードフラグ = d:VRSEL_PLA_NINJA;
+		}
+		case ( 裸ライデン ) {
+			$$i:ＶＲセレクトモードフラグ = d:VRSEL_PLA_X_RAIDEN;
+		}
+		case ( スネーク ) {
+			$$i:ＶＲセレクトモードフラグ = d:VRSEL_PLA_SNAKE;
+		}
+		case ( プリスキン ) {
+			$$i:ＶＲセレクトモードフラグ = d:VRSEL_PLA_PLISKIN;
+		}
+		case ( タキシードスネーク ) {
+			$$i:ＶＲセレクトモードフラグ = d:VRSEL_PLA_TUXEDO;
+		}
+		case ( 前作スネーク ) {
+			$$i:ＶＲセレクトモードフラグ = d:VRSEL_PLA_PREVIOUS;
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!第三の男が選ばれました。$s:選択プレイヤー='$s:選択プレイヤー
+			#endif
+
+			command assert ( d:FALSE ) 'player no error  (scenario err)'
+		}
+	}
+
+
+//------------------------------------------------------
+// ＶＲセレクトの起動
+//------------------------------------------------------
+#ifdef d:XBOX
+	if($b:主観モード番号 == 1) {
+		$$b:キーコンフィグページ番号 = 3;
+	} else if($b:主観モード番号 == 3) {
+		$$b:キーコンフィグページ番号 = 2;
+	} else {
+		$$b:キーコンフィグページ番号 = 1;
+	}
+#else
+	if($b:主観モード番号 == 1) {
+		$$b:キーコンフィグページ番号 = 2;
+	} else {
+		$$b:キーコンフィグページ番号 = 1;
+	}
+#endif
+
+	chara ＶＲセレクト ＶＲセレクト君 \
+		-mode           $$i:ＶＲセレクトモードフラグ \
+		-player_proc    プレイヤー選択プロック \
+		-stage_proc     ステージ選択プロック \
+		-title_proc     セーブしますか？ \
+		-save_proc      セーブプロック \
+		-keyconfig_proc キーコンフィグプロック \
+		-keyconfig_type $$b:キーコンフィグページ番号 \
+		-movie	t:vr_sn_r	t:vr_sn_s	t:vr_wp_r	t:vr_wp_s	t:vr_fpv_r	t:vr_fpv_s	t:vr_va_r		t:vr_va_s \
+				t:vr_bomb_r	t:vr_bomb_s	t:vr_el_r	t:vr_el_s	t:vr_ho_r	t:vr_ho_s	t:vr_photo_r	t:vr_photo_s \
+		-all_open       $$f:オールオープンフラグ
+}
+
+
+
+//------------------------------------------------------
+// ＶＲセレクトで呼ばれるプロック
+//------------------------------------------------------
+proc プレイヤー選択プロック {
+	#if d:DEBUG_PRINT
+		print 'player select proc'
+	#endif
+
+	switch ( $1 ) {
+		case ( d:VRSEL_PLA_RAIDEN ) {
+			$s:選択プレイヤー = ライデン;
+		}
+		case ( d:VRSEL_PLA_NINJA ) {
+			$s:選択プレイヤー = 刀ライデン;
+		}
+		case ( d:VRSEL_PLA_X_RAIDEN ) {
+			$s:選択プレイヤー = 裸ライデン;
+		}
+		case ( d:VRSEL_PLA_SNAKE ) {
+			$s:選択プレイヤー = スネーク;
+		}
+		case ( d:VRSEL_PLA_PLISKIN ) {
+			$s:選択プレイヤー = プリスキン;
+		}
+		case ( d:VRSEL_PLA_TUXEDO ) {
+			$s:選択プレイヤー = タキシードスネーク;
+		}
+		case ( d:VRSEL_PLA_PREVIOUS ) {
+			$s:選択プレイヤー = 前作スネーク;
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!第三の男が選ばれました。$1='$1
+			#endif
+
+			command assert ( d:FALSE ) 'player no error  (scenario err) プレイヤー選択プロック'
+		}
+	}
+
+	command セットステージＩＤ (-1) ;
+
+	restart -save;
+}
+
+proc ステージ選択プロック {
+	#if d:DEBUG_PRINT
+		print 'stage select proc'
+	#endif
+
+	switch ( $3 ) {
+		case ( d:VRSEL_MODE_SNEAKING ) {
+			$b:ミッション番号 = d:MISSION:スニーキング;
+			@サウンドデータロード d:VR_SOUND
+			@スニーキングステージロード $4 $5
+		}
+		case ( d:VRSEL_MODE_WEAPON ) {
+			$b:ミッション番号 = d:MISSION:武器訓練;
+			@サウンドデータロード d:VR_SOUND
+			@武器訓練ステージロード $4 $5
+		}
+		case ( d:VRSEL_MODE_FIRST_PERSON_VIEW ) {
+			$b:ミッション番号 = d:MISSION:主観モード;
+			@サウンドデータロード d:VR_SOUND
+			@主観ステージロード $5
+		}
+		case ( d:VRSEL_MODE_VARIETY ) {
+			$b:ミッション番号 = d:MISSION:バラエティ;
+			@サウンドデータロード d:VR_SOUND
+			@バラエティステージロード $5
+		}
+		case ( d:VRSEL_MODE_STREAKING ) {
+			$b:ミッション番号 = d:MISSION:ストリーキング;
+			@サウンドデータロード d:VR_SOUND
+			@load_st01a
+		}
+		case ( d:VRSEL_MODE_BOMB_DISPOSAL ) {
+			$b:ミッション番号 = d:MISSION:爆弾解体;
+			@爆弾解体ステージロード $5
+		}
+		case ( d:VRSEL_MODE_ELIMINATE ) {
+			$b:ミッション番号 = d:MISSION:敵兵排除;
+			@敵兵排除ステージロード $5
+		}
+		case ( d:VRSEL_MODE_HOLD_UP ) {
+			$b:ミッション番号 = d:MISSION:武装解除;
+			@武装解除ステージロード $5
+		}
+		case ( d:VRSEL_MODE_PHOTOGRAPH ) {
+			$b:ミッション番号 = d:MISSION:写真撮影;
+			@写真撮影ステージロード $5
+		}
+
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!変なミッションが選ばれました。$3='$3
+			#endif
+
+			command assert ( d:FALSE ) 'player no error  (scenario err) ステージ選択プロック'
+		}
+	}
+
+}
+
+proc タイトルロードプロック {
+	#if d:DEBUG_PRINT
+		print 'title load proc'
+	#endif
+
+	command セットステージＩＤ (-1) ;
+
+	$f:ミッションズフラグ = d:TRUE;
+
+	// レーダーフラグが強制変更されているので
+	$w:タイトルメニュー設定	= $w:タイトルメニュー設定 & ~d:TITLE_MENU_OPTION_CHANGED;
+
+//	$w:コンフィグ設定 = ($w:コンフィグ設定 & ~(d:CONFIG_RADAR_OFF | d:CONFIG_RADAR_OFF_INTRUDE)) \
+//			| ($w:ＶＲ時退避レーダーフラグ & (d:CONFIG_RADAR_OFF | d:CONFIG_RADAR_OFF_INTRUDE));
+
+	@mv_init_n_title_0;
+}
+
+proc セーブプロック {
+	#if d:DEBUG_PRINT
+		print 'save proc'
+	#endif
+	chara セーブゲーム画面マネージャー セーブ画面 \
+		-d save_load \
+		-p セーブ終了 \
+		-i sub_vricon \
+		-m d:SAVE_LOAD_MODE_VR
+}
+
+proc キーコンフィグプロック {
+	#if d:DEBUG_PRINT
+		print 'key config proc'
+	#endif
+
+#ifdef d:XBOX
+	if ( $1 == 3 ) {
+		$b:主観モード番号 = 1;
+	} else if ( $1 == 2 ) {
+		$b:主観モード番号 = 3;
+	} else {
+		$b:主観モード番号 = 2;
+	}
+#else
+	if ( $1 == 2 ) {
+		$b:主観モード番号 = 1;
+	} else {
+		$b:主観モード番号 = 2;
+	}
+#endif
+}
+
+
+//------------------------------------------------------
+// ステージ選択プロックで呼ばれるロードプロック
+//------------------------------------------------------
+proc スニーキングステージロード $:p_モード番号 $:p_レベル {
+	#if d:DEBUG_PRINT
+		print 'sneaking stage load'
+		print '$:p_モード番号='$:p_モード番号
+		print '$:p_レベル='$:p_レベル
+	#endif
+
+	if ( $:p_モード番号 == d:VRSEL_WEAPON_SNEAKING ) {
+		$b:モード番号 = d:SNEAKING:SNEAKING;
+	} else {
+		$b:モード番号 = d:SNEAKING:ELIMINATE_ALL;
+	}
+
+	switch ( $:p_レベル ) {
+		case ( d:VRSEL_LEVEL_01 ) {
+			@load_vs01a
+		}
+		case ( d:VRSEL_LEVEL_02 ) {
+			@load_vs02a
+		}
+		case ( d:VRSEL_LEVEL_03 ) {
+			@load_vs03a
+		}
+		case ( d:VRSEL_LEVEL_04 ) {
+			@load_vs04a
+		}
+		case ( d:VRSEL_LEVEL_05 ) {
+			@load_vs05a
+		}
+		case ( d:VRSEL_LEVEL_06 ) {
+			@load_vs06a
+		}
+		case ( d:VRSEL_LEVEL_07 ) {
+			@load_vs07a
+		}
+		case ( d:VRSEL_LEVEL_08 ) {
+			@load_vs08a
+		}
+		case ( d:VRSEL_LEVEL_09 ) {
+			@load_vs09a
+		}
+		case ( d:VRSEL_LEVEL_10 ) {
+			@load_vs10a
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!ないステージが選ばれました。$:p_レベル='$:p_レベル
+			#endif
+
+			command assert ( d:FALSE ) 'player no error  (scenario err) スニーキングステージロード'
+		}
+	}
+}
+
+proc 武器訓練ステージロード $:p_武器タイプ $:p_レベル {
+	#if d:DEBUG_PRINT
+		print 'weapon stage load'
+		print '$:p_武器タイプ='$:p_武器タイプ
+		print '$:p_レベル='$:p_レベル
+	#endif
+
+	if ( $:p_武器タイプ == d:VRSEL_WEAPON_HANDGUN ) {
+		// 武器訓練ハンドガンステージ
+		$b:モード番号 = d:WEAPON:HANDGUN;
+
+		switch ( $:p_レベル ) {
+			case ( d:VRSEL_LEVEL_01 ) {
+				@load_wp01a
+			}
+			case ( d:VRSEL_LEVEL_02 ) {
+				@load_wp02a
+			}
+			case ( d:VRSEL_LEVEL_03 ) {
+				@load_wp03a
+			}
+			case ( d:VRSEL_LEVEL_04 ) {
+				@load_wp04a
+			}
+			case ( d:VRSEL_LEVEL_05 ) {
+				@load_wp05a
+			}
+			default {
+				#if d:DEBUG_PRINT
+					print 'WARNING!!!!!!!ないステージが選ばれました。$:p_レベル='$:p_レベル
+				#endif
+
+				command assert ( d:FALSE ) 'player no error  (scenario err) 武器訓練ステージロード'
+			}
+		}
+
+	} else if ( $:p_武器タイプ == d:VRSEL_WEAPON_ASSAULT_RIFLE ) {
+		// 武器訓練アサルトライフルステージ
+		$b:モード番号 = d:WEAPON:ASSAULT_RIFLE;
+
+		switch ( $:p_レベル ) {
+			case ( d:VRSEL_LEVEL_01 ) {
+				@load_wp11a
+			}
+			case ( d:VRSEL_LEVEL_02 ) {
+				@load_wp12a
+			}
+			case ( d:VRSEL_LEVEL_03 ) {
+				@load_wp13a
+			}
+			case ( d:VRSEL_LEVEL_04 ) {
+				@load_wp14a
+			}
+			case ( d:VRSEL_LEVEL_05 ) {
+				@load_wp15a
+			}
+			default {
+				#if d:DEBUG_PRINT
+					print 'WARNING!!!!!!!ないステージが選ばれました。$:p_レベル='$:p_レベル
+				#endif
+
+				command assert ( d:FALSE ) 'player no error  (scenario err) 武器訓練ステージロード'
+			}
+		}
+
+	} else if ( $:p_武器タイプ == d:VRSEL_WEAPON_C4_CLAYMORE ) {
+		// 武器訓練Ｃ４・クレイモアステージ
+		$b:モード番号 = d:WEAPON:C4;
+
+		switch ( $:p_レベル ) {
+			case ( d:VRSEL_LEVEL_01 ) {
+				@load_wp21a
+			}
+			case ( d:VRSEL_LEVEL_02 ) {
+				@load_wp22a
+			}
+			case ( d:VRSEL_LEVEL_03 ) {
+				@load_wp23a
+			}
+			case ( d:VRSEL_LEVEL_04 ) {
+				@load_wp24a
+			}
+			case ( d:VRSEL_LEVEL_05 ) {
+				@load_wp25a
+			}
+			default {
+				#if d:DEBUG_PRINT
+					print 'WARNING!!!!!!!ないステージが選ばれました。$:p_レベル='$:p_レベル
+				#endif
+
+				command assert ( d:FALSE ) 'player no error  (scenario err) 武器訓練ステージロード'
+			}
+		}
+
+	} else if ( $:p_武器タイプ == d:VRSEL_WEAPON_GRENADE ) {
+		// 武器訓練ＲＧＢ６・グレネードステージ
+		$b:モード番号 = d:WEAPON:GRENADE;
+
+		switch ( $:p_レベル ) {
+			case ( d:VRSEL_LEVEL_01 ) {
+				@load_wp31a
+			}
+			case ( d:VRSEL_LEVEL_02 ) {
+				@load_wp32a
+			}
+			case ( d:VRSEL_LEVEL_03 ) {
+				@load_wp33a
+			}
+			case ( d:VRSEL_LEVEL_04 ) {
+				@load_wp34a
+			}
+			case ( d:VRSEL_LEVEL_05 ) {
+				@load_wp35a
+			}
+			default {
+				#if d:DEBUG_PRINT
+					print 'WARNING!!!!!!!ないステージが選ばれました。$:p_レベル='$:p_レベル
+				#endif
+
+				command assert ( d:FALSE ) 'player no error  (scenario err) 武器訓練ステージロード'
+			}
+		}
+
+	} else if ( $:p_武器タイプ == d:VRSEL_WEAPON_PSG1 ) {
+		// 武器訓練ＰＳＧ１ステージ
+		$b:モード番号 = d:WEAPON:PSG1;
+
+		switch ( $:p_レベル ) {
+			case ( d:VRSEL_LEVEL_01 ) {
+				@load_wp41a
+			}
+			case ( d:VRSEL_LEVEL_02 ) {
+				@load_wp42a
+			}
+			case ( d:VRSEL_LEVEL_03 ) {
+				@load_wp43a
+			}
+			case ( d:VRSEL_LEVEL_04 ) {
+				@load_wp44a
+			}
+			case ( d:VRSEL_LEVEL_05 ) {
+				@load_wp45a
+			}
+			default {
+				#if d:DEBUG_PRINT
+					print 'WARNING!!!!!!!ないステージが選ばれました。$:p_レベル='$:p_レベル
+				#endif
+
+				command assert ( d:FALSE ) 'player no error  (scenario err) 武器訓練ステージロード'
+			}
+		}
+
+	} else if ( $:p_武器タイプ == d:VRSEL_WEAPON_STINGER ) {
+		// 武器訓練スティンガーステージ
+		$b:モード番号 = d:WEAPON:STINGER;
+
+		switch ( $:p_レベル ) {
+			case ( d:VRSEL_LEVEL_01 ) {
+				@load_wp51a
+			}
+			case ( d:VRSEL_LEVEL_02 ) {
+				@load_wp52a
+			}
+			case ( d:VRSEL_LEVEL_03 ) {
+				@load_wp53a
+			}
+			case ( d:VRSEL_LEVEL_04 ) {
+				@load_wp54a
+			}
+			case ( d:VRSEL_LEVEL_05 ) {
+				@load_wp55a
+			}
+			default {
+				#if d:DEBUG_PRINT
+					print 'WARNING!!!!!!!ないステージが選ばれました。$:p_レベル='$:p_レベル
+				#endif
+
+				command assert ( d:FALSE ) 'player no error  (scenario err) 武器訓練ステージロード'
+			}
+		}
+
+	} else if ( $:p_武器タイプ == d:VRSEL_WEAPON_NIKITA ) {
+		// 武器訓練ニキータステージ
+		$b:モード番号 = d:WEAPON:NIKITA;
+
+		switch ( $:p_レベル ) {
+			case ( d:VRSEL_LEVEL_01 ) {
+				@load_wp61a
+			}
+			case ( d:VRSEL_LEVEL_02 ) {
+				@load_wp62a
+			}
+			case ( d:VRSEL_LEVEL_03 ) {
+				@load_wp63a
+			}
+			case ( d:VRSEL_LEVEL_04 ) {
+				@load_wp64a
+			}
+			case ( d:VRSEL_LEVEL_05 ) {
+				@load_wp65a
+			}
+			default {
+				#if d:DEBUG_PRINT
+					print 'WARNING!!!!!!!ないステージが選ばれました。$:p_レベル='$:p_レベル
+				#endif
+
+				command assert ( d:FALSE ) 'player no error  (scenario err) 武器訓練ステージロード'
+			}
+		}
+
+	} else if ( $:p_武器タイプ == d:VRSEL_WEAPON_HF_BLADE ) {
+		// 武器訓練刀ステージ
+		$b:モード番号 = d:WEAPON:BLADE;
+
+		switch ( $:p_レベル ) {
+			case ( d:VRSEL_LEVEL_01 ) {
+				@load_wp71a
+			}
+			case ( d:VRSEL_LEVEL_02 ) {
+				@load_wp72a
+			}
+			case ( d:VRSEL_LEVEL_03 ) {
+				@load_wp73a
+			}
+			case ( d:VRSEL_LEVEL_04 ) {
+				@load_wp74a
+			}
+			case ( d:VRSEL_LEVEL_05 ) {
+				@load_wp75a
+			}
+			default {
+				#if d:DEBUG_PRINT
+					print 'WARNING!!!!!!!ないステージが選ばれました。$:p_レベル='$:p_レベル
+				#endif
+
+				command assert ( d:FALSE ) 'player no error  (scenario err) 武器訓練ステージロード'
+			}
+		}
+
+	} else {
+		#if d:DEBUG_PRINT
+			print 'WARNING!!!!!!!ない武器タイプが選ばれました。$:p_武器タイプ='$:p_武器タイプ
+		#endif
+
+		command assert ( d:FALSE ) 'player no error  (scenario err) 武器訓練ステージロード'
+	}
+}
+
+proc 主観ステージロード $:p_レベル {
+	#if d:DEBUG_PRINT
+		print 'fpv stage load'
+		print '$:p_レベル='$:p_レベル
+	#endif
+
+	switch ( $:p_レベル ) {
+		case ( d:VRSEL_LEVEL_01 ) {
+			@load_sp21a
+		}
+		case ( d:VRSEL_LEVEL_02 ) {
+			@load_sp22a
+		}
+		case ( d:VRSEL_LEVEL_03 ) {
+			@load_sp23a
+		}
+		case ( d:VRSEL_LEVEL_04 ) {
+			@load_sp24a
+		}
+		case ( d:VRSEL_LEVEL_05 ) {
+			@load_sp25a
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!ないステージが選ばれました。$:p_レベル='$:p_レベル
+			#endif
+
+			command assert ( d:FALSE ) 'player no error  (scenario err) 主観ステージロード'
+		}
+	}
+}
+
+proc バラエティステージロード $:p_レベル {
+	#if d:DEBUG_PRINT
+		print 'variety stage load'
+		print '$:p_レベル='$:p_レベル
+	#endif
+
+	switch ( $:p_レベル ) {
+		case ( d:VRSEL_LEVEL_01 ) {
+			@load_sp01a_01
+		}
+		case ( d:VRSEL_LEVEL_02 ) {
+			@load_sp01a_02
+		}
+		case ( d:VRSEL_LEVEL_03 ) {
+			@load_sp02a
+		}
+		case ( d:VRSEL_LEVEL_04 ) {
+			@load_sp06a
+		}
+		case ( d:VRSEL_LEVEL_05 ) {
+			@load_sp08a
+		}
+		case ( d:VRSEL_LEVEL_06 ) {
+			@load_sp07a
+		}
+		case ( d:VRSEL_LEVEL_07 ) {
+			@load_sp03a
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!ないステージが選ばれました。$:p_レベル='$:p_レベル
+			#endif
+
+			command assert ( d:FALSE ) 'player no error  (scenario err) バラエティステージロード'
+		}
+	}
+
+}
+
+proc 爆弾解体ステージロード $:p_レベル {
+	#if d:DEBUG_PRINT
+		print 'bomb disposal stage load'
+		print '$:p_レベル='$:p_レベル
+	#endif
+
+	switch ( $:p_レベル ) {
+		case ( d:VRSEL_LEVEL_01 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_bomb_a31a 	// シェル２中央棟
+		}
+		case ( d:VRSEL_LEVEL_02 ) {
+			@サウンドデータロード d:TANKER_SOUND
+			@load_alt_bomb_a02a 	// エンジンルーム
+		}
+		case ( d:VRSEL_LEVEL_03 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_bomb_a41a 	// アーセナル
+		}
+		case ( d:VRSEL_LEVEL_04 ) {
+			@サウンドデータロード d:TANKER_SOUND
+			@load_alt_bomb_a01f 	// タンカー
+		}
+		case ( d:VRSEL_LEVEL_05 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_bomb_a14a		// Ｂ脚
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!ないステージが選ばれました。$:p_レベル='$:p_レベル
+			#endif
+
+			command assert ( d:FALSE ) 'player no error  (scenario err) 爆弾解体ステージロード'
+		}
+	}
+
+}
+
+proc 敵兵排除ステージロード $:p_レベル {
+	#if d:DEBUG_PRINT
+		print 'eliminate stage load'
+		print '$:p_レベル='$:p_レベル
+	#endif
+
+	switch ( $:p_レベル ) {
+		case ( d:VRSEL_LEVEL_01 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_elim_a23b
+		}
+		case ( d:VRSEL_LEVEL_02 ) {
+			@サウンドデータロード d:TANKER_SOUND
+			@load_alt_elim_a01a
+		}
+		case ( d:VRSEL_LEVEL_03 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_elim_a19a
+		}
+		case ( d:VRSEL_LEVEL_04 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_elim_a20a
+		}
+		case ( d:VRSEL_LEVEL_05 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_elim_a24d
+		}
+		case ( d:VRSEL_LEVEL_06 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_elim_a24a
+		}
+		case ( d:VRSEL_LEVEL_07 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_elim_a31a
+		}
+		case ( d:VRSEL_LEVEL_08 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_elim_a22a
+		}
+		case ( d:VRSEL_LEVEL_09 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_elim_a42a
+		}
+		case ( d:VRSEL_LEVEL_10 ) {
+			@サウンドデータロード d:TANKER_SOUND
+			@load_alt_elim_a02a
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!ないステージが選ばれました。$:p_レベル='$:p_レベル
+			#endif
+
+			command assert ( d:FALSE ) 'player no error  (scenario err) 爆弾解体ステージロード'
+		}
+	}
+
+}
+
+proc 武装解除ステージロード $:p_レベル {
+	#if d:DEBUG_PRINT
+		print 'hold up stage load'
+		print '$:p_レベル='$:p_レベル
+	#endif
+
+	switch ( $:p_レベル ) {
+		case ( d:VRSEL_LEVEL_01 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_hold_a15b
+		}
+		case ( d:VRSEL_LEVEL_02 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_hold_a12a
+		}
+		case ( d:VRSEL_LEVEL_03 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_hold_a24d
+		}
+		case ( d:VRSEL_LEVEL_04 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_hold_a13b
+		}
+		case ( d:VRSEL_LEVEL_05 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_hold_a14a
+		}
+		case ( d:VRSEL_LEVEL_06 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_hold_a22a
+		}
+		case ( d:VRSEL_LEVEL_07 ) {
+			@サウンドデータロード d:TANKER_SOUND
+			@load_alt_hold_a01b
+		}
+		case ( d:VRSEL_LEVEL_08 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_hold_a42a
+		}
+		case ( d:VRSEL_LEVEL_09 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_hold_a20b
+		}
+		case ( d:VRSEL_LEVEL_10 ) {
+			@サウンドデータロード d:PLANT_SOUND
+			@load_alt_hold_a31a
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!ないステージが選ばれました。$:p_レベル='$:p_レベル
+			#endif
+
+			command assert ( d:FALSE ) 'player no error  (scenario err) 武装解除ステージロード'
+		}
+	}
+
+}
+
+proc 写真撮影ステージロード $:p_レベル {
+	#if d:DEBUG_PRINT
+		print 'hold up stage load'
+		print '$:p_レベル='$:p_レベル
+	#endif
+
+	if ( $s:選択プレイヤー == ライデン ) {
+		switch ( $:p_レベル ) {
+			case ( d:VRSEL_LEVEL_01 ) {
+				@サウンドデータロード d:TANKER_SOUND
+				@load_alt_photo_a01a_r
+			}
+			case ( d:VRSEL_LEVEL_02 ) {
+				@サウンドデータロード d:TANKER_SOUND
+				@load_alt_photo_a01b
+			}
+			case ( d:VRSEL_LEVEL_03 ) {
+				@サウンドデータロード d:TANKER_SOUND
+				@load_alt_photo_a01f
+			}
+			case ( d:VRSEL_LEVEL_04 ) {
+				@サウンドデータロード d:TANKER_SOUND
+				@load_alt_photo_a00c
+			}
+			case ( d:VRSEL_LEVEL_05 ) {
+				@サウンドデータロード d:TANKER_SOUND
+				@load_alt_photo_a00a
+			}
+			case ( d:VRSEL_LEVEL_06 ) {
+				@サウンドデータロード d:TANKER_SOUND
+				@load_alt_photo_a03a
+			}
+			default {
+				#if d:DEBUG_PRINT
+					print 'WARNING!!!!!!!ないステージが選ばれました。$:p_レベル='$:p_レベル
+				#endif
+
+				command assert ( d:FALSE ) 'player no error  (scenario err) 写真撮影ステージロード'
+			}
+		}
+
+	} else if ( $s:選択プレイヤー == スネーク ) {
+		switch ( $:p_レベル ) {
+			case ( d:VRSEL_LEVEL_01 ) {
+				@サウンドデータロード d:TANKER_SOUND
+				@load_alt_photo_a01a_s1
+			}
+			case ( d:VRSEL_LEVEL_02 ) {
+				@サウンドデータロード d:PLANT_SOUND
+				@load_alt_photo_a24g
+			}
+			case ( d:VRSEL_LEVEL_03 ) {
+				@サウンドデータロード d:PLANT_SOUND
+				@load_alt_photo_a24a
+			}
+			case ( d:VRSEL_LEVEL_04 ) {
+				@サウンドデータロード d:TANKER_SOUND
+				@load_alt_photo_a02b
+			}
+			case ( d:VRSEL_LEVEL_05 ) {
+				@サウンドデータロード d:PLANT_SOUND
+				@load_alt_photo_a41b
+			}
+			case ( d:VRSEL_LEVEL_06 ) {
+				@サウンドデータロード d:PLANT_SOUND
+				@load_alt_photo_a24f
+			}
+			case ( d:VRSEL_LEVEL_07 ) {
+				@load_alt_photo_a01a_s2
+			}
+			default {
+				#if d:DEBUG_PRINT
+					print 'WARNING!!!!!!!ないステージが選ばれました。$:p_レベル='$:p_レベル
+				#endif
+
+				command assert ( d:FALSE ) 'player no error  (scenario err) 写真撮影ステージロード'
+			}
+		}
+
+	} else {
+		#if d:DEBUG_PRINT
+			print 'WARNING!!!!!!!その人の写真撮影ミッションはないです。$s:選択プレイヤー='$s:選択プレイヤー
+		#endif
+
+		command assert ( d:FALSE ) 'player no error  (scenario err) 写真撮影ステージロード'
+	}
+
+}
+
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+// まだできてないステージ用ダミープロック
+proc このステージはまだできてないです {
+	#if d:DEBUG_PRINT
+		print 'SORRY!!!!!!!このステージはまだ入ってません。'
+	#endif
+
+	load 'mselect';
+}
+
+//////////////////////////
+//  セーブシーケンス
+
+proc セーブ終了 {
+	@キャラ選択状態クリア;
+	command セットステージＩＤ (-2) ;	// カーソルを 'SAVE' にあわせる
+	restart -save;
+}
+
+proc セーブしますか？ {
+	// TODO:セーブの必要があるかどうかの判断
+	chara セーブ確認画面 セーブ確認 \
+		-p セーブしますか？終了 \
+		-s セーブ確認文
+}
+
+proc セーブしますか？終了 $:result {
+	if( $:result == 0 ) {
+		chara セーブゲーム画面マネージャー セーブ画面 \
+			-d save_load \
+			-p ＥＸＩＴセーブ終了 \
+			-i sub_vricon \
+			-m d:SAVE_LOAD_MODE_VR
+	} else {
+		@タイトルロードプロック
+	}
+}
+
+proc ＥＸＩＴセーブ終了 $:result {
+	if( $:result == 0 ) {
+		@キャラ選択状態クリア;
+		command セットステージＩＤ (-3) ;	// カーソルを 'EXIT' にあわせる
+		restart -save;
+	} else {
+		@タイトルロードプロック
+	}
+}
+
+//////////////////////////
+//	ＶＲロード
+
+proc load_VR {
+
+	// 初期設定をやってしまう
+
+	@キャラ選択状態クリア;
+
+	command ミッションズデータ初期化
+
+#ifdef PSX2
+	// Document のデータがあるかチェック
+	chara セーブファイル個数チェック check -p セーブファイルある？ -s d:DOCUMENT_VR_DATA
+#else
+	// セーブファイルがあるかどうかチェック
+	chara セーブファイル個数チェック check -m d:SAVE_LOAD_MODE_VR -p ロードしますか？
+#endif
+}
+
+#ifdef PSX2
+proc セーブファイルある？ $:result {
+	if( $:result > 0 ) {
+		print 'The document of MGS2 のデータがある。'
+		// ここでフラグ処理などしてください
+		$$f:オールオープンフラグ = 1;
+	}
+	chara delay 個数チェックディレイ -time 3 -exec { // MCMAN が１つしか起動できない	
+		// セーブファイルがあるかどうかチェック
+		chara セーブファイル個数チェック check2 -m d:SAVE_LOAD_MODE_VR -p ロードしますか？
+	}
+}
+
+#endif
+
+proc ロードしますか？ $:result {
+	// ロードしますか?画面
+	if( $:result > 0 ) {
+		chara セーブ確認画面 セーブ確認 \
+			-p ＶＲロード画面表示
+	} else {
+		//ネームエントリー
+		command ノード画面起動 -map -name
+	}
+}
+
+proc ＶＲロード画面表示 $:result {
+	// ロード画面
+
+	if( $:result == 0 ) {
+		chara delay 終了ディレイ -time 3 -exec {	// メモリ解放待ち
+			chara ロードゲーム画面マネージャー ロードゲーム画面起動 \
+				-d save_load \
+				-p ロードＶＲ終了プロシージャー \
+				-m d:SAVE_LOAD_MODE_VR
+		}
+	} else {
+
+		//ネームエントリー
+		command ノード画面起動 -map -name
+
+	}
+}
+
+proc ロードＶＲ終了プロシージャー $:返り値 {
+	if( $:返り値 == 1 ) {
+		$$f:オールオープンフラグ = 0;	// ロードが成功した時はDocMGS2の影響はなくなる
+		command store_loadedvar
+		@キャラ選択状態クリア;
+		@resident_clear
+
+		@セレクト画面
+	} else {
+		//ネームエントリー
+		command ノード画面起動 -map -name
+	}
+}
+
+
+proc resident_clear {
+	/* 常駐ディレクトリ情報クリア（2001．9.4 園山追加） */
+	dim $i:常駐ディレクトリ[ 4 ]
+	eval ( $i:常駐ディレクトリ[ 0 ] = 0 )
+	eval ( $i:常駐ディレクトリ[ 1 ] = 0 )
+	eval ( $i:常駐ディレクトリ[ 2 ] = 0 )
+	eval ( $i:常駐ディレクトリ[ 3 ] = 0 )
+	command varsave $i:常駐ディレクトリ[ 0 ]
+	command varsave $i:常駐ディレクトリ[ 1 ]
+	command varsave $i:常駐ディレクトリ[ 2 ]
+	command varsave $i:常駐ディレクトリ[ 3 ]
+}
+
+proc キャラ選択状態クリア {
+	$f:ＶＲ／スネークテイルズロードフラグ = 0;
+	$s:選択プレイヤー = なし;
+	command セットステージＩＤ (-1) ;
+}

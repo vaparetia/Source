@@ -1,0 +1,49 @@
+レイアウトのテスト表示の手順です。
+以下は Linux 上での作業となります。
+
+(1) 2Dレイアウトマネージャの update
+
+    mgs2/source/user/kira/ 以下を update してください。
+    mgs2/source/user/kira/2D_action/ 以下にレイアウトマネージャのソースが
+    あります。
+
+
+(2) command.def の更新
+
+  mgs2/scn/command.def 中に
+
+    chara 2Dテスト[NewLayoutTest] $s:name -file $s:ファイル名 \
+					  -action $s:アクション名
+
+  を追加してください。
+
+  
+(3) GCL の修正
+
+  確認したいステージの GCL ソース中(例: mgs2/scn/w01e.gcl)に、
+
+    chara 2Dテスト  test -file filename -action FirstAction
+
+  を追加し、mgs2/scn以下を make, make stage その他一連の作業を行ってください。
+  filename, FirstAction は、テストするファイル名やアクション名に応じて
+  変更してください。
+
+
+(4) .l2d データのコンバート
+
+  $ layout2d filename.l2d
+
+  これで、filename.o2d という組み込み形式のデータが作成されます。
+
+
+(5) データの仮組み込み
+
+  テストを行うステージデータのディレクトリ(例: mgs2/cdrom.img/stage/w01e/) に、
+  (4) で作成したデータをコピーし、data.cnf 中にそのファイルを追加してください。
+
+(6) テスト開始
+
+  make run で本体プログラムのほうを実行し、組み込んだステージを参照して
+  ください。
+
+以上です。

@@ -1,0 +1,47 @@
+ステージファイルは以下の構造を持つ
+
+先頭にステージへのオフセット
+
+struct {
+	int version;
+	int stagenum;
+	struct {
+		char stagename[8];
+		int ( offset | ( cnf_tag_size << 24 ) )
+	} stage_tag[ stagenum ];
+};
+
+各ステージはセクタ先頭から始まる
+先頭にdata.cnfの内容が以下の形で入っている
+
+struct {
+	int tagnum;
+	struct {
+		int id;				// ( 'ext' << 24 ) | strid; ext=0x7fなら特殊
+		int offset;
+	} tags[ tagnum ];		// 必ずここまででSECTOR ALIGN
+
+	char data[];
+} ALIGN2048;
+
+特殊タグ
+
+id = 0x7F010000		stage binary	// 必ずステージ中には1つしかない
+offset = STAGE BINARY SIZE		(2048 align)
+
+id = 0x7F000000		no cache
+offset = NO CACHE BLOCK SIZE	(2048byte align)
+
+id = 0x7F000001		cache
+offset = CACHE BLOCK SIZE		(16byte align)
+
+id = 0x7F000002		resident
+offset = RESIDENT BLOCK SIZE	(16byte align)
+
+id = 0x7F000100 - 1FF	block
+offset = BLOCK SIZE				(16byte align)
+
+・方針
+すべてのブロックは2048アライメント。
+ブロック中のデータは16バイトアライメント。
+テクスチャなど、一部のデータは128バイトアライメント。

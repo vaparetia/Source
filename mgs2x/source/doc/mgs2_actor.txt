@@ -1,0 +1,46 @@
+GV_NewActor時の actor タイプの種類。
+
+enum	{
+	GV_ACTOR_DAEMON,		/* システムデーモン	*/
+	GV_ACTOR_MANAGER,		/* ゲーム進行プロセス */
+	GV_ACTOR_ASSIST,		/* ゲーム補助プロセス */
+
+	GV_ACTOR_PREV2,			/* メインより前に実行されるキャラクタ（ポーズ時も動作）*/
+	GV_ACTOR_PREV,			/* メインより前に実行されるキャラクタ */
+
+	GV_ACTOR_PLAYER,		/* 通常キャラクタ (プレイヤー) */
+	GV_ACTOR_USER,			/* 通常キャラクタ */
+	GV_ACTOR_CAMERA,		/* カメラ(ポーズ時も動作) */
+
+	GV_ACTOR_AFTER,			/* メインより後に実行されるキャラクタ */
+	GV_ACTOR_EFFECT,		/* エフェクト */
+	GV_ACTOR_AFTER2,		/* メインより後に実行されるキャラクタ（ポーズ時も動作）*/
+
+	GV_ACTOR_DAEMON2,		/* システムデーモン２ */
+	GV_ACTOR_LEVEL_MAX
+} ;
+
+/* ------------------------------------------ old version */
+enum　　　　{
+　　　　GV_ACTOR_DAEMON,　　　　　　　　/* システムデーモン　　　　*/
+　　　　GV_ACTOR_MANAGER,　　　　　　　　/* ゲーム進行プロセス */
+　　　　GV_ACTOR_ASSIST,　　　　　　　　/* ゲーム補助プロセス */
+
+　　　　GV_ACTOR_PREV2,　　　　　　　　　　　　/* メインより前に実行されるキャラクタ（ポーズ時も動作）*/
+　　　　GV_ACTOR_PREV,　　　　　　　　　　　　/* メインより前に実行されるキャラクタ */
+　　　　　　　　　＊通常キャラその１：プレイヤーより前に動く必要のあるもの。
+　　　　GV_ACTOR_PLAYER,　　　　　　　　/* 通常キャラクタ (プレイヤー) */
+　　　　　　　　　＊プレイヤーのみ。他のキャラは使用不可。
+　　　　GV_ACTOR_USER,　　　　　　　　　　　　/* 通常キャラクタ */
+　　　　　　　　　＊通常キャラその２：プレイヤーの情報を参照するもの。
+　　　　GV_ACTOR_CAMERA,　　　　　　　　/* カメラ(ポーズ時も動作) */
+　　　　　　　　　＊カメラのみ。
+　　　　GV_ACTOR_AFTER,　　　　　　　　　　　　/* メインより後に実行されるキャラクタ */
+　　　　　　　　　＊プレイヤーとカメラの後。
+　　　　GV_ACTOR_EFFECT,　　　　　　　　/* エフェクト */
+　　　　　　　　　＊エフェクト。エフェクトはなるべくここ。
+　　　　GV_ACTOR_AFTER2,　　　　　　　　/* メインより後に実行されるキャラクタ（ポーズ時も動作）*/
+
+　　　　GV_ACTOR_DAEMON2,　　　　　　　　/* システムデーモン２ */
+　　　　GV_ACTOR_LEVEL_MAX
+} ;

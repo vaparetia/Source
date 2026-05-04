@@ -1,0 +1,2784 @@
+/* -------------------------------
+
+プラント編ピーター無線
+$Id: p_peter_i.cm,v 1.7 2002/08/02 10:52:49 usr01098 Exp $
+
+---------------------------------*/
+
+//Ｃ脚 d //e
+//厨房扉前 h //e
+resource PP_Ｃ脚厨房扉前１__i {
+//vox t:vc200011 {
+ピーター_000: {
+Non badare a me. Pensa piuttosto a 
+disinnescare quelle bombe.
+}
+/*私なら大丈夫だ。
+爆弾の解体に向かってくれ。
+Never mind about me.
+Get on with disposing
+of those bombs.
+*/
+//dv}//v
+}//d
+
+//しつこく扉を叩いた後 h //e
+resource PP_Ｃ脚厨房扉前扉叩いた後__i {
+//vox t:vc200021 {
+ピーター_000: {
+Cosa stai facendo qui? 
+Sbrigati e disinnesca quelle bombe.
+}
+/*そこで何をしてるんだ？
+さっさと爆弾を処理しに行ってくれ。
+What are you doing there?
+Hurry up and dispose of those
+bombs.
+*/
+//dv}//v
+}//d
+
+//扉の外で危険モードである h //e
+resource PP_Ｃ脚厨房扉前危険モード１__i {
+//vox t:vc200031 {
+ピーター_000: {
+...
+}
+/*……。（息を殺していない振りをしている）
+...
+*/
+//dv}//v
+}//d
+resource PP_Ｃ脚厨房扉前危険モード２__i {
+//vox t:vc200041 {
+ピーター_000: {
+Non aprir&`o mai la porta!
+}
+/*……ここは開けないぞ！
+I'm not going to open the door! 
+*/
+//dv}//v
+}//d
+
+//厨房で破壊の限りを尽くした後 h //e
+resource PP_Ｃ脚厨房扉前破壊__i {
+//vox t:vc200051 {
+ピーター_000: {
+Cosa stai facendo?
+}//<ページ数変更>
+ピーター_000_1: {
+Quelli che amano distruggere non
+sono  tagliati per il disinnescamento
+delle bombe.
+}//<ページ数変更>
+ピーター_000_2: {
+Sicuro di farcela?
+}
+
+/*何をやってるんだ？
+破壊衝動が強すぎる人間は爆弾処理には
+向かないのだが……。大丈夫か？
+What are you doing?
+
+Someone with such an appetite for
+destruction is probably not cut out
+for bomb disposal.
+
+Are you sure you're up to it?
+
+Cosa fai?
+
+Sei peggio di Attila -- come farai 
+a disinnescare le bombe? 
+
+Quello &`e un lavoro delicato,
+sei sicuro di essere all'altezza 
+della situazione?
+*/
+//dv}//v
+}//d
+
+
+//★P014_16_G01ピーター遭遇１６ゲーム１終了＜フラク＜P015_01_R1爆弾解体最初の一つ１無線デモ１開始 d //e
+//ノードにアクセスせよ h //e
+resource PP_ノードにアクセスしろ__i {
+//vox t:vc200061 {
+ピーター_000: {
+Il Sensore A che ti ho dato &`e regolato in 
+modo da visualizzare la posizione delle 
+bombe sul radar.
+}
+/*あんたに渡したセンサーＡはレーダーに
+爆弾の位置を表示するようにセットして
+ある。
+The Sensor A that I gave you is
+set so that the position of bombs
+will appear on the radar.
+*/
+ピーター_001: {
+Non ti avevo detto che se prima non 
+inizializzi il radar non vai da 
+nessuna parte? Ora cerca il nodo.
+}
+/*だからまずレーダーを使えるように
+しなければ話にならない。
+ノードを探すんだ。
+Didn't I say that if you don't first
+initialize the radar, you won't get
+anywhere? Now search for the node.
+*/
+ピーター_002: {
+Se non sei sicuro di dove sia il nodo, 
+chiedi al tuo comandante. 
+Lui dovrebbe saperlo.
+}
+/*ノードがどこにあるかはあんたの上官に
+聞けばわかるだろう。
+If you're not sure where the
+node is, ask your superior
+officer. He should know.
+*/
+//dv}//v
+}//d
+
+//センサー説明１ h //e
+resource PP_センサー説明１__i {
+//vox t:vc200071 {
+ピーター_000: {
+Se ti equipaggi col Sensore A dovresti 
+avere una rappresentazione visiva 
+dell'odore delle C4 sul radar.
+}//<ページ数変更>
+ピーター_000_1: {
+Apparir&`a come un' immagine nebulosa.
+}
+/*センサーＡを装備すれば、Ｃ４の匂いを
+レーダー上に視覚化させることが出来る。
+雲のように映るのがそれだ。
+Equipping yourself with
+Sensor A will bring up a
+visual representation＃−
+
+of the odor of C4's on your
+radar. It will appear as a
+mist-like image.
+*/
+ピーター_001: {
+Certamente le C4 saranno dovunque vedi 
+un'immagine. Cercale con attenzione.
+}
+/*反応があるあたりに必ずＣ４が
+仕掛けられている。よく探すんだ。
+C4 is sure to be planted anywhere
+where there is a response. Search
+carefully.
+*/
+//dv}//v
+}//d
+
+//センサー説明２ h //e
+resource PP_センサー説明２__i {
+//vox t:vc200081 {
+ピーター_000: {
+Il Sensore A non pu&`o specificare 
+l'esatta posizione delle bombe.
+}
+/*センサーＡは爆弾の位置を
+特定できるものではない。
+Sensor A can't specify the
+exact location of bombs.
+*/
+ピーター_001: {
+Purtroppo pu&`o solo localizzarne l'area. 
+Una volta che hai l'area,
+}//<ページ数変更>
+ピーター_001_1: {
+dovrai continuare le ricerche coi 
+tuoi occhi.
+}
+/*残念ながら、エリアを特定できるのみだ。
+エリアがわかれば、後は目で探す
+しかない。
+It's unfortunate, but only
+the area can be localized.
+
+Once you've got the area, you'll
+have to continue your search
+using your own two eyes.
+*/
+//dv}//v
+}//d
+//センサー説明３ h //e
+resource PP_センサー説明３__i {
+//vox t:vc200091 {
+ピーター_000: {
+Il sensore ha un alto fattore di 
+affidabilit&`a. Consideralo a 
+prova di errore.
+}
+/*センサーの信憑性は高い。
+誤作動はないと考えてくれていい。
+The sensor has a high dependability
+factor. Consider it error-proof.
+*/
+ピーター_001: {
+Anche se a prima vista non rivela niente, 
+se risponde puoi essere sicuro che nelle 
+vicinanze c'&`e una C4.
+}
+/*センサーに反応があったら、
+必ずそのどこかにＣ４がある。
+一見見当たらなくてもな。
+Even if a glance reveals nothing,
+you can be sure there is a C4 in
+the vicinity if the sensor responds.
+*/
+ピーター_002: {
+Pensa con la testa di Fatman e 
+sicuramente troverai qualcosa. 
+Guarda bene.
+}
+/*ファットマンの気持ちになって
+考えてみれば、必ず見つかる。
+よく探すんだ。
+Try thinking from Fatman's
+perspective, and you're sure to
+find something. Look carefully.
+*/
+//dv}//v
+}//d
+
+
+//冷凍スプレー h //e
+//使い方 t //e
+resource PP_冷凍スプレー使い方__i {
+//vox t:vc200101 {
+ピーター_000: {
+Lo spray refrigerante non finisce mai, 
+anche se ne usi moltissimo. 
+Utilizzalo liberamente.
+}
+/*冷却スプレーはいくら使っても内容物が
+なくなることはない。そこは気にせず
+使ってくれ。
+The coolant spray will never run
+out no matter how much you use
+it. Go ahead and utilize it freely.
+*/
+ピーター_001: {
+Ma ricorda che ha un raggio utile 
+di pochi metri.
+}//<ページ数変更>
+ピーター_001_1: {
+Considera la distanza che ti separa 
+dalle bombe, prima di usarlo.
+}
+/*ただしスプレーが届くは数メートルだ。
+爆弾との距離を考えて使用するんだ。
+Note, however, that the spray has
+a range of only several meters.
+
+Be sure to factor in the distance
+between you and the bombs when
+you use it.
+*/
+//dv}//v
+}//d
+
+//注意。主観画面になる。 h //e
+resource PP_冷凍スプレー主観__i {
+//vox t:vc200111 {
+ピーター_000: {
+Quando ti equipaggi con lo spray 
+refrigerante, passerai alla 
+schermata della Visuale Soggettiva.
+}//<ページ数変更>
+ピーター_000_1: {
+Attenzione, perch&'e questo significa 
+che quando spruzzi non potrai muoverti.
+}
+/*冷却スプレーを装備すると主観画面に
+なる。つまりスプレー噴射中は移動
+出来ないということだ。気をつけてくれ。
+When you equip yourself with the
+coolant spray, you will enter the
+First Person View Screen.
+
+Now, be careful, as this means that
+you can't move while spraying.
+
+*/
+//dv}//v
+}//d
+
+//その他注意 h //e
+resource PP_冷凍スプレー注意__i {
+//vox t:vc200121 {
+ピーター_000: {
+Anche nel caso di luoghi 
+irraggiungibili o zone troppo 
+strette,
+}//<ページ数変更>
+ピーター_000_1: {
+lo spray dovrebbe raggiungere la bomba, 
+sempre che tu allunghi il braccio.
+}
+/*背の届かない場所、入り込めないような
+狭い場所でも、手を伸ばせばスプレーの
+噴射が届くはずだ。
+Even in places that you can't
+reach or narrow areas that
+you can't enter,
+
+the spray should reach provided
+you stretch out your arm.
+*/
+//dv}//v
+}//d
+
+
+//爆弾 h //e
+resource PP_爆弾１__i {
+//vox t:vc200131 {
+ピーター_000: {
+Quando la spia sul detonatore smette 
+di pulsare, vuol dire che la bomba si 
+&`e bloccata.
+}//<ページ数変更>
+ピーター_000_1: {
+Insomma, che tu l'hai disinnescata 
+correttamente.
+}
+/*起爆装置についているランプの点滅が
+止まれば、凍結完了、つまり爆弾処理が
+終わったということだ。
+When the lamp on the detonator
+stops pulsating, it indicates that
+the bomb has been frozen --
+
+meaning that the bomb has
+been successfully defused.
+*/
+ピーター_001: {
+Spruzza il refrigerante fino a quando 
+la spia non smette di lampeggiare.
+}
+/*ランプの点滅が止まるまで
+スプレーを吹き付けろ。
+Apply the spray until
+the lamp stops blinking.
+*/
+//dv}//v
+}//d
+
+//爆弾解除報告Ａ脚の場合 h //e
+resource PP_爆弾報告＿場所＿Ａ脚１__i {
+//vox t:vc200141 {
+ライデン_000: {
+Qui Raiden. Ora la C4 localizzata nel 
+Supporto A &`e bloccata e disinnescata.
+}
+/*こちらライデン、
+Ａ脚のＣ４を冷却処理した。
+This is Raiden. The C4 found
+in Strut A has been frozen and
+disposed of.
+*/
+//dv}//v
+}//d
+//爆弾解除報告ポンプ室 h //e
+resource PP_爆弾報告＿場所＿Ａ脚２__i {
+//vox t:vc200151 {
+ライデン_000: {
+Ha messo esplosivi nella Sala della 
+Pompa, al primo piano.
+}
+/*１Ｆのポンプ室に仕掛けてあった。
+Explosives were planted in the
+Pump Room on the first floor.
+*/
+//dv}//v
+}//d
+
+
+//爆弾解除報告Ｂ脚の場合 h //e
+resource PP_爆弾報告＿場所＿Ｂ脚１__i {
+//vox t:vc200161 {
+ライデン_000: {
+Qui Raiden. La C4 nel Supporto B &`e 
+stata disinnescata.
+}
+/*こちらライデン、
+Ｂ脚のＣ４を処理した。
+Raiden reporting. The C4 in
+Strut B has been disposed of.
+*/
+//dv}//v
+}//d
+//扉裏側 t //e
+resource PP_爆弾報告＿場所＿Ｂ脚２__i {
+//vox t:vc200171 {
+ライデン_000: {
+Voleva far saltare la parete col 
+pannello del trasformatore.
+}
+/*変電盤横の壁に仕掛けてあった。
+The wall containing the
+transformer panel was
+set to blow.
+*/
+//dv}//v
+}//d
+
+//爆弾解除報告Ｃ脚の場合 h //e
+resource PP_爆弾報告＿場所＿Ｃ脚１__i {
+//vox t:vc200181 {
+ライデン_000: {
+Qui Raiden. 
+Tutto a posto con la C4 nel Supporto C.
+}
+/*こちらライデン、
+Ｃ脚のＣ４を片づけた。
+Raiden here. I took care
+of the C4 in Strut C.
+*/
+//dv}//v
+}//d
+//女子トイレ t //e
+resource PP_爆弾報告＿場所＿Ｃ脚２__i {
+//vox t:vc200191 {
+ライデン_000: {
+Voleva far esplodere il soffitto del 
+Bagno delle Donne.
+}
+/*女子トイレの天井に仕掛けてあった。
+The ceiling of the Women's
+Bathroom was set to blow.
+*/
+//dv}//v
+}//d
+
+//爆弾解除報告Ｄ脚の場合 h //e
+resource PP_爆弾報告＿場所＿Ｄ脚１__i {
+//vox t:vc200201 {
+ライデン_000: {
+Qui Raiden. La C4 nel Supporto D &`e 
+stata disinnescata.
+}
+/*こちらライデン、
+Ｄ脚のＣ４の処理を終了。
+This is Raiden. Disposal of
+the C4 in Strut D is complete.
+*/
+//dv}//v
+}//d
+//水面 t //e
+resource PP_爆弾報告＿場所＿Ｄ脚２__i {
+//vox t:vc200211 {
+ライデン_000: {
+Aveva messo esplosivi sul boccaporto 
+di manutenzione.
+}
+/*メンテナンス用ハッチの中に
+仕掛けてあった。
+Explosives were planted on
+the maintenance hatch.
+*/
+//dv}//v
+}//d
+//爆弾解除報告Ｅ脚の場合 h //e
+resource PP_爆弾報告＿場所＿Ｅ脚１__i {
+//vox t:vc200221 {
+ライデン_000: {
+Qui Raiden. Tutte le C4 nel Supporto 
+E sono bloccate e disinnescate.
+}
+/*こちらライデン、
+Ｅ脚のＣ４を冷却処理した。
+Raiden reporting. All C4 in Strut E
+has been frozen and disposed of.
+*/
+//dv}//v
+}//d
+//ベルトコンベア t //e
+resource PP_爆弾報告＿場所＿Ｅ脚２__i {
+//vox t:vc200231 {
+ライデン_000: {
+Voleva far esplodere i bagagli in transito 
+sul nastro trasportatore.
+}
+/*ベルトコンベアで流れている荷物に
+仕掛けてあった。
+The baggage moving on
+the conveyer belt was set
+to go off.
+*/
+//dv}//v
+}//d
+//爆弾解除報告Ｅ脚屋上の場合 h //e
+resource PP_爆弾報告＿場所＿Ｅ脚屋上１__i {
+//vox t:vc200241 {
+ライデン_000: {
+Qui Raiden. La C4 localizzata sul 
+tetto del Supporto E &`e k.o.
+}
+/*こちらライデン、
+Ｅ脚屋上ヘリポートのＣ４を
+片づけた。
+Raiden here. The C4 reported
+on the roof of Strut E has been
+taken care of.
+*/
+//dv}//v
+}//d
+//ハリアー t //e
+resource PP_爆弾報告＿場所＿Ｅ脚屋上ハリアー__i {
+//vox t:vc200251 {
+ライデン_000: {
+Aveva messo esplosivi sull'Harrier II 
+stazionato sul tetto.
+}
+/*駐機していたハリアー２に
+仕掛けてあった。
+Explosives were planted on
+the Harrier 2 stationed on
+the roof.
+*/
+//dv}//v
+}//d
+//敵兵背中 t //e
+resource PP_爆弾報告＿場所＿Ｅ脚３__i {
+//vox t:vc200261 {
+ライデン_000: {
+La schiena di un soldato nemico era 
+letteralmente coperta di esplosivo.
+}
+/*敵兵士の背中に仕掛けてあった。
+
+The back of an enemy soldier
+was laced with explosives.
+*/
+//dv}//v
+}//d
+
+
+//爆弾解除報告Ｆ脚の場合 h //e
+resource PP_爆弾報告＿場所＿Ｆ脚１__i {
+//vox t:vc200271 {
+ライデン_000: {
+Qui Raiden. Ho appena finito di 
+disinnescare la C4 nel Supporto F.
+}
+/*こちらライデン、
+Ｆ脚のＣ４の処理を終えたところだ。
+
+This is Raiden. I just finished
+disposing of the C4 in Strut F.
+*/
+//dv}//v
+}//d
+//荷物 t //e
+resource PP_爆弾報告＿場所＿Ｆ脚２__i {
+//vox t:vc200281 {
+ライデン_000: {
+Ho trovato esplosivi sul piano B1.
+}
+/*Ｂ１に仕掛けてあった。
+Found explosives on B1.
+*/
+//dv}//v
+}//d
+
+
+//爆弾評価 時間、ゲームオーバー回数から判定 h //e
+//時間掛かり過ぎ h //e
+resource PP_爆弾評価＿時間超過__i {
+//vox t:vc200291 {
+ピーター_000: {
+Stai perdendo troppo tempo. 
+Devi procedere pi&`u velocemente.
+}
+/*時間が掛かりすぎだな。
+もう少し、急いだ方がいい。
+You're taking too much time.
+You should work a little faster.
+*/
+スネーク_001: {
+Non c'&`e tempo, Raiden. Qui ho troppo 
+da fare, non penso di poterti aiutare.
+}//<ページ数変更>
+スネーク_001_1: {
+Tutto &`e nelle tue mani ora.
+}
+/*ライデン、時間がない。
+こっちも手いっぱいだ。
+お前の手伝いは出来そうにない。頼むぞ。
+There's no time, Raiden. I've got
+my hands full here, so it doesn't
+look like I can help you.
+
+It's in your hands.
+s*/
+//dv}//v
+}//d
+
+//時間普通 h //e
+resource PP_爆弾評価＿時間普通__i {
+//vox t:vc200301 {
+ピーター_000: {
+Sei pi&`u veloce di quanto pensassi... 
+e anche pi&`u abile di quanto sembri.
+}
+/*意外と早かったな。
+見かけよりはやるようだ。
+You're faster than I expected...
+and more capable than you look.
+*/
+/*以下はカット*/
+/*スネーク_001: {
+I've finally finished one.
+Let's keep ourselves together.
+}
+*/
+/*こっちもようやく１個だ。
+気を引き締めていこう。
+*/
+//dv}//v
+}//d
+
+//時間早い h //e
+resource PP_爆弾評価＿時間早い__i {
+//vox t:vc200311 {
+ピーター_000: {
+Sei veloce, vedo. 
+Non male per un pivellino, davvero.
+}
+/*なかなか早いな。
+まあ、まずまずだ。最初としてはな。
+You're pretty fast. Well, not
+bad for a beginner, anyway.
+*/
+スネーク_001: {
+Mmm... sembra che tutto 
+quell'addestramento in RV serva 
+a qualcosa, dopotutto.
+}
+/*ふん、ＶＲ訓練も役に立つということか。
+Hmm... it looks like VR Training
+does come in handy.
+*/
+//dv}//v
+}//d
+
+//時間超早い h //e
+resource PP_爆弾評価＿時間超早い__i {
+//vox t:vc200321 {
+ピーター_000: {
+Accidenti, quanto sei veloce! 
+Io da giovane non ero mica come te.
+}
+/*は、早いな！
+若い頃の私でもこうはいかん……。
+Damn, you're fast! Even if
+I was still young, I couldn't
+operate like that.
+*/
+スネーク_001: {
+Ma che &`e, una modalit&`a di Attacco 
+a tempo questa?!?
+}
+/*……タイムアタックでもしてるのか？
+What is this, a Time Attack
+mode or something!?
+*/
+//dv}//v
+}//d
+
+
+
+//見つかり過ぎ h //e
+resource PP_爆弾評価＿見つかり過ぎ__i {
+//vox t:vc200331 {
+ピーター_000: {
+Il nemico ti sta notando troppe volte. 
+Procedi con maggior cautela.
+}
+/*少し敵に見つかり過ぎのようだな。
+もっと慎重に進め。
+You're being spotted by the enemy
+a bit too much. Proceed with more
+caution.
+*/
+//dv}//v
+}//d
+
+//殺し過ぎ h //e
+resource PP_爆弾評価＿殺し過ぎ__i {
+//vox t:vc200341 {
+ピーター_000: {
+Vedo che ti piace combattere. 
+Per&`o sarebbe meglio procedere 
+con pi&`u discrezione.
+}
+/*あんたは戦闘が好きなようだな。
+もっと穏便に進めたほうが
+良いんじゃないか。
+Looks like you like to fight.
+Still, it would be wiser to
+proceed more stealthily.
+*/
+//dv}//v
+}//d
+
+//レーション食い過ぎ h //e
+resource PP_爆弾評価＿食い過ぎ__i {
+//vox t:vc200351 {
+ピーター_000: {
+Ma non stai mangiando un po' troppo?
+}
+/*ちょっと食べ過ぎなんじゃないか？
+Aren't you eating a bit too much?
+*/
+//dv}//v
+}//d
+
+//エロ行為し過ぎ h //e
+resource PP_爆弾評価＿エロ過ぎ__i {
+//vox t:vc200361 {
+ピーター_000: {
+Ehi, dico a te. Nessuno ti ha mai 
+detto che hai grossi problemi!?
+}
+/*なんというか、あんた……。
+素行に問題があると言われたことないか？
+Hey, you. Has anyone ever told
+you you have some issues?
+*/
+//dv}//v
+}//d
+
+
+//P015_01_R1　爆弾解体最初の一つ１無線デモ１（ピーター強制ＳＥＮＤ）連結用 h //e
+resource PP_最初の一つＣＡＬＬ連結__i {
+//vox t:vc200371 {
+ピーター_000: {
+Per&`o... c'&`e qualcosa di strano... 
+non &`e da lui, questo.
+}
+/*しかし、妙だな……。
+あいつらしくない。
+Still, there's something
+strange... it's not like him.
+*/
+//dv}//v
+}//d
+
+//そのエリアの残り爆弾 h //e
+//あり t //e
+resource PP_残り爆弾＿あり__i {
+//vox t:vc200381 {
+ピーター_000: {
+In quell'area ci sono ancora delle 
+bombe innescate. Cerca meglio.
+}
+/*そのエリアにはまだ処理されていない
+爆弾が残っている。よく探すんだ。
+There are still bombs in that area
+that haven't been disposed of.
+Search carefully.
+*/
+//dv}//v
+}//d
+
+//なし t //e
+resource PP_残り爆弾＿なし__i {
+//vox t:vc200391 {
+ピーター_000: {
+Ben fatto. Sembra che in quel supporto 
+non ci siano altre bombe. 
+Ora passa agli altri supporti.
+}
+/*その脚部にもう爆弾は残っていない
+ようだな。よくやった。他の脚部に
+向かってくれ。
+Well done. It looks like there are
+no more bombs in that strut. Now,
+head for the other struts.
+*/
+//dv}//v
+}//d
+
+
+//爆弾設置場所が不審 h //e
+resource PP_爆弾設置場所不審__i {
+//vox t:vc200401 {
+ライデン_000: {
+Questa bomba... &`e stata messa in una 
+posizione davvero strana...
+}
+/*爆弾の設置場所がおかしいという
+話だが……。
+About this bomb... it's been placed
+in a somewhat strange location...
+*/
+ピーター_001: {
+Sono d'accordo. Non ha senso. 
+Non nel suo caso, intendo.
+}
+/*ああ。合理的でないんだ。
+奴らしくない。
+Agreed. It doesn't make
+sense. Not for him, anyway.
+*/
+ライデン_002: {
+Sembra che tu abbia capito tutto, eh?
+}
+/*なんでもわかっているような口振りだな。
+You sound like you've got
+everything figured out.
+*/
+ピーター_003: {
+Proprio cos&`i. &`E perch&'e capisco alla 
+perfezione come lavora la sua mente.
+}
+/*わかっているよ。
+奴の考えていることはすべて、な……。
+That's because I do. I know
+exactly how his mind works.
+*/
+//dv}//v
+}//d
+
+//ピーターは何をしているのか？ h //e
+resource PP_ピーターは何をしてる__i {
+//vox t:vc200411 {
+ライデン_000: {
+Stillman, tutto a posto?
+}
+/*スティルマン、あんたの方は大丈夫か？
+Stillman, are you all
+right over there?
+*/
+ピーター_001: {
+S&`i, nessun problema.
+}
+/*ああ、問題ない。
+Yeah, no problem.
+*/
+ライデン_002: {
+Sarai annoiato, eh.
+}
+/*退屈してるんじゃないか？
+You must be bored.
+*/
+ピーター_003: {
+Non direi. Fra coordinare voi due e 
+calibrare quest'aggeggio, ne ho fin 
+sopra i capelli...
+}
+/*そうでもない。あんたらの相手を
+するのに忙しいし、こいつの調整が
+やはり大変でな……。
+Hardly. Between dealing with
+you guys and calibrating this,
+I've got my hands full...
+*/
+ライデン_004: {
+Che hai detto, scusa?
+}
+/*なんだって？
+What did you say?
+*/
+ピーター_005: {
+Niente, niente. Ma sarebbe meglio se 
+non dovessimo usarlo, questo.
+}//<ページ数変更>
+ピーター_005_1: {
+Comunque, tu pensa alle bombe.
+}
+/*いや。なんでもない。
+使わんにこしたことはないのだ……。
+爆弾の方は頼むぞ。
+Ah, nothing. It's just that it
+would be best if we didn't
+have to use this.
+
+Anyway, get to those bombs.
+*/
+//dv}//v
+}//d
+
+
+
+
+
+
+
+//爆弾設置場所についてのヒント h //e
+//Ａ脚南 ホフクしなければいけない h //e
+resource PP_爆弾ヒント＿Ａ脚ホフク__i {
+//vox t:vc200421 {
+ピーター_000: {
+Nessuno lascerebbe una bomba in un 
+posto cos&`i facilmente raggiungibile.
+}//<ページ数変更>
+ピーター_000_1: {
+Sarebbe meglio controllare le aree meno 
+accessibili, dove non si riesce a 
+camminare.
+}
+/*簡単に辿り着ける場所に爆弾を仕掛ける
+奴などいない。歩いては入れないような
+込み入った場所こそ探す価値がある。
+No one's going to leave a bomb
+in a place that easy to reach.
+
+It would be more worthwhile
+to search convoluted areas that
+can't be reached simply by walking.
+*/
+//dv}//v
+}//d
+
+//Ｂ脚扉閉めたらわかる爆弾 h //e
+resource PP_爆弾ヒント＿Ｂ脚扉１__i {
+//vox t:vc200431 {
+ピーター_000: {
+Raiden, nelle vicinanze abbiamo 
+rilevato una bomba.
+}
+/*ライデン、そのあたりに爆弾の反応が
+ある。
+Raiden, a bomb's been
+detected in that vicinity.
+*/
+//dv}//v
+}//d
+resource PP_爆弾ヒント＿Ｂ脚扉２__i {
+//vox t:vc200441 {
+ライデン_000: {
+Lo so, ma non la vedo da nessuna parte.
+}
+/*わかってる。
+だがどこにも見当たらないんだ。
+I know, but I don't
+see it anywhere.
+*/
+//dv}//v
+}//d
+resource PP_爆弾ヒント＿Ｂ脚扉３__i {
+//vox t:vc200451 {
+ピーター_000: {
+Fatman se la spassa a ingannare gli 
+avversari. Cerca di rimettere tutto a 
+posto com'era prima.
+}
+/*ファットマンは人の裏をかく。
+全てのものをあるべき状態に
+戻してみるんだ。
+Fatman takes pride in bluffing his
+opponents. Try putting everything
+back to how it should be.
+*/
+//dv}//v
+}//d
+
+//Ｃ脚女子トイレ h //e
+resource PP_爆弾ヒント＿Ｃ脚＿女子トイレ１__i {
+//vox t:vc200461 {
+ピーター_000: {
+Raiden, ci sono ancora C4 nel 
+supporto in cui ti trovi.
+}
+/*ライデン、あんたがいる脚には
+まだＣ４が残っているぞ。
+Raiden, there's still C4 in
+the strut where you are.
+*/
+ライデン_001: {
+Dove?
+}
+/*どこに？
+Where?
+*/
+ピーター_002: {
+Ecco, dai retta a me.
+}
+/*そうだな、ヒントをやろう。
+Alright.
+Let me give you a hint.
+*/
+//dv}//v
+}//d
+resource PP_爆弾ヒント＿Ｃ脚＿女子トイレ２__i {
+//vox t:vc200471 {
+ピーター_000: {
+Cerca un posto dove i giovani non sono 
+mai entrati fin'ora.
+}
+ピーター_001: {
+Un posto speciale, dove i giovani 
+nolerano entrare, ma semplicemente 
+non potevano.
+}
+
+/*これまで男なら入った事のない場所を
+探せ。入りたくても入れなかった
+特別な場所……。
+Look for a place that guys have
+never entered up to this point.
+
+A special place that guys
+have wanted to enter but
+simply couldn't...
+
+dove i maschi hanno 
+sempre voluto entrare ma non possono...*/
+ピーター_002: {
+Un posto in cui neanche tu entreresti, 
+se non fossimo in una situazione 
+di emergenza...
+}
+/*こんな事でもなければ入れない……。
+A place that you couldn't enter
+if the situation wasn't as such...
+*/
+//dv}//v
+}//d
+//既に入っている場合 t //e
+resource PP_爆弾ヒント＿Ｃ脚＿女子トイレ３__i {
+//vox t:vc200481 {
+ピーター_000: {
+Oh... vedo che c'eri gi&`a entrato. 
+Perbacco, Raiden!
+}
+/*ん？あんたはもう入っていたようだな。
+いやはや……。
+Oh... looks like you were
+in there already. My, my.
+*/
+//dv}//v
+}//d
+
+//女子トイレ天井 h //e
+resource PP_爆弾ヒント＿Ｃ脚天井__i {
+//vox t:vc200491 {
+ピーター_000: {
+Raiden, non ci sono dubbi: 
+l&`i vicino c'&`e una C4.
+}
+/*ライデン、そのあたりにＣ４が
+仕掛けられているのは確かだ。
+Raiden, there is no doubt that
+C4 is planted in that vicinity.
+*/
+ピーター_001: {
+Guarda in alto, in basso, a destra a 
+sinistra... dappertutto.
+}//<ページ数変更>
+ピーター_001_1: {
+Usa la Visuale Soggettiva mentre 
+cambi posizione.
+}
+/*上下、左右……。場所を変えながら
+主観でまわりをよく探してみろ。
+Up, down, left, right... be sure
+to thoroughly examine your
+surroundings＃−
+
+through the First Person View
+as you change location.
+*/
+//dv}//v
+}//d
+
+//Ｄ脚 立体 h //e
+resource PP_爆弾ヒント＿Ｄ脚＿立体__i {
+//vox t:vc200501 {
+ピーター_000: {
+Il supporto D in cui ti trovi ora ha 
+una struttura molto solida.
+}//<ページ数変更>
+ピーター_000_1: {
+Perlustra a fondo sia il livello 
+inferiore che quello superiore.
+}
+/*あんたがいるＤ脚は立体構造に
+なっている。上の階だけでなく、
+下の階もくまなく探すんだ。
+Strut D, in which you're currently
+located, has a solid makeup.
+
+Thoroughly search the lower
+as well as the upper level.
+*/
+//dv}//v
+}//d
+//んーぼつぼつＸＸＸＸＸＸＸＸＸＸ
+//泳げ t //e
+resource PP_爆弾ヒント＿Ｄ脚＿立体ズバリ__i {
+//vox t:vc200511 {
+ピーター_000: {
+Pare che ci sia un'area raggiungibile 
+solo a nuoto, attraversando il 
+serbatoio dell'acqua.
+}//<ページ数変更>
+ピーター_000_1: {
+Perch&'e non ti fai una rapida nuotatina?
+}
+/*貯水槽を泳いでいかなければ
+辿り着けないような場所もありそうだな。
+ひと泳ぎしてみるのもいいんじゃないか？
+Looks like there's an area you
+won't be able to reach unless
+you swim through the water tank.
+
+Why don't you take a quick dip?
+*/
+//dv}//v
+}//d
+//Ｄ脚ハッチの中 h //e
+resource PP_爆弾ヒント＿Ｄ脚＿ハッチ内__i {
+//vox t:vc200521 {
+ピーター_000: {
+Raiden... non sempre troverai le C4 
+in aree visibili, come pavimento e pareti.
+}
+/*ライデン、Ｃ４は床や壁などに露出して
+仕掛けられているとは限らない。
+Raiden... it's not always the case
+that C4 is set in visible areas
+such as the floor and walls.
+*/
+ピーター_001: {
+Controlla a fondo nelle vicinanze.
+}//<ページ数変更>
+ピーター_001_1: {
+C'&`e sempre la possibilit&`a di bombe 
+innescate in aree invisibili.
+}
+/*隠れた場所に設置されている可能性も
+ある。くまなく捜索するんだ。
+Thoroughly search the vicinity,
+
+as there's a possibility that
+bombs may have been placed
+in unseen areas.
+*/
+//dv}//v
+}//d
+resource PP_爆弾ヒント＿Ｄ脚＿ハッチ内ズパリ__i {
+//vox t:vc200531 {
+ピーター_000: {
+Lo vedi quel boccaporto di manutenzione,
+sul pavimento?
+}//<ページ数変更>
+ピーター_000_1: {
+Controllalo posizionandoti vicino 
+e premendo il tasto Azione.
+}
+/*床にメンテナンス用のハッチが
+あるだろう。その中も確認するんだ。
+ハッチの近くで△ボタンを押せ。
+See the maintenance
+hatch on the floor?
+
+Check the hatch by positioning
+yourself nearby it and pressing
+the Action button.
+*/
+//dv}//v
+}//d
+
+//ロッカーの中爆弾 h //e
+resource PP_爆弾ヒント＿ロッカー中__i {
+//vox t:vc200541 {
+ピーター_000: {
+Controlla dentro l'armadietto.
+}
+/*ロッカーの中を調べてみろ。
+Try checking inside the locker.
+*/
+//dv}//v
+}//d
+
+
+//Ｅ脚１Ｆベルトコンベアに載せられて移動する荷物 h //e
+resource PP_爆弾ヒント＿移動荷物__i {
+//vox t:vc200551 {
+ピーター_000: {
+Raiden, sembra che ci siano alcune 
+C4 su un oggetto in movimento. 
+Controlla bene.
+}
+/*ライデン、Ｃ４は何か移動する物に
+仕掛けられているようだ。
+よく探してみろ。
+Raiden, it would appear that some
+C4 has been planted on a moving
+object. Search carefully.
+*/
+//dv}//v
+}//d
+
+//Ｅ脚１Ｆ敵兵の背中 h //e
+resource PP_爆弾ヒント＿敵兵背中__i {
+//vox t:vc200561 {
+ピーター_000: {
+Raiden, &`e rimasta una bomba.
+}//<ページ数変更>
+ピーター_000_1: {
+Dev'esserci qualcos'altro che 
+si muove oltre ai bagagli.
+}//<ページ数変更>
+ピーター_000_2: {
+Usa la Visuale Soggettiva e controlla 
+bene.
+}
+/*ライデン、爆弾がまだ残っている。
+荷物以外にも移動するものがあるはずだ。
+主観でよく探してくれ。
+Raiden, there's still
+a bomb remaining. 
+
+There must be something other
+than the baggage that's in motion.
+
+Try to use the First Person
+View and check carefully.
+*/
+//dv}//v
+}//d
+
+//Ｅ脚屋上 ハリアー h //e
+resource PP_爆弾ヒント＿ハリアー__i {
+//vox t:vc200562 {
+ピーター_000: {
+Non potrai vedere le bombe con una 
+semplice occhiata.
+}//<ページ数変更>
+ピーター_000_1: {
+Controlla a fondo con la Visuale 
+Soggettiva. Guarda sotto le cose 
+-- guarda dappertutto.
+}
+/*爆弾が一見してわかる場所に仕掛け
+られているわけがない。主観でよく
+探すんだ。物の下なども、くまなくな。
+You won't be able to see the
+bombs with a quick glance.
+
+Search carefully with the First
+Person View. Try to look under
+things -- look everywhere.
+*/
+//dv}//v
+}//d
+//Ｅ脚屋上 ハリアー ズバリ h //e
+resource PP_爆弾ヒント＿ハリアーズバリ__i {
+//vox t:vc200563 {
+ピーター_000: {
+Lui preferisce sicuramente le posizioni 
+insolite. Ma l&`i non pensavo che ne 
+avrebbe messa una...
+}
+/*奴は意外な場所にこそ爆弾を仕掛ける。
+本来なら仕掛けるはずのない場所にな。
+He certainly favors unusual
+locations. I didn't anticipate
+he'd put one there, though...
+*/
+ピーター_001: {
+Proprio sul loro equipaggiamento 
+-- prova a controllare l'Harrier.
+}
+/*奴等の持ち物……
+ハリアーをよく調べてみろ。
+Right on their own equipment --
+try searching the Harrier.
+*/
+//dv}//v
+}//d
+
+//Ｅ脚、Ａ脚 屋上にもあるかも h //e
+resource PP_爆弾ヒント＿屋上__i {
+//vox t:vc200571 {
+ピーター_000: {
+Raiden, il tetto di quel supporto &`e 
+accessibile. Controlla anche l&`i.
+}
+/*ライデン、その脚部は屋上にも上がる
+ことが出来る。屋上の方も確認してみろ。
+Raiden, the roof of that strut is
+accessible. Check there as well.
+*/
+//dv}//v
+}//d
+
+//Ｅ脚、Ａ脚 １Ｆにもあるかも h //e
+resource PP_爆弾ヒント＿１Ｆ__i {
+//vox t:vc200581 {
+ピーター_000: {
+Raiden, pu&`o essere che abbia messo C4 
+all'interno, non solo sul tetto.
+}//<ページ数変更>
+ピーター_000_1: {
+Entra e conferma.
+}
+/*ライデン、屋上だけでなく屋内の方にも
+Ｃ４が仕掛けられている可能性がある。
+屋内に入って確認するんだ。
+Raiden, there's a possibility that
+C4 was planted indoors as well
+as on the roof.
+
+Go inside and confirm this.
+*/
+//dv}//v
+}//d
+
+//Ｆ脚 荷物の上に乗らないと駄目 h //e
+resource PP_爆弾ヒント＿Ｆ脚＿荷物上__i {
+//vox t:vc200591 {
+ピーター_000: {
+Naturalmente il raggio d'azione dello 
+spray refrigerante non &`e illimitato.
+}
+/*冷却スプレーの飛距離には当然、
+限りがある。
+There is a limit, of course, to
+the range of the coolant spray.
+*/
+ピーター_001: {
+Se una C4 &`e in una posizione 
+irraggiungibile con lo spray,
+}//<ページ数変更>
+ピーター_001_1: {
+devi avvicinarti a sufficienza 
+perch&'e lo spray possa avere 
+effetto.
+}
+/*Ｃ４がスプレーの届かない場所に
+設置されているなら、なんとかして
+スプレーの届く距離まで近づくんだ。
+Should C4 be positioned in a place
+that the spray can't reach,
+
+you must get close enough
+so that it does somehow.
+*/
+//dv}//v
+}//d
+
+//Ｆ脚 エルードで飛び降りて行く h //e
+resource PP_爆弾ヒント＿Ｆ脚＿飛び降り__i {
+//vox t:vc200601 {
+ピーター_000: {
+Il Supporto F ha una struttura solida, 
+con aree inaccessibili a piedi.
+}//<ページ数変更>
+ピーター_000_1: {
+Se salti gi&`u dal tetto, dovrebbe 
+esserci un'area a cui puoi accedere.
+}
+/*Ｆ脚は立体構造になっている。歩いては
+入れなくても。上から飛び降りれば
+行けるような場所もあるはずだ。
+Strut F has a solid makeup, with
+areas that can't be accessed
+simply by walking.
+
+If you jump off from the top,
+there should be an area that
+you can access.
+*/
+//dv}//v
+}//d
+
+//連絡橋にいる場合 h //e
+resource PP_連絡橋に爆弾なし__i {
+//vox t:vc200611 {
+ピーター_000: {
+Sembra che Fatman abbia messo bombe in 
+ognuno dei supporti.
+}//<ページ数変更>
+ピーター_000_1: {
+&`E poco probabile che ne abbia messe 
+anche sui ponti di collegamento.
+}
+/*ファットマンはＣ４を各脚部に仕掛けていると思われる。連絡橋には設置して
+いないだろう。
+It appears that Fatman placed
+bombs within each of the struts.
+
+It's likely there are no bombs
+planted on the connecting bridges.
+*/
+ピーター_001: {
+Dirigiti verso i supporti in cui non 
+hai ancora finito di disinnescare le C4.
+}
+/*まだＣ４の処理を終えていない
+脚部に向かってくれ。
+Head for the struts for which you
+have not yet finished disposing of
+the C4.
+*/
+//dv}//v
+}//d
+
+//★＜P022_01_R01爆弾解体最後から二つ目１無線デモ１終了＜フラグ＜P023_01_R01爆弾解体最後の一つ１無線デモ１開始 d //e
+//最後の一つを解体せよ h //e
+resource PP_移動後Ｈ脚到着前１__i {
+//vox t:vc200621 {
+ライデン_000: {
+Stillman, dove sei?
+}
+/*スティルマン、今どこだ？
+Stillman, where are you?
+*/
+//dv}//v
+}//d
+resource PP_移動後Ｈ脚到着前２__i {
+//vox t:vc200631 {
+ピーター_000: {
+Non sono ancora arrivato al Supporto H.
+}
+/*こっちはまだＨ脚に到着していない。
+I haven't arrived at Strut H yet.
+*/
+//dv}//v
+}//d
+resource PP_移動後Ｈ脚到着前３__i {
+//vox t:vc200641 {
+ライデン_000: {
+Ce la fai da solo?
+}
+/*ひとりで大丈夫か？
+Are you all right on your own?
+*/
+ピーター_001: {
+Credici o no, ero un poliziotto da 
+giovane.
+}//<ページ数変更>
+ピーター_001_1: {
+E al nemico ci sta gi&`a pensando 
+Pliskin.
+}
+/*これでも、昔は警官だった。敵も
+プリスキンがあらかじめ始末して
+くれている。
+Believe it or not,
+I used to be a cop.
+
+As far as the enemy, Pliskin is
+already taking care of that for
+me.
+*/
+ピーター_002: {
+Per&`o &`e duro correre dopo tutti 
+questi anni.
+}//<ページ数変更>
+ピーター_002_1: {
+Le mie gambe non sono pi&`u quelle 
+di una volta.
+}
+/*ただし、走れると言っても、５年ぶりだ。
+足がうまく運ばない。
+But it's hard to just run after
+not having done so in five years.
+
+My legs just don't work
+like they used to.
+*/
+//dv}//v
+}//d
+//二回目以降 t //e
+resource PP_移動後Ｈ脚到着前４__i {
+//vox t:vc200651 {
+ピーター_000: {
+Dovrei arrivare al Supporto H mentre 
+tu finisci di disinnescare la C4 in 
+Shell 1.
+}//<ページ数変更>
+ピーター_000_1: {
+Mi raccomando, disinnescala a dovere.
+}
+/*あんたがシェル１のＣ４を処理し終わる
+頃までにはＨ脚に着くだろう。
+そっちの方は頼んだぞ。
+I should arrive at Strut H by
+the time you finish disposing
+of the C4 in Shell 1.
+
+Be sure to take care of it.
+*/
+//dv}//v
+}//d
+
+
+//P023_01_R01　爆弾解体最後の一つ１無線デモ１割り込み用 h //e
+resource PP_センサーＢ＿割り込み用__i {
+//vox t:vc200661 {
+ピーター_000: {
+&`E quello che hai preso poco fa dalla 
+cassaforte nel Supporto C.
+}
+/*さっきあんたがＣ脚の貯蔵庫で
+手に入れたものだ。
+It's the thing you acquired from
+the safe in Strut C a little while
+back.
+*/
+//dv}//v
+}//d
+
+
+//★P023_01_R01爆弾解体最後の一つ１無線デモ１終了＜フラグ＜P024_01_R01爆弾解体センサーＢ入手１無線デモ１開始 d //e
+//センサーＢ取りにいけ h //e
+resource PP_センサーＢ取りに行け__i {
+//vox t:vc200671 {
+ピーター_000: {
+Raiden, ho pronto un sensore in grado 
+di rilevare le C4 inodori.
+}
+/*ライデン、無臭のＣ４も探知出来る
+センサーを用意しておいた。
+Raiden, I've readied a sensor
+that's capable of detecting
+odorless C4.
+*/
+ピーター_001: {
+L'ho nascosto nella cassaforte in cui stavo 
+nascosto, nella cambusa del Supporto C. 
+Prendilo.
+}
+/*Ｃ脚の厨房。私が隠れていた貯蔵庫に
+置いてある。取りに行ってくれ。
+It's stashed in the safe I was
+hiding in, in the Strut C pantry.
+Fetch it.
+*/
+//dv}//v
+}//d
+//センサーＢ持っている場合 h //e
+resource PP_カウント前センサーＢ持っている__i {
+//vox t:vc200681 {
+ピーター_000: {
+Se ha messo C4 inodori in Shell 1, 
+saranno sul fondo del Supporto A.
+}//<ページ数変更>
+ピーター_000_1: {
+Dirigiti l&`i, Raiden.
+}
+/*無臭のＣ４がシェル１にも仕掛けられて
+いるとすればＡ脚底部だ。ライデン、
+Ａ脚底部に向かってくれ。
+If odorless C4 is planted in
+Shell 1, it's going to be at
+the bottom of Strut A.
+
+Head over there, Raiden.
+*/
+//dv}//v
+}//d
+
+
+//無臭Ｃ４について h //e
+resource PP_無臭Ｃ４調査中__i {
+//vox t:vc200691 {
+ライデン_000: {
+Stillman, come va dalle tue parti?
+}
+/*スティルマン、そっちの方はどうだ？
+
+Stillman, how are you
+doing over there?
+*/
+ピーター_001: {
+Ora controllo. Non pu&`o essere 
+semplicemente una bomba che non 
+risponde a un odore.
+}//<ページ数変更>
+ピーター_001_1: {
+Deve aver messo qualcos'altro qui.
+}
+/*今調べている。単なる匂いに反応しない
+爆弾とも思えんのだ。それ以外にも
+何かが仕掛けられているはず……。
+I'm checking it now. It just can't
+simply be a bomb that doesn't
+respond to an odor.
+
+There must be something
+else planted there.
+*/
+ライデン_002: {
+Di cosa si tratta esattamente?
+}
+/*一体何か？
+Exactly what is it?
+*/
+ピーター_003: {
+Non ne sono ancora sicuro. 
+Dammi un po' pi&`u di tempo.
+}
+/*まだわからん。
+もう少し時間をくれ……。
+I'm not certain.
+Give me a little more time.
+*/
+//dv}//v
+}//d
+
+
+
+//★P024_01_R01爆弾解体センサーＢ入手１無線デモ１終了＜フラグ＜P025_01_R01爆弾解体昇降機下１無線デモ１開始 d //e
+//Ａ脚に行け h //e
+resource PP_無臭Ｃ４＿Ａ脚に行け１__i {
+//vox t:vc200701 {
+ピーター_000: {
+Il conto alla rovescia &`e partito. 
+Ascolta -- il fattore tempo &`e 
+assolutamente fondamentale.
+}//<ページ数変更>
+ピーター_000_1: {
+Corri sul fondo del Supporto A, 
+prendi la strada pi&`u corta possibile.
+}
+/*カウントダウンが始まっている。
+いいか、時間が全てだ。最短コースで
+Ａ脚底部に急いでくれ。
+The countdown has been initiated.
+Listen up -- time is absolutely
+critical.
+
+Hurry to the bottom of Strut A
+by the shortest possible route.
+*/
+//dv}//v
+}//d
+//一回目のみ t //e
+resource PP_無臭Ｃ４＿Ａ脚に行け２__i {
+//vox t:vc200711 {
+ライデン_000: {
+Devo spruzzare il refrigerante 
+come prima?
+}
+/*爆弾は同じ方法で冷却すればいいのか？
+Should I apply coolant to the bomb
+in the same way as before?
+*/
+ピーター_001: {
+Aspetta, non sono sicuro. 
+Prima lo provo io qui.
+}//<ページ数変更>
+ピーター_001_1: {
+Per il momento portati immediatamente 
+sul fondo del Supporto A.
+}
+/*いや、まだわからん。
+こっちがまず試してみる。
+とにかくＡ脚底部に急ぐんだ。
+Wait, I'm still not sure yet.
+I'll try testing it out here first.
+
+For now, get yourself to the
+bottom of Strut A ASAP.
+*/
+//dv}//v
+}//d
+
+
+//-------------------------------//e
+//後回し会話 d //e
+//-------------------------------//e
+//えらそうな爆弾警句１ h //e
+resource PP_爆弾警句１__i {
+//vox t:vc200721 {
+ピーター_000: {
+In parole povere, disinnescare le bombe 
+&`e come affrontare la paura faccia a 
+faccia.
+}//<ページ数変更>
+ピーター_000_1: {
+Non cercare di scappare, anzi accetta 
+la tua paura e sfidala apertamente.
+}
+/*爆弾処理はすなわち恐怖との戦いだ。
+恐怖から目をそらすな。
+恐怖を認めてそれに立ち向かうんだ。
+Put simply, bomb disposal is
+a one-on-one with fear itself.
+
+Don't try to run away from it.
+Instead, acknowledge the fear,
+and take it straight on. 
+*/
+//dv}//v
+}//d
+//えらそうな爆弾警句２ h //e
+resource PP_爆弾警句２__i {
+//vox t:vc200731 {
+ピーター_000: {
+Quando si tratta di bombe, 
+il segreto &`e la discrezione.
+}
+/*爆弾に向き合う時忘れてはならないのは
+慎重さだ。
+Discretion is the key
+when taking on a bomb.
+*/
+ピーター_001: {
+Devi usare cautela, anche quando 
+diventi impaziente.
+}//<ページ数変更>
+ピーター_001_1: {
+Ma non si tratta di vigliaccheria, 
+anzi &`e proprio l'opposto.
+}//<ページ数変更>
+ピーター_001_2: {
+Comportati in modo attento, 
+il coraggio ti garantir&`a il successo.
+}
+/*細心に細心を重ねた慎重さ。
+それは臆病とは違う。むしろその対極だ。
+慎重にことを運ぶ勇気を持て。
+A degree of caution that taxes
+your sense of meticulousness.
+
+Don't confuse this with cowardice,
+as it is the extreme opposite.
+
+Carefully conduct yourself with
+a courage that ensures you get
+the job done right.
+*/
+//dv}//v
+}//d
+
+//えらそうな爆弾警句３ h //e
+resource PP_爆弾警句３__i {
+//vox t:vc200741 {
+ピーター_000: {
+Ascolta, Raiden. Qualunque cosa accada, 
+non essere impaziente.
+}//<ページ数変更>
+ピーター_000_1: {
+Quando disinneschi una bomba, 
+}//<ページ数変更>
+ピーター_000_2: {
+se sei impaziente firmi la tua 
+condanna a morte.
+}
+/*いいか、ライデン。絶対に焦るな。
+焦りは爆弾処理の過程において最も
+死に近い精神状態と言える。
+Listen up, Raiden. No matter
+what, don't be impatient.
+
+Impatience is questionably the
+one state of mind absolutely
+guaranteed＃−
+
+to seal your fate when
+defusing a bomb.
+*/
+ピーター_001: {
+Anche se la situazione sembra disperata, 
+non devi mai perdere l'autocontrollo. 
+Capito?
+}
+/*いかなる状況下でも心の平静を失っては
+いけない。いいな。
+No matter how the situation
+presents itself, you must never
+lose your composure. Understood?
+*/
+//dv}//v
+}//d
+
+
+//えらそうな爆弾警句４ h //e
+resource PP_爆弾警句４__i {
+//vox t:vc200751 {
+ピーター_000: {
+Disinnescare le bombe &`e una corsa 
+contro il tempo.
+}//<ページ数変更>
+ピーター_000_1: {
+Anche 
+una minima esitazione ti pu&`o far 
+perdere minuti preziosi e, 
+inevitabilmente, vite umane.
+}
+/*爆弾解体は時間との勝負でもある。
+わずかな迷いが時間を奪い、
+人の命をも失わせる。
+Bomb disposal is also
+a race against time.
+
+The slightest hesitation can lead
+to a loss of time, and inevitably,
+lives.
+*/
+ピーター_001: {
+Non fare niente di avventato. 
+Concentrati su come essere 
+veloce ed efficiente.
+}
+/*無駄な行動はするな。
+最速・最適の行動を心がけるんだ。
+Don't do anything rash.
+Focus yourself on being
+fast and efficient.
+*/
+//dv}//v
+}//d
+
+//えらそうな爆弾警句５ h //e
+resource PP_爆弾警句５__i {
+//vox t:vc200761 {
+ピーター_000: {
+Quando ti trovi direttamente davanti
+a una bomba, puoi contare solo tu
+te stesso.
+}//<ページ数変更>
+ピーター_000_1: {
+Non fare affidamento su altri. 
+In caso contrario, troverai 
+sicuramente la morte.
+}//<ページ数変更>
+ピーター_000_2: {
+Credi in te stesso e tutto andr&`a 
+bene.
+}
+/*爆弾と対峙した時頼れるのは自分だけだ。
+他人を頼むな。その甘えは死神を
+呼び込む。自分を信じるんだ。いいな。
+When dealing with a bomb directly,
+the only one you can depend on is
+yourself.
+
+Don't count on anyone else.
+Foolishly doing so will bring
+death upon you.
+
+Believe in yourself and
+you'll be all right.
+*/
+//dv}//v
+}//d
+
+//オタコンのこと h //e
+resource PP_オタコン__i {
+//vox t:vc200771 {
+ピーター_000: {
+A proposito, Raiden, per caso hai visto 
+il tecnico che era venuto insieme a me?
+}
+/*ところで、ライデン、私と一緒に
+下りてきた技術者を見たか？
+By the way, Raiden, did you happen
+to see the technician that came
+down along with me?
+*/
+ライデン_001: {
+No, non l'ho visto.
+}
+/*いや、見ていない。
+No, I didn't.
+*/
+ピーター_002: {
+... Capisco.
+}
+/*そうか……。
+...I see.
+*/
+ライデン_003: {
+Aspetta, Stillman. 
+Quel tipo &`e davvero...
+}
+/*なあ、スティルマン、
+そいつは本当に……。
+Wait, Stillman.
+Is that guy really...
+*/
+スネーク_004: {
+Raiden!
+}
+/*ライデン！
+Raiden!
+*/
+ライデン_005: {
+...?
+}
+/*？What?
+*/
+スネーク_006: {
+Per prima cosa, dobbiamo disinnescare 
+le C4. Non abbiamo tempo da perdere.
+Forza, rimettiti subito al lavoro.
+}
+/*今はＣ４を処理することが先決だ。
+任務に戻れ。時間がないぞ。
+Disposing of the C4 is our
+first priority. There's no time.
+Get back to the task at hand.
+*/
+ライデン_007: {
+D'accordo, ricevuto.
+}
+/*ああ、わかった……。
+Right, I gotcha.
+*/
+//dv}//v
+}//d
+
+
+//プリスキンについて h //e
+resource PP_プリスキン__i {
+//vox t:vc200781 {
+ピーター_000: {
+Sembra che Pliskin non avr&`a problemi. 
+Anche tu dovresti organizzarti cos&`i.
+}
+/*プリスキンの方は特に問題ないようだ。
+あんたも抜かるなよ。
+Looks like Pliskin shouldn't be
+having any problems. You'd 
+better look sharp as well.
+*/
+ライデン_001: {
+Stillman, tu credi davvero che Pliskin 
+non sia un componente della SEAL 10
+della Marina...?
+}
+/*……スティルマン、あんた、
+プリスキンは本当にＳＥＡＬ１０の
+隊員ではないと？
+Stillman, do you really believe
+that Pliskin is not a member of
+SEAL Team 10...?
+*/
+ピーター_002: {
+Probabilmente non &`e dei loro, no.
+}
+/*ああ。おそらくな……。
+He is probably not.
+*/
+ライデン_003: {
+E allora chi &`e...?
+}
+/*では一体、あいつは……？
+Then exactly what is he...?
+*/
+ピーター_004: {
+Non ne sono sicuro.
+}
+/*わからん。
+I'm not sure.
+*/
+ライデン_005: {
+...
+}
+/*……。
+...
+*/
+ピーター_006: {
+Ma ci sono altre cose di cui sono sicuro.
+}
+/*だがわかることもある。
+But there are other things
+that I am sure of.
+*/
+ライデン_007: {
+Cio&`e?
+}
+/*なんだ？
+Like what?
+*/
+ピーター_008: {
+Che mi posso fidare di lui, ecco. 
+Non so, ma c'&`e qualcosa in lui...
+}
+/*あの男は信用できる、ということだ。
+あいつは何かを持っている。
+Like that I can believe in him,
+that's what. There's something
+about him.
+*/
+ピーター_009: {
+Un qualcosa che trovi solo negli 
+uomini di grande forza, in uomini 
+di cui ti puoi davvero fidare.
+}
+/*強い男、信じるに足る男、
+他人の期待に応えることが
+出来る男だけが持つ何かを、な。
+A certain something that's found
+only in men of strength, trust-
+worthiness, and reliability.
+*/
+ライデン_010: {
+Capisco... comunque io torno alla 
+missione.
+}
+/*ああ……ああ、そうだな。
+任務に戻る。
+I see... anyway, I'm getting
+back to the mission.
+*/
+//dv}//v
+}//d
+
+//ピーターの過去 大佐から何も聞いていない場合 h //e
+resource PP_ピーター過去＿大佐話聞いていない__i {
+//vox t:vc200791 {
+ライデン_000: {
+Stillman, ho sentito che ti sei fatto 
+una grande fama come artificiere.
+}
+/*スティルマン、あんた、爆弾処理に
+かけては有名なんだってな？
+Stillman, I heard you made quite
+a name for yourself in the bomb
+disposal field.
+*/
+ピーター_001: {
+Neanche per sogno. &`E che nessuno di 
+solito si mette a criticare i pensionati.
+}
+/*引退した人間のことを悪くいう奴は
+いない。それだけだ。
+Nothing of the sort. It's only
+that you never hear people
+badmouth retirees.
+*/
+ライデン_002: {
+Perch&'e ti sei ritirato?
+}
+/*なぜ引退を？
+Why did you retire?
+*/
+ピーター_003: {
+Non mi ricordo pi&`u. Ad ogni modo, 
+piuttosto che pensare al passato,
+}//<ページ数変更>
+ピーター_003_1: {
+non dovremmo invece concentrati 
+sul presente e sulla situazione in 
+cui ci troviamo?
+}
+/*……忘れたな。それに今は昔のことを
+振り返るより、もっとさしせまった
+問題を解決すべき時なんじゃないか？
+I forgot. At any rate, rather than
+dwelling on past occurrences,
+
+shouldn't we focus on taking care
+of the pressing issue currently at
+hand?
+*/
+ライデン_004: {
+Parole sacrosante. 
+Mi rimetto al lavoro.
+}
+/*……そうだったな。任務に戻る。
+True enough.
+I'll get back to work.
+*/
+//dv}//v
+}//d
+
+
+
+//ファットマンの話 h //e
+resource PP_ファットマン１__i {
+//vox t:vc200801 {
+ライデン_000: {
+Stillman, dimmi qualcosa di Fatman.
+}
+/*スティルマン、ファットマンのことを
+教えてくれないか？
+Stillman, tell me something
+about Fatman.
+*/
+ピーター_001: {
+Mmm... beh, tanto per cominciare &`e 
+figlio di un orologiaio.
+}
+/*ああ……。ファットマンは時計職人の
+息子として生まれた。
+Hmm... well, to start, he was
+born the son of a clockmaker. 
+*/
+ピーター_002: {
+Trascurato dai genitori e senza amici, 
+sembra che passasse molto tempo 
+da solo,
+}//<ページ数変更>
+ピーター_002_1: {
+nel laboratorio del padre.
+}
+/*両親には構ってもらえず、友達もおらず、
+よく父親の仕事場で独りで遊んでいた
+らしい。
+Neglected by his parents
+and without friends,
+
+it seems that he spent a lot of
+time by himself in his father's
+workshop.
+*/
+ピーター_003: {
+Non so, forse sar&`a stato per questo, 
+ma sin da bambino era incredibilmente 
+affascinato dai 
+}//<ページ数変更>
+ピーター_003_1: {
+meccanismi degli orologi.
+}
+/*そのせいかどうかは知らんが
+子供の頃から時計などの機械類に
+過剰な思い入れを持っていたそうだ。
+Maybe that was the reason, I'm not
+sure, but apparently he has had a
+tremendous fascination with＃−
+
+clock mechanics since
+he was a child.
+*/
+ピーター_004: {
+Su Internet all'et&`a di dieci anni,  
+trov&`o un manuale che ha cambi&`o 
+per sempre la sua vita.
+}
+/*そして奴の人生を決定付けたのは
+１０歳の時にインターネットで
+手に入れたあるマニュアルだ。
+It was at the age of ten that a
+guidebook that he found on the
+Internet changed his life forever.
+*/
+ピーター_005: {
+Fatman ha usato quel manuale per 
+costruire la sua bomba atomica 
+personale.
+}
+/*奴はそれをもとに原爆を組み立てて
+しまった。
+That guidebook served as the
+basis of his eventually piecing
+together an atomic bomb.
+*/
+ピーター_006: {
+Da l&`i &`e diventato famoso col nome 
+di Fatman e in men che non si dica,
+}//<ページ数変更>
+ピーター_006_1: {
+chiunque sapesse qualcosa di bombe 
+conosceva anche il suo nome.
+}
+/*そのことから奴はファットマンと呼ばれ
+るようになり、爆弾に携わる者の間では、
+知らぬ者のない有名人になった。
+It was from there that he came
+to be known as Fatman,
+
+and soon enough there was no one
+associated with bombs that didn't
+know his name.
+*/
+ピーター_007: {
+In un certo senso, Fatman era un eroe.
+}//<ページ数変更>
+ピーター_007_1: {
+Anche se era conosciuto solo dagli 
+specialisti,
+}//<ページ数変更>
+ピーター_007_2: {
+sono sicuro che il suo ego di 
+adolescente si sia gonfiato a 
+dismisura.
+}
+/*言わばヒーローだ。狭い世界のことでは
+あるが１０代の少年にとっては強烈に
+自尊心をくすぐられる経験だっただろう。
+In a sense, Fatman was a hero.
+
+Although what he did was recognized
+only by those in the trade,
+
+I'm sure that it served to greatly
+stir the ego of the teenage boy at
+the center of it all.
+*/
+//dv}//v
+}//d
+resource PP_ファットマン２__i {
+//vox t:vc200811 {
+ピーター_000: {
+Ma lui si &`e sempre lasciato terra 
+bruciata alle spalle. Tutti a scuola 
+lo odiavano e lo evitavano come la peste.
+}
+/*だが他に何の特技もない奴だ。学校では
+男子からは軽んじられ、女子からは
+避けられていたらしい。
+But he leaves his mark nowhere
+else. Apparently, he was hated
+and shunned by everyone in school.
+*/
+ピーター_001: {
+Cos&`i ha deciso di dedicare tutte 
+le energie agli esplosivi.
+}
+/*だから奴はますます爆弾に
+のめりこんでいった。
+So, he went on to focus all
+his energy on explosives.
+*/
+ピーター_002: {
+Visto che disprezzava la realt&`a 
+in cui viveva,
+}//<ページ数変更>
+ピーター_002_1: {
+ha optato per un mondo che gli 
+avrebbe dato facilmente grande fama.
+}
+/*自分の近くの現実に背を向け、
+簡単に自分を認めてもらえる
+世界へ向かった……。
+He scorned the reality that
+surrounded him and instead
+chose to embrace a world＃−
+
+that would easily grant
+him recognition.
+*/
+ピーター_003: {
+Beh, in effetti non &`e che facesse 
+cose cos&`i stratosferiche.
+}//<ページ数変更>
+ピーター_003_1: {
+Magari portava un'arma a scuola di 
+tanto in tanto.
+}
+/*まあ学校に銃を持ち込んだりするよりは
+害がなかったと言えるだろうがな。
+Well, to be sure, it never
+amounted to anything more
+than, say,
+
+occasionally bringing
+a gun into school.
+*/
+//dv}//v
+}//d
+resource PP_ファットマン３__i {
+//vox t:vc200821 {
+ピーター_000: {
+Alla fine Fatman &`e arrivato 
+a Indian Head,
+}//<ページ数変更>
+ピーター_000_1: {
+il centro di 
+addestramento degli Artificieri 
+della Scuola Navale, dove io 
+insegnavo.
+}
+/*そして、奴はインディアンヘッドに
+やってきた。私が教官を務めていた
+海軍爆発物処理学校の実習施設だ。
+Eventually, Fatman came
+to Indian Head,
+
+the exercise training facilities of
+the Naval School Explosive Ordnance
+Disposal at which I was a lecturer.
+*/
+ピーター_001: {
+L&`i ha assorbito una miriade di 
+nozioni, come se fosse affamato 
+di una sola cosa: le bombe.
+}
+/*奴はあらゆるものを吸収した。
+まるで爆弾に飢えているようだった。
+He absorbed all kinds of knowledge,
+as if he hungered for bombs. 
+*/
+ピーター_002: {
+Quasi il 20% degli studenti di Indian Head 
+getta la spugna per via dell'enorme 
+difficolt&`a dei corsi.
+}//<ページ数変更>
+ピーター_002_1: {
+Ma nonostante tutto Fatman ha 
+ottenuto voti altissimi, 
+mai visti prima.
+}
+/*インディアンヘッドは２０％近くが
+落第する難関だ。その中で奴は
+史上最優秀の成績を残した。
+Close to 20% of the students at
+Indian Head flunk out of what is
+truly a hellish curriculum.
+
+Despite this environment, he achieved
+extraordinarily high marks that were
+without precedent.
+*/
+ピーター_003: {
+Dopo Indian Head si &`e unito alla 
+NEST (Squadra di ricerca per 
+emergenze nucleari),
+}//<ページ数変更>
+ピーター_003_1: {
+a detta di molti l'unit&`a di 
+artificieri pi&`u in gamba al mondo.
+}
+/*インディアンヘッドを出た後、奴は
+最も優れた爆弾処理チームと言われる
+核緊急捜索チームに参加したのだが……
+After leaving Indian Head, he joined
+up with NEST (Nuclear Emergency
+Search Team),
+
+said to be the most accomplished
+bomb disposal unit.
+*/
+ピーター_004: {
+Sembra che i suoi primi guai siano 
+iniziati proprio l&`i.
+}
+/*そこで何かもめたらしい。
+It was there that he apparently
+got into some trouble.
+*/
+ライデン_005: {
+Che tipo di guai?
+}
+/*一体何を？
+What, exactly?
+*/
+ピーター_006: {
+Questo non lo so. Ma Fatman non &`e 
+certo tipo da operazioni di gruppo, 
+questo &`e sicuro.
+}
+/*さあな。だが元々団体行動には向かない
+奴ではあった。
+You got me. But Fatman was
+definitely not cut out for group
+operations from the very start.
+*/
+ピーター_007: {
+Cacciato dalla NEST, &`e stato 
+assoldato da Dead Cell,
+}//<ページ数変更>
+ピーター_007_1: {
+che proprio allora si stava facendo 
+una brutta fama di un'accozzaglia 
+di loschi figuri.
+}
+/*ＮＥＳＴを追い出された奴は、既に
+はみ出し者の集団という風評を
+確立しつつあったデッドセルに拾われた。
+Having been ousted from NEST,
+he was picked up by Dead Cell,
+
+which was already becoming
+notorious for being a motley
+crew of sorts. 
+*/
+ピーター_008: {
+Sembra che con delle manovre d'attacco 
+a sorpresa condotte da Dead Cell,
+}//<ページ数変更>
+ピーター_008_1: {
+Fatman sia poi riuscito a schiacciare 
+completamente gli ex compagni di NEST.
+}
+/*その後デッドセルが行う抜打ち襲撃
+演習でＮＥＳＴの元同僚達を徹底的に
+叩きのめしたりもしたらしい。
+It seems that it was through surprise
+attack maneuvers later conducted by
+Dead Cell＃−
+
+that Fatman completely subdued
+his former companions from NEST.
+*/
+//dv}//v
+}//d
+resource PP_ファットマン４__i {
+//vox t:vc200831 {
+ピーター_000: {
+Certo, era il pi&`u strano dei 
+miei studenti ma anche il pi&`u 
+dotato.
+}//<ページ数変更>
+ピーター_000_1: {
+Non sottovalutarlo mai, 
+ci siamo capiti?
+}
+/*ファットマンは私が教えた中で最も
+変わった男だったが、同時に最も優れた
+男でもある。あなどるなよ、いいな。
+While being the most peculiar
+individual among my students,
+he was also the most talented.
+
+Be sure not to underestimate
+him. Are we clear?
+*/
+//dv}//v
+}//d
+
+
+//無臭Ｃ４ h //e
+resource PP_移動後無臭Ｃ４__i {
+//vox t:vc200841 {
+ピーター_000: {
+Sei tu, Raiden? Non sono ancora 
+arrivato al Supporto H.
+}
+/*ライデンか？
+こっちはまだＨ脚には着いていない。
+Is that you, Raiden?
+I haven't reached Strut H yet. 
+*/
+ライデン_001: {
+Stillman... pensi davvero che ci siano 
+bombe che il sensore non &`e in grado 
+di rilevare?
+}
+/*スティルマン……本当にセンサーに
+反応しない爆弾があると思うか？
+Stillman... do you really think there
+are bombs that the sensor's not
+picking up?
+*/
+ピーター_002: {
+Ebbene... sigillando l'intero involucro 
+della bomba si impedisce che emani 
+odore.
+}//<ページ数変更>
+ピーター_002_1: {
+Questa non &`e una tecnica che gli ho 
+insegnato io.
+}
+/*確かに爆弾全体をシールすれば
+『匂い』が外に漏れるのを防ぐことが
+出来る。……私が教えなかった技術だ。
+Right... sealing the entire casing
+of the bomb prevents the odor
+from leaking outside.
+
+It's a technique that I,
+for one, didn't teach. 
+*/
+ライデン_003: {
+Ma Fatman non aveva questo tocco 
+estetico di lasciare la sua firma?
+}
+/*だがサインを残すのは奴の美学じゃ
+なかったのか。
+But wasn't leaving a signature of
+sorts Fatman's aesthetic touch?
+*/
+ピーター_004: {
+Forse questo non &`e pi&`u il Fatman 
+che conoscevo io...
+}
+/*……今のあいつは私の知っている
+あいつではないのかもしれんな……。
+Perhaps this Fatman is
+not the one I knew...
+*/
+ライデン_005: {
+Come?
+}
+/*なに？
+What?
+*/
+ピーター_006: {
+Al momento Fatman &`e fragile e debole... 
+in pi&`u, &`e pericoloso. Guardati 
+le spalle, va bene?
+}
+/*今のあいつは弱く脆く……
+そして何より危険だ。
+気をつけろ。いいな。
+Fatman right now is fragile and
+weak... what's more, he's dangerous.
+Watch yourself, okay?
+*/
+//dv}//v
+}//d
+
+//実は歩けたことの言い訳 h //e
+resource PP_歩ける言い訳１__i {
+//vox t:vc2008501 {
+ライデン_000: {
+Stillman, come ti senti?
+}
+/*スティルマン、調子はどうだ？
+Stillman, how ya feelin'?
+*/
+ピーター_001: {
+Bene. Ma ne &`e passato del tempo da 
+quando ho corso l'ultima volta...
+}
+/*ああ、大丈夫だ。
+だが走ったのは久しぶりで……。
+All right. It's been a while
+since I've run, though...
+*/
+ライデン_002: {
+Allora sar&`a anche passato molto tempo 
+dall'ultima volta che ti &`e mancato 
+il fiato, eh?
+}
+/*（皮肉）息が切れるのも久しぶりってわけか？
+Guess that means it's also been
+a while since you've run out of
+breath, huh?
+*/
+ピーター_003: {
+Mi stai accusando di qualcosa, Raiden?
+}
+/*……ライデン……私を責めているのか？
+Are you accusing me of
+something, Raiden?
+*/
+ライデン_004: {
+No, non volevo dire niente di...
+}
+/*いや、そんなつもりは。
+No, I didn't mean
+anything by it...
+*/
+ピーター_005: {
+No, dovresti condannarmi, invece.
+}
+/*いいや、責められるべきなのだ。
+No, no.
+I should be condemned.
+*/
+ライデン_006: {
+Senti, tutti noi facciamo i nostri 
+bravi errori...
+}
+/*失敗は誰にでもある……。
+Wait, everybody makes mistakes...
+*/
+ピーター_007: {
+Ma il risultato pi&`u interessante 
+si nasconde proprio dietro quegli
+errori.
+}
+/*失敗の原因にもよる。
+But it's the reasons behind those
+mistakes that become the real issue.
+
+Ma sono i motivi dietro a quegli 
+errori la cosa davvero importante.
+*/
+ライデン_008: {
+Cosa vuoi dire?
+}
+/*え？
+What do you mean?
+*/
+//dv}//v
+}//d
+resource PP_歩ける言い訳２__i {
+//vox t:vc200861 {
+ピーター_000: {
+Il motivo per cui quella bomba &`e 
+esplosa... e perch&'e io mi sono salvato...
+}//<ページ数変更>
+ピーター_000_1: {
+&`e perch&'e ho visto la morte in faccia  
+e non sono riuscito ad affrontare la
+mia paura.
+}
+/*あの爆弾が爆発したのは……そして私が
+助かったのは、私が恐怖に駆られ
+逃げ出したからなのだ。
+The reason that bomb exploded...
+and the reason that I was saved...
+
+is because I was confronted by
+fear, and I couldn't handle it.
+*/
+ピーター_001: {
+Mentre stavo disinnescando la bomba, 
+mi sono fatto prendere dalla paura...
+}//<ページ数変更>
+ピーター_001_1: {
+e quando me ne sono accorto stavo
+gi&`a fuggendo a gambe levate.
+}
+/*そう……爆弾処理の途中で私は恐怖に
+屈し……気がつくと爆弾に背を向けて
+逃げ出していた……。
+Halfway through disposing of the
+bomb, I succumbed to that fear...
+
+and when I realized what was going
+on, I had turned around and was
+running away from the bomb.
+*/
+ピーター_002: {
+Ma non sono stato io a pagarne il prezzo.
+}
+/*しかもそのツケを払うことになったのは
+私ではない。
+The one who paid the price,
+however, wasn't me.
+*/
+ピーター_003: {
+Una volta ripresi i sensi dallo shock 
+dell'esplosione, 
+}//<ページ数変更>
+ピーター_003_1: {
+la prima cosa che ho visto erano i 
+cadaveri di tutti quei bambini sepolti 
+dalle macerie.
+}
+/*爆発の衝撃から意識を取り戻した
+私が最初に目にしたのは、瓦礫の
+下敷きになった子供達の屍だった……。
+After I regained consciousness
+from the shock of the blast,
+
+the first thing that my eyes met
+were the corpses of children
+crushed under a pile of rubble.
+*/
+ライデン_004: {
+Stillman...
+}
+/*スティルマン……。
+Stillman...
+*/
+ピーター_005: {
+E tu, tu cosa pensi che io avessi 
+in mente in quel momento?
+}
+/*だが、その時私が感じたのは
+一体何だったと思う？
+Yet, what do you think
+I felt at that time?
+*/
+ピーター_006: {
+Ero sollevato, s&`i sollevato che 
+non fossi io al loro posto.
+}
+/*安堵だ。
+自分でなくてよかったと。
+A sense of relief.
+Relieved that it wasn't me.
+*/
+ライデン_007: {
+...
+}
+/*……。
+...
+*/
+//dv}//v
+}//d
+resource PP_歩ける言い訳３__i {
+//vox t:vc200871 {
+ピーター_000: {
+Ma non &`e tutto.
+}
+/*それだけではない。And that's not all.
+*/
+ピーター_001: {
+A quel tempo ero famoso come il pi&`u 
+grande artificiere in tutti gli 
+Stati Uniti.
+}
+/*当時私は合衆国最高の爆弾処理技術者と
+呼ばれていた。
+At the time, I was known as the
+top bomb disposal technician in
+the United States.
+*/
+ピーター_002: {
+Per uno come me, che non aveva moglie 
+n&'e figli, la reputazione era tutto. 
+}//<ページ数変更>
+ピーター_002_1: {
+Non volevo perderla.
+}
+/*妻も子もいない私にとってその名声は
+全てだった。失いたくはなかった。
+And to someone like me, who
+had neither a wife nor children,
+that reputation was everything.
+
+I didn't want to lose it.
+*/
+ピーター_003: {
+Ecco perch&'e ho mentito sul fatto di 
+aver perso la gamba... per sottrarmi
+alle mie responsabilit&`a...
+}//<ページ数変更>
+ピーター_003_1: {
+ho girato le spalle alle vittime 
+incoraggianolo la compassione.
+}
+/*だから私は……足を失ったと嘘をつき……
+負うべき責任を逃れ……被害者から目を
+そらし……世間の同情を買い……。
+That's why I lied about losing
+my leg... ran away from the
+responsibility that was mine...
+
+closed my eyes to the victims...
+stirred up the sympathy of the
+public.
+
+Ho chiuso gli occhi dinanzi alle 
+vittime... ho incoraggiato la 
+compassione del pubblico.
+*/
+ライデン_004: {
+Stillman, ora basta. 
+}
+ライデン_004_1: {
+Per il momento preoccupiamoci solo di 
+Fatman e delle sue bombe.
+}
+/*スティルマン。もういい。
+今はファットマンの爆弾をどうするか、
+それだけを考えよう。
+All right, Stillman.
+That's enough. 
+
+For now, let's just worry about
+what we're going to do about
+Fatman's bombs.
+*/
+ピーター_005: {
+D'accordo...
+}
+/*……ああ……。
+Yeah...
+*/
+//dv}//v
+}//d
+
+
+
+resource PP_ばぐっち__i {
+ピーター_000: {
+BOOG
+}
+/*おい小僧、ばぐっているぞ。*/
+}//d

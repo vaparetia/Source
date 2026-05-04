@@ -1,0 +1,24 @@
+
+[mutsu の ソースのアップデート]
+	・nagato の /usr/local/develop/mgs2 の scn と source を
+	  ＣＶＳにてアップデートする。
+	・mutsu の /usr/local/develop/mgs2 へ nagato からコピーする。
+
+
+/u/home/user/usr**** に必要なディレクトリなど
+    [preview_data]----[stage]--------[default_data]（デフォルトで読み込まれるデータ）
+                   |               |-[init]        （通常の cdrom.img/stage/init）
+                   |               |-[preview]     （中身は毎回更新される）
+                   |               |-[stage_work]  （作業用）
+                   |
+                   |--[data]       （ユーザーがプレビューしたいデータを入れる）
+                   |-- preview.gcl （プレビュー時に使用するＧＣＬ（ユーザーが編集する））
+
+ユーザーの環境
+	DSNETM=psjw***
+	MGS2_DESIGN=1
+
+実行スクリプト
+	/u/develop/mj001b/tools/bin/linux/pre  （旧 prev は既に他のコマンドがある）
+
+

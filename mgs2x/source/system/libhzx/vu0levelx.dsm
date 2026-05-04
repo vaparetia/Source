@@ -1,0 +1,369 @@
+;
+;	vu0levelx.dsm
+;	レベルチェックＶｕ０マイクロバージョンＸ
+;
+;   	1999/11/24 M.Sonoyama
+;   	$Id: vu0levelx.dsm,v 1.1.1.3 2002/11/19 11:42:50 Yoshizawa1 Exp $
+;
+
+; レジスタ使用状況
+;
+;	vf00	:	0
+;	vf01	:	FROM
+;	vf02	:	
+
+;	vf03	:	カレント床頂点１
+;	vf04	:	カレント床頂点２
+;	vf05	:	カレント床頂点３
+;	vf06	:	カレント床頂点４
+;	vf07	:	
+;	vf08	:	カレント床高さ
+;	vf09	:	天井高さ最小値
+;	vf10	:	床高さ最大値
+
+;	vf15	: 	ワーク 〜
+
+;	vi00	:	ゼロ
+;	vi01	:	データ開始点
+;	vi02	:	検出フラグ（床有り１／天井有り２）
+;	vi03	:	ストリップ点数
+;	vi04	:	ストリップデータポインタ 
+;	vi05	:	フロア形状
+;	vi06	:	フロア長方形
+;	vi07	:	2
+;	vi08	:	天井１個以上あり
+;	vi09	: 	床１個以上あり
+;	vi10	:	フロア水平
+;	vi11	:	ワーク 〜
+
+; メモリ使用状況
+;	
+;	0x0010	:	天井格納
+;	0x0020	:	床格納
+;	0x0030	:	検索座標
+;	0x0031	:	
+;	0x0032	:       検出フラグ
+;	0x0033	:	ストリップ点数
+;	0x0035	:	ストリップデータ
+;	
+;	壁数だけ続く（最大１２０壁）
+
+; 定義
+M_FROM		= 0x30	; 検索座標
+
+M_HIT_NUM	= 0x32	; 検出フラグ
+M_DATA_PTR	= 0x33	; データ開始点
+M_DATA_PTR2	= 0x93  ; データ開始点２
+M_N_POINTS	= 0x33	; ストリップ長さ
+M_FLAG		= 0x34	; ストリップフラグ
+M_BOUND		= 0x35  ; バウンディング
+M_STRIP_DATA	= 0x36	; ストリップデータ
+
+D_FLR_FLAT	= 0x02	; 水平フロア
+D_FLR_RECT	= 0x01	; 長方形フロア
+
+.global Vu0CheckLevelHazardX
+.global Vu0CheckLevelHazardFuncX
+
+Vu0CheckLevelHazardFuncX : 
+	.word	( LevelCheckStartProcX / 8 )
+	.word	( LevelCheckStripX / 8 )
+
+.data
+.DmaPackVif	1
+
+Vu0CheckLevelHazardX :
+	DMAref *, _level_hzx
+
+.DmaData _level_hzx
+	MPG 0, *
+
+; ここから
+.vu
+
+LevelCheckStartProcX :
+
+;nop sq.xyzw vf00, 0x0a(vi00)
+;nop sq.xyzw vf00, 0x0b(vi00)
+;nop sq.xyzw vf00, 0x0c(vi00)
+;nop sq.xyzw vf00, 0x0d(vi00)
+;nop sq.xyzw vf00, 0x0e(vi00)
+;nop sq.xyzw vf00, 0x0f(vi00)
+
+	; 初期化
+	; vf29wを２にする
+	addw.w	vf29w, vf00w, vf00w		lq.xyz	vf01xyz, M_FROM(vi00)
+	nop								isub	vi02, vi00, vi00
+	nop								iaddiu	vi07, vi00, 2
+	nop								isub	vi08, vi00, vi00
+	nop								isub	vi09, vi00, vi00
+	nop								iaddiu	vi04, vi00, M_DATA_PTR
+LevelCheckStripX :
+	; １ストリップ検査
+	nop								iadd	vi01, vi00, vi04
+	nop								lq.xy	vf30xy,    0x02(vi04)
+;	nop								lq.y	vf30y,    0x02(vi04)
+	itof0  vf30,    vf30			ilw.x	vi03, 0x00(vi04)
+	nop								ilw.x	vi05, 0x01(vi04)
+	nop								ilw.y	vi06, 0x01(vi04)
+	nop								ilw.z	vi10, 0x01(vi04)
+	nop								iaddiu	vi04, vi04, 3
+CeilSkip :
+	; ストリップバウンドＹ最小が現在天井より大きい
+	subx.x  vf15x, vf09x, vf30x		iaddiu	vi11, vi00, 0x0080
+	subx.y  vf16y, vf30y, vf10x		ibeq	vi08, vi00, FloorSkip
+	nop								iaddiu	vi13, vi00, 0x0040
+	nop								nop
+	nop								fmand	vi12, vi11
+	nop								ibne	vi12, vi00, End 
+	nop								nop
+FloorSkip :			
+	; ストリップバウンドＹ最大が現在床より小さい
+	nop								ibeq	vi09, vi00, Loop
+	nop								nop
+	nop								fmand	vi12, vi13
+	nop								ibne	vi12, vi00, End
+Loop :
+	; ポイント数チェック
+	nop								ibeq	vi03, vi00, End ; 
+	; 頂点ロード
+	sub.xyz vf24, vf24, vf24		lq.xyzw vf03xyzw, 0x00(vi04)
+	itof0 vf03, vf03				lq.xyzw vf05xyzw, 0x02(vi04)
+	itof0 vf05, vf05				lq.xyzw vf04xyzw, 0x01(vi04)
+	itof0 vf04, vf04				lq.xyzw vf06xyzw, 0x03(vi04)
+InsideFloor :
+	; フロア内チェック
+	itof0 vf06, vf06				ibeq	vi06, vi00, NotRectFloor
+	addw.x vf24x, vf24x, vf03w		nop
+	max   vf15, vf03, vf05			waitq
+	mini  vf16, vf03, vf05			div	Q, vf00w, vf04w
+	sub.xz	vf21xz, vf01xz, vf03xz		nop 	; P1_FROM
+	addw.z vf24z, vf24z, vf05w		nop
+	addw.y vf24y, vf24y, vf04w		nop
+	sub.xz  vf00, vf15, vf01		nop	; max < from
+	sub.xz  vf00, vf01, vf16		nop	; min > from
+	mul.xz  vf30, vf21, vf24		iaddiu  vi11, vi00, 0x00a0
+	addy.x  vf08x, vf00x, vf03y		nop
+	nop								fmand	vi12, vi11
+	adday.x  ACC, vf00x, vf03y		fmand	vi13, vi11
+	addz.x  vf30, vf30, vf30		ibne	vi12, vi00, LoopEnd
+	nop								ibne	vi13, vi00, LoopEnd
+	nop								waitq
+	nop								ibne	vi10, vi00, CeilorFloor
+	msubq	vf08, vf30, Q			nop
+	nop								nop
+	nop								nop
+	nop								b	CeilorFloor	
+	nop								nop
+NotRectFloor :					
+	subw.y	vf28y,vf00y,vf00w			nop				; vf28y = -1.0F CheckOpOut用
+	max.xz	vf27, vf03, vf04			ibeq	vi05, vi00, TriangleFloor
+	mini.xz	vf29, vf03, vf04			nop
+	max.xz	vf30, vf05, vf06			nop
+	mini.xz	vf31, vf05, vf06			nop
+	sub.xyz	vf15xyz, vf04xyz, vf03xyz	nop
+	sub.xz	vf21xz, vf01xz, vf03xz		div	Q, vf00w, vf04w
+	max.xz	vf30, vf27, vf30			nop
+	mini.xz	vf31, vf29, vf31			nop
+	sub.xyz	vf16xyz, vf05xyz, vf04xyz	iaddiu  vi12, vi00, 0x0040 ; opz < 0
+	sub.xz	vf22xz, vf01xz, vf04xz		iaddiu	vi14, vi00, 0x00a0 ; bound check
+	sub.xyz vf17xyz, vf06xyz, vf05xyz	nop
+	sub.xz  vf00, vf30, vf01			nop
+	sub.xz  vf00, vf01, vf31			nop
+	opmula.xyz ACC, vf21, vf15			nop
+	nop									nop
+
+	opmsub.xyz vf25, vf15, vf21			fmand	vi13, vi14
+	opmula.xyz ACC, vf22, vf16			fmand	vi15, vi14
+	sub.xz	vf23xz, vf01xz, vf05xz		ibne	vi13, vi00, LoopEnd
+	sub.xyz vf18xyz, vf03xyz, vf06xyz	ibne	vi15, vi00, LoopEnd
+	addy.x  vf08x, vf00x, vf03y			nop
+	sub.xz  vf27xz, vf01xz, vf06xz		bal		vi15, CheckOpOut
+	nop									nop
+	opmsub.xyz vf25, vf16, vf22			nop
+	opmula.xyz ACC, vf23, vf17			nop
+	nop									nop
+	addw.z vf24z, vf24z, vf05w			nop
+	nop									bal		vi15, CheckOpOut
+	nop									nop
+	opmsub.xyz vf25, vf17, vf23			nop
+	opmula.xyz ACC, vf27, vf18			nop
+	nop									nop
+	nop									nop
+	nop									bal		vi15, CheckOpOut
+	nop									nop
+	opmsub.xyz vf25, vf18, vf27			nop
+	nop									nop
+	adday.x ACC, vf00, vf03y			nop
+	mul.xz vf30, vf21, vf24				nop
+	nop									bal		vi15, CheckOpOut
+	nop									nop
+
+;	opmsub.xyz vf25, vf15, vf21			fmand	vi13, vi14
+;	opmula.xyz ACC, vf22, vf16			fmand	vi15, vi14
+;	opmsub.xyz vf26, vf16, vf22			ibne	vi13, vi00, LoopEnd
+;	sub.xz	vf23xz, vf01xz, vf05xz		ibne	vi15, vi00, LoopEnd
+;	sub.xyz vf18xyz, vf03xyz, vf06xyz	fmand	vi13, vi12
+;	sub.xz  vf27xz, vf01xz, vf06xz		ibne	vi13, vi00, LoopEnd
+;	addy.x  vf08x, vf00x, vf03y			fmand	vi13, vi12
+;	opmula.xyz ACC, vf23, vf17			ibne	vi13, vi00, LoopEnd
+;	opmsub.xyz vf25, vf17, vf23			nop
+;	opmula.xyz ACC, vf27, vf18			nop
+;	opmsub.xyz vf26, vf18, vf27			nop
+;	addw.z vf24z, vf24z, vf05w			nop
+;	adday.x ACC, vf00, vf03y			fmand	vi13, vi12
+;	nop									ibne	vi13, vi00, LoopEnd
+;	nop									fmand	vi13, vi12
+;	mul.xz vf30, vf21, vf24				ibne	vi13, vi00, LoopEnd
+;	nop									nop
+
+	nop									ibne	vi10, vi00, CeilorFloor
+	nop									nop
+	addz.x vf30x, vf30x, vf30z			nop
+	nop									nop
+	nop									nop
+	nop									waitq
+;nop sq.xyzw vf21,0x0a(vi00)
+;nop sq.xyzw vf24,0x0b(vi00)
+;nop sq.xyzw vf30,0x0c(vi00)
+	msubq  vf08, vf30, Q				nop
+	nop									nop
+	nop									nop
+;nop sq.xyzw vf08,0x0d(vi00)
+	nop									b	CeilorFloor
+	nop									nop
+TriangleFloor :
+	max.xz	vf30, vf03, vf04			nop
+	mini.xz vf31, vf03, vf04			nop
+	sub.xyz	vf15xyz, vf04xyz, vf03xyz	nop
+	sub.xz	vf21xz, vf01xz, vf03xz		div	Q, vf00w, vf04w
+	sub.xyz	vf16xyz, vf05xyz, vf04xyz	iaddiu  vi12, vi00, 0x0040 ; opz < 0
+	max.xz  vf30, vf30, vf05			iaddiu  vi14, vi00, 0x00a0 ;
+	mini.xz vf31, vf31, vf05			nop
+	sub.xz	vf22xz, vf01xz, vf04xz		nop
+	sub.xyz vf17xyz, vf03xyz, vf05xyz	nop
+	opmula.xyz ACC, vf21, vf15			nop
+	sub.xz  vf00, vf30, vf01			nop
+	sub.xz  vf00, vf01, vf31			nop
+	nop									nop
+	nop									nop
+	nop									fmand	vi13, vi14
+
+	opmsub.xyz vf25, vf15, vf21			fmand	vi15, vi14
+	opmula.xyz ACC, vf22, vf16			ibne	vi13, vi00, LoopEnd
+	sub.xz	vf23xz, vf01xz, vf05xz		ibne	vi15, vi00, LoopEnd
+	addy.x  vf08x, vf00x, vf03y			nop	
+	addw.z vf24z, vf24z, vf05w			bal		vi15, CheckOpOut
+	nop									nop
+	opmsub.xyz vf25, vf16, vf22			nop
+	opmula.xyz ACC, vf23, vf17			nop
+	mul.xz vf30, vf21, vf24				nop
+	nop									nop
+	nop									bal		vi15, CheckOpOut
+	nop									nop
+	opmsub.xyz vf25, vf17, vf23			nop
+	adday.x ACC, vf00, vf03y			nop
+	addz.x vf30x, vf30x, vf30z			nop
+	nop									nop
+	nop									bal		vi15, CheckOpOut
+	nop									nop
+
+;	opmsub.xyz vf25, vf15, vf21			fmand	vi15, vi14
+;	opmula.xyz ACC, vf22, vf16			ibne	vi13, vi00, LoopEnd
+;	opmsub.xyz vf26, vf16, vf22			ibne	vi15, vi00, LoopEnd
+;	sub.xz	vf23xz, vf01xz, vf05xz		nop
+;	addy.x  vf08x, vf00x, vf03y			fmand	vi13, vi12
+;	addw.z vf24z, vf24z, vf05w			ibne	vi13, vi00, LoopEnd
+;	nop									fmand	vi13, vi12
+;	opmula.xyz ACC, vf23, vf17			ibne	vi13, vi00, LoopEnd
+;	opmsub.xyz vf25, vf17, vf23			nop
+;	mul.xz vf30, vf21, vf24				nop
+;	nop									nop
+;	nop									nop
+;	adday.x ACC, vf00, vf03y			fmand	vi13, vi12
+;	addz.x vf30x, vf30x, vf30z			ibne	vi13, vi00, LoopEnd
+;	nop									nop
+
+	nop									ibne	vi10, vi00, CeilorFloor
+	nop									waitq
+	msubq  vf08, vf30, Q				nop
+	nop									nop
+	nop									nop
+;nop sq.xyzw vf03, 0x0a(vi00)
+;nop sq.xyzw vf21, 0x0b(vi00)
+;nop sq.xyzw vf24, 0x0c(vi00)
+	nop									b	CeilorFloor
+	nop									nop
+CeilorFloor :
+	; 天井か床か？
+	suby.x	vf00x, vf08x, vf01y			nop
+	sub.x	vf30x, vf09x, vf08x			nop
+	sub.x   vf31x, vf08x, vf10x			nop
+	nop									iaddiu	vi11, vi00, 0x0088
+	nop									fmand	vi12, vi11
+	nop									fmand	vi13, vi11
+	nop									fmand	vi14, vi11
+	nop									ibne	vi12, vi00, FloorFind 
+	nop									nop
+CeilFind :
+	nop									iand	vi12, vi08, vi13
+	nop									lq.xyzw vf30, 0x00(vi01)
+	nop									ibne	vi12, vi00, LoopEnd
+	nop									nop
+	nop									sq.xyzw vf30, 0x10(vi00)
+	addx.x	vf09x, vf08x, vf00x			isw.x   vi03, 0x10(vi00)
+	nop									iaddiu	vi08, vi00, 0x0088
+	nop									ior	vi02, vi02, vi07
+	nop									b	LoopEnd 
+	nop									nop
+FloorFind :
+	nop									iand	vi13, vi09, vi14
+	nop									lq.xyzw vf30, 0x00(vi01)
+	nop									ibne	vi13, vi00, LoopEnd
+	nop									nop
+	nop									sq.xyzw vf30, 0x20(vi00)
+	addx.x	vf10x, vf08x, vf00x			iaddiu	vi09, vi00, 0x0088
+	nop									isw.x   vi03, 0x20(vi00)
+	nop									iaddiu  vi11, vi00, 1
+	nop									ior	vi02, vi02, vi11
+;nop sq.xyzw vf03, 0x0a(vi00)
+;nop sq.xyzw vf04, 0x0b(vi00)
+;nop sq.xyzw vf05, 0x0c(vi00)
+;nop sq.xyzw vf06, 0x0d(vi00)
+LoopEnd :
+	nop									iaddi   vi11, vi05, 3
+	nop									iadd	vi04, vi04, vi11
+	nop									isub	vi03, vi03, vi11
+	nop									b	Loop
+	nop									nop	
+
+CheckOpOut :								
+	; vf28y = -1.0F, vf25 = op
+	; vi11, vi13 を使用
+	; vi15 へリターン
+	suby.y	vf00y, vf25y, vf28y		iaddiu	vi11, vi00, 0x0044
+	nop								nop	
+	nop								nop
+	nop								nop
+	nop								fmand	vi13, vi11
+	nop								ibne	vi13, vi00, LoopEnd
+	nop								nop
+	nop								jr		vi15
+	nop								nop
+
+End :
+	nop								sq.x	vf09x, 0x11(vi00)
+	nop								sq.x	vf10x, 0x21(vi00)
+	nop								isw.x	vi02, 0x32(vi00)
+	nop								iaddiu	vi11, vi00, M_DATA_PTR
+	nop								iaddiu	vi04, vi00, M_DATA_PTR2
+	nop								ibeq	vi01, vi11, EndEnd
+	nop								nop
+	nop								iaddiu	vi04, vi00, M_DATA_PTR
+EndEnd :	
+	nop[e]							nop
+	nop								nop
+
+.EndMPG
+.EndDmaData
+

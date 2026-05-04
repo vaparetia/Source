@@ -1,0 +1,3973 @@
+/*
+	w00b.gcl
+	    オルガ戦ステージ（上構左舷ウイング）
+
+	2000/01/04 S.Hirano
+	$Id: w00b.gcl,v 1.342 2002/09/13 11:39:34 usr13731 Exp $
+
+
+*/
+
+// include
+// ------------------------------------
+#define PLAYER スネーク
+
+
+// オルガモーションリスト（ビデオ撮影用）
+enum オルガモーションリスト{
+	stll_idle	 = 0,
+	fire_throw_l = 19
+};
+
+// defines
+// ------------------------------------
+#define STAGE_TANKER						1
+#define STAGE_W00B							1							//通信機・デジカメ用
+
+
+#define SOUND								1 // サウンド
+#define YURE								1 // 上下揺れ
+
+#define screen_shot							0 // スクリーンショット使用
+#define E3_VIDEO							0
+
+#define uturikomi							1	// 床への映り込み
+
+#define オルガ各種カット					1
+
+#define オルガホロ撃ち時x					1
+
+#define オルガ死に時x						1
+
+#define オルガグレネードなげ時x				1
+#define オルガグレネードなげ時初回のみ		1
+
+#define オルガめくら撃ち_乱射時x			0
+#define オルガめくら撃ち_乱射時初回のみ		1
+
+#define オルガアンチエルード時x				0
+#define オルガアンチエルード時初回のみ		0
+
+#define オルガとんぼ返り時x					0
+#define オルガとんぼ返り時初回のみ			1
+
+#define オルガ側転時x						1
+#define オルガ側転時初回のみ				1
+
+#define オルガダメージ時x					0
+#define オルガダメージ時初回のみ			1
+
+#define オルガ覗き込み時x					0
+#define オルガ覗き込み時初回のみ			1
+
+#define オルガスライディング時x				1
+#define オルガスライディング時初回のみ		1
+
+#define オルガマシンガンな奴時x				0
+#define オルガマシンガンな奴時初回のみ		1
+
+#define オルガ挑発時x						0
+#define オルガ挑発時初回のみ				1
+
+#define オルガホロ舞う時x					1
+#define オルガホロ舞う時初回のみ			1
+
+#define オルガライフ１／２時x				0
+#define オルガライフ１／２時初回のみ		1
+#define オルガライフ１／４時x				0
+#define オルガライフ１／４時初回のみ		1
+#define オルガライフ１／８時x				0
+#define オルガライフ１／８時初回のみ		1
+#define オルガライフ３／４時x				0
+#define オルガライフ３／４時初回のみ		1
+
+#define スネークすき間時x					1
+#define スネークすき間初回のみ				1
+
+#define 人生語り最初始めx					1
+#define 人生語り最初終りx					1
+#define 人生語り最後始めx					1
+#define 人生語り最後終りx					1
+
+#define rinji_kao_anime						1 // 臨時顔アニメを使う
+#define usb_keyboard						0 // USBキーボードで色々やる。
+
+#define ENE_T_GOL 1			// タンカー編ゴル兵薬莢
+
+
+//#define LD_FADEOUT						1
+#define PAN_CAMERA							1
+#define VIB_ELUDE							1
+
+#define デバッグモード						0
+#define IN_RAIL_HZD	1				//エルード位置補正
+
+// レーダー画面ローテーションのため、chara レーダー を直置きする必要があるので。
+// 後にはstdch.h 内のデファイン切り分けで対応＞吉池君
+#include "sna_w00b.mh"	//強制モーションリスト
+//#include "stdch_h.h"
+#include "stdch.h"
+#include "sload.h"
+#include "beyond.h"
+#include "sound.h"
+#include "equip.h"
+#include "item_info.h"
+#include "../source/user/morita/orga/include/orga_flag.h"
+#include "../module/inc_se/se_defin.h"
+#include "boss_stdproc.h"
+#include "cap_resource.h"
+
+// USBキーボード対応のため。
+#include "usbkbd.h"
+
+
+
+// 常駐キャラ初期化関係
+// ------------------------------------
+
+
+// 変数初期化関係
+// ------------------------------------
+#if d:デバッグモード
+	//eval($w:ゲーム設定 = d:LEVEL_EASY)
+	eval($w:ゲーム設定 = d:LEVEL_HARD)
+#endif
+
+
+
+// マップ
+// ------------------------------------
+chara マップ ブリッジ屋上部 -h w00b -l w00b
+
+
+
+// マップ設定
+// ------------------------------------
+command マップ設定 ブリッジ屋上部 -s {
+
+#ifdef d:BOSS_MODE
+	@レーダーオンオフチェック 1	// stdch.hで定義
+#endif
+	@常駐キャラ設定
+
+// ボスラッシュ専用のキャラ
+	@ボスラッシュ開始時キャラ設定
+
+#ifndef d:BOSS_MODE
+	print '001'
+	@サウンドマネージャーセット
+	print '002'
+	@足音セット
+
+#endif
+	print '003'
+	@オルガ戦ＢＧＭ_スネークの場所によって曲調変化セット
+
+	@跳弾番号設定
+
+	print '004'
+	@レーダーセット
+	print '005'
+	@オルガプログラム用イベントセット
+
+	print '006'
+	@ホロセット
+
+	print '007'
+	@ブラー_煙突_カメラ上下揺れセット
+	print '008'
+	@空_雷_天球_風制御セット
+	print '009'
+	@雨_武器水飛沫_カメラ雨セット
+	print '010'
+	@波面セット
+
+	print '011'
+	@タンカーぼんぼりセット
+	print '012'
+	@霧雨_フォグセット
+	print '013'
+	@川岸のぼかし
+	print '014'
+	@マンハッタン関係セット
+	print '015'
+	@クレーン_旗_ワイヤーセット
+	print '016'
+	@プットテクスチャ関係セット
+
+	print '017'
+	@Ｚフォーカス管理セット
+
+	print '018'
+	@スポットライト関連セット
+	print '019'
+	@投光器水飛沫セット
+	print '020'
+	@ピンライトセット
+	print '021'
+	@影用ハザードセット
+
+	print '022'
+	@床の水飛沫セット
+
+	print '023'
+	@各種カメラ作成
+	print '024'
+	@デフォルトカメラセット
+	print '025'
+	@ウイング側カメラセット
+
+	print '026'
+	@階段前寄りカメラセット
+	print '027'
+	@オルガ戦ステージビヨンド設定１
+	print '028'
+	@オルガ戦ステージビヨンド設定２
+	print '029'
+	@オルガ戦ステージビヨンド設定３
+	print '030'
+	@不動ドアセット
+	print '031'
+	@クルー死体セット
+
+	print '032'
+	@鉄箱_木箱セット
+	@木箱のすき間の透明壁セット
+	print '033'
+	@木箱の上のIRS制御ボックスセット
+
+	print '034'
+	@飛沫鉄箱１ //下・右から１番目
+	print '035'
+	@飛沫鉄箱３ //上・左端の鉄箱（斜め）
+	print '036'
+	@飛沫木箱１ //下・右から１番目
+	print '037'
+	@飛沫木箱２ //下・右から２番目
+	print '038'
+	@飛沫木箱３ //下・左奥
+	print '039'
+	@飛沫木箱４ //下・左端の木箱
+	print '040'
+	@飛沫鉄箱２ //上・右から２番目　鉄箱３と４は統合した
+	print '041'
+	@飛沫鉄箱４ //上・右から２番目　鉄箱３と４は統合した
+	print '042'
+	@飛沫鉄箱６ //階段前のスネーク前進防止鉄箱
+
+	print '043'
+	@下階層水飛沫セット
+	print '044'
+	@上階層水飛沫セット
+	print '045'
+	@スネーク返し水飛沫セット
+	print '046'
+	@ウイング南のエルード禁止柵水飛沫セット
+	print '047'
+	@ホロをスタン通り抜け防止用透明床セット
+	print '048'
+	@オルガ戦第一フェーズロックオン防止壁セット
+
+	print '049'
+#ifndef d:BOSS_MODE
+	@プレイヤー設定
+#else
+	// プレイヤー設定の変わりに呼ぶ（X Y Z 方向 姿勢）mlsファイル(snake) mlsファイル(raiden)
+	@ボスラッシュプレイヤー設定 -8015 12000 -19124 3072 d:FA_END_SQUAT sna_w00b rai_w00b
+#endif
+
+
+	@スネーク水飛沫設定
+	print '050'
+	@ゲームスタート時スネーク起立
+
+	print '051'
+	@オルガ隠れ場所セット
+	print '052'
+	@ボスオルガセット
+	print '053'
+	//@オルガ表情セット
+
+	print '054'
+	@ウイング底抜け防止モデルセット
+	print '055'
+	@床オブジェクトセット
+
+	print '056'
+	@床への映り込みセット
+	print '057'
+	@スネークホフク時オルガ映り込み消去セット
+	print '058'
+	@遠近ぼかしセット
+
+	print '059'
+	@USBキーボード操作セット
+
+	print '060'
+	@船首セット
+	print '061'
+	@ステージセット
+
+	print '062'
+	@スクリーンショットセット
+	print '063'
+
+	print '064'
+	@レーダークルクル
+	print '065'
+
+	print '066'
+#ifndef d:BOSS_MODE
+	@ボス戦アイテム補給セット
+#else
+	@ボスラッシュ用アイテム設定
+#endif
+
+	print '067'
+	@共通シネマスクリーンセット
+	print '068'
+
+#ifndef d:BOSS_MODE
+	@タンカーデジカメ写真判定		//dcam_tanker.hの中にあります。
+#endif
+
+	//@タンカー編全体マップ設定 d:船橋五階操舵室マップ
+	@オルガ戦風邪治し
+
+#ifndef d:BOSS_MODE
+	@ポーズ時ステージ名表示設定 d:wn_航海甲板左舷ウイング
+#endif
+
+
+
+
+// キャラ用専用ライトは、マップのshowより後におくこと。
+	@キャラクタ専用ライトセット
+
+
+} // <command マップ設定 ブリッジ屋上部>の閉じカッコ
+
+#ifndef d:BOSS_MODE
+	@ロード時フェードイン
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ------------------------------------
+// 無線gclのインクルード。
+// 必ずマップ設定と、showコマンドの間に置くこと。
+// ------------------------------------
+#include "w00b_cdc.ch"
+// ------------------------------------
+// 無線gclのインクルード終了。
+// ここから動かさないこと。
+// ------------------------------------
+
+
+// マップ初期表示
+// ------------------------------------
+command マップ表示 -show ブリッジ屋上部
+
+// サウンド
+// ------------------------------------
+proc サウンドマネージャーセット {
+#if d:SOUND
+	chara サウンドマネージャー ＳＤマネ -pak 0
+		mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_PLAY_01
+//		mesg サウンドマネージャー ＳＤマネ SD_SNEAK_AUTO d:SNG_PLAY_01
+#endif
+}
+
+proc ボス戦ＢＧＭ_アクション曲調に戻る {
+	mesg サウンドマネージャー ＳＤマネ SD_CODE d:SD_AUTO_FADER1
+}
+
+proc ボス戦ＢＧＭ_静かな曲調に変わる {
+	mesg サウンドマネージャー ＳＤマネ SD_CODE d:SD_AUTO_FADER2
+}
+
+proc 足音セット {
+	// スネーク雨足音セット「通常・鉄階段・以下ダミー・・・」の順
+	// 左足
+#if 1
+	@サウンド効果音設定
+#else
+	command 壁床効果音設定 \
+		-id 0 \
+		-type 0 \
+		-se d:SD_P_FOOTL01 \
+		-data  d:se_code:SD_P_FOOT_03L,d:NOISE_ZERO \
+			   d:se_code:SD_P_FOOT_04L,d:NOISE_ZERO \
+			   d:se_code:SD_P_FOOT_03L,d:NOISE_ZERO \
+			   d:se_code:SD_P_FOOT_03L,d:NOISE_ZERO \
+			   d:se_code:SD_P_FOOT_03L,d:NOISE_ZERO \
+			   d:se_code:SD_P_FOOT_03L,d:NOISE_ZERO \
+			   d:se_code:SD_P_FOOT_03L,d:NOISE_ZERO \
+			   d:se_code:SD_P_FOOT_03L,d:NOISE_ZERO 	// 必ず８セット書くこと
+	// 右足
+	command 壁床効果音設定 \
+		-id 0 \
+		-type 0 \
+		-se  d:SD_P_FOOTR01 \
+		-data  d:se_code:SD_P_FOOT_03R,d:NOISE_ZERO \
+			   d:se_code:SD_P_FOOT_04R,d:NOISE_ZERO \
+			   d:se_code:SD_P_FOOT_03R,d:NOISE_ZERO \
+			   d:se_code:SD_P_FOOT_03R,d:NOISE_ZERO \
+			   d:se_code:SD_P_FOOT_03R,d:NOISE_ZERO \
+			   d:se_code:SD_P_FOOT_03R,d:NOISE_ZERO \
+			   d:se_code:SD_P_FOOT_03R,d:NOISE_ZERO \
+			   d:se_code:SD_P_FOOT_03R,d:NOISE_ZERO 	// 必ず８セット書くこと
+
+	// 壁叩き音
+	command 壁床効果音設定 \
+		-id 0 \
+		-type 1 \
+		-se d:SD_P_WALL02 \
+	-data	d:se_code:SD_A_WALLM01,d:NOISE_ZERO \ // 通常
+			d:se_code:SD_A_WALLM02,d:NOISE_ZERO \ // 鉄筋
+			d:se_code:SD_A_WALLM03,d:NOISE_ZERO \ // 鉄板
+			d:se_code:SD_A_WALLM04,d:NOISE_S \	  // 木
+			d:se_code:SD_A_WALLM01,d:NOISE_ZERO \
+			d:se_code:SD_A_WALLM01,d:NOISE_ZERO \
+			d:se_code:SD_A_WALLM01,d:NOISE_ZERO \
+			d:se_code:SD_A_WALLM01,d:NOISE_ZERO	// 必ず８セット書くこと
+
+	// 床跳弾音
+	command 壁床効果音設定 \
+		-id 0 \
+		-type 0 \
+		-se d:SD_W_RICOCH02 \
+		-data	d:se_code:SD_A_RICOCH01,d:NOISE_ZERO \ // 跳弾１−１ 通常
+				d:se_code:SD_A_RICOCH02,d:NOISE_ZERO \ // 跳弾２−１ 鉄筋
+				d:se_code:SD_A_RICOCH03,d:NOISE_ZERO \ // 跳弾３−１ 鉄板
+				d:se_code:SD_A_RICOCH04,d:NOISE_S \	   // 跳弾４−１ 木
+				d:se_code:SD_A_RICOCH05,d:NOISE_ZERO \ // 跳弾５−１ ダンボール
+				d:se_code:SD_A_RICOCH02,d:NOISE_ZERO \
+				d:se_code:SD_A_RICOCH02,d:NOISE_ZERO \
+				d:se_code:SD_A_RICOCH02,d:NOISE_ZERO	// 必ず８セット書くこと
+
+	// 壁跳弾音
+	command 壁床効果音設定 \
+		-id 0 \
+		-type 1 \
+		-se d:SD_W_RICOCH02 \
+		-data	d:se_code:SD_A_RICOCH01,d:NOISE_ZERO \ // 跳弾１−１ 通常
+				d:se_code:SD_A_RICOCH02,d:NOISE_ZERO \ // 跳弾２−１ 鉄筋
+				d:se_code:SD_A_RICOCH03,d:NOISE_ZERO \ // 跳弾３−１ 鉄板
+				d:se_code:SD_A_RICOCH04,d:NOISE_S \	   // 跳弾４−１ 木
+				d:se_code:SD_A_RICOCH05,d:NOISE_ZERO \ // 跳弾５−１ ダンボール
+				d:se_code:SD_A_RICOCH02,d:NOISE_ZERO \
+				d:se_code:SD_A_RICOCH02,d:NOISE_ZERO \
+				d:se_code:SD_A_RICOCH02,d:NOISE_ZERO	// 必ず８セット書くこと
+
+
+	// オルガ雨足音セット「通常・鉄階段・以下ダミー・・・」の順
+	// 左足
+	command 壁床効果音設定 \
+		-id 1 \
+		-type 0 \
+		-se  d:SD_P_FOOTL01 \
+		-data d:se_code:SD_E_EFOOT_3L1,d:NOISE_ZERO \
+			  d:se_code:SD_E_EFOOT_4L1,d:NOISE_ZERO \
+			  d:se_code:SD_E_EFOOT_3L1,d:NOISE_ZERO \
+			  d:se_code:SD_E_EFOOT_3L1,d:NOISE_ZERO \
+			  d:se_code:SD_E_EFOOT_3L1,d:NOISE_ZERO \
+			  d:se_code:SD_E_EFOOT_3L1,d:NOISE_ZERO \
+			  d:se_code:SD_E_EFOOT_3L1,d:NOISE_ZERO \
+			  d:se_code:SD_E_EFOOT_3L1,d:NOISE_ZERO 	// 必ず８セット書くこと
+	// 右足
+	command 壁床効果音設定 \
+		-id 1 \
+		-type 0 \
+		-se  d:SD_P_FOOTR01 \
+		-data d:se_code:SD_E_EFOOT_3R1,d:NOISE_ZERO \
+			  d:se_code:SD_E_EFOOT_4R1,d:NOISE_ZERO \
+			  d:se_code:SD_P_FOOT_03R,d:NOISE_ZERO \
+			  d:se_code:SD_P_FOOT_03R,d:NOISE_ZERO \
+			  d:se_code:SD_P_FOOT_03R,d:NOISE_ZERO \
+			  d:se_code:SD_P_FOOT_03R,d:NOISE_ZERO \
+			  d:se_code:SD_P_FOOT_03R,d:NOISE_ZERO \
+			  d:se_code:SD_P_FOOT_03R,d:NOISE_ZERO 	// 必ず８セット書くこと
+
+
+
+#endif
+}
+
+
+proc 跳弾番号設定 {
+	print '跳弾番号設定'
+	// ------------------------------------
+		command 跳弾ノーマル -n 0
+		command 跳弾ノーマル -n 1
+		command 跳弾ノーマル -n 2
+		command 跳弾ＳＥのみ -n 6
+
+		command 弾痕ノーマル -n 0
+		command 弾痕ノーマル -n 1
+		command 弾痕ノーマル -n 2
+		command 弾痕ノーマル -n 6
+
+
+
+}
+
+proc オルガ戦ＢＧＭ_スネークの場所によって曲調変化セット {
+	trap fd000 d:PLAYER \
+		-mask ？ \
+		-state d:TRP_STATE_ELUDE \
+		-exec {
+			if($3 == 入る) {
+				@ボス戦ＢＧＭ_静かな曲調に変わる
+			} else {
+				@ボス戦ＢＧＭ_アクション曲調に戻る
+			}
+		}
+	trap fd000 d:PLAYER \
+		-mask ？ \
+		-exec {
+			if($3 == 入る) {
+				@ボス戦ＢＧＭ_静かな曲調に変わる
+			} else {
+				@ボス戦ＢＧＭ_アクション曲調に戻る
+			}
+		}
+}
+
+proc オルガプログラム用イベントセット {
+/* 「スネークの位置をプロックで知る」という仕様に戻る可能性を考慮して
+残しておく。現在は座標とHZXで見ているので未使用 */
+#if 0
+	trap ev000 d:PLAYER \
+		-mask ？ \
+		-exec {
+				if($3 == 入る){
+				//隠れ場所にスネークが入った
+				mesg ボスオルガ オルガ snake_hide 0 // 引数はトラップ名の最後の数字にあわせる
+			} else {
+				//隠れ場所にスネークが出た
+				mesg ボスオルガ オルガ snake_unhide
+			}
+		}
+
+	trap ev001 d:PLAYER \
+		-mask ？ \
+		-exec {
+				if($3 == 入る){
+				//隠れ場所にスネークが入った
+				mesg ボスオルガ オルガ snake_hide 1 // 引数はトラップ名の最後の数字にあわせる
+			} else {
+				//隠れ場所にスネークが出た
+				mesg ボスオルガ オルガ snake_unhide
+			}
+		}
+
+	trap ev002 d:PLAYER \
+		-mask ？ \
+		-exec {
+				if($3 == 入る){
+				//隠れ場所にスネークが入った
+				mesg ボスオルガ オルガ snake_hide 2 // 引数はトラップ名の最後の数字にあわせる
+			} else {
+				//隠れ場所にスネークが出た
+				mesg ボスオルガ オルガ snake_unhide
+			}
+		}
+
+	trap ev003 d:PLAYER \
+		-mask ？ \
+		-exec {
+				if($3 == 入る){
+				//隠れ場所にスネークが入った
+				mesg ボスオルガ オルガ snake_hide 3 // 引数はトラップ名の最後の数字にあわせる
+			} else {
+				//隠れ場所にスネークが出た
+				mesg ボスオルガ オルガ snake_unhide
+			}
+		}
+
+	trap ev004 d:PLAYER \
+		-mask ？ \
+		-exec {
+				if($3 == 入る){
+				//隠れ場所にスネークが入った
+				mesg ボスオルガ オルガ snake_hide 4 // 引数はトラップ名の最後の数字にあわせる
+			} else {
+				//隠れ場所にスネークが出た
+				mesg ボスオルガ オルガ snake_unhide
+			}
+		}
+
+	trap ev005 d:PLAYER \
+		-mask ？ \
+		-exec {
+				if($3 == 入る){
+				//隠れ場所にスネークが入った
+				mesg ボスオルガ オルガ snake_hide 5 // 引数はトラップ名の最後の数字にあわせる
+			} else {
+				//隠れ場所にスネークが出た
+				mesg ボスオルガ オルガ snake_unhide
+			}
+		}
+
+	// 階段接近時
+	trap ev006 d:PLAYER -mask ？ \
+		-exec {
+			if($3 == 入る){
+				mesg ボスオルガ オルガ スネーク階段入る
+			} else {
+				mesg ボスオルガ オルガ スネーク階段出る
+			}
+		}
+
+#endif
+}
+
+// レーダー
+// ------------------------------------
+proc レーダーセット {
+	// レーダー画面回転のため、charaを置く。
+	chara レーダー レーダー -dir 3072
+}
+
+proc オルガ各種カット時レーダー画面制御 $:消去持続時間 {
+	command メニュー設定 \
+		-menu off \ // 武器・アイテムメニューのオフ
+		-gage off \ // ゲージのオフ
+		-radar off \ // レーダーのオフ
+		-subwin off  // 子画面のオフ
+
+	chara delay ディレイ -time $:消去持続時間 -exec {
+		command メニュー設定 \
+			-menu on \ //武器・アイテムメニューのオン
+			-gage on \ //ゲージのオン
+			-radar on \ //レーダーのオン
+			-subwin on  //子画面のオン
+	}
+}
+
+proc レーダー画面消去 {
+	command メニュー設定 \
+		-menu off \ // 武器・アイテムメニューのオフ
+		-gage off \ // ゲージのオフ
+		-radar off \ // レーダーのオフ
+		-subwin off  // 子画面のオフ
+}
+
+proc レーダー画面表示 {
+	command メニュー設定 \
+		-menu on \ //武器・アイテムメニューのオン
+		-gage on \ //ゲージのオン
+		-radar on \ //レーダーのオン
+		-subwin on  //子画面のオン
+}
+
+// エフェクト
+// ------------------------------------
+proc ホロセット {
+	#if 1
+	chara プットホロオブジェ ホロ \
+	        -c horo1 \
+	        -m horo_def horo_bo horo_bod horo_box horo_lo horo_lod horo_lox horo_ro horo_rod horo_rox \
+	        -p -17000,12750,-17000 \
+	        -r 0
+	#endif
+//	chara プットオブジェ 隠し -m hide_horo -l w00b
+//	chara プット飛沫オブジェ 飛沫１ -m horo1 -r 0 0 0 -p -17000,12750,-17000
+}
+
+proc ブラー_煙突_カメラ上下揺れセット {
+	chara ブラー オカジーブラー
+
+	chara 煙突煙 モクモク \
+		-n 4 \
+		-p	3200,25000,-1000 \
+			3200,25000,-3000 \
+			-3200,25000,-1000 \
+			-3200,25000,-3000
+
+	#if d:YURE
+	chara カメラ上下振動 波ゆれ \
+		-a 96 \
+		-c 512
+	#endif
+}
+
+proc 空_雷_天球_風制御セット {
+	chara   新空 嵐空 -m w00_sky
+	chara   新雷フラッシュ 嵐空
+
+	chara 天球 背景
+
+	chara 風制御 wind \
+		-i 100 \
+		-j 300 \
+		-r -1024 1024 0 \
+		-a 4 \
+		-b 300 \
+		-c 150
+}
+
+proc 雨_武器水飛沫_カメラ雨セット {
+#if 0
+	chara 雨 rain \
+		-n 8 \ // 9
+		-c 95 // 100
+#else
+	chara 雨速度可変 slow_rain \
+		-n 8 \		// 量
+		-c 95
+#endif
+
+	chara 武器水飛沫 水飛沫
+
+	chara カメラ雨 カメラ雨 -l 1 // 目の前吹き込みオフ
+}
+
+proc 波面セット {
+	chara 波面 wave \
+		-p 0,-6000,0 \
+		-s 128 \
+		-n 5 \
+		-w 5 5 \
+		-b 	     0,200, 20500,6,    0,  0 \
+			-20000,500,-25000,8,-1024, -50 \
+			-20000,500,-24000,7,-1024, -50 \
+			-20000,500,-10000,8,-1024, -50 \
+			-20000,500,-11000,7,-1024, -50 \
+		-x 0,-135500 20000,132500
+}
+
+proc タンカーぼんぼりセット {
+	chara プットテクスチャ タンカー前部ボンボリ \
+		-t light07_msk light07_msk light07_msk light07_msk light07_msk light07_msk light07_msk light07_msk \
+		-p 	-17000, 3500,  -61000 \
+			 17000, 3500,  -61000 \
+			-17000, 3500, -121000 \
+			 17000, 3500, -121000 \
+			-17000, 3500, -181000 \
+			 17000, 3500, -181000 \
+			 -3500, 4000, -112100 \
+			     0, 7000, -218000 \
+		-r 0 0 0 0 0 0 0 0 \
+		-c 	128 128 128 16 \
+			128 128 128 16 \
+			128 128 128 16 \
+			128 128 128 16 \
+			128 128 128 16 \
+			128 128 128 16 \
+			128 128 128 16 \
+			128 128 128 16 \
+		-s 	7000 7000 \
+			7000 7000 \
+			10000 10000 \
+			10000 10000 \
+			10000 10000 \
+			10000 10000 \
+			10000 10000 \
+			10000 10000
+}
+
+proc 霧雨_フォグセット {
+#if 0
+	chara 霧雨 霧雨
+#endif
+
+#if 1
+	// 雨天
+	chara フォグ 霧 \
+		 -c 16 32 27 \
+		 -n 10000 \
+		 -f 28000
+#else
+	// 晴天
+	chara フォグ 霧 \
+		 -c 16 32 37 \
+		 -n 10000 \
+		 -f 28000
+#endif
+}
+
+proc 川岸のぼかし {
+	chara 遠景ぼかし far_blur \
+		-plane	2 \
+		-near	50000 \
+		-far	100000 \
+		-enable
+}
+
+proc マンハッタン関係セット {
+	chara マンハッタン トランスファー \
+		-l w00b
+	chara ブルックリン ブルックリン \
+		-l w00b
+	chara マンハット黄灯 黄灯
+	chara マンハット赤灯1 赤灯1
+	chara マンハット赤灯2 赤灯2
+	chara ブルックリン赤灯 赤灯
+}
+
+proc クレーン_旗_ワイヤーセット {
+	chara ロープモデル２ クレーンワイヤー \
+		-n w00a_ch1 \
+		-x -10950 7970 6610 \
+		-d 0
+
+	chara プット頂点アニメオブジェ 旗         -m w00_vfg -b 5 -w 1 -p 0,0,0
+	chara プット頂点アニメオブジェ ワイヤー１ -m w00_vw1 -b 5 -w 1 -p 0,0,0
+	chara プット頂点アニメオブジェ ワイヤー２ -m w00_vw2 -b 5 -w 1 -p 0,0,0
+	chara プット頂点アニメオブジェ ワイヤー３ -m w00_vw3 -b 5 -w 1 -p 0,0,0
+	chara プット頂点アニメオブジェ ワイヤー４ -m w00_vw4 -b 5 -w 1 -p 0,0,0
+	chara プット頂点アニメオブジェ ワイヤー５ -m w00_vw5 -b 5 -w 1 -p 0,0,0
+	chara プット頂点アニメオブジェ ワイヤー６ -m w00_vw6 -b 5 -w 1 -p 0,0,0
+}
+
+proc プットテクスチャ関係セット {
+
+#if 1
+
+	chara プットテクスチャクロスフェードワールド wwww \
+		-t light12_msk \
+		-u light12_msk \
+		-p 1800, -1900, 8020 \
+		   4200, -1900, 8020 \
+		  -4200, -1900, 8020 \
+		  -1800, -1900, 8020 \
+		-r 0, 0 \
+		   0, 0 \
+		   0, 0 \
+		   0, 0 \
+		-s 1300 1700
+
+	chara プットテクスチャクロスフェードカメラ ssss \
+		-t xlit04b_alp \
+		-u xlit04a_alp \
+		-v xlit05b_alp \
+		-p \
+		   //-1800, 2300, 8350 \
+		   //-4200, 2300, 8350 \
+		   //-7650, 3800, 4500 \
+		   -6650, 8675,  500 \
+		   -6650, 8675, 3500 \
+		   -6650, 8675,-2500 \
+		   -6650, 8675,-5600 \
+		  -11000, 8900,-8350 \
+		  -12650, 8900,-10500 \
+		-s 400 400 100 \
+		-z 8000
+
+	chara プットテクスチャクロスフェードカメラドア tttt \
+		-t xlit05b_alp \
+		-u xlit05a_alp \
+		-p \
+		   //-8700, 2580, -5000 \
+		   //-8760, 2580, -4950 \
+		   //-8820, 2580, -4900 \
+		   //-8700, 8580, -9000 \
+		   //-8760, 8580, -8950 \
+		   //-8820, 8580, -8900 \
+		   -6000, 14580, -15890 \
+		   -6050, 14580, -15950 \
+		   -6100, 14580, -16010 \
+		-s 400 \
+		-z 8000
+#else
+	chara プットテクスチャクロスフェードカメラ ssss \
+		-t xlit04b_alp \
+		-u xlit04a_alp \
+		-v xlit05b_alp \
+		-p -1800, 2300, 8350 \
+		 -4200, 2300, 8350 \
+		 -7650, 3800, 4500 \
+		 -6650, 8675,  500 \
+		 -6650, 8675, 3500 \
+		 -6650, 8675,-2500 \
+		 -6650, 8675,-5600 \
+		-11000, 8900,-8350 \
+		-s 400 400 100 \
+		-z 8000
+
+	chara プットテクスチャクロスフェードカメラドア ドアの上の蛍光パネル \
+		-t xlit05b_alp \
+		-u xlit05a_alp \
+		-p  /*-8700, 2580, -5000 \
+			-8760, 2580, -4950 \
+			-8820, 2580, -4900 \
+			-8700, 8580, -9000 \
+			-8760, 8580, -8950 \
+			-8820, 8580, -8900*/ \
+			-6000, 14580, -15890 \
+			-6050, 14580, -15950 \
+			-6100, 14580, -16010 \
+		-s 400 \
+		-z 8000
+#endif
+}
+
+proc Ｚフォーカス管理セット {
+	chara Ｚフォーカス管理 Z_manager -z 5000 10000 -t 30
+}
+
+// スポットライト関連
+// ------------------------------------
+proc 投光器壊れた {
+	eval($f:w00b_左舷投光器壊れた = 1)
+}
+
+proc スポットライト関連セット {
+
+	chara スポットライト投影モデル 投影モデル \
+		-model w00k2 \
+		-pos 0,10,0
+
+	chara スポットライト投影モデル 投影モデル \
+		-model w00k5 \
+		-pos 0,10,0
+
+
+#if 0
+	chara 静止スポットライト設置 投影モデル \
+		-pos -19765, 14610, -14914 \
+		-dir  19700, -12000, -6000 \
+		-range 15000 \
+		-angle 45 \
+		-color 128,128,100 \
+		-option 0x0000
+#endif
+
+#if 0
+	chara 固定ボリュームライト 投影モデル \
+		-p -19670,13610,-14914 \
+		-d 0,19000,-11000 \
+		-n 16 \		// 16 (max=32)
+		-l 15000 \	// 15000
+		-w 1000		// 1000
+#endif
+	chara プットオルガ戦投光器オブジェ 投光器 \
+		-m  w00b_slt0 w00b_slt0_brk \
+		-n ブリッジ屋上 投影モデル \
+		-l w00b \
+		-b 投光器壊れた \
+		-p -20060, 12700, -14890 \
+		-aim 8600, 17870, -12000
+
+	chara スポット雨 投影モデル \
+		-from -19765, 14710, -14914 \
+		-to    8600, 17870, -12000 \
+		-ratio  50 \
+		-sphere 6000
+}
+
+proc 投光器水飛沫セット {
+	chara ライン水飛沫 投光器水飛沫 \
+		-n 1 \
+		-d 1 450 15 72 -20650 14800 -15100 -19750 15000 -14900
+}
+
+// 壊れピンライト
+// 西壁北端（以降、反時計回り）
+proc ピンライトセット {
+	chara プットスポットライトオブジェ 照明モデル１ \
+		-m w00_pl7 w00_pl7x \
+		-n 上層照明左 \
+		-t -5600,14500,-13750 100 1000 1500 \
+		-l w00b \
+		-p 0,0,0 \
+		-f d:BRK_LGT_PUTW00B
+
+	chara プットスポットライトオブジェ 照明モデル２ \
+		-m w00_pl6 w00_pl6x \
+		-n 上層照明左 \
+		-t -5600,14500,-11250 100 1000 1500 \
+		-l w00b \
+		-p 0,0,0 \
+		-f d:BRK_LGT_PUTW00B
+
+	chara プットスポットライトオブジェ 照明モデル３ \
+		-m w00_pl5 w00_pl5x \
+		-n 上層照明左 \
+		-t -4000,14500,-9350 100 1000 1500 \
+		-l w00b \
+		-p 0,0,0 \
+		-f d:BRK_LGT_PUTW00B
+
+	chara プットスポットライトオブジェ 照明モデル４ \
+		-m w00_pl4 w00_pl4x \
+		-n 上層照明左 \
+		-t -2000,14500,-9350 100 1000 1500 \
+		-l w00b \
+		-p 0,0,0 \
+		-f d:BRK_LGT_PUTW00B
+
+	chara プットスポットライトオブジェ 照明モデル５ \
+		-m w00_pl3 w00_pl3x \
+		-n 上層照明左 \
+		-t 4000,14500,-9350 100 1000 1500 \
+		-l w00b \
+		-p 0,0,0 \
+		-f d:BRK_LGT_PUTW00B
+
+}
+
+proc 影用ハザードセット {
+	command 影投影ハザード \
+		-name ブリッジ屋上部 \
+		-group 1
+
+	command スポットライト投影ハザード \
+		-name ブリッジ屋上部 \
+		-group 1
+}
+
+// 床に映る波紋（床水飛沫）
+proc 床の水飛沫セット {
+	// オルガ側の床水飛沫
+	chara 波紋 床水飛沫１ \
+		-n 1 \
+		-b -20000 -20000 -12500 -14000 \
+		-h 12750
+
+	// スネーク側の床。
+	chara 波紋 床水飛沫２ \
+		-n 1 \
+		-b -12000 -20000 -5000 -9000 \
+		-h 12000
+}
+
+// カメラ設定
+// ------------------------------------
+proc 各種カメラ作成 {
+	chara カメラ ステージカメラ	-c 0 -l 3 -p 5
+	chara カメラ サブカメラ１	-c 0 -l 2 -p 30
+	chara カメラ サブカメラ２	-c 0 -l 2 -p 20
+	chara カメラ サブカメラ３	-c 0 -l 2 -p 10
+
+	chara カメラ ビヨンドカメラ		-c 0 -l 2 -p 15
+
+	// これはカットインカメラ
+	chara カメラ オルガカットカメラ -c 0 -l 1 -p 2
+
+	// オルガ人生語り時のカットインカメラ
+	// 語り時にカットが変わらないように、最強にセット
+	chara カメラ オルガカットカメラ人生 -c 0 -l 0 -p 1
+}
+
+proc デフォルトカメラセット {
+	trap ca003 d:PLAYER \
+		-mask ＊ \
+		-camera \
+		-exec {
+
+		chara カメラ設定 サブカメラ１ \
+			-c 0 \
+			-b -6500,20000,-19000 -6500,20000,-7500 \
+			-l -32000,-32000,-32000 -6510,32000,32000 \
+			-r 240,3072,0 \
+			-f 6000 \
+			-a 200 \
+			-i 1 -1 0 0 \
+			-d 1 \
+			-s $3
+	}
+}
+
+proc ウイング側カメラセット {
+	trap ca000 d:PLAYER \
+		-mask ＊ \
+		-camera \
+		-exec {
+			chara カメラ設定 サブカメラ１ \
+				-c 0 \
+				-b -5500,20500,-18300 -5500,20500,32000 \
+				-l -13500,-32000,-19100 -11500,32000,32000 \
+				-r 300,3000,0 \
+				-f 10000 \
+				-a 180 \
+				-i 2 -1 0 0 \
+				-d 1 \ // パッド補正
+				-s $3
+
+		}
+
+
+
+	trap ca000 d:PLAYER \
+		-mask ＊ \
+		-state d:TRP_STATE_GROUND \
+		-camera \
+		-exec {
+			chara カメラ設定 サブカメラ２ \
+				-c 0 \
+				-b -6300,12000,-20000 -6050,15000,-8800 \
+				-l -12000,12000,-20000 -7250,15000,-8800 \
+				-r 110,3000,0 \
+				-f 3000 \
+				-a 170 \
+				-i 0 0 0 0 \
+				-d 1 \ // パッド補正
+				-s $3 \
+				-slide  1 10 \
+						800 800 \
+						30 1
+		}
+
+
+
+
+/*
+	// ウイング側
+	trap ca000 d:PLAYER \
+		-mask ＊ \
+		-camera \
+		-exec {
+			if(!`command PlayerStatus -f 2`){
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \
+					-b -5000,20500,-18300 -5000,20500,32000 \
+					-l -13500,-32000,-19100 -11500,32000,32000 \
+					-r 300,3000,0 \
+					-f 10000 \
+					-a 180 \
+					-i 2 -1 0 0 \
+					-d 1 \ // パッド補正
+					-s $3
+
+			// ホフク中
+			} else {
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \
+					-b -12000,12000,-20000 -6050,15000,-8800 \
+					-l -12000,12000,-20000 -7250,15000,-8800 \
+					-r 110,3000,0 \
+					-f 3000 \
+					-a 170 \
+					-i 0 -1 0 0 \
+					-d 1 \ // パッド補正
+					-s $3 \
+					-slide  1 10 \
+							800 800 \
+							30 1
+			}
+		}
+
+*/
+
+}
+
+
+proc スネークホフク時オルガ映り込み消去セット {
+#if d:uturikomi
+	trap ev400 d:PLAYER \
+		-mask ？ \
+		-state 2 \
+		-exec {
+				//スネークホフク中は、オルガの映り込みを消す。
+				if($3 == 入る){
+					mesg 鏡面モデル管理 床面映り込みオルガ del オルガ
+				} else {
+					mesg 鏡面モデル管理 床面映り込みオルガ add オルガ
+				}
+		}
+#endif
+}
+
+
+// オルガへの接近防止用カメラ。
+proc 階段前寄りカメラセット {
+	trap ca002 d:PLAYER \
+		-mask ＊ \
+		-camera \
+		-exec {
+				chara カメラ設定 サブカメラ１ \
+					-c 1 \
+					-p -11270,18652,-14875 \
+					-t -11342,14417,-14880 \
+					-a 220 \
+					-i 1 -1 0 0 \
+					-d 1 \ // パッド補正
+					-s $3
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ビヨンド設定
+// ------------------------------------
+proc オルガ戦ステージビヨンド設定１ {
+	trap by000 d:PLAYER \
+		-mask いる \
+		-button 3 \		//ビヨンドボタン
+		-state 0,4 \	//立ち状態or張り付き
+		-exec {
+
+			@西向きビヨンド発動 by000 -11875 $6 -11500 -9250 d:BY_FALL_DEAD
+
+		}
+
+	// ぶら下がり前
+	trap by000 d:PLAYER \
+		-mask ＊ \
+		-state 6 \
+		-dir 3072 256 \	//方向指定
+		-exec {
+			mesg プレイヤー d:PLAYER shadow 0
+			chara カメラ設定 ビヨンドカメラ \
+				-c 0 \
+				-b -32000,-32000,-32000 32000,32000,32000 \
+				-l -32000,-32000,-32000 32000,32000,32000 \
+				-r 708,1872,0 \
+				-f 9776 \
+				-a 200 \
+				-i 1 -1 0 0 \
+				-s $3
+#if d:uturikomi
+			if($3 == 入る){
+				mesg 鏡面モデル管理 床面映り込みスネーク del d:PLAYER
+				mesg 鏡面モデル管理 床面映り込みオルガ del オルガ
+print 'デリート！！'
+			}
+#endif
+		}
+
+	// ぶら下がり中
+	trap by000 d:PLAYER \
+		-mask ？ \
+		-state 5 \
+		-dir 1024 256 \	//方向指定
+		-exec {
+#if 1
+			chara カメラ設定 ビヨンドカメラ \
+				-c 1 \
+				-p -19015,16201,-13452 \
+				-t -11608,11093,-10929 \
+				-r 377,810,0 -f 9344 \
+				-a 445 \
+				-i 3 2 0 0 \
+				-s $3
+#else
+			chara カメラ設定 ビヨンドカメラ \
+				-c 1 \
+				-p -17479,19354,-11748 \
+				-t -12266,11637,-12562 \
+				-r 588,1095,0 \
+				-f 9349 \
+				-a 238 \
+				-i 3 2 0 0 \
+				-s $3
+#endif
+#if d:uturikomi
+			if($3 == 出る){
+				mesg 鏡面モデル管理 床面映り込みスネーク add d:PLAYER
+				mesg 鏡面モデル管理 床面映り込みオルガ add オルガ
+print 'アッド！！'
+			}
+#endif
+		}
+
+
+
+	trap by000 d:PLAYER \
+		-mask 入る \
+		-state d:TRP_STATE_ELUDE_FALL \
+		-dir 1024,256 \	//方向指定
+		-exec {
+			print '落下死です。'
+			if(`%ゲームオーバーチェック` == 0){
+				command ゲームオーバー処理開始 \
+					-exec {
+						chara delay ディレイ -time 60 -exec{
+							command ゲームオーバー処理終了
+						}
+					}
+			}
+		}
+
+
+}
+
+proc オルガ戦ステージビヨンド設定２ {
+	trap by001 d:PLAYER \
+		-mask ？ \
+		-state 0,4 \	//立ち状態or張り付き
+		-exec {}
+
+	trap by001 d:PLAYER \
+		-mask いる \
+		-button 3 \		//ビヨンドボタン
+		-state 0,4 \	//立ち状態or張り付き
+		-exec {
+// Y.Matsuhana 2001.2.27 modify
+//			@ビヨンドモード発動 by001 0 2 (-10125+(d:ADJ_DIS_NOMAL)) (-9625+(d:ADJ_DIS_BEHIND)) \
+//								0 $4 (-12000+(d:ADJ_DIS)) (-7000-(d:ADJ_DIS)) 0x00000006
+		}
+
+	// ぶら下がり前
+	trap by001 d:PLAYER \
+		-mask ＊ \
+		-state 6 \
+		-dir 0 256 \	//方向指定
+		-exec {
+			mesg プレイヤー d:PLAYER shadow 0
+
+			chara カメラ設定 ビヨンドカメラ \
+				-c 0 \
+				-b -32000,-32000,-32000 -5500,32000,32000 \
+				-l -32000,-32000,-32000 -5500,32000,32000 \
+				-r 464,3736,0 \
+				-f 4500 \
+				-a 176 \
+				-i 1 -1 0 0 \
+				-s $3
+#if d:uturikomi
+			if($3 == 入る){
+				mesg 鏡面モデル管理 床面映り込みスネーク del d:PLAYER
+print 'デリート！！'
+			}
+#endif
+		}
+
+	// ぶら下がり中
+	trap by001 d:PLAYER \
+		-mask ？ \
+		-state 5 \
+		-dir 2048 256 \	//方向指定
+		-exec {
+			chara カメラ設定 ビヨンドカメラ \
+				-c 0 \
+				-b -32000,12390,-32000 32000,32000,32000 \
+				-l -32000,11767,-32000 32000,32000,32000 \
+				-r 36,2136,0 \
+				-f 10192 \
+				-a 200 \
+				-i 3 2 0 0 \
+				-s $3
+			if($3 == 入る) {
+				mesg 鏡面モデル管理 床面映り込みオルガ del オルガ
+				mesg プットオブジェ 底抜け防止 off
+			} else {
+				mesg 鏡面モデル管理 床面映り込みオルガ add オルガ
+				mesg プットオブジェ 底抜け防止 on
+#if d:uturikomi
+				mesg 鏡面モデル管理 床面映り込みスネーク add d:PLAYER
+print 'アッド！！'
+#endif
+			}
+		}
+}
+
+proc オルガ戦ステージビヨンド設定３ {
+	trap by002 d:PLAYER \
+		-mask いる \
+		-button 3 \		//ビヨンドボタン
+		-state 0,4 \	//立ち状態or張り付き
+		-exec {
+// Y.Matsuhana 2001.2.27 modify
+//			@ビヨンドモード発動 by002 3072 0 (-6875+(d:ADJ_DIS_NOMAL)) (-6875+(d:ADJ_DIS_BEHIND)) \
+//								2 $6 (-9000+(d:ADJ_DIS)) (-7000-(d:ADJ_DIS)) 0x00000006
+		}
+
+	// ぶら下がり前
+	trap by002 d:PLAYER \
+		-mask ＊ \
+		-state 6 \
+		-dir 3072 256 \	//方向指定
+		-exec {
+			mesg プレイヤー d:PLAYER shadow 0
+
+			chara カメラ設定 ビヨンドカメラ \
+				-c 0 \
+				-b -32000,-32000,-32000 32000,32000,32000 \
+				-l -32000,-32000,-32000 32000,32000,32000 \
+				-r 360,1524,0 \
+				-f 11376 \
+				-a 200 \
+				-i 1 -1 0 0 \
+				-s $3
+#if d:uturikomi
+			if($3 == 入る){
+				mesg 鏡面モデル管理 床面映り込みスネーク del d:PLAYER
+print 'デリート！！'
+			}
+#endif
+		}
+
+	// ぶら下がり中
+	trap by002 d:PLAYER \
+		-mask ？ \
+		-state 5 \
+		-dir 1024 256 \	//方向指定
+		-exec {
+
+			chara カメラ設定 ビヨンドカメラ \
+				-c 1 \
+				-p -16403,5766,-4188 \
+				-t -6805,11990,-8872 \
+				-a 200 \
+				-i 3 2 0 0 \
+				-s $3
+
+#if d:uturikomi
+			if($3 == 出る){
+				mesg 鏡面モデル管理 床面映り込みスネーク add d:PLAYER
+print 'アッド！！'
+			}
+#endif
+		}
+}
+
+
+// プロックセット
+
+// ドア
+// ------------------------------------
+proc 不動ドアセット {
+	chara 水密ドア管理 ドア管理人 -n 2 \
+		-N 1		//$b:ノック音番号 \
+		//-N d:se_code:SD_A_WALLM02		//$b:ノック音番号 \
+
+	chara 水密ドア 水密君 \
+		-kms w00_sdr_l w00_sdr_handle \
+		-position -5950,12000,-16525 \
+		-rotate 0,3072,0 \
+		-hazard -5950,12000,-16525 -5950,12000,-15525 \
+		-exec {
+		} // ここで強制移動、フェードインその他を？
+
+
+	chara 水密ドア 水密君_右 \
+		-kms w00_sdr_r w00_sdr_handle \
+		-position 5950,12000,-16525 \
+		-rotate 0,3072,0 \
+		-type 1 \	// 右軸
+		//-hazard 6000 12000 -16750 6000 12000 -15000 \
+		//-flag $i:ローカル変数Ｉ１ \
+		-exec{
+		}
+
+
+}
+
+// 設置オブジェクト
+// ------------------------------------
+proc クルー死体セット {
+	chara プットオブジェ 死体たち \
+		-m tnc_died_obj -r 0 0 0 -p 0 0 0 -l w00b -s 100 100 100
+}
+
+proc 木箱の上のIRS制御ボックスセット {
+#if 1
+	chara プットオブジェ ＩＲ制御ボックス -m irs_box -r 3072 (4096-160) 0 \
+		-p  -9800 13220 -15600 -l w00b -s 100 100 100
+	chara プットオブジェ ＩＲ制御ボックス -m irs_box -r 3072 (4096-50) 0 \
+		-p -10250 13220 -15300 -l w00b -s 100 100 100
+	chara プットオブジェ ＩＲ制御ボックス -m irs_box -r 3072 1960 0 \
+		-p  -9850 13220 -15250 -l w00b -s 100 100 100
+	chara プットオブジェ ＩＲ制御ボックス -m irs_box -r 3072 1420 0 \
+		-p -10150 13220 -14850 -l w00b -s 100 100 100
+#else
+	chara プット箱型オブジェ ＩＲ制御ボックス \
+		-l w00b \
+		-m irs_box irs_box irs_box irs_box \
+		-p  3072 (4096-160) 0 -9800 13220 -15600 \
+			3072 (4096-50) 0 -10250 13220 -15300 \
+			3072 1960 0  	  -9850 13220 -15250 \
+			3072 1420 0 	 -10150 13220 -14850 \
+		-f 0x00000002
+	//パラメータの詳細
+	// 向きx 向きy  位置x 位置y 位置z
+	//を1セットとしてモデルの個数分だけ用意する
+	// フラグは以下のものがあり、ビットを立てることによりその機能を選択できる
+	//	0x00000001 移動あり(衝撃により移動する。)
+	//	0x00000002 回転あり(衝撃により回転する。なしの場合はY軸回転のみ)
+	//	0x00000004 ハザードあり(移動回転の際 周りのハザードを見る、なしの場合は最初だけ)
+	//	0x00000008 密度あり(モデルの大きさに動きが比例)
+	//	0x00000010 箱同士の当たりあり(未完成)
+	//	0x00000020 光源計算あり
+#endif
+}
+
+proc 鉄箱_木箱セット {
+	chara プットスネーク隠れオブジェ 鉄と木箱群 \
+		-m obs_box3 -r 0 1024 0 -p -10000 12000 -18700 -l w00b \
+		-m obs_box3 -r 0    0 0 -p -10000 12000 -17600 -l w00b \
+		-m obs_box4 -r 0 1024 0 -p -10000 12000 -16000 -l w00b \
+		-m obs_box4 -r 0 1024 0 -p -10000 12000 -14900 -l w00b \
+		-m obs_box3 -r 0 -200 0 -p -10200 13100 -16900 -l w00b \
+		-m obs_box3 -r 0  350 0 -p -10000 13100 -18200 -l w00b \
+
+		-m obs_box4 -r 0 1024 0 -p -11300 12000 -12000 -l w00b \
+		-m obs_box4 -r 0 1024 0 -p -10200 12000 -11800 -l w00b \
+		-m obs_box3 -r 0  800 0 -p -10600 13100 -12200 -l w00b \
+
+		-m obs_box3 -r 0 171 0 -p -11300 12000 -15000 -l w00b
+
+//		-m obs_box3 -r 0 (1024/6) 0 -p -11300 12000 -15000 -l w00b
+
+/* 上から
+鉄１・鉄２・木１・木２・鉄３・鉄４・木３・木４・鉄５・鉄６
+*/
+/*
+w00b/cの階段前新規箱の座標です。
+obs_box3.mdl
+TRANS : -11300, 12000, -15000
+ROTY : 15°
+*/
+}
+
+proc 木箱のすき間の透明壁セット {
+	// 立ち時用透明壁
+	chara 透明壁 木箱のすき間透明壁立ち \
+		-position -9450,12500,-16550 600 \
+			      -9450,12500,-17050 600 \
+		-attribute (d:HZX_SEG_NO_ENEMY | d:HZX_SEG_NO_BULLET | d:HZX_SEG_NO_MISSILE | \
+					d:HZX_SEG_NO_C4 | d:HZX_SEG_NO_RECOIL | \
+					d:HZX_SEG_NO_DISP_RADAR | d:HZX_SEG_NO_BULLETHOLE | d:HZX_SEG_NO_SPRAY | \
+					d:HZX_SEG_NO_ENEMY_EYES | d:HZX_SEG_NO_KNOCK_SE)
+
+	trap ev800 d:PLAYER \
+		-mask ？ \
+		-exec {
+			if($3 == 入る) {
+				mesg 透明壁 木箱のすき間透明壁立ち on
+			} else {
+				mesg 透明壁 木箱のすき間透明壁立ち off
+			}
+		}
+
+	// しゃがみ時用透明壁・張り付きアリ
+	chara 透明壁 木箱のすき間透明壁立ち_張り付きアリ \
+		-position -9450,12000,-16550 500 \
+			      -9450,12000,-17050 500 \
+		-attribute (d:HZX_SEG_NO_ENEMY | d:HZX_SEG_NO_BULLET | d:HZX_SEG_NO_MISSILE | \
+					d:HZX_SEG_NO_C4 | d:HZX_SEG_NO_RECOIL | \
+					d:HZX_SEG_NO_DISP_RADAR | d:HZX_SEG_NO_BULLETHOLE | d:HZX_SEG_NO_SPRAY | \
+					d:HZX_SEG_NO_ENEMY_EYES | d:HZX_SEG_NO_KNOCK_SE)
+	// しゃがみ時用透明壁・張り付きナシ
+	chara 透明壁 木箱のすき間透明壁立ち_張り付きナシ \
+		-position -9450,12000,-16550 500 \
+			      -9450,12000,-17050 500 \
+		-attribute (d:HZX_SEG_NO_ENEMY | d:HZX_SEG_NO_BULLET | d:HZX_SEG_NO_MISSILE | \
+					d:HZX_SEG_NO_C4 | d:HZX_SEG_NO_RECOIL | d:HZX_SEG_NO_HARITSUKI | \
+					d:HZX_SEG_NO_DISP_RADAR | d:HZX_SEG_NO_BULLETHOLE | d:HZX_SEG_NO_SPRAY | \
+					d:HZX_SEG_NO_ENEMY_EYES | d:HZX_SEG_NO_KNOCK_SE)
+
+	trap ev101 d:PLAYER \
+		-mask ？ \
+		-state d:TRP_STATE_CAUTION \
+		-exec {
+			if($3 == 入る) {
+				mesg 透明壁 木箱のすき間透明壁立ち_張り付きアリ on
+				mesg 透明壁 木箱のすき間透明壁立ち_張り付きナシ off
+			} else {
+				mesg 透明壁 木箱のすき間透明壁立ち_張り付きアリ off
+				mesg 透明壁 木箱のすき間透明壁立ち_張り付きナシ on
+			}
+		}
+}
+
+#if 1
+// 箱への水飛沫
+proc 飛沫鉄箱１{
+	chara ライン水飛沫 line_splash \
+		-n 1 \
+		-l 5000 \
+		-d 1 1025 50 64 -10250 13100 -19000 -9750 13100 -19000
+}
+proc 飛沫木箱１{
+	chara ライン水飛沫 line_splash \
+		-n 1 \
+		-l 5000 \
+		-d 1 1025 50 96 -10000 13100 -16000 -10000 13100 -16000
+}
+proc 飛沫木箱２{
+	chara ライン水飛沫 line_splash \
+		-n 1 \
+		-l 5000 \
+		-d 1 1025 50 96 -10000 13100 -14800 -10000 13100 -14800
+}
+proc 飛沫鉄箱２{
+	chara 斜め回転床水飛沫 飛沫鉄箱２ \
+		-n 2 \			// ３２枚の何倍？
+		-p -10000 14200 -18200 \	// ＸＹＺの ３つ
+		-r 0 350 \	// Ｘ回転、Ｙ回転 の２つ
+		-w 550 50 550	// 回転前のＸ幅、Ｙ幅（厚みに相当）、Ｚ幅 の ３つ
+}
+proc 飛沫鉄箱４{
+	chara 斜め回転床水飛沫 飛沫鉄箱４ \
+		-n 2 \			// ３２枚の何倍？
+		-p -10200 14200 -16900 \	// ＸＹＺの ３つ
+		-r 0 -200 \	// Ｘ回転、Ｙ回転 の２つ
+		-w 550 50 550	// 回転前のＸ幅、Ｙ幅（厚みに相当）、Ｚ幅 の ３つ
+}
+proc 飛沫木箱３{
+	chara ライン水飛沫 line_splash \
+		-n 1 \
+		-l 5000 \
+		-d 1 1025 50 96 -11400 13100 -12000 -11400 13100 -12000
+}
+proc 飛沫木箱４{
+	chara ライン水飛沫 line_splash \
+		-n 1 \
+		-l 5000 \
+		-d 1 1025 50 96 -10200 13100 -11800 -10200 13100 -11800
+}
+proc 飛沫鉄箱３{
+	chara 斜め回転床水飛沫 飛沫鉄箱３ \
+		-n 2 \			// ３２枚の何倍？
+		-p -10600 14200 -12200 \	// ＸＹＺの ３つ
+		-r 0 800 \	// Ｘ回転、Ｙ回転 の２つ
+		-w 550 50 550	// 回転前のＸ幅、Ｙ幅（厚みに相当）、Ｚ幅 の ３つ
+}
+proc 飛沫鉄箱６{
+	chara 斜め回転床水飛沫 飛沫鉄箱６ \
+		-n 2 \			// ３２枚の何倍？
+		-p -11300 13100 -15000 \	// ＸＹＺの ３つ
+		-r 0 (1024/6) \	// Ｘ回転、Ｙ回転 の２つ
+		-w 550 50 550	// 回転前のＸ幅、Ｙ幅（厚みに相当）、Ｚ幅 の ３つ
+}
+
+#endif
+
+proc 下階層水飛沫セット {
+	chara ライン水飛沫 柵水飛沫 \
+		-n 13 \
+		-d \
+		   2 20 5 64 -12000 13000 -19900 -6000 13000 -19900 \
+		   2 20 5 64 -19850 13750 -19900 -12000 13750 -19900 \
+		   2 20 5 64 -19850 13750 -19950 -19850 13750 -14150 \
+		   2 20 5 64 -19850 13750 -14150 -12000 13750 -12100 \
+		   1 20 5 64 -11900 13000 -12000 -11900 13000 -9100 \
+		   1 20 5 64 11950 13000 -12000 11950 13000 -9100 \
+		   2 20 5 64 -11950 13000 -9100 -6950 13000 -9100 \
+		   2 20 5 64 11950 13000 -9100 6950 13000 -9100 \
+		   1 20 5 64 -6950 13000 -9100 -6950 13000 -7100 \
+		   1 20 5 64 6950 13000 -9100 6950 13000 -7100 \
+		   3 20 5 64 -6950 13000 -7100 6950 13000 -7100 \
+		   1 1050 15 96 -13000 13750 -18150 -13000 13750 -18150 \
+		   1 520 15 96 -13750 15000 -14500 -13750 15000 -14000
+}
+
+proc 上階層水飛沫セット {
+	chara ライン水飛沫 柵水飛沫 \
+		-n 4 \
+		-d 1 20 5 64 -5925 16000 -19875 -4025 16000 -20850 \
+		   1 20 5 64 -5925 16000 -19875 -5925 16000 -15100 \
+		   1 20 5 32 -5925 16000 -15150 -4800 16000 -15050 \
+		   1 20 5 64 -4900 16000 -15150 -4900 16000 -10150
+}
+
+proc スネーク返し水飛沫セット {
+	chara ライン水飛沫 スネーク返し水飛沫 \
+		-n 1 \
+		-d 1 5 3 64 -12075 12750 -12240 -12075 12750 -19850
+}
+
+proc ウイング南のエルード禁止柵水飛沫セット {
+	chara 斜め回転床水飛沫 エルード禁止柵 \
+		-n 6 \			// ３２枚の何倍？
+		-p (-14414-75) (12917-140) (-12300) \	// ＸＹＺの ３つ
+		-r -256 (4096-128-24) \	// Ｘ回転、Ｙ回転 の２つ
+		-w 2000 25 345	// 回転前のＸ幅、Ｙ幅（厚みに相当）、Ｚ幅 の ３つ
+}
+
+proc ホロ下のIRセンサー水飛沫セット {
+	chara ライン水飛沫 IR水飛沫 \
+		-n 6 \
+		-d 1 300 5 64  -17350 14300 -17650  -17350 14300 -15650 \
+		   1 300 5 32  -17350 14200 -17950  -17350 14200 -18400 \
+
+		   1 300 5 64  -16600 13800 -18350  -16600 13800 -16350 \
+		   1 300 5 32  -16600 13700 -15600  -16600 13700 -16050 \
+
+		   1 300 5 32  -17000 14000 -17650  -16500 14000 -17650 \
+		   1 300 5 32  -17000 14000 -16350  -16500 14000 -16350
+}
+
+
+proc ホロをスタン通り抜け防止用透明床セット {
+/* スタンの投擲距離が短くなってホロまで届かなくなったので、未使用に（00.10.30） */
+#if 0
+
+	chara 透明床 スタン通り抜け防止透明床１ \
+		-p -17650 14380 -18020 \
+		   -17050 14380 -18020 \
+		   -17050 14380 -15700 \
+		   -17650 14380 -15700 \
+		-n_points 4 \
+	-attribute (d:HZX_FLOOR_NO_PLAYER | d:HZX_FLOOR_NO_ENEMY | \
+				d:HZX_FLOOR_NO_BULLET | d:HZX_FLOOR_NO_C4 | \
+				d:HZX_FLOOR_NO_RECOIL | d:HZX_FLOOR_NO_CLAYMORE | \
+				d:HZX_FLOOR_NO_BLOOD | d:HZX_FLOOR_NO_BULLETHOLE | \
+				d:HZX_FLOOR_NO_SPRAY | d:HZX_FLOOR_NO_ENEMY_EYES)
+
+	chara 透明床 スタン通り抜け防止透明床２ \
+		-p -17050 14380 -18020 \
+		   -17050 14380 -15700 \
+		   -16300 13910 -15700 \
+		   -16300 13910 -18020 \
+		-n_points 4 \
+	-attribute (d:HZX_FLOOR_NO_PLAYER | d:HZX_FLOOR_NO_ENEMY | \
+				d:HZX_FLOOR_NO_BULLET | d:HZX_FLOOR_NO_C4 | \
+				d:HZX_FLOOR_NO_RECOIL | d:HZX_FLOOR_NO_CLAYMORE | \
+				d:HZX_FLOOR_NO_BLOOD | d:HZX_FLOOR_NO_BULLETHOLE | \
+				d:HZX_FLOOR_NO_SPRAY | d:HZX_FLOOR_NO_ENEMY_EYES)
+
+	chara 透明床 スタン通り抜け防止透明床３ \
+		-p -16300 13910 -15700 \
+		   -16300 13910 -18020 \
+		   -16030 12950 -18000 \
+		   -16030 12950 -15700 \
+		-n_points 4 \
+	-attribute (d:HZX_FLOOR_NO_PLAYER | d:HZX_FLOOR_NO_ENEMY | \
+				d:HZX_FLOOR_NO_BULLET | d:HZX_FLOOR_NO_C4 | \
+				d:HZX_FLOOR_NO_RECOIL | d:HZX_FLOOR_NO_CLAYMORE | \
+				d:HZX_FLOOR_NO_BLOOD | d:HZX_FLOOR_NO_BULLETHOLE | \
+				d:HZX_FLOOR_NO_SPRAY | d:HZX_FLOOR_NO_ENEMY_EYES)
+
+
+#endif
+}
+
+proc ホロ通り抜け防止透明床消去 {
+/* スタンの投擲距離が短くなってホロまで届かなくなったので、未使用に（00.10.30） */
+#if 0
+	mesg 透明床 スタン通り抜け防止透明床１ kill
+	mesg 透明床 スタン通り抜け防止透明床２ kill
+	mesg 透明床 スタン通り抜け防止透明床３ kill
+#endif
+}
+
+// ホロの向こうのオルガを追尾しないように
+proc オルガ戦第一フェーズロックオン防止壁セット {
+
+
+	chara 透明壁 第一フェーズロックオン防止壁１ \
+		-position -16030,12750,-18000 2000 \
+			      -16030,12750,-16000 2000 \
+		-attribute (d:HZX_SEG_NO_ENEMY | d:HZX_SEG_NO_MISSILE | \
+					d:HZX_SEG_NO_C4 | d:HZX_SEG_NO_RECOIL | d:HZX_SEG_NO_HARITSUKI | \
+					d:HZX_SEG_NO_DISP_RADAR | d:HZX_SEG_NO_BULLETHOLE | d:HZX_SEG_NO_SPRAY)
+
+	chara 透明壁 第一フェーズロックオン防止壁２ \
+		-position -16030,12750,-16000 2000 \
+			      -17700,12750,-16000 2000 \
+		-attribute (d:HZX_SEG_NO_ENEMY | d:HZX_SEG_NO_MISSILE | \
+					d:HZX_SEG_NO_C4 | d:HZX_SEG_NO_RECOIL | d:HZX_SEG_NO_HARITSUKI | \
+					d:HZX_SEG_NO_DISP_RADAR | d:HZX_SEG_NO_BULLETHOLE | d:HZX_SEG_NO_SPRAY)
+
+}
+
+proc オルガ戦第一フェーズロックオン防止壁終了 {
+	mesg 透明壁 第一フェーズロックオン防止壁１ kill
+	mesg 透明壁 第一フェーズロックオン防止壁２ kill
+}
+
+proc オルガ戦第二フェーズロックオン防止壁発動 {
+
+	print '防止壁発動'
+
+
+	// ホロ手前のロックオン防止壁を外す
+	@オルガ戦第一フェーズロックオン防止壁終了
+
+	chara 透明壁 第二フェーズロックオン防止壁三角 \
+		-position -15750,12750,-18000 0 \
+			      -15750,12750,-16250 1750 \
+		-attribute (d:HZX_SEG_NO_ENEMY | d:HZX_SEG_NO_BULLET | d:HZX_SEG_NO_MISSILE | \
+					d:HZX_SEG_NO_C4 | d:HZX_SEG_NO_RECOIL | d:HZX_SEG_NO_HARITSUKI | \
+					d:HZX_SEG_NO_DISP_RADAR | d:HZX_SEG_NO_BULLETHOLE | d:HZX_SEG_NO_SPRAY)
+
+	chara 透明壁 第二フェーズロックオン防止壁四角 \
+		-position -15750,12750,-16250 1750 \
+			      -15750,12750,-10250 1750 \
+		-attribute (d:HZX_SEG_NO_ENEMY | d:HZX_SEG_NO_BULLET | d:HZX_SEG_NO_MISSILE | \
+					d:HZX_SEG_NO_C4 | d:HZX_SEG_NO_RECOIL | d:HZX_SEG_NO_HARITSUKI | \
+					d:HZX_SEG_NO_DISP_RADAR | d:HZX_SEG_NO_BULLETHOLE | d:HZX_SEG_NO_SPRAY)
+
+
+}
+
+proc オルガ戦第二フェーズロックオン防止壁終了 {
+	mesg 透明壁 第二フェーズロックオン防止壁三角 kill
+	mesg 透明壁 第二フェーズロックオン防止壁四角 kill
+}
+
+
+// 入出トラップ
+// ------------------------------------
+
+// プレイヤー
+// ------------------------------------
+proc プレイヤー設定 {
+
+#if 1
+	if($w:ゲーム設定 < d:LEVEL_NORMAL) {
+		eval($i:w00b_ホーミング距離 = 64000)
+	} else {
+		eval($i:w00b_ホーミング距離 = 4500)
+	}
+#endif
+
+print 'snake_000'
+	chara プレイヤー d:PLAYER \
+		-m sna_def \
+		-a snake \
+		-p -8015 12000 -19124 \
+		-homing $i:w00b_ホーミング距離 512 \
+		-d 0,3072,0 \
+		-l 4000 \
+		-f (d:PLY_SPLASH | d:PLY_NO_FOOT_SHADOW) \
+		-s d:FA_END_SQUAT \ // ポリデモからの繋がりで、左舷向きしゃがみ
+		-i 0 \
+		-o sna_w00b
+
+print 'snake_001'
+#if 1
+	@プレイヤーＬＯＤ設定 d:C_DISTANCE_TYPE 6000
+#else
+	chara ＬＯＤ制御 ＬＯＤ \
+		-name d:PLAYER \
+		-type 0 \
+		-model sna_def_sh sna_def \ // HIGH <-----> LOW （４つまで）
+		-value d:TRP_STATE_BEHINDCAMERA_ENABLE
+#endif
+
+print 'snake_002'
+
+	// ビデオ撮影用にセット。
+	// オルガの背後から、スネークを撃つ映像の時は外す。
+	#if 0
+	chara マルチウェイトキャラ マルチ \
+		-name d:PLAYER \
+		-model sna_def_mh
+	#endif
+
+print 'snake_003'
+	chara ロープモデル３ バンダナ１ \
+		-n sna_bdn1 \
+		-d 1 \
+		-y d:PLAYER \
+		-z 12 \
+		-x 0,60,-90 \
+		-m 12 \
+		-p 250 \
+		-k 350 \
+		-o 110 \
+		-f 1
+
+print 'snake_004'
+	chara ロープモデル３ バンダナ２ \
+		-n sna_bdn2 \
+		-d 1 \
+		-y d:PLAYER \
+		-z 12 \
+		-x 0,50,-90 \
+		-m 22 \
+		-p 250 \
+		-k 350 \
+		-o 110 \
+		-f 1
+
+print 'snake_005'
+}
+
+
+
+
+
+
+proc ゲームスタート時スネーク起立 {
+
+	command パッド操作 -release
+
+	command プレイヤー無敵セット
+
+	eval($w:武器 = d:武器:Ｍ９)
+
+	chara delay ディレイ -time 30 -exec {
+
+		mesg プレイヤー d:PLAYER stance \
+			 0 \
+			-1 \
+			-1 \
+			0
+
+		command プレイヤー無敵解除
+		command パッド操作 -cancel
+
+	}
+
+}
+
+
+//###################################################################################
+//								スネーク水飛沫設定
+//###################################################################################
+
+	proc スネーク水飛沫設定 {
+		print 'スネーク水飛沫設定'
+		print 'snake_splash'
+
+
+		chara キャラ付随水飛抹 スネーク水飛沫 \
+			-nconcname d:PLAYER \
+			-addone 32 \
+			-time -1 \
+			-rgbadd 0x40404030 \
+			-gbsub 0x40404030
+
+
+
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ------------------------------------
+// オルガデバッグ
+// ------------------------------------
+#if 1
+proc オルガ瞬間移動デバッグ $:Ｘ座標変数 $:Ｙ座標変数 $:Ｚ座標変数 $:方向変数 {
+	mesg ボスオルガ オルガ オルガ瞬間移動 $:Ｘ座標変数 $:Ｙ座標変数 $:Ｚ座標変数 $:方向変数
+print '瞬間移動'
+}
+#endif
+
+// オルガ
+// ------------------------------------
+proc オルガ隠れ場所セット {
+	chara プット隠れオブジェ オルガ隠れ場所 \
+		-m obs_box1  obs_box2 obs_irs \
+		-r 0         0        0       \
+		-p 0,0,0 0,0,0    0,0,0   \
+		-l w00b
+}
+
+/*
+オルガの各種カットは、
+スネークが主観時ではなく、かつビハインド時でも無いときに発動
+し、各カット初回の一回のみ発動、とする。
+
+	// 主観ではなく、ビハインドしてもいなければ…
+	if(!`%PlayerStatus -f d:TRP_STATE_SUBJECT d:TRP_STATE_BEHIND`) {
+
+*/
+
+// オルガカット終了時共通処理。バグ回避のため、終了を２フレーム遅らせる。
+proc オルガカットカメラ終了 {
+	chara delay ディレイ -time 2 -exec {
+		chara カメラ設定 オルガカットカメラ -s -1
+	}
+}
+
+
+proc オルガホロ撃ち時 {
+#if d:オルガ各種カット
+	#if d:オルガホロ撃ち時x
+
+		// 何フレーム見せるか
+		eval($i:w00b_delay_time = 150)
+
+		// レーダー画面制御
+		@オルガ各種カット時レーダー画面制御 $i:w00b_delay_time
+
+		// シネマスクリーン
+		@シネマスクリーン使用 $i:w00b_delay_time
+
+		command パッド操作 -release
+
+		@特殊装備解除
+
+		mesg ボスオルガ オルガ 回避無効
+
+		@ホロ下のIRセンサー水飛沫セット
+
+		chara カメラ設定 オルガカットカメラ \
+			-c 1 \
+			-p -21366,15703,-20372 -t -18004,13369,-16651 \
+			-r 284,479,0 -f 5531 \
+			-a 170 \
+			-i 0 0 0 0  \
+			-s 1
+
+		// ひも当たり位置変更
+		mesg プットホロオブジェ ホロ 右紐当たり位置変更 -15950 12800 -18000
+
+		// ホロの向こう側のオルガに対するロックオン防止機構設置
+		@オルガ戦第二フェーズロックオン防止壁発動
+
+		chara delay ディレイ -time $i:w00b_delay_time -exec {
+			#if 1
+				@オルガカットカメラ終了
+			#else
+				chara カメラ設定 オルガカットカメラ -s -1
+			#endif
+			mesg ボスオルガ オルガ 回避有効
+			command パッド操作 -cancel
+		}
+
+	#endif
+#endif
+}
+
+proc オルガ戦勝利後デモへ {
+	//ＳＥをフェードで消してから、
+	command セットサウンドコード -c d:SE_JOUCHUU_OFF
+
+	//もっかいだけチャンスをあげるぷりーん
+	print 'もう１回だけサボり兵のチャンスをあげるよーん！！！！！！'
+	eval($f:休憩兵イベント発生 = 0)
+
+	// オルガ戦後デモステージをロード
+	load "d05t" -no_save 0
+}
+
+
+proc 死に場所雨増加とスロー発動 {
+
+	chara 雨速度可変 slow_rain \
+	-n 32 \		// 量
+	-c 128		// 輝度
+
+	// 速度可変雨の速度を変更するchara
+	chara スローパラメータ制御 スローにする -s 35
+
+	// スローかける
+	chara delay ディレイ -time 1 -exec {
+		chara 速度可変 可変 \
+		-l 120 \
+		-t 2
+	}
+
+	// ブラーかける
+	chara ブラー オカジーブラー -i 72
+}
+
+proc 壊れ物ステータス引継 {
+	// ホロの状態の保存
+	command ゲットホロ状況 $i:w00b_ホロステータス
+
+	// 投光器の状態の保存
+	/* @投光器壊れた で保存した */
+
+	// ピンライトの状態の保存
+	// 出来るか？体験版後に森田さん？
+
+}
+
+proc オルガ死に時 {
+#if d:オルガ各種カット
+	#if d:オルガ死に時x
+
+		@レーダー画面消去
+		@壊れ物ステータス引継
+
+		#if d:体験版
+		#else
+			// 死んだ場所によって、どちらの戦後デモへ送るか決める。
+			command ゲットオルガ座標 $i:Ｘ座標変数 $i:Ｙ座標変数 $i:Ｚ座標変数
+			if($i:Ｚ座標変数 < -16000) {
+				eval($f:w00b_オルガ柵によりかかり = 0)
+			} else {
+				eval($f:w00b_オルガ柵によりかかり = 1)
+			}
+		#endif
+
+		// まずはパッドリリース
+		command パッド操作 -release
+
+		@特殊装備解除
+
+#ifndef d:BOSS_MODE
+		// シネマスクリーン起動
+		@シネマスクリーン使用 600 // そのままフェードアウトするので、適当に長目に。
+
+		// オルガの映り込みを消して
+		mesg 鏡面モデル管理 床面映り込みオルガ del オルガ
+
+		preseek 'd05t'
+		// ホワイトフェード
+		chara delay ディレイ -time 30 -exec {
+			chara フェードインアウト フェードイン \
+			-c 255,255,255 128 \
+			-t 210 \
+			-s 1 // 何か値を入れると優先低くなる。
+
+
+			// に引き続いて黒くフェード
+			chara delay ディレイ -time 210 -exec {
+
+				chara delay ディレイ -time 30 -exec {
+					if($f:w00b_オルガ柵によりかかり) {
+						command ＳＥセットモード -s d:se_code:SD_E_ORGABR01 -p -17391 12225 -10618 -m 3
+					}else{
+						command ＳＥセットモード -s d:se_code:SD_E_ORGABR02 -p -17391 12225 -10618 -m 3
+					}
+				}
+
+				chara フェードインアウト フェードイン \
+				-c 0,0,0 128 \
+				-t 120 \
+				-s 1
+			}
+
+		}
+
+		chara delay ディレイ -time 15 -exec {
+
+			// ＢＧＭをフェードで消してから、
+			command セットサウンドコード -c d:SNG_FOUTS_L
+
+			// 他のオブジェにカメラがめり込む等の面倒を避けるため、オルガを瞬間移動
+			mesg ボスオルガ オルガ オルガ瞬間移動 \
+				-18750 12750 -10000 1024
+
+			// 下からのアオリ固定アングル
+				// 新倒れモーション
+				chara カメラ設定 オルガカットカメラ人生 \
+					-c 1 \
+					-p -17391,12225,-10618 -t -18449,13031,-9947 \
+					-r -373,3440,0 -f 1490 \
+					-a 158 \
+					-i 0 0 0 0  \
+					-s 1
+
+			// 死に場所雨増加＆スロー発動
+			@死に場所雨増加とスロー発動
+		}
+
+		// オルガ戦後デモへ
+		chara delay ディレイ -time 360 -exec {
+			#if 0
+				@オルガカットカメラ終了
+			#else
+				chara delay ディレイ -time 2 -exec {
+					chara カメラ設定 オルガカットカメラ人生 -s -1
+				}
+			#endif
+			command パッド操作 -cancel
+
+			//ゲーム中の処理
+			@オルガ戦勝利後デモへ
+		}
+#else
+		// ＢＧＭをフェードで消してから、
+		command セットサウンドコード -c d:SNG_FOUTS_L
+		//ボスラッシュ時の処理
+		@ボスラッシュ終了時処理
+#endif
+
+	#endif
+#endif
+}
+
+proc オルガグレネードなげ時 {
+#if d:オルガ各種カット
+	#if d:オルガグレネードなげ時x
+
+	print '投げ'
+		#if 1
+
+		if(!$f:rft_オルガ戦オルガグレネード投げた){			//fukushima
+			eval($f:rft_オルガ戦オルガグレネード投げた = 1)	//fukushima
+		}													//fukushima
+
+		#else
+
+		// 主観ではなく、ビハインドしてもいなければ…
+		if(!`%PlayerStatus \
+			-f d:TRP_STATE_SUBJECT \
+			   d:TRP_STATE_BEHIND`) {
+
+			if(!$f:w00b_オルガグレネードなげ時初回終了){
+
+				command パッド操作 -release
+
+				@特殊装備解除
+
+				mesg ボスオルガ オルガ 回避無効
+
+				// 何フレーム見せるか
+				eval($i:w00b_delay_time = 120)
+
+				// レーダー画面制御
+				@オルガ各種カット時レーダー画面制御 $i:w00b_delay_time
+
+				// シネマスクリーン
+				@シネマスクリーン使用 $i:w00b_delay_time
+
+				command ゲットオルガ目的地 $i:目的地 $i:現在地
+				eval($i:攻撃_行動地 = $i:目的地)
+
+				// コンテナに隠れてグレネードなげ
+				if($i:攻撃_行動地 == 1) {
+					chara カメラ設定 オルガカットカメラ \
+						-c 1 \
+						-p -12330,12929,-15146 \
+						-t -14626,14197,-18051 \
+						-a 200 \
+						-i 0 0 0 0  \
+						-s 1
+
+		print 'コンテナ隠れて投げ'
+
+				// ロッカーに隠れてグレネードなげ
+				} else if($i:攻撃_行動地 == 0) {
+
+					@パンカメラプロック \
+						-10953 14756 -10655 \
+						-14467 13116 -16129 \
+						-13153 14746 -9233 \
+						-16683 13116 -14696 \
+						280 \
+						$i:w00b_delay_time \
+						1
+
+		print 'ロッカー隠れて投げ'
+
+				// ホロに隠れてグレネードなげ
+				} else if($i:攻撃_行動地 == 2) {
+
+					// 各隠れ場所の左右どちらか？
+					command ゲットオルガフラグ $i:フラグ
+
+					// ホロの右端
+					if($i:フラグ & d:flag_t:ORGA_F_DANGR_LEFT){
+
+					@パンカメラプロック \
+						-10965 14788 -23622 \
+						-14789 14575 -21024 \
+						-10251 14788 -22573 \
+						-14070 14575 -19970 \
+						170 \
+						$i:w00b_delay_time \
+						1
+
+		print 'ホロ隠れ船首側投げ'
+
+					// ホロの左端
+					} else if($i:フラグ & d:flag_t:ORGA_F_DANGR_RIGHT){
+
+						chara カメラ設定 オルガカットカメラ \
+							-c 1 \
+							-p -17277,25546,-13423 \
+							-t -17779,21002,-14260 \
+							-a 433 \
+							-i 0 0 0 0  \
+							-s 1
+
+		print 'ホロ隠れ船尾側投げ'
+
+					}
+				}
+
+				chara delay ディレイ -time $i:w00b_delay_time -exec {
+					#if 1
+						@オルガカットカメラ終了
+					#else
+						chara カメラ設定 オルガカットカメラ -s -1
+					#endif
+					mesg ボスオルガ オルガ 回避有効
+					command パッド操作 -cancel
+				}
+
+				eval($f:w00b_オルガグレネードなげ時初回終了 = 1)
+
+			}
+		}
+
+		#endif
+
+	#endif
+#endif
+}
+
+proc オルガめくら撃ち_乱射時 {
+#if d:オルガ各種カット
+	#if d:オルガめくら撃ち_乱射時x
+		#if d:オルガめくら撃ち_乱射時初回のみ
+			print 'めくら撃ち'
+		#endif
+	#endif
+#endif
+}
+
+proc オルガアンチエルード時 {
+#if d:オルガ各種カット
+	#if d:オルガアンチエルード時x
+		#if d:オルガアンチエルード時初回のみ
+		#endif
+	#endif
+#endif
+}
+
+proc オルガとんぼ返り時 {
+#if d:オルガ各種カット
+	#if d:オルガとんぼ返り時x
+		#if d:オルガとんぼ返り時初回のみ
+		#endif
+	#endif
+#endif
+}
+
+proc オルガ側転時内部プロックその１ {
+
+	command パッド操作 -release
+
+	@特殊装備解除
+
+	command プレイヤー無敵セット
+
+	mesg ボスオルガ オルガ 回避無効
+}
+
+proc オルガ側転時 {
+#if d:オルガ各種カット
+	#if d:オルガ側転時x
+		#if d:オルガ側転時初回のみ
+
+			// カットを両方とも見終わっていなかったら。
+			if((!$f:w00b_オルガ側転_ロッカーから_終了) || \
+				(!$f:w00b_オルガ側転_ロッカーから_終了)){
+
+				// 主観ではなく、ビハインドしてもいなければ…
+				if(!`%PlayerStatus \
+					-f d:TRP_STATE_SUBJECT \
+					   d:TRP_STATE_BEHIND`) {
+
+						// どっちから飛び出すか先に判定
+						command ゲットオルガ目的地 $i:目的地 $i:現在地
+						// 目的地は、０：ロッカー、１：コンテナ、２：ホロ。
+
+						// ロッカーから飛び出す
+						if($i:現在地 == 0){
+
+							// まだロッカーから飛び出しを見ていなかったら。
+							if(!$f:w00b_オルガ側転_ロッカーから_終了) {
+
+								// 何フレーム見せるか
+								eval($i:w00b_delay_time = 70) // 少し短い
+
+								// レーダー画面制御
+								@オルガ各種カット時レーダー画面制御 $i:w00b_delay_time
+
+								// シネマスクリーン
+								@シネマスクリーン使用 $i:w00b_delay_time
+
+								@オルガ側転時内部プロックその１
+
+								@パンカメラプロック \
+									-10707,13112,-15915 \
+									-12249,13431,-15211 \
+									-10734,13120,-15461 \
+									-12426,13430,-15584 \
+									150 \
+									$i:w00b_delay_time \
+									1
+
+				print '側転_ロッカーから飛び出す'
+
+								eval($f:w00b_オルガ側転_ロッカーから_終了 = 1)
+							}
+
+						// コンテナから飛び出す
+						} else if($i:現在地 == 1) {
+
+							// まだコンテナから飛び出しを見ていなかったら。
+							if(!$f:w00b_オルガ側転_ロッカーから_終了) {
+
+								// 何フレーム見せるか
+								eval($i:w00b_delay_time = 90) // こっちは少し長目
+
+								// レーダー画面制御
+								@オルガ各種カット時レーダー画面制御 $i:w00b_delay_time
+
+								// シネマスクリーン
+								@シネマスクリーン使用 $i:w00b_delay_time
+
+								@オルガ側転時内部プロックその１
+
+								@パンカメラプロック \
+									-13646 15785 -20732 \
+									-12427 12517 -17374 \
+									-15787 15900 -19830 \
+									-14298 13356 -16032 \
+									170 \
+									$i:w00b_delay_time \
+									1
+
+				print '側転_コンテナから飛び出す'
+
+								eval($f:w00b_オルガ側転_コンテナから_終了 = 1)
+							}
+						}
+
+						chara delay ディレイ -time $i:w00b_delay_time -exec {
+							command パッド操作 -cancel
+							mesg ボスオルガ オルガ 回避有効
+							command プレイヤー無敵解除
+
+							// 側転直後に射撃すると、スネークは避けにくいのでその対策。
+							mesg ボスオルガ オルガ 全機能停止 15
+
+							#if 1
+								@オルガカットカメラ終了
+							#else
+								chara カメラ設定 オルガカットカメラ -s -1
+							#endif
+						}
+
+				}
+			}
+		#endif
+	#endif
+#endif
+}
+
+proc オルガダメージ時 {
+#if d:オルガ各種カット
+	#if d:オルガダメージ時x
+		#if d:オルガダメージ時初回のみ
+			print 'ダメージ'
+		#endif
+	#endif
+#endif
+}
+
+proc オルガ覗き込み時 {
+#if d:オルガ各種カット
+	#if d:オルガ覗き込み時x
+		#if d:オルガ覗き込み時初回のみ
+
+		print 'のぞき'
+			if(!$f:w00b_オルガ覗き込み時初回終了){
+
+				@特殊装備解除
+
+				command パッド操作 -release
+
+				mesg ボスオルガ オルガ 回避無効
+
+				command ゲットオルガ目的地 $i:目的地 $i:現在地
+				eval($i:攻撃_行動地 = $i:目的地)
+
+				// コンテナに隠れて覗き込み
+				if($i:攻撃_行動地 == 1) {
+						chara カメラ設定 オルガカットカメラ \
+							-c 1 \
+							-p -12411 14174 -13395 \
+							-t -13855 13311 -18613 \
+							-a 280 \
+							-i 0 0 0 0  \
+							-s 1
+
+			print 'コンテナに隠れて覗き込み'
+
+					// ロッカーに隠れて覗き込み
+					} else if($i:攻撃_行動地 == 0) {
+						chara カメラ設定 オルガカットカメラ \
+							-c 1 \
+							-p -18098 17141 -12664 \
+							-t -12782 12566 -15309 \
+							-a 250 \
+							-i 0 0 0 0  \
+							-s 1
+
+			print 'ロッカーに隠れて覗き込み'
+
+					// ホロに隠れて覗き込み
+					} else if($i:攻撃_行動地 == 2) {
+
+						// 各隠れ場所の左右どちらか？
+						command ゲットオルガフラグ $i:フラグ
+
+						// 右端
+						if($i:フラグ & d:flag_t:ORGA_F_DANGR_LEFT){
+							chara カメラ設定 オルガカットカメラ \
+								-c 1 \
+								-p -19030,16614,-19683 \
+								-t -16346,11799,-17432 \
+								-r 614,569,0 -f 5955 \
+								-a 180 \
+								-i 0 0 0 0  \
+								-s 1
+
+			print 'ホロに隠れて、船首側覗き込み'
+
+						// 右端
+						} else if($i:フラグ & d:flag_t:ORGA_F_DANGR_RIGHT){
+							chara カメラ設定 オルガカットカメラ \
+								-c 1 \
+								-p -19984,16614,-14405 \
+								-t -14424,8623,-18731 \
+								-r 553,1455,0 -f 10653 \
+								-a 180 \
+								-i 0 0 0 0  \
+								-s 1
+
+			print 'ホロに隠れて、船尾側覗き込み'
+
+						}
+					}
+
+				chara delay ディレイ -time 180 -exec {
+					#if 1
+						@オルガカットカメラ終了
+					#else
+						chara カメラ設定 オルガカットカメラ -s -1
+					#endif
+					mesg ボスオルガ オルガ 回避有効
+					command パッド操作 -cancel
+				}
+
+				eval($f:w00b_オルガ覗き込み時初回終了 = 1)
+
+			}
+		#endif
+	#endif
+#endif
+}
+
+proc オルガスライディング内部プロック $:スライディング持続時間 {
+
+	// 何フレーム見せるか
+	eval($i:w00b_delay_time = $:スライディング持続時間)
+
+	// レーダー画面制御
+	@オルガ各種カット時レーダー画面制御 $i:w00b_delay_time
+
+	// シネマスクリーン
+	@シネマスクリーン使用 $i:w00b_delay_time
+
+	@特殊装備解除
+
+	command パッド操作 -release
+
+	command プレイヤー無敵セット
+}
+
+proc オルガスライディング時 {
+#if d:オルガ各種カット
+	#if d:オルガスライディング時x
+		#if d:オルガスライディング時初回のみ
+		print 'スライディング１'
+
+			if((!$f:w00b_オルガスライディング_コンテナへ_終了) || \
+				(!$f:w00b_オルガスライディング_ロッカーへ_終了)) {
+
+		print 'スライディング２'
+				// 主観ではなく、ビハインドしてもいなければ…
+				if(!`%PlayerStatus \
+					-f d:TRP_STATE_SUBJECT \
+					   d:TRP_STATE_BEHIND`) {
+
+		print 'スライディング３'
+					// どっちから飛び出すか先に判定
+					command ゲットオルガ目的地 $i:目的地 $i:現在地
+					// 目的地は、０：ロッカー、１：コンテナ、３：ホロ。
+
+					// コンテナへ向けてスライディング
+					if($i:目的地 == 1){
+
+						// まだコンテナへのスライディングを見ていなかったら。
+						if(!$f:w00b_オルガスライディング_コンテナへ_終了) {
+
+							@オルガスライディング内部プロック 75
+
+							chara カメラ設定 オルガカットカメラ \
+								-c 1 \
+								-p -14805,12996,-19486 \
+								-t -13287,14184,-11265 \
+								-a 163 \
+								-i 0 0 0 0  \
+								-s 1
+
+							chara delay ディレイ -time 35 -exec {
+								/* オルガの水飛沫浴びて、カメラレンズ飛沫 */
+
+				print 'コンテナへ向けてスライディング'
+
+							}
+
+							eval($f:w00b_オルガスライディング_コンテナへ_終了 = 1)
+
+						}
+
+					// ロッカーへ向けてスライディング
+					} else if($i:目的地 == 0) {
+
+						// まだロッカーへのスライディングを見ていなかったら。
+						if(!$f:w00b_オルガスライディング_ロッカーへ_終了) {
+
+							@オルガスライディング内部プロック 75
+
+						chara カメラ設定 オルガカットカメラ \
+							-c 1 \
+							-p -17659,15174,-15491 \
+							-t -10565,10971,-17268 \
+							-a 165 \
+							-i 0 0 0 0  \
+							-s 1
+
+			print 'ロッカーへ向けてスライディング'
+
+						eval($f:w00b_オルガスライディング_ロッカーへ_終了 = 1)
+
+						}
+
+					}
+
+					chara delay ディレイ -time $i:w00b_delay_time -exec {
+						#if 1
+							@オルガカットカメラ終了
+						#else
+							chara カメラ設定 オルガカットカメラ -s -1
+						#endif
+						command パッド操作 -cancel
+						command プレイヤー無敵解除
+
+					}
+				}
+			}
+		#endif
+	#endif
+#endif
+}
+
+proc オルガマシンガンな奴時 {
+#if d:オルガ各種カット
+	#if d:オルガマシンガンな奴時x
+		#if d:オルガマシンガンな奴時初回のみ
+			print 'オルガマシンガンな奴'
+		#endif
+	#endif
+#endif
+}
+
+proc オルガ挑発時 {
+#if d:オルガ各種カット
+print '長髪'
+	#if d:オルガ挑発時x
+		#if d:オルガ挑発時初回のみ
+		#endif
+	#endif
+#endif
+}
+
+proc ホロ舞う時 {
+#if d:オルガ各種カット
+	#if d:オルガホロ舞う時x
+		#if d:オルガホロ舞う時初回のみ
+
+			if(!$f:w00b_オルガホロ舞う時初回終了){
+				//アイテム装備を解除
+				@特殊装備解除
+
+				// オルガの無用な回避を防止
+				mesg ボスオルガ オルガ 回避無効
+
+				// 何フレーム見せるか
+				eval($i:w00b_delay_time = 120)
+
+				// レーダー画面制御
+				@オルガ各種カット時レーダー画面制御 $i:w00b_delay_time
+
+				// シネマスクリーン
+				@シネマスクリーン使用 $i:w00b_delay_time
+
+				// パンカメラ
+				@パンカメラプロック \
+					-14002 13332 -10355 \
+					-17584 14402 -15662 \
+					-17156 15824  -9143 \
+					-16862 13233 -18787 \
+					170 \
+					$i:w00b_delay_time \
+					1
+
+				// 元の状態に
+				chara delay ディレイ -time $i:w00b_delay_time -exec {
+					mesg プットホロオブジェ ホロ 映り込み消し
+					mesg ボスオルガ オルガ 回避有効
+				}
+
+			}
+		#endif
+				eval($f:w00b_オルガホロ舞う時初回終了 = 1)
+	#endif
+#endif
+}
+
+proc ライフ１／２時 {
+#if d:オルガ各種カット
+	#if d:オルガライフ１／２時x
+	print 'ライフ１／２時'
+		mesg ボスオルガ オルガ オルガ静止解除
+	#endif
+#endif
+}
+
+proc ライフ１／４時 {
+#if d:オルガ各種カット
+	print 'ライフ１／４時'
+	#if d:オルガライフ１／４時x
+	print 'ライフ１／４時'
+		chara delay ディレイ -time 140 -exec {
+			mesg ボスオルガ オルガ オルガ静止解除
+		}
+	#endif
+#endif
+}
+
+proc ライフ１／８時 {
+#if d:オルガ各種カット
+	print 'ライフ１／８'
+	chara delay ディレイ -time 140 -exec {
+		mesg ボスオルガ オルガ オルガ静止解除
+	}
+
+//----------------
+
+		#if d:オルガライフ１／８時x
+			#if d:オルガライフ１／８時初回のみ
+			print 'ライフ１／８'
+
+					// 何フレーム見せるか（モーションのフレーム数＋しゃべり分数フレーム）
+					eval($i:w00b_delay_time = 180)
+
+					// レーダー画面制御
+					@オルガ各種カット時レーダー画面制御 $i:w00b_delay_time
+
+					command パッド操作 -release
+
+					@特殊装備解除
+
+					command プレイヤー無敵セット
+
+					command ゲットオルガ目的地 $i:目的地 $i:現在地
+					// 目的地は、０：ロッカー、１：コンテナ、３：ホロ。
+
+					// 各隠れ場所の左右どちらか？
+					command ゲットオルガフラグ $i:フラグ
+
+			#if 1
+					// コンテナへ隠れ
+					if($i:目的地 == 1){
+						// コンテナ右端
+						if($i:フラグ & d:flag_t:ORGA_F_DANGR_LEFT){
+							//オルガが隠れ場所に到達
+							mesg ボスオルガ オルガ マルチウェイト表示
+
+							chara カメラ設定 オルガカットカメラ \
+								-c 1 \
+								-p -11710,13985,-19350 \
+								-t -14214,13767,-18698 \
+								-a 499 \
+								-i 0 0 0 0  \
+								-s 1
+
+							mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_scream 10
+							mesg 臨時顔アニメキャラ オルガアニメ 視線変更 0 60 -10500 12000 -12500 // 仮座標
+							command ＳＥセットモード -s d:se_code:SD_V_SORGA10 -p -15735,14272,-13146 -m 1
+
+						// コンテナ左端
+						} else if($i:フラグ & d:flag_t:ORGA_F_DANGR_RIGHT) {
+							//オルガが隠れ場所に到達
+							mesg ボスオルガ オルガ マルチウェイト表示
+
+							chara カメラ設定 オルガカットカメラ \
+								-c 1 \
+								-p -8758,13838,-14247 \
+								-t -10982,13743,-15571 \
+								-a 1068 \
+								-i 0 0 0 0  \
+								-s 1
+
+							mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_scream 10
+							mesg 臨時顔アニメキャラ オルガアニメ 視線変更 0 60 -10500 12000 -12500 // 仮座標
+							command ＳＥセットモード -s d:se_code:SD_V_SORGA10 -p -15735,14272,-13146 -m 1
+						}
+
+					// ロッカーへ隠れ
+					} else if($i:目的地 == 0) {
+						// ロッカー右端
+						if($i:フラグ & d:flag_t:ORGA_F_DANGR_LEFT){
+							//オルガが隠れ場所に到達
+							mesg ボスオルガ オルガ マルチウェイト表示
+
+							chara カメラ設定 オルガカットカメラ \
+								-c 1 \
+								-p -13455,17146,-16390 \
+								-t -13905,15688,-15577 \
+								-a 557 \
+								-i 0 0 0 0  \
+								-s 1
+
+							mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_scream 10
+							mesg 臨時顔アニメキャラ オルガアニメ 視線変更 0 60 -10500 12000 -12500 // 仮座標
+							command ＳＥセットモード -s d:se_code:SD_V_SORGA10 -p -15735,14272,-13146 -m 1
+
+						// ロッカー左端
+						} else if($i:フラグ & d:flag_t:ORGA_F_DANGR_RIGHT) {
+							//オルガが隠れ場所に到達
+							mesg ボスオルガ オルガ マルチウェイト表示
+
+							chara カメラ設定 オルガカットカメラ \
+								-c 1 \
+								-p -17626,13615,-11746 \
+								-t -16177,13938,-12651 \
+								-a 557 \
+								-i 0 0 0 0  \
+								-s 1
+
+							mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_scream 10
+							mesg 臨時顔アニメキャラ オルガアニメ 視線変更 0 60 -10500 12000 -12500 // 仮座標
+							command ＳＥセットモード -s d:se_code:SD_V_SORGA10 -p -15735,14272,-13146 -m 1
+						}
+
+					// IRセンサーへ隠れ
+					} else {
+						// IRセンサー
+						if($i:フラグ & d:flag_t:ORGA_F_DANGR_LEFT){
+							//オルガが隠れ場所に到達
+							mesg ボスオルガ オルガ マルチウェイト表示
+
+							chara カメラ設定 オルガカットカメラ \
+								-c 1 \
+								-p -15072,13216,-19643 \
+								-t -18418,14165,-18446 \
+								-a 546 \
+								-i 0 0 0 0  \
+								-s 1
+
+							mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_scream 10
+							mesg 臨時顔アニメキャラ オルガアニメ 視線変更 0 60 -10500 12000 -12500 // 仮座標
+							command ＳＥセットモード -s d:se_code:SD_V_SORGA10 -p -15735,14272,-13146 -m 1
+
+						// IRセンサー
+						} else if($i:フラグ & d:flag_t:ORGA_F_DANGR_RIGHT) {
+							//オルガが隠れ場所に到達
+							mesg ボスオルガ オルガ マルチウェイト表示
+
+							chara カメラ設定 オルガカットカメラ \
+								-c 1 \
+								-p -15816,15956,-13120 \
+								-t -17799,14551,-15055 \
+								-a 749 \
+								-i 0 0 0 0  \
+								-s 1
+
+							mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_scream 10
+							mesg 臨時顔アニメキャラ オルガアニメ 視線変更 0 60 -10500 12000 -12500 // 仮座標
+							command ＳＥセットモード -s d:se_code:SD_V_SORGA10 -p -15735,14272,-13146 -m 1
+						}
+					}
+			#else
+
+			#endif
+
+		chara delay ディレイ -time $i:w00b_delay_time -exec {
+			#if 1
+				@オルガカットカメラ終了
+			#else
+				chara カメラ設定 オルガカットカメラ -s -1
+			#endif
+			mesg ボスオルガ オルガ オルガ静止解除
+			mesg ボスオルガ オルガ シングルウェイト表示
+			command パッド操作 -cancel
+			command プレイヤー無敵解除
+
+		}
+
+		#else
+		#endif
+	#endif
+#endif
+}
+
+proc ライフ３／４時 {
+#if d:オルガ各種カット
+	print 'ライフ３／４'
+	chara delay ディレイ -time 140 -exec {
+		mesg ボスオルガ オルガ オルガ静止解除
+	}
+
+//----------------
+
+	#if d:オルガライフ３／４時x
+		#if d:オルガライフ３／４時初回のみ
+
+		print 'ライフ３／４'
+
+				// 何フレーム見せるか（モーションのフレーム数＋しゃべり分数フレーム）
+				eval($i:w00b_delay_time = 180)
+
+				// レーダー画面制御
+				@オルガ各種カット時レーダー画面制御 $i:w00b_delay_time
+
+				command パッド操作 -release
+
+				@特殊装備解除
+
+				command プレイヤー無敵セット
+
+				command ゲットオルガ目的地 $i:目的地 $i:現在地
+				// 目的地は、０：ロッカー、１：コンテナ、３：ホロ。
+
+				// 各隠れ場所の左右どちらか？
+				command ゲットオルガフラグ $i:フラグ
+
+			#if 1
+					// コンテナへ隠れ
+					if($i:目的地 == 1){
+						// コンテナ右端
+						if($i:フラグ & d:flag_t:ORGA_F_DANGR_LEFT){
+							//オルガが隠れ場所に到達
+							mesg ボスオルガ オルガ マルチウェイト表示
+
+							chara カメラ設定 オルガカットカメラ \
+								-c 1 \
+								-p -11710,13985,-19350 \
+								-t -14214,13767,-18698 \
+								-a 499 \
+								-i 0 0 0 0  \
+								-s 1
+
+							mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_scream 10
+							mesg 臨時顔アニメキャラ オルガアニメ 視線変更 0 60 -10500 12000 -12500 // 仮座標
+							command ＳＥセットモード -s d:se_code:SD_V_SORGA09 -p -15735,14272,-13146 -m 1
+
+						// コンテナ左端
+						} else if($i:フラグ & d:flag_t:ORGA_F_DANGR_RIGHT) {
+							//オルガが隠れ場所に到達
+							mesg ボスオルガ オルガ マルチウェイト表示
+
+							chara カメラ設定 オルガカットカメラ \
+								-c 1 \
+								-p -8758,13838,-14247 \
+								-t -10982,13743,-15571 \
+								-a 1068 \
+								-i 0 0 0 0  \
+								-s 1
+
+							mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_scream 10
+							mesg 臨時顔アニメキャラ オルガアニメ 視線変更 0 60 -10500 12000 -12500 // 仮座標
+							command ＳＥセットモード -s d:se_code:SD_V_SORGA09 -p -15735,14272,-13146 -m 1
+						}
+
+					// ロッカーへ隠れ
+					} else if($i:目的地 == 0) {
+						// ロッカー右端
+						if($i:フラグ & d:flag_t:ORGA_F_DANGR_LEFT){
+							//オルガが隠れ場所に到達
+							mesg ボスオルガ オルガ マルチウェイト表示
+
+							chara カメラ設定 オルガカットカメラ \
+								-c 1 \
+								-p -13455,17146,-16390 \
+								-t -13905,15688,-15577 \
+								-a 557 \
+								-i 0 0 0 0  \
+								-s 1
+
+							mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_scream 10
+							mesg 臨時顔アニメキャラ オルガアニメ 視線変更 0 60 -10500 12000 -12500 // 仮座標
+							command ＳＥセットモード -s d:se_code:SD_V_SORGA09 -p -15735,14272,-13146 -m 1
+
+						// ロッカー左端
+						} else if($i:フラグ & d:flag_t:ORGA_F_DANGR_RIGHT) {
+							//オルガが隠れ場所に到達
+							mesg ボスオルガ オルガ マルチウェイト表示
+
+							chara カメラ設定 オルガカットカメラ \
+								-c 1 \
+								-p -17626,13615,-11746 \
+								-t -16177,13938,-12651 \
+								-a 557 \
+								-i 0 0 0 0  \
+								-s 1
+
+							mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_scream 10
+							mesg 臨時顔アニメキャラ オルガアニメ 視線変更 0 60 -10500 12000 -12500 // 仮座標
+							command ＳＥセットモード -s d:se_code:SD_V_SORGA09 -p -15735,14272,-13146 -m 1
+						}
+
+					// IRセンサーへ隠れ
+					} else {
+						// IRセンサー
+						if($i:フラグ & d:flag_t:ORGA_F_DANGR_LEFT){
+							//オルガが隠れ場所に到達
+							mesg ボスオルガ オルガ マルチウェイト表示
+
+							chara カメラ設定 オルガカットカメラ \
+								-c 1 \
+								-p -15072,13216,-19643 \
+								-t -18418,14165,-18446 \
+								-a 546 \
+								-i 0 0 0 0  \
+								-s 1
+
+							mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_scream 10
+							mesg 臨時顔アニメキャラ オルガアニメ 視線変更 0 60 -10500 12000 -12500 // 仮座標
+							command ＳＥセットモード -s d:se_code:SD_V_SORGA09 -p -15735,14272,-13146 -m 1
+
+						// IRセンサー
+						} else if($i:フラグ & d:flag_t:ORGA_F_DANGR_RIGHT) {
+							//オルガが隠れ場所に到達
+							mesg ボスオルガ オルガ マルチウェイト表示
+
+							chara カメラ設定 オルガカットカメラ \
+								-c 1 \
+								-p -15816,15956,-13120 \
+								-t -17799,14551,-15055 \
+								-a 749 \
+								-i 0 0 0 0  \
+								-s 1
+
+							mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_scream 10
+							mesg 臨時顔アニメキャラ オルガアニメ 視線変更 0 60 -10500 12000 -12500 // 仮座標
+							command ＳＥセットモード -s d:se_code:SD_V_SORGA09 -p -15735,14272,-13146 -m 1
+						}
+					}
+			#else
+
+				//実験
+				@オルガ瞬間移動デバッグ -14500 13000 -14000 2048 // <---
+
+				mesg ボスオルガ オルガ マルチウェイト表示
+
+				chara カメラ設定 オルガカットカメラ \
+					-c 1 \
+					-p -16190,13825,-14152 -t -8543,13136,-14988 \
+					-a 180 \
+					-i 0 0 0 0  \
+					-s 1
+
+				#if d:rinji_kao_anime
+					mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_scream 10
+					mesg 臨時顔アニメキャラ オルガアニメ 視線変更 0 60 -10500 12000 -12500 // 仮座標
+					command ＳＥセットモード -s d:se_code:SD_V_SORGA09 -p -15735,14272,-13146 -m 1
+				#else
+					mesg 顔アニメキャラ オルガアニメ モーション再生 org_face_scream
+					mesg 顔アニメキャラ オルガアニメ 視線変更 0 60 -10500 12000 -12500 // 仮座標
+					command ＳＥセットモード -s d:se_code:SD_V_SORGA09 -p -15735,14272,-13146 -m 1
+				#endif
+
+			#endif
+
+				chara delay ディレイ -time $i:w00b_delay_time -exec {
+					#if 1
+						@オルガカットカメラ終了
+					#else
+						chara カメラ設定 オルガカットカメラ -s -1
+					#endif
+					mesg ボスオルガ オルガ オルガ静止解除
+					mesg ボスオルガ オルガ シングルウェイト表示
+					command パッド操作 -cancel
+					command プレイヤー無敵解除
+
+				}
+
+		#else
+		#endif
+	#endif
+#endif
+}
+
+proc スネークすき間 {
+#if d:オルガ各種カット
+	#if d:スネークすき間時x
+		#if d:スネークすき間初回のみ
+
+		print 'スネークすき間'
+
+			if(!$f:w00b_スネークすき間時初回終了){
+
+				// 何フレーム見せるか
+				eval($i:w00b_delay_time = 90)
+
+				// レーダー画面制御
+				@オルガ各種カット時レーダー画面制御 $i:w00b_delay_time
+
+				// シネマスクリーン
+				@シネマスクリーン使用 $i:w00b_delay_time
+
+				command パッド操作 -release
+
+				@特殊装備解除
+
+				command プレイヤー無敵セット
+				mesg ボスオルガ オルガ 回避無効
+
+				@パンカメラプロック \
+					-11813 15880 -12355 \
+					-8640  12670 -17025 \
+					-7782  15870 -12001 \
+					-11594 12670 -16169 \
+					206 \
+					$i:w00b_delay_time \
+					1
+
+				chara delay ディレイ -time $i:w00b_delay_time -exec {
+					#if 1
+						@オルガカットカメラ終了
+					#else
+						chara カメラ設定 オルガカットカメラ -s -1
+					#endif
+					eval($b:w00b_呼ばれてはいけない_スネークすき間 = 1)
+					command パッド操作 -cancel
+					mesg ボスオルガ オルガ 回避有効
+					command プレイヤー無敵解除
+				}
+
+				eval($f:w00b_スネークすき間時初回終了 = 1)
+
+			}
+
+		#endif
+	#endif
+#endif
+}
+
+#ifdef ENGLISH
+	#define	人生語り始めディレイタイム	360
+#else
+	#define	人生語り始めディレイタイム	430
+#endif
+
+proc 人生語り最初始め {
+#if d:オルガ各種カット
+	#if d:人生語り最初始めx
+		if($f:w00b_人生語り始め聞いた) {
+			mesg ボスオルガ オルガ デモスキップ可能
+		}
+		eval($f:w00b_人生語り始め聞いた = 1)
+
+		// コンティニュー後スキップのため
+		command varsave $f:w00b_人生語り始め聞いた
+
+		@シネマスクリーンスタート
+		@レーダー画面消去
+		@特殊装備解除
+		command パッド操作 -release
+		command プレイヤー無敵セット
+
+		// ------------------------------
+		// 実際のカット
+		// ------------------------------
+		// 最初のカット始め
+		@パンカメラプロック \
+			-24427,17548,-9693 \
+			-19465,13757,-17972 \
+			-15298,17548,-9265 \
+			-19465,13757,-17972 \
+			766 \
+			d:人生語り始めディレイタイム \
+			0
+
+		// 船首ぼかす
+		mesg 遠景ぼかし 遠景ぼかし３ on
+
+		// 別カットに切り替わり
+		chara delay ディレイ人生 -time d:人生語り始めディレイタイム -exec {
+
+			mesg 遠景ぼかし 遠景ぼかし３ off
+
+			chara カメラ設定 オルガカットカメラ人生 \
+				-c 1 \
+				-p -18882,12858,-16671 -t -19348,13895,-17907 \
+				-r -434,2283,0 -f 1679 \
+				-a 278 \
+				-i 0 -1 0 0 \
+				-s 1
+
+		}
+
+	#endif
+#endif
+}
+
+proc 人生語り最初終り {
+#if d:オルガ各種カット
+	#if d:人生語り最初終りx
+		mesg delay ディレイ人生 kill
+
+		@カメラＯＦＦ パンカメラ
+
+		chara カメラ設定 オルガカットカメラ人生 -s -1
+		@シネマスクリーン終了
+		@レーダー画面表示
+		command プレイヤー無敵解除
+		command パッド操作 -cancel
+	#endif
+#endif
+}
+
+proc 人生語り最後始め {
+#if d:オルガ各種カット
+	#if d:人生語り最後始めx
+		if($f:w00b_人生語り最後聞いた) {
+			mesg ボスオルガ オルガ デモスキップ可能
+		}
+		eval($f:w00b_人生語り最後聞いた = 1)
+
+		// コンティニュー後スキップのため
+		command varsave $f:w00b_人生語り最後聞いた
+
+		@シネマスクリーンスタート
+		@レーダー画面消去
+		@特殊装備解除
+		command パッド操作 -release
+
+		// ------------------------------
+		// 実際のカット
+		// ------------------------------
+		// 最初のカット始め
+		@パンカメラプロック \
+			-7497,14949,-18951 \
+			-13820,13753,-14094 \
+			-8176,15195,-19770 \
+			-14491,14000,-14904 \
+			920 \
+			200 \
+			0
+
+		// 川岸ぼかす
+		mesg 遠景ぼかし 遠景ぼかし３ on
+
+		// 別カットに切り替わり
+		chara delay ディレイ人生 -time 200 -exec {
+
+			mesg 遠景ぼかし 遠景ぼかし３ off
+
+			chara カメラ設定 オルガカットカメラ人生 \
+				-c 1 \
+				-p -13739,13731,-15424 -t -15269,14046,-14700 \
+				-r -120,3360,0 -f 1722 \
+				-a 190 \
+				-i 0 -1 0 0 \
+				-s 1
+
+		}
+
+	#endif
+#endif
+}
+
+proc 人生語り最後終り {
+#if d:オルガ各種カット
+	#if d:人生語り最後終りx
+		mesg delay ディレイ人生 kill
+		@カメラＯＦＦ パンカメラ
+		@カメラＯＦＦ オルガカットカメラ人生
+
+//		chara カメラ設定 オルガカットカメラ人生 -s -1
+		@シネマスクリーン終了
+		@レーダー画面表示
+		command パッド操作 -cancel
+		eval($f:w00b_オルガ言いたいこと言った = 1)
+	#endif
+#endif
+}
+
+proc オルガ戦第三フェーズカット
+{
+	eval($f:w00b_オルガ戦第３フェーズ入った = 1)		//福島無線用
+
+	mesg ボスオルガ オルガ 回避無効
+
+	@シネマスクリーンスタート
+	@レーダー画面消去
+	@特殊装備解除
+	command パッド操作 -release
+
+	@オルガ戦第二フェーズロックオン防止壁発動
+
+	chara カメラ設定 オルガカットカメラ人生 \
+		-c 1 \
+		-p -23233,15849,-16353 -t -23144,15811,-16330 \
+		-r 252,862,0 -f 100 \
+		-a 180 \
+		-i 0 -1 0 0 \
+		-s 1
+	chara delay ディレイ人生 -time 120 -exec {
+		chara カメラ設定 オルガカットカメラ人生 -s -1
+
+		mesg ボスオルガ オルガ 回避有効
+		@シネマスクリーン終了
+		@レーダー画面表示
+		command パッド操作 -cancel
+	}
+}
+
+proc オルガ表情セット {
+#if d:rinji_kao_anime
+	chara 臨時顔アニメキャラ オルガアニメ \
+		-chara オルガ
+#else
+	chara 顔アニメキャラ オルガアニメ \
+		-fanim	org_rmt \
+		-chara	オルガ
+
+// マルチウェイトエンベロープモデル顔アニメキャラ
+// メッセージによりコントロールする（時間は全て1/300秒単位）
+// ＜視線変更コマンド捕捉＞
+//  $w:タイプ = -1 視線はモーションに依存（補間時間、注目座標の指定は必要なし）
+//            =  0 絶対座標による注目座標指定
+//            =  1 頭部モデルからの相対座標による注目座標指定
+//            =  2 カメラ目線（注目座標の指定は必要なし）
+//
+#endif
+}
+
+proc ボスオルガセット {
+
+
+		// -hオプション時は、オルガ全部表情つけるか？
+		// ぼかしも入れるとか。
+
+
+		if($w:ゲーム設定 <= d:LEVEL_EASY){
+			eval( $w:ローカル変数Ｗ１ = 5 );
+			eval( $w:ローカル変数Ｗ２ = 11 );
+		}else if($w:ゲーム設定 == d:LEVEL_NORMAL){
+			eval( $w:ローカル変数Ｗ１ = 8 );
+			eval( $w:ローカル変数Ｗ２ = 14 );
+		}else if($w:ゲーム設定 == d:LEVEL_HARD){
+			eval( $w:ローカル変数Ｗ１ = 15 );
+			eval( $w:ローカル変数Ｗ２ = 25 );
+		}else{
+			eval( $w:ローカル変数Ｗ１ = 30 );
+			eval( $w:ローカル変数Ｗ２ = 50 );
+		}
+
+
+		chara ボスオルガ オルガ \
+			-m org_def_sh_mt \
+			-a orga \
+			-p -18800,13000,-19300 \
+			-d 0,2048,0 \
+			-s 0 \
+			-v t:vc060101 t:vc060102 t:vc060103 t:vc060104 t:vc060105 t:vc060106 \
+			-h オルガホロ撃ち時 \
+			   オルガ死に時 \
+			   オルガグレネードなげ時 \
+			   オルガめくら撃ち_乱射時 \
+			   オルガアンチエルード時 \
+			   オルガとんぼ返り時 \
+			   オルガ側転時 \
+			   オルガダメージ時 \
+			   オルガ覗き込み時 \
+			   オルガスライディング時 \
+			   オルガマシンガンな奴時 \
+			   オルガ挑発時 \
+			   ホロ舞う時 \
+			   ライフ１／２時 \ // 廃止
+			   ライフ１／４時 \
+			   ライフ１／８時 \
+			   ライフ３／４時 \
+			   スネークすき間 \
+			   人生語り最初始め \	//（１番めのセリフススタート）
+			   人生語り最初終り \	//（１番めのセリフ終了）
+			   人生語り最後始め \	//（４番めのセリフスタート）
+			   人生語り最後終り \	//（４番めのセリフ終了）
+			   オルガ戦第二フェーズロックオン防止壁終了 \
+			   オルガ戦第三フェーズカット               \ /* 第３フェーズ用 */
+			   オルガ戦第二フェーズロックオン防止壁終了 \ /* 第３フェーズに流用 */
+			-c $w:ローカル変数Ｗ１ $w:ローカル変数Ｗ２ 1500 2000 \ // スネーク銃・グレネードダメージ・吹っ飛びダメージ範囲・吹っ飛びのみ範囲
+//			   128 128 128 128 128 128 128 128 128 128 128 \ // オルガダメージ 128
+			   32 25 11 11 11 11 11 11 11 11 20 \ // オルガダメージ 128
+			-f 0x00000000
+
+		// ステージ開始時は、シングル表示。
+		mesg ボスオルガ オルガ シングルウェイト表示
+
+		//欧州言語用ＳＥ字幕
+		#ifdef d:EU || d:KOREA
+			#ifdef d:EU
+				command 字幕言語設定
+			#endif
+				@ＳＥ字幕リソース
+		#endif
+
+	chara 装備品Ａ オルガＵＳＰホルスター \
+		-n org_gbhlst \
+		-y オルガ \
+		-z 0 \
+		-x -110 90 55 \
+		-v 0 -243 0 \
+		-a 1 0 0 \
+		-r (0*4096/360) (-55*4096/360) (-10*4096/360) \
+		-l (20*4096/360) \
+		-o 90
+
+	chara 装備品Ａ オルガスカウトナイフ \
+		-n org_sk_cover \
+		-y オルガ \
+		-z 0 \
+		-x 76 90 107 \
+		-v 0 -243 0 \
+		-a 1 0 1 \
+		-r (0*4096/360) (8*4096/360) (15*4096/360) \
+		-l (45*4096/360) \
+		-o 110
+
+	chara 装備品Ａ オルガ無線機 \
+		-n org_radio \
+		-y オルガ \
+		-z 0 \
+		-x 67 90 -51 \
+		-v 0 -243 0 \
+		-a 1 0 0 \
+		-r (0*4096/360) (157*4096/360) (0*4096/360) \
+		-l (20*4096/360) \
+		-o 110
+}
+
+proc ウイング底抜け防止モデルセット {
+	chara プットオブジェ 底抜け防止 -m w00b_uc2 -r 0 0 0 \
+		-p 0 0 0 -l w00b -s 100 100 100 -f d:PUT_OBJ_AUTOREPAINT
+}
+
+proc 床オブジェクトセット {
+	chara プットオブジェ 床オブジェクト -m w00b_floor -r 0 0 0 \
+		-p 0 0 0 -l w00b -s 100 100 100 -f d:PUT_OBJ_AUTOREPAINT
+}
+
+proc 床への映り込みセット {
+// とりあえずE3ビデオ用の床下映り込み。
+#if d:uturikomi
+	// スネーク用
+	chara 鏡面モデル管理 床面映り込みスネーク \
+		-pos 0,12000,0 \
+		-axis 1 // Y軸反転
+	mesg 鏡面モデル管理 床面映り込みスネーク add d:PLAYER
+print 'アッド！！'
+
+	// オルガ用
+	chara 鏡面モデル管理 床面映り込みオルガ \
+		-pos 0,12750,0 \
+		-axis 1 // Y軸反転
+	mesg 鏡面モデル管理 床面映り込みオルガ add オルガ
+print 'アッド！！'
+#endif
+}
+
+proc 遠近ぼかしセット {
+	chara 遠景ぼかし 遠景ぼかし１ \
+		-plane	3 \
+		-near	1000 \
+		-far	5000
+
+	chara 遠景ぼかし 遠景ぼかし２ \
+		-plane	3 \
+		-near	1000 \
+		-far	15000
+
+	chara 遠景ぼかし 遠景ぼかし３ \
+		-plane	3 \
+//		-near	20000 \
+//		-far	35000
+		-near	10000 \
+		-far	25000
+
+	chara 近景ぼかし 近景ぼかし１ \
+		-plane	3 \
+		-near	0 \
+		-far	1000
+
+	chara 近景ぼかし 近景ぼかし２ \
+		-plane	3 \
+		-near	0 \
+		-far	3000
+
+	chara 近景ぼかし 近景ぼかし３ \
+		-plane	3 \
+		-near	0 \
+		-far	5000
+}
+
+proc USBキーボード操作セット {
+#if d:usb_keyboard
+	chara 臨時顔アニメキャラ スネークアニメ \
+		-chara d:PLAYER
+
+	chara 臨時顔アニメキャラ オルガアニメ \
+		-chara オルガ
+
+	chara USBキーボード実行 test \
+		-e d:KBD_ESC {	mesg 臨時顔アニメキャラ スネークアニメ モーション再生 normal 30
+						mesg 臨時顔アニメキャラ スネークアニメ 視線変更 -1
+						mesg 遠景ぼかし 遠景ぼかし１ off
+						mesg 遠景ぼかし 遠景ぼかし２ off
+						mesg 遠景ぼかし 遠景ぼかし３ off
+						mesg 近景ぼかし 近景ぼかし１ off
+						mesg 近景ぼかし 近景ぼかし２ off
+						mesg 近景ぼかし 近景ぼかし３ off
+						} \
+		-e d:KBD_F1 { mesg 臨時顔アニメキャラ スネークアニメ モーション再生 sna_face_pain 30 } \
+		-e d:KBD_F2 { mesg 臨時顔アニメキャラ スネークアニメ モーション再生 sna_face_T12a1D71 30 } \
+		-e d:KBD_F3 { mesg 臨時顔アニメキャラ スネークアニメ モーション再生 sna_face_relax 30 } \
+		-e d:KBD_F4 { mesg 臨時顔アニメキャラ スネークアニメ モーション再生 sna_face_scream 0 } \
+		-e d:KBD_F5 { mesg 臨時顔アニメキャラ スネークアニメ モーション再生 sna_face_sigh 30 } \
+		-e d:KBD_F6 { mesg 臨時顔アニメキャラ スネークアニメ モーション再生 sna_face_surprise 30 } \
+		-e d:KBD_F7 { mesg 臨時顔アニメキャラ スネークアニメ モーション再生 sna_face_teeth 30 } \
+		-e d:KBD_F8 { mesg 臨時顔アニメキャラ スネークアニメ モーション再生 sna_face_tension 30 } \
+		-e d:KBD_F9 { mesg 臨時顔アニメキャラ スネークアニメ モーション再生 sna_face_exciting 30 } \
+
+		-e d:KBD_F10 { mesg 臨時顔アニメキャラ スネークアニメ 視線変更 0 60 -10000,13000,-23000 } \
+		-e d:KBD_F11 { mesg 臨時顔アニメキャラ スネークアニメ 視線変更 0 60 -10000,13000,-9950 } \
+		-e d:KBD_F12 { mesg 臨時顔アニメキャラ スネークアニメ 視線変更 0 60 10000,13000,-18100 } \
+		-e d:KBD_PRINT { mesg 臨時顔アニメキャラ スネークアニメ 視線変更 0 60 -10000,13000,-18100 } \
+		-e d:KBD_SCLOCK { mesg 臨時顔アニメキャラ スネークアニメ 視線変更 2 } \
+
+		-e d:KBD_X { mesg プットホロオブジェ ホロ オルガ開く } \
+		-e d:KBD_C { mesg プットホロオブジェ ホロ 右開く } \
+		-e d:KBD_Z { mesg プットホロオブジェ ホロ 左開く } \
+
+		-e d:KBD_1 { mesg 遠景ぼかし 遠景ぼかし１ on } \
+		-e d:KBD_2 { mesg 遠景ぼかし 遠景ぼかし２ on } \
+		-e d:KBD_3 { mesg 遠景ぼかし 遠景ぼかし３ on } \
+		-e d:KBD_4 { mesg 近景ぼかし 近景ぼかし１ on } \
+		-e d:KBD_5 { mesg 近景ぼかし 近景ぼかし２ on } \
+		-e d:KBD_6 { mesg 近景ぼかし 近景ぼかし３ on } \
+
+		-e d:KPD_ENTER { mesg プレイヤー d:PLAYER headmark } \
+
+		-e d:KBD_0 { restart } \
+
+		-e d:KBD_ZENHAN {	mesg 臨時顔アニメキャラ オルガアニメ モーション再生 normal 30
+							mesg 臨時顔アニメキャラ オルガアニメ 視線変更 -1
+							mesg ボスオルガ オルガ デバッグアクション 0 } \
+		-e d:KBD_Q { mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_anger 30 } \
+		-e d:KBD_W { mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_teeth 30 } \
+		-e d:KBD_E { mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_look_distant 30 } \
+		-e d:KBD_R { mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_pain 30 } \
+		-e d:KBD_T {
+					mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_excitement 30
+					chara delay ディレイ \
+						-time 100 \
+						-exec { mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_excitement 30 }
+					chara delay ディレイ \
+						-time 200 \
+						-exec { mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_excitement 30
+					chara delay ディレイ \
+						-time 100 \
+						-exec { mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_excitement 30 }
+						}
+					chara delay ディレイ \
+						-time 300 \
+						-exec { mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_excitement 30 }
+					chara delay ディレイ \
+						-time 400 \
+						-exec { mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_excitement 30 }
+					} \
+		-e d:KBD_Y { mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_scream 10 } \
+		-e d:KBD_U { mesg 臨時顔アニメキャラ オルガアニメ モーション再生 org_face_surprise 30 } \
+		-e d:KBD_I { mesg 臨時顔アニメキャラ オルガアニメ モーション再生 t05a1d41 30 } \
+		-e d:KBD_O { mesg 臨時顔アニメキャラ オルガアニメ 視線変更 0 -14000,13000,-18000 } \
+		-e d:KBD_P { mesg 臨時顔アニメキャラ オルガアニメ 視線変更 2 } \
+
+		-e d:KBD_INSERT 	{ mesg ボスオルガ オルガ デバッグアクション 1 } \
+		-e d:KBD_HOME   	{ mesg ボスオルガ オルガ デバッグアクション 2 } \
+		-e d:KBD_PAGEUP 	{ mesg ボスオルガ オルガ デバッグアクション 3 } \
+		-e d:KBD_DELETE 	{ mesg ボスオルガ オルガ デバッグアクション 4 } \
+		-e d:KBD_END    	{ mesg ボスオルガ オルガ デバッグアクション 5 } \
+		-e d:KBD_PAGEDOWN 	{ mesg ボスオルガ オルガ デバッグアクション 6 } \
+		-e d:KBD_SCLOCK 	{ mesg ボスオルガ オルガ デバッグアクション 7 } \
+		-e d:KBD_PAUSE 		{ mesg ボスオルガ オルガ デバッグアクション 12 } \
+		-e d:KPD_NUMLOCK 	{ mesg ボスオルガ オルガ デバッグアクション 13 } \
+		-e d:KPD_SLASH	 	{ mesg ボスオルガ オルガ デバッグアクション 14 } \
+		-e d:KPD_ASTA	 	{ mesg ボスオルガ オルガ デバッグアクション 15 } \
+
+//		-e d:KPD_SLASH	 	{ mesg プットホロオブジェ ホロ リセット } \
+
+//		-e d:KBD_V { mesg 鏡面モデル管理 床面映り込みスネーク del d:PLAYER } \
+//		-e d:KBD_B { mesg 鏡面モデル管理 床面映り込みスネーク add d:PLAYER } \
+//		-e d:KBD_N { mesg 鏡面モデル管理 床面映り込みオルガ del オルガ } \
+//		-e d:KBD_M { mesg 鏡面モデル管理 床面映り込みオルガ add オルガ } \
+
+		-e d:KBD_A { mesg プレイヤー d:PLAYER shadow $f:ＯＦＦ }
+#endif
+}
+
+proc レーダークルクル {
+	chara くるくる物体 radar \
+		-k w00_radar \
+		-p -1500 25600 -15400 \
+		-r 32 \
+		-s 1 \
+		-d 2 200 200 48
+}
+
+proc ボス戦初期化 {
+	// 設置すべきアイテムの数だけ必要。
+	// （予備）弾薬がステージ上に存在しているかどうかのフラグ。
+	eval($f:boss_battle_bullet_exist_1 = 0)
+	eval($f:boss_battle_bullet_exist_2 = 0)
+	eval($w:boss_battle_bullet_exist_3 = 0)
+	eval($w:boss_battle_bullet_exist_4 = 0)
+//	eval($w:boss_battle_bullet_exist_5 = 0)
+	eval($f:boss_battle_bullet_exist_6 = 0)
+}
+
+proc スネーク居場所チェック {
+	trap ev800 d:PLAYER \
+		-mask ？ \
+		-exec {
+			if($3 == 入る) {
+				eval($f:ev_item_000 = 1)
+			} else {
+				eval($f:ev_item_000 = 0)
+			}
+		}
+	trap ev801 d:PLAYER \
+		-mask ？ \
+		-exec {
+			if($3 == 入る) {
+				eval($f:ev_item_001 = 1)
+			} else {
+				eval($f:ev_item_001 = 0)
+			}
+		}
+	trap ev802 d:PLAYER \
+		-mask ？ \
+		-exec {
+			if($3 == 入る) {
+				eval($f:ev_item_002 = 1)
+			} else {
+				eval($f:ev_item_002 = 0)
+			}
+		}
+}
+
+#ifndef d:BOSS_MODE
+proc アイテム取得時番号設定 $:ボックス名 {
+	// ボスステージなので、中身は不要。
+}
+#endif
+
+proc アイテム初期設置セット {
+
+
+		chara アイテム アイテムボックス \
+			-b 0 \
+			-p -11500 12000 -13500 \
+			-k handgun_amo_ibox \
+			-s handgun_amo_ibox_sh \
+			-l m92_amo_label \
+			-f d:アイテム種別:武器弾 \
+			-i d:武器:Ｍ９ \
+			-n 15 \
+			-h 300 \
+			-r 1 \
+			-x { eval($f:boss_battle_bullet_exist_1 = 0) }
+		// ボス戦用アイテム、重複出現防止
+		eval($f:boss_battle_bullet_exist_1 = 1)
+
+//--------
+		chara アイテム アイテムボックス \
+			-b 0 \
+			-p -6600 12000 -19250 \
+			-k handgun_amo_ibox \
+			-s handgun_amo_ibox_sh \
+			-l m92_amo_label \
+			-f d:アイテム種別:武器弾 \
+			-i d:武器:Ｍ９ \
+			-n 15 \
+			-h 300 \
+			-r 1 \
+			-x { eval($f:boss_battle_bullet_exist_2 = 0) }
+		// ボス戦用アイテム、重複出現防止
+		eval($f:boss_battle_bullet_exist_2 = 1)
+
+//--------
+		if($w:ゲーム設定 < d:LEVEL_EXTREME) {
+
+			// Easy 以下では判りやすい場所に設置
+			if($w:ゲーム設定 <= d:LEVEL_EASY) {
+				eval($i:w00b_レーション位置Ｘ = -11250)
+				eval($i:w00b_レーション位置Ｚ = -10750)
+			} else {
+				eval($i:w00b_レーション位置Ｘ = -4550)
+				eval($i:w00b_レーション位置Ｚ = -9500)
+			}
+
+			chara アイテム アイテムボックス \
+				-b 0 \
+				-p $i:w00b_レーション位置Ｘ 12000 $i:w00b_レーション位置Ｚ \
+				-k ration_ibox \
+				-s ration_ibox_sh \
+				-l rtn_label \
+				-f d:アイテム種別:アイテム \
+				-i d:アイテム:レーション \
+				-n 1 \
+				-h 300 \
+				-r 1 \
+				-x { eval($f:boss_battle_bullet_exist_6 = 0) }
+			// ボス戦用アイテム、重複出現防止
+			eval($f:boss_battle_bullet_exist_6 = 1)
+		}
+
+
+//	@振動センサー_初期設置 ぶるぶる -4550 12000 -9000 1
+
+}
+
+proc ボスラッシュＭ９設置判定 {
+	if($s:ボスラッシュプレイヤー == スネーク){
+		if($w:武器弾数[ d:武器:Ｍ９ ] == 0){
+			return 1
+		}else{
+			return 0
+		}
+	}else{
+		if($w:武器弾数Ｒ[ d:武器:Ｍ９ ] == 0){
+			return 1
+		}else{
+			return 0
+		}
+	}
+}
+
+
+
+proc ボスラッシュレーション設置判定 {
+	if($s:ボスラッシュプレイヤー == スネーク){
+		if($w:アイテム数[ d:アイテム:レーション ] == 0){
+			return 1
+		}else{
+			return 0
+		}
+	}else{
+		if($w:アイテム数Ｒ[ d:アイテム:レーション ] == 0){
+			return 1
+		}else{
+			return 0
+		}
+	}
+}
+
+
+proc ボス戦アイテム補給セット {
+
+
+		@ボス戦初期化 // 初期配置をすることになったので、実質上不要か？
+		@スネーク居場所チェック
+
+		// ボス戦初期化よりあとに置くこと
+		@アイテム初期設置セット
+
+		trap ev300 d:PLAYER \
+			-mask いる \
+			-exec {
+				// M9の1
+				if(!$f:ev_item_000) {
+					if($f:boss_battle_bullet_exist_1 == 0) {
+						if($w:武器弾数[ d:武器:Ｍ９ ] == 0){
+							if(`command カメラ視界チェック -camera 0x03 \
+								-bound -11510 12000 -13510 -11490 12000 -13490` == 0){
+							 		chara アイテム アイテムボックス \
+										-b 0 \
+										-p -11500 12000 -13500 \
+										-k handgun_amo_ibox \
+										-s handgun_amo_ibox_sh \
+										-l m92_amo_label \
+										-f d:アイテム種別:武器弾 \
+										-i d:武器:Ｍ９ \
+										-n 15 \
+										-h 300 \
+										-r 1 \
+										-x { eval($f:boss_battle_bullet_exist_1 = 0) }
+
+									// 弾薬がステージ上に出現（存在）しましたよ。
+									eval($f:boss_battle_bullet_exist_1 = 1)
+
+							}
+						}
+					}
+				}
+
+				// M9の2
+				if(!$f:ev_item_001) {
+					if($f:boss_battle_bullet_exist_2 == 0) {
+						if($w:武器弾数[ d:武器:Ｍ９ ] == 0){
+							if(`command カメラ視界チェック -camera 0x03 \
+								-bound -6610 12000 -195260 -6590 12000 -19240` == 0){
+									chara アイテム アイテムボックス \
+										-b 0 \
+										-p -6600 12000 -19250 \
+										-k handgun_amo_ibox \
+										-s handgun_amo_ibox_sh \
+										-l m92_amo_label \
+										-f d:アイテム種別:武器弾 \
+										-i d:武器:Ｍ９ \
+										-n 15 \
+										-h 300 \
+										-r 1 \
+										-x { eval($f:boss_battle_bullet_exist_2 = 0) }
+
+									// 弾薬がステージ上に出現（存在）しましたよ。
+									eval($f:boss_battle_bullet_exist_2 = 1)
+
+							}
+						}
+					}
+				}
+
+
+	// --------------------------------------------
+				// レーションの1
+				if($w:ゲーム設定 < d:LEVEL_EXTREME && !$f:ev_item_002 && ! $f:boss_battle_bullet_exist_6){
+					if($w:アイテム数[ d:アイテム:レーション ] == 0){
+						eval($i:w00b_レーションバウンドＸ１ = $i:w00b_レーション位置Ｘ-10)
+						eval($i:w00b_レーションバウンドＸ２ = $i:w00b_レーション位置Ｘ+10)
+						eval($i:w00b_レーションバウンドＺ１ = $i:w00b_レーション位置Ｚ-10)
+						eval($i:w00b_レーションバウンドＺ２ = $i:w00b_レーション位置Ｚ+10)
+
+						if(`command カメラ視界チェック -camera 0x03 \
+							-bound $i:w00b_レーションバウンドＸ１,12000,$i:w00b_レーションバウンドＺ１ $i:w00b_レーションバウンドＸ２,12000,$i:w00b_レーションバウンドＺ２` == 0){
+
+							chara アイテム アイテムボックス \
+								-b 0 \
+								-p $i:w00b_レーション位置Ｘ 12000 $i:w00b_レーション位置Ｚ \
+								-k ration_ibox \
+								-s ration_ibox_sh \
+								-l rtn_label \
+								-f d:アイテム種別:アイテム \
+								-i d:アイテム:レーション \
+								-n 1 \
+								-h 300 \
+								-r 1 \
+								-x { eval($f:boss_battle_bullet_exist_6 = 0) }
+
+							// 弾薬がステージ上に出現（存在）しましたよ。
+							eval($f:boss_battle_bullet_exist_6 = 1)
+
+						}
+					}
+				}
+			}
+
+
+}
+
+proc 共通シネマスクリーンセット {
+	chara シネマスクリーン シネマ \
+		-top d:CINEMA_BELT_UPPER \
+		-bottom d:CINEMA_BELT_LOWER \
+		-ftime 30	//デフォルト値（ゼロは駄目）
+}
+
+// 適宜スタート、終了したい場合
+proc シネマスクリーンスタート {
+	// コール絡みバグ予防策
+	command 無線設定 -reset
+
+	mesg ボスオルガ オルガ デモ開始
+	mesg シネマスクリーン シネマ フェードアウト 0
+}
+proc シネマスクリーン終了 {
+	mesg シネマスクリーン シネマ フェードイン 0
+	mesg ボスオルガ オルガ デモ終了
+}
+
+// 最初から時間判っている場合
+proc シネマスクリーン使用 $:持続時間 {
+	// コール絡みバグ予防策
+	command 無線設定 -reset
+
+	mesg シネマスクリーン シネマ フェードアウト 0
+	mesg ボスオルガ オルガ デモ開始
+	chara delay ディレイ -time $:持続時間 -exec {
+		mesg シネマスクリーン シネマ フェードイン 0
+		mesg ボスオルガ オルガ デモ終了
+	}
+}
+
+// ステージ は、最後に！！
+// ------------------------------------
+proc 船首セット {
+	chara プットオブジェ 船首１ -m w00_f1 -r 0 0 0 -p 0 0 -180000  -l w00b -s 100 100 100
+	chara プットオブジェ 船首２ -m w00_f2 -r 0 0 0 -p 0 0 -120000  -l w00b -s 100 100 100
+	chara プットオブジェ 船首３ -m w00_f3 -r 0 0 0 -p 0 0 -60000  -l w00b -s 100 100 100
+	chara プットオブジェ 船首４ -m w00_f4 -r 0 0 0 -p 0 0 0  -l w00b -s 100 100 100
+}
+
+// 屋上部との絡みで、ステージをオブジェ置き。
+proc ステージセット {
+	chara プットオブジェ ブリッジ屋上 -m w00b -r 0 0 0 -p 0 0 0  -l w00b -s 100 100 100 -f d:PUT_OBJ_AUTOREPAINT
+}
+
+// デバッグキャラ
+// ------------------------------------
+proc スクリーンショットセット {
+#if d:screen_shot
+	chara スクリーンショット スクリーンショット
+#endif
+}
+
+proc キャラクタ専用ライトセット {
+// キャラクタ専用ライト設置
+	chara 環境光 環境光 \
+		 -c 53,73,55
+	chara 平行光 平行光 \
+		 -c 70,230,214 \
+		 -d 691,721,0
+}
+
+
+
+
+proc オルガ戦風邪治し {
+	mesg delay タンカーくしゃみ繰り返しディレイ kill
+	command プレイヤー風邪治し
+}
+
+
+//
+// 字幕用キャラ
+// cap_resource.h に移行
+
+

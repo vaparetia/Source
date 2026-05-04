@@ -1,0 +1,191 @@
+//	w31b.src
+//	written by S.Kaneyoshi 200X/XX/XX
+//	$Id: a31b.src,v 1.2 2002/06/04 07:53:05 usr04249 Exp $
+
+// 常駐データ
+block .use r_vr_s
+
+block .nocache
+block .cache
+
+#define WN_W31B
+
+#define EFFECT_CUSTUM
+
+//#define	E_GLASS_DANKON			// グラス系弾痕
+#define	E_KOGETUKI				// 壁への焦げ付き
+#define	E_FOOTSTAMP				// 足跡
+//#define	E_ENEMY					// 敵兵系
+#define	E_ENEMY_LIGHT			// 敵兵ライト
+//#define	E_SLING					// スリング
+//#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+//#define	E_MANHATTAN_LIGHT		// マンハッタンライト
+//#define	E_C4BOMB				// Ｃ４爆弾、赤外線センサー
+#define	E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷
+//#define	E_CROSS_FADE_LIGHT		// クロスフェード（甲板のライトで使用）
+//#define	E_CHARA_DENTOU			// chara 懐中電灯、フォーチュン戦
+#define	E_WATER					// 水関係
+#define	E_CHARA_HAMON			// chara 波紋
+//#define	E_BROKEN_OBJECT			// 壊れ物
+//#define	E_BROKEN_PAPEROBJECT	// 壊れ物紙
+//#define	E_BROKEN_PLATE			// 壊れ物皿
+#define	E_HIMATU				// 水飛沫
+//#define	E_CHARA_MADOAME			// chara 窓雨
+//#define	E_STEAM					// 粉 & 水蒸気
+//#define	E_POWDER				// 小麦粉
+//#define	E_SKY_NORMAL			// 空
+//#define	E_LINEAR_GUN			// リニアガン
+//#define	E_TENKYUU				// 天球ドーム
+//#define	E_SUN					// 太陽
+#define	E_DOOR_LUMP				// ドアランプ
+#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+//#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+//#define	BONBORI					// ぼんぼり
+#define	NODE_LAMP				// ノードディスプレイランプ
+
+// 各ステージ共通要素
+#include 	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+
+// エマ
+	#include		"emma.h"
+
+// ピーター
+	human	ptr_def/ptr_dead_mh_mt.evm
+	mtn		w31b_ptr.mls
+
+	//水中の血
+	pack_trnall	blood_water.tri \
+	           	effect/blood/blood_2bw_alp.bmp \
+				effect/mark/hosi_msk.bmp /* 気絶星 */\
+				effect/mark/zzz_msk.bmp /* 睡眠ZZZ */
+
+	// 強制モーション
+	mtn		sna_swim.mls			// 泳ぎモーション
+	mtn		rai_swim.mls
+	mtn		rai_w31b.mls
+
+	mtn		sna_hatch.mls 			// 水密ドア開閉モーション
+	mtn		rai_wt_hatch.mls 		// 水密ドア開閉モーション
+	mtn		hatch_door_sna.mls 		// 水密ドア扉開閉モーション
+	mtn		hatch_handle_sna.mls	// 水密ドアハンドル回転モーション
+
+// ワールド
+	world/w31b/w31b0	w31b_poster.kms
+
+	world		w31b
+	lt2			w31b.lt2
+	hazard		w31b.hzx
+
+	// 水密ドアとドア
+	pack_all	wt_door2.tri \
+					world/door/w01asdr_handle.dar \
+					world/door/w01asdr_body_l.dar \
+					world/door/w01asdr_body_r.dar \
+					world/door/w01a_dr.dar \
+					world/door/w01asdr_handle2.dar \
+					world/door/w01asdr_handle3.dar
+
+	world/door		w01asdr_handle.kms
+	world/door		w01asdr_body_l.kms
+	world/door		w01asdr_body_r.kms
+	world/door		w01a_dr.kms
+	world/door		w01asdr_handle2.kms
+	world/door		w01asdr_handle3.kms
+
+	pack_all	wt_door.tri \
+					world/door/w11a_sdr_body_l.dar \
+					world/door/w11a_sdr_body_r.dar \
+					world/door/w11a_sdr_handle.dar \
+					world/door/dr_lv4_00.dar
+
+	world/door		w11a_sdr_body_l.kms
+	world/door		w11a_sdr_body_r.kms
+	world/door		w11a_sdr_handle.kms
+	world/door		dr_lv4_00.kms
+
+
+	// それ以外のモデル
+	world		elevator/elv_2
+
+	// 影投影モデル
+	world		w31b/w31b0/w31b_k1.kms
+
+	// 水面
+	pack_all	water.tri world/w31b/w31b_water/w31b_ref_water_alp_ovl_01.bmp
+
+	// カメラ水
+	effect		scr_effect/scr_waterline01.kms
+	cvd			effect/scr_effect/scr_waterline01.cv2 vn
+
+	// 気泡
+	effect	scr_effect/scr_kihou01.kms
+	cvd		effect/scr_effect/scr_kihou01.cv2 vn
+
+// アイテム
+	itembox
+
+	// 水飛沫用cv2
+	cvd		human/sna_skl/sna_skl3.cvd vn
+
+	// ふなむし
+	pack_all	funa.tri \
+					human/hnm_hunamushi/hnm_low_cm.dar \
+					human/hnm_hunamushi/hnm_def.dar
+
+	human	hnm_hunamushi/hnm_low_cm.kms
+	human	hnm_hunamushi/hnm_def.kms
+
+	pack_trnall effect.tri \
+			human/hnm_hunamushi/hnm_death_00_ovl_alp.bmp
+
+// 波エフェクト
+	debug takabe/raw_ipu/reflact02.rim
+
+// 紙屑
+	pack_all	paper.tri \
+					goods/dust/paper_a.dar \
+					goods/dust/paper_b.dar
+
+	goods	dust/paper_a.kms
+	goods	dust/paper_b.kms
+
+	cvd		goods/dust/paper_a.cv2 vn
+	cvd		goods/dust/paper_b.cv2 vn
+
+
+// 浮遊物
+	pack_all	dust.tri \
+					goods/dust/kan.dar \
+					goods/dust/wtd_vul_figure/wtd_vul_figure.dar \
+					goods/dust/wtd_hiyoko/wtd_hiyoko.dar \
+					goods/dust/wtd_kan/wtd_kan.dar \
+					goods/dust/wtd_papercup/wtd_papercup.dar \
+					goods/watermine/watermine.dar
+
+	pack_all	dust_mt.tri \
+					goods/dust/wtd_petbottle_mt.dar \
+					goods/dust/wtd_smallpet_mt.dar
+
+	goods		dust/kan.kms
+	goods		dust/wtd_vul_figure/wtd_vul_figure.kms
+	goods		dust/wtd_hiyoko/wtd_hiyoko.kms
+	goods		dust/wtd_kan/wtd_kan.kms
+	goods		dust/wtd_papercup/wtd_papercup.kms
+	goods		watermine/watermine.kms						// 水中機雷
+
+	goods		dust/wtd_petbottle_mt.kms
+	goods		dust/wtd_smallpet_mt.kms
+//	goods		dust/wtd_hiyoko.kms
+
+//goods		demo_w00_sdr/demo_w00_sdr_r.kms
+
+	vib		etc/core_ele_01.vib
+	vib		etc/core_ele_02.vib
+	vib		etc/core_ele_03.vib
+
+	vib rai/ema_rai_onbu_start.vib
+	vib rai/ema_rai_onbu_end.vib
+	

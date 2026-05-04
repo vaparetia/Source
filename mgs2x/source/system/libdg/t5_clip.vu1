@@ -1,0 +1,1348 @@
+;
+;	t4_clip.vu1
+;	カリング、クリップ処理付き描画ＶＵ１プログラム（フォグ対応）
+;
+;	2000/02/26 K.Takabe
+;	$Id: t5_clip.vu1,v 1.1.1.3 2002/11/19 11:42:30 Yoshizawa1 Exp $
+;
+
+; ================================================================
+; 通常レジスタ割り当て
+; ================================================================
+;	vf00:fix
+;	vf01:定数読み込みベクトル
+;	vf02:プリミティブ座標変換スケール
+;	vf03:プリミティブ座標変換オフセット
+;	vf04:透視変換マトリクス
+;	vf05:透視変換マトリクス
+;	vf06:透視変換マトリクス
+;	vf07:透視変換マトリクス
+;	vf08:ローカルライトマトリクス
+;	vf09:ローカルライトマトリクス
+;	vf10:ローカルライトマトリクス
+;	vf11:フォグパラメータ
+;	vf12:ローカルカラーマトリクス
+;	vf13:ローカルカラーマトリクス
+;	vf14:ローカルカラーマトリクス
+;	vf15:ローカルカラーマトリクス
+;	vf16:頂点読み込み
+;	vf17:法線読み込み
+;	vf18:ＵＶ０読み込み
+;	vf19:変換後頂点
+;	vf20:変換後法線
+;	vf21:変換後ＵＶ
+;	vf22:書き込み頂点
+;	vf24:書き込みカラー
+;	vf25:書き込みＵＶ０
+;	vf26:計算用テンポラリ
+;	vf27:計算用テンポラリ
+;	vf28:エンベロープ計算用マトリクス
+;	vf29:エンベロープ計算用マトリクス
+;	vf30:エンベロープ計算用マトリクス
+;	vf31:エンベロープ計算用マトリクス
+
+;	vi00:０
+;	vi01:条件判断又はテンポラリ
+;	vi02:条件判断他
+;	vi03:定数記憶用
+;	vi04:定数記憶用
+;	vi06:
+;	vi07:キックフラグ読み込み用
+;	vi08:頂点数
+;	vi09:読み込みデータアドレス
+;	vi10:書き込みデータアドレス
+;	vi11:エンベロープマトリクス読み取りアドレス
+;	vi12:処理フラグ記憶用
+;	vi13:バッファ先頭アドレス
+;	vi14:クリップフラグ設定定数
+;	vi15:リンクレジスタ＆クリップ処理チェックフラグ
+
+
+
+; ================================================================
+; 光源計算付き透視変換ルーチン
+; ================================================================
+;	upper		.					lower		.
+ClipTransStart:
+	; 変換初期化処理
+	; バッファアドレス、ループ回数のセットとデータのプリロード処理
+	nop								xtop		vi13				; -,
+	nop								lq.xyzw		vf01,FV_PRM(vi00)	; -,定数読み込み
+	nop								lq.xyzw		vf02,FV_SCN(vi00)	; -,定数読みみ込
+	nop								lq.xyzw		vf03,FV_OFT(vi00)	; -,定数読み込み
+	nop								ilw.x		vi08,PACKDAT(vi13)	; -,処理頂点数の読み込み
+	muly.w		vf20,vf00,vf01		lq.yzw		vf04,GIFNORMAL(vi13); アルファ設定,GIFタグ生成
+	nop								iaddiu		vi01,vi00,0x4000	; -,GIFタグ生成
+	nop								iadd		vi01,vi01,vi01		; -,GIFタグ生成
+	nop								ior			vi01,vi01,vi08		; -,GIFタグ生成
+	nop								isw.x		vi01,WORK_TOP(vi13)	; -,GIFタグ生成
+	nop								sq.yzw		vf04,WORK_TOP(vi13)	; -,GIFタグ生成
+	nop								ilw.w		vi01,PACKDAT(vi13)	; -,バウンディングフラグ読み込み
+	nop								iaddiu		vi09,vi13,DATA_OFT	; -,データ先読みアドレス設定
+	nop								iaddiu		vi10,vi13,PACK_TOP	; -,データ書き戻しアドレス設定
+	nop								lq.xyzw		vf16,BUF_VERT(vi09)	; -,第１頂点読み込み
+	nop								lq.xyzw		vf17,BUF_NORM(vi09)	; -,第１法線（＆キック情報）読み込み
+	nop								lq.xyzw		vf18,BUF_UV0(vi09)	; -,第１ＵＶ値読み込み（高速ルーチン用）
+	nop								lq.xyzw		vf04,M_PRS0(vi13)	; -,透視変換マトリクスロード
+	nop								lq.xyzw		vf05,M_PRS1(vi13)	; -,透視変換マトリクスロード
+	itof0.xyzw	vf16,vf16			lq.xyzw		vf06,M_PRS2(vi13)	; -,透視変換マトリクスロード
+	nop								ibeq		vi01,vi00,FastTransStart	; -,クリップ処理なしルーチンへ
+	itof12.xyz	vf17,vf17			lq.xyzw		vf07,M_PRS3(vi13)	; -,透視変換マトリクスロード
+	nop								lq.xyzw		vf08,M_LIT0(vi13)	; -,ローカルライトマトリクス読み込み
+	nop								lq.xyzw		vf09,M_LIT1(vi13)	; -,ローカルライトマトリクス読み込み
+	nop								lq.xyzw		vf10,M_LIT2(vi13)	; -,ローカルライトマトリクス読み込み
+	nop								lq.xyzw		vf12,M_COL0(vi13)	; -,ローカルカラーマトリクス読み込み
+	nop								lq.xyzw		vf13,M_COL1(vi13)	; -,ローカルカラーマトリクス読み込み
+	nop								lq.xyzw		vf14,M_COL2(vi13)	; -,ローカルカラーマトリクス読み込み
+	nop								lq.xyzw		vf15,M_COL3(vi13)	; -,ローカルカラーマトリクス読み込み
+	nop								ilw.z		vi06,PACKDAT(vi13)	; -,固定フォグ値記憶
+	nop								fcset		0					; -,クリップチェック初期化
+	nop								iaddiu		vi15,vi00,0			; -,全体クリップチェックフラグクリア
+	nop								iaddiu		vi14,vi00,0x6000	; vi14 + vi14 = 0xc000
+	nop								iaddiu		vi03,vi00,0x0fff	; キックフラグ用マスク
+
+
+	; ディレイ処理の為の前処理
+	mulax.xyzw	ACC ,vf04,vf16		ilw.w		vi07,BUF_FLG(vi09)			; 透視変換,キックフラグ
+	madday.xyzw	ACC ,vf05,vf16		lq.xyzw		vf18,BUF_UV0(vi09)			; 透視変換,ＵＶ読み込み
+	maddaz.xyzw	ACC ,vf06,vf16		iaddiu		vi09,vi09,BUF_NEXT			; 透視変換,読み込みアドレス増加
+	maddw.xyzw	vf19,vf07,vf00		lq.xyzw		vf16,BUF_VERT(vi09)			; 透視変換,(先)頂点読み込み
+	minix.xyzw	vf24,vf20,vf01		iaddi		vi08,vi08,-1				; (遅)光源計算,カウンタのデクリメント
+	mulax.xyz	ACC ,vf08,vf17		nop										; 光源計算,(遅)ＵＶ座標
+	madday.xyz	ACC ,vf09,vf17		ior			vi07,vi07,vi03				; 光源計算,キックフラグ
+	clipw.xyz	vf19,vf19			div			Q,vf00w,vf19w				; クリップ,透視変換
+	maddz.xyz	vf20,vf10,vf17		sq.xyzw		vf19,SRC_XYZW-SRC_NEXT(vi09); 光源計算,クリップ用保存
+	ftoi4.xyz	vf22,vf22			lq.xyzw		vf17,BUF_NORM(vi09)			; (遅)透視変換,(先)法線読み込み
+	itof0.xyzw	vf16,vf16			nop										; (先)透視変換,(遅)クリップ用保存
+	itof12.xyz	vf18,vf18			fcand		vi01,0x3ffff				; ＵＶ座標,クリップ
+	maxx.xyzw	vf20,vf20,vf00		ibeq		vi01,vi00,l01				; 光源計算,クリップ
+	ftoi0.xyzw	vf24,vf24			iand		vi07,vi07,vi06				; (遅)光源計算,フォグ処理
+;	nop								ibltz		vi07,l01					; ●
+;	nop								iadd		vi01,vi14,vi14				; ●
+;	nop								ior			vi07,vi07,vi01				; ●
+;	nop								iaddiu		vi15,vi15,1					; ●
+l01:itof12.xyz	vf17,vf17			isw.w		vi07,DST_XYZ(vi10)			; (先)光源計算,描画キック
+	mulq.xyzw	vf22,vf19,Q			nop										; 透視変換,(遅)透視変換
+	mulax.xyz	ACC ,vf12,vf20		sq.xyzw		vf18,SRC_UV0-SRC_NEXT(vi09)	; 光源計算,クリップ用保存
+	madday.xyz	ACC ,vf13,vf20		nop										; 光源計算,(遅)光源計算
+	maddaz.xyz	ACC ,vf14,vf20		isw.w		vi07,SRC_FLG-SRC_NEXT(vi09)	; 光源計算,クリップ用保存
+	maddw.xyz	vf20,vf15,vf00		nop										; 光源計算,
+	mulq.xyz	vf25,vf18,Q			iaddiu		vi10,vi10,DST_NEXT			; ＵＶ座標,書き込みアドレス増加
+	mula.xyz	ACC ,vf22,vf02		ibgtz		vi08,_ClipTransLoop			; 透視変換,ループジャンプ
+	maddw.xyz	vf22,vf03,vf00		nop										; 透視変換,
+
+_ClipTransLoop:
+	; 頂点変換処理（途中で次の頂点の情報を読み込んでおく）
+	mulax.xyzw	ACC ,vf04,vf16		ilw.w		vi07,BUF_FLG(vi09)			; 透視変換,キックフラグ
+	madday.xyzw	ACC ,vf05,vf16		lq.xyzw		vf18,BUF_UV0(vi09)			; 透視変換,ＵＶ読み込み
+	maddaz.xyzw	ACC ,vf06,vf16		iaddiu		vi09,vi09,BUF_NEXT			; 透視変換,読み込みアドレス増加
+	maddw.xyzw	vf19,vf07,vf00		lq.xyzw		vf16,BUF_VERT(vi09)			; 透視変換,(先)頂点読み込み
+	minix.xyzw	vf24,vf20,vf01		iaddi		vi08,vi08,-1				; (遅)光源計算,カウンタのデクリメント
+	mulax.xyz	ACC ,vf08,vf17		sq.xyz		vf25,DST_UV0-DST_NEXT(vi10)	; 光源計算,(遅)ＵＶ座標
+	madday.xyz	ACC ,vf09,vf17		ior			vi07,vi07,vi03				; 光源計算,キックフラグ
+	clipw.xyz	vf19,vf19			div			Q,vf00w,vf19w				; クリップ,透視変換
+	maddz.xyz	vf20,vf10,vf17		sq.xyzw		vf19,SRC_XYZW-SRC_NEXT(vi09); 光源計算,クリップ用保存
+	ftoi4.xyz	vf22,vf22			lq.xyzw		vf17,BUF_NORM(vi09)			; (遅)透視変換,(先)法線読み込み
+	itof0.xyzw	vf16,vf16			sq.xyzw		vf24,SRC_COL-SRC_NEXT*2(vi09);(先)透視変換,(遅)クリップ用保存
+	itof12.xyz	vf18,vf18			fcand		vi01,0x3ffff				; ＵＶ座標,クリップ
+	maxx.xyzw	vf20,vf20,vf00		ibeq		vi01,vi00,l02				; 光源計算,クリップ
+	ftoi0.xyzw	vf24,vf24			iand		vi07,vi07,vi06				; (遅)光源計算,フォグ処理
+	nop								ibltz		vi07,l02					; ●
+	nop								iadd		vi01,vi14,vi14				; ●
+	nop								ior			vi07,vi07,vi01				; ●
+	nop								iaddiu		vi15,vi15,1					; ●
+l02:itof12.xyz	vf17,vf17			isw.w		vi07,DST_XYZ(vi10)			; (先)光源計算,描画キック
+	mulq.xyzw	vf22,vf19,Q			sq.xyz		vf22,DST_XYZ-DST_NEXT(vi10)	; 透視変換,(遅)透視変換
+	mulax.xyz	ACC ,vf12,vf20		sq.xyzw		vf18,SRC_UV0-SRC_NEXT(vi09)	; 光源計算,クリップ用保存
+	madday.xyz	ACC ,vf13,vf20		sq.xyzw		vf24,DST_COL-DST_NEXT(vi10)	; 光源計算,(遅)光源計算
+	maddaz.xyz	ACC ,vf14,vf20		isw.w		vi07,SRC_FLG-SRC_NEXT(vi09)	; 光源計算,クリップ用保存
+	maddw.xyz	vf20,vf15,vf00		nop										; 光源計算,
+	mulq.xyz	vf25,vf18,Q			iaddiu		vi10,vi10,DST_NEXT			; ＵＶ座標,書き込みアドレス増加
+	mula.xyz	ACC ,vf22,vf02		ibgtz		vi08,_ClipTransLoop			; 透視変換,ループジャンプ
+	maddw.xyz	vf22,vf03,vf00		nop										; 透視変換,
+
+	; 後始末
+	minix.xyzw	vf24,vf20,vf01		iaddiu		vi01,vi13,TX0_OFT			; (遅)光源計算,テクスチャ設定
+	ftoi4.xyz	vf22,vf22			xgkick		vi01						; (遅)透視変換,テクスチャ設定
+	nop								sq.xyz		vf25,DST_UV0-DST_NEXT(vi10)	; (遅)光源計算,(遅)ＵＶ座標
+	ftoi0.xyzw	vf24,vf24			sq.xyzw		vf24,SRC_COL-SRC_NEXT(vi09);-,(遅)クリップ用保存
+	nop								sq.xyz		vf22,DST_XYZ-DST_NEXT(vi10)	; -,(遅)透視変換
+	nop								sq.xyzw		vf24,DST_COL-DST_NEXT(vi10)	; -,(遅)光源計算
+
+	; 終端ダミーパケットをキックし待機
+	nop								iaddiu		vi01,vi13,WORK_TOP	; 
+	nop								xgkick		vi01				; ＧＩＦへのキック
+	nop								b			ClipStart			; 
+	nop								nop								; 
+
+
+
+
+; ================================================================
+; エンベロープ対応ルーチン
+; ================================================================
+;	upper		.					lower		.
+ClipTransEnvelopeStart:
+	; 変換初期化処理
+	; バッファアドレス、ループ回数のセットとデータのプリロード処理
+	nop								xtop		vi13				; -,
+	nop								lq.xyzw		vf01,FV_PRM(vi00)	; -,定数読み込み
+	nop								lq.xyzw		vf02,FV_SCN(vi00)	; -,定数読みみ込
+	nop								lq.xyzw		vf03,FV_OFT(vi00)	; -,定数読み込み
+	nop								ilw.x		vi08,PACKDAT(vi13)	; -,処理頂点数の読み込み
+	muly.w		vf20,vf00,vf01		lq.yzw		vf04,GIFNORMAL(vi13); -,GIFタグ生成
+	nop								iaddiu		vi01,vi00,0x4000	; -,GIFタグ生成
+	nop								iadd		vi01,vi01,vi01		; -,GIFタグ生成
+	nop								ior			vi01,vi01,vi08		; -,GIFタグ生成
+	nop								isw.x		vi01,WORK_TOP(vi13)	; -,GIFタグ生成
+	nop								sq.yzw		vf04,WORK_TOP(vi13)	; -,GIFタグ生成
+	nop								ilw.w		vi01,PACKDAT(vi13)	; -,バウンディングフラグ読み込み
+	nop								iaddiu		vi09,vi13,DATA_OFT	; -,データ先読みアドレス設定
+	nop								iaddiu		vi10,vi13,PACK_TOP	; -,データ書き戻しアドレス設定
+	nop								lq.xyzw		vf16,BUF_VERT(vi09)	; -,第１頂点読み込み
+	nop								lq.xyzw		vf17,BUF_NORM(vi09)	; -,第１法線（＆キック情報）読み込み
+	nop								lq.xyzw		vf18,BUF_UV0(vi09)	; -,第１ＵＶ値読み込み（高速ルーチン用）
+	nop								lq.xyzw		vf28,M_SUP0(vi13)	; エンベロープ補正マトリクス読み込み
+	nop								lq.xyzw		vf29,M_SUP1(vi13)	; エンベロープ補正マトリクス読み込み
+	itof0.xyz	vf16,vf16			lq.xyzw		vf30,M_SUP2(vi13)	; エンベロープ補正マトリクス読み込み
+	itof12.w	vf26,vf16			lq.xyzw		vf31,M_SUP3(vi13)	; エンベロープ補正マトリクス読み込み
+	itof12.xyz	vf17,vf17			lq.xyzw		vf04,M_PRS0(vi13)	; -,透視変換マトリクスロード
+	nop								lq.xyzw		vf05,M_PRS1(vi13)	; -,透視変換マトリクスロード
+	mulax.xyz	ACC ,vf28,vf16		lq.xyzw		vf06,M_PRS2(vi13)	; trans_v,透視変換マトリクスロード
+	madday.xyz	ACC ,vf29,vf16		lq.xyzw		vf07,M_PRS3(vi13)	; trans_v,透視変換マトリクスロード
+	maddaz.xyz	ACC ,vf30,vf16		lq.xyzw		vf08,M_LIT0(vi13)	; trans_v,ローカルライトマトリクス読み込み
+	maddw.xyz	vf26,vf31,vf00		lq.xyzw		vf09,M_LIT1(vi13)	; trans_v,ローカルライトマトリクス読み込み
+	sub.w		vf27,vf00,vf26		lq.xyzw		vf10,M_LIT2(vi13)	; make v&n,ローカルライトマトリクス読み込み
+	mulax.xyz	ACC ,vf28,vf17		lq.xyzw		vf12,M_COL0(vi13)	; trans_n,ローカルカラーマトリクス読み込み
+	madday.xyz	ACC ,vf29,vf17		lq.xyzw		vf13,M_COL1(vi13)	; trans_n,ローカルカラーマトリクス読み込み
+	maddz.xyz	vf27,vf30,vf17		lq.xyzw		vf14,M_COL2(vi13)	; trans_n,ローカルカラーマトリクス読み込み
+	mulaw.xyz	ACC ,vf16,vf26		lq.xyzw		vf15,M_COL3(vi13)	; make v,ローカルカラーマトリクス読み込み
+	maddw.xyz	vf16,vf26,vf27		ilw.z		vi06,PACKDAT(vi13)	; make v,固定フォグ値記憶
+	mulaw.xyz	ACC ,vf17,vf26		iaddiu		vi14,vi00,0x6000	; make n,vi14 + vi14 = 0xc000
+	nop								ibeq		vi01,vi00,FastTransEnvelopeStart	; -,クリップ処理なしルーチンへ
+	maddw.xyz	vf17,vf27,vf27		fcset		0					; make n,クリップチェック初期化
+	nop								iaddiu		vi15,vi00,0			; アルファ設定,全体クリップチェックフラグクリア
+	nop								iaddiu		vi03,vi00,0x0fff	; キックフラグ用マスク
+
+	; ディレイ処理の為の前処理
+	mulax.xyzw	ACC ,vf04,vf16		ilw.w		vi07,BUF_FLG(vi09)			; 透視変換,キックフラグ
+	madday.xyzw	ACC ,vf05,vf16		lq.xyzw		vf18,BUF_UV0(vi09)			; 透視変換,ＵＶ読み込み
+	maddaz.xyzw	ACC ,vf06,vf16		iaddiu		vi09,vi09,BUF_NEXT			; 透視変換,読み込みアドレス増加
+	maddw.xyzw	vf19,vf07,vf00		lq.xyzw		vf16,BUF_VERT(vi09)			; 透視変換,(先)頂点読み込み
+	minix.xyzw	vf24,vf20,vf01		iaddi		vi08,vi08,-1				; (遅)光源計算,カウンタのデクリメント
+	mulax.xyz	ACC ,vf08,vf17		nop										; 光源計算,(遅)ＵＶ座標
+	madday.xyz	ACC ,vf09,vf17		ior			vi07,vi07,vi03				; 光源計算,キックフラグ
+	clipw.xyz	vf19,vf19			div			Q,vf00w,vf19w				; クリップ,透視変換
+	maddz.xyz	vf20,vf10,vf17		sq.xyzw		vf19,SRC_XYZW-SRC_NEXT(vi09); 光源計算,クリップ用保存
+	ftoi4.xyz	vf22,vf22			lq.xyzw		vf17,BUF_NORM(vi09)			; (遅)透視変換,(先)法線読み込み
+	itof0.xyz	vf16,vf16			nop										; (先)透視変換,(遅)クリップ用保存
+	itof12.w	vf26,vf16			nop										; (先)エンベロープ,
+	itof12.xyz	vf18,vf18			fcand		vi01,0x3ffff				; ＵＶ座標,クリップ
+	maxx.xyzw	vf20,vf20,vf00		ibeq		vi01,vi00,l03				; 光源計算,クリップ
+	ftoi0.xyzw	vf24,vf24			iand		vi07,vi07,vi06				; (遅)光源計算,フォグ処理
+;	nop								ibltz		vi07,l03					; ●
+;	nop								iadd		vi01,vi14,vi14				; ●
+;	nop								ior			vi07,vi07,vi01				; ●
+;	nop								iaddiu		vi15,vi15,1					; ●
+l03:itof12.xyz	vf17,vf17			isw.w		vi07,DST_XYZ(vi10)			; (先)光源計算,描画キック
+	mulq.xyzw	vf22,vf19,Q			nop										; 透視変換,(遅)透視変換
+	mulax.xyz	ACC ,vf12,vf20		sq.xyzw		vf18,SRC_UV0-SRC_NEXT(vi09)	; 光源計算,クリップ用保存
+	madday.xyz	ACC ,vf13,vf20		nop										; 光源計算,(遅)光源計算
+	maddaz.xyz	ACC ,vf14,vf20		isw.w		vi07,SRC_FLG-SRC_NEXT(vi09)	; 光源計算,クリップ用保存
+	maddw.xyz	vf20,vf15,vf00		ibgtz		vi08,_ClipTransEnvelopeLoop	; 光源計算,ループジャンプ
+	mulq.xyz	vf25,vf18,Q			iaddiu		vi10,vi10,DST_NEXT			; ＵＶ座標,書き込みアドレス増加
+
+_ClipTransEnvelopeLoop:
+	; 頂点変換処理（途中で次の頂点の情報を読み込んでおく）
+	mulax.xyz	ACC ,vf28,vf16		nop								; trans_v
+	madday.xyz	ACC ,vf29,vf16		nop								; trans_v,-
+	maddaz.xyz	ACC ,vf30,vf16		nop								; trans_v,make v
+	maddw.xyz	vf26,vf31,vf00		nop								; trans_v,-
+	sub.w		vf27,vf00,vf26		nop								; make v&n,-
+	mulax.xyz	ACC ,vf28,vf17		nop								; trans_n,-
+	madday.xyz	ACC ,vf29,vf17		nop								; trans_n,-
+	maddz.xyz	vf27,vf30,vf17		nop								; trans_n,-
+	mulaw.xyz	ACC ,vf16,vf26		nop								; make v,-
+	maddw.xyz	vf16,vf26,vf27		nop								; make v,-
+	mulaw.xyz	ACC ,vf17,vf26		nop								; make n,-
+	maddw.xyz	vf17,vf27,vf27		nop								; make n,-
+	mula.xyz	ACC ,vf22,vf02		nop										; 透視変換,
+	maddw.xyz	vf22,vf03,vf00		nop										; 透視変換,
+
+	mulax.xyzw	ACC ,vf04,vf16		ilw.w		vi07,BUF_FLG(vi09)			; 透視変換,キックフラグ
+	madday.xyzw	ACC ,vf05,vf16		lq.xyzw		vf18,BUF_UV0(vi09)			; 透視変換,ＵＶ読み込み
+	maddaz.xyzw	ACC ,vf06,vf16		iaddiu		vi09,vi09,BUF_NEXT			; 透視変換,読み込みアドレス増加
+	maddw.xyzw	vf19,vf07,vf00		lq.xyzw		vf16,BUF_VERT(vi09)			; 透視変換,(先)頂点読み込み
+	minix.xyzw	vf24,vf20,vf01		iaddi		vi08,vi08,-1				; (遅)光源計算,カウンタのデクリメント
+	mulax.xyz	ACC ,vf08,vf17		sq.xyz		vf25,DST_UV0-DST_NEXT(vi10)	; 光源計算,(遅)ＵＶ座標
+	madday.xyz	ACC ,vf09,vf17		ior			vi07,vi07,vi03				; 光源計算,キックフラグ
+	clipw.xyz	vf19,vf19			div			Q,vf00w,vf19w				; クリップ,透視変換
+	maddz.xyz	vf20,vf10,vf17		sq.xyzw		vf19,SRC_XYZW-SRC_NEXT(vi09); 光源計算,クリップ用保存
+	ftoi4.xyz	vf22,vf22			lq.xyzw		vf17,BUF_NORM(vi09)			; (遅)透視変換,(先)法線読み込み
+	itof0.xyz	vf16,vf16			sq.xyzw		vf24,SRC_COL-SRC_NEXT*2(vi09);(先)透視変換,(遅)クリップ用保存
+	itof12.w	vf26,vf16			nop										; (先)エンベロープ,
+	itof12.xyz	vf18,vf18			fcand		vi01,0x3ffff				; ＵＶ座標,クリップ
+	maxx.xyzw	vf20,vf20,vf00		ibeq		vi01,vi00,l04				; 光源計算,クリップ
+	ftoi0.xyzw	vf24,vf24			iand		vi07,vi07,vi06				; (遅)光源計算,フォグ処理
+	nop								ibltz		vi07,l04					; ●
+	nop								iadd		vi01,vi14,vi14				; ●
+	nop								ior			vi07,vi07,vi01				; ●
+	nop								iaddiu		vi15,vi15,1					; ●
+l04:itof12.xyz	vf17,vf17			isw.w		vi07,DST_XYZ(vi10)			; (先)光源計算,描画キック
+	mulq.xyzw	vf22,vf19,Q			sq.xyz		vf22,DST_XYZ-DST_NEXT(vi10)	; 透視変換,(遅)透視変換
+	mulax.xyz	ACC ,vf12,vf20		sq.xyzw		vf18,SRC_UV0-SRC_NEXT(vi09)	; 光源計算,クリップ用保存
+	madday.xyz	ACC ,vf13,vf20		sq.xyzw		vf24,DST_COL-DST_NEXT(vi10)	; 光源計算,(遅)光源計算
+	maddaz.xyz	ACC ,vf14,vf20		isw.w		vi07,SRC_FLG-SRC_NEXT(vi09)	; 光源計算,クリップ用保存
+	maddw.xyz	vf20,vf15,vf00		ibgtz		vi08,_ClipTransEnvelopeLoop	; 光源計算,ループジャンプ
+	mulq.xyz	vf25,vf18,Q			iaddiu		vi10,vi10,DST_NEXT			; ＵＶ座標,書き込みアドレス増加
+
+	; 後始末
+	mula.xyz	ACC ,vf22,vf02		nop										; 透視変換,
+	maddw.xyz	vf22,vf03,vf00		nop										; 透視変換,
+	minix.xyzw	vf24,vf20,vf01		iaddiu		vi01,vi13,TX0_OFT			; (遅)光源計算,テクスチャ設定
+	ftoi4.xyz	vf22,vf22			xgkick		vi01						; (遅)透視変換,テクスチャ設定
+	nop								sq.xyz		vf25,DST_UV0-DST_NEXT(vi10)	; (遅)光源計算,(遅)ＵＶ座標
+	ftoi0.xyzw	vf24,vf24			sq.xyzw		vf24,SRC_COL-SRC_NEXT(vi09);-,(遅)クリップ用保存
+	nop								sq.xyz		vf22,DST_XYZ-DST_NEXT(vi10)	; -,(遅)透視変換
+	nop								sq.xyzw		vf24,DST_COL-DST_NEXT(vi10)	; -,(遅)光源計算
+
+	; 終端ダミーパケットをキックし待機
+	nop								iaddiu		vi01,vi13,WORK_TOP	; 
+	nop								xgkick		vi01				; ＧＩＦへのキック
+	nop								b			ClipStart			; 
+	nop								nop								; 
+
+
+; ================================================================
+; プリシェード用透視変換ルーチン
+; ================================================================
+; ＜補足＞
+; vf20を最終書き出し頂点用に使用
+;	vf26:キックフラグ設定用
+;	vf31:フォグ係数
+; 
+;	upper		.					lower		.
+ClipPreshadeTransStart:
+	; 変換初期化処理
+	; バッファアドレス、ループ回数のセットとデータのプリロード処理
+	nop								xtop		vi13				; -,
+	nop								lq.xyzw		vf01,FV_PRM(vi00)	; -,定数読み込み
+	nop								lq.xyzw		vf02,FV_SCN(vi00)	; -,定数読みみ込
+	nop								lq.xyzw		vf03,FV_OFT(vi00)	; -,定数読み込み
+	nop								ilw.x		vi08,PACKDAT(vi13)	; -,処理頂点数の読み込み
+	muly.w		vf17,vf00,vf01		lq.yzw		vf04,GIFNORMAL(vi13); -,GIFタグ生成
+	nop								iaddiu		vi01,vi00,0x4000	; -,GIFタグ生成
+	nop								iadd		vi01,vi01,vi01		; -,GIFタグ生成
+	nop								ior			vi01,vi01,vi08		; -,GIFタグ生成
+	ftoi0.w		vf17,vf17			isw.x		vi01,WORK_TOP(vi13)	; -,GIFタグ生成
+	nop								sq.yzw		vf04,WORK_TOP(vi13)	; -,GIFタグ生成
+	nop								ilw.w		vi01,PACKDAT(vi13)	; -,バウンディングフラグ読み込み
+	nop								iaddiu		vi09,vi13,DATA_OFT	; -,データ先読みアドレス設定
+	nop								iaddiu		vi10,vi13,PACK_TOP	; -,データ書き戻しアドレス設定
+	nop								lq.xyzw		vf16,BUF_VERT(vi09)	; -,第１頂点読み込み
+	nop								lq.xyz		vf17,BUF_NORM(vi09)	; -,第１法線（＆キック情報）読み込み
+	nop								lq.xyzw		vf18,BUF_UV0(vi09)	; -,第１ＵＶ値読み込み
+	nop								lq.xyzw		vf04,M_PRS0(vi13)	; -,透視変換マトリクスロード
+	itof0.xyzw	vf16,vf16			lq.xyzw		vf05,M_PRS1(vi13)	; -,透視変換マトリクスロード
+	itof0.xyzw	vf23,vf17			lq.xyzw		vf06,M_PRS2(vi13)	; -,透視変換マトリクスロード
+	nop								ibeq		vi01,vi00,FastPreshadeTransStart ;
+	nop								lq.xyzw		vf07,M_PRS3(vi13)	; -,透視変換マトリクスロード
+	nop								lq.xyzw		vf31,FV_FOG(vi00)	; フォグ係数読み込み
+	nop								iaddiu		vi06,vi00,0x4000	;
+	nop								iadd		vi06,vi06,vi06		; vi06 = 0x8000
+	nop								iaddiu		vi04,vi06,0x4fff	; vi04 = 0xcfff
+	nop								iaddiu		vi15,vi00,0			; 
+	nop								fcset		0						; クリップフラグクリア
+
+	; ディレイ処理の為の前処理
+	; 頂点変換処理（途中で次の頂点の情報を読み込んでおく）
+	mulax.xyzw	ACC ,vf04,vf16		nop										; 透視変換,(遅)クリップ用保存
+	minix.w		vf22,vf22,vf01		ilw.w		vi07,BUF_FLG(vi09)			; (遅)フォグ,描画キック
+	madday.xyzw	ACC ,vf05,vf16		iaddiu		vi09,vi09,BUF_NEXT			; 透視変換,先読みアドレス増加
+	maddaz.xyzw	ACC ,vf06,vf16		nop										; 透視変換,(遅)ＵＶ座標
+	maddw.xyzw	vf19,vf07,vf00		lq.xyzw		vf16,BUF_VERT(vi09)			; 透視変換,(先)頂点読み込み
+	add.w		vf22,vf22,vf26		sq.xyzw		vf23,SRC_COL-SRC_NEXT(vi09)	; (遅)フォグ,クリップ用保存
+	mula.xyz	ACC ,vf22,vf02		sq.xyzw		vf17,DST_COL(vi10)			; (遅)透視変換,光源計算
+	maddw.xyz	vf22,vf03,vf00		iand		vi05,vi07,vi06				; (遅)透視変換,キックフラグ
+	clipw.xyz	vf19,vf19			div			Q,vf00w,vf19w				; クリップ,透視変換
+	itof12.xyz	vf25,vf18			sq.xyzw		vf19,SRC_XYZW-SRC_NEXT(vi09); ＳＴ座標,クリップ用保存
+	mulax.w		ACC ,vf19,vf31		lq.xyzw		vf18,BUF_UV0(vi09)			; フォグ,(先)ＵＶ読み込み
+	maddy.w		vf19,vf00,vf31		lq.xyz		vf17,BUF_NORM(vi09)			; フォグ,(先)光源計算
+	ftoi4.xyzw	vf20,vf22			fcand		vi01,0x3ffff				; (遅)透視変換,クリップ
+	itof0.xyzw	vf16,vf16			ibeq		vi01,vi00,l05				; (先)透視変換,クリップ
+	nop								isubiu		vi08,vi08,1					; -,カウンタのデクリメント
+;	nop								ibltz		vi05,l05					; ●
+;	nop								ior			vi05,vi05,vi06				; ●
+;	nop								ior			vi07,vi07,vi04				; ●
+;	nop								iaddiu		vi15,vi15,1					; ●
+l05:mulq.xyz	vf22,vf19,Q			mfir.w		vf26,vi05					; 透視変換,キックフラグ
+	maxx.w		vf22,vf19,vf00		nop										; フォグ,(遅)透視変換
+	mulq.xyz	vf25,vf25,Q			sq.xyzw		vf25,SRC_UV0-SRC_NEXT(vi09)	; ＳＴ座標,クリップ用保存
+	itof0.xyzw	vf23,vf17			ibgtz		vi08,_ClipPreshadeTransLoop	; 光源計算,ループジャンプ
+	itof4.w		vf26,vf26			iaddiu		vi10,vi10,DST_NEXT			; キックフラグ,書き込みアドレス増加
+
+_ClipPreshadeTransLoop:
+	; 頂点変換処理（途中で次の頂点の情報を読み込んでおく）
+	mulax.xyzw	ACC ,vf04,vf16		isw.w		vi07,SRC_FLG-SRC_NEXT(vi09)	; 透視変換,(遅)クリップ用保存
+	minix.w		vf22,vf22,vf01		ilw.w		vi07,BUF_FLG(vi09)			; (遅)フォグ,描画キック
+	madday.xyzw	ACC ,vf05,vf16		iaddiu		vi09,vi09,BUF_NEXT			; 透視変換,先読みアドレス増加
+	maddaz.xyzw	ACC ,vf06,vf16		sq.xyz		vf25,DST_UV0-DST_NEXT(vi10)	; 透視変換,(遅)ＵＶ座標
+	maddw.xyzw	vf19,vf07,vf00		lq.xyzw		vf16,BUF_VERT(vi09)			; 透視変換,(先)頂点読み込み
+	add.w		vf22,vf22,vf26		sq.xyzw		vf23,SRC_COL-SRC_NEXT(vi09)	;(遅)フォグ,クリップ用保存
+	mula.xyz	ACC ,vf22,vf02		sq.xyzw		vf17,DST_COL(vi10)			; (遅)透視変換,光源計算
+	maddw.xyz	vf22,vf03,vf00		iand		vi05,vi07,vi06				; (遅)透視変換,キックフラグ
+	clipw.xyz	vf19,vf19			div			Q,vf00w,vf19w				; クリップ,透視変換
+	itof12.xyz	vf25,vf18			sq.xyzw		vf19,SRC_XYZW-SRC_NEXT(vi09); ＳＴ座標,クリップ用保存
+	mulax.w		ACC ,vf19,vf31		lq.xyzw		vf18,BUF_UV0(vi09)			; フォグ,(先)ＵＶ読み込み
+	maddy.w		vf19,vf00,vf31		lq.xyz		vf17,BUF_NORM(vi09)			; フォグ,(先)光源計算
+	ftoi4.xyzw	vf20,vf22			fcand		vi01,0x3ffff				; (遅)透視変換,クリップ
+	itof0.xyzw	vf16,vf16			ibeq		vi01,vi00,l06				; (先)透視変換,クリップ
+	nop								isubiu		vi08,vi08,1					; -,カウンタのデクリメント
+	nop								ibltz		vi05,l06					; ●
+	nop								ior			vi05,vi05,vi06				; ●
+	nop								ior			vi07,vi07,vi04				; ●
+	nop								b			l06							; ●
+	nop								iaddiu		vi15,vi15,1					; ●
+l06:mulq.xyz	vf22,vf19,Q			mfir.w		vf26,vi05					; 透視変換,キックフラグ
+	maxx.w		vf22,vf19,vf00		sq.xyzw		vf20,DST_XYZ-DST_NEXT(vi10)	; フォグ,(遅)透視変換
+	mulq.xyz	vf25,vf25,Q			sq.xyzw		vf25,SRC_UV0-SRC_NEXT(vi09)	; ＳＴ座標,クリップ用保存
+	itof0.xyzw	vf23,vf17			ibgtz		vi08,_ClipPreshadeTransLoop	; 光源計算,ループジャンプ
+	itof4.w		vf26,vf26			iaddiu		vi10,vi10,DST_NEXT			; キックフラグ,書き込みアドレス増加
+
+	; 後始末
+	minix.w		vf22,vf22,vf01		isw.w		vi07,SRC_FLG-SRC_NEXT(vi09)	; (遅)フォグ,(遅)クリップ用保存
+	add.w		vf22,vf22,vf26		sq.xyz		vf25,DST_UV0-DST_NEXT(vi10)	; (遅)フォグ,(遅)ＵＶ座標
+	mula.xyz	ACC ,vf22,vf02		nop										; (遅)透視変換,
+	maddw.xyz	vf22,vf03,vf00		iaddiu		vi01,vi13,TX0_OFT			; (遅)透視変換,テクスチャ設定
+	ftoi4.xyzw	vf22,vf22			xgkick		vi01						; (遅)透視変換,テクスチャ設定
+	nop								sq.xyzw		vf22,DST_XYZ-DST_NEXT(vi10)	; -,(遅)透視変換
+
+	; 終端ダミーパケットをキックし待機
+	nop								iaddiu		vi01,vi13,WORK_TOP	; 
+	nop								xgkick		vi01				; ＧＩＦへのキック
+	nop								b			ClipStartFog		; 
+	nop								nop								; 
+
+
+; ================================================================
+; プリシェード用透視変換ルーチン
+; ================================================================
+; ＜補足＞
+; vf20を最終書き出し頂点用に使用
+;	vf26:キックフラグ設定用
+;	vf27:１つ前の頂点
+;	vf28:１つ前のベクトル
+;	vf29:ベクトル計算用テンポラリ
+;	vf30:外積計算結果
+;	vf31:フォグ係数
+; 
+;	upper		.					lower		.
+CullClipPreshadeTransStart:
+	; 変換初期化処理
+	; バッファアドレス、ループ回数のセットとデータのプリロード処理
+	nop								xtop		vi13				; -,
+	nop								lq.xyzw		vf01,FV_PRM(vi00)	; -,定数読み込み
+	nop								lq.xyzw		vf02,FV_SCN(vi00)	; -,定数読みみ込
+	nop								lq.xyzw		vf03,FV_OFT(vi00)	; -,定数読み込み
+	nop								ilw.x		vi08,PACKDAT(vi13)	; -,処理頂点数の読み込み
+	muly.w		vf17,vf00,vf01		lq.yzw		vf04,GIFNORMAL(vi13); -,GIFタグ生成
+	nop								iaddiu		vi01,vi00,0x4000	; -,GIFタグ生成
+	nop								iadd		vi01,vi01,vi01		; -,GIFタグ生成
+	nop								ior			vi01,vi01,vi08		; -,GIFタグ生成
+	ftoi0.w		vf17,vf17			isw.x		vi01,WORK_TOP(vi13)	; -,GIFタグ生成
+	nop								sq.yzw		vf04,WORK_TOP(vi13)	; -,GIFタグ生成
+	nop								iaddiu		vi09,vi13,DATA_OFT	; -,データ先読みアドレス設定
+	nop								iaddiu		vi10,vi13,PACK_TOP	; -,データ書き戻しアドレス設定
+	nop								lq.xyzw		vf16,BUF_VERT(vi09)	; -,第１頂点読み込み
+	nop								lq.xyz		vf17,BUF_NORM(vi09)	; -,第１法線（＆キック情報）読み込み
+	nop								lq.xyzw		vf18,BUF_UV0(vi09)	; -,第１ＵＶ値読み込み
+	nop								lq.xyzw		vf04,M_PRS0(vi13)	; -,透視変換マトリクスロード
+	itof0.xyzw	vf16,vf16			lq.xyzw		vf05,M_PRS1(vi13)	; -,透視変換マトリクスロード
+	itof0.xyzw	vf23,vf17			lq.xyzw		vf06,M_PRS2(vi13)	; -,透視変換マトリクスロード
+	nop								ibeq		vi01,vi00,CullFastPreshadeTransStart ;
+	nop								lq.xyzw		vf07,M_PRS3(vi13)	; -,透視変換マトリクスロード
+	nop								lq.xyzw		vf31,FV_FOG(vi00)	; フォグ係数読み込み
+	nop								iaddiu		vi06,vi00,0x4000	; 
+	nop								iadd		vi06,vi06,vi06		; vi06 = 0x8000
+	nop								iaddiu		vi04,vi06,0x4000	; vi04 = 0xc000
+	nop								iaddiu		vi15,vi00,0			; 
+	nop								fcset		0						; クリップフラグクリア
+
+	; ディレイ処理の為の前処理
+	; 頂点変換処理（途中で次の頂点の情報を読み込んでおく）
+	mulax.xyzw	ACC ,vf04,vf16		nop										; 透視変換,(遅)クリップ用保存
+	minix.w		vf22,vf22,vf01		ilw.w		vi07,BUF_FLG(vi09)			; (遅)フォグ,描画キック
+	madday.xyzw	ACC ,vf05,vf16		iaddiu		vi09,vi09,BUF_NEXT			; 透視変換,先読みアドレス増加
+	maddaz.xyzw	ACC ,vf06,vf16		nop										; 透視変換,(遅)ＵＶ座標
+	maddw.xyzw	vf19,vf07,vf00		lq.xyzw		vf16,BUF_VERT(vi09)			; 透視変換,(先)頂点読み込み
+	add.w		vf22,vf22,vf26		sq.xyzw		vf23,SRC_COL-SRC_NEXT(vi09)	; (遅)フォグ,クリップ用保存
+	mula.xyz	ACC ,vf22,vf02		sq.xyzw		vf17,DST_COL(vi10)			; (遅)透視変換,光源計算
+	maddw.xyz	vf22,vf03,vf00		iand		vi05,vi07,vi06				; (遅)透視変換,キックフラグ
+	clipw.xyz	vf19,vf19			div			Q,vf00w,vf19w				; クリップ,透視変換
+	mulaw.xyz	ACC ,vf27,vf19		nop										; カリング,-
+	msubw.xyz	vf29,vf19,vf27		move.xyzw	vf27,vf19					; カリング,カリング
+	itof12.xyz	vf25,vf18			sq.xyzw		vf19,SRC_XYZW-SRC_NEXT(vi09); ＳＴ座標,クリップ用保存
+	mulax.w		ACC ,vf19,vf31		lq.xyzw		vf18,BUF_UV0(vi09)			; フォグ,(先)ＵＶ読み込み
+	maddy.w		vf19,vf00,vf31		lq.xyz		vf17,BUF_NORM(vi09)			; フォグ,(先)光源計算
+	opmula.xyz	ACC ,vf28,vf29		iaddiu		vi02,vi00,0x0020			; カリング,カリング
+	opmsub.xyz	vf30,vf29,vf28		move.xyzw	vf28,vf29					; カリング,カリング
+	ftoi4.xyzw	vf20,vf22			fcand		vi01,0x3ffff				; (遅)透視変換,クリップ
+	itof0.xyzw	vf16,vf16			ibeq		vi01,vi00,l07				; (先)透視変換,クリップ
+	nop								isubiu		vi08,vi08,1					; -,カウンタのデクリメント
+;	nop								ibltz		vi05,l07					; ●
+;	nop								ior			vi05,vi05,vi06				; ●
+;	nop								ior			vi07,vi07,vi04				; ●
+;	nop								iaddiu		vi15,vi15,1					; ●
+l07:mulq.xyz	vf22,vf19,Q			mfir.w		vf26,vi05					; 透視変換,キックフラグ
+	maxx.w		vf22,vf19,vf00		nop										; フォグ,(遅)透視変換
+	mulq.xyz	vf25,vf25,Q			sq.xyzw		vf25,SRC_UV0-SRC_NEXT(vi09)	; ＳＴ座標,クリップ用保存
+	itof0.xyzw	vf23,vf17			ibgtz		vi08,_CullClipPreshadeTransLoop	; 光源計算,ループジャンプ
+	itof4.w		vf26,vf26			iaddiu		vi10,vi10,DST_NEXT			; キックフラグ,書き込みアドレス増加
+
+_CullClipPreshadeTransLoop:
+	; 頂点変換処理（途中で次の頂点の情報を読み込んでおく）
+	mulax.xyzw	ACC ,vf04,vf16		isw.w		vi07,SRC_FLG-SRC_NEXT(vi09)	; 透視変換,(遅)クリップ用保存
+	minix.w		vf22,vf22,vf01		ilw.w		vi07,BUF_FLG(vi09)			; (遅)フォグ,描画キック
+	madday.xyzw	ACC ,vf05,vf16		iaddiu		vi09,vi09,BUF_NEXT			; 透視変換,先読みアドレス増加
+	maddaz.xyzw	ACC ,vf06,vf16		sq.xyz		vf25,DST_UV0-DST_NEXT(vi10)	; 透視変換,(遅)ＵＶ座標
+	maddw.xyzw	vf19,vf07,vf00		lq.xyzw		vf16,BUF_VERT(vi09)			; 透視変換,(先)頂点読み込み
+	add.w		vf22,vf22,vf26		sq.xyzw		vf23,SRC_COL-SRC_NEXT(vi09)	;(遅)フォグ,クリップ用保存
+	mula.xyz	ACC ,vf22,vf02		sq.xyzw		vf17,DST_COL(vi10)			; (遅)透視変換,光源計算
+	maddw.xyz	vf22,vf03,vf00		iand		vi05,vi07,vi06				; (遅)透視変換,キックフラグ
+	clipw.xyz	vf19,vf19			div			Q,vf00w,vf19w				; クリップ,透視変換
+	mulaw.xyz	ACC ,vf19,vf27		iaddiu		vi03,vi00,0x0030			; カリング,カリング
+	msubw.xyz	vf29,vf27,vf19		move.xyzw	vf27,vf19					; カリング,カリング
+	itof12.xyz	vf25,vf18			sq.xyzw		vf19,SRC_XYZW-SRC_NEXT(vi09); ＳＴ座標,クリップ用保存
+	mulax.w		ACC ,vf19,vf31		lq.xyzw		vf18,BUF_UV0(vi09)			; フォグ,(先)ＵＶ読み込み
+	maddy.w		vf19,vf00,vf31		lq.xyz		vf17,BUF_NORM(vi09)			; フォグ,(先)光源計算
+	opmula.xyz	ACC ,vf28,vf29		iaddiu		vi02,vi00,0x0020			; カリング,カリング
+	opmsub.xyz	vf30,vf29,vf28		move.xyzw	vf28,vf29					; カリング,カリング
+	ftoi4.xyzw	vf20,vf22			fcand		vi01,0x3ffff				; (遅)透視変換,クリップ
+	itof0.xyzw	vf16,vf16			ibeq		vi01,vi00,l09				; (先)透視変換,クリップ
+	nop								isubiu		vi08,vi08,1					; -,カウンタのデクリメント
+	nop								ibltz		vi05,l08					; ●
+	nop								ior			vi05,vi05,vi06				; ● vi05 |= 0x8000
+	nop								ior			vi07,vi07,vi04				; ● vi07 |= 0xc000
+	nop								b			l08							; ●
+	nop								iaddiu		vi15,vi15,1					; ●
+l09:nop								iand		vi03,vi03,vi07				; -,カリング
+	nop								fmand		vi02,vi02					; -,カリング
+	nop								ibne		vi02,vi03,l08				; -,カリング
+	nop								nop										; -,カリング
+	nop								ior			vi05,vi05,vi06				; -,カリング
+l08:mulq.xyz	vf22,vf19,Q			mfir.w		vf26,vi05					; 透視変換,キックフラグ
+	maxx.w		vf22,vf19,vf00		sq.xyzw		vf20,DST_XYZ-DST_NEXT(vi10)	; フォグ,(遅)透視変換
+	mulq.xyz	vf25,vf25,Q			sq.xyzw		vf25,SRC_UV0-SRC_NEXT(vi09)	; ＳＴ座標,クリップ用保存
+	itof0.xyzw	vf23,vf17			ibgtz		vi08,_CullClipPreshadeTransLoop	; 光源計算,ループジャンプ
+	itof4.w		vf26,vf26			iaddiu		vi10,vi10,DST_NEXT			; キックフラグ,書き込みアドレス増加
+
+	; 後始末
+	minix.w		vf22,vf22,vf01		isw.w		vi07,SRC_FLG-SRC_NEXT(vi09)	; (遅)フォグ,(遅)クリップ用保存
+	add.w		vf22,vf22,vf26		sq.xyz		vf25,DST_UV0-DST_NEXT(vi10)	; (遅)フォグ,(遅)ＵＶ座標
+	mula.xyz	ACC ,vf22,vf02		nop										; (遅)透視変換,
+	maddw.xyz	vf22,vf03,vf00		iaddiu		vi01,vi13,TX0_OFT			; (遅)透視変換,テクスチャ設定
+	ftoi4.xyzw	vf22,vf22			xgkick		vi01						; (遅)透視変換,テクスチャ設定
+	nop								sq.xyzw		vf22,DST_XYZ-DST_NEXT(vi10)	; -,(遅)透視変換
+
+	; 終端ダミーパケットをキックし待機
+	nop								iaddiu		vi01,vi13,WORK_TOP	; 
+	nop								xgkick		vi01				; ＧＩＦへのキック
+	nop								b			ClipStartFog		; 
+	nop								nop								; 
+
+
+
+; ================================================================
+; クリップルーチン用レジスタ割り当て
+; ================================================================
+;	vf00:fix
+;	vf01:定数読み込みベクトル
+;	vf02:プリミティブ座標変換スケール
+;	vf03:プリミティブ座標変換オフセット
+;	vf04:クリップ頂点保持用
+;	vf05:クリップ頂点保持用
+;	vf06:クリップ頂点保持用
+;	vf07:クリップ頂点保持用
+;	vf08:
+;	vf09:
+;	vf10:
+;	vf11:
+;	vf12:
+;	vf13:
+;	vf14:
+;	vf15:フォグパラメータ
+;	vf16:
+;	vf17:
+;	vf18:
+;	vf19:
+;	vf20:
+;	vf21:
+;	vf22:
+;	vf23:
+;	vf24:
+;	vf25:
+;	vf26:
+;	vf27:
+;	vf28:
+;	vf29:
+;	vf30:
+;	vf31:汎用
+
+;	vi00:０
+;	vi01:条件判断又はテンポラリ
+;	vi02:クリップ頂点数
+;	vi03:一時使用
+;	vi04:一時使用
+;	vi05:一時使用
+;	vi06:
+;	vi07:キックフラグ読み込み用
+;	vi08:頂点数
+;	vi09:読み込みデータアドレス
+;	vi10:書き込みデータアドレス
+;	vi11:0x4000定数＆汎用
+;	vi12:処理フラグ記憶用
+;	vi13:バッファ先頭アドレス
+;	vi14:ダブルバッファ切り替えフラグ
+;	vi15:リンクレジスタ＆クリップ処理チェックフラグ
+
+; ================================================================
+; クリッピングルーチン
+; ================================================================
+ClipStart:
+	nop								ibeq		vi15,vi00,ProgramEnd		; -,クリップ処理スキップ
+	nop								ilw.x		vi08,PACKDAT(vi13)			; -,処理頂点数の読み込み
+	nop								iaddiu		vi09,vi13,DATA_OFT+SRC_NEXT*2; -,読み込みアドレス設定
+	nop								ilw.w		vi07,SRC_FLG(vi09)			; クリップフラグ読み込み
+	nop								iaddi		vi08,vi08,-2				; ２頂点スキップしているので
+	nop								iaddiu		vi01,vi13,TX0_OFT			; テクスチャ設定
+	nop								xgkick		vi01						; テクスチャ設定（＝ウェイト）
+	nop								iaddiu		vi14,vi00,0					; ダブルバッファフラグクリア
+	nop								iaddiu		vi11,vi00,0x4000			; 定数設定
+ClipLoop:
+	nop								iand		vi01,vi07,vi11				; フラグチェック
+	nop								iaddiu		vi02,vi00,3					; クリップ処理頂点数設定
+	nop								ibeq		vi01,vi00,ClipSkip			; 
+	nop								fcset		0							; 
+	; クリップポリゴン発見時
+	nop								lq.xyzw		vf04,SRC_XYZW-SRC_NEXT*2(vi09)	; -,第１座標読み込み
+	nop								lq.xyzw		vf05,SRC_XYZW-SRC_NEXT*1(vi09)	; -,第２座標読み込み
+	nop								ibne		vi14,vi00,l11					; 
+	nop								lq.xyzw		vf06,SRC_XYZW-SRC_NEXT*0(vi09)	; -,第３座標読み込み
+	nop								b			l12								; 
+	nop								iaddiu		vi10,vi13,CWORK1				; 
+l11:nop								iaddiu		vi10,vi13,CWORK2				;
+l12:clipw.xyz	vf04,vf04			lq.xyzw		vf16,SRC_COL -SRC_NEXT*2(vi09)	; ,第１カラー読み込み
+	clipw.xyz	vf05,vf05			lq.xyzw		vf17,SRC_UV0 -SRC_NEXT*2(vi09)	; ,第１ＵＶ０読み込み
+	clipw.xyz	vf06,vf06			lq.xyzw		vf18,SRC_COL -SRC_NEXT*1(vi09)	; ,第２カラー読み込み
+	nop								lq.xyzw		vf19,SRC_UV0 -SRC_NEXT*1(vi09)	; -,第２ＵＶ０読み込み
+	nop								fcget		vi03							; 
+	nop								fcget		vi04							; 
+	nop								iand		vi03,vi03,vi04					; 
+	nop								fcget		vi04							; 
+	nop								iand		vi03,vi03,vi04					; 
+	nop								sq.xyzw		vf16,DST_COL +DST_NEXT*0(vi10)	; 第１カラー書き込み
+	nop								ibne		vi03,vi00,ClipSkip				; 
+	nop								sq.xyzw		vf17,DST_UV0 +DST_NEXT*0(vi10)	; 第１ＵＶ０書き込み
+	nop								sq.xyzw		vf18,DST_COL +DST_NEXT*1(vi10)	; 第２カラー書き込み
+	nop								sq.xyzw		vf19,DST_UV0 +DST_NEXT*1(vi10)	; 第２ＵＶ０書き込み
+	nop								lq.xyzw		vf16,SRC_COL -SRC_NEXT*0(vi09)	; 第３カラー読み込み
+	nop								lq.xyzw		vf17,SRC_UV0 -SRC_NEXT*0(vi09)	; 第３ＵＶ０読み込み
+	nop								sq.xyzw		vf04,DST_XYZ +DST_NEXT*0(vi10)	; 第１座標書き込み
+	nop								sq.xyzw		vf05,DST_XYZ +DST_NEXT*1(vi10)	; 第２座標書き込み
+	nop								sq.xyzw		vf06,DST_XYZ +DST_NEXT*2(vi10)	; 第３座標書き込み
+	nop								sq.xyzw		vf16,DST_COL +DST_NEXT*2(vi10)	; 第３カラー書き込み
+	nop								sq.xyzw		vf17,DST_UV0 +DST_NEXT*2(vi10)	; 第３ＵＶ０書き込み
+
+	nop								fcand		vi01,0x10410		; 
+	nop								ibeq		vi01,vi00,_clip_6	; 
+	nop								nop								; 
+	nop								bal			vi15,ZClip_p		; Ｚ＝Ｗ面によるクリップ
+	nop								nop								; 
+_clip_6:
+	nop								bal			vi15,CorrectColor	; ＲＧＢＡ補正
+	nop								nop								; 
+	nop								fcand		vi01,0x820820		; 
+	nop								ibeq		vi01,vi00,_clip_1	; 
+	nop								nop								; 
+	nop								bal			vi15,ZClip_m		; Ｚ＝−Ｗ面によるクリップ
+	nop								nop								; 
+_clip_1:
+	nop								fcand		vi01,0x041041		; 
+	nop								ibeq		vi01,vi00,_clip_2	; 
+	nop								nop								; 
+	nop								bal			vi15,XClip_p		; Ｘ＝Ｗ面によるクリップ
+	nop								nop								; 
+_clip_2:
+	nop								fcand		vi01,0x082082		; 
+	nop								ibeq		vi01,vi00,_clip_3	; 
+	nop								nop								; 
+	nop								bal			vi15,XClip_m		; Ｘ＝−Ｗ面によるクリップ
+	nop								nop								; 
+_clip_3:
+	nop								fcand		vi01,0x104104		; 
+	nop								ibeq		vi01,vi00,_clip_4	; 
+	nop								nop								; 
+	nop								bal			vi15,YClip_p		; Ｙ＝Ｗ面によるクリップ
+	nop								nop								; 
+_clip_4:
+	nop								fcand		vi01,0x208208		; 
+	nop								ibeq		vi01,vi00,_clip_5	; 
+	nop								nop								; 
+	nop								bal			vi15,YClip_m		; Ｙ＝−Ｗ面によるクリップ
+	nop								nop								; 
+_clip_5:
+
+	; クリップ後に頂点が存在すれば描画を行う
+	nop								isubiu		vi01,vi02,3					; 
+	nop								lq.xyzw		vf16,GIFCLIP(vi13)			; ＧＩＦタグ読み込み
+	nop								ibltz		vi01,ClipSkip				; 
+	nop								iaddiu		vi01,vi00,0x4000			; 
+	mulx.xyzw	vf27,vf27,vf00		iadd		vi01,vi01,vi01				; 
+	nop								ior			vi01,vi01,vi02				; 
+	nop								iaddi		vi10,vi10,-1				; 
+	nop								loi			0.5							; ＲＧＢＡ四捨五入用定数
+	addi.xyz	vf27,vf27,I			sq.yzw		vf16,0(vi10)				; alphaには四捨五入を行なわない
+	nop								isw.x		vi01,0(vi10)				; 
+	nop								iaddiu		vi03,vi10,1					; 
+	; 座標変換処理他
+	nop								lq.xyzw		vf16,DST_XYZ(vi03)			; 
+	nop								ilw.z		vi15,PACKDAT(vi13)			; 固定フォグ値読み出し
+	nop								lq.xyzw		vf17,DST_COL(vi03)			; 
+	nop								lq.xyzw		vf18,DST_UV0(vi03)			; 
+	nop								div			Q,vf00w,vf16w				; 
+	nop								iaddiu		vi01,vi00,0x0fff			; 
+	nop								iand		vi15,vi15,vi01				; 
+	nop								mfir.w		vf21,vi15					; フォグ値設定
+_clip_0:
+	mulq.xyz	vf21,vf16,Q			waitq									; 透視変換
+	mulaq.xyzw	ACC ,vf17,Q			nop										; ＲＧＢＡ値補正,
+	maddw.xyzw	vf22,vf27,vf00		lq.xyzw		vf16,DST_XYZ+DST_NEXT(vi03)	; ＲＧＢＡ値補正,(先)頂点読み込み
+	mulq.xyz	vf23,vf18,Q			lq.xyzw		vf17,DST_COL+DST_NEXT(vi03)	; ＳＴＱ０,(先)色読み込み
+	mula.xyz	ACC ,vf21,vf02		lq.xyzw		vf18,DST_UV0+DST_NEXT(vi03)	; プリミティブ座標,(先)ＵＶ０読み込み
+	maddw.xyz	vf21,vf03,vf00		iaddi		vi02,vi02,-1				; プリミティブ座標,頂点数減算
+	ftoi0.xyzw	vf22,vf22			div			Q,vf00w,vf16w				; 色整数化,(先)透視変換
+;	nop								nop										; -,
+	nop								iaddiu		vi03,vi03,DST_NEXT			; -,読み込みアドレス増加
+	ftoi4.xyz	vf21,vf21			sq.xyz		vf23,DST_UV0-DST_NEXT(vi03)	; 頂点整数化,ＵＶ０書き戻し
+	nop								sq.xyzw		vf22,DST_COL-DST_NEXT(vi03)	; -,色書き戻し
+;	nop								nop										; -,
+	nop								ibgtz		vi02,_clip_0				; 
+	nop								sq.xyzw		vf21,DST_XYZ-DST_NEXT(vi03)	; -,座標書き戻し
+
+	nop								xgkick		vi10				; 
+	nop								iaddiu		vi01,vi00,1			; 
+	nop								isub		vi14,vi01,vi14		; バッファ切り替え
+
+ClipSkip:
+	nop								iaddi		vi08,vi08,-1		; カウンタ減算
+	nop								iaddiu		vi09,vi09,SRC_NEXT	; 読み込みアドレス増加
+	nop								ilw.w		vi07,SRC_FLG(vi09)	; クリップフラグ読み込み
+	nop								ibgtz		vi08,ClipLoop		; 
+	nop								iaddiu		vi11,vi00,0x4000	; 定数設定
+
+	nop								b			ProgramEnd			; 
+	nop								nop								; 
+
+; ================================================================
+; クリッピングルーチン
+; ================================================================
+ClipStartFog:
+	nop								ibeq		vi15,vi00,ProgramEnd		; -,クリップ処理スキップ
+	nop								ilw.x		vi08,PACKDAT(vi13)			; -,処理頂点数の読み込み
+	nop								iaddiu		vi09,vi13,DATA_OFT+SRC_NEXT*2; -,読み込みアドレス設定
+	nop								ilw.w		vi07,SRC_FLG(vi09)			; クリップフラグ読み込み
+	nop								iaddi		vi08,vi08,-2				; ２頂点スキップしているので
+	nop								iaddiu		vi01,vi13,TX0_OFT			; テクスチャ設定
+	nop								xgkick		vi01						; テクスチャ設定（＝ウェイト）
+	nop								iaddiu		vi14,vi00,0					; ダブルバッファフラグクリア
+	nop								iaddiu		vi11,vi00,0x4000			; 定数設定
+ClipLoopFog:
+	nop								iand		vi01,vi07,vi11				; フラグチェック
+	nop								iaddiu		vi02,vi00,3					; クリップ処理頂点数設定
+	nop								ibeq		vi01,vi00,ClipSkipFog		; 
+	nop								fcset		0							; 
+	; クリップポリゴン発見時
+	nop								lq.xyzw		vf04,SRC_XYZW-SRC_NEXT*2(vi09)	; -,第１座標読み込み
+	nop								lq.xyzw		vf05,SRC_XYZW-SRC_NEXT*1(vi09)	; -,第２座標読み込み
+	nop								ibne		vi14,vi00,l21					; 
+	nop								lq.xyzw		vf06,SRC_XYZW-SRC_NEXT*0(vi09)	; -,第３座標読み込み
+	nop								b			l22								; 
+	nop								iaddiu		vi10,vi13,CWORK1				; 
+l21:nop								iaddiu		vi10,vi13,CWORK2				;
+l22:clipw.xyz	vf04,vf04			lq.xyzw		vf16,SRC_COL -SRC_NEXT*2(vi09)	; ,第１カラー読み込み
+	clipw.xyz	vf05,vf05			lq.xyzw		vf17,SRC_UV0 -SRC_NEXT*2(vi09)	; ,第１ＵＶ０読み込み
+	clipw.xyz	vf06,vf06			lq.xyzw		vf18,SRC_COL -SRC_NEXT*1(vi09)	; ,第２カラー読み込み
+	nop								lq.xyzw		vf19,SRC_UV0 -SRC_NEXT*1(vi09)	; -,第２ＵＶ０読み込み
+	nop								fcget		vi03							; 
+	nop								fcget		vi04							; 
+	nop								iand		vi03,vi03,vi04					; 
+	nop								fcget		vi04							; 
+	nop								iand		vi03,vi03,vi04					; 
+	nop								sq.xyzw		vf16,DST_COL +DST_NEXT*0(vi10)	; 第１カラー書き込み
+	nop								ibne		vi03,vi00,ClipSkipFog			; 
+	nop								sq.xyzw		vf17,DST_UV0 +DST_NEXT*0(vi10)	; 第１ＵＶ０書き込み
+	nop								sq.xyzw		vf18,DST_COL +DST_NEXT*1(vi10)	; 第２カラー書き込み
+	nop								sq.xyzw		vf19,DST_UV0 +DST_NEXT*1(vi10)	; 第２ＵＶ０書き込み
+	nop								lq.xyzw		vf16,SRC_COL -SRC_NEXT*0(vi09)	; 第３カラー読み込み
+	nop								lq.xyzw		vf17,SRC_UV0 -SRC_NEXT*0(vi09)	; 第３ＵＶ０読み込み
+	nop								sq.xyzw		vf04,DST_XYZ +DST_NEXT*0(vi10)	; 第１座標書き込み
+	nop								sq.xyzw		vf05,DST_XYZ +DST_NEXT*1(vi10)	; 第２座標書き込み
+	nop								sq.xyzw		vf06,DST_XYZ +DST_NEXT*2(vi10)	; 第３座標書き込み
+	nop								sq.xyzw		vf16,DST_COL +DST_NEXT*2(vi10)	; 第３カラー書き込み
+	nop								sq.xyzw		vf17,DST_UV0 +DST_NEXT*2(vi10)	; 第３ＵＶ０書き込み
+
+	nop								fcand		vi01,0x10410		; 
+	nop								ibeq		vi01,vi00,_clipf_6	; 
+	nop								nop								; 
+	nop								bal			vi15,ZClip_p		; Ｚ＝Ｗ面によるクリップ
+	nop								nop								; 
+_clipf_6:
+	nop								bal			vi15,CorrectColor	; ＲＧＢＡ補正
+	nop								nop								; 
+	nop								fcand		vi01,0x820820		; 
+	nop								ibeq		vi01,vi00,_clipf_1	; 
+	nop								nop								; 
+	nop								bal			vi15,ZClip_m		; Ｚ＝−Ｗ面によるクリップ
+	nop								nop								; 
+_clipf_1:
+	nop								fcand		vi01,0x041041		; 
+	nop								ibeq		vi01,vi00,_clipf_2	; 
+	nop								nop								; 
+	nop								bal			vi15,XClip_p		; Ｘ＝Ｗ面によるクリップ
+	nop								nop								; 
+_clipf_2:
+	nop								fcand		vi01,0x082082		; 
+	nop								ibeq		vi01,vi00,_clipf_3	; 
+	nop								nop								; 
+	nop								bal			vi15,XClip_m		; Ｘ＝−Ｗ面によるクリップ
+	nop								nop								; 
+_clipf_3:
+	nop								fcand		vi01,0x104104		; 
+	nop								ibeq		vi01,vi00,_clipf_4	; 
+	nop								nop								; 
+	nop								bal			vi15,YClip_p		; Ｙ＝Ｗ面によるクリップ
+	nop								nop								; 
+_clipf_4:
+	nop								fcand		vi01,0x208208		; 
+	nop								ibeq		vi01,vi00,_clipf_5	; 
+	nop								nop								; 
+	nop								bal			vi15,YClip_m		; Ｙ＝−Ｗ面によるクリップ
+	nop								nop								; 
+_clipf_5:
+
+	; クリップ後に頂点が存在すれば描画を行う
+	nop								lq.xyzw		vf04,DST_XYZ(vi10)			; -,カリング
+	nop								lq.xyzw		vf05,DST_XYZ+DST_NEXT(vi10)	; -,カリング
+	nop								lq.xyzw		vf06,DST_XYZ+DST_NEXT*2(vi10); -,カリング
+	mulx.xyzw	vf27,vf27,vf00		isubiu		vi01,vi02,3					; ,頂点数チェック
+	nop								lq.xyzw		vf16,GIFCLIP(vi13)			; ＧＩＦタグ読み込み
+	mulaw.xyz	ACC ,vf05,vf04		ibltz		vi01,ClipSkipFog			; カリング,頂点数チェック
+	msubw.xyz	vf04,vf04,vf05		iaddiu		vi03,vi00,0x4000			; カリング,ＧＩＦタグ生成
+	mulaw.xyz	ACC ,vf06,vf05		iadd		vi01,vi03,vi03				; カリング,ＧＩＦタグ生成
+	msubw.xyz	vf05,vf05,vf06		ior			vi01,vi01,vi02				; カリング,ＧＩＦタグ生成
+	nop								iaddi		vi10,vi10,-1				; -,ＧＩＦタグ生成
+	nop								loi			0.0005						; ＲＧＢＡ四捨五入用定数
+	addi.xyzw	vf27,vf27,I			sq.yzw		vf16,0(vi10)				; alphaには四捨五入を行なわない
+	opmula.xyz	ACC ,vf04,vf05		isw.x		vi01,0(vi10)				; カリング,ＧＩＦタグ生成
+	opmsub.xyz	vf04,vf05,vf04		nop										; カリング,-
+	nop								iaddiu		vi03,vi00,0x0030			; -,カリング
+	nop								iand		vi03,vi03,vi07				; -,カリング
+	nop								iaddiu		vi01,vi00,0x0020			; -,カリング
+	nop								fmand		vi01,vi01					; -,カリング
+	nop								ibeq		vi01,vi03,ClipSkipFog		; -,カリング
+	nop								iaddiu		vi03,vi10,1					; 
+	; 座標変換処理他
+
+	nop								lq.xyzw		vf15,FV_FOG(vi00)	; 
+	nop								lq.xyzw		vf16,DST_XYZ(vi03)	; 
+	nop								lq.xyzw		vf17,DST_COL(vi03)	; 
+	nop								lq.xyzw		vf18,DST_UV0(vi03)	; 
+	mulax.w		ACC ,vf16,vf15		div			Q,vf00w,vf16w		; 
+	maddy.w		vf16,vf00,vf15		lq.xyzw		vf01,FV_PRM(vi00)	; 
+	maxx.w		vf21,vf16,vf00		nop								; 
+_clipf_0:
+	mulq.xyz	vf21,vf16,Q			waitq									; 透視変換,-
+	mulaq.xyzw	ACC ,vf17,Q			iaddiu		vi03,vi03,DST_NEXT			; ＲＧＢＡ値補正,読み込みアドレス増加
+	maddw.xyzw	vf22,vf27,vf00		lq.xyzw		vf16,DST_XYZ(vi03)			; ＲＧＢＡ値補正,(先)頂点読み込み
+	minix.w		vf21,vf21,vf01		lq.xyzw		vf17,DST_COL(vi03)			; フォグ,(先)色読み込み
+	mula.xyz	ACC ,vf21,vf02		nop										; プリミティブ座標,-
+	maddw.xyz	vf21,vf03,vf00		nop										; プリミティブ座標,-
+	mulq.xyz	vf23,vf18,Q			div			Q,vf00w,vf16w				; ＳＴＱ０,除数算出
+	ftoi0.xyzw	vf22,vf22			lq.xyzw		vf18,DST_UV0(vi03)			; 整数化,(先)ＵＶ０読み込み
+	mulax.w		ACC ,vf16,vf15		iaddi		vi02,vi02,-1				; (先)フォグ,頂点数減算
+	ftoi4.xyzw	vf21,vf21			nop										; 整数化,-
+	maddy.w		vf16,vf00,vf15		sq.xyz		vf23,DST_UV0-DST_NEXT(vi03)	; (先)フォグ,ＵＶ０書き戻し
+	nop								sq.xyzw		vf22,DST_COL-DST_NEXT(vi03)	; -,色書き戻し
+	nop								ibgtz		vi02,_clipf_0				; -,ループ
+	maxx.w		vf21,vf16,vf00		sq.xyzw		vf21,DST_XYZ-DST_NEXT(vi03)	; (先)フォグ,座標書き戻し
+
+	nop								xgkick		vi10				; 
+	nop								iaddiu		vi01,vi00,1			; 
+	nop								isub		vi14,vi01,vi14		; バッファ切り替え
+
+ClipSkipFog:
+	nop								iaddi		vi08,vi08,-1		; カウンタ減算
+	nop								iaddiu		vi09,vi09,SRC_NEXT	; 読み込みアドレス増加
+	nop								ilw.w		vi07,SRC_FLG(vi09)	; クリップフラグ読み込み
+	nop								ibgtz		vi08,ClipLoopFog	; 
+	nop								iaddiu		vi11,vi00,0x4000	; 定数設定
+
+
+
+
+
+; ================================================================
+; 処理の終了
+; ================================================================
+ProgramEnd:
+	nop[e]							nop								; 
+	nop								nop								; 
+
+
+
+
+; ================================================================
+; クリップ用サブルーチン
+; ================================================================
+
+; ----------------------------------------------------------------
+; Ｘ＝Ｗ面に対するクリップ処理
+; ----------------------------------------------------------------
+XClip_p:
+	nop								iaddiu		vi03,vi10,0			; vi03=処理用の頂点読み込みアドレス
+	nop								iadd		vi01,vi02,vi02		; 
+	nop								iadd		vi01,vi01,vi02		; vi01=処理頂点数×3
+	nop								iadd		vi04,vi03,vi01		; vi04=計算用最終頂点格納アドレス
+	nop								isubiu		vi10,vi10,DST_NEXT	; 頂点アドレスのデクリメント
+	nop								iaddiu		vi11,vi10,0			; vi11=処理用の頂点格納アドレス
+	nop								iaddi		vi05,vi02,0			; vi05=ループ用カウンタ
+	nop								iaddiu		vi02,vi00,0			; 新規の頂点数をカウントする為にクリア
+
+	nop								lq.xyzw		vf16,DST_XYZ(vi03)	; 
+	nop								lq.xyzw		vf17,DST_COL(vi03)	; 
+	nop								lq.xyzw		vf18,DST_UV0(vi03)	; 
+	nop								iaddiu		vi03,vi03,DST_NEXT	; 
+	clipw.xyz	vf16,vf16			sq.xyzw		vf16,DST_XYZ(vi04)	; ,計算用最終頂点の生成
+	subx.w		vf12,vf16,vf16		sq.xyzw		vf17,DST_COL(vi04)	; ＜非共通部分＞,計算用最終頂点の生成
+	nop								sq.xyzw		vf18,DST_UV0(vi04)	; ,計算用最終頂点の生成
+_clip0_0:
+	nop								lq.xyzw		vf21,DST_XYZ(vi03)	; 
+	nop								lq.xyzw		vf22,DST_COL(vi03)	; 
+	nop								lq.xyz		vf23,DST_UV0(vi03)	; 
+	nop								iaddiu		vi03,vi03,DST_NEXT	; 
+	clipw.xyz	vf21,vf21			sq.xyzw		vf16,DST_XYZ(vi11)	; 先頭頂点がクリップ内のときには先にストアしておく
+	subx.w		vf13,vf21,vf21		sq.xyzw		vf17,DST_COL(vi11)	; ＜非共通部分＞
+	nop								sq.xyzw		vf18,DST_UV0(vi11)	; 
+	nop								iaddi		vi05,vi05,-1		; 
+	; クリップ判定
+	mulw.xyzw	vf27,vf21,vf12		fcor		vi01,~0x041			; 座標Ｂ,＜非共通部分＞
+	mulw.xyzw	vf26,vf16,vf13		ibne		vi01,vi00,_clip0_2	; 座標Ａ,２点とも領域外
+	sub.w		vf14,vf13,vf12		fcand		vi01,0x041			; Ｗの差分,カラー補間用先行計算,＜非共通部分＞
+	mulw.xyzw	vf28,vf17,vf13		ibeq		vi01,vi00,_clip0_1	; 色Ａ,２点とも領域内
+	mulw.xyzw	vf29,vf22,vf12		fcand		vi01,0x0040			; 色Ｂ,＜非共通部分＞
+	mulw.xyz	vf30,vf18,vf13		ibne		vi01,vi00,_clip0_3	; ＵＶ０Ａ,
+	mulw.xyz	vf31,vf23,vf12		div			Q,vf00w,vf14w		; ＵＶ０Ｂ,
+	nop								iaddiu		vi11,vi11,DST_NEXT	; ●書き込みアドレス増加
+	nop								iaddiu		vi02,vi02,1			; ●頂点数増加
+_clip0_3:
+	sub.yzw		vf16,vf26,vf27		nop								; 座標＜非共通部分＞,
+	sub.xyzw	vf17,vf28,vf29		nop								; 色
+	sub.xyz		vf18,vf30,vf31		nop								; ＳＴ０
+	addw.x		vf16,vf00,vf16		nop								; 座標＜非共通部分＞
+	mulq.xyzw	vf16,vf16,Q			waitq							; 
+	mulq.xyzw	vf17,vf17,Q			nop								; 
+	mulq.xyzw	vf18,vf18,Q			nop								; 
+_clip0_1:
+	nop								sq.xyzw		vf16,DST_XYZ(vi11)	; 
+	nop								sq.xyzw		vf17,DST_COL(vi11)	; 
+	nop								sq.xyzw		vf18,DST_UV0(vi11)	; 
+	nop								iaddiu		vi11,vi11,DST_NEXT	; 
+	nop								iaddiu		vi02,vi02,1			; 
+_clip0_2:
+	addx.xyzw	vf16,vf21,vf00		nop								; 
+	addx.xyzw	vf17,vf22,vf00		ibgtz		vi05,_clip0_0		; 
+	addx.xyzw	vf18,vf23,vf00		move.w		vf12,vf13			; 
+
+	clipw.xyz	vf04,vf04			nop								; 
+	clipw.xyz	vf05,vf05			nop								; リターン
+	clipw.xyz	vf06,vf06			nop								; 
+	clipw.xyz	vf07,vf07			nop								; 
+	nop								nop								; 
+	nop								jr			vi15				; 
+	nop								nop								; 
+
+; ----------------------------------------------------------------
+; Ｘ＝−Ｗ面に対するクリップ処理
+; ----------------------------------------------------------------
+XClip_m:
+	nop								iaddiu		vi03,vi10,0			; vi03=処理用の頂点読み込みアドレス
+	nop								iadd		vi01,vi02,vi02		; 
+	nop								iadd		vi01,vi01,vi02		; vi01=処理頂点数×3
+	nop								iadd		vi04,vi03,vi01		; vi04=計算用最終頂点格納アドレス
+	nop								isubiu		vi10,vi10,DST_NEXT	; 頂点アドレスのデクリメント
+	nop								iaddiu		vi11,vi10,0			; vi11=処理用の頂点格納アドレス
+	nop								iaddi		vi05,vi02,0			; vi05=ループ用カウンタ
+	nop								iaddiu		vi02,vi00,0			; 新規の頂点数をカウントする為にクリア
+
+	nop								lq.xyzw		vf16,DST_XYZ(vi03)	; 
+	nop								lq.xyzw		vf17,DST_COL(vi03)	; 
+	nop								lq.xyzw		vf18,DST_UV0(vi03)	; 
+	nop								iaddiu		vi03,vi03,DST_NEXT	; 
+	clipw.xyz	vf16,vf16			sq.xyzw		vf16,DST_XYZ(vi04)	; ,計算用最終頂点の生成
+	addx.w		vf12,vf16,vf16		sq.xyzw		vf17,DST_COL(vi04)	; ＜非共通部分＞,計算用最終頂点の生成
+	nop								sq.xyzw		vf18,DST_UV0(vi04)	; ,計算用最終頂点の生成
+_clip1_0:
+	nop								lq.xyzw		vf21,DST_XYZ(vi03)	; 
+	nop								lq.xyzw		vf22,DST_COL(vi03)	; 
+	nop								lq.xyz		vf23,DST_UV0(vi03)	; 
+	nop								iaddiu		vi03,vi03,DST_NEXT	; 
+	clipw.xyz	vf21,vf21			sq.xyzw		vf16,DST_XYZ(vi11)	; ,先にストアしておく
+	addx.w		vf13,vf21,vf21		sq.xyzw		vf17,DST_COL(vi11)	; ＜非共通部分＞
+	nop								sq.xyzw		vf18,DST_UV0(vi11)	; 
+	nop								iaddi		vi05,vi05,-1		; 
+	; クリップ判定
+	mulw.xyzw	vf27,vf21,vf12		fcor		vi01,~0x082			; 座標Ｂ,＜非共通部分＞
+	mulw.xyzw	vf26,vf16,vf13		ibne		vi01,vi00,_clip1_2	; 座標Ａ,２点とも領域外
+	sub.w		vf14,vf13,vf12		fcand		vi01,0x082			; Ｗの差分,カラー補間用先行計算,＜非共通部分＞
+	mulw.xyzw	vf28,vf17,vf13		ibeq		vi01,vi00,_clip1_1	; 色Ａ,２点とも領域内
+	mulw.xyzw	vf29,vf22,vf12		fcand		vi01,0x0080			; 色Ｂ,＜非共通部分＞
+	mulw.xyz	vf30,vf18,vf13		ibne		vi01,vi00,_clip1_3	; ＵＶ０Ａ,
+	mulw.xyz	vf31,vf23,vf12		div			Q,vf00w,vf14w		; ＵＶ０Ｂ,
+	nop								iaddiu		vi11,vi11,DST_NEXT	; ●書き込みアドレス増加
+	nop								iaddiu		vi02,vi02,1			; ●頂点数増加
+_clip1_3:
+	sub.yzw		vf16,vf26,vf27		nop								; 座標＜非共通部分＞,
+	sub.xyzw	vf17,vf28,vf29		nop								; 色
+	sub.xyz		vf18,vf30,vf31		nop								; ＳＴ０
+	subw.x		vf16,vf00,vf16		nop								; 座標＜非共通部分＞
+	mulq.xyzw	vf16,vf16,Q			waitq							; 
+	mulq.xyzw	vf17,vf17,Q			nop								; 
+	mulq.xyzw	vf18,vf18,Q			nop								; 
+_clip1_1:
+	nop								sq.xyzw		vf16,DST_XYZ(vi11)	; 
+	nop								sq.xyzw		vf17,DST_COL(vi11)	; 
+	nop								sq.xyzw		vf18,DST_UV0(vi11)	; 
+	nop								iaddiu		vi11,vi11,DST_NEXT	; 
+	nop								iaddiu		vi02,vi02,1			; 
+_clip1_2:
+	addx.xyzw	vf16,vf21,vf00		nop								; 
+	addx.xyzw	vf17,vf22,vf00		ibgtz		vi05,_clip1_0		; 
+	addx.xyzw	vf18,vf23,vf00		move.w		vf12,vf13			; 
+
+	clipw.xyz	vf04,vf04			nop								; 
+	clipw.xyz	vf05,vf05			nop								; リターン
+	clipw.xyz	vf06,vf06			nop								; 
+	clipw.xyz	vf07,vf07			nop								; 
+	nop								nop								; 
+	nop								jr			vi15				; 
+	nop								nop								; 
+
+
+; ----------------------------------------------------------------
+; Ｙ＝Ｗ面に対するクリップ処理
+; ----------------------------------------------------------------
+YClip_p:
+	nop								iaddiu		vi03,vi10,0			; vi03=処理用の頂点読み込みアドレス
+	nop								iadd		vi01,vi02,vi02		; 
+	nop								iadd		vi01,vi01,vi02		; vi01=処理頂点数×3
+	nop								iadd		vi04,vi03,vi01		; vi04=計算用最終頂点格納アドレス
+	nop								isubiu		vi10,vi10,DST_NEXT	; 頂点アドレスのデクリメント
+	nop								iaddiu		vi11,vi10,0			; vi11=処理用の頂点格納アドレス
+	nop								iaddi		vi05,vi02,0			; vi05=ループ用カウンタ
+	nop								iaddiu		vi02,vi00,0			; 新規の頂点数をカウントする為にクリア
+
+	nop								lq.xyzw		vf16,DST_XYZ(vi03)	; 
+	nop								lq.xyzw		vf17,DST_COL(vi03)	; 
+	nop								lq.xyzw		vf18,DST_UV0(vi03)	; 
+	nop								iaddiu		vi03,vi03,DST_NEXT	; 
+	clipw.xyz	vf16,vf16			sq.xyzw		vf16,DST_XYZ(vi04)	; ,計算用最終頂点の生成
+	suby.w		vf12,vf16,vf16		sq.xyzw		vf17,DST_COL(vi04)	; ＜非共通部分＞,計算用最終頂点の生成
+	nop								sq.xyzw		vf18,DST_UV0(vi04)	; ,計算用最終頂点の生成
+_clip2_0:
+	nop								lq.xyzw		vf21,DST_XYZ(vi03)	; 
+	nop								lq.xyzw		vf22,DST_COL(vi03)	; 
+	nop								lq.xyz		vf23,DST_UV0(vi03)	; 
+	nop								iaddiu		vi03,vi03,DST_NEXT	; 
+	clipw.xyz	vf21,vf21			sq.xyzw		vf16,DST_XYZ(vi11)	; 先頭頂点がクリップ内のときには先にストアしておく
+	suby.w		vf13,vf21,vf21		sq.xyzw		vf17,DST_COL(vi11)	; ＜非共通部分＞
+	nop								sq.xyzw		vf18,DST_UV0(vi11)	; 
+	nop								iaddi		vi05,vi05,-1		; 
+	; クリップ判定
+	mulw.xyzw	vf27,vf21,vf12		fcor		vi01,~0x104			; 座標Ｂ,＜非共通部分＞
+	mulw.xyzw	vf26,vf16,vf13		ibne		vi01,vi00,_clip2_2	; 座標Ａ,２点とも領域外
+	sub.w		vf14,vf13,vf12		fcand		vi01,0x104			; Ｗの差分,カラー補間用先行計算,＜非共通部分＞
+	mulw.xyzw	vf28,vf17,vf13		ibeq		vi01,vi00,_clip2_1	; 色Ａ,２点とも領域内
+	mulw.xyzw	vf29,vf22,vf12		fcand		vi01,0x0100			; 色Ｂ,＜非共通部分＞
+	mulw.xyz	vf30,vf18,vf13		ibne		vi01,vi00,_clip2_3	; ＵＶ０Ａ,
+	mulw.xyz	vf31,vf23,vf12		div			Q,vf00w,vf14w		; ＵＶ０Ｂ,
+	nop								iaddiu		vi11,vi11,DST_NEXT	; ●書き込みアドレス増加
+	nop								iaddiu		vi02,vi02,1			; ●頂点数増加
+_clip2_3:
+	sub.xzw		vf16,vf26,vf27		nop								; 座標＜非共通部分＞,
+	sub.xyzw	vf17,vf28,vf29		nop								; 色
+	sub.xyz		vf18,vf30,vf31		nop								; ＳＴ０
+	addw.y		vf16,vf00,vf16		nop								; 座標＜非共通部分＞
+	mulq.xyzw	vf16,vf16,Q			waitq							; 
+	mulq.xyzw	vf17,vf17,Q			nop								; 
+	mulq.xyzw	vf18,vf18,Q			nop								; 
+_clip2_1:
+	nop								sq.xyzw		vf16,DST_XYZ(vi11)	; 
+	nop								sq.xyzw		vf17,DST_COL(vi11)	; 
+	nop								sq.xyzw		vf18,DST_UV0(vi11)	; 
+	nop								iaddiu		vi11,vi11,DST_NEXT	; 
+	nop								iaddiu		vi02,vi02,1			; 
+_clip2_2:
+	addx.xyzw	vf16,vf21,vf00		nop								; 
+	addx.xyzw	vf17,vf22,vf00		ibgtz		vi05,_clip2_0		; 
+	addx.xyzw	vf18,vf23,vf00		move.w		vf12,vf13			; 
+
+	clipw.xyz	vf04,vf04			nop								; 
+	clipw.xyz	vf05,vf05			nop								; リターン
+	clipw.xyz	vf06,vf06			nop								; 
+	clipw.xyz	vf07,vf07			nop								; 
+	nop								nop								; 
+	nop								jr			vi15				; 
+	nop								nop								; 
+
+; ----------------------------------------------------------------
+; Ｙ＝−Ｗ面に対するクリップ処理
+; ----------------------------------------------------------------
+YClip_m:
+	nop								iaddiu		vi03,vi10,0			; vi03=処理用の頂点読み込みアドレス
+	nop								iadd		vi01,vi02,vi02		; 
+	nop								iadd		vi01,vi01,vi02		; vi01=処理頂点数×3
+	nop								iadd		vi04,vi03,vi01		; vi04=計算用最終頂点格納アドレス
+	nop								isubiu		vi10,vi10,DST_NEXT	; 頂点アドレスのデクリメント
+	nop								iaddiu		vi11,vi10,0			; vi11=処理用の頂点格納アドレス
+	nop								iaddi		vi05,vi02,0			; vi05=ループ用カウンタ
+	nop								iaddiu		vi02,vi00,0			; 新規の頂点数をカウントする為にクリア
+
+	nop								lq.xyzw		vf16,DST_XYZ(vi03)	; 
+	nop								lq.xyzw		vf17,DST_COL(vi03)	; 
+	nop								lq.xyzw		vf18,DST_UV0(vi03)	; 
+	nop								iaddiu		vi03,vi03,DST_NEXT	; 
+	clipw.xyz	vf16,vf16			sq.xyzw		vf16,DST_XYZ(vi04)	; ,計算用最終頂点の生成
+	addy.w		vf12,vf16,vf16		sq.xyzw		vf17,DST_COL(vi04)	; ＜非共通部分＞,計算用最終頂点の生成
+	nop								sq.xyzw		vf18,DST_UV0(vi04)	; ,計算用最終頂点の生成
+_clip3_0:
+	nop								lq.xyzw		vf21,DST_XYZ(vi03)	; 
+	nop								lq.xyzw		vf22,DST_COL(vi03)	; 
+	nop								lq.xyz		vf23,DST_UV0(vi03)	; 
+	nop								iaddiu		vi03,vi03,DST_NEXT	; 
+	clipw.xyz	vf21,vf21			sq.xyzw		vf16,DST_XYZ(vi11)	; ,先にストアしておく
+	addy.w		vf13,vf21,vf21		sq.xyzw		vf17,DST_COL(vi11)	; ＜非共通部分＞
+	nop								sq.xyzw		vf18,DST_UV0(vi11)	; 
+	nop								iaddi		vi05,vi05,-1		; 
+	; クリップ判定
+	mulw.xyzw	vf27,vf21,vf12		fcor		vi01,~0x208			; 座標Ｂ,＜非共通部分＞
+	mulw.xyzw	vf26,vf16,vf13		ibne		vi01,vi00,_clip3_2	; 座標Ａ,２点とも領域外
+	sub.w		vf14,vf13,vf12		fcand		vi01,0x208			; Ｗの差分,カラー補間用先行計算,＜非共通部分＞
+	mulw.xyzw	vf28,vf17,vf13		ibeq		vi01,vi00,_clip3_1	; 色Ａ,２点とも領域内
+	mulw.xyzw	vf29,vf22,vf12		fcand		vi01,0x0200			; 色Ｂ,＜非共通部分＞
+	mulw.xyz	vf30,vf18,vf13		ibne		vi01,vi00,_clip3_3	; ＵＶ０Ａ,
+	mulw.xyz	vf31,vf23,vf12		div			Q,vf00w,vf14w		; ＵＶ０Ｂ,
+	nop								iaddiu		vi11,vi11,DST_NEXT	; ●書き込みアドレス増加
+	nop								iaddiu		vi02,vi02,1			; ●頂点数増加
+_clip3_3:
+	sub.xzw		vf16,vf26,vf27		nop								; 座標＜非共通部分＞,
+	sub.xyzw	vf17,vf28,vf29		nop								; 色
+	sub.xyz		vf18,vf30,vf31		nop								; ＳＴ０
+	subw.y		vf16,vf00,vf16		nop								; 座標＜非共通部分＞
+	mulq.xyzw	vf16,vf16,Q			waitq							; 
+	mulq.xyzw	vf17,vf17,Q			nop								; 
+	mulq.xyzw	vf18,vf18,Q			nop								; 
+_clip3_1:
+	nop								sq.xyzw		vf16,DST_XYZ(vi11)	; 
+	nop								sq.xyzw		vf17,DST_COL(vi11)	; 
+	nop								sq.xyzw		vf18,DST_UV0(vi11)	; 
+	nop								iaddiu		vi11,vi11,DST_NEXT	; 
+	nop								iaddiu		vi02,vi02,1			; 
+_clip3_2:
+	addx.xyzw	vf16,vf21,vf00		nop								; 
+	addx.xyzw	vf17,vf22,vf00		ibgtz		vi05,_clip3_0		; 
+	addx.xyzw	vf18,vf23,vf00		move.w		vf12,vf13			; 
+
+	clipw.xyz	vf04,vf04			nop								; 
+	clipw.xyz	vf05,vf05			nop								; リターン
+	clipw.xyz	vf06,vf06			nop								; 
+	clipw.xyz	vf07,vf07			nop								; 
+	nop								nop								; 
+	nop								jr			vi15				; 
+	nop								nop								; 
+
+
+; ----------------------------------------------------------------
+; Ｚ＝Ｗ面に対するクリップ処理
+; ----------------------------------------------------------------
+ZClip_p:
+	nop								iaddiu		vi03,vi10,0			; vi03=処理用の頂点読み込みアドレス
+	nop								iadd		vi01,vi02,vi02		; 
+	nop								iadd		vi01,vi01,vi02		; vi01=処理頂点数×3
+	nop								iadd		vi04,vi03,vi01		; vi04=計算用最終頂点格納アドレス
+	nop								isubiu		vi10,vi10,DST_NEXT	; 頂点アドレスのデクリメント
+	nop								iaddiu		vi11,vi10,0			; vi11=処理用の頂点格納アドレス
+	nop								iaddi		vi05,vi02,0			; vi05=ループ用カウンタ
+	nop								iaddiu		vi02,vi00,0			; 新規の頂点数をカウントする為にクリア
+
+	nop								lq.xyzw		vf16,DST_XYZ(vi03)	; 
+	nop								lq.xyzw		vf17,DST_COL(vi03)	; 
+	nop								lq.xyzw		vf18,DST_UV0(vi03)	; 
+	nop								iaddiu		vi03,vi03,DST_NEXT	; 
+	clipw.xyz	vf16,vf16			sq.xyzw		vf16,DST_XYZ(vi04)	; ,計算用最終頂点の生成
+	subz.w		vf12,vf16,vf16		sq.xyzw		vf17,DST_COL(vi04)	; ＜非共通部分＞,計算用最終頂点の生成
+	nop								sq.xyzw		vf18,DST_UV0(vi04)	; ,計算用最終頂点の生成
+_clip4_0:
+	nop								lq.xyzw		vf21,DST_XYZ(vi03)	; 
+	nop								lq.xyzw		vf22,DST_COL(vi03)	; 
+	nop								lq.xyz		vf23,DST_UV0(vi03)	; 
+	nop								iaddiu		vi03,vi03,DST_NEXT	; 
+	clipw.xyz	vf21,vf21			sq.xyzw		vf16,DST_XYZ(vi11)	; 先頭頂点がクリップ内のときには先にストアしておく
+	subz.w		vf13,vf21,vf21		sq.xyzw		vf17,DST_COL(vi11)	; ＜非共通部分＞
+	nop								sq.xyzw		vf18,DST_UV0(vi11)	; 
+	nop								iaddi		vi05,vi05,-1		; 
+	; クリップ判定
+	mulw.xyzw	vf27,vf21,vf12		fcor		vi01,~0x410			; 座標Ｂ,＜非共通部分＞
+	mulw.xyzw	vf26,vf16,vf13		ibne		vi01,vi00,_clip4_2	; 座標Ａ,２点とも領域外
+	sub.w		vf14,vf13,vf12		fcand		vi01,0x410			; Ｗの差分,カラー補間用先行計算,＜非共通部分＞
+	mulw.xyzw	vf28,vf17,vf13		ibeq		vi01,vi00,_clip4_1	; 色Ａ,２点とも領域内
+	mulw.xyzw	vf29,vf22,vf12		fcand		vi01,0x0400			; 色Ｂ,＜非共通部分＞
+	mulw.xyz	vf30,vf18,vf13		ibne		vi01,vi00,_clip4_3	; ＵＶ０Ａ,
+	mulw.xyz	vf31,vf23,vf12		div			Q,vf00w,vf14w		; ＵＶ０Ｂ,
+	nop								iaddiu		vi11,vi11,DST_NEXT	; ●書き込みアドレス増加
+	nop								iaddiu		vi02,vi02,1			; ●頂点数増加
+_clip4_3:
+	sub.xyw		vf16,vf26,vf27		nop								; 座標＜非共通部分＞,
+	sub.xyzw	vf17,vf28,vf29		nop								; 色
+	sub.xyz		vf18,vf30,vf31		nop								; ＳＴ０
+	addw.z		vf16,vf00,vf16		nop								; 座標＜非共通部分＞
+	mulq.xyzw	vf16,vf16,Q			waitq							; 
+	mulq.xyzw	vf17,vf17,Q			nop								; 
+	mulq.xyzw	vf18,vf18,Q			nop								; 
+_clip4_1:
+	nop								sq.xyzw		vf16,DST_XYZ(vi11)	; 
+	nop								sq.xyzw		vf17,DST_COL(vi11)	; 
+	nop								sq.xyzw		vf18,DST_UV0(vi11)	; 
+	nop								iaddiu		vi11,vi11,DST_NEXT	; 
+	nop								iaddiu		vi02,vi02,1			; 
+_clip4_2:
+	addx.xyzw	vf16,vf21,vf00		nop								; 
+	addx.xyzw	vf17,vf22,vf00		ibgtz		vi05,_clip4_0		; 
+	addx.xyzw	vf18,vf23,vf00		move.w		vf12,vf13			; 
+
+	clipw.xyz	vf04,vf04			nop								; 
+	clipw.xyz	vf05,vf05			nop								; リターン
+	clipw.xyz	vf06,vf06			nop								; 
+	nop								nop								; 
+	nop								jr			vi15				; 
+	nop								nop								; 
+
+; ----------------------------------------------------------------
+; Ｚ＝−Ｗ面に対するクリップ処理
+; ----------------------------------------------------------------
+ZClip_m:
+	nop								iaddiu		vi03,vi10,0			; vi03=処理用の頂点読み込みアドレス
+	nop								iadd		vi01,vi02,vi02		; 
+	nop								iadd		vi01,vi01,vi02		; vi01=処理頂点数×3
+	nop								iadd		vi04,vi03,vi01		; vi04=計算用最終頂点格納アドレス
+	nop								isubiu		vi10,vi10,DST_NEXT	; 頂点アドレスのデクリメント
+	nop								iaddiu		vi11,vi10,0			; vi11=処理用の頂点格納アドレス
+	nop								iaddi		vi05,vi02,0			; vi05=ループ用カウンタ
+	nop								iaddiu		vi02,vi00,0			; 新規の頂点数をカウントする為にクリア
+
+	nop								lq.xyzw		vf16,DST_XYZ(vi03)	; 
+	nop								lq.xyzw		vf17,DST_COL(vi03)	; 
+	nop								lq.xyzw		vf18,DST_UV0(vi03)	; 
+	nop								iaddiu		vi03,vi03,DST_NEXT	; 
+	clipw.xyz	vf16,vf16			sq.xyzw		vf16,DST_XYZ(vi04)	; ,計算用最終頂点の生成
+	addz.w		vf12,vf16,vf16		sq.xyzw		vf17,DST_COL(vi04)	; ＜非共通部分＞,計算用最終頂点の生成
+	nop								sq.xyzw		vf18,DST_UV0(vi04)	; ,計算用最終頂点の生成
+_clip5_0:
+	nop								lq.xyzw		vf21,DST_XYZ(vi03)	; 
+	nop								lq.xyzw		vf22,DST_COL(vi03)	; 
+	nop								lq.xyz		vf23,DST_UV0(vi03)	; 
+	nop								iaddiu		vi03,vi03,DST_NEXT	; 
+	clipw.xyz	vf21,vf21			sq.xyzw		vf16,DST_XYZ(vi11)	; ,先にストアしておく
+	addz.w		vf13,vf21,vf21		sq.xyzw		vf17,DST_COL(vi11)	; ＜非共通部分＞
+	nop								sq.xyzw		vf18,DST_UV0(vi11)	; 
+	nop								iaddi		vi05,vi05,-1		; 
+	; クリップ判定
+	mulw.xyzw	vf27,vf21,vf12		fcor		vi01,~0x820			; 座標Ｂ,＜非共通部分＞
+	mulw.xyzw	vf26,vf16,vf13		ibne		vi01,vi00,_clip5_2	; 座標Ａ,２点とも領域外
+	sub.w		vf14,vf13,vf12		fcand		vi01,0x820			; Ｗの差分,カラー補間用先行計算,＜非共通部分＞
+	mulw.xyzw	vf28,vf17,vf13		ibeq		vi01,vi00,_clip5_1	; 色Ａ,２点とも領域内
+	mulw.xyzw	vf29,vf22,vf12		fcand		vi01,0x0800			; 色Ｂ,＜非共通部分＞
+	mulw.xyz	vf30,vf18,vf13		ibne		vi01,vi00,_clip5_3	; ＵＶ０Ａ,
+	mulw.xyz	vf31,vf23,vf12		div			Q,vf00w,vf14w		; ＵＶ０Ｂ,
+	nop								iaddiu		vi11,vi11,DST_NEXT	; ●書き込みアドレス増加
+	nop								iaddiu		vi02,vi02,1			; ●頂点数増加
+_clip5_3:
+	sub.xyw		vf16,vf26,vf27		nop								; 座標＜非共通部分＞,
+	sub.xyzw	vf17,vf28,vf29		nop								; 色
+	sub.xyz		vf18,vf30,vf31		nop								; ＳＴ０
+	subw.z		vf16,vf00,vf16		nop								; 座標＜非共通部分＞
+	mulq.xyzw	vf16,vf16,Q			waitq							; 
+	mulq.xyzw	vf17,vf17,Q			nop								; 
+	mulq.xyzw	vf18,vf18,Q			nop								; 
+_clip5_1:
+	nop								sq.xyzw		vf16,DST_XYZ(vi11)	; 
+	nop								sq.xyzw		vf17,DST_COL(vi11)	; 
+	nop								sq.xyzw		vf18,DST_UV0(vi11)	; 
+	nop								iaddiu		vi11,vi11,DST_NEXT	; 
+	nop								iaddiu		vi02,vi02,1			; 
+_clip5_2:
+	addx.xyzw	vf16,vf21,vf00		nop								; 
+	addx.xyzw	vf17,vf22,vf00		ibgtz		vi05,_clip5_0		; 
+	addx.xyzw	vf18,vf23,vf00		move.w		vf12,vf13			; 
+
+	clipw.xyz	vf04,vf04			nop								; 
+	clipw.xyz	vf05,vf05			nop								; リターン
+	clipw.xyz	vf06,vf06			nop								; 
+	clipw.xyz	vf07,vf07			nop								; 
+	nop								nop								; 
+	nop								jr			vi15				; 
+	nop								nop								; 
+
+
+; ----------------------------------------------------------------
+; 色補正処理ＲＧＢＡにＷを乗算する
+; ----------------------------------------------------------------
+CorrectColor:
+	nop								iaddiu		vi04,vi02,0			; 処理用の頂点数設定
+	nop								fcset		0					; 
+	nop								lq.xyzw		vf04,DST_XYZ+DST_NEXT*0(vi10)	; 
+	nop								lq.xyzw		vf20,DST_COL+DST_NEXT*0(vi10)	;
+	nop								lq.xyzw		vf21,DST_COL+DST_NEXT*1(vi10)	;
+	nop								lq.xyzw		vf22,DST_COL+DST_NEXT*2(vi10)	;
+	nop								lq.xyzw		vf23,DST_COL+DST_NEXT*3(vi10)	;
+	nop								ibeq		vi04,vi00,clr_corrc_end0 ;
+	nop								iaddi		vi04,vi04,-1			; 
+	mulw.xyzw	vf20,vf20,vf04		lq.xyzw		vf05,DST_XYZ+DST_NEXT*1(vi10)	; 
+	clipw.xyz	vf04,vf04			ibeq		vi04,vi00,clr_corrc_end1 ;
+	nop								iaddi		vi04,vi04,-1			; 
+	mulw.xyzw	vf21,vf21,vf05		lq.xyzw		vf06,DST_XYZ+DST_NEXT*2(vi10)	; 
+	clipw.xyz	vf05,vf05			ibeq		vi04,vi00,clr_corrc_end2 ;
+	nop								iaddi		vi04,vi04,-1			; 
+	mulw.xyzw	vf22,vf22,vf06		lq.xyzw		vf07,DST_XYZ+DST_NEXT*3(vi10)	; 
+	clipw.xyz	vf06,vf06			ibeq		vi04,vi00,clr_corrc_end3 ;
+	nop								iaddi		vi04,vi04,-1			; 
+	mulw.xyzw	vf23,vf23,vf07		b			clr_corrc_end4		;
+	clipw.xyz	vf07,vf07			nop								; 
+
+clr_corrc_end0:
+	nop								move.xyzw	vf04,vf00			; 
+clr_corrc_end1:
+	nop								move.xyzw	vf05,vf00			; 
+clr_corrc_end2:
+	nop								move.xyzw	vf06,vf00			; 
+clr_corrc_end3:
+	nop								move.xyzw	vf07,vf00			; 
+clr_corrc_end4:
+	nop								sq.xyzw		vf20,DST_COL+DST_NEXT*0(vi10)	;
+	nop								sq.xyzw		vf21,DST_COL+DST_NEXT*1(vi10)	;
+	nop								sq.xyzw		vf22,DST_COL+DST_NEXT*2(vi10)	;
+	nop								jr			vi15				; 
+	nop								sq.xyzw		vf23,DST_COL+DST_NEXT*3(vi10)	;
+
+
+
+

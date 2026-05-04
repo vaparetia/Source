@@ -1,0 +1,26 @@
+//
+//	wmovie.src
+//
+//	2001/07/18 S.Mukaide
+//
+//	$Id: wmovie.src,v 1.8 2002/10/09 06:54:17 usr03700 Exp $
+
+block .use r_plt0
+block .nocache
+block .cache
+
+pack_all	mgs2logo.tri	2D/demo_telop/title_logo_mono_alp_ovl.bmp
+
+#ifdef MGS2_XBOX_1
+binary		ending_eng.row
+#else
+#ifdef MGS2_AREA_JAPAN
+binary		ending_ps2_jpn.row
+rename		ending_ps2_jpn.row ending_eng.row
+#else
+binary		ending_ps2.row
+rename		ending_ps2.row ending_eng.row
+#endif
+#endif
+
+

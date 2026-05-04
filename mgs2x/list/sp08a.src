@@ -1,0 +1,89 @@
+//
+//	sp08a.src	
+//	バラエティ ダークステージ
+//	written by H.Yoshiike 2002.Apr
+//
+//	$Id$
+
+#define WN_SP08A
+
+// モデル用
+// 敵兵関連define
+// 敵兵タイプ
+#define ENE_VR_GOL		// ＶＲ兵
+#define ENE_ATTACKER	// 攻撃兵
+#define	ENE_GOGGLE		// 暗視ゴーグルモデル
+#define ENE_SHIELD		// 盾兵
+#define ENE_SHOT		// ショットガン兵
+// 特殊兵のモーション設定
+#define ENE_MAR '-DDEL_TNG=DUMMY -DDEL_WALKMAN=DUMMY'
+// 的用
+#define VR_TGT_MINE 1 // ＶＲ機雷
+
+// エフェクト用(vr_defでdefineがきられているため、足りないものは自分で足す)
+#define	E_ENEMY_LIGHT			// 敵兵ライト
+#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+#define	E_GLASS_DANKON			// グラス系弾痕
+
+block .use r_vr_r
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"vr_def.h"
+#include	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+
+// キャラクタ
+#include	"ene_plant.h"
+
+// ＶＲ的
+#include	"vrstage.h"
+
+// 強制モーション
+mtn			rai_sp08a.mls
+mtn			sna_sp08a.mls
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル 
+option makexti6 -l 1024 -f PAL8
+pack_all	sp08a.tri \
+	world/vr_variety/sp08a
+option makexti6
+
+world		vr_variety/sp08a
+lt2			vr_dark.lt2
+lt2			debug.lt2
+hazard		sp08a.hzx
+
+rol			world/vr_variety/sp08a/sp08a.rol
+
+
+// オブジェクト
+pack_all	object.tri \
+			meca/svc_plant \
+			meca/gun_camera \
+			world/test/vr_test/vr2_pitfall_a0.dar
+
+meca		svc_plant
+meca		gun_camera
+world		test/vr_test/vr2_pitfall_a0.kms
+
+//	落し穴
+include		pit_effect.h
+pack_trn	pitfall_tex.tri \
+			effect_vr/pitfall/vr2_pitfall_b0_all_add_alp.bmp
+
+//	ＶＲ追加エフェクト
+#include	"vr_effect.h"
+
+// アイテム
+itembox
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム

@@ -1,0 +1,673 @@
+/*
+	P005_01_p01.w12a.gcl
+	    プラント編オープニングデモ・潜入プール
+
+	2001/02/28 S.Hirano
+	$Id: P005_01_p01.w12a.gcl,v 1.27 2002/08/09 07:57:53 usr02774 Exp $                      
+
+	
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+#define		DEMO_STAGE		1		// デモステージかどうかで起動するキャラを切り分ける
+
+// 各種スイッチ用define
+// ------------------------------------
+// デバッグ関係
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME		d00a3
+#define		KMS_NAME_SEA	sea
+
+// ステージのモデル
+// world/w12_common/w12_bg にある。
+#define KMS_NAME1  w12a_12a			// Ａ脚壁面
+#define KMS_NAME2  w12a_13a			// ＡＢ連絡橋
+#define KMS_NAME3  w12a_15a			// ＢＣ連絡橋
+#define KMS_NAME4  w12a_20a			// Ｅ脚
+#define KMS_NAME5  w12a_21a			// ＥＦ連絡橋
+#define KMS_NAME6  w12a_23a			// ＦＡ連絡橋
+#define KMS_NAME7  w12a_24a			// 中央棟
+#define KMS_NAME10 w12a_15b			// ＢＣ連絡橋
+#define KMS_NAME11 w12a_15c			// ＢＣ連絡橋
+#define OBJ_NAME6  w12a_crane		// クレーン
+#define OBJ_NAME3  w12a_elvwall		// エレベーター壁
+
+// world/elevator/w11_elv_append/w11_elv_append.mdl offset>yに-42000.0
+#define OBJ_NAME_ELV  w11_elv_append	// デモ専用エレベーター壁
+
+// world/w12a/w12a にある。
+#define OBJ_NAME1  w12a_elvsk00		// 朝バージョン。エレベーターの柵が上がる前の影
+#define OBJ_NAME2  w12a_elvsk01		// 朝バージョン。エレベーターの柵
+#define OBJ_NAME4  w12a_objdr00		// 朝バージョン。閉まっている網扉
+#define KMS_NAME0  w12a				// Ａ脚
+#define KMS_NAME20 w12a_sdw00		// 影投影モデル
+
+// world/door/にある。
+#define DOOR_NAME1 w12a_dr00		// 扉
+
+#define LT2_NAME		w12a
+#define LT2_NAME_W10A	w10a
+
+// フェンスモデル
+#define OBJ_NAME10 w12_ami00
+#define OBJ_NAME11 w12_ami01
+#define OBJ_NAME12 w12_ami02
+#define OBJ_NAME13 w12_ami03
+#define OBJ_NAME14 w12_ami04
+#define OBJ_NAME15 w12_ami05
+#define OBJ_NAME16 w12_ami06
+#define OBJ_NAME17 w12_ami07
+#define OBJ_NAME20 w12_drami00
+#define OBJ_NAME21 w12_drami01
+#define OBJ_NAME22 w12_drami02
+
+// include
+// ------------------------------------
+#include "5sec_bfr_demo.h"
+#include "demo_vardef.h"
+#include "demo_stdch.h"
+#include "story.h"
+#include "demo_stdch2.h"
+#include "sload.h"
+#include "sea_surface.h"
+
+#include "p_force_cdc.ch"
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+#if d:PLANT_DEMO_ALL_SKIP
+	#define		DEMO_SKIP_ENABLE 1
+#else
+	#define		DEMO_SKIP_ENABLE 0
+#endif
+
+
+// マップ設定
+// ------------------------------------
+// ＜↓↓↓同期↓↓↓＞
+if( d:ST:P005_03_R01ライデン昇降機上昇３無線デモ１終了 <= $w:p_story && \
+					$w:p_story < d:ST:P005_04_P03ライデン昇降機上昇４ポリゴンデモ３開始) {
+	chara マップ w12aステージ -h d:HZX_NAME -l d:LT2_NAME_W10A
+} else {
+	chara マップ w12aステージ -h d:HZX_NAME -l d:LT2_NAME
+}
+
+chara サウンドマネージャー ＳＤマネ -pak 0
+
+command マップ設定 w12aステージ -set {
+
+//	デモ環境かゲーム環境かで起動を読み分ける。
+// ------------------------------------
+#if d:MGS2_DEMO
+
+chara デモアクトデバッグ demodebug  -i t:p005_01_p01 -d 'p005_01_p01' -l   \
+		-p 海面オフ 海面オン \
+		   かもめ一斉に飛ぶ
+
+		// t01 を再生するとき
+//			eval($s:d_num = t01a1D)
+
+
+#else
+
+
+// 実際の再生
+//-----------------------------------------------------------
+	if( $w:p_story == d:ST:P005_01_P01ライデン昇降機上昇１ポリゴンデモ１開始) {
+		print '$w:p_story = ST:P005_01_P01ライデン昇降機上昇１ポリゴンデモ１開始'
+
+		/* 昇降機上昇　サブタイトル表示 */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P005_01_p01)
+
+		@デモモデル差し替え処理
+		proc デモ再生_P005_01_p01 {
+			chara demo デモ再生 \
+				-i t:p005_01_p01 \
+				-p 海面オフ 海面オン \
+				   かもめ一斉に飛ぶ \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next P005_01_p01終了
+		}
+
+		@デモ再生_P005_01_p01
+
+#ifdef _XBOX
+		command ＸＢＯＸ用パッチ_d005p01_demo
+#endif
+
+	} else if( d:ST:P005_01_P01ライデン昇降機上昇１ポリゴンデモ１終了 <= $w:p_story && \
+					$w:p_story < d:ST:P005_03_R01ライデン昇降機上昇３無線デモ１開始) {
+
+		/* 大佐強制コール　ビッグシェル屋上へ出た */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P005_03_r01)
+
+		@rt_P005_03_R01ライデン昇降機上昇３無線デモ１
+		/* P005_03_r01終了 */
+		/*
+		eval($w:p_story = d:ST:P005_03_R01ライデン昇降機上昇３無線デモ１終了)
+		restart
+		*/
+
+// ＜↑↑↑同期↑↑↑＞
+#if 0
+	// 実行するステージがP001_01_p01.w10aに変更になりました。(田中(信)修正)
+	} else if( d:ST:P005_03_R01ライデン昇降機上昇３無線デモ１終了 <= $w:p_story && \
+					$w:p_story < d:ST:P005_04_P03ライデン昇降機上昇４ポリゴンデモ３開始) {
+		eval($w:p_story = d:ST:P005_04_P03ライデン昇降機上昇４ポリゴンデモ３開始)
+		print '$w:p_story = ST:P005_04_P03ライデン昇降機上昇４ポリゴンデモ３開始'
+
+		/* 昇降機上昇　ビッグシェル全景表示 */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P005_04_p03)
+
+		@デモモデル差し替え処理
+		proc デモ再生_P005_04_p03 {
+			chara demo デモ再生 \
+				-i t:p005_04_p03 \
+				-p 海面オフ 海面オン \
+				   かもめ一斉に飛ぶ \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next P005_04_p03終了
+		}
+
+		@デモ再生_P005_04_p03
+	} else if( d:ST:P005_04_P03ライデン昇降機上昇４ポリゴンデモ３終了 <= $w:p_story && \
+					$w:p_story < d:ST:P005_05_R02ライデン昇降機上昇５無線デモ２開始) {
+
+		/* 大佐強制コール　ノード探してみそ */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P005_05_r02)
+
+		@rt_P005_05_R02ライデン昇降機上昇５無線デモ２
+		/* P005_05_r02終了 */
+		/*
+		eval($w:p_story = d:ST:P005_05_R02ライデン昇降機上昇５無線デモ２終了)
+		// ゲームへ
+		@ゲームステージへ戻る
+		@mv_w11a2_w12a_0
+		*/
+#endif
+
+	} 
+
+
+#endif
+
+	// デモキャンセルは全てのデモで共通につかう
+	chara デモキャンセルチェック デモキャンセル \
+		-p demo_cancel
+
+
+// 以下、諸々セット
+//-----------------------------------------------------------
+	@常駐キャラ設定						// stdch.hで定義
+
+	if($s:d_num == P005_04_p03){
+		// プラント全景（P001のモデル）使用
+		@P001プラント_遠景モデルセット
+		@P001フォグ設定
+		@P001空設置
+		@P001巨大海面セット
+
+	} else {
+		@プラントステージでのフォグセット 朝 0
+		@エフェクト設定
+
+		@プラント海面セット 朝 w12a 1
+		@空設置
+
+		#if 0
+			@かもめさんセット
+		#else
+			#include "P005_kamome.gcl"
+			@w12a_かもめ_40
+		#endif
+
+		@Ａ脚への昇降機セット
+		@Ａ脚屋上セット
+		@連絡橋他セット
+		@ドアセット
+		@フェンスモデルセット
+		@リアル影セット
+	}
+
+
+	// 無線ではシネマスクリーン起動しない
+	if(($s:d_num != P005_03_r01) || \
+	   ($s:d_num != P005_05_r02)){
+		@シネマスクリーンセット
+	}
+
+//	@デバッグキャラセット
+}
+
+// ====================================
+// 初期マップ表示
+// ====================================
+	command マップ表示 -show w12aステージ
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// デモ用のプロック
+//-----------------------------------------------------------
+	proc null {}
+
+	proc demo_cancel {
+		command StreamStopAll
+	}
+
+	proc restart_proc {
+		restart
+	}
+
+	proc P005_01_p01終了 {
+		@デモ終了時シネマスクリーンオフ
+		mesg デモキャンセルチェック デモキャンセル kill
+
+		print '$w:p_story = d:ST:P005_01_P01ライデン昇降機上昇１ポリゴンデモ１終了'
+		eval($w:p_story = d:ST:P005_01_P01ライデン昇降機上昇１ポリゴンデモ１終了)
+
+		chara delay ディレイ \
+			-time 1 \ 
+			-exec{
+				restart
+			}
+	}
+
+#if 0
+	// 実行するステージがP001_01_p01.w10aに変更になりました。(田中(信)修正)
+	proc P005_04_p03終了 {
+		@デモ終了時シネマスクリーンオフ
+		mesg デモキャンセルチェック デモキャンセル kill
+
+		print '$w:p_story = d:ST:P005_04_P03ライデン昇降機上昇４ポリゴンデモ３終了'
+		eval($w:p_story = d:ST:P005_04_P03ライデン昇降機上昇４ポリゴンデモ３終了)
+
+		chara delay ディレイ \
+			-time 1 \ 
+			-exec{
+				restart
+			}
+	}
+#endif
+
+
+// シネマスクリーン
+proc シネマスクリーンセット {
+	chara シネマスクリーン シネマ \
+		-top d:CINEMA_BELT_UPPER \
+		-bottom d:CINEMA_BELT_LOWER \
+		-ftime 60	//デフォルト値（ゼロは駄目）
+	mesg シネマスクリーン シネマ フェードアウト 1
+}
+
+// 全マップ共通
+
+	// フォグ
+	// ------------------------------------
+/*	proc フォグ設定 {
+		chara フォグ 霧\
+			-c 194, 199, 163 \
+			-n -20000 \
+			-f 200000
+	}
+*/
+
+	// エフェクト関係
+	// -----------------------------------
+	proc エフェクト設定 {
+			chara Ｚフォーカス管理 Z_manager
+	}
+
+
+// 各マップ別設定
+// ------------------------------------
+
+// Ａ脚へのエレベータ
+// -----------------------------------------------------------------------------------
+	proc Ａ脚への昇降機セット {
+		chara プットオブジェ エレベーター壁 \
+			-m d:OBJ_NAME3 \
+			-r 0,0,0 \
+			-p 0,0,0 \
+			-s 100,100,100 \
+			-l d:LT2_NAME
+		chara プットオブジェ デモ専用エレベーター壁 \
+			-m d:OBJ_NAME_ELV \
+			-r 0,0,0 \
+			-p 0,-42000,0 \ // Y -42000 でオフセット
+			-s 100,100,100 \
+			-l d:LT2_NAME
+	}
+
+// Ａ脚屋上（w12a相当）
+// -----------------------------------------------------------------------------------
+	proc Ａ脚屋上セット {
+		chara プットオブジェ 朝バージョン_エレベーターの柵が上がる前の影 \
+			-m d:OBJ_NAME1 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+// 柵開け状態にするため、コメントアウト
+//		chara プットオブジェ 朝バージョン_エレベーターの柵 \
+//			-m d:OBJ_NAME2 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+		chara プットオブジェ 朝バージョン_閉まっている網扉 \
+			-m d:OBJ_NAME4 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+		chara プットオブジェ Ａ脚 \
+			-m d:KMS_NAME0 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+		chara プットオブジェ Ａ脚屋上_影投影モデル \
+			-m d:KMS_NAME20 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+	}
+
+	proc 連絡橋他セット {
+		chara プットオブジェ Ａ脚壁面 \
+			-m d:KMS_NAME1 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+		chara プットオブジェ ＡＢ連絡橋 \
+			-m d:KMS_NAME2 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+		chara プットオブジェ ＢＣ連絡橋 \
+			-m d:KMS_NAME3 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+		chara プットオブジェ Ｅ脚 \
+			-m d:KMS_NAME4 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+		chara プットオブジェ ＥＦ連絡橋 \
+			-m d:KMS_NAME5 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+		chara プットオブジェ ＦＡ連絡橋 \
+			-m d:KMS_NAME6 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+		chara プットオブジェ 中央棟 \
+			-m d:KMS_NAME7 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+		chara プットオブジェ ＢＣ連絡橋 \
+			-m d:KMS_NAME10 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+		chara プットオブジェ ＢＣ連絡橋 \
+			-m d:KMS_NAME11 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+		chara プットオブジェ クレーン \
+			-m d:OBJ_NAME6 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+	}
+
+	proc ドアセット {
+		chara プットオブジェ 左側のドア \
+			-m d:DOOR_NAME1 -r 0,0,0 -p -8750 5000 -9125 -s 100,100,100 -l d:LT2_NAME
+		chara プットオブジェ 右側のドア \
+			-m d:DOOR_NAME1 -r 0,2048,0 -p 8750 5000 -9125 -s 100,100,100 -l d:LT2_NAME
+	}
+
+// 海面・空
+// -----------------------------------------------------------------------------------
+	proc 海面オフ {
+		mesg プラント海面 プラント海面セット 表示状態 0
+	}
+	proc 海面オン {
+		mesg プラント海面 プラント海面セット 表示状態 1
+	}
+
+	proc 空設置 {
+		// 空
+		@プラントステージでの汎用空セット 朝 w12a
+/*		chara 昼空ドーム 空 \
+			-col 90 110 95 \	// 朝
+			-pos 0,-40000,0		// 中心の位置
+*/
+		// 太陽
+		chara 太陽 太陽 \
+			-l 100 \
+			-p 0,-40000,0 \		// 中心の位置
+			-f 1930 -1500 4350	\// 原点からこの位置に向かって光が射す
+			-a 0
+	}
+
+
+proc かもめさんセット {
+}
+
+proc かもめ一斉に飛ぶ {
+	// かもめマネージャ の名前「かもめ管理」は、@w12a_かもめ_40 で使用している名前。
+	mesg かもめマネージャ かもめ管理 全かもめ飛行 20
+}
+
+proc リアル影セット {
+// 影投影モデル -m 影投影専用モデル -p 設置位置
+	chara 影投影モデル 影投影モデル -m d:KMS_NAME20 -p -3,6,-3
+
+// 影管理 -t 光源タイプ -l 光源距離(並行光源時のみ有効) -p 並行光源方向直接指定
+	chara 影管理 影管理 -t 0 -l 6000 -p 94,-150,265
+}
+proc 影出し開始 {
+//	mesg 影管理 影管理 add ***ライデンのモデル名*** 影投影モデル
+}
+
+
+proc P001プラント_遠景モデルセット {
+	// プラント座標オフセット値
+	eval($i:d001p01_plt_x = -150000)
+	eval($i:d001p01_plt_y = 40000)
+	eval($i:d001p01_plt_z = 0)
+
+	// プラント回転オフセット値。Ｙのみ必要。
+	eval($i:d001p01_rot_y = 3072)
+
+	chara プットオブジェ 全景_w10c_12a \
+		-m w10c_12a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_13a \
+		-m w10c_13a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_14a \
+		-m w10c_14a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_15a \
+		-m w10c_15a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_16a \
+		-m w10c_16a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_17a \
+		-m w10c_17a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_18a \
+		-m w10c_18a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_19a \
+		-m w10c_19a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_20a \
+		-m w10c_20a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_20b \
+		-m w10c_20b -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_21a \
+		-m w10c_21a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_22a \
+		-m w10c_22a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_23a \
+		-m w10c_23a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_24a \
+		-m w10c_24a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_25a \
+		-m w10c_25a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_31a \
+		-m w10c_31a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_gh \
+		-m w10c_gh -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_gl \
+		-m w10c_gl -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_h \
+		-m w10c_h -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_hi \
+		-m w10c_hi -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_i \
+		-m w10c_i -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_ij \
+		-m w10c_ij -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_j \
+		-m w10c_j -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_jk \
+		-m w10c_jk -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_k \
+		-m w10c_k -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_kl \
+		-m w10c_kl -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+	chara プットオブジェ 全景_w10c_l \
+		-m w10c_l -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME_W10A -f 0x0200
+}
+
+proc P001フォグ設定 {
+	chara フォグ 霧 \
+		-c 39,61,65 \
+		-n (-1500000) \
+		-f (3000000) \
+		-z 					// ファークリップ機能追加（山下）
+}
+
+proc P001空設置 {
+	chara 汎用空 デモ用空 \
+		-c 7 31 37\
+		-pos 52000 -41000 -210000 \
+		-l   (32*20) \
+		-f	 0 \
+		-t 4 sky_n1_alp 198 54 42 50 \
+			 sky_n2_alp 125 44 34 50 \
+			 sky_n3_alp 0 0 0 0 \
+			 sky_n4_alp 154 73 53 50 \
+		-m 1 n_sky_wall1 25 24 24 -100 0
+
+	chara 太陽 ソル \
+		-l (32*20) \
+		-p 0 0 0 \    		//中心の位置
+		-f -4700 350 -1600 \    //平行光源の-pと同じ値
+		-a 9
+}
+
+proc P001巨大海面セット {
+	chara 巨大海面 seaseasea \
+		-mipmap 3 50000 0 \
+		-size 400000 400000 \
+		-light_enable \
+		-tex w10a_sea \
+		w10a_v2_sea02_256_alp_ovl \
+		w10a_v2_sea02_128_alp_ovl \
+		w10a_v2_sea02_64_alp_ovl \
+		w10a_v2_sea02_32_alp_ovl \
+		-pos 60000,0,-200000 
+}
+
+proc フェンスモデルセット {
+	chara プットオブジェ フェンス_00 \
+		-m d:OBJ_NAME10 \
+		-r 0,0,0 \
+		-p 0,0,0 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+	chara プットオブジェ フェンス_01 \
+		-m d:OBJ_NAME11 \
+		-r 0,0,0 \
+		-p -8000,0,-12000 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+	chara プットオブジェ フェンス_02 \
+		-m d:OBJ_NAME12 \
+		-r 0,0,0 \
+		-p 8000,0,-12000 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+	chara プットオブジェ フェンス_03 \
+		-m d:OBJ_NAME13 \
+		-r 0,0,0 \
+		-p 3875,0,-14500 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+	chara プットオブジェ フェンス_04 \
+		-m d:OBJ_NAME13 \
+		-r 0,0,0 \
+		-p -4000,0,-14500 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+	chara プットオブジェ フェンス_05 \
+		-m d:OBJ_NAME14 \
+		-r 0,0,0 \
+		-p 5875,0,-10500 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+	chara プットオブジェ フェンス_06 \
+		-m d:OBJ_NAME14 \
+		-r 0,0,0 \
+		-p -5750,0,-10500 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+	chara プットオブジェ フェンス_07 \
+		-m d:OBJ_NAME15 \
+		-r 0,0,0 \
+		-p -4750,0,-11500 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+	chara プットオブジェ フェンス_08 \
+		-m d:OBJ_NAME16 \
+		-r 0,0,0 \
+		-p 4750,0,-11500 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+	chara プットオブジェ フェンス_09 \
+		-m d:OBJ_NAME17 \
+		-r 0,0,0 \
+		-p 5625,0,-14000 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+	chara プットオブジェ フェンス_10 \
+		-m d:OBJ_NAME17 \
+		-r 0,0,0 \
+		-p -5750,0,-14000 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+}
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------
+proc デバッグキャラセット {
+	#if d:SCREENSHOT
+		chara スクリーンショット shot
+	#endif
+
+	#if d:USB_KEY
+		chara USBキーボード実行 test \
+			-e d:KBD_ESC {	
+				mesg プレイヤー d:PLAYER position -5500, -13000, -500
+			} \
+	#endif
+}

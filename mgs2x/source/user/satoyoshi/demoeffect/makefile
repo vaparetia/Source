@@ -1,0 +1,50 @@
+#
+# Makefile for MGS2 Sub Module
+#	各ソースがおかれたディレクトリ用 makefile
+#
+# 1999/07/08 K.Uehara
+# $Id: makefile,v 1.3 2002/02/13 04:37:46 usr04250 Exp $
+#
+
+# ベースディレクトリ
+BASEDIR = ../../..
+
+# ライブラリ名
+
+LIBNAME = satoyoshi.a
+
+# オブジェクトリスト
+
+ifneq ($(MGS2_XBOX),1)
+
+OBJECTS = har_demoeffect.o
+
+else
+
+XOBJECTS = har_demoeffect.obj
+
+endif
+
+
+# ここでのローカルフラグリスト
+LOCAL_INCLUDES = 
+LOCAL_INCLUDES = 
+LOCAL_DEFINES = 
+LOCAL_OPTIONS = 
+
+# 設定の実体
+
+include $(BASEDIR)/makefile.sub
+
+# 依存関係のリスト
+
+ifneq ($(MGS2_XBOX),1)
+
+har_demoeffect.o : har_demoeffect.c
+
+else
+
+har_demoeffect.obj : har_demoeffect.c
+
+endif
+

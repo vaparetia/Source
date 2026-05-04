@@ -1,0 +1,70 @@
+//
+//	P063_01_P01.w25d.src
+//
+//	written by Y.Matsuhana 2001.Jul
+//
+//	$Id: P063_01_P01.w25d.src,v 1.6 2001/09/03 07:55:32 usr13079 Exp $
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 空タイプ
+#define W25D_EVENING_SKY
+
+// 各ステージ共通要素
+#include	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+
+
+// デモで使用する海面
+// 010623 平野追加
+#include	"e_surface.h"
+
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+world		w25d
+world		w25cd_common/w25cd_bg
+world		sea
+world		door/w25c_dr00.kms
+lt2		w25d.lt2
+hazard		w25d.hzx
+// エマ
+#include	"emma.h"
+// かもめ
+#include	"kamome.h"
+// アイテム
+// 海面
+//pack_all	oil.tri \
+//		effect/plant_sea/e_oil_ref_add_alp_ovl_mod1120.bmp \
+//		effect/plant_sea/e_oil_sea_alp_ovl_mod0222.bmp
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+// リネーム
+texrename w25cd_24a.kms w10c_cntw04.bmp w10c_cntw04aaaa.bmp
+/* mgdemo added ----from here (Mon Aug  6 09:55:34 2001) ---- */
+human	ema_def/ema_idrope.kms
+human	rai_def/rai_def_mh_mt.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Aug  6 11:19:51 2001) ---- */
+human	ema_def/ema_id_rope3_mh_mt.evm
+human	ema_def/ema_idrope2_mh_mt.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Aug  6 16:56:57 2001) ---- */
+/* mgdemo added ----from here (Thu Aug 23 11:45:35 2001) ---- */
+goods	demo_dummy/demo_dummy.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Aug 24 10:38:54 2001) ---- */
+goods	null/null.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Sat Aug 25 21:32:58 2001) ---- */
+vib	demo/P063_01_p01_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Sep  3 16:51:31 2001) ---- */
+human	ema_def/ema_def_addhand_mh_mt.evm
+/* mgdemo added ----upto here ---- */

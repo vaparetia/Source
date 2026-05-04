@@ -1,0 +1,35 @@
+// a20b.src
+// Ｅ脚・ヘリポート(フォーチュン戦前)
+// 2002/05/24 H.Yoshiike
+// $Id:
+
+
+
+// ステージ名
+#define		WN_W20B
+
+// 敵兵タイプ
+#define		ENE_P_GOL
+#define		ENE_ATTACKER
+#define		ENE_NO_FINGER	// フィンガーサイン使わない
+
+// 特殊兵
+
+// 特殊兵のモーション設定
+#define		ENE_MAR '-DDEL_SHOTGUN=DUMMY -DDEL_TNG=DUMMY -DDEL_SHIELD=DUMMY -DDEL_WALKMAN=DUMMY -DDEL_HIGH=DUMMY -DDEL_LOCKER=DUMMY -DDEL_TOILET=DUMMY'
+
+// 空・太陽
+#define		DAY_SKY
+
+
+
+block .use r_vr_s
+block .nocache
+block .cache
+
+// ステージ共通要素
+#include	"a20bcd_common.h"
+
+//	アイテム
+#define	CBX			//	ダンボール
+#include	"a_item.h"

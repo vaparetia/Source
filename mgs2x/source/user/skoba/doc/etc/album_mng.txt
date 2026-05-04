@@ -1,0 +1,38 @@
+/*
+	album_mng.txt
+	albam_mngの仕組み
+
+	2001/10/31	S.Kobayashi
+	$Id: album_mng.txt,v 1.1.1.3 2002/11/19 11:50:04 Yoshizawa1 Exp $
+
+*/
+
+0 説明
+	アルバムモードを管理する大元のソースファイル
+
+1 処理手順
+	初期化 各種変数の初期化
+		↓
+	シグナル待ち状態
+		↓
+	終了
+
+
+2 関数説明
+	void *NewAlbumMng( int name )
+		本体
+
+	static int GetResources( Work *work )
+		初期化関数
+
+	static void Die( Work *work )
+		終了処理関数
+
+	static void Act( Work *pWork )
+		通常実行関数
+
+	static int SignalFunc( void *work, int signal, int value )
+		シグナル受取関数
+
+	static inline void ExecProc( Work *pWork , char mode )
+		プロック実行関数

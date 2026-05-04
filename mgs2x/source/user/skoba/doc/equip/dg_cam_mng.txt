@@ -1,0 +1,66 @@
+/*
+	dg_cam_mng.txt
+	dg_cam_mngの仕組み
+
+	2001/10/24	S.Kobayashi
+	$Id: dg_cam_mng.txt,v 1.1.1.3 2002/11/19 11:50:03 Yoshizawa1 Exp $
+
+*/
+
+1 処理手順
+	初期化 カメラ起動
+		   パッド等初期化
+		   タンカーカメラ or プラント編カメラサイトの起動
+		   子画面、鏡用モデル生成
+		↓
+	主観状態になるまで待機
+		↓
+	メッセージにより各処理実行←↑
+		↓						↑
+		↓						↑
+		↓						↑
+	装備解除されるまでループ→→↑
+	（ 親が死ぬまで ）
+		↓
+	終了
+
+2 関数説明
+	void *NewNormalDigitalCamera( CONTROL *ctrl , OBJECT **body , int *unit , u_int *trigger )
+	void *NewTnkDigitalCamera( CONTROL *ctrl , OBJECT **body , int *unit , u_int *trigger )
+		ラップ関数
+
+	void *NewDigitalCamera( CONTROL *ctrl, OBJECT **body, int *unit, u_int *trigger , int this )
+		本体
+
+	static int GetResources( Work *work , int strcode )
+		初期化関数
+
+	static void Die( Work *work )
+		終了処理関数
+
+	static void Act( Work *pWork )
+		通常実行関数
+
+	static void	InitCamera( Work *work, CONTROL *ctrl, int this )
+		カメラ起動
+
+	static void NormalAct( Work *pWork )
+		プラント編カメラ用Jpegセーブ中メインループ
+
+	static void TankerAct( Work *pWork )
+		タンカー編カメラ用Jpegセーブ中メインループ
+
+	void *SK_PhotoFramePointer( int frame_this )
+		写真保存領域のポインタ取得関数
+
+	static void CameraControl( Work *work )
+		カメラ操作関数
+
+	static void StartZoomCamera( Work *work )
+		ズームカメラ起動関数
+
+	static int SignalFunc( void *work, int signal, int value )
+		シグナルファンクション
+
+	static inline void StatusReset( Work *pWork )
+		写真撮影時に非表示にしたものを元の状態に戻す関数

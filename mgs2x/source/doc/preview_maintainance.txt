@@ -1,0 +1,121 @@
+プレビュー環境管理者用ドキュメント
+
+					2000/9/20
+					狩野  賢一郎(usr01363)
+
+
+新しくユーザーを増やす場合
+  2000/1/26  Ken Kano
+    下の新規ユーザー用のディレクトリの作成とファイルのコピーを
+    行うスクリプトを用意しました。
+    /usr/local/develop/preview/maintainance/setup_newuser.sh user_idを
+    実行すると下記内容(3,4以外の内容)が実行されます。
+
+  1) usr*****/
+     usr*****/stage
+     usr*****/stage/init
+     usr*****/stage/preview
+     といったディレクトリを作成する。
+
+  2) usr*****/にinit.gclとpreview.gclをコピーする。
+     2001/1/12  Ken Kano
+       init.gclはゲーム中と同一のものを用いるように変更しました。
+       そのため、各ユーザーのディレクトリにあったinit.gclは
+       必要なくなりました。
+     2001/1/26  Ken Kano
+       usbboot.cnfもコピーする必要がありました。
+
+  3) mj001b/tools/bin/linux/setup_previewにユーザーを増やす。
+     T-10000環境とUSB環境で少しいじる場所が違うので注意。
+
+  4) usr*****/.cshrc等、ログインシェルでsetup_previewが
+     実行されるようにする。
+
+     例) ~/.cshrc
+
+     source /u/develop/mj001b/tools/bin/linux/setup_preview
+
+
+MGS2のソースを新しくする場合
+  2000/1/12  Ken Kano
+    下のソースの更新とデータの更新を同時に行うスクリプトを
+    新規に作成しました。
+    /usr/local/develop/preview/maintainance/preview_update.shを
+    実行すると下記内容が実行されます。
+
+  1) /usr/local/develop/preview/maintainance/mainte.sh on
+     を実行。これにより、プレビュー環境は、メンテナンス状態に
+     なり、メンテナンス実行者以外のpreを受け付けなくなる。
+     現在、メンテナンス実行者は、usr01363に固定。
+     ('pre'コマンド参照)
+
+     2001/3/3  Ken Kano
+       新たに環境変数'MGS2_PREV_SUPERVISOR'を追加しました。
+       この変数が'1'の時は、メンテナンス実行者と認識します。
+
+
+  2) cd /usr/local/develop/preview/mgs2
+     を実行。
+
+  3) cvs update .
+     を実行。
+
+  4) source/ , module/にて、
+     make clean
+     make
+     を実行。
+
+  5) テスト実行し動作確認後、
+     /usr/local/develop/preview/maintainance/mainte.sh off
+     を実行。メンテナンス状態を終了する。
+
+
+ライブラリのアップデート
+
+  1) /usr/local/develop/preview/maintainance/mainte.sh on
+     を実行。これにより、プレビュー環境は、メンテナンス状態に
+     なり、メンテナンス実行者以外のpreを受け付けなくなる。
+     現在、メンテナンス実行者は、usr01363に固定。
+     ('pre'コマンド参照)
+
+     2001/3/3  Ken Kano
+       新たに環境変数'MGS2_PREV_SUPERVISOR'を追加しました。
+       この変数が'1'の時は、メンテナンス実行者と認識します。
+
+
+  2) /usr/local/develop/scelib/latestを削除。
+     新しいライブラリへリンクし直す。(ln -s ver*** latest)
+
+  3) テスト実行し動作確認後、
+     /usr/local/develop/preview/maintainance/mainte.sh off
+     を実行。メンテナンス状態を終了する。
+
+
+標準で用いているデータのアップデート
+  2000/1/12  Ken Kano
+    下のソースの更新とデータの更新を同時に行うスクリプトを
+    新規に作成しました。
+    /usr/local/develop/preview/maintainance/preview_update.shを
+    実行すると下記内容が実行されます。
+
+
+    cd /usr/local/develop/preview/default_init/
+    dpack ../mgs2/list/init.src .
+
+    cd /usr/local/develop/preview/default/
+    dpack ../mgs2/list/preview.src .
+
+  を実行する。
+
+  サウンドデータは、適当なユーザー(管理者)のサウンドデータを
+  アップデートし、そのデータをdefault_init , defaultにコピーする。
+
+    cd /usr/local/develop/preview/mgs2/list
+    make sound
+    cd ../../usr*****
+    cp stage/init/pk* ../default_init
+    cp stage/preview/pk* ../default_init
+
+  'make sound'によって取り出されるデータは、
+  /usr/local/develop/preview/mgs2/list/soundpre.lst
+  に記述されている。

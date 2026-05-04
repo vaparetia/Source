@@ -1,0 +1,207 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+
+	void edgePostMakeMaskFromFloats( void* output, const void* input, uint32_t count );
+	void edgePostApplyMaskFX16( void* output, const void* input, const void* mask, uint32_t count );
+	
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+.include "edgepost_helpers.inc"
+
+
+.cfunc void edgePostMakeMaskFromFloats( qword output, qword input, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	
+	.reg		kShuf0, kShuf1
+	il128		kShuf0, "DHLPdhlp00000000"
+	il128		kShuf1, "00000000DHLPdhlp"
+	
+loop:
+	ai			output, output, 0x10
+	ai			input, input, 0x40
+	ai			count, count, -16
+	
+	// Load input pixels
+	.reg		s0, s1, s2, s3
+	lqd			s0, -0x40( input )
+	lqd			s1, -0x30( input )
+	lqd			s2, -0x20( input )
+	lqd			s3, -0x10( input )
+
+	// clamp and convert to unsigned 
+	EDGEPOST_CLAMP_FLOAT( s0 )
+	EDGEPOST_CLAMP_FLOAT( s1 )
+	EDGEPOST_CLAMP_FLOAT( s2 )
+	EDGEPOST_CLAMP_FLOAT( s3 )
+	EDGEPOST_FLOAT_TO_U8( s0, s0 )
+	EDGEPOST_FLOAT_TO_U8( s1, s1 )
+	EDGEPOST_FLOAT_TO_U8( s2, s2 )
+	EDGEPOST_FLOAT_TO_U8( s3, s3 )
+	
+	// pack into a single qword
+	.reg		mask, mask0, mask1
+	shufb		mask0, s0, s1, kShuf0
+	shufb		mask1, s2, s3, kShuf1
+	or			mask, mask0, mask1
+	
+	// Store
+	stqd		mask, -0x10( output )
+	brnz		count, loop
+.endfunc
+
+.cfunc void edgePostApplyMaskFX16( qword output, qword input, qword mask, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	
+loop:
+	ai			output, output, 0x80
+	ai			input, input, 0x80
+	ai			mask, mask, 0x10
+	ai			count, count, -16
+
+	// Load input pixels
+	.reg		s0, s1, s2, s3, s4, s5, s6, s7
+	lqd			s0, -0x80( input )
+	lqd			s1, -0x70( input )
+	lqd			s2, -0x60( input )
+	lqd			s3, -0x50( input )
+	lqd			s4, -0x40( input )
+	lqd			s5, -0x30( input )
+	lqd			s6, -0x20( input )
+	lqd			s7, -0x10( input )
+
+	// Load packed mask
+	.reg		m
+	lqd			m, -0x10( mask )
+	
+	// Unpack pixels
+	.reg		p0, p1, p2, p3, p4, p5, p6, p7
+	.reg		p8, p9, p10, p11, p12, p13, p14, p15
+	EDGEPOST_UNPACK_PIXELS16( p0, p1, s0 )
+	EDGEPOST_UNPACK_PIXELS16( p2, p3, s1 )
+	EDGEPOST_UNPACK_PIXELS16( p4, p5, s2 )
+	EDGEPOST_UNPACK_PIXELS16( p6, p7, s3 )
+	EDGEPOST_UNPACK_PIXELS16( p8, p9, s4 )
+	EDGEPOST_UNPACK_PIXELS16( p10, p11, s5 )
+	EDGEPOST_UNPACK_PIXELS16( p12, p13, s6 )
+	EDGEPOST_UNPACK_PIXELS16( p14, p15, s7 )
+	
+	// Unpack mask
+	.reg		m0, m1, m2, m3, m4, m5, m6, m7
+	.reg		m8, m9, m10, m11, m12, m13, m14, m15
+	EDGEPOST_UNPACK_PIXELS8( m3, m7, m11, m15, m )
+	EDGEPOST_U8_TO_FLOAT( m3, m3)
+	EDGEPOST_U8_TO_FLOAT( m7, m7)
+	EDGEPOST_U8_TO_FLOAT( m11, m11)
+	EDGEPOST_U8_TO_FLOAT( m15, m15)
+	shufb		m0, m3, m3, kEdgePostReplicateX
+	shufb		m1, m3, m3, kEdgePostReplicateY
+	shufb		m2, m3, m3, kEdgePostReplicateZ
+	shufb		m3, m3, m3, kEdgePostReplicateW
+	shufb		m4, m7, m7, kEdgePostReplicateX
+	shufb		m5, m7, m7, kEdgePostReplicateY
+	shufb		m6, m7, m7, kEdgePostReplicateZ
+	shufb		m7, m7, m7, kEdgePostReplicateW
+	shufb		m8, m11, m11, kEdgePostReplicateX
+	shufb		m9, m11, m11, kEdgePostReplicateY
+	shufb		m10, m11, m11, kEdgePostReplicateZ
+	shufb		m11, m11, m11, kEdgePostReplicateW
+	shufb		m12, m15, m15, kEdgePostReplicateX
+	shufb		m13, m15, m15, kEdgePostReplicateY
+	shufb		m14, m15, m15, kEdgePostReplicateZ
+	shufb		m15, m15, m15, kEdgePostReplicateW
+	
+	// convert inputs
+	cuflt		p0, p0, 11
+	cuflt		p1, p1, 11
+	cuflt		p2, p2, 11
+	cuflt		p3, p3, 11
+	cuflt		p4, p4, 11
+	cuflt		p5, p5, 11
+	cuflt		p6, p6, 11
+	cuflt		p7, p7, 11
+	cuflt		p8, p8, 11
+	cuflt		p9, p9, 11
+	cuflt		p10, p10, 11
+	cuflt		p11, p11, 11
+	cuflt		p12, p12, 11
+	cuflt		p13, p13, 11
+	cuflt		p14, p14, 11
+	cuflt		p15, p15, 11
+	
+	// modulate
+	fm			p0, p0, m0
+	fm			p1, p1, m1
+	fm			p2, p2, m2
+	fm			p3, p3, m3
+	fm			p4, p4, m4
+	fm			p5, p5, m5
+	fm			p6, p6, m6
+	fm			p7, p7, m7
+	fm			p8, p8, m8
+	fm			p9, p9, m9
+	fm			p10, p10, m10
+	fm			p11, p11, m11
+	fm			p12, p12, m12
+	fm			p13, p13, m13
+	fm			p14, p14, m14
+	fm			p15, p15, m15
+	
+	// convert results
+	cfltu		p0, p0, 11
+	cfltu		p1, p1, 11
+	cfltu		p2, p2, 11
+	cfltu		p3, p3, 11
+	cfltu		p4, p4, 11
+	cfltu		p5, p5, 11
+	cfltu		p6, p6, 11
+	cfltu		p7, p7, 11
+	cfltu		p8, p8, 11
+	cfltu		p9, p9, 11
+	cfltu		p10, p10, 11
+	cfltu		p11, p11, 11
+	cfltu		p12, p12, 11
+	cfltu		p13, p13, 11
+	cfltu		p14, p14, 11
+	cfltu		p15, p15, 11
+	
+	/*
+	--rept(11, VAR)
+	cfltu		p##VAR, 11
+	--endrept
+	*/
+	
+	// pack
+	.reg		r0, r1, r2, r3, r4, r5, r6, r7	
+	EDGEPOST_PACK_PIXELS16( r0, p0, p1 )
+	EDGEPOST_PACK_PIXELS16( r1, p2, p3 )
+	EDGEPOST_PACK_PIXELS16( r2, p4, p5 )
+	EDGEPOST_PACK_PIXELS16( r3, p6, p7 )
+	EDGEPOST_PACK_PIXELS16( r4, p8, p9 )
+	EDGEPOST_PACK_PIXELS16( r5, p10, p11 )
+	EDGEPOST_PACK_PIXELS16( r6, p12, p13 )
+	EDGEPOST_PACK_PIXELS16( r7, p14, p15 )
+	
+	// Store
+	stqd		r0, -0x80( output )
+	stqd		r1, -0x70( output )
+	stqd		r2, -0x60( output )
+	stqd		r3, -0x50( output )
+	stqd		r4, -0x40( output )
+	stqd		r5, -0x30( output )
+	stqd		r6, -0x20( output )
+	stqd		r7, -0x10( output )
+	brnz		count, loop
+	
+.endfunc

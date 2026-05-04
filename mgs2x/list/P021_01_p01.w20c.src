@@ -1,0 +1,289 @@
+// P021_01_p01.w20c.src // 010605 に P021_01_p01.w20b.src より名称変更
+// Ｅ脚・ヘリポートデモステージ
+// 爆弾解体オルガ登場１_pd１/ファットマン登場１/ファットマン死亡１/忍者登場１〜１２（全て）
+// 2001/02/23 S.Yamashita
+// $Id: P021_01_p01.w20c.src,v 1.32 2001/09/01 09:33:11 usr13079 Exp $
+
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 不要エフェクト切り分け定義
+#define EFFECT_CUSTUM
+
+//#define	E_GLASS_DANKON			// グラス系弾痕
+#define	E_KOGETUKI				// 壁への焦げ付き
+#define	E_FOOTSTAMP				// 足跡
+#define	E_ENEMY					// 敵兵系
+//#define	E_ENEMY_LIGHT			// 敵兵ライト
+#define	E_SLING					// スリング
+//#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+//#define	E_MANHATTAN_LIGHT		// マンハッタンライト
+#define	E_C4BOMB				// Ｃ４爆弾、赤外線センサー
+//#define	E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷
+//#define	E_CROSS_FADE_LIGHT		// クロスフェード（甲板のライトで使用）
+//#define	E_CHARA_DENTOU			// chara 懐中電灯、フォーチュン戦
+#define	E_WATER					// 水関係
+//#define	E_CHARA_HAMON			// chara 波紋
+//#define	E_BROKEN_OBJECT			// 壊れ物
+//#define	E_BROKEN_PAPEROBJECT	// 壊れ物紙
+//#define	E_BROKEN_PLATE			// 壊れ物皿
+//#define	E_HIMATU				// 水飛沫
+//#define	E_CHARA_MADOAME			// chara 窓雨
+#define	E_STEAM					// 粉 & 水蒸気
+//#define	E_POWDER				// 小麦粉
+#define	E_SKY_NORMAL			// 空
+//#define	E_LINEAR_GUN			// リニアガン
+#define	E_TENKYUU				// 天球ドーム
+#define	E_SUN					// 太陽
+#define	E_DOOR_LUMP				// ドアランプ
+#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、
+								// ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+//#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+#define	ENV						// 天球
+
+// 汎用空用テクスチャのためのデファイン（c_effect.h の前で）
+//#define MORNING_SKY
+#define DAY_SKY
+//#define EVENING_SKY
+//#define NIGHT_SKY_DEMO
+
+// 各ステージ共通要素
+include		common.h
+#include	"c_effect.h"
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+pack_all	w20c.tri world/w20c world/door/w02a_l_dr.dar world/door/w24b_dr02.dar world/door/w01f_dr.dar world/sea
+world		w20c
+world		door/w02a_l_dr.kms
+world		door/w24b_dr02.kms
+world		door/w01f_dr.kms
+world		sea
+
+/*
+// w10c のモデル 010813 田中コメントアウト
+pack_all	w10c.tri \
+			world/w10c/w10c_12a.dar \
+			world/w10c/w10c_16a.dar \
+			world/w10c/w10c_17a.dar \
+			world/w10c/w10c_18a.dar \
+			world/w10c/w10c_19a.dar \
+			world/w10c/w10c_21a.dar \
+			world/w10c/w10c_22a.dar \
+			world/w10c/w10c_23a.dar \
+			world/w10c/w10c_24a.dar // \
+
+//			world/w10c/w10c_25a.dar \ // 追加
+//			world/w10c/w10c_31a.dar // 追加
+world		w10c/w10c_12a.kms
+world		w10c/w10c_16a.kms
+world		w10c/w10c_17a.kms
+world		w10c/w10c_18a.kms
+world		w10c/w10c_19a.kms
+world		w10c/w10c_21a.kms
+world		w10c/w10c_22a.kms
+world		w10c/w10c_23a.kms
+world		w10c/w10c_24a.kms
+//world		w10c/w10c_25a.kms // 追加
+//world		w10c/w10c_31a.kms // 追加
+*/
+
+
+// w20b遠景用のモデル 010813 田中追加
+world		w20b/other/w20b_12a.kms \
+			w20b/other/w20b_14a.kms \
+			w20b/other/w20b_15a.kms \
+			w20b/other/w20b_17a.kms \
+			w20b/other/w20b_19a.kms \
+			w20b/other/w20b_21a.kms \
+			w20b/other/w20b_23a.kms \
+			w20b/other/w20b_24a.kms \
+			w20b/other/w20b_25a.kms \
+			w20b/other/w20b_31a.kms \
+			w20b/other/w20b_crane.kms \
+			w20b/other/w20b_gl.kms \
+			w20b/other/w20b_h.kms \
+			w20b/other/w20b_hi.kms \
+			w20b/other/w20b_i.kms \
+			w20b/other/w20b_jk.kms \
+			w20b/other/w20b_k.kms
+
+// w25c0
+//world		w25c/w25c/w25c0.kms
+
+// w24b、網膜センサー部分モデル（P036_07_p06用）
+pack_all w24b_etc.tri \
+		world/w24b/w24b0/w24b0.dar \
+		world/w24b/w24b0/w24b0_ms00.dar
+world		w24b/w24b0/w24b0.kms
+world		w24b/w24b0/w24b0_ms00.kms
+// 同網膜センサー覗く敵兵
+pack_all gbs_def_mt.tri \
+		human/gbs_def/gbs_def.dar 
+human		gbs_def
+
+// プラント海面用
+include d_surface.h
+/*pack_all	oil.tri \
+				debug/takabe/tex/oil_alp_ovl_mod0222.bmp \
+				debug/takabe/tex/sky_day_add_alp_ovl_mod1120.bmp
+*/
+
+// ライト等
+lt2			w20b.lt2 // w20c.lt2 というファイルは存在しない。
+lt2			w24b.lt2 // 網膜チェックデモ時用ライト
+hazard		d00a3.hzx
+
+// キャラクタ
+// ライデン
+human		rai_def/rai_def_mh_mt.evm
+// オルガ
+pack_all org_merge.tri \
+	human/org_def/org_def.dar \
+	human/org_def/org_def_addhand_mh_mt.dar 
+include		orga_demo.h
+// ファットマン
+//human	fat_def
+// ファットマンの滲み血
+// モデル（TRI名に、zzz_fat_ooze_blood_mh.tri が欲しいので、まとめない）
+pack_all zzz_fat_ooze_blood_mh.tri \
+			human/fat_def/fat_ooze_blood_mh.dar
+human		fat_def/fat_ooze_blood_mh.evm
+// アニメテクスチャ
+// アニメテクスチャで置き換えるべきテクスチャは、"fat_ooze_blood87_alp_ovl"
+anmtex fat_ooze_blood.rat effect/fat_ooze_blood
+
+// 忍者
+//human	org_tng
+
+// ファットマン
+human	fat_def
+
+// キムさん指定爆弾
+goods	c4_kaitai_a/c4_kaitai_a1.kms
+
+// リネーム
+
+/* mgdemo added ----from here (Mon Jun  4 14:14:47 2001) ---- */
+human	sna_def/sna_def.kms
+/* mgdemo added ----upto here ---- */
+
+
+
+/* mgdemo added ----from here (Thu Jun 21 21:26:46 2001) ---- */
+goods	demo_makarov_crg/demo_makarov_crg.kms
+human	org_def/org_radio_forhand.kms
+human	org_plant/org_plant_mh_mt.evm
+weapon	usp/usp_sub.kms
+human	org_plant/org_plant_hair_mh.evm
+human	org_plant/org_plant_dummy.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Jun 22 14:37:20 2001) ---- */
+human	gbs_def/gbs_def.kms
+human	gbs_def/gbs_hlst.kms
+human	gbs_def/gbs_bp.kms
+weapon	aks/aks.kms
+human	sna_def/sna_bdn2.kms
+human	sna_def/sna_bdn1.kms
+human	sna_def/sna_mag1.kms
+human	sna_def/sna_mag2.kms
+human	sna_def/sna_mag3.kms
+human	sna_def/sna_mag4.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Jul  6 18:00:43 2001) ---- */
+human	sel_def/sel_def.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Jul 12 11:12:51 2001) ---- */
+goods	demo_org_tng_hfb/demo_org_tng_hfb_r_blade_mt.kms
+goods	demo_org_tng_hfb/demo_org_tng_hfb_r_sheath.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Jul 12 11:19:55 2001) ---- */
+human	org_tng/org_tng_sld_mt.kms
+human	org_tng/org_tng_mh_mt.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Jul 12 11:22:55 2001) ---- */
+goods	demo_dummy/demo_dummy.kms
+item	item_security_card_lv2/security_card_lv2.kms
+goods	demo_gbs_uniform/demo_gbs_uniform_mh.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Jul 12 11:31:35 2001) ---- */
+item	handy_telephone/handy_telephone.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Jul 16 15:18:06 2001) ---- */
+human	org_tng/org_tng_sh_mt.kms
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_text_R_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_text_L_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_mitsubishi_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_square_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_noiz_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_head_met_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_cover_alp.bmp
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Jul 27 22:53:22 2001) ---- */
+item	shield/shl_frg1.kms
+goods	demo_wineglass_fat/strow_fat_short.kms
+goods	demo_wineglass_fat/wine_liq_vanim_50hlf_mt.kms
+goods	demo_wineglass_fat/strow_fat_long.kms
+goods	demo_wineglass_fat/wineglass_fat.kms
+item	shield/shl_frg1.kms
+/* mgdemo added ----upto here ---- */
+
+// テックスリネーム
+texrename w10c_24a.kms w10c_cntw04.bmp w10c_cntw04_x.bmp
+
+// ホロ
+pack_all	zobject.tri \
+				world/w20b/w20b/w20b_horo.dar
+
+world		w20b/w20b/w20b_horo.kms
+cvd			world/w20b/w20b/w20b_horo.cv2 vn
+/* mgdemo added ----from here (Tue Jul 31 11:18:44 2001) ---- */
+goods	demo_det_switch_fat/demo_def_switch_fat.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Aug  3 23:29:58 2001) ---- */
+goods	field_camera/field_camera_all.kms
+world	door/w04_dr.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Aug 14 18:51:08 2001) ---- */
+vib	demo/P036_05_p04_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Aug 16 10:58:21 2001) ---- */
+vib	demo/P021_01_p01_rai_02.vib
+vib	demo/P021_01_p01_rai_01.vib
+goods	demo_org_plant_goods/demo_org_plant_hlst.kms
+goods	demo_org_plant_goods/demo_org_plant_radio.kms
+goods	demo_org_plant_goods/demo_org_plant_ssk.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Aug 16 11:06:39 2001) ---- */
+vib	demo/P036_01_p01_rai_02.vib
+vib	demo/P036_01_p01_rai_01.vib
+/* mgdemo added ----upto here ---- */
+
+// たなかついか
+item  radio/rad.kms
+
+pack_trnall trn.tri effect/light/xlit04a_alp.bmp
+vib	demo/P032_01_p01_rai_01.vib
+cvd	goods/demo_wineglass_fat/wine_liq_vanim_50hlf_mt.cv2
+vib	demo/P032_01_p01_fat_02.vib
+vib	demo/P032_01_p01_fat_01.vib
+/* mgdemo added ----upto here ---- */
+// テロップ
+#ifdef MGS2_LANG_ENGLISH
+// 英語
+pack_all	staff.tri \
+		2D/demo_telop/eng/sr06j_alp_ovl.bmp
+
+#else
+// 日本語
+pack_all	staff.tri \
+		2D/demo_telop/jpn/sr06j_alp_ovl.bmp
+
+#endif
+/* mgdemo added ----from here (Sat Sep  1 18:26:04 2001) ---- */
+vib	demo/P034_01_p01_rai_01.vib
+/* mgdemo added ----upto here ---- */

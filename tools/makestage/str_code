@@ -1,0 +1,30 @@
+#!/usr/bin/perl
+
+die "Usage: str_code <string> [bitlength(16)]\n" if ( $#ARGV == -1 ) ;
+
+$BITLEN =16 ;
+$BITLEN = $ARGV[1] if ( $#ARGV == 1 ) ;
+print &str_code( $ARGV[0] )."\n" ;
+
+
+sub str_code()
+{
+    local ( $string ) = @_ ;
+    local $len ;
+    local $c, $id, $mask ;
+
+    $id  = 0 ;
+    $len = length( $string )-1 ;
+    $mask = ( 1 << $BITLEN ) - 1;
+
+    foreach $i (0..$len)
+    {
+	$c = substr( $string, $i,1 ) ;
+	$id = ( $id << 5 ) | ($id >> ($BITLEN-5) ) ;
+	$id += ord($c) ;
+	$id &= $mask ;
+    }
+    $id = 1 if ( $id == 0 ) ;
+    return $id ;
+}
+

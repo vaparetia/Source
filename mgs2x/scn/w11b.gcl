@@ -1,0 +1,539 @@
+/*
+	w11b.gcl                     
+		海底ドック(爆弾解体〜フォーチュン戦前)
+
+	2000/04/19 H.Yoshiike         
+	$Id: w11b.gcl,v 1.44 2002/08/05 04:19:16 usr04098 Exp $                      
+
+	
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+// ステージ名
+#define		STAGE_W11B		1		// 共通プロック切り分け用
+// 敵兵、ＮＰＣ状況（薬莢を呼び分けるのに必要）
+
+// 各種スイッチ用define
+// ------------------------------------
+// サウンド
+#define		SOUND			1		// サウンドデータは最初に呼ぶ
+#define		BGM				1		// BGMは敵兵コマンダーの後に呼ぶ
+// ノード端末
+#define		NODE			1		// ノードcharaを使用するのに必要
+// キャラクター関係
+#define		RAIDEN			1		// SNAKEとは排他
+// ドア
+#define		WT_DOOR			1		// 水密ドア
+#define		SLIDE_DOOR		1		// スライドドア
+// 入出トラップ
+#define		LOAD_TRAP		1
+#define		STAGE_END		1		// ステージ終了時処理を使用可にする
+// フォグ
+#define		FOG				1
+// エフェクト関係
+// 子画面
+#define		SUB_CAMERA		0
+// カメラ関係
+#define		CLEAR_CAMERA	0		// クリアリング専用カメラ(要子画面)
+// 天井
+#define		CHARA_CEIL		1		// 天井君
+// 透明壁
+#define		TR_WALL			1		// シナリオ置きの透明壁
+// ライト関係
+#define		SPOT_LIGHT		0		// スポットライト
+#define		CHARA_LIGHT		1		// キャラ専用ライト
+// オブジェ関係
+#define		LOCKER			1		// ロッカー
+#define		SD_LOCKER_FLR	4		// ロッカー扉SE番号(倒れバージョン)
+#define		SD_LOCKER_HZD	1		// ロッカー扉SE番号(扉バージョン)
+#define		SUBMARINE		1		// 潜水艇
+#define		C4_BOMB			1		// 解体用
+// 水中モード関連
+#define	WATER				1		// 水面
+#define	WATER_MODE			1		// 水中モード基本キャラ設定を使用するのに必要
+#define WATER_SURFACE		-47250	// 水面の高さ
+#define	WATER_CAMERA_ZONE	5		// 追従カメラが使用するゾーンのあるグループ番号(必要があれば定義する)
+#define	WATER_ELUDE_IN		1		// エルード状態から入水できる場合は定義する
+#define	CAMERA_BUBBLE_NUM	3		// カメラ泡の個数(いらない場合は定義しない)
+#define	CAMERA_DUST_NUM		10		// カメラダストの個数(いらない場合は定義しない)
+// 爆弾タイマー
+#define		CTDOWN_TIMER_P	1		// 爆弾タイマー開始procを呼ぶのに必要
+// アイテム
+#define		ITEM			1
+// 強制モーション
+#define		JP_MOTION		1		// ジャンプモーション
+#define		BY_MOTION		1		// ビヨンドモーション
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+	#define		DEBUG_MODE		0		// デバッグ開発環境
+	#define		NO_POLYDEMO		0		// ポリデモなしフラグ
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+	#define		DEBUG_MODE		1		// デバッグ開発環境
+	#define		NO_POLYDEMO		1		// ポリデモなしフラグ
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME		w11b
+#define		KMS_NAME0		w11a0
+#define		MT_KMS_NAME0	w11a0_speobj_mt
+#define		KMS_NAME1		w11a1
+#define		KMS_NAME2		w11c2
+#define		KMS_NAME3		w11_elv_fader
+#define		BK_CABLE_NAME	w11c2r_cable
+#define		CEIL_NAME0		w11a0r
+#define		CEIL_NAME1		w11a1r
+#define		CEIL_NAME2		w11c2r
+#define		WALL_NAME0		w11a0_southwall
+#define		WALL_NAME1		w11c2_southwall
+#define		DOOR_NAME1		dr_free
+#define		LT2_NAME		w11
+#define		R_MT_FILE		rai_w11a
+
+// キャラクター関係
+#if d:RAIDEN
+	#define		PLAYER		ライデン	// モーションができるまで名前はスネーク
+#else
+	#define		PLAYER		スネーク
+#endif
+
+
+
+// include
+// ------------------------------------
+#include "rai_w11a.mh"		// 強制モーションリスト
+#include "stdch.h"
+#include "sload.h"
+#include "jump.h"
+#include "beyond.h"
+#include "sound.h"
+#include "enevoice.h"
+#include "item_info.h"
+#include "w11abc_common.h"
+#include "w11ab_common.h"
+#include "w11bc_common.h"
+#include "node_res.h"
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+
+// マップ設定
+// ------------------------------------
+chara マップ 発着口 -k d:KMS_NAME0 -h d:HZX_NAME,0 -l d:LT2_NAME
+chara マップ 連結ハッチ -k d:KMS_NAME1 -h d:HZX_NAME,1 -l d:LT2_NAME
+chara マップ 昇降機ホール -k d:KMS_NAME2 -k d:KMS_NAME3 -h d:HZX_NAME,2 -l d:LT2_NAME
+
+chara マップ接合 発着口／連結ハッチ 発着口 連結ハッチ
+chara マップ接合 連結ハッチ／昇降機ホール 連結ハッチ 昇降機ホール
+
+command マップ設定 昇降機ホール -set {
+	// デモorゲームにかかわらずセットする
+	command フォーチュン索敵初期化
+
+// プレイヤーを乗っけるために先に定義
+	if( $s:登場ポイント == sp_w12a_w11b_0 ) {
+	// 上からきたときのみ設置する
+		@昇降機設置					// w11abc_common.hで定義
+	}
+}
+
+command マップ設定 発着口 連結ハッチ 昇降機ホール -set {
+// サウンド、キャラクターのセット
+// ------------------------------------
+#if d:SOUND	
+	@サウンド設定				// データは最初に呼ぶ。w11abc_common.hで定義
+#endif
+	@レーダーオンオフチェック $f:w11a_ノードフラグ	// stdproc.hで定義
+	@常駐キャラ設定				// stdch.hで定義
+	@ローカル変数初期化			// w11abc_common.hで定義
+	@設定値変更					// w11abc_common.hで定義
+	@レーダーオンオフチェック $f:w11a_ノードフラグ	// stdch.hで定義
+	@シナリオデモキャラセット	// stdproc.hで定義
+	@プラグイン設定				// w11abc_common.hで定義
+	@プレイヤー設定				// w11abc_common.hで定義
+#if d:JP_MOTION
+	@ジャンプ設定				// w11ab_common.hで定義
+#endif
+	@弾痕跳弾設定				// w11abc_common.hで定義
+// マップ切り替え、ロード、ドア
+// ------------------------------------
+#if d:SLIDE_DOOR
+	@ドア設置					// w11abc_common.hで定義
+#endif
+#if d:LOAD_TRAP
+	@昇降機ホールロード設定		// w11ab_common.hで定義
+#endif
+// ステージ、オブジェクト関連
+// ------------------------------------
+	@プラント編全体マップ設定 d:Ａ脚マップ	// stdproc.hで定義
+	@爆弾タイマー設置			// stdproc.hで定義（ストリーフラグで自動判別）
+#if d:FOG
+	@フォグ設定					// w11abc_common.hで定義
+#endif
+	@カメラセット				// w11abc_common.hで定義
+
+// デバッグキャラ、仮キャラ
+// ------------------------------------
+#if d:DEBUG_CHARA
+//	@デバッグキャラセット		// w11ab_common.hで定義
+#endif
+}
+
+command マップ設定 発着口 連結ハッチ -set {
+#if d:WT_DOOR
+	@水密ドア設置				// w11ab_common.hで定義
+#endif
+}
+
+command マップ設定 発着口 -set {
+#if d:CHARA_CEIL
+	@発着口天井設置			// w11ab_common.hで定義
+#endif
+#if d:ITEM
+	@発着口アイテム設置		// w11abc_common.hで定義
+#endif
+#if d:TR_WALL
+	@透明壁設置					// w11ab_common.hで定義
+#endif
+#if d:LOCKER
+	@ロッカー設置				// w11ab_common.hで定義
+#endif
+	@イントルード金網設定			// w11ab_common.hで定義
+#if d:SUBMARINE
+	@潜水艇設置					// w11ab_common.hで定義
+#endif
+	@発着口壁スポットライト		// w11ab_common.hで定義
+	@フナ虫設定					// w11ab_common.hで定義
+	@メニューフナムシ取り付き設定	// stdproc.hで定義
+#if d:C4_BOMB
+	@解体Ｃ４設置				// w11ab_common.hで定義
+#endif
+#if d:BY_MOTION
+	@発着口ビヨンド設定		// w11ab_common.hで定義
+#endif
+	@発着口カメラ設定		// w11ab_common.hで定義
+#if d:WATER
+	@水中モード基本キャラ設定
+	@エルード時の体水飛沫設定	// w11ab_common.hで定義
+	@敵兵水落ち設定				// w11ab_common.hで定義
+	@発着口水面設定			// w11ab_common.hで定義
+	@発着口水中モードプレイヤー連動キャラ設定	// w11ab_common.hで定義
+#endif
+	@フェンスドア設定				// w11ab_common.hで定義
+}
+
+command マップ設定 連結ハッチ -set {
+#if d:CHARA_CEIL
+	@連結ハッチ天井設置			// w11ab_common.hで定義
+#endif
+	@連結ハッチカメラ設定		// w11ab_common.hで定義
+// デバッグキャラ、仮キャラ
+// ------------------------------------
+	@爆弾解体後昇降機ホール１無線デモ１設定
+}
+
+command マップ設定 昇降機ホール -set {
+#if d:NODE
+	@ノード端末設定 1536			// stdproc.hで定義
+#endif
+#if d:CHARA_CEIL
+	@デモ中壊れオブジェクト設定		// w11abc_common.hで定義
+	@昇降機ホール天井設置			// w11abc_common.hで定義
+	@天井崩れ						// w11bc_common.hで定義
+#endif
+#if d:ITEM
+	@昇降機ホールアイテム設置		// w11abc_common.hで定義
+#endif
+	@昇降機ホール揺れライト設定		// w11abc_common.hで定義
+	@昇降機ホール壁ライト設定		// w11abc_common.hで定義
+	@昇降機ホール壁スポットライト	// w11abc_common.hで定義
+	@昇降機ホールオブジェ設置 5		// w11bc_common.hで定義
+	@昇降機ホールスポットライト設定 // w11abc_common.hで定義
+	@昇降機ホールカメラ設定
+}
+
+// キャラ用ライトは最後に設定
+command マップ設定 発着口 連結ハッチ 昇降機ホール -set {
+#if d:CHARA_LIGHT
+	@キャラ用ライト設置				// w11abc_common.hで定義
+#endif
+}
+
+
+// 無線用include ※位置は動かさないこと
+#include "w11b_cdc.ch"
+#include "p_force_cdc.ch"
+
+
+// 全てのセットが終わったところでフェードイン
+if( $s:登場ポイント == sp_w12a_w11b_0 ) {
+	//初期マップの表示
+	command マップ表示 -show 昇降機ホール
+	mesg マップ接合 発着口／連結ハッチ on
+
+	// 全てのセットが終わったところでフェードイン
+	@ステージ開始時処理（昇降機） d:wn_Ａ脚底部海底ドック
+
+} else if ( $s:登場ポイント == 爆弾解体終了１無線デモ１終了後 ) {
+// 無線デモ後
+	command マップ表示 -show 発着口
+	command マップ表示 -show 連結ハッチ
+	mesg マップ接合 発着口／連結ハッチ on
+	// 無効にしていたロードプロックと無線用プロックを起動
+	command トラップ切り替え -trap ev010 -switch 1
+	command トラップ切り替え -trap ld002 -switch 1
+	@ロード時フェードイン
+} else {
+// 無線デモ後
+	command マップ表示 -show 発着口
+	command マップ表示 -show 連結ハッチ
+	mesg マップ接合 発着口／連結ハッチ on
+	@ロード時フェードイン
+	// 無効にしていたロードプロックと無線用プロックを起動
+	command トラップ切り替え -trap ld002 -switch 1
+}
+
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// 全マップ共通
+	// ノード端末
+	// ------------------------------------
+	proc ノード接続時プロック {
+		#if d:DEBUG_PRINT
+			print 'node_set'
+		#endif
+
+		eval($f:ノードフラグ = $f:w11a_ノードフラグ);
+	}
+
+
+	proc ノード接続後プロック {
+		#if d:DEBUG_PRINT
+			print 'node_event_go'
+		#endif
+
+		eval($f:w11a_ノードフラグ = 1);
+		command メニュー設定 -node_access on 
+	}
+
+	// 無線デモ
+	// ------------------------------------
+	proc 爆弾解体後昇降機ホール１無線デモ１設定 {
+		#if d:DEBUG_PRINT
+			print 'codec_demo_set'
+		#endif
+
+		// このトラップは爆弾解体終了後起動
+		trap ev010 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( $w:p_story < d:ST:P027_01_R01爆弾解体後昇降機ホール１無線デモ１開始 ) {
+					eval ( $w:p_story = d:ST:P027_01_R01爆弾解体後昇降機ホール１無線デモ１終了 );
+					eval( $i:プレイヤー初期Ｘ位置 = $i:プレイヤー位置Ｘ ) ;
+					eval( $i:プレイヤー初期Ｙ位置 = $i:プレイヤー位置Ｙ ) ;
+					eval( $i:プレイヤー初期Ｚ位置 = $i:プレイヤー位置Ｚ ) ;
+					eval( $i:プレイヤー初期方向 = $w:プレイヤー方向 )
+					eval( $b:プレイヤー初期姿勢 = $w:プレイヤー姿勢 ) ;
+					eval( $s:登場ポイント = 昇降機ホール１無線デモ１後 );
+					@昇降機ホール揺れフラグチェック			// w11abc_common.h
+					@rt_P027_01_R01爆弾解体後昇降機ホール１無線デモ１
+				}
+			}
+	}
+
+
+// 各マップ別設定
+// ------------------------------------
+// 昇降機ホール
+	// 各種カメラの設定
+	// ------------------------------------
+	proc 昇降機ホールカメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w11a2_camera_set'
+		#endif
+
+		trap ca021 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				if ( $w:p_story > d:ST:P027_01_R01爆弾解体後昇降機ホール１無線デモ１開始 && $w:p_story <= d:ST:P028_01_P01爆弾解体後フォーチュン再登場１ポリゴンデモ１開始 ) {
+					// 爆弾解体終了後はポリデモへ飛ぶので、カメラを変化させない
+					chara カメラ設定 メインカメラ \
+						-c 0 \	
+						-b -11316,-39467,4286 -8474,-39467,4286 \
+						-l -11316,-43497,2993 -8474,-43497,2993 \
+						-r 821,2048,0 \
+						-f 4239 \
+						-a 200 \
+						-i 0 0 0 0 \
+						-z d:CAMERA_NO_CUSHION \
+						-s $3
+				} else {
+					@CS_スムーズカメラ降順 $6 6000 4000 876 500
+					eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+					chara カメラ設定 メインカメラ \
+						-c 0 \	
+						-b -2500,-38000,1000 2500,-38000,5776 \
+						-l -2500,-43653,-5000 2500,-43653,4249 \
+						-r $i:補完ＲＸ,2048,0 \
+						-f 7500 \
+						-a 200 \
+						-i 2 -1 0 0 \
+						-s $3
+				}
+
+			}
+
+		trap ca022 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -4000 -5000 -2300 -850
+				eval( $i:補完ＢＸ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -4000 -5000 2300 850
+				eval( $i:補完ＢＸ２ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -4000 -5000 -38000 -38500
+				eval( $i:補完ＢＹ = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b $i:補完ＢＸ,$i:補完ＢＹ,-434 $i:補完ＢＸ２,$i:補完ＢＹ,5776 \
+					-l $i:補完ＢＸ,-43653,-5834 $i:補完ＢＸ２,-43653,4249 \
+					-r 500,2048,0 \
+					-f 7500 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-s $3
+			}
+
+		// エレベーター
+		trap ca023 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 1 \	
+					-p 0,-42999,-3037 -t 0,-43401,-6872 \
+					-r 68,2048,0 -f 3856 \
+					-a 200 \
+					-i 0 1 0 0 \
+					-s $3
+			}
+
+		// 連結通路扉前
+		trap ca024 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				if ( $w:p_story > d:ST:P027_01_R01爆弾解体後昇降機ホール１無線デモ１開始 && $w:p_story <= d:ST:P028_01_P01爆弾解体後フォーチュン再登場１ポリゴンデモ１開始 ) {
+					// 爆弾解体終了後はポリデモへ飛ぶので、カメラを変化させない
+					chara カメラ設定 メインカメラ \
+						-c 0 \	
+						-b -11316,-39467,4286 -8474,-39467,4286 \
+						-l -11316,-43497,2993 -8474,-43497,2993 \
+						-r 821,2048,0 \
+						-f 4239 \
+						-a 200 \
+						-i 0 0 0 0 \
+						-z d:CAMERA_NO_CUSHION \
+						-s $3
+				} else {
+					@CS_スムーズカメラ降順 $6 6000 4000 876 500
+					eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+					chara カメラ設定 サブカメラ \
+						-c 0 \	
+						-b -4250,-38000,1000 2500,-38000,5776 \
+						-l -4250,-43653,3481 2500,-43653,4249 \
+						-r $i:補完ＲＸ,2048,0 \
+						-f 7500 \
+						-a 200 \
+						-i 3 3 0 0 \
+						-s $3
+				}
+			}
+
+		// 昇降機ホール南東
+		trap ca025 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 6000 4000 876 500
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				chara カメラ設定 サブカメラ \
+					-c 0 \	
+					-b -2500,-38000,1000 4000,-38000,5776 \
+					-l -2500,-43653,3231 4000,-43653,4249 \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 7500 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-s $3
+			}
+
+		// 荷物裏の匍匐カメラ
+		trap ca026 d:PLAYER \
+			-mask ？ \
+			-state 1,2 \	//しゃがみor匍匐
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 0 \	
+					-b -3500,-38000,d:CAM_MIN d:CAM_MAX,-38000,d:CAM_MAX \
+					-l -3500,-43653,d:CAM_MIN d:CAM_MAX,-43653,d:CAM_MAX \
+					-r 900,2048,0 \
+					-f 7250 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-s $3
+			}
+	}
+
+
+
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下仮キャラ用proc
+// -----------------------------------------------------------------------------------
+// 仮キャラ
+// ------------------------------------
+
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------

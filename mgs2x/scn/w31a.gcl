@@ -1,0 +1,1512 @@
+/*
+	w31a.gcl                     
+		シェル２中央棟１Ｆ-大統領
+
+	2000/11/16 H.Yoshiike         
+	$Id: w31a.gcl,v 1.88 2001/11/19 09:01:07 usr03682 Exp $                      
+
+	
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+// ステージ名
+#define		STAGE_W31A		1		// 共通プロック切り分け用
+// 敵兵、ＮＰＣ状況（薬莢を呼び分けるのに必要）
+#define GUN_MECA 1 					// ガンカメ ガンサイファー 
+
+
+// 各種スイッチ用define
+// ------------------------------------
+// サウンド
+#define		SOUND			1		// サウンドデータは最初に呼ぶ
+#define		BGM				1		// BGMは敵兵コマンダーの後に呼ぶ
+// デモ
+#define		POLYDEMO_LOAD	1		// ポリゴンデモロードを使用するのに必要
+// ノード端末
+#define		NODE			1		// ノードcharaを使用するのに必要
+// キャラクター関係
+#define		RAIDEN			1		// SNAKEとは排他
+#define		SNAKE			0
+// 監視カメラ関係
+#define		GUN_CAMERA		1		// ガンカメラ
+// ルートデモ人形
+#define		DOLL			1
+// ドア
+#define		SLIDE_DOOR		1		// スライドドア
+// エレベーター
+#define		ELEVATOR_SET	1		// エレベーター設置を有効にする
+#define		ELEVATOR_Y		0		// エレベーターをＹ軸にいくつずらすか
+#define		ELEVATOR_Z		-180250	// エレベーターをＺ軸にいくつずらすか
+#define		ELV_1F			1		// ステージの階数を定義
+#define		SHELL			1		// シェル２は１で定義
+// 入出トラップ
+#define		LOAD_TRAP		1
+#define		STAGE_END		1		// ステージ終了時処理を使用可にする
+// フォグ
+#define		FOG				1
+// エフェクト関係
+// 子画面
+#define		SUB_CAMERA		0
+// カメラ関係
+#define		START_CAMERA	1		// ステージ開始時のカメラ
+#define		CLEAR_CAMERA	0		// クリアリング専用カメラ(要子画面)
+
+// 天井
+#define		CHARA_CEIL		1		// 天井君
+// 透明壁
+#define		TR_WALL			0		// シナリオ置きの透明壁
+// ライト関係
+#define		CHARA_LIGHT		1		// キャラ専用ライト
+// オブジェ関係
+#define		LOCKER			0		// ロッカー
+// アイテム
+#define		ITEM			1
+// 強制モーション
+#define		JP_MOTION		1		// ジャンプモーション
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+	#define		NO_POLYDEMO		0		// ポリデモなしフラグ
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+	#define		NO_POLYDEMO		0		// ポリデモなしフラグ
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME			w31a
+#define		KMS_NAME0			w31a0
+#define		KMS_NAME1			elv_2
+#define		KMS_NAME2			w31a_pipe
+#define		KMS_NAME3			w31a_25c
+#define		KMS_NAME4			w31a1
+#define		PANEL_KMS_NAME0		aw31a_panel0
+#define		PANEL_KMS_NAME1		aw31a_panel1
+#define		CEIL_NAME0			w31ar
+#define		CEIL_NAME1			elv_2r
+#define		WALL_NAME0			w31a_wall01
+#define		DOOR_NAME			dr_free
+#define		DOOR_NAME_LOAD		w31a_dr00		// ロード用
+#define		LT2_NAME			w31a
+
+// キャラクター関係
+#if d:RAIDEN
+	#define		PLAYER		ライデン	// モーションができるまで名前はスネーク
+#else
+	#define		PLAYER		スネーク
+#endif
+
+// ローカル変数
+
+// モーション関係
+// ------------------------------------
+enum 大統領モーションリスト {
+	jam_walk= 0,
+	jam_idle,
+	jam_impact,
+	jam_okaji,
+	jam_erotica,
+}
+
+enum オルガモーションリスト {
+	org_idle= 0,
+	org_walk,
+	org_punch
+}
+
+
+// include
+// ------------------------------------
+#include "rai_w31a.mh"		// 強制モーションリスト
+#include "commdef.h"		// infキャラ名define
+#include "stdch.h"
+#include "sload.h"
+#include "jump.h"
+#include "sound.h"
+#include "enevoice.h"
+#include "item_info.h"
+#include "w31a_prez.gcl" 
+#include "w31ad_common.h" 
+#include "node_res.h"
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+
+// マップ設定
+// ------------------------------------
+chara マップ シェル２中央棟１Ｆ -k d:KMS_NAME0 -k d:KMS_NAME3 -k d:KMS_NAME4 -h d:HZX_NAME,0 -l d:LT2_NAME
+
+#include "polydemo_w31a.h"	// ポリデモ（位置はここ）
+							// ポリデモ終了後、$s:d_num = not_demoになりrestartをかけ、ゲームに戻る
+
+command マップ設定 シェル２中央棟１Ｆ -set {
+	if($s:d_num == not_demo) {
+		// サウンド、キャラクターのセット
+		// ------------------------------------
+		#if d:SOUND	
+			@サウンド設定			// データは最初に呼ぶ。w31ad_common.hで定義
+		#endif
+		@レーダーオンオフチェック $f:w31a_ノードフラグ	// stdch.hで定義
+	}
+
+	// ゲームとデモの両方で共有して使用するもの
+	// ------------------------------------
+	@常駐キャラ設定			// stdch.hで定義
+	#if d:SLIDE_DOOR
+	if ( $w:p_story != d:ST:P049_01_P01大統領１ポリゴンデモ１開始 ) {
+	// 大統領ポリデモ１の時はデモのほうでドアをつける
+		@ドア設置				// w31ad_common.hで定義
+	}
+	#endif
+	#if d:FOG
+		@フォグ設定				// w31ad_common.hで定義
+	#endif
+	#if d:CHARA_CEIL
+		@シェル２中央棟１Ｆ天井設置	// w31ad_common.hで定義
+		@シェル２中央棟１Ｆ南壁設置	// w31ad_common.hで定義
+	#endif
+	@パイプ部屋パイプ設置		// w31ad_common.hで定義
+	@ダクト金網設定				// w31ad_common.hで定義
+	@鏡面モデル設定				// w31ad_common.hで定義
+
+
+	// ゲームで使用するもの
+	// ------------------------------------
+	if($s:d_num == not_demo) {
+		@ローカル変数初期化		// w31ad_common.hで定義
+		@設定値変更				// w31ad_common.hで定義
+		@ポリデモ後変数設定
+		@シナリオデモキャラセット	// stdproc.hで定義
+		@プラグイン設定			// w31ad_common.hで定義
+		@プレイヤー設定			// w31ad_common.hで定義
+		@コマンダー設定
+		#if d:DOLL
+			if ( $w:p_story >= d:ST:P047_04_I02電撃床前オルガ４インタラクティブ主観デモ２終了 && \
+				 $w:p_story <= d:ST:P049_01_P01大統領１ポリゴンデモ１開始 ) {
+				@大統領ニキータイベント設定	// w31a_prez.gclで定義
+				@大統領ルート設定
+			} else if ( $w:p_story >= d:ST:P049_11_P02大統領１１ポリゴンデモ２終了 ) {
+				@大統領死体設定
+				@大統領用アタリ追加
+			}
+			@オルガ設定
+		#endif
+		#if d:GUN_CAMERA
+			@ガンカメラ設置			// w31ad_common.hで定義
+		#endif
+		#if d:BGM	
+			if ( $w:p_story >= d:ST:P050_01_R01タンカー編整理１無線機デモ１終了 ) {
+				@ＢＧＭ設定	// プレイヤー→敵兵→BGMの順で呼ぶ。w31ad_common.hで定義
+			}
+		#endif
+			@弾痕跳弾設定			// w31ad_common.hで定義
+		// ステージ、オブジェクト関連
+		// ------------------------------------
+		#if d:NODE
+			@ノード端末設定 2048	// w31ad_common.hで定義
+		#endif
+		@エレベーター設置 シェル２中央棟１Ｆ	// stdproc.hで定義
+		@プラント編全体マップ設定 d:シェル２中央棟マップ	// stdproc.hで定義
+		#if d:LOAD_TRAP
+			@ロード設定				// w31ad_common.hで定義
+		#endif
+			@シェル２中央棟１Ｆトラップ制御
+			@イントルード金網設定	// w31ad_common.hで定義
+		#if d:ITEM
+			@アイテム設置			// w31ad_common.hで定義
+		#endif
+			@カメラセット			// w31ad_common.hで定義
+
+			@主観禁止壁設定					// w31ad_common.hで定義
+		#if d:JP_MOTION
+			@シェル２中央棟１Ｆジャンプ設定	// w31ad_common.hで定義
+		#endif
+			@シェル２中央棟１Ｆカメラ設定	// w31ad_common.hで定義
+		#if d:CHARA_LIGHT
+			@キャラ用ライト設置				// マップ設定の最後に呼ぶ。w31ad_common.hで定義
+		#endif
+
+		// デバッグ関係
+		// ------------------------------------
+		#if d:DEBUG_CHARA
+		//	@デバッグキャラセット		// w31ad_common.hで定義
+		#endif
+	}
+}
+
+
+// 無線用include ※位置は動かさないこと
+if($s:d_num == not_demo) {
+	#include "w31a_cdc.ch"
+}
+
+#include "p_force_cdc.ch"
+
+// ポリデモ呼び出し部（chara無線システムよりあとに呼ばないと強制無線はだめ）
+command マップ設定 シェル２中央棟１Ｆ -set {
+	if($s:d_num == not_demo) {
+		// デモ関係
+		// ------------------------------------
+		@電撃床前オルガポリゴンデモ設定
+		@電源パネル設置
+		if ( $w:p_story >= d:ST:P047_02_I01電撃床前オルガ２インタラクティブ主観デモ１終了 && \
+			 $w:p_story < d:ST:P048_01_P01電源パネル破壊１ポリゴンデモ１終了 ) {
+			@電撃床設置
+		}
+		if ( $w:p_story >= d:ST:P047_04_I02電撃床前オルガ４インタラクティブ主観デモ２終了 && \
+			 $w:p_story <= d:ST:P049_01_P01大統領１ポリゴンデモ１開始 ) {
+			@大統領張り付きシナリオデモ設定
+		}
+		@タンカー編整理１無線機デモ設定
+	}
+}
+
+
+// 全てのセットが終わったところでフェードイン
+if($s:d_num == not_demo) {
+// ゲーム時
+	if( $s:登場ポイント == sp_w25c_w31a_0 ) {
+		// ＫＬ連絡橋から
+		// サウンドマネージャーがいないので自前で鳴らす
+		if ( $f:ＢＧＭマネージャー起動フラグ == 0 ) {
+			mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_PLAY_05
+		}
+		//初期マップの表示
+		command マップ表示 -show シェル２中央棟１Ｆ
+		// 全てのセットが終わったところでフェードイン
+		@ステージ開始時処理（ステージ名表示） \
+			d:LOAD_TYPE:SL_DOOR_TYPE １Ｆ右ドア 2000 d:DEFAULT_M_TYPE \
+			d:wn_シェル２中央棟１Ｆ空気清浄室
+
+	} else if( $s:登場ポイント == sp_w31b_w31a_0 ) {
+		// Ｂ１から
+		// サウンドマネージャーがいないので自前で鳴らす
+		if ( $f:ＢＧＭマネージャー起動フラグ == 0 ) {
+			mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_PLAY_05
+		}
+		//初期マップの表示
+		command マップ表示 -show シェル２中央棟１Ｆ
+		// 全てのセットが終わったところでフェードイン
+		@ステージ開始時処理（エレベーター） d:wn_シェル２中央棟１Ｆ空気清浄室
+
+	} else if( $s:登場ポイント == 主観デモ１へ ) {
+		//初期マップの表示
+		command マップ表示 -show シェル２中央棟１Ｆ
+		chara フェードインアウト フェードイン \
+			-i 0,0,0 128 \
+			-c 0,0,0 0 \
+			-t d:FADEIN_TIME
+		// 装備品を制御
+		@デモ後武器アイテム制御 d:デモ後必ず素手 d:デモ後特殊装備なし
+		// インタラクティブ主観デモへ
+		@電撃床前オルガインタラクティブ主観デモ設定
+
+	} else if( $s:登場ポイント == 主観デモ２へ ) {
+		//初期マップの表示
+		command マップ表示 -show シェル２中央棟１Ｆ
+		chara フェードインアウト フェードイン \
+			-i 0,0,0 128 \
+			-c 0,0,0 0 \
+			-t d:FADEIN_TIME
+		// インタラクティブ主観デモへ
+		if ( $f:ＢＧＭマネージャー起動フラグ == 0 ) {
+			mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_PLAY_05
+		}
+		@電撃床前オルガインタラクティブ主観デモ開始
+
+	} else if ( $s:登場ポイント == オルガ無線デモ後 ) {
+		//初期マップの表示
+		command マップ表示 -show シェル２中央棟１Ｆ
+		// フェードインが終わるまではパッドリリース
+		command パッド操作 -release
+
+		eval($f:ロードチェックＯＮフラグ = 1);
+
+		chara フェードインアウト フェードイン \
+			-i 0,0,0 128 \
+			-c 0,0,0 0 \
+			-t d:FADEIN_TIME
+
+		if ( $f:ＢＧＭマネージャー起動フラグ == 0 ) {
+			mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_PLAY_05
+		}
+		command シナリオ前武器変更 -number d:武器:素手
+		chara delay デモディレイ \
+			-time (d:FADEIN_TIME + 60 - 4) \
+			-exec {
+				command パッド操作	-which 0 -press d:PAD_R2	// 指定ボタンをそのフレームだけおしたことにする
+			}
+
+		chara delay パッドディレイ \
+			-time (d:FADEIN_TIME + 60) \
+			-exec {
+				if ( $f:デモ再生フラグ == 0 ) {
+					command パッド操作 -cancel
+				}
+			}
+
+	} else if ( $s:登場ポイント == 大統領死亡後 ) {
+		//初期マップの表示
+		command マップ表示 -show シェル２中央棟１Ｆ
+		mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_PLAY_06
+		@ロード時フェードイン
+		mesg プレイヤー d:PLAYER stance d:FA_END_STAND 512 512 0
+
+	} else {
+		//初期マップの表示
+		if ( $f:ＢＧＭマネージャー起動フラグ == 0 ) {
+			mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_PLAY_05
+		}
+		command マップ表示 -show シェル２中央棟１Ｆ
+		@ロード時フェードイン
+	}
+} else {
+// デモ再生時
+	command マップ表示 -show シェル２中央棟１Ｆ
+}
+
+
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// 全マップ共通
+	// ポリデモ後変数設定
+	// ------------------------------------
+	proc ポリデモ後変数設定 {
+		#if d:DEBUG_PRINT
+			print 'polydemo_end_var_change!'
+		#endif
+
+		if ( $w:p_story == d:ST:P047_02_I01電撃床前オルガ２インタラクティブ主観デモ１開始 ) {
+			// 電撃床前オルガ１ポリゴンデモ１終了後の設定
+			eval( $i:プレイヤー初期Ｘ位置 = 13091 ) ;
+			eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+			eval( $i:プレイヤー初期Ｚ位置 = -235031 ) ;
+			eval( $i:プレイヤー初期方向 = 2433 )
+			eval( $b:プレイヤー初期姿勢 = d:FA_END_STAND ) ;
+			eval( $s:登場ポイント = 主観デモ１へ );
+
+		} else if ( $w:p_story == d:ST:P047_04_I02電撃床前オルガ４インタラクティブ主観デモ２開始 ) {
+		// P047_03_P02電撃床前オルガ３ポリゴンデモ２終了後の設定
+			eval( $i:プレイヤー初期Ｘ位置 = 11431 ) ;
+			eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+			eval( $i:プレイヤー初期Ｚ位置 = -230894 ) ;
+			eval( $i:プレイヤー初期方向 = 1801 )
+			eval( $b:プレイヤー初期姿勢 = d:FA_END_STAND ) ;
+			eval( $s:登場ポイント = 主観デモ２へ );
+
+		} else if ( $w:p_story == d:ST:P047_05_R01電撃床前オルガ５無線デモ１終了 && \
+					$f:デモ直後フラグ == 1 ) {
+		// P047_05_R01電撃床前オルガ５無線デモ１終了後
+			eval( $i:プレイヤー初期Ｘ位置 = 11431 ) ;
+			eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+			eval( $i:プレイヤー初期Ｚ位置 = -230894 ) ;
+			eval( $b:プレイヤー初期姿勢 = d:FA_END_STAND ) ;
+			eval( $s:登場ポイント = オルガ無線デモ後 );
+			eval( $f:デモ直後フラグ = 0 );
+
+		} else if ( $w:p_story == d:ST:P049_11_P02大統領１１ポリゴンデモ２終了 ) {
+		// d:ST:P049_11_P02大統領１１ポリゴンデモ２終了後
+			eval( $i:プレイヤー初期Ｘ位置 = 2639 ) ;
+			eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+			eval( $i:プレイヤー初期Ｚ位置 = -244803 ) ;
+			eval( $i:プレイヤー初期方向 = 512 )
+			eval( $b:プレイヤー初期姿勢 = d:FA_END_SQUAT ) ;
+			eval( $s:登場ポイント = 大統領死亡後 );
+			@デモ後武器アイテム制御 d:デモ後必ず素手 d:デモ後特殊装備なし
+			eval( $w:武器 = d:武器:ソコム ) ;
+			eval($w:アイテム数Ｒ[d:アイテム:カード] = 4);
+			eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+		}
+
+	}
+
+	// トラップの制御
+	// ------------------------------------
+	proc シェル２中央棟１Ｆトラップ制御 {
+		#if d:DEBUG_PRINT
+			print 'w31a_trap_control'
+		#endif
+
+		// 主観デモ用トラップ
+		if ( $w:p_story < d:ST:P047_02_I01電撃床前オルガ２インタラクティブ主観デモ１開始 ) {
+			command トラップ切り替え -trap ev001 -switch 1
+		} else {
+			command トラップ切り替え -trap ev001 -switch 0
+		}
+
+		// WEBサイトデモ用トラップのオンオフ
+		if ( $w:p_story >= d:ST:P049_11_P02大統領１１ポリゴンデモ２終了 && \
+			$w:p_story < d:ST:P050_06_R03タンカー編整理６無線機デモ３終了 ) {
+			command トラップ切り替え -trap ev002 -switch 1
+		} else {
+			command トラップ切り替え -trap ev002 -switch 0
+		}
+
+		// 電撃床用トラップ
+		if ( $w:p_story < d:ST:P048_01_P01電源パネル破壊１ポリゴンデモ１終了 ) {
+			command トラップ切り替え -trap ev011 -switch 1
+		} else {
+			command トラップ切り替え -trap ev011 -switch 0
+		}
+
+		// 大統領用の張り付きカメラ
+		if ( $w:p_story < d:ST:P049_11_P02大統領１１ポリゴンデモ２終了 ) {
+			command トラップ切り替え -trap ca015 -switch 1
+			command トラップ切り替え -trap ca016 -switch 1
+			command トラップ切り替え -trap ev051 -switch 1
+		} else {
+			command トラップ切り替え -trap ca015 -switch 0
+			command トラップ切り替え -trap ca016 -switch 0
+			command トラップ切り替え -trap ev051 -switch 0
+		}
+
+	}
+
+	// ポリデモ設定
+	// ------------------------------------
+	// ゴルルコ兵服ポリゴンデモ共通プロック
+	proc ポリデモロードスタート {
+		load "w31a" -r 'r_plt5'
+	}
+
+	// 電撃床前オルガポリゴンデモ
+	proc 電撃床前オルガポリゴンデモ設定 {
+		#if d:DEBUG_PRINT 
+			print 'olg_polydemo_set'
+		#endif
+
+		trap ev001 d:PLAYER \
+			-mask いる \
+			-exec {
+				// P047_01_P01電撃床前オルガ１ポリゴンデモ１開始へ
+				if ( $w:p_story < d:ST:P047_01_P01電撃床前オルガ１ポリゴンデモ１開始 && \
+					 $f:ロードチェックＯＮフラグ == 1 ) {
+					eval( $s:登場ポイント = ポリゴンデモへ );
+					command トラップ切り替え -trap ev001 -switch 0
+					@ポリデモアイテムチェック後スタート d:ST:P047_01_P01電撃床前オルガ１ポリゴンデモ１開始
+				}
+			}
+	}
+
+
+	// 主観デモ設定
+	// ------------------------------------
+	proc 電撃床前オルガインタラクティブ主観デモ設定 {
+		#if d:DEBUG_PRINT 
+			print 'olg_demo1_set'
+		#endif
+/*
+		eval( $w:武器 = d:武器:素手 ) ;
+		if ( $w:アイテム != d:アイテム:ゴル兵制服 && $w:アイテム != d:アイテム:無限カツラ && \
+			 $w:アイテム == d:アイテム:カツラＡ && $w:アイテム == d:アイテム:カツラＢ ) {
+			eval( $w:アイテム = d:アイテム:素手 ) ;
+		}
+*/
+		command シナリオ前武器変更 -number d:武器:マイク
+
+
+		@シナリオデモ開始処理（ダンボールも解除）
+
+		chara デモキャンセルチェック パッドデモキャンセル \
+			-p パッドデモキャンセルポリデモへ
+
+		command メニュー設定 -menu on
+
+		chara パッドデモ パッドデモ \
+			-file w31a_paddemo \
+			-end_proc パッドデモ終了主観デモへ
+
+		mesg パッドデモ パッドデモ start
+
+	}
+
+	proc パッドデモキャンセルポリデモへ {
+		#if d:DEBUG_PRINT 
+			print 'paddemo_cancel'
+		#endif
+
+		mesg パッドデモ パッドデモ kill
+		@電撃床前オルガインタラクティブ主観デモ終了
+	}
+
+	proc パッドデモ終了主観デモへ {
+		#if d:DEBUG_PRINT 
+			print 'paddemo_end'
+		#endif
+
+		mesg デモキャンセルチェック パッドデモキャンセル kill
+		mesg パッドデモ パッドデモ kill
+		@シナリオデモ終了処理
+		command メニュー設定 -menu on -gage off -radar off -subwin off -radio off -pause off
+		mesg シネマスクリーン シネマ フェードイン 0
+		@電撃床前オルガインタラクティブ主観デモ開始
+	}
+
+	proc 電撃床前オルガインタラクティブ主観デモ開始 {
+		#if d:DEBUG_PRINT 
+			print 'olg_demo1_start'
+		#endif
+
+		// 装備を固定にし、かえられないようにする
+		chara デモキャンセルチェック デモキャンセル \
+			-p 主観デモキャンセル
+
+		command 無線設定 -reset
+		command プレイヤー無敵セット
+
+		command メニュー設定 -menu on -gage off -radar off -subwin off -radio off -pause off
+		command パッド操作 -mask (d:PAD_L2 | d:PAD_R2 | d:PAD_STA | d:PAD_SEL | d:PAD_B)
+
+		chara 台詞発生源君 発生源君 -n オルガ
+
+		if ( $w:p_story == d:ST:P047_02_I01電撃床前オルガ２インタラクティブ主観デモ１開始 ) {
+			command セットマイクパラメータ \
+				1 \			//$i:モード
+				1 \			//$i:有効角度 
+				500 \		//$i:内側計算最小距離
+				9500 \		//$i:内側計算最大距離
+				0x3F \		//$i:内側最小距離時音量
+				0x3D \		//$i:内側最大距離時音量
+				128 \		//$i:減衰最大角
+				1000 \		//$i:外側計算最小距離
+				10000 \		//$i:外側計算最大距離
+				0x0a \		//$i:外側最小距離時音量
+				0x04 \		//$i:外側最大距離時音量
+				1000		//$i:パン係数
+
+			eval( $i:STREAM_ID = `%Stream t:vc104701 -p 電撃床前オルガインタラクティブ主観デモ１続き` );
+
+		} else {
+			// マイクは強制にセット
+			eval( $w:武器 = d:武器:マイク ) ;
+			command セットマイクパラメータ \
+				1 \			//$i:モード
+				32 \			//$i:有効角度 
+				1000 \		//$i:内側計算最小距離
+				10000 \		//$i:内側計算最大距離
+				0x3F \		//$i:内側最小距離時音量
+				0x3D \		//$i:内側最大距離時音量
+				256 \		//$i:減衰最大角
+				1000 \		//$i:外側計算最小距離
+				10000 \		//$i:外側計算最大距離
+				0x0a \		//$i:外側最小距離時音量
+				0x04 \		//$i:外側最大距離時音量
+				1000		//$i:パン係数
+
+			eval( $i:STREAM_ID = `%Stream t:vc104711 -p 電撃床前オルガインタラクティブ主観デモ２続き` );
+
+		}
+	}
+
+	proc 電撃床前オルガインタラクティブ主観デモ１続き {
+		if (`command ゲームオーバーチェック` == 0 ) {
+			if ( $1 == 0 ) {
+				mesg ルートデモ人形 オルガ アクション終了
+				chara delay デモディレイ \
+					-time 179 \
+					-exec {
+						eval( $i:STREAM_ID = `%Stream t:vc104702 -p 電撃床前オルガインタラクティブ主観デモ終了` );
+					}
+			} else {
+			// 中断したらこっち
+				@電撃床前オルガインタラクティブ主観デモ終了
+			}
+		}
+	}
+
+	proc 電撃床前オルガインタラクティブ主観デモ２続き {
+		if (`command ゲームオーバーチェック` == 0 ) {
+			if ( $1 == 0 ) {
+				mesg ルートデモ人形 オルガ アクション終了
+				chara delay デモディレイ \
+					-time 240 \
+					-exec {
+						@電撃床前オルガインタラクティブ主観デモ終了
+					}
+			} else {
+				// 中断したらこっち
+				chara フェードインアウト フェードアウト \
+					-c 0,0,0 128 \
+					-t d:FADEOUT_TIME \
+					-p 電撃床前オルガインタラクティブ主観デモ終了
+			}
+		}
+	}
+
+	proc 主観デモキャンセル {
+		#if d:DEBUG_PRINT 
+			print 'event_cancel'
+		#endif
+
+		command StreamStop $i:STREAM_ID
+	}
+
+	proc 電撃床前オルガインタラクティブ主観デモ終了 {
+		#if d:DEBUG_PRINT 
+			print 'olg_demo1_end'
+		#endif
+
+		if (`command ゲームオーバーチェック` == 0 ) {
+			mesg デモキャンセルチェック パッドデモキャンセル kill
+			@主観デモ後スタート
+		}
+	}
+
+	proc 主観デモ後スタート {
+		#if d:DEBUG_PRINT 
+			print 'start'
+		#endif
+
+		if ( $w:p_story == d:ST:P047_02_I01電撃床前オルガ２インタラクティブ主観デモ１開始 ) {
+			// 最初の主観デモ後はポリデモへとばす
+			command セットサウンドコード -c d:SNG_FOUTS_S
+			eval ( $w:p_story = d:ST:P047_02_I01電撃床前オルガ２インタラクティブ主観デモ１終了 );
+			eval( $s:登場ポイント = ポリゴンデモへ );
+			@ポリデモアイテムチェック後スタート d:ST:P047_03_P02電撃床前オルガ３ポリゴンデモ２開始
+
+		} else {
+			// そうじゃないときはリスタート
+			eval ( $w:p_story = d:ST:P047_04_I02電撃床前オルガ４インタラクティブ主観デモ２終了 );
+			eval( $f:デモ直後フラグ = 1 );
+			eval( $i:プレイヤー初期方向 = $w:プレイヤー方向 );
+			@rt_P047_05_R01電撃床前オルガ５無線デモ１
+		}
+	}
+
+	
+	// ニキータイベント
+	// ------------------------------------
+	proc 電源パネル設置 {
+		#if d:DEBUG_PRINT 
+			print 'panel_set'
+		#endif
+
+		if ( $w:p_story < d:ST:P048_01_P01電源パネル破壊１ポリゴンデモ１開始 ) {
+			// 電源パネル
+			chara ターゲットプロック 電源パネル \
+				-target 5025,2500,-247500 5027,0,-246825 \
+				-target 5025,2500,-246825 8500,0,-246823 \
+				-flag   0 \
+				-proc   電源パネル破壊ポリデモへ
+
+			chara プットオブジェ 電源パネル破壊前 -m d:PANEL_KMS_NAME0 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+
+			// 電源パネルランプ
+			chara 電源パネルライト 電源パネルライト -timing 15
+			
+			trap ev011 d:PLAYER \
+				-mask 入る \
+				-exec {
+					if ( $f:w31a_電撃床デモ発動中フラグ == 0 ) {
+						eval( $f:w31a_電撃床デモ発動中フラグ = 1 );
+						mesg マルチウェイト髪の毛モデル ライデン髪の毛 髪の毛逆立ちモード 500 -1 0
+
+						if ($w:アイテム == d:アイテム:ダンボール || $w:アイテム == d:アイテム:ダンボールＢ || \
+							$w:アイテム == d:アイテム:ダンボールＣ || $w:アイテム == d:アイテム:ダンボールＤ || \
+							$w:アイテム == d:アイテム:ダンボールＥ || $w:アイテム == d:アイテム:濡れダンボール) {
+							// ダンボールつきの場合
+							@電撃床デモカメラスタート 1
+
+							mesg プレイヤー d:PLAYER motion \
+								d:モーションリスト:box_dam_lightning \
+								3072 3072 -1 ( d:FA_NO_INTERP | d:FA_BOX_EXIST ) \
+								8500 -240750
+
+							command	強制モーション終了プロック \
+								-motion d:モーションリスト:box_dam_lightning \
+								-proc ダメージモーション発動
+						} else {
+							@電撃床デモカメラスタート 0
+
+							mesg プレイヤー d:PLAYER motion \
+								d:モーションリスト:non_dam_lightning \
+								3072 3072 d:FA_END_DOWN_BACK d:FA_NO_INTERP \
+								8500 -240750 1082
+
+							command	強制モーション終了プロック \
+								-motion d:モーションリスト:non_dam_lightning \
+								-proc ビリビリモーション終了
+						}
+					} else {
+						#if d:DEBUG_PRINT 
+							print '-------------------ビリビリモーション発動前に一回出たよ'
+						#endif
+					}
+				}
+		} else {
+			// 電源パネル破壊後は破壊オブジェに切り替え
+			chara プットオブジェ 電源パネル破壊後 -m d:PANEL_KMS_NAME1 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+		}
+	}
+
+	// 電撃床
+	proc 電撃床設置 {
+		#if d:DEBUG_PRINT 
+			print 'lightning_floor_set'
+		#endif
+
+		// 電撃床
+		chara 電撃床 電撃床ビリビリ
+	}
+
+	proc 電撃床デモカメラスタート $:ダンボールフラグ {
+		#if d:DEBUG_PRINT 
+			print 'lightning_event_start'
+		#endif
+
+		chara ブラー 電撃ブラー
+
+		if ( $:ダンボールフラグ == 0 ) {
+		// 通常状態のカメラ
+			chara カメラ設定 モーションカメラ \
+				-c 1 \	
+				-p 4953,3104,-239804 -t 8990,577,-241347 \
+				-r 345,1262,0 -f 5006 \
+				-a 200 \
+				-i 0 0 0 0 \
+				-s 1
+
+			eval( $i:ローカル変数Ｉ１ = 0 );
+
+			command ＳＥセットモード -s d:se_code:SD_A_ELFLOOR1 \
+				-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+			command ＳＥセットモード -s d:se_code:SD_V_RAIELE01 \
+				-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+			command ＳＥセットモード -s d:SD_E_HIBANA02 \
+				-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+			command ＳＥセットモード -s d:SD_P_HEARTB01 \
+				-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+
+			chara パッド振動 ビリビリ振動 -vibfile rai_spark
+
+			chara delay 無線デモディレイ \
+				-time 30 \
+				-exec {
+					eval( $i:ローカル変数Ｉ１ = $i:ローカル変数Ｉ１ + 1 );
+	
+					command ＳＥセットモード -s d:SD_E_HIBANA02 \
+						-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+
+					if ( $i:ローカル変数Ｉ１ == 1 ) {
+						command ＳＥセットモード -s d:se_code:SD_A_ELFLOOR3 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						command ＳＥセットモード -s d:se_code:SD_V_RAIELE02 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						command ＳＥセットモード -s d:SD_P_HEARTB01 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						chara パッド振動 ビリビリ振動 -vibfile rai_spark
+						mesg ブラー 電撃ブラー パラメータ 120 20
+						chara カメラ設定 モーションカメラ \
+							-c 1 \	
+							-p 5432,307,-241778 -t 8282,1008,-240618 \
+							-r -146,772,0 -f 3156 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						return 20
+					} else if ( $i:ローカル変数Ｉ１ == 2 ) {
+						command ＳＥセットモード -s d:SD_P_HEARTB01 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						chara パッド振動 ビリビリ振動 -vibfile rai_spark
+						mesg ブラー 電撃ブラー パラメータ 100 15
+						chara カメラ設定 モーションカメラ \
+							-c 1 \	
+							-p 11572,481,-241649 -t 8539,1015,-240987 \
+							-r 3985,3212,0 -f 3150 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						return 15
+					} else if ( $i:ローカル変数Ｉ１ == 3 ) {
+						command ＳＥセットモード -s d:se_code:SD_A_ELFLOOR2 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						command ＳＥセットモード -s d:se_code:SD_V_RAIELE03 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						chara パッド振動 ビリビリ振動 -vibfile rai_spark
+						mesg ブラー 電撃ブラー パラメータ 120 30
+						chara カメラ設定 モーションカメラ \
+							-c 1 \	
+							-p 5166,1876,-240069 -t 8335,1038,-240639 \
+							-r 166,1140,0 -f 3327 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						return 30
+					} else if ( $i:ローカル変数Ｉ１ == 4 ) {
+						chara パッド振動 ビリビリ振動 -vibfile rai_spark
+						mesg ブラー 電撃ブラー パラメータ 90 5
+						chara カメラ設定 モーションカメラ \
+							-c 1 \	
+							-p 7028,375,-241947 -t 7767,771,-241188 \
+							-r -233,503,0 -f 1131 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						return 5
+					} else if ( $i:ローカル変数Ｉ１ == 5 ) {
+						command ＳＥセットモード -s d:se_code:SD_A_ELFLOOR4 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						command ＳＥセットモード -s d:se_code:SD_V_RAIELE02 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						command ＳＥセットモード -s d:SD_P_HEARTB01 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						chara パッド振動 ビリビリ振動 -vibfile rai_spark
+						mesg ブラー 電撃ブラー パラメータ 120 20
+						chara カメラ設定 モーションカメラ \
+							-c 1 \	
+							-p 4953,3104,-239804 -t 8990,577,-241347 \
+							-r 345,1262,0 -f 5006 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						return 20
+					} else if ( $i:ローカル変数Ｉ１ == 6 ) {
+						chara パッド振動 ビリビリ振動 -vibfile rai_spark
+						mesg ブラー 電撃ブラー パラメータ 80 10
+						chara カメラ設定 モーションカメラ \
+							-c 1 \	
+							-p 7765,1635,-240613 -t 8886,1596,-240673 \
+							-r 23,1059,0 -f 1123 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						return 10
+					} else if ( $i:ローカル変数Ｉ１ == 7 ) {
+						command ＳＥセットモード -s d:se_code:SD_A_ELFLOOR3 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						command ＳＥセットモード -s d:se_code:SD_V_RAIELE01 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						command ＳＥセットモード -s d:SD_P_HEARTB01 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						chara パッド振動 ビリビリ振動 -vibfile rai_spark
+						mesg ブラー 電撃ブラー パラメータ 120 20
+						chara カメラ設定 モーションカメラ \
+							-c 1 \	
+							-p 10261,163,-239862 -t 8592,1071,-240699 \
+							-r -295,2769,0 -f 2076 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						return 20
+					} else if ( $i:ローカル変数Ｉ１ == 8 ) {
+						command ＳＥセットモード -s d:SD_P_HEARTB01 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						chara パッド振動 ビリビリ振動 -vibfile rai_spark
+						mesg ブラー 電撃ブラー パラメータ 60 60
+						chara カメラ設定 モーションカメラ \
+							-c 1 \	
+							-p 5019,408,-240087 -t 8566,1022,-240725 \
+							-r -110,1140,0 -f 3655 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						return 30
+					} else if ( $i:ローカル変数Ｉ１ == 9 ) {
+						command ＳＥセットモード -s d:se_code:SD_A_ELFLOOR4 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						command ＳＥセットモード -s d:se_code:SD_V_RAIELE04 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						chara パッド振動 ビリビリ振動 -vibfile rai_non_dam_sps_f
+
+						return 0
+					}
+				}
+		} else {
+		// ダンボール状態のカメラ
+			chara カメラ設定 モーションカメラ \
+				-c 1 \	
+				-p 5222,2690,-239908 -t 9289,-58,-240881 \
+				-r 379,1177,0 -f 5004 \
+				-a 200 \
+				-i 0 0 0 0 \
+				-s 1
+
+			eval( $i:ローカル変数Ｉ１ = 0 );
+			command ＳＥセットモード -s d:se_code:SD_A_ELFLOOR1 \
+				-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+			command ＳＥセットモード -s d:se_code:SD_V_RAIELE01 \
+				-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+			command ＳＥセットモード -s d:SD_E_HIBANA02 \
+				-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+			command ＳＥセットモード -s d:SD_P_HEARTB01 \
+				-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+
+			chara パッド振動 ビリビリ振動 -vibfile rai_spark
+
+			chara delay 無線デモディレイ \
+				-time 30 \
+				-exec {
+					eval( $i:ローカル変数Ｉ１ = $i:ローカル変数Ｉ１ + 1 );
+
+					command ＳＥセットモード -s d:se_code:SD_A_ELFLOOR4 \
+						-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+					command ＳＥセットモード -s d:SD_E_HIBANA02 \
+						-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+					command ＳＥセットモード -s d:SD_P_HEARTB01 \
+						-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+					command ＳＥセットモード -s d:SD_P_HEARTB01 \
+						-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+
+					if ( $i:ローカル変数Ｉ１ == 1 ) {
+						command ＳＥセットモード -s d:se_code:SD_A_ELFLOOR2 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						command ＳＥセットモード -s d:se_code:SD_V_RAIELE02 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						command ＳＥセットモード -s d:SD_P_HEARTB01 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						chara パッド振動 ビリビリ振動 -vibfile rai_spark
+						mesg ブラー 電撃ブラー パラメータ 120 20
+						chara カメラ設定 モーションカメラ \
+							-c 1 \	
+							-p 6461,3468,-241720 -t 7886,777,-240526 \
+							-r 630,569,0 -f 3271 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						return 20
+					} else if ( $i:ローカル変数Ｉ１ == 2 ) {
+						chara パッド振動 ビリビリ振動 -vibfile rai_spark
+						mesg ブラー 電撃ブラー パラメータ 100 15
+						chara カメラ設定 モーションカメラ \
+							-c 1 \	
+							-p 11500,621,-239679 -t 8567,814,-241012 \
+							-r -39,2794,0 -f 3228 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						return 15
+					} else if ( $i:ローカル変数Ｉ１ == 3 ) {
+						command ＳＥセットモード -s d:SD_P_HEARTB01 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						command ＳＥセットモード -s d:se_code:SD_A_ELFLOOR3 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						command ＳＥセットモード -s d:se_code:SD_V_RAIELE03 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						chara パッド振動 ビリビリ振動 -vibfile rai_spark
+						mesg ブラー 電撃ブラー パラメータ 120 30
+						chara カメラ設定 モーションカメラ \
+							-c 1 \	
+							-p 6446,759,-241244 -t 8057,761,-240804 \
+							-r -1,850,0 -f 1671 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						return 30
+					} else if ( $i:ローカル変数Ｉ１ == 4 ) {
+						command ＳＥセットモード -s d:SD_P_HEARTB01 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						chara パッド振動 ビリビリ振動 -vibfile rai_spark
+						mesg ブラー 電撃ブラー パラメータ 90 5
+/*
+						chara カメラ設定 モーションカメラ \
+							-c 1 \	
+							-p 10682,223,-241698 -t 8559,693,-240834 \
+							-r -132,3324,0 -f 2340 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+*/
+						chara カメラ設定 モーションカメラ \
+							-c 1 \	
+							-p -1212,1435,-230366 -t -3404,-1004,-222539 \
+							-r 190,3918,0 -f 8486 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						return 6
+					} else if ( $i:ローカル変数Ｉ１ == 5 ) {
+						command ＳＥセットモード -s d:se_code:SD_A_ELFLOOR1 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						command ＳＥセットモード -s d:se_code:SD_V_RAIELE02 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						chara パッド振動 ビリビリ振動 -vibfile rai_spark
+						mesg ブラー 電撃ブラー パラメータ 120 20
+						chara カメラ設定 モーションカメラ \
+							-c 1 \	
+							-p 9917,4430,-241419 -t 8218,609,-240782 \
+							-r 735,3306,0 -f 4229 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						return 20
+					} else if ( $i:ローカル変数Ｉ１ == 6 ) {
+						command ＳＥセットモード -s d:SD_P_HEARTB01 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						chara パッド振動 ビリビリ振動 -vibfile rai_spark
+						mesg ブラー 電撃ブラー パラメータ 80 10
+						chara カメラ設定 モーションカメラ \
+							-c 1 \	
+							-p 7208,45,-239645 -t 7890,491,-240341 \
+							-r 3816,1543,0 -f 1072 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						return 10
+					} else if ( $i:ローカル変数Ｉ１ == 7 ) {
+						command ＳＥセットモード -s d:se_code:SD_A_ELFLOOR3 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						command ＳＥセットモード -s d:se_code:SD_V_RAIELE01 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						command ＳＥセットモード -s d:SD_P_HEARTB01 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						chara パッド振動 ビリビリ振動 -vibfile rai_spark
+						mesg ブラー 電撃ブラー パラメータ 120 20
+						chara カメラ設定 モーションカメラ \
+							-c 1 \	
+							-p 10261,163,-239862 -t 8592,1071,-240699 \
+							-r -295,2769,0 -f 2076 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						return 20
+					} else if ( $i:ローカル変数Ｉ１ == 8 ) {
+						chara パッド振動 ビリビリ振動 -vibfile rai_spark
+						mesg ブラー 電撃ブラー パラメータ 60 60
+						chara カメラ設定 モーションカメラ \
+							-c 1 \	
+							-p 4155,312,-240008 -t 8444,835,-241040 \
+							-r -77,1178,0 -f 4442 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						return 30
+					} else if ( $i:ローカル変数Ｉ１ == 9 ) {
+						command ＳＥセットモード -s d:se_code:SD_A_ELFLOOR4 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						command ＳＥセットモード -s d:se_code:SD_V_RAIELE04 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+						chara パッド振動 ビリビリ振動 -vibfile rai_non_dam_sps_f
+
+						return 0
+					}
+				}
+		}
+	}
+
+	proc ダメージモーション発動 {
+		#if d:DEBUG_PRINT 
+			print 'player_dam_motion_go'
+		#endif
+
+		// ダンボールつき
+		mesg プレイヤー d:PLAYER motion \
+			d:モーションリスト:rai_non_dam_sps_f \
+			3072 3072 d:FA_END_DOWN_BACK d:FA_BOX_EXIST
+
+		// ダンボール壊す
+		command 装備ダンボール破壊
+		command ＳＥセットモード -s d:SD_A_DAMBRA01 \
+			-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 0
+
+		command	強制モーション終了プロック \
+			-motion d:モーションリスト:rai_non_dam_sps_f \
+			-proc ビリビリモーション終了
+	}
+
+	proc ビリビリモーション終了 {
+		#if d:DEBUG_PRINT 
+			print 'player_lightning_motion_end'
+		#endif
+
+		eval( $f:w31a_電撃床デモ発動中フラグ = 0 );
+		mesg マルチウェイト髪の毛モデル ライデン髪の毛 髪の毛逆立ちモード 0 0 270
+		command プレイヤーライフ値操作 -type 0 -mode 1 -value -20
+
+		chara カメラ設定 モーションカメラ -s -1
+		mesg ブラー 電撃ブラー キャラ削除
+	}
+
+
+	// 大統領張り付きシナリオデモ
+	proc 大統領張り付きシナリオデモ設定 {
+		#if d:DEBUG_PRINT 
+			print 'prez_behinddemo_set'
+		#endif
+
+		// 北側廊下部分の張り付きカメラ(電源パネルが破壊されるとトラップがオフされます)
+		trap ca015 d:PLAYER \
+			-mask 入る \
+			-dir 2048 512 \
+			-state d:TRP_STATE_CAUTION \
+			-camera \
+			-exec {
+				if ( $f:w31a_大統領シナリオデモフラグ == 0 && (`command ゲームオーバーチェック` == 0 ) && \
+					 $f:w31a_大統領シナリオデモ中フラグ == 0 ) {
+					command コントロール座標取得 \
+						健康な大統領 $i:ローカル変数Ｉ１ $i:ローカル変数Ｉ２ $i:ローカル変数Ｉ３
+
+					if ( $i:ローカル変数Ｉ３ < -243500 ) {
+						eval( $f:w31a_大統領シナリオデモ中フラグ = 1 );
+						eval( $f:w31a_大統領シナリオデモフラグ = 1 );
+						@シナリオデモ開始処理
+
+						mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_FOUTP_S
+						command ＳＥセットモード -s d:se_code:SD_S_JINGLE01 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 3
+
+						chara カメラ設定 シナリオデモカメラ \
+							-c 1 \	
+							-b 0,8725,-247509 5600,8725,-247509 \
+							-l 0,1588,-247772 5600,1588,-247772 \
+							-p $i:カメラＸ位置,8002,$i:カメラＺ位置 -t $i:注視点Ｘ位置,1623,$i:注視点Ｚ位置 \
+							-r 749,2048,0 -f 6992 \
+							-a 200 \
+							-z d:CAMERA_LIMITBOUND_EXIST \
+							-i 0 0 0 0 \
+							-s 1
+
+						chara カメラ設定 シナリオデモカメラ \
+							-c 1 \
+							-b 0,8725,-247509 5600,8725,-247509 \
+							-l 0,1588,-247772 5600,1588,-247772 \
+							-p $i:ローカル変数Ｉ１,8002,$i:ローカル変数Ｉ３ \
+							-t $i:ローカル変数Ｉ１,1623,($i:ローカル変数Ｉ３-263) \
+							-a 200 \
+							-z ( d:CAMERA_INTERP_CAMERA | d:CAMERA_LIMITBOUND_EXIST ) \ // 補完カメラフラグを指定。
+							-interp_time (60*4) \ // 補完時間を指定
+							-s 1
+
+						chara delay カメラディレイ \
+							-time (60*4) \
+							-exec {
+								eval( $f:w31a_大統領シナリオデモ中フラグ = 0 );
+								mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_FIN_S
+								chara カメラ設定 シナリオデモカメラ -s -1
+								@シナリオデモ終了処理
+							}
+					}
+				}
+			}
+
+		// 休憩室部分の張り付きカメラ(電源パネルが破壊されるとトラップがオフされます)
+		trap ca016 d:PLAYER \
+			-mask 入る \
+			-dir 3072 512 \
+			-state d:TRP_STATE_CAUTION \
+			-camera \
+			-exec {
+				if ( $f:w31a_大統領シナリオデモフラグ == 0 && (`command ゲームオーバーチェック` == 0 ) && \
+					 $f:w31a_大統領シナリオデモ中フラグ == 0 ) {
+					command コントロール座標取得 \
+						健康な大統領 $i:ローカル変数Ｉ１ $i:ローカル変数Ｉ２ $i:ローカル変数Ｉ３
+
+					if ( $i:ローカル変数Ｉ３ < -243500 ) {
+						eval( $f:w31a_大統領シナリオデモ中フラグ = 1 );
+						eval( $f:w31a_大統領シナリオデモフラグ = 1 );
+						@シナリオデモ開始処理
+						mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_FOUTP_S
+						command ＳＥセットモード -s d:se_code:SD_S_JINGLE01 \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 3
+
+						command コントロール座標取得 \
+							健康な大統領 $i:ローカル変数Ｉ１ $i:ローカル変数Ｉ２ $i:ローカル変数Ｉ３
+
+						chara カメラ設定 シナリオデモカメラ \
+							-c 1 \	
+							-p -2891,8002,-242183 -t -2891,1623,-245046 \
+							-r 749,2048,0 -f 6992 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+
+						if ( $i:ローカル変数Ｉ１ > 5600 ) {
+							eval( $i:ローカル変数Ｉ１ = 5600 );
+						}
+
+						chara カメラ設定 シナリオデモカメラ \
+							-c 1 \
+							-p $i:ローカル変数Ｉ１,8002,-242183 \
+							-t $i:ローカル変数Ｉ１,1623,-245046 \
+							-a 200 \
+							-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+							-interp_time 300 \ // 補完時間を指定
+							-s 1
+
+						chara delay カメラディレイ \
+							-time 300 \
+							-exec {
+								eval( $f:w31a_大統領シナリオデモ中フラグ = 0 );
+								mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_FIN_S
+								chara カメラ設定 シナリオデモカメラ -s -1
+								@シナリオデモ終了処理
+							}
+					}
+				}
+			}
+	}
+
+
+
+	proc 電源パネル破壊ポリデモへ {
+		#if d:DEBUG_PRINT 
+			print 'panel_broken_polydemo_go'
+		#endif
+
+		if ( $w:p_story < d:ST:P048_01_P01電源パネル破壊１ポリゴンデモ１開始 ) {
+			eval( $i:プレイヤー初期Ｘ位置 = $i:プレイヤー位置Ｘ ) ;
+			eval( $i:プレイヤー初期Ｙ位置 = $i:プレイヤー位置Ｙ ) ;
+			eval( $i:プレイヤー初期Ｚ位置 = $i:プレイヤー位置Ｚ ) ;
+			eval( $i:プレイヤー初期方向 = $w:プレイヤー方向 )
+			eval( $b:プレイヤー初期姿勢 = $w:プレイヤー姿勢 ) ;
+			eval( $s:登場ポイント = 電源パネルポリゴンデモへ );
+			// 大統領の現在地を取得
+			command ニキータイベント大統領耐久値取得 $i:大統領ライフ現在値
+			@ポリデモアイテムチェック後スタート d:ST:P048_01_P01電源パネル破壊１ポリゴンデモ１開始
+		}
+	}
+
+
+	// 無線デモムービーデモ設定
+	// ------------------------------------
+	proc タンカー編整理１無線機デモ設定 {
+		#if d:DEBUG_PRINT 
+			print 'tanker_demo1_set'
+		#endif
+
+		trap ev002 d:PLAYER \
+			-mask 入る \
+			-exec {
+				// P050_01_R01タンカー編整理１無線機デモ１開始へ
+/*
+				if ( $w:p_story < d:ST:P050_01_R01タンカー編整理１無線機デモ１開始 && \
+					 (`command ゲームオーバーチェック` == 0 )) {
+					eval( $i:プレイヤー初期Ｘ位置 = $i:プレイヤー位置Ｘ );
+					eval( $i:プレイヤー初期Ｙ位置 = $i:プレイヤー位置Ｙ );
+					eval( $i:プレイヤー初期Ｚ位置 = $i:プレイヤー位置Ｚ );
+					eval( $i:プレイヤー初期方向 = $w:プレイヤー方向 );
+					eval( $b:プレイヤー初期姿勢 = $w:プレイヤー姿勢 ) ;
+					eval( $s:登場ポイント = タンカー編回想デモ開始 );
+					// 大統領の位置も覚える
+					if ( $w:p_story >= d:ST:P049_11_P02大統領１１ポリゴンデモ２終了 ) {
+						command コントロール座標取得 大統領死体 $i:w31a_大統領Ｘ位置,$i:w31a_大統領Ｙ位置,$i:w31a_大統領Ｚ位置
+					}
+					@rt_P049_12_R05大統領１２無線機デモ５
+				}
+*/
+			}
+	}
+
+	proc 無線開始位置へ移動 {
+		mesg プレイヤー d:PLAYER run 5125 0 -240750 0 1024 \
+			(d:FA_DIRECT_MOVE) 大佐へ無線
+
+		chara delay カメラディレイ \
+			-time 1 \
+			-exec {
+				chara カメラ設定 シナリオデモカメラ \
+					-c 1 \	
+					-p 9547,149,-240066 -t 4712,1191,-240768 \
+					-r 3959,2978,0 -f 4996 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s 1
+			}
+	}
+
+	proc 大佐へ無線 {
+		eval( $i:プレイヤー初期Ｘ位置 = $i:プレイヤー位置Ｘ );
+		eval( $i:プレイヤー初期Ｙ位置 = $i:プレイヤー位置Ｙ );
+		eval( $i:プレイヤー初期Ｚ位置 = $i:プレイヤー位置Ｚ );
+		eval( $i:プレイヤー初期方向 = $w:プレイヤー方向 );
+		eval( $b:プレイヤー初期姿勢 = d:FA_END_STAND ) ;
+		eval( $s:登場ポイント = タンカー編回想デモ開始 );
+		// 大統領の位置も覚える
+		if ( $w:p_story >= d:ST:P049_11_P02大統領１１ポリゴンデモ２終了 ) {
+			command コントロール座標取得 大統領死体 $i:w31a_大統領Ｘ位置,$i:w31a_大統領Ｙ位置,$i:w31a_大統領Ｚ位置
+			command コントロール方向取得 大統領死体 $i:w31a_大統領方向
+			command 倒れ状態取得 大統領死体 $w:w31a_大統領状態
+		}
+		@rt_P049_12_R05大統領１２無線機デモ５
+	}
+
+	// 大統領死体設定
+	// ------------------------------------
+	proc 大統領死体設定 {
+		#if d:DEBUG_PRINT 
+			print 'prez_set'
+		#endif
+
+		chara 死体君 大統領死体 \
+			-m jam_def_sh_mt \
+			-e jam_def_deadface \
+			-d $w:w31a_大統領状態 \	// あお向け
+			-p $i:w31a_大統領Ｘ位置,0,$i:w31a_大統領Ｚ位置 \
+			-r 0,$i:w31a_大統領方向,0 \
+			-s ( d:CORPS_ST_EVM | d:CORP_STATUS_NOHIT )	// マルチテクスチャ
+
+		// 大統領ネクタイ
+		chara ロープモデル３ ネクタイ \
+			-n jam_tie \
+			-d 6 \
+			-b jam_bounding2 \
+			-y 大統領死体 \
+			-z 2 \
+			-x 0,0,0 \
+			-m 22 \
+			-p 250 \
+			-k 350 \
+			-o 100 \
+			-f 1 \
+			-h 1
+
+	}
+
+	proc 大統領用アタリ追加 {
+		#if d:DEBUG_PRINT
+			print 'w31a_hzd_add'
+		#endif
+
+		command 追加ＨＺＸグループ登録 -h 0 -a 1
+	}
+
+	// オルガ設定
+	// ------------------------------------
+	proc オルガ設定 {
+		#if d:DEBUG_PRINT 
+			print 'olg_set'
+		#endif
+
+		if ( $w:p_story == d:ST:P047_02_I01電撃床前オルガ２インタラクティブ主観デモ１開始 ) {
+			chara ルートデモ人形 オルガ \
+				-route 3 0 \ 
+				-kms org_plant_sh_mt \		//	影／映り込み用
+				-evm org_plant_mh_mt \
+				-mar org_w31a \
+				-number d:オルガモーションリスト:org_walk
+
+			chara マルチウェイト髪の毛モデル プラントオルガの髪 \
+				-n org_plant_hair_mh\
+				-d 20 \
+				-y オルガ \
+				-b org_plant_dummy \
+				-z 11 12 \
+				-o 100 \
+				-f 1 \
+				-c 2 { 11 12 }
+
+			chara 装備品Ｃ オルガ無線機 \
+				-n org_radio_forhand \
+				-y オルガ \
+				-z 10 \
+				-x 0,-169,-68 \
+				-r 3595,0,2048 \
+				-f 1
+
+		} else if ( $w:p_story == d:ST:P047_04_I02電撃床前オルガ４インタラクティブ主観デモ２開始 ) {
+			chara ルートデモ人形 オルガ \
+				-route 4 0 \ 
+				-kms org_plant_sh_mt \		//	影／映り込み用
+				-evm org_plant_mh_mt \
+				-mar org_w31a \
+				-number d:オルガモーションリスト:org_walk
+
+			chara マルチウェイト髪の毛モデル プラントオルガの髪 \
+				-n org_plant_hair_mh\
+				-d 20 \
+				-y オルガ \
+				-b org_plant_dummy \
+				-z 11 12 \
+				-o 100 \
+				-f 1 \
+				-c 2 { 11 12 }
+
+			chara 装備品Ｃ オルガ無線機 \
+				-n org_radio_forhand \
+				-y オルガ \
+				-z 10 \
+				-x 0,-169,-68 \
+				-r 3595,0,2048 \
+				-f 1
+		}
+
+	}
+
+
+	// コマンダー
+	// ------------------------------------
+	proc コマンダー設定 {
+		#if d:DEBUG_PRINT
+			print 'commander_set'
+		#endif
+		eval ($w:スタートアラートモード = d:ALERT_MODE_SENNYU);
+
+		chara コマンダー 敵兵セット \
+			-m $w:スタートアラートモード
+	}
+
+
+
+
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下仮キャラ用proc
+// -----------------------------------------------------------------------------------
+// 仮キャラ
+// ------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------

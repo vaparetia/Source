@@ -1,0 +1,989 @@
+/*
+   etc.txt
+   etc総合ドキュメント
+   
+   2001/11/27	S.Kobayashi
+   $Id: etc.txt,v 1.1.1.3 2002/11/19 11:50:05 Yoshizawa1 Exp $
+*/
+
+/etc総合ドキュメント
+このドキュメントで説明されているもの
+	albam.c
+	album_mng.c
+	album_name.c
+	boss_etc.c
+	boss_pause.c
+	boss_result.c
+	clear_result.c
+	demo_c4.c
+	demo_nkt_smoke.c
+	dogtag2.c
+	dogtag_mng.c
+	encute.c
+	etc.c
+	gameover.c
+	mc_mng.c
+	mc_dogtag_mng.c
+	name_layout.c
+	photo_save.c
+	previous_story.c
+	web_site.c
+	world_map_bug_layout.c
+	world_map_layout.c
+	world_map_sub_layout.c
+
+○albamの仕組み
+説明
+	アルバムモード本体。 ここから、Jpegの表示、名前の変更、色変更
+	メモリーカードに保存を全て行っている。 ただし、名前の変更のみ
+	子供を作りその中で実行している。
+注意
+	#ifdef PALで区切っている部分がありますが、これはただ各国語に対応しているだけです。
+    日本語と英語＋αのバージョンを作成する時は、PALで区切られている部分を改造して
+	対応させてください。 もちろんリソースは必要です。
+
+Enumの説明
+	SK_NORMAL                   = 通常状態
+	SK_PHOTO_LOAD_OK            = JPEGデータをメモリーカードからLoadが完了した
+	SK_PHOTO_SAVE_OK            = 未使用
+	SK_PHOTO_FADE_IN_START      = 写真/FadeIn表示要求
+	SK_PHOTO_FADE_IN_OK         = 写真/FadeIn表示完了
+	SK_PHOTO_FADE_OUT_START     = 写真/FadeOut表示要求
+	SK_PHOTO_FADE_OUT_OK        = 写真/FadeOut表示完了
+	SK_PAGE_FADE_IN_START       = PAGE Font/FadeIn表示要求
+	SK_PAGE_FADE_IN_OK          = PAGE Font/FadeIn表示完了
+	SK_PAGE_FADE_OUT_START      = PAGE Font/FadeOut表示要求
+	SK_PAGE_FADE_OUT_OK         = PAGE Font/FadeOut表示完了
+	SK_FONT_FADE_IN_START       = Name Font/FadeIn表示要求
+	SK_FONT_FADE_IN_OK          = Name Font/FadeIn表示完了
+	SK_FONT_FADE_OUT_START      = Name Font/FadeOut表示要求
+	SK_FONT_FADE_OUT_OK         = Name Font/FadeOut表示完了
+	SK_DOT_FADE_IN_START        = Dot Cursor/FadeIn表示要求
+	SK_DOT_FADE_IN_OK           = Dot Cursor/FadeIn表示完了
+	SK_DOT_FADE_OUT_START       = Dot Cursor/FadeOut表示要求
+	SK_DOT_FADE_OUT_OK          = Dot Cursor/FadeOut表示完了
+	SK_RGB_FADE_IN_START        = RGB Font/FadeIn表示要求
+	SK_RGB_FADE_IN_OK           = RGB Font/FadeIn表示完了
+	SK_RGB_FADE_OUT_START       = RGB Font/FadeOut表示要求
+	SK_RGB_FADE_OUT_OK          = RGB Font/FadeOut表示完了
+	SK_CHANCEL                  = キャンセルされた
+	SK_PAGE_CHANGE_L            = ページを戻した
+	SK_PAGE_CHANGE_R            = ページを進めた
+	SK_FULL_SCREEN_START        = Full Screen Mode/表示要求
+	SK_FULL_SCREEN_OK           = Full Screen Mode/表示完了
+	SK_PRE_NORMAL_SCREEN_START  = Edit Mode/表示要求
+	SK_PRE_NORMAL_SCREEN_OK     = Edit Mode/表示完了
+	SK_NORMAL_SCREEN_START      = Normal Mode/表示要求
+	SK_NORMAL_SCREEN_OK         = Normal Mode/表示完了
+	SK_NAME_ENTRY               = Name Entry Mode中
+	SK_RGB_CHENG                = RGB Chenge Mode中
+	SK_ACTION_START             = Layout 2D 実行要求
+	SK_ACTION_OK                = Layout 2D 実行完了
+	SK_SIGNAL_OK                = Layout 2DからSignalがきたかどうか
+	SK_OVER_WRITE_MODE          = Yes / No 選択中
+	SK_MEMORY_FONT_FADE         = Memory Card Slot ? の部分をFadeOutさせる
+	SK_SAVE_WAIT                = セーブ中を表示する
+	SK_SAVE_TIME                = セーブ完了を表示する
+	SK_MOVE_OK                  = Pad Control受付開始
+	SK_NAME_ENTRY_END           = Name Entry終了
+	SK_LIST_UP                  = ページ中の一番後にDotCursorをあわせる
+	SK_FIRST_FADE_OK            = 最初のFadeInが終了した 
+	SK_OPEN_NOW_LOAD            = NowLoding表示中
+	SK_DELAY                    = Delay許可Flag
+	SK_SAVE_START               = Memory Card Save実行
+	SK_END                      = 終了
+	
+処理手順
+	初期化 各種変数の初期化
+		   メモリーカードSlot1 , Slot2を判別して設定
+		   言語リソースを設定
+		   リスト構造を生成
+		   メモリ確保
+		↓
+	アニメーション再生が終るまでまつ
+	裏でメモリーカードを読み込む
+		↓
+	メモリーカードから30ファイル or 最大ファイル読み込むまでまつ
+		↓
+	通常状態を表示
+	一定時間カーソルを動かさないとJpegをデコードする←←←←←←←←
+	○ボタンを押す	 ×ボタンを押す						           ↑
+	    ↓                終了									   ↑
+		↓												           ↑
+	通常モードからEDITモードへ移行						           ↑
+		↓												           ↑
+  →名前入力、色調整、通常モードに戻るを選ぶメニュー出現           ↑
+  ↑	↓             ↓			  ↓↑				           ↑
+  ↑名前入力を選ぶ   色調整を選ぶ     ↓↑   通常モードに戻る→→→↑
+  ↑	↓             ↓			  ↓↑
+  ↑	↓←←←←←←←			  ↓↑
+  ←キャンセル			フルスクリーンモード(R１ボタン)へ移行
+						何かボタンを押されたらEDITモードへ移行
+
+
+関数説明
+	void *NewAlbamMode( MCScrWork *mcscr , int port , int handle , int handle_out )
+		本体
+
+	static int GetResources( Work *work )
+		初期化関数
+
+	static void Signal( void *work , int sign , int value )
+		レイアウト２D用シグナルファンクション
+
+	static void AnimetionAct( Work *pWork )
+		レイアウト２D用アニメーション関数
+
+	static void Die( Work *work )
+		終了処理関数
+
+	static void Act( Work *pWork )
+		通常実行関数
+
+	static void MorfL2d( int handle , int strcode , int code1 , int code2 , Hokan *hokan )
+		モーフィングを設定してくれる関数
+
+	static inline int MorfAct( Work *pWork , Hokan *pHokan ) // これのみ実行
+		モーフィングを実行する関数
+
+	static void NormalAct( Work *pWork )
+		通常状態実行関数
+
+	static void PadAct( Work *pWork )
+		 パッドコントロール管理
+
+	static void PadControlOverWrite( Work *pWork )
+		メモリーカードセーブフェーズ用パッドコントロール関数
+
+	static void MarubatsuHideShow( Work *pWork , char mode )
+		 未使用
+
+	static inline void OverWriteColorRe( Work *pWork )
+		 Yes / No 部分の色を戻す関数
+
+	static void PadControlNormal( Work *pWork )
+		通常実行時フェーズ用パッドコントロール関数
+
+	static void PadControlPreNormal( Work *pWork )
+		EDITフェーズ用パッドコントロール関数
+
+	static void PadControlFullScreen( Work *pWork )
+		Full Screenフェーズ用パッドコントロール関数
+
+	static inline void ForceMorf( int handle , int strcode , int code1 , int code2 )
+		強制モーフィング実行関数
+
+	static void MemoryCardFade( Work *pWork )
+		Memory Card Slot ? のalpha色がえ
+
+	static void PageChange( Work *pWork )
+		ページ切替管理関数
+
+	static void PrePositionUpdate( Work *pWork )
+		EDIT画面での選択アクションの呼び出し
+
+	static inline void RGBUpdate( Work *pWork )
+		RGBの色更新関数
+
+	static inline void DotUpdate( Work *pWork ) // update
+		カーソル位置更新
+
+	static void RGBFade( Work *pWork ) // update
+		RGBフェード管理関数
+
+	static void RGB_BarMove( Work *pWork )
+		RGB選択バーの移動管理関数
+
+	static void RGB_SelectUpdate( Work *pWork )
+		RGB選択バー位置更新関数
+
+	static void DotFade( Work *pWork )
+		カーソルフェード管理関数
+
+	static void FontFade( Work *pWork )
+		フォントフェード関数
+
+	static void PageFade( Work *pWork )
+		PAGEフォントフェード関数
+
+	static void PhotoFade( Work *pWork )
+		Jpegデータフェード関数
+
+	static void FullScreen( Work *pWork )
+		スクリーン管理関数
+		Jpegの大きさ
+
+	static void RGB_Menu( Work *pWork )
+		RGB調整モードメイン関数
+
+	static void ColorChange( Work *pWork )
+		RGB調整関数
+
+	static inline void RgbMask( Work *pWork , int mode )
+		RGB選択中のハイライト管理関数
+
+	static inline void SoundRgb( int tmp , int tmp2 )
+		RGB変更時に音をならすかならさないか管理する関数
+
+	static void OverWriteEnd( Work *pWork )
+		メモリーカードセーブ終了まち関数
+
+	static int SK_MCManGetResult( Work *pWork ) // 最低でも30frame
+		メモリーカード状態チェック関数
+
+	static void OverWriteFontControl( Work *pWork )
+		上書き確認メッセージ管理関数
+
+	static void OverWrite( Work *pWork )
+		上書き情報設定関数
+
+	static void StringCleate( Work *pWork )
+		文字形成関数
+
+	static SPR_OBJ **SetSpriteY( Work *pWork )
+		上書き確認メッセージ表示位置調整関数
+
+	static void StringDisp( Work *pWork )
+		文字表示関数
+
+	static void PhotoDisp( Work *pWork )
+		写真描画関数
+
+	static void PhotoToJpeg( Work *pWork )
+		デコード管理関数
+
+	static void MemoryLoad( Work *pWork )
+		サムネイルにメモりーカードからデータを読み込む関数
+
+	static void DamagedCheck( Work *pWork )
+		壊れたファイルかどうかをチェックする関数
+
+	static int MemoryAct( Work *pWork )
+		メモリーカード管理関数
+
+	static int ListAll( Work *pWork )
+		List構造生成関数
+
+	static int ListAutoInsert( Work *pWork )
+		List構造生成関数（バックグラウンド動作）
+
+	static void MCScrBackCheckCard(MCScrWork *work)
+		デバック用関数
+
+	static void PhotoListFree( Work *pWork )
+		リスト解放関数
+
+	static inline Photo_List *PhotoListSearch( Photo_List *pPhoto_list , int position )
+		pWork->position の 値まで移動して関数そのアドレスを返す関数
+
+	static inline Photo_List *PhotoListForward( Photo_List *pPhoto_list )
+		リストを進める関数
+
+	static inline Photo_List *PhotoListBack( Photo_List *pPhoto_list )
+		リストを戻す関数
+
+	static int PhotoListAdd( Work *pWork , int id )
+		リストに情報を追加する関数
+
+	static int PhotoListDataInput( Work *pWork , int id , int mode )
+		リストに情報を入力する関数
+
+	static int PhotoListInitialize( Work *pWork )
+		リストを初期化する関数
+
+	static void PageUpDate( Work *pWork )
+		PAGE 00/00 を更新する関数
+
+	static void FontUpDate( Work *pWork )
+		Name FONTを更新する関数
+
+	static void EditNameDisp( Work *pWork )
+		Edit画面に名前を入力する関数
+
+	static int SprInit( Work *pWork )
+		L2dに含まれる素材更新関数
+
+	static void LangChecge( Work *pWork )
+		言語切替関数
+
+○albam_mngの仕組み
+説明
+	アルバムモードを管理する大元のソースファイル
+
+処理手順
+	初期化 各種変数の初期化
+		↓
+	シグナル待ち状態
+		↓
+	終了
+
+
+関数説明
+	void *NewAlbumMng( int name )
+		本体
+
+	static int GetResources( Work *work )
+		初期化関数
+
+	static void Die( Work *work )
+		終了処理関数
+
+	static void Act( Work *pWork )
+		通常実行関数
+
+	static int SignalFunc( void *work, int signal, int value )
+		シグナル受取関数
+
+	static inline void ExecProc( Work *pWork , char mode )
+		プロック実行関数
+
+○albam_nameの仕組み
+説明
+	アルバムモード（EDIT画面）に表示されている写真の名前を変更する。
+	キャンセルされた場合は元の名前に戻す。
+注意
+	#ifdef PALで区切っている部分がありますが、これはただ各国語に対応しているだけです。
+    日本語と英語＋αのバージョンを作成する時は、PALで区切られている部分を改造して
+	対応させてください。 もちろんリソースは必要です。
+
+処理手順
+	初期化 各種変数の初期化
+		   バッファに元のデータをコピー
+		↓
+	アニメーション再生が終るまでまつ
+		↓
+	通常状態を表示
+		↓
+	決定ボタンを押す or OKを選ぶ →→→→→→→→→→→  キャンセルをする
+		↓														↓
+		↓														↓
+		↓														↓
+	メモリーカードにデータを保存						 元の情報に戻す
+		↓														↓
+		↓←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+		↓
+	終了
+
+
+関数説明
+	void *NewAlbamName( char *name_data , u_long *flag , int port , Photo_List *photo_list , int handle , void *jpn_font , int resource )
+		本体
+
+	static int GetResources( Work *work )
+		初期化関数
+
+	static void StringCleate( Work *pWork )
+		文字列生成関数
+	
+	static SPR_OBJ **SetSpriteY( Work *pWork )
+		スプライトのY座標を設定する関数
+
+	static void StringDisp( Work *pWork )
+		文字列表示関数
+
+	static void OverWrite( Work *pWork )
+		メモリーカード保存情報設定関数
+
+	static void AnimetionAct( Work *pWork )
+		レイアウト２D用アニメーション関数
+
+	static void Die( Work *work )
+		終了処理関数
+
+	static void Act( Work *pWork )
+		通常実行関数
+
+	static void NormalAct( Work *pWork )
+		通常状態実行関数
+
+	static void OverWriteEnd( Work *pWork )
+		メモリーカード上書き終了管理関数
+
+	static int SK_MCManGetResult( Work *pWork ) // 最低でも30frame
+		メモリーカード状態チェック関数
+
+	static void OverWriteFontControl( Work *pWork ) // over write menu control
+		Yes / No を管理する関数
+
+	static inline void OverWriteDotUpdate( Work *pWork )
+		未使用
+
+	static void EscapeAct( Work *pWork )
+		終了時メイン関数
+
+	static void PadAct( Work *pWork )
+		 パッドコントロール管理
+
+	static void PadControlOverWrite( Work *pWork )
+		メモリーカードセーブフェーズ用パッドコントロール関数
+
+	static void MarubatsuHideShow( Work *pWork , char mode )
+		 説明文管理
+
+	static void HilightFade( Work *pWork )
+		ハイライトエフェクト管理関数
+
+	static inline void OverWriteColorRe( Work *pWork )
+		 Yes / No 部分の色を戻す関数
+
+	static void PadControlNormal( Work *pWork )
+		通常実行時フェーズ用パッドコントロール関数
+
+	static inline void OverWriteIn( Work *pWork )
+		上書き時メッセージ作成関数
+
+	static void NoneName( Work *pWork )
+		名前チェック関数
+
+	static void Update( Work *pWork ) // update
+		ハイライトエフェクト更新関数
+
+	static int SprInit( Work *pWork )
+		L2dに含まれる素材更新関数
+
+
+○boss_etcの仕組み
+説明
+	ボスラッシュで表示するテロップ（FIGHT等）を管理する
+
+処理手順
+	初期化 各種変数の初期化
+		↓
+	Ready , Fightをシナリオから指定された方を呼ぶ
+		↓
+	表示が終了すると終了、Readyのみステージロードをはさまないと終了しない
+
+関数説明
+	void *NewSK_BossTelop( int name )
+		本体
+
+	static int GetResources( Work *work )
+		初期化関数
+
+	static void Die( Work *work )
+		終了処理関数
+
+	static void Act( Work *pWork )
+		通常実行関数
+
+	static int Signal( void *work, int signal, int value )
+		L2D用シグナル受取関数
+
+	static int AnimationAct( Work *pWork )
+		アニメーション実行関数
+
+	static void KeySetName( Work *pWork )
+		名前のモーフィングキーを設定する関数
+
+	static void KeySetPic( Work *pWork )
+		絵のモーフィングキーを設定する関数
+
+	static void DefaultNextAction( Work *pWork )
+		デフォルトアクション実行後に設定するアクションを決定する関数
+
+	static void MorfL2d( int handle , int strcode , int code1 , int code2 , Hokan *hokan )
+		モーフィングを設定してくれる関数
+
+	static inline int MorfAct( Work *pWork , Hokan *pHokan )
+		モーフィングを実行してくれる関数
+
+	static void AlphaControl( Work *pWork )
+		未使用
+
+	static int SprInit( Work *pWork )
+		L2DSprite初期化
+
+	static void BossNameDisp( Work *pWork , int flag )
+		各ボスキャラの名前を表示する関数
+
+	static void ShowHideControl( int handle_2d , int strcode  , int mode )
+		L2Dオブジェクトの表示/非表示する関数
+
+
+○boss_pauseの仕組み
+説明
+	ボスラッシュ中のポーズ状態を管理
+
+処理手順
+	初期化 各種変数の初期化
+		↓
+	L2Dアニメーションを再生
+		↓
+	表示、ボタンが押されるまで表示す続ける。
+		↓
+		↓ ボタンが押された
+		↓
+	各種処理をしたのち終了
+
+関数説明
+	void SK_BossPauseVisibleInvisible( void )
+		シナリオから表示/非表示を切り換える関数
+
+	void *NewSK_BossPause( int name )
+		本体
+
+	static int GetResources( Work *work )
+		初期化関数
+
+	static void Die( Work *work )
+		終了処理関数
+
+	static void Act( Work *pWork )
+		通常実行関数
+
+	static inline void Initialize( Work *pWork )
+		キーの初期化をする関数
+
+	static void MorfL2d( int handle , int strcode , int code1 , int code2 , Hokan *hokan )
+		モーフィングを設定してくれる関数
+
+	static inline int MorfAct( Work *pWork , Hokan *pHokan ) // これのみ実行
+		モーフィングを実行する関数
+
+	static void WaitAct( Work *pWork )
+		スタートボタンを押す前のメイン関数
+
+	static void SubWaitAct( Work *pWork )
+		空関数
+
+	static void NormalAct( Work *pWork )
+		通常時メイン関数
+
+	static void SpriteControl( Work *pWork )
+		L2Dスプライト管理関数
+
+	static int AnimationAct( Work *pWork )
+		アニメーション実行関数
+
+	static void PadControlNormal( Work *pWork )
+		通常時パッドコントロール関数
+
+	static void FontDisp( void )
+	static int SprInit( Work *pWork )
+		未使用
+
+○boss_resultの仕組み
+説明
+	ボスラッシュの結果を表示する
+
+注意
+	ボスラッシュクリアコードの内訳（ビット下位から表示）
+		オルガクリアタイム          17bit
+		ファットマンクリアタイム	17bit
+		ハリアークリアタイム		17bit
+		ヴァンプクリアタイム		17bit
+		レイクリアタイム			17bit
+		ソリダスクリアタイム		17bit
+		ファットマン非殺生			 1bit
+		ヴァンプ非殺生				 1bit
+		ソリダス非殺生				 1bit
+		バージョン情報				 2bit
+		難易度						 2bit
+		プレイヤー(スネーク／雷電)	 1bit
+
+処理手順
+	初期化 各種変数の初期化
+		↓
+	L2Dアニメーションを再生
+	時間の計算をする
+		↓
+	表示、ボタンが押されるまで表示す続ける。
+		↓
+		↓ ボタンが押された
+		↓
+	終了
+
+関数説明
+	void SK_BossTimeAfterWrite( void )
+		シナリオから結果を後書する関数
+
+	void SK_BossResultChenge( void )
+		シナリオからストリームを変更する関数
+
+	void *SK_BossResultWakeup_Sub( int mode )
+	void SK_BossResultWakeup( void )
+		Sleep -> Wakeup状態にする
+
+	void *NewSK_BossResult( int name )
+		本体
+
+	static int GetResources( Work *work )
+		初期化関数
+
+	static void Die( Work *work )
+		終了処理関数
+
+	static void Act( Work *pWork )
+		通常実行関数
+
+	static int Signal( void *work, int signal, int value )
+		L2D用シグナル受取関数
+
+	static void DifShow( Work *pWork )
+		難度表記する関数
+
+	static void ClearCodeDisp( Work *pWork )
+		クリアコードを表示する関数
+
+	static long64 TimeLimitCheck( long64 time )
+		リミットをチェックする関数
+
+	static int AnimationAct( Work *pWork )
+		アニメーション実行関数
+
+	static void StreamRetry( Work *pWork )
+		ストリーム再生関数(リトライ機能付き)
+
+	static void SK_StreamControl( Work *pWork )
+		ストリーム管理関数
+
+	static void NormalAct( Work *pWork )
+		通常時メイン関数
+
+	static void EscapeAct( Work *pWork )
+		終了時メイン関数
+
+	static void PadAct( Work *pWork )
+		パッド管理関数
+
+	static void PadControlNormal( Work *pWork )
+		通常時パッドコントロール関数
+
+	static void AllAlphaControl( Work *pWork )
+		全てのαを管理する関数
+
+	static void PlayTimeDisp( Work *pWork , int mode )
+		闘った時間を表示する関数
+
+	static void SK_SpritePosition( SPR_OBJ **spr , float x , float y , int max )
+		L2Dスプライトオブジェに指定の場所を設定する関数
+
+	static int SprInit( Work *pWork )
+		L2DSprite初期化
+
+○clear_resultの仕組み
+説明
+	クリア時にリザルトを表示する
+	ドッグタグを全て入手している場合は、ホームページアドレスを表示する。
+
+処理手順
+	初期化 各種変数の初期化
+		↓
+	L2Dアニメーションを再生
+		↓
+	表示、ボタンが押されるまで表示す続ける。
+		↓
+		↓ ボタンが押された
+		↓
+	終了
+
+○demo_c4の仕組み
+説明
+	デモ用C4爆弾
+	一定フレームで凍る機能付き
+	その他は普通のC4とかわらない
+
+○demo_nkt_smokeの仕組み
+説明
+	デモ用二キータ煙
+	指定された座標に付随する煙
+
+処理手順
+	初期化 各種変数の初期化
+		↓
+	メッセージがくるまで終了しない
+
+○dogtag2の仕組み
+処理手順
+	初期化 数値の初期化
+		   セレクト画面L２D初期化
+		   リスト構造生成
+		↓
+→→セレクト画面
+↑	タンカー編を選ぶ、プラント編を選ぶ、キャンセルをする→→→→→→→→→→→A
+↑		↓                  ↓												
+↑	  一度クリアしているかどうか？→→→↓
+↑		↓Yes				            ↓No
+↑		↓					            ↓
+↑	全てのドッグタグLocationを表示   取得済のドッグタグのみLocationを表示
+↑		↓                              ↓
+↑		↓←←←←←←←←←←←←←←←←
+↑		↓
+↑  キャンセルされるまで情報を表示
+←←キャンセルされた
+		
+
+		A
+		↓
+	メモリ解放
+		↓
+	終了
+
+注意
+	TANKER or PLANTを選んだ直後に表示される難易度を変更するには #define SK_DEFAULT_PAGE の
+	部分を変更してください。新な難易度を追加する場合は、テクスチャを追加してもらう必要があります。
+	現在国名の扱いはαが０で表示されていないだけです。 将来国名も表示したいということになれば
+	αの部分を元に戻してください。関数NumToRegの最後にコメントアウトされている部分が元の状態です。
+
+関数説明
+	void *NewDogtagMode( void *font_work , int handle )
+		メイン関数
+
+	static	int	GetResources( Work *work )
+		初期化関数
+
+	static void Signal( void *work , int sign , int value )
+		L2D用シグナルファンクション
+
+	static void SelectAct( Work *pWork )
+		セレクト画面メイン関数
+
+	static void SelectUpdate( Work *pWork )
+		セレクト画面更新関数
+
+	static void DotFade( Work *pWork ) // ドットのfade
+		カーソルフェード管理関数
+
+	static void SelectInitialize( Work *pWork )
+		セレクト画面関連初期化
+
+	static inline void DotUpdate( Work *pWork ) // update
+		カーソル更新関数
+
+	static	void	Die( Work *pWork )
+		終了処理関数
+
+	static void Act( Work *pWork )
+		メイン関数
+
+	static void NormalAct( Work *pWork )
+		ビューワ時メイン関数
+
+	static void PadAct( Work *pWork )
+		パッド管理関数
+
+	static void PadControlSelect( Work *pWork )
+		Tanker or Plant選択時のパッド管理関数
+
+	static void PadControlNormal( Work *pWork )
+		Viewer表示時のパッド管理関数
+
+	static inline void HilightUpdate( Work *pWork )
+		ハイライトエフェクトα更新関数
+
+	static inline Dogtag_List *PageChange( Work *pWork )
+		ページの切替(レベルの変更)関数
+
+	static inline void DifControl( Work *pWork )
+		難易度テクスチャUV値変更関数
+
+	static inline Dogtag_List *DogtagLinker( Work *pWork )
+		各難易度の先頭のアドレスを設定する関数
+
+	static void LocationInit( Dogtag_List *pDogtag_list , int location_max )
+		未使用		
+
+	static void LocationDisp( Work *pWork , Dogtag_List *pDogtag_list , int point )
+		未使用		
+
+	static inline void NumToBarthday( Work *pWork , Dogtag_List *pDogtag_list , int point )
+		誕生日表示関数
+
+	static inline void NumToLocation( Work *pWork , Dogtag_List *pDogtag_list , int point )
+		場所情報表示関数
+
+	static void *GetLinkvariableAddr(void *addr)
+		Linkvariable変数のアドレスを取得する関数
+
+	static inline void NameUpdate( Work *pWork , Dogtag_List *pDogtag_list , int point )
+		名前表示関数
+
+	static inline void NumToReg( Work *pWork , Dogtag_List *pDogtag_list , int point )
+		国表示関数（未使用）
+
+	static inline void NumToBlood( Work *pWork , Dogtag_List *pDogtag_list , int point )
+		血液型表示関数
+
+	static inline void NumToId( Work *pWork , Dogtag_List *pDogtag_list , int point )
+		ID表示関数
+
+	static inline void PercentDisp( Work *pWork )
+		取得率表示関数
+
+	static void FontFade( Work *pWork )
+		フォントα管理関数
+
+	static void ArrowFade( Work *pWork )
+		次に進むことが出来るのかを表示する関数
+
+	static void LocationControl( Work *pWork )
+		場所情報表示管理関数
+
+	static void ListAll( Work *pWork )
+		未使用
+
+	static void DogtagListFree( Work *pWork , int select_mode , int level )
+		リスト解放関数
+
+	static inline Dogtag_List *DogtagListSearch( Dogtag_List *pDogtag_list , int position )
+		現在の場所から任意の場所までリストを進める関数
+
+	static void ListDebug( Work *pWork , int level )
+		未使用
+
+	static inline Dogtag_List *DogtagListForward( Dogtag_List *pDogtag_list )
+		リストを前に進める関数
+
+	static inline Dogtag_List *DogtagListBack( Dogtag_List *pDogtag_list )
+		リストを後に進める関数
+
+	static int DogtagListAdd( Work *pWork )
+		リストに情報を追加する関数
+
+	static int DogtagListAddSub( Work *pWork , int id , int location , u_char *name , int manth , int day ,
+								 int blood , u_char *region , int where , int level , Dogtag_List *pDogtag_list )
+		リストに挿入する関数
+
+	static void DogtagListAddMng( Work *pWork )
+		リスト挿入管理関数
+
+	static inline int TankerOrPlant( int id )
+		未使用
+
+	static inline int IdToPage( int id )
+		未使用
+
+	static inline Dogtag_List *DogtagListPageSet( Work *pWork , int select_mode , int page )
+		ページの先頭アドレスをセットする関数
+
+	static int DogtagListInitialize( Work *pWork )
+		リストを初期化する関数
+
+	static void FontUpdate( Work *pWork )
+		各種情報の更新を管理する関数
+
+	static void FontAlphaControl( Work *pWork )
+		未使用
+
+	static void FontFadein( Work *pWork )
+		未使用
+
+	static int SprInit( Work *pWork )
+		L2dスプライトの初期化
+
+○dogtag_mngの仕組み
+説明
+	シグナルを受取りドッグタグを子供として呼びす関数
+
+○encuteの仕組み
+説明
+	アンケートを表示する
+
+注意
+	日本語とそれ以外（英語、PAL）の二つの細かい設定があります。
+	日本語と英語のようなバージョンを作成したい場合は、それ以外の部分を改良して作成してください。
+	static void LangChecge( Work *pWork ) という関数はすでにその事を考えて設計されているので
+    #define SK_ENCUTE_JAPAN の内容を変更することで実装出来ると思われます。
+
+処理手順
+	初期化 各種変数の初期化
+		   言語の設定
+		↓
+	L2Dアニメーションを再生
+		↓
+	表示、ボタンが押されるまで表示す続ける。
+		↓
+		↓ ボタンが押された
+		↓
+	メッセージを送信して終了
+
+○gameoverの仕組み
+説明
+	ストリームの再生を待ちます（リミット60フレーム)その間は常に白フェードのままです。
+	その後アニメーション再生、ボタンが押されるまで待つボタンが押されると各処理を実行して終了する。
+
+○mc_mngの仕組み
+説明
+	メモリーカードをチェックして、結果正しいものだと判定されると
+	アルバムモードを呼ぶ。
+
+処理手順
+	初期化 各種変数の初期化
+		↓
+	メモリーカード結果待ち状態
+		↓
+	正しいデータならば、アルバムモードのキャラを生成してスリープ状態へ 、終了のメッセージがくると終了する
+
+
+関数説明
+	void *NewAlbumMcMng( int handle , int first_start )
+		本体
+
+	static int GetResources( Work *work )
+		初期化関数
+
+	static void Die( Work *work )
+		終了処理関数
+
+	static void Act( Work *pWork )
+		通常実行関数
+
+	static void NormalAct( Work *pWork )
+		通常実行関数
+
+	static int SignalFunc( void *work, int signal, int value )
+		シグナル受取関数
+
+	static void MsgChack( Work *pWork )
+		メッセージ受取関数
+
+○mc_dogtag_mngの仕組み
+説明
+	メモリーカードをチェックして、結果正しいものだと判定されると
+	ドッグタグモードを呼び出す。
+
+○name_layoutの仕組み
+説明
+	PLANT編をクリアしている時のみデフォルトの設定を前周の情報にします。
+	名前は、禁句処理、スタッフの名前かどうかチェックしてそれぞれの処理をします。
+	誕生日と今の日付が同じならHappy Birth Dayを表示します。
+	OKを選ぶと終了します。 
+
+○photo_saveの仕組み
+説明
+	メモリーカードの状態をチェックしてメモリーカードにセーブします。
+    セーブが正常に終了する、キャンセルした時に終了します。
+注意
+	#ifdef PALで区切っている部分がありますが、これはただ各国語に対応しているだけです。
+    日本語と英語＋αのバージョンを作成する時は、PALで区切られている部分を改造して
+	対応させてください。 もちろんリソースは必要です。
+
+○previous_storyの仕組み
+説明
+	用意されたリソースデータをシナリオから指定されたページ分だけ表示します。
+	一冊目の最後には、MGSの宣伝が入るため少し特殊な扱いになっています。
+    その他の本は、ただデータを読込表示するだけです。
+    キャンセルした時のみ終了です。
+
+○web_siteの仕組み
+説明
+	大統領イベント後に登場するウェブサイト画面
+	タンカー編からプレイしたデータのみ常駐領域
+	にあるデータを表示する。
+	それ以外は、用意された画像を表示する
+	ボタン(スタート、×ボタン)が押されるとキャンセルして終了
+
+○world_map_bug_layoutの仕組み
+説明
+	L2Dアニメーションを再生するのみです。
+	シグナルにて終了メッセージを受け取ると終了します。
+
+○world_map_layoutの仕組み
+説明
+	全体マップ賑やかしの基礎部分です。
+	爆弾マークの表示、枠アニメーションの再生等
+	を行っています。
+
+○world_map_sub_layoutの仕組み
+説明
+	全体マップ右下にあるメーターの制御を行っています。

@@ -1,0 +1,32 @@
+// w12a.src
+// Ａ脚・屋上
+// 2001/02/23 S.Yamashita
+// $Id: w12a.src,v 1.31 2001/09/04 06:40:44 usr03692 Exp $
+
+
+
+// ステージ名
+#define		WN_W12A
+
+// 敵兵タイプ
+#define		ENE_P_GOL
+#define		ENE_ATTACKER
+#define		ENE_SHADOW 1
+#define		ENE_NO_FINGER	// フィンガーサイン使わない
+
+// 特殊兵
+
+// 特殊兵のモーション設定
+#define		ENE_MAR '-DDEL_SHOTGUN=DUMMY -DDEL_TNG=DUMMY -DDEL_SHIELD=DUMMY -DDEL_WALKMAN=DUMMY -DDEL_HIGH=DUMMY'
+
+// 空・太陽
+#define		MORNING_SKY
+
+
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// ステージ共通要素
+#include	"w12ac_common.h"

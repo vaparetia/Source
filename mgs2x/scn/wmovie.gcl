@@ -1,0 +1,523 @@
+/*
+	wmovie.gcl
+	    ムービー再生専用ステージ
+
+	2001/07/18 S.Mukaide
+	$Id: wmovie.gcl,v 1.43 2002/09/30 11:14:17 usr03700 Exp $
+
+
+*/
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+
+
+#include "stdch.h"
+#include "sload.h"
+#include "sound.h"
+#include "enevoice.h"
+#include "item_info.h"
+#include "commdef.h"
+#include "p_force_cdc.ch"
+
+
+//---------------------------------------------------------------------------
+//	ムービー再生
+//---------------------------------------------------------------------------
+	@シナリオデモキャラセット	// stdproc.hで定義
+	mesg シネマスクリーン シネマ フェードアウト 1
+
+	if(d:ST:P014_01_P01ピーター遭遇１ポリゴンデモ１終了 <= $w:p_story && \
+				$w:p_story < d:ST:P014_02_M01ピーター遭遇２ムービーデモ１開始) {
+		eval($w:p_story = d:ST:P014_02_M01ピーター遭遇２ムービーデモ１開始)
+		print '$w:p_story = ST:P014_02_M01ピーター遭遇２ムービーデモ１開始'
+
+		/* ファットマンの紹介映像 */
+
+		chara サウンドマネージャー ＳＤマネ -pak -1		// パックをロードしない
+		command セットサウンドコード -c d:SNG_PLAY_06
+
+		chara MOVIE再生 p014_02_m01 -file t:p014_02_m01 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc P014_02_m01終了
+
+	} else if(d:ST:P014_03_P02ピーター遭遇３ポリゴンデモ２終了 <= $w:p_story && \
+				$w:p_story < d:ST:P014_04_M02ピーター遭遇４ムービーデモ２開始) {
+		eval($w:p_story = d:ST:P014_04_M02ピーター遭遇４ムービーデモ２開始)
+		print '$w:p_story = ST:P014_04_M02ピーター遭遇４ムービーデモ２開始'
+
+		/* オタコンがビッグシェルに来たことを示すムービー */
+
+		chara MOVIE再生 p014_04_m02 -file t:p014_04_m02 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc P014_04_m02終了
+
+
+	} else if(d:ST:P014_06_I01ピーター遭遇６インタラクティブ主観デモ１終了 <= $w:p_story && \
+					$w:p_story < d:ST:P014_07_M03ピーター遭遇７ムービーデモ３開始) {
+		eval($w:p_story = d:ST:P014_07_M03ピーター遭遇７ムービーデモ３開始)
+		print '$w:p_story = ST:P014_07_M03ピーター遭遇７ムービーデモ３開始'
+
+		chara MOVIE再生 p014_07_m03 -file t:p014_07_m03 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc P014_07_m03終了
+
+	} else if(d:ST:P014_13_P06ピーター遭遇１３ポリゴンデモ６終了 <= $w:p_story && \
+					$w:p_story <= d:ST:P014_14_M04ピーター遭遇１４ムービーデモ４開始) {
+		eval($w:p_story = d:ST:P014_14_M04ピーター遭遇１４ムービーデモ４開始)
+		print '$w:p_story = ST:P014_14_M04ピーター遭遇１４ムービーデモ４開始'
+
+		chara MOVIE再生 p014_14_m04 -file t:p014_14_m04 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc P014_14_m04終了
+
+	} else if(d:ST:P036_08_R02忍者登場８無線デモ２終了 <= $w:p_story && \
+					$w:p_story < d:ST:P036_09_M01忍者登場９ムービーデモ１開始) {
+		eval($w:p_story = d:ST:P036_09_M01忍者登場９ムービーデモ１開始)
+		print '$w:p_story = ST:P036_09_M01忍者登場９ムービーデモ１開始'
+
+		/* ヴァンプに奪われたブラックケースの映像 */
+
+		chara MOVIE再生 p036_09_m01 -file t:p036_09_m01 -top 0, 36 -size 512, 320 -proc P036_09_m01終了		// 01.07.18 山下修正
+
+//野尻追加
+	} else if(d:ST:P040_06a_R02aエイムズ発見６a無線デモ２a終了 <= $w:p_story && \
+					$w:p_story < d:ST:P040_06b_M00エイムズ発見６bムービーデモ０開始) {
+
+		eval($w:p_story = d:ST:P040_06b_M00エイムズ発見６bムービーデモ０開始)
+		print '$w:p_story = ST:P040_06b_M00エイムズ発見６bムービーデモ０開始'
+
+		/* ウォール街　ＮＹＳＥ */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P040_06b_m00)
+
+		eval( $w:p_story = d:ST:P040_06b_M00エイムズ発見６bムービーデモ０開始 );
+		print '$w:p_story = d:ST:P040_06b_M00エイムズ発見６bムービーデモ０開始'
+
+		chara MOVIE再生 P040_06b_m00 -file t:p040_06_r02 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc P040_06b_m00終了
+
+//野尻追加
+
+
+//---------------------------------------------------------------------------
+// w31a.gclで呼ばれているムービー
+//---------------------------------------------------------------------------
+	} else if ( $w:p_story == d:ST:P049_03_M01大統領３ムービーデモ１開始 ) {
+	/* 実写映像……ホワイトハウス／ペンタゴンの空撮等 */
+		#if d:DEBUG_PRINT
+			print 'd:ST:P049_03_M01大統領３ムービーデモ１開始'
+		#endif
+		eval( $w:p_story = d:ST:P049_03_M01大統領３ムービーデモ１終了 );
+		chara MOVIE再生 p049_03_m01 -file t:p049_03_m01 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc リスタート
+		eval( $w:p_story = d:ST:P049_04_M02大統領４ムービーデモ２開始 );
+
+	} else if ( $w:p_story == d:ST:P049_04_M02大統領４ムービーデモ２開始 ) {
+	/* １２人の老人達のシルエット／賢人会議… */
+		#if d:DEBUG_PRINT
+			print 'd:ST:P049_04_M02大統領４ムービーデモ２開始'
+		#endif
+		eval( $w:p_story = d:ST:P049_04_M02大統領４ムービーデモ２終了 );
+		chara MOVIE再生 p049_04_m02 -file t:p049_04_m02 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc rt_P049_05_R02大統領５無線機デモ２
+
+	} else if ( $w:p_story == d:ST:P049_06_M03大統領６ムービーデモ３開始 ) {
+	/* 大統領時代のソリダスの図 */
+		#if d:DEBUG_PRINT
+			print 'd:ST:P049_06_M03大統領６ムービーデモ３開始'
+		#endif
+		eval( $w:p_story = d:ST:P049_06_M03大統領６ムービーデモ３終了 );
+		chara MOVIE再生 p049_06_m03 -file t:p049_06_m03 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc リスタート
+		eval( $w:p_story = d:ST:P049_07_M04大統領７ムービーデモ４開始 );
+
+	} else if ( $w:p_story == d:ST:P049_07_M04大統領７ムービーデモ４開始 ) {
+	/* 前作ゲーム画面（ポリデモ）映像デモ */
+		#if d:DEBUG_PRINT
+			print 'd:ST:P049_07_M04大統領７ムービーデモ４開始'
+		#endif
+		eval( $w:p_story = d:ST:P049_07_M04大統領７ムービーデモ４終了 );
+		chara MOVIE再生 p049_07_m04 -file t:p049_07_m04 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc rt_P049_08_R03大統領８無線機デモ３
+
+	} else if ( $w:p_story == d:ST:P049_09_M05大統領９ムービーデモ５開始 ) {
+	/* アーセナルギアの設計図・ラフスケッチ・シルエット・ＲＡＹのイラスト */
+		#if d:DEBUG_PRINT
+			print 'd:ST:P049_09_M05大統領９ムービーデモ５開始'
+		#endif
+		eval( $w:p_story = d:ST:P049_09_M05大統領９ムービーデモ５終了 );
+		chara MOVIE再生 p049_09_m05 -file t:p049_09_m05 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc rt_P049_10_R04大統領１０無線機デモ４
+
+	} else if ( $w:p_story == d:ST:P050_03_M02タンカー編整理３ムービーデモ２開始 ) {
+	/* タンカー編のポリデモ、ゲーム画面の編集ムービー */
+		#if d:DEBUG_PRINT
+			print 'd:ST:P050_03_M02タンカー編整理３ムービーデモ２開始'
+		#endif
+		eval( $w:p_story = d:ST:P050_03_M02タンカー編整理３ムービーデモ２終了 );
+		chara MOVIE再生 p050_03_m02 -file t:p050_03_m02 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc rt_P050_04_R02タンカー編整理４無線機デモ２
+
+	} else if ( $w:p_story == d:ST:P050_05_M03タンカー編整理５ムービーデモ３開始 ) {
+	/* サイファーのシーンが映る */
+		#if d:DEBUG_PRINT
+			print 'd:ST:P050_05_M03タンカー編整理５ムービーデモ３開始'
+		#endif
+		eval( $w:p_story = d:ST:P050_05_M03タンカー編整理５ムービーデモ３終了 );
+		chara MOVIE再生 p050_05_m03 -file t:p050_05_m03 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc rt_P050_06_R03タンカー編整理６無線機デモ３
+
+
+//---------------------------------------------------------------------------
+// w31cステージ管轄内で呼ばれているムービー
+//---------------------------------------------------------------------------
+	} else if ( $w:p_story == d:ST:P055_03_M01ヴァンプ戦前３ムービーデモ１開始 ) {
+		#if d:DEBUG_PRINT
+			print 'd:ST:P055_03_M01ヴァンプ戦前３ムービーデモ１開始'
+		#endif
+		eval( $w:p_story = d:ST:P055_03_M01ヴァンプ戦前３ムービーデモ１終了 );
+		chara MOVIE再生 p055_03_m01 -file t:p055_03_m01 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc mv_P055_01_P01_0
+		eval( $w:p_story = d:ST:P055_04_P03ヴァンプ戦前４ポリゴンデモ３開始 );
+
+	} else if ( $w:p_story == d:ST:P058_05_M01エマ救出５ムービーデモ１開始 ) {
+		#if d:DEBUG_PRINT
+			print 'd:ST:P058_05_M01エマ救出５ムービーデモ１開始'
+		#endif
+		eval( $w:p_story = d:ST:P058_05_M01エマ救出５ムービーデモ１終了 );
+		eval( $w:p_story = d:ST:P058_06_P03エマ救出６ポリゴンデモ３開始 );
+		chara MOVIE再生 p058_05_m01 -file t:p058_05_m01 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc mv_P055_01_P01_0
+
+	} else if ( $w:p_story == d:ST:P059_02_M02エマ休憩２ムービーデモ１開始 ) {
+		#if d:DEBUG_PRINT
+			print 'd:ST:P059_02_M02エマ休憩２ムービーデモ１開始'
+		#endif
+		eval( $w:p_story = d:ST:P059_02_M02エマ休憩２ムービーデモ１終了 );
+		chara MOVIE再生 p059_02_m02 -file t:p059_02_m02 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc rt_P059_03_R01エマ休憩３無線機デモ１
+
+
+//---------------------------------------------------------------------------
+// w41aステージ管轄内で呼ばれているムービー
+//---------------------------------------------------------------------------
+	} else if(d:ST:P070_05_P05ＡＧ起動５ポリゴンデモ５終了 <= $w:p_story && \
+					$w:p_story < d:ST:P070_06_M01ＡＧ起動６ムービーデモ１開始) {
+		eval($s:d_num = P070_06_m01)
+		//chara デバッグポーズ pause 'MOVIE_P070_06_m01' -p P070_06_m01終了
+		chara MOVIE再生 MOVIE_P070_06_m01 -file t:p070_06_m01 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc P070_06_m01終了
+	} else if(d:ST:P070_07_P06ＡＧ起動７ポリゴンデモ６終了 <= $w:p_story && \
+					$w:p_story < d:ST:P070_08_P07ＡＧ起動８ポリゴンデモ７開始) {
+		eval($s:d_num = P070_08_p07)
+		//chara デバッグポーズ pause 'MOVIE_P070_08_p07' -p P070_08_p07終了
+		chara MOVIE再生 MOVIE_P070_08_p07 -file t:p070_08_p07 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc P070_08_p07終了
+
+	} else if ($w:p_story == d:ST:P070_11_M02ＡＧ起動１１ムービーデモ２開始) {
+		print'd:ST:P070_11_M02ＡＧ起動１１ムービーデモ２開始'
+		chara MOVIE再生 p070_11_m02 -file t:p070_11_m02 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc P070_11_m02終了
+
+	} else if(d:ST:P070_13_P09ＡＧ起動１３ポリゴンデモ９終了 <= $w:p_story && \
+				$w:p_story < d:ST:P070_14_M03ＡＧ起動１４ムービーデモ３開始) {
+		print'd:ST:P070_14_M03ＡＧ起動１４ムービーデモ３開始'
+		eval($w:p_story = d:ST:P070_14_M03ＡＧ起動１４ムービーデモ３開始)
+		chara MOVIE再生 p070_14_m03 -file t:p070_14_m03 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc P070_14_m03終了
+
+
+	} else if (d:ST:P070_18_R02ＡＧ起動１８無線機デモ２終了 <= $w:p_story && \
+				$w:p_story < d:ST:P070_19_M05ＡＧ起動１９ムービーデモ５開始) {
+		print'd:ST:P070_19_M05ＡＧ起動１９ムービーデモ５開始'
+		eval($w:p_story = d:ST:P070_19_M05ＡＧ起動１９ムービーデモ５開始)
+		chara MOVIE再生 p070_19_m05 -file t:p070_19_m05 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc P070_19_m05終了
+
+//---------------------------------------------------------------------------
+// w46aステージ管轄内で呼ばれているムービー
+//---------------------------------------------------------------------------
+	} else if( d:ST:P080_01_P01ＡＧ浮上１ポリゴンデモ１終了 <= $w:p_story && \
+			$w:p_story < d:ST:P080_02_M01ＡＧ浮上２ムービーデモ１開始) {
+		print'd:ST:P080_02_M01ＡＧ浮上２ムービーデモ１開始'
+		eval($w:p_story = d:ST:P080_02_M01ＡＧ浮上２ムービーデモ１開始)
+
+		/* アーセナルに異常発生 */
+		chara MOVIE再生 p080_02_m01 -file t:p080_02_m01 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc P080_02_m01終了
+
+
+//---------------------------------------------------------------------------
+// P080_11_p06.w51aで呼ばれているムービー
+//---------------------------------------------------------------------------
+	} else if ( $w:p_story == d:ST:P080_12_M05ＡＧ浮上１２ムービーデモ５開始 ) {
+		#if d:DEBUG_PRINT
+			print 'd:ST:P080_12_M05ＡＧ浮上１２ムービーデモ５開始'
+		#endif
+		eval( $w:p_story = d:ST:P080_12_M05ＡＧ浮上１２ムービーデモ５終了 );
+		chara MOVIE再生 p080_12_m05 -file t:p080_12_m05 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc mv_P080_11_P06_0
+		eval( $w:p_story = d:ST:P080_13_P07ＡＧ浮上１３ポリゴンデモ７開始 );
+
+
+//---------------------------------------------------------------------------
+// P080_14_p08.w61aで呼ばれているムービー
+//---------------------------------------------------------------------------
+	} else if ( $w:p_story == d:ST:P080_15_M06ＡＧ浮上１５ムービーデモ６開始 ) {
+	/* フェデラルホールの星条旗ＵＰ */
+		#if d:DEBUG_PRINT
+			print 'd:ST:P080_15_M06ＡＧ浮上１５ムービーデモ６開始'
+		#endif
+		eval( $w:p_story = d:ST:P080_15_M06ＡＧ浮上１５ムービーデモ６終了 );
+		eval( $w:p_story = d:ST:P080_16_P09ＡＧ浮上１６ポリゴンデモ９開始 );
+		chara MOVIE再生 p080_15_m06 -file t:p080_15_m06 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc mv_P080_14_P08_0
+
+
+	} else if ( $w:p_story == d:ST:P080_17_M07ＡＧ浮上１７ムービーデモ７開始 ) {
+	/* マンハッタン雑踏　「子孫を残せない我々は…」 */
+		#if d:DEBUG_PRINT
+			print 'd:ST:P080_17_M07ＡＧ浮上１７ムービーデモ７開始'
+		#endif
+		eval( $w:p_story = d:ST:P080_17_M07ＡＧ浮上１７ムービーデモ７終了 );
+		eval( $w:p_story = d:ST:P080_18_P10ＡＧ浮上１８ポリゴンデモ１０開始 );
+		chara MOVIE再生 p080_17_m07 -file t:p080_17_m07 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc mv_P080_14_P08_0
+
+	} else if ( $w:p_story == d:ST:P080_20_M08ＡＧ浮上２０ムービーデモ８開始 ) {
+	/* ホワイトハウス映像 */
+		#if d:DEBUG_PRINT
+			print 'd:ST:P080_20_M08ＡＧ浮上２０ムービーデモ８開始'
+		#endif
+		eval( $w:p_story = d:ST:P080_20_M08ＡＧ浮上２０ムービーデモ８終了 );
+		chara MOVIE再生 p080_20_m08 -file t:p080_20_m08 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc rt_P080_21_R02ＡＧ浮上２１無線機デモ２
+
+	} else if ( $w:p_story == d:ST:P080_22_M09ＡＧ浮上２２ムービーデモ９開始 ) {
+	/* Ｓ３計画について */
+		#if d:DEBUG_PRINT
+			print 'd:ST:P080_22_M09ＡＧ浮上２２ムービーデモ９開始'
+		#endif
+		eval( $w:p_story = d:ST:P080_22_M09ＡＧ浮上２２ムービーデモ９終了 );
+		chara MOVIE再生 p080_22_m09 -file t:p080_22_m09 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc rt_P080_23_R03ＡＧ浮上２３無線機デモ３
+
+	} else if ( $w:p_story == d:ST:P080_24_M10ＡＧ浮上２４ムービーデモ１０開始 ) {
+	/* 前作の映像ラッシュ */
+		#if d:DEBUG_PRINT
+			print 'd:ST:P080_24_M10ＡＧ浮上２４ムービーデモ１０開始'
+		#endif
+		eval( $w:p_story = d:ST:P080_24_M10ＡＧ浮上２４ムービーデモ１０終了 );
+		chara MOVIE再生 p080_24_m10 -file t:p080_24_m10 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc rt_P080_25_R04ＡＧ浮上２５無線機デモ４
+
+	} else if ( $w:p_story == d:ST:P080_27_M11ＡＧ浮上２７ムービーデモ１１開始 ) {
+	/* チャイルドソルジャー映像 */
+		#if d:DEBUG_PRINT
+			print 'd:ST:P080_27_M11ＡＧ浮上２７ムービーデモ１１開始'
+		#endif
+		eval( $w:p_story = d:ST:P080_27_M11ＡＧ浮上２７ムービーデモ１１終了 );
+		eval( $w:p_story = d:ST:P080_28_P12ＡＧ浮上２８ポリゴンデモ１２開始 );
+		chara MOVIE再生 p080_27_m11 -file t:p080_27_m11 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc mv_P080_14_P08_0
+
+
+//---------------------------------------------------------------------------
+// P082_01_p01.w61aで呼ばれているムービー
+//---------------------------------------------------------------------------
+	} else if ( $w:p_story == d:ST:P082_03_M01エンディング３ムービーデモ１開始 ) {
+	/* マンハッタン雑踏映像 */
+		#if d:DEBUG_PRINT
+			print 'd:ST:P082_03_M01エンディング３ムービーデモ１開始'
+		#endif
+		eval( $w:p_story = d:ST:P082_03_M01エンディング３ムービーデモ１終了 );
+		eval( $w:p_story = d:ST:P082_04_P03エンディング４ポリゴンデモ３開始 );
+		chara MOVIE再生 p082_03_m01 -file t:p082_03_m01 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc mv_P082_01_P01_0
+
+	} else if ( $w:p_story == d:ST:P082_05_M02エンディング５ムービーデモ２開始 ) {
+	/* 雑踏実写映像　ライデンプロポーズ スタッフクレジットまで一気に行く */
+		#if d:DEBUG_PRINT
+			print 'd:ST:P082_05_M02エンディング５ムービーデモ２開始'
+		#endif
+		eval( $w:p_story = d:ST:P082_05_M02エンディング５ムービーデモ２終了 );
+		eval( $w:p_story = d:ST:P082_09_M04エンディング９ムービーデモ４開始 );
+#ifdef d:ENGLISH
+//#ifdef d:PAL
+//		chara エンディング name -file t:ending -telop ending_pal -proc リスタート
+//#else
+		chara エンディング name -file t:ending -telop ending_eng -proc リスタート
+//#endif
+#else
+		chara エンディング name -file t:ending -telop ending_jp -proc リスタート
+#endif
+	} else if ( $w:p_story == d:ST:P082_09_M04エンディング９ムービーデモ４開始 ) {
+	/* ニューヨーク雑踏映像　スネーク最後の語り */
+		#if d:DEBUG_PRINT
+			print 'd:ST:P082_09_M04エンディング９ムービーデモ４開始'
+		#endif
+		eval( $w:p_story = d:ST:P082_09_M04エンディング９ムービーデモ４終了 );
+		eval( $w:p_story = d:ST:P082_10_V01エンディング１０音声デモ１開始 );
+		command 無線設定 -reset
+		command メニュー設定 -menu off -gage off -radar off -subwin off
+		command パッド操作 -release
+		chara delay 遅延 -t (4*60) -exec {
+			chara delay 遅延 -t 4664 -exec {
+				print '2D Sprite!'
+				chara ２Ｄスプライト表示 マップネーム表示 \
+					-tri mgs2logo \
+					-x title_logo_mono_alp_ovl \
+					-pos 256 150 \
+					-b 9000 9000 \
+					-count 30,1800,0 \
+					-flag d:FLAG_CENTER
+			}
+			chara MOVIE再生 p082_09_m04 -file t:p082_09_m04 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+				-prio 128 -proc リスタート
+		}
+	} else if ( $w:p_story == d:ST:P082_10_V01エンディング１０音声デモ１開始 ) {
+		/* 愛国者は１２名とも１００年前に死亡していたことが判明する */
+		#if d:DEBUG_PRINT
+			print 'd:ST:P082_10_V01エンディング１０音声デモ１開始'
+		#endif
+		eval( $w:p_story = d:ST:P082_10_V01エンディング１０音声デモ１終了 );
+		eval( $w:p_story = d:ST:P082_11_PASSエンディング１１パスワード表示１開始 );
+		eval($w:音声デモ長さ = t:vc108211_len ) ;		// T-Symbolは演算できない
+		eval($w:音声デモ長さ = $w:音声デモ長さ - 600 ) ;	// らしいのでこの記述とする
+		command 無線設定 -reset
+		command メニュー設定 -menu off -gage off -radar off -subwin off
+		command パッド操作 -release
+		chara ２Ｄスプライト表示 マップネーム表示 \
+			-tri mgs2logo \
+			-x title_logo_mono_alp_ovl \
+			-pos 256 150 \
+			-b 9000 9000 \
+			-count 0,$w:音声デモ長さ,30 \
+			-flag d:FLAG_CENTER
+		chara delay 遅延 -time (2*60) -exec {
+			/* 2001.10.5 村岡Ｍ依頼により2秒の「間（ま）」を作った */
+			/* ただし事情により「間（ま）」の2秒間はキャンセル不可です */
+			chara デモキャンセルチェック vc108211キャンセル -p vc108211キャンセル処理
+			command Stream t:vc108211 -p P082_10_V01終了
+		}
+	} else if ( $w:p_story == d:ST:P082_11_PASSエンディング１１パスワード表示１開始 ) {
+		/* パスワード表示 */
+		#if d:DEBUG_PRINT
+			print 'd:ST:P082_11_PASSエンディング１１パスワード表示１開始'
+		#endif
+		eval( $w:p_story = d:ST:P082_11_PASSエンディング１１パスワード表示１終了 );
+		// クリアしたらクリア回数を一回増やしてタイトルへ飛ばす
+		eval( $w:プラント編クリア回数 = $w:プラント編クリア回数 + 1 );
+		command varsave
+		load "ending"		// クリアコード表示
+	}
+
+
+
+
+
+
+//---------------------------------------------------------------------------
+//	終了プロック
+//---------------------------------------------------------------------------
+	proc P014_02_m01終了 {
+		eval($w:p_story = d:ST:P014_02_M01ピーター遭遇２ムービーデモ１終了)
+		load 'd014p01'
+	}
+	proc P014_04_m02終了 {
+
+		// ここで無線を呼ぶので修正 2001.08.13
+//		eval($w:p_story = d:ST:P014_04_M02ピーター遭遇４ムービーデモ２終了)
+//		load 'd014p01'
+
+		eval($w:p_story = d:ST:P014_05_R01ピーター遭遇５無線デモ１開始)
+		print '$w:p_story = ST:P014_05_R01ピーター遭遇５無線デモ１開始'
+
+		/* 大佐強制コール　大佐に相談＞爆弾処理していい？ */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P014_05_r01)
+
+		@rt_P014_05_R01ピーター遭遇５無線デモ１
+
+	}
+	proc P014_07_m03終了 {
+		eval($w:p_story = d:ST:P014_07_M03ピーター遭遇７ムービーデモ３終了)
+		// レーダーを殺すか生かすかフラグ
+		eval( $f:global_polygon_demo = 0 );
+		// デモ仕様封殺フラグ
+		eval( $s:d_num = not_demo );
+		@mv_demo2_w16a_0
+		//load 'd014p01'
+	}
+	proc P014_14_m04終了 {
+		@デモ終了時シネマスクリーンオフ
+		print '$w:p_story = d:ST:P014_14_M04ピーター遭遇１４ムービーデモ４終了'
+		eval($w:p_story = d:ST:P014_14_M04ピーター遭遇１４ムービーデモ４終了)
+		load "d014p01"
+	}
+	proc P036_09_m01終了 {
+		eval($w:p_story = d:ST:P036_09_M01忍者登場９ムービーデモ１終了)
+		load 'd021p01'
+	}
+	proc P040_06b_m00終了 {
+		eval($w:p_story = d:ST:P040_06b_M00エイムズ発見６bムービーデモ０終了)
+		print '$w:p_story = d:ST:P040_06b_M00エイムズ発見６bムービーデモ０終了'
+
+		load "d036p03"
+
+	}
+
+	proc P070_11_m02終了 {
+		eval($w:p_story = d:ST:P070_11_M02ＡＧ起動１１ムービーデモ２終了)
+	#if 1
+		//	日本語版以降から
+		//	フナムシ状態をいったん別の変数に格納する
+		eval ($w:w41a_メニューフナムシ状態 = $w:メニューフナムシ状態)
+		//	フナムシ状態をゼロにする
+		eval ($w:メニューフナムシ状態 = 0)
+	#endif
+		// ゲームステージへ
+		@mv_w24d_w41a_0
+	}
+	proc P070_14_m03終了 {
+//		eval($w:p_story = d:ST:P070_14_M03ＡＧ起動１４ムービーデモ３終了)
+		eval($w:p_story = d:ST:P070_15_M04ＡＧ起動１５ムービーデモ４終了)
+		// ゲームステージへ
+		load 'd070px9'
+//		@mv_w24d_w41a_0
+	}
+	proc P070_19_m05終了 {
+		eval($w:p_story = d:ST:P070_19_M05ＡＧ起動１９ムービーデモ５終了)
+		// ゲームステージへ
+		load 'd070px9'
+//		@mv_w24d_w41a_0
+	}
+
+	proc P070_06_m01終了 {
+		//@デモ終了時シネマスクリーンオフ
+		eval($w:p_story = d:ST:P070_06_M01ＡＧ起動６ムービーデモ１終了)
+		print '$w:p_story = d:ST:P070_06_M01ＡＧ起動６ムービーデモ１終了'
+		load 'd070p01'
+	}
+
+	proc P070_08_p07終了 {
+		//@デモ終了時シネマスクリーンオフ
+		print '$w:p_story = d:ST:P070_08_P07ＡＧ起動８ポリゴンデモ７終了'
+		eval($w:p_story = d:ST:P070_08_P07ＡＧ起動８ポリゴンデモ７終了)
+		load 'd070p01'
+	}
+
+	proc P080_02_m01終了 {
+		//@デモ終了時シネマスクリーンオフ
+		eval($w:p_story = d:ST:P080_02_M01ＡＧ浮上２ムービーデモ１終了)
+		@mv_w46a_d080p01_0
+	}
+
+	proc P082_08_M03ムービー再生開始 {
+		chara MOVIE再生 p082_08_m03 -file t:p082_08_m03 -top 0, d:MOVIE_TOP_Y -size 512, 320 \
+			-proc リスタート
+	}
+	proc vc108201キャンセル処理 {
+		mesg デモキャンセルチェック vc108201キャンセル kill
+		@リスタート
+	}
+	proc P082_10_V01終了 {
+		chara フェードインアウト フェードアウト \
+			-c 0,0,0 128 \
+			-t d:FADEOUT_TIME \
+			-p P082_10_V01終了フェードアウト待ち
+	}
+	proc P082_10_V01終了フェードアウト待ち {
+		@リスタート
+	}
+	proc vc108211キャンセル処理 {
+		%StreamStopAll
+	}

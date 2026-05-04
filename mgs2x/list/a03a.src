@@ -1,0 +1,171 @@
+//
+//	w03a.src
+//
+//	written by H.Yoshiike 1999.Oct
+//
+//	$Id: a03a.src,v 1.10 2002/08/06 06:05:17 usr04249 Exp $
+
+// 長廊下
+
+// 常駐データ
+block .use r_vr_s
+
+block .nocache
+block .cache
+
+#define WN_W03A
+
+// 各ステージ共通要素
+#include		"t_common.h"
+#include		"common.h"
+
+
+//エフェクト関係
+#define	EFFECT_CUSTUM
+
+#define	E_KOGETUKI				// 壁への焦げ付き
+#define	E_ENEMY					// 敵兵系
+#define	E_SLING					// スリング
+#define	E_ENEMY_LIGHT			// 敵兵ライト
+#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+#define	E_BROKEN_OBJECT			// 壊れ物
+#define	E_POWDER				// 小麦粉
+#define	E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷
+#define	E_CROSS_FADE_LIGHT		// クロスフェード（甲板のライトで使用）
+#define	E_STEAM					// 粉 & 水蒸気
+#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+
+#include		"c_effect.h"
+// オルタナティブミッション用追加エフェクト
+#include	"alt_effect.h"
+//include		wp_tank.h
+
+// キャラクタ
+//include		snake.h
+include		ene_tank.h
+//タンカークルーモデル
+//human	tnc_def
+
+// ワールド
+//pack_all	w03bd.tri world/w03a/w03b world/w03a/w03d
+world		w03a/w03a0
+world		w03a/w03a1
+world		w03a/w03a2
+// 水密ドアの向こうの構造
+world		w03b/w03b0
+//world		w03a/w03d
+//world		w03a/w03e
+
+
+
+
+lt2		w03a.lt2
+//lt2		debug
+hazard		a03a.hzx
+
+
+
+
+// デバッグ用
+//pack_all	object.tri world/w03 world/door/w03bsdr_handle.kms world/door/w03bsdr_body.kms goods/sling_test goods/corpse_a goods/corpse_u
+
+world		w03
+world		door/w03bsdr_handle.kms
+world		door/w03bsdr_body.kms
+
+//goods		sling_test
+//goods		corpse_a
+//goods		corpse_u
+
+//船員死体
+world		w03a/other/tnc_died_obj_w03a.kms
+human		tnc_def
+mtn		corps.mls
+
+// 水密ドア開閉用モーション
+mtn			sna_hatch.mls
+mtn			rai_wt_hatch.mls
+mtn			hatch_door_sna.mls
+mtn			hatch_handle_sna.mls
+// 開かない水密ドア用の透明モデル
+world		w01d/dining/w01d0tray.kms
+
+
+// 水密ドアハンドル壊れ
+mtn			sna_a03a.mls
+mtn			rai_a03a.mls
+mtn			wtdoor_break.mls
+world/door		w01asdr_body_r.kms w01asdr_handle3.kms
+
+
+// 消火器のモデル
+debug	okajima/hose_test/hose_cone.kms
+debug	okajima/hose_test/hose_new2.kms
+cvd		debug/okajima/hose_test/hose_new2.cvd vn
+
+
+//電灯に群がる羽虫
+goods	fly/fly_cm.kms
+
+
+//バカ兄弟用倒れパイプモデル
+world	w03a/other/w03a_pipe.kms
+mtn		pipe_w03a.mls
+
+
+//デバッグ用箱
+//world	w00b/obs_box3.kms
+
+
+
+//-----以下ビデオ用-----
+// ビデオ撮影用スネークモデル
+//human	sna_def/sna_mmt.evm
+
+// ビデオ撮影用スネーク顔表情
+//rmt	sna_rmt
+
+//手モーフィン
+/*
+human	sna_def/sna_def_shmt.kms \
+	sna_def_handanime/sna_rhand_sdoor01.kms \
+	sna_def_handanime/sna_lhand_sdoor01.kms
+
+cvd	human/sna_def/sna_def_shmt.cv2
+cvd	human/sna_def_handanime/sna_rhand_sdoor01.cv2
+cvd	human/sna_def_handanime/sna_rhand_sdoor02.cv2
+cvd	human/sna_def_handanime/sna_rhand_sdoor03.cv2
+cvd	human/sna_def_handanime/sna_rhand_sdoor04.cv2
+cvd	human/sna_def_handanime/sna_lhand_sdoor01.cv2
+cvd	human/sna_def_handanime/sna_lhand_sdoor02.cv2
+cvd	human/sna_def_handanime/sna_lhand_sdoor03.cv2
+cvd	human/sna_def_handanime/sna_lhand_sdoor04.cv2
+*/
+
+// リネーム
+mtn		gbs_w03a.mls
+rename	gbs_w03a.mar gbsstage.mar
+
+/*
+rename	sna_def.kms sna_def_nouse.kms
+rename	sna_def.cv2 sna_def_nouse.cv2
+rename	sna_def_shmt.kms sna_def.kms
+rename	sna_def_shmt.cv2 sna_def.cv2
+*/
+
+//デバッグ用
+//debug mogi/sankaku.kms
+
+human	tnc_ghost/human_tnc_ghost.evm
+
+// 写真撮影用お題
+pack_all	photo_odai.tri \
+				debug/kaneyoshi/odai_ghost.bmp 
+
+// 追加アイテム
+	//#define	BAM			//	ボディアーマー
+	//#define	USP_SP		//	ＵＳＰサプレッサ
+	
+	#include "a_item.h"

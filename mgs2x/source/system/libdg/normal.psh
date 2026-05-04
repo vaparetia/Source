@@ -1,0 +1,22 @@
+; 普通のピクセル処理
+; 
+;
+; 2001.05.18  F.Miyauchi
+
+#ifdef KP_XBOX
+xps.1.1
+#else
+ps.1.1
+#endif
+
+tex t0
+; 入力カラー * テクスチャカラー
+mul_x2 r0.rgb, v0, t0
+mul_x4 r0.a, v0, t0
+
+#ifdef KP_XBOX
+; final color = s0*s1 + (1-s0)*s2 + s3
+; final alpha = s6.a
+; final combiner prod register = s4 * s5
+;xfc	zero_sat, r0_sat, r0_sat, zero_sat, zero_sat, zero_sat, r0_sat
+#endif

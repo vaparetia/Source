@@ -1,0 +1,85 @@
+//
+//	P080_13_p07b.w51a.src
+//	アーセナルギア・マンハッタン突入
+//
+//	written by H.Yoshiike 2001.May
+//
+//	$Id: P080_13_p07b.w51a.src,v 1.14 2002/06/20 07:18:59 usr02774 Exp $
+
+
+block .use r_plt0
+block .nocache
+block .cache
+
+
+// 各ステージ共通要素
+#include	"common.h"
+#include	"c_effect.h"
+
+
+// キャラクタ
+// スネーク
+// ソリダス
+// フォーチュン
+// オセロット
+// ＲＡＹ
+//meca		ray/ray_def_mt.kms
+// アーセナルギア本体
+//meca		arsenal_gear
+//world		w60a/land/w60a_amg.kms
+
+// ワールド
+// アーセナルギア上
+//pack_all	w51a.tri world/w51a
+//world		w51a
+
+// マンハッタン自体遠景(そらも含む）
+world		w60a/building
+world		w60a/land
+world		w60a/sky
+
+// マンハッタン湾の沿岸（P001で使っている地形のハイレゾ版）
+world		w10a/w10a_land2/land_high
+// とそれ以外（P001と同じもの）
+world		w10a/w10a_bridge // 6
+pack_all	w10a_norm_res.tri \
+			world/w10a/w10a_land // 5,8
+world		w10a/w10a_land
+
+#ifndef MGS2_XBOX_1
+mipmap w10a/w10a_sea.tri
+#else
+pack_mip w10a_sea.tri \
+	effect/sea_mipmap/w10a_sea03_256_alp_ovl.bmp \
+	effect/sea_mipmap/w10a_sea03_128_alp_ovl.bmp \
+	effect/sea_mipmap/w10a_sea03_64_alp_ovl.bmp \
+	effect/sea_mipmap/w10a_sea03_32_alp_ovl.bmp 
+#endif
+
+
+// ライト
+lt2			w61a.lt2
+//テストで入れました　柴田
+lt2			w62a_scale10_am700.lt2
+//lt2			w24d.lt2
+hazard		d00a3.hzx
+
+//----------------------------------------------------------------------------- 追加小林
+//アーセナルギア
+meca	arsenal_gear/amg_def.kms
+human	rai_def/rai_def_mh_mt.evm
+weapon	usp/usp_sub.kms
+//アーセナル上で耐える人（１／１０サイズ）
+goods	demo_human_onemesh/for_onemesh_mt.kms
+goods	demo_human_onemesh/sol_onemesh_mt.kms
+goods	demo_human_onemesh/rai_onemesh_mt.kms
+//ハイポリ木
+goods	demo_w10a_wood/demo_w10a_wood.kms
+//振動
+vib	demo/P080_13_p08_ag_03.vib
+vib	demo/P080_13_p08_ag_02.vib
+vib	demo/P080_13_p08_ag_01.vib
+vib	demo/P080_13_p08_ag_06.vib
+vib	demo/P080_13_p08_ag_05.vib
+vib	demo/P080_13_p08_ag_04.vib
+//----------------------------------------------------------------------------- 追加小林

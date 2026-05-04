@@ -1,0 +1,59 @@
+//
+//	wp25a.src
+//	Ｃ４・クレイモア 五面
+//
+//	$Id$
+
+#define WN_WP25A
+#define WN_ANOTHER
+
+block .use r_vr_r
+block .nocache
+block .cache
+
+// 的モデル呼び分け用
+#define		VR_TGT_CUBE		1
+#define		VR_TGT_SQUARE	1
+#define		VR_TGT_TRIANGLE	1
+#define		VR_TGT_OCTA		1
+#define		VR_TGT_STRAW	1
+#define		VR_TGT_HEXA		1
+#define		VR_TGT_WALL		1
+
+// 各ステージ共通要素
+#include	"vr_def.h"		// defineファイル 厳密にはc_effect.hの前でよい
+#include	"p_common.h"
+#include	"common.h"
+#include 	"vrstage.h"		// 現在的データはここ
+include		c_effect.h
+
+// VR用追加エフェクト
+#include	"vr_effect.h"
+
+// 強制モーション
+mtn			rai_wp25a.mls
+mtn			sna_wp25a.mls
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+option makexti6 -l 1024 -f PAL8
+pack_all	ws25a.tri \
+			world/vr_weapon/ws25a
+option makexti6
+
+world		vr_weapon/ws25a
+hazard		ws25a.hzx
+rol			world/vr_weapon/ws25a/ws25a.rol
+
+// オブジェクト
+
+// 消火器
+
+// アイテム
+itembox
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+// リネーム

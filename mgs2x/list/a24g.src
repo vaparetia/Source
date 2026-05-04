@@ -1,0 +1,183 @@
+//	w24g.src
+//	電算室 写真撮影ミッション用
+//	written by S.Kaneyoshi 2001/02/02
+//	$Id: a24g.src,v 1.5 2002/09/11 12:11:53 usr03682 Exp $
+
+// ロード時テクスチャ
+#define WN_W24D
+
+// 敵兵タイプ
+#define		ENE_T_GOL
+#define		ENE_ATTACKER
+
+// 特殊兵
+#define		ENE_SHOT
+#define		ENE_SHIELD
+#define		ENE_HIGH_TECH
+#define 	ENE_MAR '-DDEL_TNG=DUMMY -DDEL_WALKMAN=DUMMY'
+
+// 常駐データ
+block .use r_vr_s
+
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include 	"p_common.h"
+#include	"common.h"
+
+
+#define EFFECT_CUSTUM
+
+#define	E_GLASS_DANKON			// グラス系弾痕
+#define	E_KOGETUKI				// 壁への焦げ付き
+#define	E_FOOTSTAMP				// 足跡
+#define	E_ENEMY					// 敵兵系
+#define	E_ENEMY_LIGHT			// 敵兵ライト、スティンガー、ニキータ、剣の火花、しょんべん兵
+#define	E_SLING					// スリング
+	//#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+#define	E_MANHATTAN_LIGHT		// マンハッタンライト
+#define	E_C4BOMB				// Ｃ４爆弾、赤外線センサー
+#define	E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷 解体Ｃ４
+#define	E_CROSS_FADE_LIGHT		// クロスフェード（甲板のライトで使用）
+#define	E_CHARA_DENTOU			// chara 懐中電灯、フォーチュン戦
+	//#define	E_WATER					// 水関係
+	//#define	E_CHARA_HAMON			// chara 波紋
+#define	E_BROKEN_OBJECT			// 壊れ物
+#define	E_BROKEN_PAPEROBJECT	// 壊れ物紙
+#define	E_BROKEN_PLATE			// 壊れ物皿
+	//#define	E_HIMATU				// 水飛沫
+#define	E_CHARA_MADOAME			// chara 窓雨
+#define	E_STEAM					// 粉 & 水蒸気
+#define	E_POWDER				// 小麦粉
+#define	E_SKY_NORMAL			// 空
+#define	E_LINEAR_GUN			// リニアガン
+#define	E_TENKYUU				// 天球ドーム
+#define	E_SUN					// 太陽
+#define	E_DOOR_LUMP				// ドアランプ
+#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+#define	BONBORI					// ぼんぼり
+#define	NODE_LAMP				// ノードディスプレイランプ
+#include	"c_effect.h"
+
+
+// オルタナティブミッション用追加エフェクト
+#include	"alt_effect.h"
+
+// キャラクタ
+#include	"ene_plant.h"
+
+// 強制モーション
+//mtn		rai_w24d.mls		// ステージ固有モーション
+//mtn		sna_w24d.mls
+	mtn		rai_a24d.mls
+	mtn		sna_a24d.mls
+
+mtn		sna_locker.mls		// ロッカー開閉モーション
+mtn		locker.mls			// ロッカー扉開閉モーション
+
+// ワールド
+// マルチテクスチャモデル
+
+// それ以外のモデル
+option makexti6 -l 1024 -f PAL8
+pack_all	w24d.tri world/elevator/elv_2 world/door/w02a_l_dr.dar
+
+// w24d0
+world		w24d/w24d0
+// w24d1
+world/w24d/w24d1	w24d1_a.kms \
+					w24d1_b.kms
+world/w24d/w24d1 	w24d1r.kms
+// w24d1
+world/w24d/w24d2	w24d2.kms \
+					w24d2_wall.kms
+world/w24d/w24d2	w24d2_tes_sita_v01.kms \
+					w24d2_pos.kms \
+					w24d2r.kms
+option makexti6
+
+
+// アーセナル
+world/w24d/w24d_lamp	w24d_lamp_alp.bmp
+
+world		elevator/elv_2
+//world		door/w24d_dr01.kms
+world		door/dr_free.kms
+
+lt2			w24d.lt2
+hazard		a24g.hzx
+
+// オブジェクト
+pack_all	object.tri goods/locker/neo_locker_door.dar
+goods		locker/neo_locker_door.kms
+
+// 壊れコンピューター	T.Morita 2001.07.06
+pack_trnall	button.tri	effect/button/button_alp.bmp
+//pack_trnall	monitor.tri	world/w24d/w24d2/w24d2_moni
+
+// 壊れ書類		T.Morita 2001.07.06
+world		w24d/w24d2/w24d2_ppepar.kms
+goods		dust/paper_a.kms
+world		w01d/dining/paperBro_S_cm.kms
+
+// 壊れガラス		T.Morita 2001.07.06
+world		w24d/w24d2/w24a2_win_bro
+cvd		world/w24d/w24d2/w24a2_win_bro/w24d2_glass1_bro.cv2 v
+cvd		world/w24d/w24d2/w24a2_win_bro/w24d2_glass2_bro.cv2 v
+cvd		world/w24d/w24d2/w24a2_win_bro/w24d2_glass3_bro.cv2 v
+cvd		world/w24d/w24d2/w24a2_win_bro/w24d2_glass4_bro.cv2 v
+cvd		world/w24d/w24d2/w24a2_win_bro/w24d2_glass5_bro.cv2 v
+cvd		world/w24d/w24d2/w24a2_win_bro/w24d2_glass6_bro.cv2 v
+pack_all	allcm_cm.tri	goods/bottle/btl_piece.dar
+pack_trnall	glass.tri	debug/morita/break/dbx_dust_alp_ovl.bmp
+goods		bottle/btl_piece.kms
+
+// 曇りガラス
+effect	frost/frost02_alp.bmp
+
+
+// アイテム
+	//itembox
+	#include	"a_item.h"
+
+//オウム
+human	par_def/par_def_mh.evm
+human	par_def/bird_cage.kms
+human	par_def/par_hane.kms
+mtn	parrot.mls
+
+// 敵兵固有モーション
+mtn gbs_w24d.mls
+
+
+// スネークテイルズ用に爆弾を追加
+pack_all	goods/c4_kaitai_a
+
+goods		c4_kaitai_a
+
+// 追加ドアモデル
+world		door/dr_lv2_00.kms
+
+// リネーム
+rename 		gbs_w24d.mar gbsstage.mar
+
+vib       etc/core_ele_01.vib
+vib       etc/core_ele_02.vib
+vib       etc/core_ele_03.vib
+
+
+// 壊れコンピューター関連
+pack_trnall monitor.tri \
+			world/w24d/w24d2/w24d2_moni/w24d2_pane01_alp.bmp \
+			world/w24d/w24d2/w24d2_moni/w24d2_pane02_alp.bmp \
+			world/a24d/a24d2_pane03_alp.bmp \
+			world/a24d/a24d2_pane04_alp.bmp
+
+// お題
+pack_all	odai.tri \
+			world/a24d/odai_a24d2_pane03.bmp \
+			world/a24d/odai_a24d2_pane04.bmp
+

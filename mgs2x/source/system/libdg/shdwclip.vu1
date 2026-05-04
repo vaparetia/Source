@@ -1,0 +1,250 @@
+;
+;	shdwclip.vu1
+;	シャドーボリューム用クリップ付き描画実験ＶＵ１プログラム
+;
+;	1999/07/07 K.Takabe
+;	$Id: shdwclip.vu1,v 1.1.1.3 2002/11/19 11:42:25 Yoshizawa1 Exp $
+;
+
+;
+;	ＶＵ１実験用オブジェクト表示マイクロプログラム
+;	1999.4.*  K.Takabe
+;
+;	浮動小数点レジスタ使用状況
+;	vf0:fix
+;	vf1:定数読み込みベクトル
+;	vf2:プリミティブ座標へのスケール値
+;	vf3:プリミティブ座標へのオフセット
+;	vf4~vf7:透視変換マトリクス
+;	vf8~vf11:作業用マトリクス（ライトマトリクス等）
+;	vf12:頂点読み込み
+;	vf13:法線読み込み
+;	vf14:ＵＶ値読み込み
+;	vf15:リザーブ（頂点データ読み込み）
+;	vf16~19:リザーブ（マトリクス）
+;	vf20:透視変換直後座標
+;	vf21:光源計算用ワーク
+;	vf22~23:作業用
+;	vf24~27:作業用
+;	vf28:描画頂点データ
+;	vf29:色データ
+;	vf30:テクスチャ座標
+;	vf31:リザーブ（変換後頂点データ）
+;	
+;	整数レジスタ使用状況
+;	vi0:０固定
+;	vi1:フラグ受け取り用
+;	vi2:ＧＩＦキックアドレス
+;	vi3:読み出し頂点処理アドレス
+;	vi4:汎用
+;	vi5:汎用
+;	vi6:汎用
+;	vi7:描画キックフラグの記憶
+;	vi8:頂点数（＝ループカウンタ）
+;	vi9:描画カウント（画面外に頂点があると３が代入されカウントが０になるとそのポリゴンは完全に画面内と判定できる）
+;	vi10:Ｗの符号チェック用定数
+;	vi11:Ｗの符号チェック結果格納用変数
+;	vi12:リザーブ
+;	vi13:バッファ先頭アドレス（インクリメントしてキックアドレスとして使用する）
+;	vi14:スタック
+;	vi15:リンクレジスタ
+;	
+
+; メモリ使用構成（ＶＵ１側から見るときには下位４ビットを無視すること）
+; 0x0000~0x01ff	プログラムワーク
+; 0x0200~0x03ff オブジェクトパラメータ設定（変換マトリクス等）
+; 0x0400~0x21ff ダブルバッファ０
+;  +0x0000_0x0eff 転送用バッファ
+;  +0x0f00_0x1cff 読み込み用バッファ
+; 0x2200~0x3fff ダブルバッファ１
+;  +0x0000_0x0eff 転送用バッファ
+;  +0x0f00_0x1cff 読み込み用バッファ
+; 0x4000		最終アドレス
+; 
+
+; データフォーマット（案）
+; + 0.x    頂点データ数
+; + 0.y    データ開始位置（＝５）
+; + 0.z    開始ポリゴン頂点回り（0x0000 or 0x0020）
+; + 1.xyzw GIFtag（クリップポリゴン用プリミティブ設定ＧＩＦタグ）
+; + 2.xyzw PRIM
+; + 3.xyzw GIFtag（クリップポリゴン頂点用の転送ＧＩＦタグ）
+; + 4.xyzw GIFtag（テクスチャパラメータ設定ＧＩＦタグ）
+; + 5.xyzw CLAMP_1
+; + 6.xyzw TEX0_1
+; + 7.xyzw GIFtag（頂点の転送ＧＩＦタグ）
+; + 8.xyzw 第１ＳＴＱ
+; + 9.xyzw 第１ＲＧＢＡ
+; +10.xyzw 第１ＸＹＺＦ
+; +11.xyzw 第２ＳＴＱ
+; +12.xyzw 第２ＲＧＢＡ
+; .
+; .
+; .
+; +f0.xyzw 第１ＶＵデータ
+; +f1.xyzw 第１法線データ
+; +f2.xyzw 第１頂点データ
+; +f3.xyzw 第２ＶＵデータ
+; +f4.xyzw 第１法線データ
+; 
+; 
+; 
+; 
+
+
+; 表裏チェックサブルーチン
+;  vf22: 旧透視変換済み頂点１
+;  vf23: 旧透視変換済み頂点２
+;  vf24: ベクトル１
+;  vf25: ベクトル２
+;  vf26: 計算結果
+;  vf28: 新透視変換済み頂点
+;  vi4 : 定数用
+;  vi5 : フラグチェック用定数
+;  vi6 : カリングフラグ
+CullCheck:
+	sub.xyz		vf24,vf23,vf22		move.xyzw	vf22,vf23			; 
+	sub.xyz		vf25,vf23,vf28		move.xyzw	vf23,vf28			;
+	nop								iaddi		vi4,vi0,-1			; 
+	nop								iaddiu		vi1,vi0,0x0020		; 
+	nop								ibeq		vi4,vi0,CullCheckEnd	; 
+	opmula.xyz	ACC,vf24,vf25		isub		vi6,vi1,vi6			; カリングフラグ反転
+	opmsub.xyz	vf26,vf25,vf24		iaddiu		vi4,vi0,0x4000		; 
+	nop								iadd		vi5,vi4,vi4			; 
+	nop								nop								; 
+	nop								nop								; 
+	nop								fmand		vi1, vi1			; 
+	nop								nop								; 
+	nop								ibeq		vi1,vi6,CullCheckEnd ;
+CullOut:
+	nop								iaddiu		vi1,vi0,0xfff		; 
+	nop								iand		vi7,vi7,vi1			; ポリゴン分割描画も行わない
+	nop								ior			vi7,vi7,vi5			; 描画しない
+CullCheckEnd:
+	nop								jr			vi15				; 
+	nop								nop								; 
+
+; --------------------------------------
+; シャドーボリューム用透視変換ルーチン
+; --------------------------------------
+;	upper		.					lower		.
+ClipShadowVolumeTransStart:
+	; 変換初期化処理
+	nop								lq.xyzw		vf1,FV_PRM2(vi0)	; 
+	nop								lq.xyzw		vf7,M_PRS3(vi0)		; -,透視変換マトリクスロード
+	nop								lq.xyzw		vf4,M_PRS0(vi0)		; -,透視変換マトリクスロード
+	nop								lq.xyzw		vf5,M_PRS1(vi0)		; -,透視変換マトリクスロード
+	nop								lq.xyzw		vf6,M_PRS2(vi0)		; -,透視変換マトリクスロード
+	nop								lq.xyzw		vf2,FV_SCN(vi0)		; 
+	nop								lq.xyzw		vf3,FV_OFT(vi0)		; 
+	nop								lq.xyzw		vf1,FV_PRM(vi0)	; 
+	; 変換処理開始
+ClipShadowVolumeTransNext:
+	; バッファアドレス、ループ回数のセットとデータのプリロード処理
+	nop								xtop		vi13				; 
+	nop								ilw.y		vi2,0(vi13)			; 
+	nop								lq.xyzw		vf12,0xf2(vi13)		; 第１頂点読み込み
+	nop								lq.xyzw		vf13,0xf1(vi13)		; 第１法線（＆キック情報）読み込み
+	nop								lq.xyzw		vf14,0xf0(vi13)		; 第１ＵＶ値読み込み
+	nop								iaddiu		vi3,vi13,0xf3		; データ先読みアドレス設定
+	itof0.xyzw	vf12,vf12			iadd		vi2,vi2,vi13		; データ書き戻しアドレス設定
+	itof0.xyz	vf21,vf13			ilw.x		vi8,0(vi13)			; 処理頂点数の読み込み
+	mulx.w		vf21,vf21,vf0		iaddiu		vi13,vi13,4			; GIFキックアドレス設定
+	nop								iaddiu		vi9,vi0,0			; 
+	nop								iaddiu		vi10,vi0,0x0010		; 
+	nop								fcset		0					; クリップチェック初期化
+	nop								ilw.z		vi6,0(vi13)			; カリングフラグ初期値読み込み
+
+	; ディレイ処理の為の前処理
+	; 頂点変換処理（途中で次の頂点の情報を読み込んでおく）
+	mulax.xyzw	ACC,vf4,vf12		mtir		vi7,vf13w			; 透視変換,描画キック
+	madday.xyzw	ACC,vf5,vf12		nop								; 透視変換,(遅)ＳＴ座標
+	maddaz.xyzw	ACC,vf6,vf12		nop								; 透視変換,-
+	maddw.xyzw	vf20,vf7,vf0		lq.xyzw		vf12,2(vi3)			; 透視変換,次ループ準備
+	ftoi0.xyzw	vf29,vf21			sq.xyzw		vf21,1-3(vi3)		; 光源処理,クリップ用に保存
+	ftoi4.xyz	vf28,vf28			lq.xyzw		vf13,1(vi3)			; (遅)透視変換,次ループ準備
+	itof12.xyz	vf14,vf14			fsset		0					; ＳＴ座標,クリップ
+	subz.w		vf31,vf20,vf20		div			Q,vf0w,vf20w		; クリップ,透視変換
+	addz.x		vf31,vf0,vf20		sq.xyzw		vf20,2-3(vi3)		; クリップ,クリップ用に保存
+	clipw.xyz	vf20xyz,vf20w		sq.xyzw		vf29,1(vi2)			; クリップ,光源処理
+	itof0.xyzw	vf12,vf12			nop								; 次ループ準備,(遅)透視変換
+	itof0.xyz	vf21,vf13			sq.xyz		vf14,0-3(vi3)		; 次ループ準備,クリップ用に保存
+	nop								fsand		vi11,0x80			; ＳＴ座標,クリップ
+	nop								fcand		vi01,0x3f			; -,クリップ
+	mulq.xyz	vf28,vf20,Q			ior			vi1,vi11,vi1		; 透視変換,クリップアウト(=waitq)
+	mulq.xyz	vf30,vf14,Q			lq.xyzw		vf14,0(vi3)			; ＳＴ座標,次ループ準備
+	nop								ibeq		vi1,vi0,label0_sv	; -,クリップ
+	nop								isubiu		vi8,vi8,1			; -,カウンタのデクリメント
+	; その頂点が画面外の場合の処理
+	nop								iaddiu		vi9,vi0,3			; ポリゴンクリップ有効カウンタ設定
+	nop								nop								; -,
+label0_sv:
+	nop								iblez		vi9,label1_sv		; -,クリップフラグチェック
+	mul.xyz		vf28,vf28,vf2		iaddi		vi9,vi9,-1			; 透視変換,
+	; 描画するポリゴンがクリップ面に掛かっている場合
+	nop								ibltz		vi7,label1_sv		; 描画ポリゴンかどうかのチェック
+	nop								iaddi		vi1,vi0,-2			; フラグの上位２ビットを立てる
+	nop								ior			vi7,vi7,vi1			; 
+label1_sv:
+nop								bal			vi15,CullCheck		; カリングチェック
+nop								nop								; 
+	nop								isw.w		vi7,0-3(vi3)		; -,クリップ用に保存
+	nop								isw.w		vi7,2(vi2)			; -,透視変換
+	nop								iaddiu		vi3,vi3,3			; -,先読みアドレスインクリメント
+	add.xyz		vf28,vf28,vf3		ibgtz		vi8,_ClipShadowVolumeTransLoop	; 透視変換,ループジャンプ
+	nop								iaddiu		vi2,vi2,3			; 書き込みアドレスのインクリメント
+
+_ClipShadowVolumeTransLoop:
+	; 頂点変換処理（途中で次の頂点の情報を読み込んでおく）
+	mulax.xyzw	ACC,vf4,vf12		mtir		vi7,vf13w			; 透視変換,描画キック
+	madday.xyzw	ACC,vf5,vf12		sq.xyz		vf30,0-3(vi2)		; 透視変換,(遅)ＳＴ座標
+	maddaz.xyzw	ACC,vf6,vf12		nop								; 透視変換,-
+	maddw.xyzw	vf20,vf7,vf0		lq.xyzw		vf12,2(vi3)			; 透視変換,次ループ準備
+	ftoi0.xyzw	vf29,vf21			sq.xyzw		vf21,1-3(vi3)		; 光源処理,クリップ用に保存
+	ftoi4.xyz	vf28,vf28			lq.xyzw		vf13,1(vi3)			; (遅)透視変換,次ループ準備
+	itof12.xyz	vf14,vf14			fsset		0					; ＳＴ座標,クリップ
+	subz.w		vf31,vf20,vf20		div			Q,vf0w,vf20w		; クリップ,透視変換
+	addz.x		vf31,vf0,vf20		sq.xyzw		vf20,2-3(vi3)		; クリップ,クリップ用に保存
+	clipw.xyz	vf20xyz,vf20w		sq.xyzw		vf29,1(vi2)			; クリップ,光源処理
+	itof0.xyzw	vf12,vf12			sq.xyz		vf28,2-3(vi2)		; 次ループ準備,(遅)透視変換
+	itof0.xyz	vf21,vf13			sq.xyz		vf14,0-3(vi3)		; 次ループ準備,クリップ用に保存
+	nop								fsand		vi11,0x80			; ＳＴ座標,クリップ
+	nop								fcand		vi01,0x3f			; -,クリップ
+	mulq.xyz	vf28,vf20,Q			ior			vi1,vi11,vi1		; 透視変換,クリップアウト(=waitq)
+	mulq.xyz	vf30,vf14,Q			lq.xyzw		vf14,0(vi3)			; ＳＴ座標,次ループ準備
+	nop								ibeq		vi1,vi0,label2_sv	; -,クリップ
+	nop								isubiu		vi8,vi8,1			; -,カウンタのデクリメント
+	; その頂点が画面外の場合の処理
+	nop								iaddiu		vi9,vi0,3			; ポリゴンクリップ有効カウンタ設定
+	nop								nop								; -,
+label2_sv:
+	nop								iblez		vi9,label3_sv		; -,クリップフラグチェック
+	mul.xyz		vf28,vf28,vf2		iaddi		vi9,vi9,-1			; 透視変換,
+	; 描画するポリゴンがクリップ面に掛かっている場合
+	nop								ibltz		vi7,label3_sv		; 描画ポリゴンかどうかのチェック
+	nop								iaddi		vi1,vi0,-2			; フラグの上位２ビットを立てる
+	nop								ior			vi7,vi7,vi1			; 
+label3_sv:
+nop								bal			vi15,CullCheck		; カリングチェック
+nop								nop								; 
+	nop								isw.w		vi7,0-3(vi3)		; -,クリップ用に保存
+	nop								isw.w		vi7,2(vi2)			; -,透視変換
+	nop								iaddiu		vi3,vi3,3			; -,先読みアドレスインクリメント
+	add.xyz		vf28,vf28,vf3		ibgtz		vi8,_ClipShadowVolumeTransLoop	; 透視変換,ループジャンプ
+	nop								iaddiu		vi2,vi2,3			; 書き込みアドレスのインクリメント
+
+	; 後始末
+	ftoi4.xyz	vf28,vf28			sq.xyz		vf30,0-3(vi2)		; (遅)透視変換,(遅)ＳＴ座標
+	nop								sq.xyz		vf28,2-3(vi2)		; 光源処理,遅透視変換
+
+	; 終端ダミーパケットをキックし待機
+	nop								xgkick		vi13				; ＧＩＦへのキック
+	nop								b			_ClipStart			; 
+	nop								nop								; 
+
+
+
+
+
+
+

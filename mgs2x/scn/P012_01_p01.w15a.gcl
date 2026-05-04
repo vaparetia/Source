@@ -1,0 +1,612 @@
+/*
+	P012_01_p01.w15a.gcl
+	    ＢＣ連絡橋・フォーチュン遭遇デモステージ
+
+	1999/12/09 Y.Matsuhana         
+	$Id: P012_01_p01.w15a.gcl,v 1.50 2001/10/02 14:08:25 usr03635 Exp $                      
+
+	
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+#define		DEMO_STAGE		1		// デモステージかどうかで起動するキャラを切り分ける
+
+// 各種スイッチ用define
+// ------------------------------------
+// デバッグ関係
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+// ------------------------------------
+// マップ関係
+//#define		HZX_NAME		w15a
+#define		HZX_NAME		kmm15a
+#define		KMS_NAME0		w15a
+
+//	ＡＢ共通
+#define		KMS_NAME1		w15_24a		//	シェル１
+#define		KMS_NAME2		w15_17a		//	ＣＤ連絡橋＆Ｄ脚
+#define		KMS_NAME3		w15_13a		//	ＡＢ連絡橋
+#define		KMS_NAME4		w15_12a		//	Ａ脚
+
+#define		KMS_NAME5		w15_14a		//	Ｂ脚
+
+// 010619追加
+#define		KMS_NAME6		w15_19a		//	ＤＥ連絡橋
+#define		KMS_NAME7		w15_23a		//	ＦＡ連絡橋
+
+#define		KMS_NAME8		w15_16a		//	Ｃ脚
+
+#define		KMS_NAME9		w15_20a		//	Ｅ脚
+#define		KMS_NAME10		w15_other00 //	浮き橋１
+#define		KMS_NAME11		w15_other01 //	浮き橋２
+#define		KMS_NAME12		w15_other02 //	浮き橋３
+#define		KMS_NAME13		w15_crane	//	クレーン
+// ここまで
+
+//#define		DOOR_NAME1		w01f_dr
+#define		DOOR_NAME1		w15a_dr00
+#define		LT2_NAME		w15a
+#define		KMS_NAME_SEA	sea
+
+#define		W15A			1
+
+// include
+// ------------------------------------
+#include "5sec_bfr_demo.h"
+#include "demo_vardef.h"
+#include "demo_stdch.h"
+#include "demo_stdch2.h"
+#include "story.h"
+#include "sload.h"
+#include "sea_surface.h"
+
+#include "p_force_cdc.ch"
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+#if d:PLANT_DEMO_ALL_SKIP
+	#define		DEMO_SKIP_ENABLE 1
+#else
+	#define		DEMO_SKIP_ENABLE 0
+#endif
+
+#include	w15_d_common.h		//共通プロック
+
+// キャスティングシアター対応。
+#include "lowpoly.h"
+@ローポリ設定
+
+
+chara サウンドマネージャー ＳＤマネ -pak 0
+
+// マップ設定
+// ------------------------------------
+chara マップ ＢＣ連絡橋 -h d:HZX_NAME -l d:LT2_NAME
+
+command マップ設定 ＢＣ連絡橋 -set {
+
+//	デモ環境かゲーム環境かで起動を読み分ける。
+// ------------------------------------
+#if d:MGS2_DEMO
+
+chara デモアクトデバッグ demodebug  -i t:p012_01_p01 -d 'p012_01_p01' -l  -s 'p012_01_p01'  \
+		-p ＢＣ連絡橋破壊前オン ＢＣ連絡橋破壊前オフ \
+		   ＢＣ連絡橋破壊後オン ＢＣ連絡橋破壊後オフ \
+		   全かもめ緊急離陸 全かもめ死亡１ 全かもめ死亡２ 全かもめ死亡３ フォーチュン群がりカモメ散れ \
+		   フォーチュンリニアガンオン フォーチュンリニアガンオフ \
+		   爆発でカモメ待避 待避したカモメ全体に散れ \
+		   しがみつくシールズ影出し しがみつくシールズ影削除
+
+//			eval($s:d_num = t01a1D)
+
+
+#else
+
+
+// 実際の再生
+//-----------------------------------------------------------
+	// 実際のデモ再生の方も、ストーリーフラグで変える
+	if($w:p_story <= d:ST:P012_01_P01フォーチュン遭遇１ポリゴンデモ１開始) {
+		print '$w:p_story = ST:P012_01_P01フォーチュン遭遇１ポリゴンデモ１開始'
+
+		/* フォーチュン、SEALを殲滅 */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P012_01_p01)
+
+		@デモモデル差し替え処理
+		proc デモ再生_P012_01_p01 {
+				chara demo デモ再生 \
+//					-i t:data_dummy_raiden \
+					-i t:p012_01_p01 \
+					-p ＢＣ連絡橋破壊前オン ＢＣ連絡橋破壊前オフ \
+					   ＢＣ連絡橋破壊後オン ＢＣ連絡橋破壊後オフ \
+					   全かもめ緊急離陸 全かもめ死亡１ 全かもめ死亡２ 全かもめ死亡３ フォーチュン群がりカモメ散れ \
+					   フォーチュンリニアガンオン フォーチュンリニアガンオフ \
+					   爆発でカモメ待避 待避したカモメ全体に散れ \
+					   しがみつくシールズ影出し しがみつくシールズ影削除 \
+					-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+					-next P012_01_p01終了
+		}
+		@デモ再生_P012_01_p01
+
+	} else if( d:ST:P012_01_P01フォーチュン遭遇１ポリゴンデモ１終了 <= $w:p_story && \
+					$w:p_story < d:ST:P012_02_R01フォーチュン遭遇２無線デモ１開始) {
+
+		/* 大佐強制センド　SEAL全滅を報告 */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P012_02_r01)
+		command セットサウンドコード -c d:SNG_PLAY_06
+		@rt_P012_02_R01_フォーチュン遭遇２無線デモ１
+	}
+
+#endif
+
+
+// 以下、諸々セット
+//-----------------------------------------------------------
+	@常駐キャラ設定						// stdch.hで定義
+
+	chara デモキャンセルチェック デモキャンセル \
+		-p demo_cancel
+
+	@ステージモデル本体セット
+	@エフェクト設定
+	@デモ用薬莢用メモリ確保セット
+	@かもめさんセット
+
+	//	w15_d_common.h内
+	@ドア設置
+	@海面設置
+	@空設置
+	@フォグ設定
+
+	@リアル影セット
+	@リアル影セット２
+
+//	@プラント海面セット 朝 w15a 1
+//	@プラントステージでのフォグセット 朝 0
+
+
+	// 無線ではシネマスクリーン起動しない
+	if($s:d_num != P012_02_r01){
+		@シネマスクリーンセット // 水谷
+	}
+}
+
+//初期マップの表示
+// -----------------------------------
+command マップ表示 	-add ＢＣ連絡橋
+
+
+//###################################################################################
+//									各proc設定
+//###################################################################################
+// デモデモ再生関連のプロック
+//-----------------------------------------------------------
+proc null {}
+
+proc demo_cancel {
+	command StreamStopAll
+}
+
+proc P012_01_p01終了 {
+	if ($f:ローポリ劇場フラグ == d:TRUE) {
+		// ローポリ劇場中
+		@mv_lowpoly
+
+	} else {
+		// 通常ゲーム中
+		@デモ終了時シネマスクリーンオフ
+		mesg デモキャンセルチェック デモキャンセル kill
+
+		print '$w:p_story = d:ST:P012_01_P01フォーチュン遭遇１ポリゴンデモ１終了'
+		eval($w:p_story = d:ST:P012_01_P01フォーチュン遭遇１ポリゴンデモ１終了)
+
+		chara delay ディレイ \
+			-time 1 \ 
+			-exec{
+				restart
+			}
+	}
+}
+
+/*
+proc P012_02_r01終了 {
+		eval($w:p_story = d:ST:P012_02_R01フォーチュン遭遇２無線デモ１終了)
+		// ゲームへ
+		@ゲームステージへ戻る
+		@mv_w14a_w15a_0
+}
+*/
+
+
+proc シネマスクリーンセット  {
+	chara シネマスクリーン シネマ \
+		-top d:CINEMA_BELT_UPPER \
+		-bottom d:CINEMA_BELT_LOWER \
+		-ftime 60	//デフォルト値（ゼロは駄目）
+	mesg シネマスクリーン シネマ フェードアウト 1
+}
+
+
+//###################################################################################
+//									全マップ共通
+//###################################################################################
+
+
+
+//###################################################################################
+//									 ステージモデル本体
+//###################################################################################
+proc ステージモデル本体セット {
+	chara プットオブジェ w15a_本体 \
+		-m d:KMS_NAME0 \
+		-r 0 0 0 \
+		-p 0 0 0 \
+		-l d:LT2_NAME \
+		-s 100 100 100
+
+	chara プットオブジェ シェル１ \
+		-m d:KMS_NAME1 \
+		-r 0 0 0 \
+		-p 0 0 0 \
+		-l d:LT2_NAME \
+		-s 100 100 100
+
+	chara プットオブジェ ＣＤ連絡橋＆Ｄ脚 \
+		-m d:KMS_NAME2 \
+		-r 0 0 0 \
+		-p 0 0 0 \
+		-l d:LT2_NAME \
+		-s 100 100 100
+
+	chara プットオブジェ ＡＢ連絡橋 \
+		-m d:KMS_NAME3 \
+		-r 0 0 0 \
+		-p 0 0 0 \
+		-l d:LT2_NAME \
+		-s 100 100 100
+
+	chara プットオブジェ Ａ脚 \
+		-m d:KMS_NAME4 \
+		-r 0 0 0 \
+		-p 0 0 0 \
+		-l d:LT2_NAME \
+		-s 100 100 100
+
+	chara プットオブジェ Ｂ脚 \
+		-m d:KMS_NAME5 \
+		-r 0 0 0 \
+		-p 0 0 0 \
+		-l d:LT2_NAME \
+		-s 100 100 100
+
+	chara プットオブジェ ＤＥ連絡橋 \
+		-m d:KMS_NAME6 \
+		-r 0 0 0 \
+		-p 0 0 0 \
+		-l d:LT2_NAME \
+		-s 100 100 100
+
+	chara プットオブジェ ＦＡ連絡橋 \
+		-m d:KMS_NAME7 \
+		-r 0 0 0 \
+		-p 0 0 0 \
+		-l d:LT2_NAME \
+		-s 100 100 100
+
+	chara プットオブジェ Ｃ脚 \
+		-m d:KMS_NAME8 \
+		-r 0 0 0 \
+		-p 0 0 0 \
+		-l d:LT2_NAME \
+		-s 100 100 100
+
+	chara プットオブジェ Ｅ脚 \
+		-m d:KMS_NAME9 \
+		-r 0 0 0 \
+		-p 0 0 0 \
+		-l d:LT2_NAME \
+		-s 100 100 100
+
+	chara プットオブジェ 浮き橋１ \
+		-m d:KMS_NAME10 \
+		-r 0 0 0 \
+		-p 0 0 0 \
+		-l d:LT2_NAME \
+		-s 100 100 100
+
+	chara プットオブジェ 浮き橋２ \
+		-m d:KMS_NAME11 \
+		-r 0 0 0 \
+		-p 0 0 0 \
+		-l d:LT2_NAME \
+		-s 100 100 100
+
+	chara プットオブジェ 浮き橋３ \
+		-m d:KMS_NAME12 \
+		-r 0 0 0 \
+		-p 0 0 0 \
+		-l d:LT2_NAME \
+		-s 100 100 100
+
+	chara プットオブジェ クレーン \
+		-m d:KMS_NAME13 \
+		-r 0 0 0 \
+		-p 0 0 0 \
+		-l d:LT2_NAME \
+		-s 100 100 100
+
+	chara プットオブジェ ＢＣ連絡橋破壊前 \
+		-m w15a_obj00 \
+		-r 0 0 0 \
+		-p 0 0 0 \
+		-l d:LT2_NAME \
+		-s 100 100 100
+	mesg プットオブジェ ＢＣ連絡橋破壊前 off
+
+	chara プットオブジェ ＢＣ連絡橋破壊後 \
+		-m w15a_obj01 \
+		-r 0 0 0 \
+		-p 0 0 0 \
+		-l d:LT2_NAME \
+		-s 100 100 100
+	mesg プットオブジェ ＢＣ連絡橋破壊後 off
+}
+
+proc ＢＣ連絡橋破壊前オン {
+print '破壊前オン破壊前オン破壊前オン破壊前オン破壊前オン破壊前オン破壊前オン破壊前オン破壊前オン'
+	mesg プットオブジェ ＢＣ連絡橋破壊前 on
+}
+proc ＢＣ連絡橋破壊前オフ {
+print '破壊前オふ破壊前オふ破壊前オふ破壊前オふ破壊前オふ破壊前オふ破壊前オふ破壊前オふ破壊前オふ'
+	mesg プットオブジェ ＢＣ連絡橋破壊前 off
+}
+
+proc ＢＣ連絡橋破壊後オン {
+print '破壊痕オン破壊痕オン破壊痕オン破壊痕オン破壊痕オン破壊痕オン破壊痕オン破壊痕オン破壊痕オン'
+	mesg プットオブジェ ＢＣ連絡橋破壊後 on
+}
+proc ＢＣ連絡橋破壊後オフ {
+print '破壊痕オふ破壊痕オふ破壊痕オふ破壊痕オふ破壊痕オふ破壊痕オふ破壊痕オふ破壊痕オふ破壊痕オふ'
+	mesg プットオブジェ ＢＣ連絡橋破壊後 off
+}
+
+
+//###################################################################################
+//									 エフェクト
+//###################################################################################
+
+
+	proc エフェクト設定 {
+//		chara ブラー okajibura 
+		chara Ｚフォーカス管理 Z_manager -z 5000 10000 -t 30
+	}
+
+
+proc デモ用薬莢用メモリ確保セット {
+	chara M4弾 M4グレネード
+	chara M4_DEMO_GUN弾 デモ弾Ｍ４
+	
+}
+
+proc かもめさんセット {
+    chara かもめマネージャ かもめマネージャ１ \
+
+	-seed 25241 \
+
+	-zspeed 55 \
+
+	-name \
+//	Kamome00, Kamome01, Kamome02, Kamome03, Kamome04, \
+	Kamome05, Kamome06, Kamome07, Kamome08, Kamome09, \
+	Kamome10, Kamome11, Kamome12, Kamome13, Kamome14, \
+	Kamome15, Kamome16, Kamome17, Kamome18, Kamome19, \
+	Kamome20, Kamome21, Kamome22, Kamome23, Kamome24, \
+	Kamome25, Kamome26, Kamome27, Kamome28, Kamome29, \
+	Kamome30, Kamome31, Kamome32, Kamome33, Kamome34, \
+	Kamome35, Kamome36, Kamome37, Kamome38, Kamome39, \
+	Kamome40, Kamome41, Kamome42, Kamome43, Kamome44, \
+	Kamome45, Kamome46, Kamome47, Kamome48, Kamome49  \
+
+	-farea \
+	-45000, 1500, -72000,  -25000, 4500, -60000, \ // 全体1
+	-45000, 1500, -60000,  -25000, 4500, -46000, \ // 全体2
+	-60000, 1700, -72000,  -45000, 4700, -46000, \ // 全体3
+	-33000, 1500, -67500,  -25000, 4500, -52500, \ // フォーチュンに群がり
+//	(-59500), 1800, (-60000),  (-45500), 8000, (-46500), \
+
+	-unitpos \
+//	(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+	(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+	(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+	(d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), \
+	(d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), \
+	(d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), \
+	(d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), \
+	(d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), \
+	(d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), \
+	(d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03)  \
+
+	-areadata \
+	-45000, 1500, -72000,  -25000, 4500, -60000, \ // 全体1
+	-45000, 1500, -60000,  -25000, 4500, -46000, \ // 全体2
+	-60000, 1700, -72000,  -45000, 4700, -46000, \ // 全体3
+	-33000, 1500, -67500,  -25000, 4500, -52500, \ // フォーチュンに群がり
+//	(-59500), 1800, (-60000),  (-45500), 8000, (-46500), \
+//	(-70500), -500, (-62000),  (-59500), 500, (-58500), \
+//	(-52500-9500), 1800, (-56500-6500),  (-33500+9500), 8000, (-43500+6500), \
+
+	-indexarea \
+//	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00),  \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00),  \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00),  \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00),  \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01),  \
+	(d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01),  \
+	(d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01),  \
+	(d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01),  \
+	(d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02),  \
+	(d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02),  \
+	
+	-mot \
+//	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING  \
+
+	-routine \
+//	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING   
+
+mesg かもめマネージャ かもめマネージャ１ 全かもめ飛行 0
+}
+
+proc 全かもめ緊急離陸 {
+	mesg かもめマネージャ かもめマネージャ１ 全かもめ緊急離陸 15
+}
+
+proc 全かもめ死亡１ {
+	#if 0
+		mesg かもめマネージャ かもめマネージャ１ 全かもめ死亡 15
+	#else
+		mesg かもめマネージャ かもめマネージャ１ 指定エリア内搾取死亡 \
+			-44000, 1000, -70000,  -34000, 8000, -45000 480
+		mesg かもめマネージャ かもめマネージャ１ 落下速度設定 110
+	#endif
+}
+proc 全かもめ死亡２ {
+	#if 0
+		mesg かもめマネージャ かもめマネージャ１ 全かもめ死亡 15
+	#else
+		mesg かもめマネージャ かもめマネージャ１ 指定エリア内搾取死亡 \
+			-50000, 1000, -70000,  -25000, 8000, -61000 360
+		mesg かもめマネージャ かもめマネージャ１ 落下速度設定 110
+	#endif
+}
+proc 全かもめ死亡３ {
+	#if 0
+		mesg かもめマネージャ かもめマネージャ１ 全かもめ死亡 15
+	#else
+		mesg かもめマネージャ かもめマネージャ１ 指定エリア内搾取死亡 \
+			-50000, 1000, -59000,  -25000, 8000, -45000 400
+		mesg かもめマネージャ かもめマネージャ１ 落下速度設定 110
+	#endif
+}
+
+proc フォーチュン群がりカモメ散れ {
+	mesg かもめマネージャ かもめマネージャ１ 指定エリア内飛行エリア変更 \
+		-60000, 1500, -67500,  -25000, 4500, -52500 \ // 変更もと
+//		-70000, 2000, -80000,  -25000, 6000, -40000 \
+		-60000, 1500, -72000,  -25000, 4500, -46000 \ // 変更先（全体）
+		120
+}
+
+proc 爆発でカモメ待避 {
+	mesg かもめマネージャ かもめマネージャ１ 指定エリア内緊急散開 \
+		-46500 1500 -65000 -24500 4500 -55000 \
+		-60500 6500 -71000 -51500 9500 -50000 \
+//		-60500 6500 -71000 -51500 9500 -50000 \
+		250 \
+		30
+}
+
+proc 待避したカモメ全体に散れ {
+	mesg かもめマネージャ かもめマネージャ１ 指定エリア内飛行エリア変更 \
+		-60500 6500 -71000 -51500 9500 -50000 \ // 変更もと
+		-45000, 1500, -72000,  -33000, 4500, -46000 \ // 変更先（全体）
+//		-60000, 1500, -72000,  -25000, 4500, -46000 \ // 変更先（全体）
+		120
+}
+
+// [追加] 2001/08/30 Uehara Masatoshi
+proc リアル影セット {
+	chara 影投影モデル 影もでる \
+		-m w15demo_sdw00 \
+		-p -1 1 -1
+
+	chara 影管理 影かんり \
+		-t 0 \
+		-p 71 -70 69
+
+	mesg 影管理 影かんり demo_add for_coat_addhand_demo 影もでる	// ファーチュン
+	mesg 影管理 影かんり demo_add vmp_coat_demo         影もでる	// ヴァンプ
+	mesg 影管理 影かんり demo_add vmp_coat_demo02       影もでる	// ヴァンプ
+	mesg 影管理 影かんり demo_add jam_def_demo          影もでる	// 大統領
+
+	mesg 影管理 影かんり demo_add sel_def_B0 影もでる	// 中腰射撃兵（ブラボー）
+	mesg 影管理 影かんり demo_add sel_def_B1 影もでる	// 匍匐射撃兵（ブラボー）
+	mesg 影管理 影かんり demo_add sel_def_C0 影もでる	// グレネード兵（アルファ）
+	mesg 影管理 影かんり demo_add sel_def_D0 影もでる	// 兵（アルファ）
+	mesg 影管理 影かんり demo_add sel_def_E0 影もでる	// 落下兵（アルファ）
+	mesg 影管理 影かんり demo_add sel_def_F  影もでる	// 後続兵１（アルファ）
+	mesg 影管理 影かんり demo_add sel_def_G  影もでる	// 後続兵２（アルファ）
+	mesg 影管理 影かんり demo_add sel_def_H  影もでる	// 後続兵３（アルファ）
+
+	mesg 影管理 影かんり demo_add demo_m4_sel_D0 影もでる	// 兵（アルファ）の銃
+
+	mesg 影管理 影かんり demo_add blackcase         影もでる	// ブラックケース（床置き）
+	mesg 影管理 影かんり demo_add blackcase02       影もでる	// ブラックケース（手持ち）
+	mesg 影管理 影かんり demo_add demo_m4_grn_bul02 影もでる	// グレネード弾
+	mesg 影管理 影かんり demo_add kmo_def           影もでる	// ごめんねカモメさん
+
+}
+
+proc フォーチュンリニアガンオン {
+	mesg 影管理 影かんり demo_add demo_lnr 影もでる	// ファーチュンリニアガン
+}
+proc フォーチュンリニアガンオフ {
+	mesg 影管理 影かんり del demo_lnr	// ファーチュンリニアガン
+}
+
+proc リアル影セット２ {
+	chara 影投影モデル２ 影管理2代目 \
+		-ctrl w15a_obj02_A
+
+	chara 影管理 影かんり２ \
+		-t 0 \
+		-p 71 -70 69
+}
+
+proc しがみつくシールズ影出し {
+	mesg 影管理 影かんり２ demo_add sel_def_E1 影管理2代目
+}
+
+proc しがみつくシールズ影削除 {
+	mesg 影管理 影かんり２ del sel_def_E1
+}
+
+//###################################################################################
+//									 バックアップ
+//###################################################################################
+
+/*
+	proc フォグ設定 {
+		chara フォグ fog \
+			 -c 168 186 156 \
+			 -n -25000 \
+			 -f 125000
+	}
+*/

@@ -1,0 +1,114 @@
+//	w01b.src
+//	written by 	M.Uehara 2000.Jan
+//				S.Kaneyoshi	2000/04/01
+//	$Id: a01b.src,v 1.13 2002/08/06 06:05:17 usr04249 Exp $
+
+#define WN_W01B
+
+// 常駐データ
+block .use r_vr_s
+
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include "t_common.h"
+#include 	"common.h"
+#include	"c_effect.h"
+// オルタナティブミッション用追加エフェクト
+#include	"alt_effect.h"
+
+// キャラクタ
+include		ene_tank.h
+
+// アイテム
+
+// ワールド
+world		w01b/w01b0
+world		w01b/w01b1
+world		w01b/w01b2
+world		w01b/load_model
+
+// 羽虫コモデル
+goods		fly/fly_cm.kms
+
+
+// ドア & 水密ドア
+// 「w01f_dr.kms」「w01asdr_handle.kms」		ドアモデル	水密ドアハンドルモデル
+// 「w01asdr_body_l.kms」「w01asdr_body_r.kms	水密ドア左モデル
+// 「w01c_lit1a.kms」 「w01c_lit1b.kms」		壊れライトＡ
+world		door/w01f_dr.kms \
+			door/w01asdr_handle.kms \
+			door/w01asdr_body_l.kms \
+			door/w01asdr_body_r.kms \
+			w01c/w01c_lit1a.kms \
+			w01c/w01c_lit1b.kms
+
+// 水密ドアモーション
+mtn				sna_hatch.mls
+mtn				rai_wt_hatch.mls
+mtn				hatch_door_sna.mls
+mtn				hatch_handle_sna.mls
+
+// エフェクト半透明テクスチャ 後に一つにまとめる
+pack_trnall	fun.tri effect/rain
+
+// w00のモデルを使用
+world		w00
+
+// ライト & ハザード
+lt2			w01b.lt2
+hazard		a01b.hzx
+
+//gbs/gbs_ak_nom_surveillance_w00a.mt3
+//gbs/gbs_ak_nom_sabori_w01b.mt3
+//rename		gbs_ak_nom_sabori_w01b	gbs_ak_nom_surveillance_w00a
+
+// ロッカー
+mtn					sna_locker.mls
+mtn					locker.mls
+
+// 強制モーション
+mtn			sna_a01b.mls
+mtn			rai_a01b.mls
+
+// 消火器
+debug			okajima/hose_test/hose_cone.kms
+debug			okajima/hose_test/hose_new2.kms
+cvd  			debug/okajima/hose_test/hose_new2.cvd vn
+
+// 敵兵固有モーション
+mtn			gbs_w01b.mls
+
+// リネーム
+rename		aks_sp.cv2	aks_sp_1.cv2
+//rename		gbs_w01b.mar	gbs.mar
+//rename		gbs_w01b.sar	gbs.sar
+//rename		gbs_w01b.var	gbs.var
+rename 		gbs_w01b.mar gbsstage.mar
+
+
+// 写真のお題
+//pack_all	photo.tri \
+//				debug/yamashita/odai_test.bmp
+
+pack_all	photo_odai.tri \
+				debug/kaneyoshi/odai_erobook.bmp 
+
+// 追加アイテム
+	
+	//#define	COLD			//	風邪薬
+	//#define M4
+	//#define M4_AM
+	//#define AK_AM
+	
+	#include "a_item.h"
+	
+// 解体Ｃ４セット 最後に描画させるためにＴＲＩ名にＺをつける
+pack_all	z_object.tri \
+			goods/c4_kaitai_a \
+			goods/c4_kaitai_b
+
+goods		c4_kaitai_a
+goods		c4_kaitai_b
+

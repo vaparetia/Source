@@ -1,0 +1,197 @@
+;
+;	mw_env.dsm
+;	マルチウェイトエンベロープ計算処理プログラム
+;
+;	1999/09/03 K.Takabe
+;	$Id: mw_env.dsm,v 1.1.1.3 2002/11/19 11:42:12 Yoshizawa1 Exp $
+;
+
+.global MultiWeightEnvelopeVu0
+.global MultiWeightEnvelopeVu0_Func
+
+; プログラム呼び出しＶＩＦコード一覧
+MultiWeightEnvelopeVu0_Func:
+	.word	( CalcVertex / 8 )
+	.word	( CalcNormal / 8 )
+	.word	( CalcVertexNormal / 8 )
+
+.data
+.DmaPackVif 0			; タグ中のＶＩＦコード無効
+
+;Vu1DrawObject1:		; この方法は失敗した
+;	DMAret *			; この方法は失敗した
+;	MPG 0,*				; この方法は失敗した
+
+
+; プログラム転送ＤＭＡタグ定義
+MultiWeightEnvelopeVu0:	; マイクロプログラム読み込み用タグ記憶ポインタ
+	DMAref *, _vu_prog	; DMArefによるデータ転送を行う
+	.EndDmaData			; DMAパケットの終了
+
+
+; プログラム記述部
+.DmaData _vu_prog		; DMArefで転送するデータの宣言
+	MPG 0,*				; マイクロプログラム転送VIFcode
+
+.vu
+
+; μプログラムインターフェイス
+; vi1:第１マトリクスアドレス
+; vi2:第２マトリクスアドレス
+; vi3:第３マトリクスアドレス
+; vi4:第４マトリクスアドレス
+; vf1:頂点入力
+; vf2:法線入力
+; vf3:重み入力
+; vf12:頂点出力
+; vf13:法線出力
+
+;	upper		.					lower		.
+	nop								b			CalcVertex			; 
+	nop								nop								; 
+	nop								b			CalcNormal			; 
+	nop								nop								; 
+	nop								b			CalcVertexNormal	; 
+	nop								nop								; 
+
+CalcVertex:
+	nop								lqi.xyzw	vf4,(vi1++)			; 
+	nop								lqi.xyzw	vf5,(vi1++)			; 
+	nop								lqi.xyzw	vf6,(vi1++)			; 
+	nop								lqi.xyzw	vf7,(vi1++)			; 
+	mulax.xyzw	ACC,vf4,vf1			lqi.xyzw	vf4,(vi2++)			; 
+	madday.xyzw	ACC,vf5,vf1			lqi.xyzw	vf5,(vi2++)			; 
+	maddaz.xyzw	ACC,vf6,vf1			lqi.xyzw	vf6,(vi2++)			; 
+	maddw.xyzw	vf8,vf7,vf0			lqi.xyzw	vf7,(vi2++)			; 
+	mulax.xyzw	ACC,vf4,vf1			lqi.xyzw	vf4,(vi3++)			; 
+	madday.xyzw	ACC,vf5,vf1			lqi.xyzw	vf5,(vi3++)			; 
+	maddaz.xyzw	ACC,vf6,vf1			lqi.xyzw	vf6,(vi3++)			; 
+	maddw.xyzw	vf9,vf7,vf0			lqi.xyzw	vf7,(vi3++)			; 
+	mulax.xyzw	ACC,vf4,vf1			lqi.xyzw	vf4,(vi4++)			; 
+	madday.xyzw	ACC,vf5,vf1			lqi.xyzw	vf5,(vi4++)			; 
+	maddaz.xyzw	ACC,vf6,vf1			lqi.xyzw	vf6,(vi4++)			; 
+	maddw.xyzw	vf10,vf7,vf0		lqi.xyzw	vf7,(vi4++)			; 
+	mulax.xyzw	ACC,vf4,vf1			nop								; 
+	madday.xyzw	ACC,vf5,vf1			nop								; 
+	maddaz.xyzw	ACC,vf6,vf1			nop								; 
+	maddw.xyzw	vf11,vf7,vf0		nop								; 
+	mulax.xyzw	ACC,vf8,vf3			nop								; 
+	madday.xyzw	ACC,vf9,vf3			nop								; 
+	maddaz.xyzw	ACC,vf10,vf3		nop								; 
+	maddw.xyzw	vf12,vf11,vf3		nop								; 
+	nop[e]							nop								; 
+	nop								nop								; 
+
+CalcNormal:
+	nop								lqi.xyzw	vf4,(vi1++)			; 
+	nop								lqi.xyzw	vf5,(vi1++)			; 
+	nop								lqi.xyzw	vf6,(vi1++)			; 
+	nop								lqi.xyzw	vf7,(vi1++)			; 
+	mulax.xyz	ACC,vf4,vf2			lqi.xyzw	vf4,(vi2++)			; 
+	madday.xyz	ACC,vf5,vf2			lqi.xyzw	vf5,(vi2++)			; 
+	maddz.xyz	vf8,vf6,vf2			lqi.xyzw	vf6,(vi2++)			; 
+	mulax.xyz	ACC,vf4,vf2			lqi.xyzw	vf4,(vi3++)			; 
+	madday.xyz	ACC,vf5,vf2			lqi.xyzw	vf5,(vi3++)			; 
+	maddz.xyz	vf9,vf6,vf2			lqi.xyzw	vf6,(vi3++)			; 
+	mulax.xyz	ACC,vf4,vf2			lqi.xyzw	vf4,(vi4++)			; 
+	madday.xyz	ACC,vf5,vf2			lqi.xyzw	vf5,(vi4++)			; 
+	maddz.xyz	vf10,vf6,vf2		lqi.xyzw	vf6,(vi4++)			; 
+	mulax.xyz	ACC,vf4,vf2			nop								; 
+	madday.xyz	ACC,vf5,vf2			nop								; 
+	maddz.xyz	vf11,vf6,vf2		nop								; 
+	mulax.xyz	ACC,vf8,vf3			nop								; 
+	madday.xyz	ACC,vf9,vf3			nop								; 
+	maddaz.xyz	ACC,vf10,vf3		nop								; 
+	maddw.xyz	vf13,vf11,vf3		nop								; 
+.if 1
+	; 正規化処理
+	mul.xyz		vf14,vf13,vf13		nop								; 法線：２乗ベクトル計算
+	mulax.w		ACC,vf0,vf14		nop								; 法線：平方和計算
+	madday.w	ACC,vf0,vf14		nop								; 法線：平方和計算
+	maddz.w		vf14,vf0,vf14		nop								; 法線：平方和計算
+.if 1
+	; 通常
+	nop								rsqrt		Q,vf0w,vf14w		; ,法線：正規化定数計算
+	mulq.xyz	vf13,vf13,Q			waitq							; 
+.else
+	; RSQRTバグ回避バージョン
+	nop								sqrt		Q,vf14w				; ,法線：正規化定数計算
+	mulq.w		vf14,vf0,Q			waitq							; 
+	nop								div			Q,vf0w,vf14w		; 
+	mulq.xyz	vf13,vf13,Q			waitq							; 
+.endif
+.endif
+	nop[e]							nop								; 
+	nop								nop								; 
+
+CalcVertexNormal:
+	nop								lq.xyzw		vf4,0(vi1)			; 
+	nop								lq.xyzw		vf5,1(vi1)			; 
+	nop								lq.xyzw		vf6,2(vi1)			; 
+	mulax.xyz	ACC,vf4,vf2			lq.xyzw		vf4,0(vi2)			; 
+	madday.xyz	ACC,vf5,vf2			lq.xyzw		vf5,1(vi2)			; 
+	maddz.xyz	vf8,vf6,vf2			lq.xyzw		vf6,2(vi2)			; 
+	mulax.xyz	ACC,vf4,vf2			lq.xyzw		vf4,0(vi3)			; 
+	madday.xyz	ACC,vf5,vf2			lq.xyzw		vf5,1(vi3)			; 
+	maddz.xyz	vf9,vf6,vf2			lq.xyzw		vf6,2(vi3)			; 
+	mulax.xyz	ACC,vf4,vf2			lq.xyzw		vf4,0(vi4)			; 
+	madday.xyz	ACC,vf5,vf2			lq.xyzw		vf5,1(vi4)			; 
+	maddz.xyz	vf10,vf6,vf2		lq.xyzw		vf6,2(vi4)			; 
+	mulax.xyz	ACC,vf4,vf2			nop								; 
+	madday.xyz	ACC,vf5,vf2			nop								; 
+	maddz.xyz	vf11,vf6,vf2		nop								; 
+	mulax.xyz	ACC,vf8,vf3			lqi.xyzw	vf4,(vi1++)			; 
+	madday.xyz	ACC,vf9,vf3			lqi.xyzw	vf5,(vi1++)			; 
+	maddaz.xyz	ACC,vf10,vf3		lqi.xyzw	vf6,(vi1++)			; 
+	maddw.xyz	vf13,vf11,vf3		lqi.xyzw	vf7,(vi1++)			; 
+	mulax.xyzw	ACC,vf4,vf1			lqi.xyzw	vf4,(vi2++)			; 
+	madday.xyzw	ACC,vf5,vf1			lqi.xyzw	vf5,(vi2++)			; 
+	maddaz.xyzw	ACC,vf6,vf1			lqi.xyzw	vf6,(vi2++)			; 
+	maddw.xyzw	vf8,vf7,vf0			lqi.xyzw	vf7,(vi2++)			; 
+	mul.xyz		vf14,vf13,vf13		nop								; 法線：２乗ベクトル計算
+	mulax.xyzw	ACC,vf4,vf1			lqi.xyzw	vf4,(vi3++)			; 
+	madday.xyzw	ACC,vf5,vf1			lqi.xyzw	vf5,(vi3++)			; 
+	maddaz.xyzw	ACC,vf6,vf1			lqi.xyzw	vf6,(vi3++)			; 
+	maddw.xyzw	vf9,vf7,vf0			lqi.xyzw	vf7,(vi3++)			; 
+	mulax.w		ACC,vf0,vf14		nop								; 法線：平方和計算
+	madday.w	ACC,vf0,vf14		nop								; 法線：平方和計算
+	maddz.w		vf14,vf0,vf14		nop								; 法線：平方和計算
+	mulax.xyzw	ACC,vf4,vf1			lqi.xyzw	vf4,(vi4++)			; 
+	madday.xyzw	ACC,vf5,vf1			lqi.xyzw	vf5,(vi4++)			; 
+	maddaz.xyzw	ACC,vf6,vf1			lqi.xyzw	vf6,(vi4++)			; 
+	maddw.xyzw	vf10,vf7,vf0		lqi.xyzw	vf7,(vi4++)			; 
+.if 1
+	mulax.xyzw	ACC,vf4,vf1			rsqrt		Q,vf0w,vf14w		; ,法線：正規化定数計算
+	madday.xyzw	ACC,vf5,vf1			nop								; 
+	maddaz.xyzw	ACC,vf6,vf1			nop								; 
+	maddw.xyzw	vf11,vf7,vf0		nop								; 
+	mulax.xyzw	ACC,vf8,vf3			nop								; 
+	madday.xyzw	ACC,vf9,vf3			nop								; 
+	maddaz.xyzw	ACC,vf10,vf3		nop								; 
+	maddw.xyzw	vf12,vf11,vf3		nop								; 
+	mulq.xyz	vf13,vf13,Q			waitq							; 
+.else
+	; RSQRTバグ回避バージョン
+	mulax.xyzw	ACC,vf4,vf1			sqrt		Q,vf14w				; ,法線：正規化定数計算
+	madday.xyzw	ACC,vf5,vf1			nop								; 
+	maddaz.xyzw	ACC,vf6,vf1			nop								; 
+	maddw.xyzw	vf11,vf7,vf0		nop								; 
+	mulax.xyzw	ACC,vf8,vf3			nop								; 
+	madday.xyzw	ACC,vf9,vf3			nop								; 
+	maddaz.xyzw	ACC,vf10,vf3		nop								; 
+	maddw.xyzw	vf12,vf11,vf3		nop								; 
+	mulq.w		vf14,vf0,Q			waitq							; 
+	nop								div			Q,vf0w,vf14w		; 
+	mulq.xyz	vf13,vf13,Q			waitq							; 
+.endif
+	nop[e]							nop								; 
+	nop								nop								; 
+
+.EndMPG					; マイクロプログラム転送の終了
+.EndDmaData				; DMAref転送データの終了
+
+
+
+
+
+

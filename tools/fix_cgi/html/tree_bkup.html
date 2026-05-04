@@ -1,0 +1,24 @@
+<HR>
+
+<FORM ACTION=/cgi-bin/backup.cgi METHOD=post>
+<INPUT TYPE=hidden NAME=cur_dir   VALUE=_tag_cur_dir  >
+<INPUT TYPE=hidden NAME=showdirs  VALUE=_tag_showdirs >
+<INPUT TYPE=hidden NAME=directive VALUE="RunTime">
+<INPUT TYPE=hidden NAME=ext_mode  VALUE=_tag_ext_mode>
+
+<H3>ランタイム バックアップ</H3>
+
+<TABLE>
+<TR><TD><FONT COLOR=pink>現在のディレクトリ</FONT></TD>
+    <TD><A HREF="/cgi-bin/tree.cgi?directive=_tag_directive&ext_mode=_tag_ext_mode">_tag_directive</A>/_tag_cur_dir</TD></TR>
+<TR><TD><FONT COLOR=pink>ファイル          </FONT></TD>
+    <TD><INPUT TYPE=submit VALUE="保存"></TD></TR>
+<TR><TD></TD>
+    <TD><SELECT SIZE=15 NAME=files MULTIPLE>
+_tag_include::_tag_tmpfile
+<OPTION>====================End of list=====================</OPTION>
+</SELECT></TD></TR>
+</TABLE>
+
+</FORM>
+</BODY>

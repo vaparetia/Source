@@ -1,0 +1,1418 @@
+//　●区分　　　　　　　　　　　　　　　　　　　　//
+//　P_プレイヤー動作、W_武器関連、I_アイテム関連　//
+//　E_敵兵関連、V_音声、S_システム系、A_その他　　//
+
+//（※重複するモノは全て省いてありますので、この表の上では効果音が
+//　無いステージもありますが、気にしないで下さい。）
+
+//　●同時発音防止フラグ使用状況
+//　0x01　プレイヤー
+//　0x02　
+//　0x03　オルガ
+//　0x04　敵兵１
+//　0x05　敵兵２
+//　0x06　敵兵３
+//　0x07　敵兵４
+//　0x08　ファットマン
+//　0x09　フォーチュン
+//　0x0A　NPCスネーク
+//　0x0B　オタコン
+//　0x0C　ソリダス
+//　0x0D　大統領
+//　0x0E　ヴァンプ
+//　0x0F　その他SE
+//　0x10　エマ
+//　0x11　サイファー１
+//　0x12　サイファー２
+//　0x13　サイファー３
+//　0x14　サイファー４
+//　0x15　クラスター爆弾飛散～爆発
+//　0x16　緊迫ジングル音４キャンセル
+//　0x17　ファットマン死亡ローラーキャンセル
+
+//敵兵などの兼用系//
+SD_V_GBSDMG01 0x50 0x01 0x00 ..\gbs\gbsdmg01 //敵１・ダメージ
+SD_V_GBSDMG02 0x50 0x01 0x00 ..\gbs\gbsdmg02 //敵２・ダメージ
+SD_V_GBSDMG03 0x50 0x01 0x00 ..\gbs\gbsdmg03 //敵３・ダメージ
+SD_V_GBSDMG04 0x50 0x01 0x00 ..\gbs\gbsdmg04 //敵４・ダメージ
+SD_V_GBSDWN01 0x50 0x01 0x00 ..\gbs\gbsdwn01 //敵１・キック倒れ
+SD_V_GBSDWN02 0x50 0x01 0x00 ..\gbs\gbsdwn02 //敵２・キック倒れ
+SD_V_GBSDWN03 0x50 0x01 0x00 ..\gbs\gbsdwn03 //敵３・キック倒れ
+SD_V_GBSDWN04 0x50 0x01 0x00 ..\gbs\gbsdwn04 //敵４・キック倒れ
+SD_V_GBSFAL01 0x50 0x01 0x00 ..\gbs\gbsfal01 //敵１・落下アウト
+SD_V_GBSFAL02 0x50 0x01 0x00 ..\gbs\gbsfal02 //敵２・落下アウト
+SD_V_GBSFAL03 0x50 0x01 0x00 ..\gbs\gbsfal03 //敵３・落下アウト
+SD_V_GBSFAL04 0x50 0x01 0x00 ..\gbs\gbsfal04 //敵４・落下アウト
+SD_V_GBSOUT01 0x50 0x01 0x00 ..\gbs\gbsout01 //敵１・アウト
+SD_V_GBSOUT02 0x50 0x01 0x00 ..\gbs\gbsout02 //敵２・アウト
+SD_V_GBSOUT03 0x50 0x01 0x00 ..\gbs\gbsout03 //敵３・アウト
+SD_V_GBSOUT04 0x50 0x01 0x00 ..\gbs\gbsout04 //敵４・アウト
+SD_V_GBSFUN01 0x50 0x01 0x00 ..\gbs\gbsfun01 //敵１・白兵攻撃気合
+SD_V_GBSFUN02 0x50 0x01 0x00 ..\gbs\gbsfun02 //敵２・白兵攻撃気合
+SD_V_GBSFUN03 0x50 0x01 0x00 ..\gbs\gbsfun03 //敵３・白兵攻撃気合
+SD_V_GBSFUN04 0x50 0x01 0x00 ..\gbs\gbsfun04 //敵４・白兵攻撃気合
+SD_V_GBSNEC01 0x50 0x01 0x00 ..\gbs\gbsnec01 //敵１・首絞まる
+SD_V_GBSNEC02 0x50 0x01 0x00 ..\gbs\gbsnec02 //敵２・首絞まる
+SD_V_GBSNEC03 0x50 0x01 0x00 ..\gbs\gbsnec03 //敵３・首絞まる
+SD_V_GBSNEC04 0x50 0x01 0x00 ..\gbs\gbsnec04 //敵４・首絞まる
+SD_V_GBSNEB01 0x50 0x01 0x00 ..\gbs\gbsneb01 //敵１・頚椎折る
+SD_V_GBSNEB02 0x50 0x01 0x00 ..\gbs\gbsneb02 //敵２・頚椎折る
+SD_V_GBSNEB03 0x50 0x01 0x00 ..\gbs\gbsneb03 //敵３・頚椎折る
+SD_V_GBSNEB04 0x50 0x01 0x00 ..\gbs\gbsneb04 //敵４・頚椎折る
+SD_V_GBSIBK01 0x50 0x01 0x04 ..\gbs\gbsibk01 //敵兵１・いびき
+SD_V_GBSIBK02 0x50 0x01 0x05 ..\gbs\gbsibk02 //敵兵２・いびき
+SD_V_GBSIBK03 0x50 0x01 0x06 ..\gbs\gbsibk03 //敵兵３・いびき
+SD_V_GBSIBK04 0x50 0x01 0x07 ..\gbs\gbsibk04 //敵兵４・いびき
+SD_V_GBSSLP01 0x50 0x01 0x04 ..\gbs\gbsslp01 //敵兵１・麻酔倒れ
+SD_V_GBSSLP02 0x50 0x01 0x05 ..\gbs\gbsslp02 //敵兵２・麻酔倒れ
+SD_V_GBSSLP03 0x50 0x01 0x06 ..\gbs\gbsslp03 //敵兵３・麻酔倒れ
+SD_V_GBSSLP04 0x50 0x01 0x07 ..\gbs\gbsslp04 //敵兵４・麻酔倒れ
+
+SD_V_C01MAKI 0x50 0x01 0x04 ..\gbs\gbs_a004 //敵兵１「グレネード！」
+SD_V_C01MORI 0x50 0x01 0x05 ..\gbs\gbs_b004 //敵兵２「グレネード！」
+SD_V_C01OKAJ 0x50 0x01 0x06 ..\gbs\gbs_c004 //敵兵３「グレネード！」
+SD_V_C01SHIG 0x50 0x01 0x07 ..\gbs\gbs_d004 //敵兵４「グレネード！」
+SD_V_C04MAKI 0x50 0x01 0x04 ..\gbs\gbs_a026 //敵兵１「くらえ」
+SD_V_C04MORI 0x50 0x01 0x05 ..\gbs\gbs_b026 //敵兵２「くらえ」
+SD_V_C04OKAJ 0x50 0x01 0x06 ..\gbs\gbs_c026 //敵兵３「くらえ」
+SD_V_C04SHIG 0x50 0x01 0x07 ..\gbs\gbs_d026 //敵兵４「くらえ」
+SD_V_C07MAKI 0x50 0x01 0x04 ..\gbs\gbsdrd01 //敵兵１「誰だ！」
+SD_V_C07MORI 0x50 0x01 0x05 ..\gbs\gbsdrd02 //敵兵２「誰だ！」
+SD_V_C07OKAJ 0x50 0x01 0x06 ..\gbs\gbsdrd03 //敵兵３「誰だ！」
+SD_V_C07SHIG 0x50 0x01 0x07 ..\gbs\gbsdrd04 //敵兵４「誰だ！」
+SD_V_C08MAKI 0x50 0x01 0x04 ..\gbs\gbs_a02f //敵兵１「クリア」
+SD_V_C08MORI 0x50 0x01 0x05 ..\gbs\gbs_b02f //敵兵２「クリア」
+SD_V_C08OKAJ 0x50 0x01 0x06 ..\gbs\gbs_c02f //敵兵３「クリア」
+SD_V_C08SHIG 0x50 0x01 0x07 ..\gbs\gbs_d02f //敵兵４「クリア」
+
+SD_V_ATKO01 0x50 0x01 0x04 ..\gbs\gbs_a001 //攻撃兵１対離れ「そこにいるぞ！」
+SD_V_ATMO01 0x50 0x01 0x05 ..\gbs\gbs_b001 //攻撃兵２対離れ「そこだ！」
+SD_V_ATKO02 0x50 0x01 0x06 ..\gbs\gbs_c001 //攻撃兵３対離れ「そこだな！」
+SD_V_ATMO02 0x50 0x01 0x07 ..\gbs\gbs_d001 //攻撃兵４対離れ「そこにいる！」
+SD_V_ATKO03 0x50 0x01 0x04 ..\gbs\gbs_a002 //攻撃兵１対逃げ「逃げたぞ！」
+SD_V_ATMO03 0x50 0x01 0x05 ..\gbs\gbs_b002 //攻撃兵２対逃げ「追跡しろ！」
+SD_V_ATKO04 0x50 0x01 0x06 ..\gbs\gbs_c002 //攻撃兵３対逃げ「追え！」
+SD_V_ATMO04 0x50 0x01 0x07 ..\gbs\gbs_d002 //攻撃兵４対逃げ「待て！」
+SD_V_ATKO05 0x50 0x01 0x04 ..\gbs\gbs_a003 //攻撃兵１非発砲「撃つな！」
+SD_V_ATMO05 0x50 0x01 0x05 ..\gbs\gbs_b003 //攻撃兵２非発砲「味方に当たる！」
+SD_V_ATKO06 0x50 0x01 0x06 ..\gbs\gbs_c003 //攻撃兵３非発砲「くそ！」
+SD_V_ATMO06 0x50 0x01 0x07 ..\gbs\gbs_d003 //攻撃兵４非発砲「卑怯な！」
+
+SD_V_MAKI20 0x50 0x01 0x04 ..\gbs\gbs_a006 //敵兵１足跡モード「ん？」
+SD_V_MORI20 0x50 0x01 0x05 ..\gbs\gbs_b006 //敵兵２足跡モード「ん？」
+SD_V_OKAJ20 0x50 0x01 0x06 ..\gbs\gbs_c006 //敵兵３足跡モード「ん？」
+SD_V_SHIG20 0x50 0x01 0x07 ..\gbs\gbs_d006 //敵兵４足跡モード「ん？」
+SD_V_MAKI21 0x50 0x01 0x04 ..\gbs\gbs_a007 //敵兵１足跡モード「うん？」
+SD_V_MORI21 0x50 0x01 0x05 ..\gbs\gbs_b007 //敵兵２足跡モード「うん？」
+SD_V_OKAJ21 0x50 0x01 0x06 ..\gbs\gbs_c007 //敵兵３足跡モード「うん？」
+SD_V_SHIG21 0x50 0x01 0x07 ..\gbs\gbs_d007 //敵兵４足跡モード「うん？」
+SD_V_MAKI24 0x50 0x01 0x04 ..\gbs\gbs_a00a //敵兵１プレイヤー発見モード「あっ」
+SD_V_MORI24 0x50 0x01 0x05 ..\gbs\gbs_b00a //敵兵２プレイヤー発見モード「あっ」
+SD_V_OKAJ24 0x50 0x01 0x06 ..\gbs\gbs_c00a //敵兵３プレイヤー発見モード「あっ」
+SD_V_SHIG24 0x50 0x01 0x07 ..\gbs\gbs_d00a //敵兵４プレイヤー発見モード「あっ」
+SD_V_MAKI27 0x50 0x01 0x04 ..\gbs\gbs_a00d //敵兵１味方ダメージモード「んっ！」
+SD_V_MORI27 0x50 0x01 0x05 ..\gbs\gbs_b00d //敵兵２味方ダメージモード「んっ！」
+SD_V_OKAJ27 0x50 0x01 0x06 ..\gbs\gbs_c00d //敵兵３味方ダメージモード「んっ！」
+SD_V_SHIG27 0x50 0x01 0x07 ..\gbs\gbs_d00d //敵兵４味方ダメージモード「んっ！」
+SD_V_MAKI35 0x50 0x01 0x04 ..\gbs\gbs_a015 //敵兵１ホールドアップモード「ひぃ」
+SD_V_MORI35 0x50 0x01 0x05 ..\gbs\gbs_b015 //敵兵２ホールドアップモード「ひぃ」
+SD_V_OKAJ35 0x50 0x01 0x06 ..\gbs\gbs_c015 //敵兵３ホールドアップモード「ひぃ」
+SD_V_SHIG35 0x50 0x01 0x07 ..\gbs\gbs_d015 //敵兵４ホールドアップモード「ひぃ」
+SD_V_GBS_A016 0x50 0x01 0x04 ..\gbs\gbs_a016 //敵兵１ホールドアップ２「お助け」
+SD_V_GBS_B016 0x50 0x01 0x05 ..\gbs\gbs_b016 //敵兵２ホールドアップ２「勘弁」
+SD_V_GBS_C016 0x50 0x01 0x06 ..\gbs\gbs_c016 //敵兵３ホールドアップ２「助けて」
+SD_V_GBS_D016 0x50 0x01 0x07 ..\gbs\gbs_d016 //敵兵４ホールドアップ２「撃たな」
+SD_V_MAKI36 0x50 0x01 0x04 ..\gbs\gbs_a018 //敵兵１エロ本発見「ん！」
+SD_V_MORI36 0x50 0x01 0x05 ..\gbs\gbs_b018 //敵兵２エロ本発見「ん！」
+SD_V_OKAJ36 0x50 0x01 0x06 ..\gbs\gbs_c018 //敵兵３エロ本発見「ん！」
+SD_V_SHIG36 0x50 0x01 0x07 ..\gbs\gbs_d018 //敵兵４エロ本発見「ん！」
+SD_V_MAKI37 0x50 0x01 0x04 ..\gbs\gbs_a019 //敵兵１「ゴッ（Ｇｏ)」
+SD_V_MORI37 0x50 0x01 0x05 ..\gbs\gbs_b019 //敵兵２「ゴッ（Ｇｏ)」
+SD_V_OKAJ37 0x50 0x01 0x06 ..\gbs\gbs_c019 //敵兵３「ゴッ（Ｇｏ)」
+SD_V_SHIG37 0x50 0x01 0x07 ..\gbs\gbs_d019 //敵兵４「ゴッ（Ｇｏ)」
+SD_V_MAKI39 0x50 0x01 0x04 ..\gbs\gbs_a021 //敵兵１「待てっ」
+SD_V_MORI39 0x50 0x01 0x05 ..\gbs\gbs_b021 //敵兵２「待てっ」
+SD_V_OKAJ39 0x50 0x01 0x06 ..\gbs\gbs_c021 //敵兵３「待てっ」
+SD_V_SHIG39 0x50 0x01 0x07 ..\gbs\gbs_d021 //敵兵４「待てっ」
+
+SD_V_GBSNOBI1 0x50 0x01 0x04 ..\gbs\gbsnobi1 //敵兵伸び始め「んっっ」
+SD_V_GBSNOBI2 0x50 0x01 0x04 ..\gbs\gbsnobi2 //敵兵伸び終わり「はぁぁ」
+
+SD_E_EFOOT_1L1 0x10 0x01 0x00 ..\g\efoot_1l //敵兵１通常足音（左）
+SD_E_EFOOT_1R1 0x10 0x01 0x00 ..\g\efoot_1r //敵兵１通常足音（右）
+SD_E_EFOOT_1L2 0x10 0x01 0x00 ..\g\efoot_1l //敵兵２通常足音（左）
+SD_E_EFOOT_1R2 0x10 0x01 0x00 ..\g\efoot_1r //敵兵２通常足音（右）
+SD_E_EFOOT_1L3 0x10 0x01 0x00 ..\g\efoot_1l //敵兵３通常足音（左）
+SD_E_EFOOT_1R3 0x10 0x01 0x00 ..\g\efoot_1r //敵兵３通常足音（右）
+SD_E_EFOOT_1L4 0x10 0x01 0x00 ..\g\efoot_1l //敵兵４通常足音（左）
+SD_E_EFOOT_1R4 0x10 0x01 0x00 ..\g\efoot_1r //敵兵４通常足音（右）
+SD_E_EFOOT_2L1 0x10 0x01 0x00 ..\g\efootm1l //敵兵１鉄板床足音（左）
+SD_E_EFOOT_2R1 0x10 0x01 0x00 ..\g\efootm1r //敵兵１鉄板床足音（右）
+SD_E_EFOOT_2L2 0x10 0x01 0x00 ..\g\efootm1l //敵兵２鉄板床足音（左）
+SD_E_EFOOT_2R2 0x10 0x01 0x00 ..\g\efootm1r //敵兵２鉄板床足音（右）
+SD_E_EFOOT_2L3 0x10 0x01 0x00 ..\g\efootm1l //敵兵３鉄板床足音（左）
+SD_E_EFOOT_2R3 0x10 0x01 0x00 ..\g\efootm1r //敵兵３鉄板床足音（右）
+SD_E_EFOOT_2L4 0x10 0x01 0x00 ..\g\efootm1l //敵兵４鉄板床足音（左）
+SD_E_EFOOT_2R4 0x10 0x01 0x00 ..\g\efootm1r //敵兵４鉄板床足音（右）
+SD_E_EFOOT_3L1 0x10 0x01 0x00 ..\se7d\efootw1l //敵兵１濡れ床足音（左）
+SD_E_EFOOT_3R1 0x10 0x01 0x00 ..\se7d\efootw1r //敵兵１濡れ床足音（右）
+SD_E_EFOOT_3L2 0x10 0x01 0x00 ..\se7d\efootw1l //敵兵２濡れ床足音（左）
+SD_E_EFOOT_3R2 0x10 0x01 0x00 ..\se7d\efootw1r //敵兵２濡れ床足音（右）
+SD_E_EFOOT_3L3 0x10 0x01 0x00 ..\se7d\efootw1l //敵兵３濡れ床足音（左）
+SD_E_EFOOT_3R3 0x10 0x01 0x00 ..\se7d\efootw1r //敵兵３濡れ床足音（右）
+SD_E_EFOOT_3L4 0x10 0x01 0x00 ..\se7d\efootw1l //敵兵４濡れ床足音（左）
+SD_E_EFOOT_3R4 0x10 0x01 0x00 ..\se7d\efootw1r //敵兵４濡れ床足音（右）
+SD_E_EFOOT_4L1 0x10 0x01 0x00 ..\se7d\efootw2l //敵兵１濡れ鉄板床足音（左）
+SD_E_EFOOT_4R1 0x10 0x01 0x00 ..\se7d\efootw2r //敵兵１濡れ鉄板床足音（右）
+SD_E_EFOOT_4L2 0x10 0x01 0x00 ..\se7d\efootw2l //敵兵２濡れ鉄板床足音（左）
+SD_E_EFOOT_4R2 0x10 0x01 0x00 ..\se7d\efootw2r //敵兵２濡れ鉄板床足音（右）
+SD_E_EFOOT_4L3 0x10 0x01 0x00 ..\se7d\efootw2l //敵兵３濡れ鉄板床足音（左）
+SD_E_EFOOT_4R3 0x10 0x01 0x00 ..\se7d\efootw2r //敵兵３濡れ鉄板床足音（右）
+SD_E_EFOOT_4L4 0x10 0x01 0x00 ..\se7d\efootw2l //敵兵４濡れ鉄板床足音（左）
+SD_E_EFOOT_4R4 0x10 0x01 0x00 ..\se7d\efootw2r //敵兵４濡れ鉄板床足音（右）
+SD_E_EFOOT_5L1 0x10 0x01 0x00 ..\g\efoot_1l //敵兵１足音５（左）
+SD_E_EFOOT_5R1 0x10 0x01 0x00 ..\g\efoot_1r //敵兵１足音５（右）
+SD_E_EFOOT_5L2 0x10 0x01 0x00 ..\g\efoot_1l //敵兵２足音５（左）
+SD_E_EFOOT_5R2 0x10 0x01 0x00 ..\g\efoot_1r //敵兵２足音５（右）
+SD_E_EFOOT_5L3 0x10 0x01 0x00 ..\g\efoot_1l //敵兵３足音５（左）
+SD_E_EFOOT_5R3 0x10 0x01 0x00 ..\g\efoot_1r //敵兵３足音５（右）
+SD_E_EFOOT_5L4 0x10 0x01 0x00 ..\g\efoot_1l //敵兵４足音５（左）
+SD_E_EFOOT_5R4 0x10 0x01 0x00 ..\g\efoot_1r //敵兵４足音５（右）
+SD_E_EFOOT_6L1 0x10 0x01 0x00 ..\g\efoot_1l //敵兵１足音６（左）
+SD_E_EFOOT_6R1 0x10 0x01 0x00 ..\g\efoot_1r //敵兵１足音６（右）
+SD_E_EFOOT_6L2 0x10 0x01 0x00 ..\g\efoot_1l //敵兵２足音６（左）
+SD_E_EFOOT_6R2 0x10 0x01 0x00 ..\g\efoot_1r //敵兵２足音６（右）
+SD_E_EFOOT_6L3 0x10 0x01 0x00 ..\g\efoot_1l //敵兵３足音６（左）
+SD_E_EFOOT_6R3 0x10 0x01 0x00 ..\g\efoot_1r //敵兵３足音６（右）
+SD_E_EFOOT_6L4 0x10 0x01 0x00 ..\g\efoot_1l //敵兵４足音６（左）
+SD_E_EFOOT_6R4 0x10 0x01 0x00 ..\g\efoot_1r //敵兵４足音６（右）
+SD_E_EFOOT_7L1 0x10 0x01 0x00 ..\g\efoot_1l //敵兵１足音７（左）
+SD_E_EFOOT_7R1 0x10 0x01 0x00 ..\g\efoot_1r //敵兵１足音７（右）
+SD_E_EFOOT_7L2 0x10 0x01 0x00 ..\g\efoot_1l //敵兵２足音７（左）
+SD_E_EFOOT_7R2 0x10 0x01 0x00 ..\g\efoot_1r //敵兵２足音７（右）
+SD_E_EFOOT_7L3 0x10 0x01 0x00 ..\g\efoot_1l //敵兵３足音７（左）
+SD_E_EFOOT_7R3 0x10 0x01 0x00 ..\g\efoot_1r //敵兵３足音７（右）
+SD_E_EFOOT_7L4 0x10 0x01 0x00 ..\g\efoot_1l //敵兵４足音７（左）
+SD_E_EFOOT_7R4 0x10 0x01 0x00 ..\g\efoot_1r //敵兵４足音７（右）
+SD_E_EFOOT_8L1 0x10 0x01 0x00 ..\g\efoot_1l //敵兵１足音８（左）
+SD_E_EFOOT_8R1 0x10 0x01 0x00 ..\g\efoot_1r //敵兵１足音８（右）
+SD_E_EFOOT_8L2 0x10 0x01 0x00 ..\g\efoot_1l //敵兵２足音８（左）
+SD_E_EFOOT_8R2 0x10 0x01 0x00 ..\g\efoot_1r //敵兵２足音８（右）
+SD_E_EFOOT_8L3 0x10 0x01 0x00 ..\g\efoot_1l //敵兵３足音８（左）
+SD_E_EFOOT_8R3 0x10 0x01 0x00 ..\g\efoot_1r //敵兵３足音８（右）
+SD_E_EFOOT_8L4 0x10 0x01 0x00 ..\g\efoot_1l //敵兵４足音８（左）
+SD_E_EFOOT_8R4 0x10 0x01 0x00 ..\g\efoot_1r //敵兵４足音８（右）
+
+SD_P_FOOT_01L 0x10 0x01 0x00 ..\g\foot_01l //プレイヤー通常足音（左）
+SD_P_FOOT_01R 0x10 0x01 0x00 ..\g\foot_01r //プレイヤー通常足音（右）
+SD_P_FOOT_02L 0x10 0x01 0x00 ..\g\foot_m1l //プレイヤー鉄板床足音（左）
+SD_P_FOOT_02R 0x10 0x01 0x00 ..\g\foot_m1r //プレイヤー鉄板床足音（右）
+SD_P_FOOT_03L 0x10 0x01 0x00 ..\se7d\foot_w1l //プレイヤー濡れ床足音（左）
+SD_P_FOOT_03R 0x10 0x01 0x00 ..\se7d\foot_w1r //プレイヤー濡れ床足音（右）
+SD_P_FOOT_04L 0x10 0x01 0x00 ..\se7d\foot_w2l //プレイヤー濡れ鉄板床足音（左）
+SD_P_FOOT_04R 0x10 0x01 0x00 ..\se7d\foot_w2r //プレイヤー濡れ鉄板床足音（右）
+SD_P_FOOT_05L 0x10 0x01 0x00 ..\g\foot_m1l //プレイヤー足音５（左）
+SD_P_FOOT_05R 0x10 0x01 0x00 ..\g\foot_m1r //プレイヤー足音５（右）
+SD_P_FOOT_06L 0x10 0x01 0x00 ..\g\foot_m1l //プレイヤー足音６（左）
+SD_P_FOOT_06R 0x10 0x01 0x00 ..\g\foot_m1r //プレイヤー足音６（右）
+SD_P_FOOT_07L 0x10 0x01 0x00 ..\g\foot_m1l //プレイヤー足音７（左）
+SD_P_FOOT_07R 0x10 0x01 0x00 ..\g\foot_m1r //プレイヤー足音７（右）
+SD_P_FOOT_08L 0x10 0x01 0x00 ..\g\foot_m1l //プレイヤー足音８（左）
+SD_P_FOOT_08R 0x10 0x01 0x00 ..\g\foot_m1r //プレイヤー足音８（右）
+
+SD_A_WALLM01 0x30 0x01 0x00 ..\g\wallm01 //壁叩く１（通常）
+SD_A_WALLM02 0x30 0x01 0x00 ..\g\wallm02 //壁叩く２（鉄筋）
+SD_A_WALLM03 0x30 0x01 0x00 ..\g\wallm03 //壁叩く３（鉄板）
+SD_A_WALLM04 0x30 0x01 0x00 ..\g\wallm04 //壁叩く４（木）
+SD_A_WALLM05 0x30 0x01 0x00 ..\g\wallm05 //壁叩く５（段ボール）
+SD_A_WALLM06 0x30 0x01 0x00 ..\g\wallm01 //壁叩く６
+SD_A_WALLM07 0x30 0x01 0x00 ..\g\wallm01 //壁叩く７
+SD_A_WALLM08 0x30 0x01 0x00 ..\g\wallm01 //壁叩く８
+
+SD_A_RICOCH01 0x30 0x01 0x00 ..\g\ricoch01 //跳弾１（通常）
+SD_A_RICOCH02 0x30 0x01 0x00 ..\g\ricmet01 //跳弾２（金属１密）
+SD_A_RICOCH03 0x30 0x01 0x00 ..\g\ricmet02 //跳弾３（金属２空洞）
+SD_A_RICOCH04 0x30 0x01 0x00 ..\g\ricbox01 //跳弾４（木箱）
+SD_A_RICOCH05 0x30 0x01 0x00 ..\g\ricdan02 //跳弾５（段ボール）
+SD_A_RICOCH06 0x30 0x01 0x00 ..\g\ricoch01 //跳弾６
+SD_A_RICOCH07 0x30 0x01 0x00 ..\g\ricoch01 //跳弾７
+SD_A_RICOCH08 0x30 0x01 0x00 ..\g\ricoch01 //跳弾８
+
+SD_E_BLOOD_H1 0x10 0x01 0x00 ..\se7c\blood_h1 //血しぶき（強）
+SD_E_BLOOD_L1 0x10 0x01 0x00 ..\se7c\blood_l1 //血しぶき（弱）
+SD_E_BLOOD_S1 0x10 0x01 0x00 ..\se7c\blood_s1 //血しぶき（ポタッ）
+SD_E_SHIELD01 0x60 0x01 0x00 ..\se7c\shield01 //盾兵、盾破壊
+SD_E_SHIRIC01 0x30 0x01 0x00 ..\se7c\shiric01 //盾兵、盾に弾めり込む
+SD_E_SLIGHT01 0x30 0x01 0x00 ..\se7c\slight01 //盾兵、盾ライト破壊
+
+SD_E_PHYFAR01 0x10 0x01 0x11 ..\g\phyfar01 //サイファー飛行音１
+SD_E_PHYFAR02 0x10 0x01 0x12 ..\g\phyfar01 //サイファー飛行音２
+SD_E_PHYFAR03 0x10 0x01 0x13 ..\g\phyfar01 //サイファー飛行音３
+SD_E_PHYFAR04 0x10 0x01 0x14 ..\g\phyfar01 //サイファー飛行音４
+SD_E_PHYFAR05 0x10 0x01 0x11 ..\g\phyfar02 //サイファー静止飛行音１
+SD_E_PHYFAR06 0x10 0x01 0x12 ..\g\phyfar02 //サイファー静止飛行音２
+SD_E_PHYFAR07 0x10 0x01 0x13 ..\g\phyfar02 //サイファー静止飛行音３
+SD_E_PHYFAR08 0x10 0x01 0x14 ..\g\phyfar02 //サイファー静止飛行音４
+
+
+//●●タンカー編●●//
+
+//se7d(w00a,w00c,タンカー甲板)//
+SD_A_RAIN_SE1 0xFF 0x00 0x00 ..\se7d\rain_se1 //ＳＥ雨風音
+SD_A_CLOUD01 0x10 0x01 0x00 ..\se7d\cloud01 //雷（遠１）
+SD_A_CLOUD02 0x10 0x01 0x00 ..\se7d\cloud02 //雷（遠２）
+SD_P_DOBOON01 0x10 0x01 0x00 ..\se7d\doboon01 //海に落ちる
+SD_A_THUNDR01 0x10 0x01 0x00 ..\se7d\thundr01 //雷（近１）
+SD_A_THUNDR02 0x10 0x01 0x00 ..\se7d\thundr02 //雷（近２）
+SD_A_WAVE01 0x10 0x01 0x00 ..\se7d\wave01 //波音（大）
+SD_A_WAVE02 0x10 0x01 0x00 ..\se7d\wave02 //波音（小）
+SD_A_LAMP02 0x30 0x01 0x00 ..\se7d\lamp01 //電灯破壊
+SD_A_TOBCLO01 0x20 0x01 0x00 ..\se7d\tobclo01 //甲板フェンス閉める
+SD_A_TOBOPN01 0x20 0x01 0x00 ..\se7d\tobopn01 //甲板フェンス開く
+SD_A_CORPTH01 0x20 0x01 0x00 ..\se7d\corpth01 //死体投げ捨て
+SD_V_POBORE01 0x90 0x00 0x01 ..\se7d\pobore01 //スネーク着水アウト寸前声
+SD_V_ORGABR01 0x50 0x01 0x03 ..\se7d\orgabr01 //オルガ、寝息（吐）
+SD_V_ORGABR02 0x50 0x01 0x03 ..\se7d\orgabr02 //オルガ、寝息（吸）
+
+
+//se7a(w00b,オルガ戦)//
+SD_V_SORGA01 0x50 0x01 0x03 ..\se7a\sorga01 //オルガ、「隠れてるだけ！？」
+SD_V_SORGA02 0x50 0x01 0x03 ..\se7a\sorga02 //オルガ、「たいした事無いわね！」
+SD_V_SORGA03 0x50 0x01 0x03 ..\se7a\sorga03 //オルガ、「そこね！」
+SD_V_SORGA04 0x50 0x01 0x03 ..\se7a\sorga04 //オルガ、「出て来なさい！」
+SD_V_SORGA05 0x50 0x01 0x03 ..\se7a\sorga05 //オルガ、「その程度？」
+SD_V_SORGA06 0x50 0x01 0x03 ..\se7a\sorga06 //オルガ、「丸見えよ！」
+SD_V_SORGA07 0x50 0x01 0x03 ..\se7a\sorga07 //オルガ、「どこを狙ってるの？」
+SD_V_SORGA08 0x50 0x01 0x03 ..\se7a\sorga08 //オルガ、「ハハハ…（嘲笑）」
+SD_V_SORGA09 0x50 0x01 0x03 ..\se7a\sorga09 //オルガ、「やるわねぇ」
+SD_V_SORGA10 0x50 0x01 0x03 ..\se7a\sorga10 //オルガ、「まだよ！」
+SD_V_SORGA19 0x50 0x01 0x03 ..\se7a\sorga19 //オルガ、マスト切り気合「ティ！」
+SD_V_SORGA22 0x50 0x01 0x03 ..\se7a\sorga22 //オルガ、「逃げてるつもり？」
+SD_V_SORGA23 0x50 0x01 0x03 ..\se7a\sorga23 //オルガ、「バカにしてるの？」
+SD_V_ORGA03 0x50 0x01 0x03 ..\se7a\sorga25 //オルガ、気合「ィヤッ！」
+SD_V_SORGA28 0x50 0x01 0x03 ..\se7a\sorga28 //オルガ、息切れ「ッッハァハァ」
+SD_V_ORGA01 0x50 0x01 0x03 ..\se7a\sorga30 //オルガ、舌打ち「チィッ！」
+SD_V_ORGA02 0x50 0x01 0x03 ..\se7a\sorga34 //オルガ、見つかった！？「ハッ！」
+SD_V_ORGA04 0x50 0x01 0x03 ..\se7a\sorga36 //オルガ、手榴弾投げる「食らえ！」
+SD_V_ORGA05 0x50 0x01 0x03 ..\se7a\sorga37 //オルガ、ダメージ１「ウッ！」
+SD_V_ORGA06 0x50 0x01 0x03 ..\se7a\sorga38 //オルガ、ダメージ２「アァッ！」
+SD_V_ORGA07 0x50 0x01 0x03 ..\se7a\sorga44 //オルガ、気を失うやられ「アッハゥ」
+SD_A_CLOTH01 0x40 0x01 0x00 ..\se7a\cloth01 //布めくれあがる
+SD_A_CLOTH02 0x40 0x01 0x00 ..\se7a\cloth02 //布バタバタ１（1と2をランダムに）
+SD_A_CLOTH03 0x40 0x01 0x00 ..\se7a\cloth03 //布バタバタ２（不定周期で連続呼び
+SD_A_LLIGHT01 0x80 0x01 0x00 ..\se7a\llight01 //投光器破壊
+SD_A_LHIBI01 0x40 0x01 0x00 ..\se7a\lhibi01 //投光機ヒビ入る
+SD_W_SOCOM02 0x40 0x01 0x00 ..\se7a\socom02 //オルガ拳銃発砲
+SD_A_RICO_OM1 0x30 0x01 0x00 ..\se7a\rico_om1 //オルガ戦用金属跳弾（鉄板鉄柵）
+SD_A_RICO_OM2 0x30 0x01 0x00 ..\se7a\rico_om2 //オルガ戦用鉄板跳弾（コンテナ）
+SD_A_RICO_ON1 0x30 0x01 0x00 ..\se7a\rico_on1 //オルガ戦用通常跳弾（床、壁）
+SD_A_RICO_OW1 0x30 0x01 0x00 ..\se7a\rico_ow1 //オルガ戦用木製跳弾（木箱）
+SD_E_ORGABR01 0x50 0x01 0x03 ..\se7a\downsaku //オルガ、失神ダウン（鉄柵）
+SD_E_ORGABR02 0x50 0x01 0x03 ..\se7a\downyuka //オルガ、失神ダウン（雨床）
+
+
+//se79(w01a0,w01a1,w01b,w01c,w01d,居住区)//
+SD_A_BOTTLE01 0x30 0x01 0x00 ..\se79\bottle01 //酒ビン破壊（銃器で）
+SD_A_BOTTLE02 0x30 0x01 0x00 ..\se79\bottle02 //酒ビン割れる（落下で）
+SD_A_GLASS01 0x40 0x01 0x00 ..\se79\glass01 //ガラス割れる１
+SD_A_GLASS02 0x40 0x01 0x00 ..\se79\glass02 //ガラス割れる２
+SD_A_GLASS03 0x40 0x01 0x00 ..\se79\glass03 //ガラス割れる３
+SD_A_GLSFALL1 0x20 0x01 0x00 ..\se79\glsfall1 //ガラス破片落ち１
+SD_A_GLSFALL2 0x20 0x01 0x00 ..\se79\glsfall2 //ガラス破片落ち２（交互に）
+SD_A_HIBI01 0x30 0x01 0x00 ..\se79\hibi01 //ガラスヒビ入り１（着弾時）
+SD_A_HIBI02 0x20 0x01 0x00 ..\se79\hibi02 //ガラスヒビ入り２（割れ前、8fps連）
+SD_A_LEAF01 0x30 0x01 0x00 ..\se79\riclef01 //観葉植物の跳弾
+SD_A_KOBORE01 0x10 0x01 0x00 ..\se79\kobore01 //酒こぼれる
+SD_A_WSDOOR01 0x10 0x01 0x00 ..\se79\wsdoor01 //カウンタードア軋み（低）
+SD_A_WSDOOR02 0x10 0x01 0x00 ..\se79\wsdoor02 //カウンタードア軋み（高）
+SD_A_OTAMA_CS 0x20 0x01 0x00 ..\se79\otama_cs //おたま跳弾４（ラ＃）
+SD_A_OTAMA_DS 0x20 0x01 0x00 ..\se79\otama_ds //おたま跳弾５（ド）
+SD_A_OTAMA_E 0x20 0x01 0x00 ..\se79\otama_e //おたま跳弾６（レ）小さい方
+SD_A_FLYPAN_F 0x20 0x01 0x00 ..\se79\flypan_f //フライパン跳弾（大）
+SD_A_FLYPAN_G 0x20 0x01 0x00 ..\se79\flypan_g //フライパン跳弾（中大）
+SD_A_FLYPAN_A 0x20 0x01 0x00 ..\se79\flypan_a //フライパン跳弾（中）
+SD_A_FLYPAN_B 0x20 0x01 0x00 ..\se79\flypan_b //フライパン跳弾（中小）
+SD_A_FLYPAN_C 0x20 0x01 0x00 ..\se79\flypan_c //フライパン跳弾（小）
+SD_A_RICSOF_C 0x30 0x01 0x00 ..\se79\ricsof01 //ソファー、跳弾
+SD_A_RICKOM01 0x30 0x01 0x00 ..\se79\rickom01 //小麦粉袋、跳弾
+SD_A_RICDAN01 0x30 0x01 0x00 ..\se79\ricdan01 //ダンボール跳弾
+SD_A_RICNAP01 0x30 0x01 0x00 ..\se79\ricnap01 //紙ナプキン跳弾
+SD_A_KOMFAL01 0x10 0x01 0x00 ..\se79\komfal01 //小麦粉こぼれる
+SD_A_RICVGT01 0x30 0x01 0x00 ..\se79\ricvgt01 //ジャガイモ破壊（跳弾？）
+SD_A_VGTFAL01 0x20 0x01 0x00 ..\se79\vgtfal01 //ジャガイモ落下（単発コールで）
+SD_A_DANBOR01 0x40 0x01 0x00 ..\se79\danbor01 //ダンボール壊れ（倒れ）
+SD_A_RICVGT02 0x30 0x01 0x00 ..\se79\ricvgt02 //カボチャ破壊（跳弾）
+SD_A_VGTFAL02 0x20 0x01 0x00 ..\se79\vgtfal02 //カボチャ落下１
+SD_A_VGTFAL03 0x20 0x01 0x00 ..\se79\vgtfal03 //カボチャ落下２
+SD_A_VGTFAL04 0x20 0x01 0x00 ..\se79\vgtfal04 //カボチャ落下３（初の落下のみ）
+SD_A_VGTFAL05 0x20 0x01 0x00 ..\se79\vgtfal05 //カボチャ落下４（４種ランダム）
+SD_A_W_RAIN01 0xFF 0x00 0x00 ..\se79\w_rain01 //窓の外の雨（持続SE）
+SD_A_SUPON01 0x20 0x01 0x00 ..\se79\supon01 //水密扉取っ手取れる
+SD_V_SNADOR01 0x50 0x01 0x01 ..\se79\snador01 //スネークうろたえ声
+SD_A_SYOKAK01 0x20 0x01 0x00 ..\se79\syokak04 //消火器噴射１（着弾時）
+SD_A_SYOKAK02 0x20 0x01 0x00 ..\se79\syokak03 //消火器噴射２（ホースくねくね）
+SD_A_SYOKAK03 0x20 0x01 0x00 ..\se79\syokak05 //消火器噴射３（噴出中連続）
+SD_V_KISS_GO 0x20 0x01 0x01 ..\se79\kiss_go //主観ポスターへのキス開始
+SD_V_KISS_FIN 0x20 0x01 0x01 ..\se79\kiss_fin //主観ポスターへのキス終了
+SD_A_DRORAIN1 0x50 0x01 0x00 ..\se79\drorain1 //w00aへの水密扉開け雨風
+SD_A_DRCRAIN1 0x50 0x01 0x00 ..\se79\drcrain1 //w00aからの水密扉閉め雨風
+SD_A_CAMGLS01 0x50 0x01 0x00 ..\se79\camgls01 //監視カメラレンズ割れ
+SD_A_SARABRE1 0x30 0x01 0x00 ..\se79\sarabre1 //皿着弾破壊
+SD_A_SARAOTI1 0x20 0x01 0x00 ..\se79\saraoti1 //皿破片落下１
+SD_A_SARAOTI2 0x20 0x01 0x00 ..\se79\saraoti2 //皿破片落下２
+
+
+//se76(w01f,居住区追加分)//
+SD_A_BOOKFA01 0x10 0x01 0x00 ..\se76\bookfa01 //雑誌落下１（開いている時）
+SD_A_BOOKFA02 0x10 0x01 0x00 ..\se76\bookfa02 //雑誌落下２（閉じている時）
+SD_A_BOOKBR01 0x30 0x01 0x00 ..\se76\bookbr01 //雑誌への着弾
+SD_A_ICECAN01 0x30 0x01 0x00 ..\se76\icecan01 //氷缶への着弾１（氷無し）
+SD_A_ICECAN02 0x10 0x01 0x00 ..\se76\icecan02 //氷缶はずむ
+SD_A_ICECAN03 0x30 0x01 0x00 ..\se76\icecan03 //氷缶への着弾２（氷有り）
+SD_A_ICEDRP01 0x10 0x01 0x00 ..\se76\icedrp01 //氷の落下１（ワンバウンド目）
+SD_A_ICEDRP02 0x10 0x01 0x00 ..\se76\icedrp02 //氷の落下２（４種ランダム）
+SD_A_ICEDRP03 0x10 0x01 0x00 ..\se76\icedrp03 //氷の落下３
+SD_A_ICEDRP04 0x10 0x01 0x00 ..\se76\icedrp04 //氷の落下４
+SD_A_MONITA01 0x30 0x01 0x00 ..\se76\monita01 //大型モニター破損（着弾時）
+
+
+//se78(w01e,操舵室)//
+SD_A_CONSOL01 0x20 0x01 0x00 ..\se78\consol01 //コンソールキータイプ音１
+SD_A_CONSOL02 0x20 0x01 0x00 ..\se78\consol02 //コンソールキータイプ音２
+SD_A_CONSOL03 0x20 0x01 0x00 ..\se78\consol03 //コンソールキータイプ音３
+SD_A_CONSOL04 0x20 0x01 0x00 ..\se78\consol04 //コンソールキータイプ音４
+
+
+//se7c(w02a,エンジンルーム)//
+SD_A_ENGINESE 0xFF 0x00 0x00 ..\se7c\enginese //SEエンジン音(持続)
+SD_A_BBHIT01 0x10 0x01 0x00 ..\se7c\bbhit01 //ＢＢ弾、跳弾
+SD_A_BBSHOT01 0x10 0x01 0x00 ..\se7c\bbshot01 //フィギュア、鉄砲発射中
+SD_A_BBSHOT00 0x10 0x01 0x00 ..\se7c\bbshot00 //フィギュア、鉄砲発射開始
+SD_A_DOLLV01 0x10 0x01 0x00 ..\se7c\dollv01 //フィギュア、叫び声
+SD_A_HIBANA01 0x40 0x01 0x00 ..\se7c\hibana01 //懐中電灯、火花
+SD_A_PLIGHT01 0x50 0x01 0x00 ..\se7c\plight01 //懐中電灯、壊れる
+
+
+//se7b(w03a,長廊下左舷)//
+SD_E_SHAKOUT1 0x10 0x01 0x00 ..\se7b\shakout1 //ウォークマン壊れる
+SD_A_STEAM01 0x50 0x01 0x00 ..\se7b\steam21 //配管スチーム大１
+SD_A_STEAM02 0x50 0x01 0x00 ..\se7b\steam21 //配管スチーム大２
+SD_A_STEAM03 0x50 0x01 0x00 ..\se7b\steam26 //配管スチーム中１
+SD_A_STEAM04 0x50 0x01 0x00 ..\se7b\steam26 //配管スチーム中２
+SD_A_STEAM05 0x50 0x01 0x00 ..\se7b\steam24 //配管スチーム小１
+SD_A_STEAM06 0x50 0x01 0x00 ..\se7b\steam24 //配管スチーム小２
+SD_A_PIPEDW01 0x30 0x01 0x00 ..\se7b\pipedw01 //パイプ落ち１（１バウンド目）
+SD_A_PIPEDW02 0x30 0x01 0x00 ..\se7b\pipedw02 //パイプ落ち２（２バウンド以降）
+SD_A_PIPEDW03 0x30 0x01 0x00 ..\se7b\pipedw03 //パイプ落ち３（コロコロ）
+
+
+//se75(w03b,長廊下右舷)//
+SD_A_BULLET01 0x20 0x01 0x00 ..\se75\bullet01 //敵兵からの弾丸飛び風切り１
+SD_A_BULLET02 0x20 0x01 0x00 ..\se75\bullet02 //敵兵からの弾丸飛び風切り２
+SD_A_BULLET03 0x20 0x01 0x00 ..\se75\bullet03 //敵兵からの弾丸飛び風切り３
+SD_A_BULLET04 0x20 0x01 0x00 ..\se75\bullet04 //敵兵からの弾丸飛び風切り４
+SD_A_RICO_NOM 0x20 0x01 0x00 ..\se75\rico_nom //敵兵からの弾丸跳弾（通常）
+SD_A_RICO_IRO 0x20 0x01 0x00 ..\se75\rico_iro //敵兵からの弾丸跳弾（金属）
+SD_A_RICO_PIP 0x20 0x01 0x00 ..\se75\rico_pip //敵兵からの弾丸跳弾（パイプ）
+SD_A_RICO_BOX 0x20 0x01 0x00 ..\se75\rico_box //敵兵からの弾丸跳弾（木箱）
+
+
+//se77(w04a,船倉)//
+SD_E_USAEQU01 0x10 0x01 0x00 ..\se77\usaequ01 //海兵隊員銃構える１
+SD_E_USAEQU02 0x10 0x01 0x00 ..\se77\usaequ02 //海兵隊員銃構える２
+SD_E_USAEQU03 0x10 0x01 0x00 ..\se77\usaequ03 //海兵隊員銃構える３
+SD_E_USAEQU04 0x10 0x01 0x00 ..\se77\usaequ04 //海兵隊員銃構える４
+SD_E_USATRN01 0x10 0x01 0x00 ..\se77\usatrn01 //海兵隊員振り向く１
+SD_E_USATRN02 0x10 0x01 0x00 ..\se77\usatrn02 //海兵隊員振り向く２
+SD_E_USATRN03 0x10 0x01 0x00 ..\se77\usatrn03 //海兵隊員振り向く３
+SD_E_USATRN04 0x10 0x01 0x00 ..\se77\usatrn04 //海兵隊員振り向く４
+SD_E_BIKKRIS21 0x50 0x00 0x00 ..\se77\bikkris2 //海兵隊員びっくり単音（！）１
+SD_E_BIKKRIS22 0x50 0x00 0x00 ..\se77\bikkris2 //海兵隊員びっくり単音（！）２
+SD_E_BIKKRIS23 0x50 0x00 0x00 ..\se77\bikkris2 //海兵隊員びっくり単音（！）３
+SD_E_BIKKRIS24 0x50 0x00 0x00 ..\se77\bikkris2 //海兵隊員びっくり単音（！）４
+SD_E_USKERE01 0x10 0x01 0x00 ..\se77\uskere01 //海兵隊員敬礼１
+SD_E_USKERE02 0x10 0x01 0x00 ..\se77\uskere02 //海兵隊員敬礼２
+SD_E_USKERE03 0x10 0x01 0x00 ..\se77\uskere03 //海兵隊員敬礼３
+SD_E_USKERE04 0x10 0x01 0x00 ..\se77\uskere04 //海兵隊員敬礼４
+SD_E_USNAOR01 0x10 0x01 0x00 ..\se77\usnaor01 //海兵隊員直れ１
+SD_E_USNAOR02 0x10 0x01 0x00 ..\se77\usnaor02 //海兵隊員直れ２
+SD_E_USNAOR03 0x10 0x01 0x00 ..\se77\usnaor03 //海兵隊員直れ３
+SD_E_USNAOR04 0x10 0x01 0x00 ..\se77\usnaor04 //海兵隊員直れ４
+SD_E_USKIWO01 0x10 0x01 0x00 ..\se77\uskiwo01 //海兵隊員気をつけ１
+SD_E_USKIWO02 0x10 0x01 0x00 ..\se77\uskiwo02 //海兵隊員気をつけ２
+SD_E_USKIWO03 0x10 0x01 0x00 ..\se77\uskiwo03 //海兵隊員気をつけ３
+SD_E_USKIWO04 0x10 0x01 0x00 ..\se77\uskiwo04 //海兵隊員気をつけ４
+SD_A_HATOPN01 0x20 0x01 0x00 ..\se77\hatopn01 //床ハッチ開き始める
+SD_A_HATOPN02 0x20 0x01 0x00 ..\se77\hatopn02 //床ハッチ開いている
+SD_A_HATOPN03 0x20 0x01 0x00 ..\se77\hatopn03 //床ハッチ開ききる
+SD_S_JINGLE01 0x90 0x00 0x00 ..\se77\jingle01 //緊迫ジングル音１
+SD_E_FACEDOWN 0x20 0x01 0x00 ..\se77\facedown //海兵隊員、顔から倒れる
+SD_P_INTLUDE1 0x20 0x01 0x00 ..\se77\intlude1 //スネークダクト内ホフク左
+SD_P_INTLUDE2 0x20 0x01 0x00 ..\se77\intlude2 //スネークダクト内ホフク右
+SD_A_LIGHTER1 0x20 0x01 0x00 ..\se77\lighter1 //ライター落とし１バウンド目
+SD_A_LIGHTER2 0x10 0x01 0x00 ..\se77\lighter2 //ライター落とし２バウンド目以降
+SD_P_POLE_GO1 0x30 0x01 0x00 ..\se77\pole_go1 //ポール降り、スタート
+SD_P_POLE_MID 0x30 0x01 0x00 ..\se77\pole_mid //ポール降り、滑っている
+SD_P_POLE_END 0x30 0x01 0x00 ..\se77\pole_end //ポール降り、着地
+SD_A_PROJMOTO 0x10 0x01 0x00 ..\se77\projmoto //プロジェクタ駆動音(18fps連)
+SD_A_PROJSWIT 0x10 0x01 0x00 ..\se77\projswit //プロジェクタリモコンスイッチ
+SD_A_PROJCHUG 0x10 0x01 0x00 ..\se77\projchng //プロジェクタ点灯
+SD_A_PROJOFF1 0x10 0x01 0x00 ..\se77\projoff1 //プロジェクタ消灯
+SD_A_CMCDMG01 0x50 0x00 0x00 ..\se77\cmcdmg01 //司令官ダメージ１「うっ！」
+SD_A_CMCDMG02 0x50 0x00 0x00 ..\se77\cmcdmg02 //司令官ダメージ２「ぐむぅ！」
+SD_A_CMCCAP03 0x50 0x00 0x00 ..\se77\cmccap03 //司令官「つかまえろっ！！」
+SD_V_SNAYES01 0x50 0x01 0x01 ..\se77\snayes01 //スネーク撮影ＯＫ１「うん」
+SD_V_SNAYES02 0x50 0x01 0x01 ..\se77\snayes02 //スネーク撮影ＯＫ２「よし」
+SD_V_SNABAD01 0x50 0x01 0x01 ..\se77\snabad01 //スネーク撮影ＮＧ１「うぅむ」
+SD_V_SNABAD02 0x50 0x01 0x01 ..\se77\snabad02 //スネーク撮影ＮＧ２「チッ」
+SD_V_SNABIM01 0x50 0x01 0x01 ..\se77\snabim01 //スネーク撮影微妙１「ふぅん？」
+SD_V_SNABIM02 0x50 0x01 0x01 ..\se77\snabim02 //スネーク撮影微妙２「うぅーん」
+
+
+//se70(title,タイトル)//
+SD_A_HELIMIXM 0x90 0x00 0x00 ..\se70\helimixm //タイトルヘリ羽音
+SD_A_TENDER_M 0x90 0x00 0x00 ..\se70\tender_m //タイトル雷
+SD_A_PAPER01 0x90 0x00 0x00 ..\se70\paper01 //ページめくり音
+
+
+
+//●●プラント編●●//
+
+//se5e(w11c,フォーチュン戦)//
+SD_V_FORDMG01 0x50 0x01 0x09 ..\se5e\fordmg01 //フォーチュンダメージ「うぉっ」
+SD_V_FORDMG02 0x50 0x01 0x09 ..\se5e\fordmg02 //フォーチュンダメージ「ぉあっ」
+SD_V_FORDMG03 0x50 0x01 0x09 ..\se5e\fordmg03 //フォーチュンダメージ「えぇは」
+SD_V_FORDMG04 0x50 0x01 0x09 ..\se5e\fordmg04 //フォーチュンダメージ「ぅえひ」
+SD_V_FORTUN01 0x50 0x01 0x09 ..\se5e\fortun01 //フォーチュン嘲笑「あはははっ」
+SD_V_FORTUN02 0x50 0x01 0x09 ..\se5e\fortun02 //フォーチュン挑発「出てらっ～」
+SD_V_FORTUN03 0x50 0x01 0x09 ..\se5e\fortun03 //フォーチュン弾逸れ「だめね」
+SD_V_FORTUN04 0x50 0x01 0x09 ..\se5e\fortun04 //フォーチュン弾逸れ「はずれ」
+SD_V_FORTUN05 0x50 0x01 0x09 ..\se5e\fortun05 //フォーチュン弾逸れ「あたら～」
+SD_V_FORTUN06 0x50 0x01 0x09 ..\se5e\fortun06 //フォーチュン弾逸れ「お前に～」
+SD_V_FORTUN07 0x50 0x01 0x09 ..\se5e\fortun07 //フォーチュン気合「ふんっ」
+SD_V_FORTUN08 0x50 0x01 0x09 ..\se5e\fortun08 //フォーチュン気合「はぁっ」
+SD_V_FORTUN09 0x50 0x01 0x09 ..\se5e\fortun09 //フォーチュン気合「でぇえぃ」
+SD_V_FORTUN10 0x50 0x01 0x09 ..\se5e\fortun10 //フォーチュン気合「はっ」
+SD_V_FORTUN11 0x50 0x01 0x09 ..\se5e\fortun11 //フォーチュン「早く私を殺して」
+SD_V_FORTUN12 0x50 0x01 0x09 ..\se5e\fortun12 //フォーチュン「何してるの？～」
+SD_V_FORTUN13 0x50 0x01 0x09 ..\se5e\fortun13 //フォーチュン「殺してみなさ～」
+SD_V_FORTUN14 0x50 0x01 0x09 ..\se5e\fortun14 //フォーチュン「貴方に私の悲～」
+SD_V_FORTUN15 0x50 0x01 0x09 ..\se5e\fortun15 //フォーチュン「当たってないわ」
+SD_V_FORTUN16 0x50 0x01 0x09 ..\se5e\fortun16 //フォーチュン「当たらないわ」
+
+SD_E_LGUNFIRE 0x80 0x01 0x00 ..\se5e\lgunfire //フォーチュン、ガン発射
+SD_E_LGUNTAME 0x50 0x01 0x00 ..\se5e\lguntame //フォーチュン、ガンエネルギ充填
+SD_E_MAGAZI01 0x20 0x01 0x00 ..\se5e\magazi01 //フォーチュン、マガジンはめる
+SD_E_KAMAE001 0x20 0x01 0x00 ..\se5e\kamae01 //フォーチュン、ガン構える
+SD_E_TURN0001 0x20 0x01 0x00 ..\se5e\turn01 //フォーチュン、方向転換
+SD_E_RGSPARK1 0x30 0x01 0x00 ..\se5e\rgspark1 //レールガンスパーク「パァン！」
+SD_E_RGSPARK2 0x10 0x01 0x00 ..\se5e\rgspark2 //レールガン帯電ヴヴ..(8fps連)
+SD_A_RICFOR01 0x30 0x01 0x00 ..\se5e\ricfor01 //フォーチュン弾丸無効跳弾
+SD_A_EVCALL01 0x50 0x01 0x00 ..\se5e\evcall01 //エレベータ到着チャイム
+SD_A_EVDCLO01 0x50 0x01 0x00 ..\se5e\evdclo01 //エレベータドア閉まり切る
+SD_A_EVDMOV01 0x30 0x01 0x00 ..\se5e\evdmov01 //エレベータドア動く
+SD_A_EVDOPN01 0x50 0x01 0x00 ..\se5e\evdopn01 //エレベータドア開き切る
+SD_A_EVMOTOR1 0x30 0x01 0x00 ..\se5e\evmotor1 //エレベータ動く（14/60fps連続）
+SD_A_EVSTART1 0x50 0x01 0x00 ..\se5e\evstart1 //エレベータ動き始める
+SD_A_EVSTOP01 0x50 0x01 0x00 ..\se5e\evstop01 //エレベータ止まる
+SD_A_EVCALL02 0x50 0x01 0x00 ..\se5e\evcall02 //エレベータ赤ランプ点滅
+SD_A_EVCALL03 0x50 0x01 0x00 ..\se5e\evcall03 //エレベータ緑ランプ点灯
+SD_A_FLAME001 0x50 0x01 0x00 ..\se5e\flame01 //フォークリフトフレーム落下
+SD_A_FLAME002 0x50 0x01 0x00 ..\se5e\flame02 //フォークリフト倒れる
+SD_A_LANPOTI1 0x50 0x01 0x00 ..\se5e\lanpoti1 //電灯落ちる
+SD_A_LANPSWI1 0x20 0x01 0x00 ..\se5e\lanpswi1 //電灯揺れる１
+SD_A_LANPSWI2 0x20 0x01 0x00 ..\se5e\lanpswi2 //電灯揺れる２（左右で交互に）
+SD_A_LANPKIE1 0x20 0x01 0x00 ..\se5e\LANPKIE1 //蛍光灯消える
+SD_A_DRUMCAN1 0x20 0x01 0x00 ..\se5e\drumcan1 //ドラム缶倒れる
+SD_A_METLANA1 0x30 0x01 0x00 ..\se5e\metlana1 //鉄コンテナに穴が空く
+SD_A_METLBRE1 0x50 0x01 0x00 ..\se5e\metlbre1 //鉄コンテナ破壊
+SD_A_METLOTI1 0x20 0x01 0x00 ..\se5e\metloti1 //鉄破片落ち１
+SD_A_METLOTI2 0x20 0x01 0x00 ..\se5e\metloti2 //鉄破片落ち２
+SD_A_WOODBRE1 0x50 0x01 0x00 ..\se5e\woodbre1 //木箱破壊
+SD_A_WOODOTI1 0x20 0x01 0x00 ..\se5e\woodoti1 //木破片落ち１
+SD_A_WOODOTI2 0x20 0x01 0x00 ..\se5e\woodoti2 //木破片落ち２
+SD_A_OILFIRE1 0x10 0x01 0x00 ..\se5e\oilfire1 //燃料燃える(15fps連)
+SD_A_TENOTI1 0x50 0x01 0x00 ..\se5e\tenoti1 //天井落ちる１（ジャリ）
+SD_A_TENOTI2 0x50 0x01 0x00 ..\se5e\tenoti2 //天井落ちる２（ガラ）
+SD_A_TENPARA1 0x10 0x01 0x00 ..\se5e\tenpara1 //天井壊れ破片１
+SD_A_TENPARA2 0x10 0x01 0x00 ..\se5e\tenpara2 //天井壊れ破片２
+
+
+//se5d(w45a,天狗兵)//
+SD_V_SNADMG01 0x50 0x01 0x0A ..\se5d\snadmg01 //NPCスネークダメージ１「うぁっ」
+SD_V_SNADMG02 0x50 0x01 0x0A ..\se5d\snadmg02 //NPCスネークダメージ２「うっ」
+SD_V_SNAOUT01 0xF0 0x00 0x0A ..\se5d\snaout01 //NPCスネークアウト「うあーっ…」
+SD_V_SNANEC01 0x50 0x01 0x0A ..\se5d\snanec01 //NPCスネーク首絞まる「いっ」
+SD_V_SNANED01 0xF0 0x00 0x0A ..\se5d\snaned01 //NPCスネーク首折れアウト「んっ」
+SD_V_SNASLP01 0x50 0x01 0x0A ..\se5d\snaslp01 //NPCスネーク寝息（吸う）「ず～」
+
+SD_A_SWORDOPN 0x50 0x01 0x00 ..\se5d\swordopn //刀構える
+SD_A_SWORDCLO 0x50 0x01 0x00 ..\se5d\swordclo //刀収める
+SD_A_SWORDCNG 0x50 0x01 0x00 ..\se5d\swordcng //刀みね打ち切り替え
+SD_A_SWORDBIT 0x50 0x01 0x00 ..\se5d\swordbit //刀刺しヒット
+SD_A_SWORDCUT 0x50 0x01 0x00 ..\se5d\swordcut //刀振りヒット
+SD_A_SWORDHIT 0x50 0x01 0x00 ..\se5d\swordhit //刀みね打ちヒット
+SD_A_SWINGBIT 0x20 0x01 0x00 ..\se5d\swingbit //刀刺し風切り
+SD_A_SWINGCUT 0x20 0x01 0x00 ..\se5d\swingcut //刀振り風切り
+SD_A_SWINGROL 0x20 0x01 0x00 ..\se5d\swingrol //刀回転振り風切り
+SD_A_SWORDRIC 0x30 0x01 0x00 ..\se5d\swordric //刀銃弾はじき
+SD_A_SWORDHAD 0x50 0x01 0x00 ..\se5d\swordhad //刀と刀の衝突
+SD_A_SWINGBAK 0x10 0x01 0x00 ..\se5d\swingbak //刀振り返し
+SD_A_SWORDSET 0x20 0x01 0x00 ..\se5d\swordset //刀かまえる
+SD_E_TNGHITPU 0x50 0x01 0x00 ..\se5d\tnghitpu //天狗パンチヒット
+SD_E_TNGHITKI 0x50 0x01 0x00 ..\se5d\tnghitki //天狗キックヒット
+SD_E_TNGPUNCH 0x20 0x01 0x00 ..\se5d\tngpunch //天狗パンチ振り風切り
+SD_E_TNGKICK1 0x20 0x01 0x00 ..\se5d\tngkick //天狗キック振り風切り
+SD_E_TNGSLIDE 0x20 0x01 0x00 ..\se5d\tngslide //天狗スライディング
+SD_E_TNGJUMP1 0x20 0x01 0x00 ..\se5d\tngjump1 //天狗ジャンプ
+SD_E_TNGLAND1 0x20 0x01 0x00 ..\se5d\tngland1 //天狗着地
+SD_E_TNGPFIRE 0x40 0x01 0x00 ..\se5d\tngpfire //天狗Ｐ９０発砲
+SD_E_TNGPRELD 0x30 0x01 0x00 ..\se5d\tngpreld //天狗Ｐ９０リロード
+
+
+//se5b(w31a,シェル２中央棟エマ手繋ぎ)//
+SD_V_EMAAFR01 0x50 0x01 0x10 ..\se5b\emaafr02 //エマ脅え１「ひっ！」
+SD_V_EMAAFR02 0x50 0x01 0x10 ..\se5b\emaafr03 //エマ脅え２「あぁ…ぁぁ…」
+SD_V_EMABTH01 0x50 0x01 0x10 ..\se5b\emabth01 //エマ小息継ぎ「はーひー」
+SD_V_EMABTH02 0x50 0x01 0x10 ..\se5b\emabth03 //エマ大息継ぎ「ぶっはぁひぃ」
+SD_V_EMADMG01 0x50 0x01 0x10 ..\se5b\emadmg11 //エマダメージ１「ヤッ！」
+SD_V_EMADMG02 0x50 0x01 0x10 ..\se5b\emadmg12 //エマダメージ２「アッ！」
+SD_V_EMADMW01 0x50 0x01 0x10 ..\se5b\emadmw01 //エマ水中ダメージ１「ブッ！」
+SD_V_EMADMW02 0x50 0x01 0x10 ..\se5b\emadmw02 //エマ水中ダメージ２「プァッ！」
+SD_V_EMADWN01 0x50 0x01 0x10 ..\se5b\emadwn01 //エマ転ぶ１「あはっ！」
+SD_V_EMADWN02 0x50 0x01 0x10 ..\se5b\emadwn02 //エマ転ぶ２「えぁっ！」
+SD_V_EMAEXP01 0x50 0x01 0x10 ..\se5b\emaexp01 //エマ狙われる予感１「あっ！？」
+SD_V_EMAEXP02 0x50 0x01 0x10 ..\se5b\emaexp02 //エマ狙われる予感２「はっ！？」
+SD_V_EMAGIV01 0x50 0x01 0x10 ..\se5b\emagiv01 //エマ気絶うめき１「ううーっ」
+SD_V_EMAGIV02 0x50 0x01 0x10 ..\se5b\emagiv02 //エマ気絶うめき２「うぅふぅ」
+SD_V_EMAOUT01 0x50 0x00 0x10 ..\se5b\emaout11 //エマアウト「キャーッ！」
+SD_V_EMAOUW01 0x50 0x00 0x10 ..\se5b\emaouw01 //エマ水中アウト「アァァァ」
+SD_V_EMASCR01 0x50 0x01 0x10 ..\se5b\emascr01 //エマ悲鳴１「キャッ！」
+SD_V_EMASCR02 0x50 0x01 0x10 ..\se5b\emascr02 //エマ悲鳴２「イヤー！」
+SD_V_EMAHNG01 0x50 0x01 0x10 ..\se5b\emahng01 //エマ首絞められ「んあっ」
+SD_V_EMAOUH02 0x50 0x00 0x10 ..\se5b\emaouh01 //エマ首絞めアウト
+SD_V_EMASLP01 0x50 0x01 0x10 ..\se5b\emaslp01 //エマ寝息１吐く「んふ～」
+SD_V_EMASLP02 0x50 0x01 0x10 ..\se5b\emaslp02 //エマ寝息２吸う「す～」
+
+SD_A_EMFOOTL1 0x10 0x01 0x00 ..\se5b\emfootl1 //エマ走り足音（左）
+SD_A_EMFOOTR1 0x10 0x01 0x00 ..\se5b\emfootr1 //エマ走り足音（右）
+SD_A_EMFOOTL2 0x10 0x01 0x00 ..\se5b\emfootl2 //エマ歩き足音（左）
+SD_A_EMFOOTR2 0x10 0x01 0x00 ..\se5b\emfootr2 //エマ歩き足音（右）
+SD_A_EMSITDW1 0x20 0x01 0x00 ..\se5b\emsitdw1 //エマしゃがむ
+SD_A_EMSTAND1 0x20 0x01 0x00 ..\se5b\emstand1 //エマ立つ
+SD_A_MEGAEQU1 0x20 0x01 0x00 ..\se5b\megaequ1 //エマ眼鏡かける
+SD_A_MEGAOFF1 0x20 0x01 0x00 ..\se5b\megaoff1 //エマ眼鏡外す
+
+SD_A_BGWATR01 0xFF 0x00 0x00 ..\se5b\bgwatr01 //水中環境音（持続）
+SD_A_INWDOOR1 0x40 0x01 0x00 ..\se5b\inwdoor1 //水中水密ドア開く
+SD_P_INWMOVE1 0x20 0x01 0x00 ..\se5b\inwmove1 //プレイヤー水中動作１
+SD_P_INWMOVE2 0x20 0x01 0x00 ..\se5b\inwmove2 //プレイヤー水中動作２
+SD_P_INWMOVE3 0x20 0x01 0x00 ..\se5b\inwmove3 //プレイヤー水中動作３
+SD_P_INWMOVE4 0x20 0x01 0x00 ..\se5b\inwmove4 //プレイヤー水中動作４
+SD_P_INWSWIM1 0x10 0x01 0x00 ..\se5b\inwswim1 //プレイヤー水中泳ぎ１
+SD_P_INWSWIM2 0x10 0x01 0x00 ..\se5b\inwswim2 //プレイヤー水中泳ぎ２
+SD_P_INWTERL1 0x30 0x01 0x00 ..\se5b\inwterl1 //プレイヤー水面へ飛び込む
+SD_P_INWTERM1 0x20 0x01 0x00 ..\se5b\inwterm1 //プレイヤー水面から水中へ潜る
+SD_P_IWFOOTL1 0x10 0x01 0x00 ..\se5b\iwfootl1 //プレイヤー水入り際足音（左）
+SD_P_IWFOOTR1 0x10 0x01 0x00 ..\se5b\iwfootr1 //プレイヤー水入り際足音（右）
+SD_P_OUTSWIM1 0x10 0x01 0x00 ..\se5b\outswim1 //プレイヤー水面泳ぎ
+SD_P_OUTWTRS1 0x20 0x01 0x00 ..\se5b\outwtrs1 //プレイヤー水面に上がる
+SD_V_RAIBRE01 0x50 0x01 0x01 ..\se5b\raibre01 //プレイヤー危険呼吸「ブァハッ」
+SD_V_RAIBRE02 0x50 0x01 0x01 ..\se5b\raibre02 //プレイヤー通常呼吸「ハァスー」
+SD_V_RAIDMW01 0x50 0x01 0x01 ..\se5b\raidmw01 //プレイヤー水中ダメージ「ブァ」
+SD_V_RAIOUW01 0x50 0x00 0x01 ..\se5b\raiouw01 //プレイヤー水中アウト「ブオァ」
+
+SD_A_FNACAM01 0x30 0x01 0x00 ..\se5b\fnacam01 //船虫カメラにベチッ
+SD_A_FNAFOOT1 0x20 0x01 0x00 ..\se5b\fnafoot1 //船虫踏み潰す１
+SD_A_FNAFOOT2 0x20 0x01 0x00 ..\se5b\fnafoot2 //船虫踏み潰す２(２種ランダム)
+SD_A_FNALOP01 0x10 0x01 0x00 ..\se5b\fnaloop0 //船虫わさわさ遅１
+SD_A_FNALOP02 0x10 0x01 0x00 ..\se5b\fnaloop0 //船虫わさわさ遅２(交互18fps連)
+SD_A_FNALOP11 0x10 0x01 0x00 ..\se5b\fnaloop1 //船虫わさわさ中１
+SD_A_FNALOP12 0x10 0x01 0x00 ..\se5b\fnaloop1 //船虫わさわさ中２(交互18fps連)
+SD_A_FNALOP21 0x10 0x01 0x00 ..\se5b\fnaloop2 //船虫わさわさ速１
+SD_A_FNALOP22 0x10 0x01 0x00 ..\se5b\fnaloop2 //船虫わさわさ速２(交互18fps連)
+SD_A_FNABOU01 0x10 0x01 0x00 ..\se5b\fnabou01 //船虫弾む１
+SD_A_FNABOU02 0x10 0x01 0x00 ..\se5b\fnabou01 //船虫弾む２
+SD_A_FNABOU03 0x10 0x01 0x00 ..\se5b\fnabou02 //船虫弾む３
+SD_A_FNABOU04 0x10 0x01 0x00 ..\se5b\fnabou02 //船虫弾む４(４種交互に使う)
+
+
+//se5c(w25b,w25c,タイトロープ)//
+SD_A_WIND_SE1 0xFF 0x00 0x00 ..\se5c\wind_se1 //連絡橋ＳＥ風波音
+SD_A_KMOFLY01 0x10 0x01 0x00 ..\se5c\kmofly01 //海鳥羽ばたき１
+SD_A_KMOFLY02 0x10 0x01 0x00 ..\se5c\kmofly02 //海鳥羽ばたき２
+SD_A_KMOFLY03 0x10 0x01 0x00 ..\se5c\kmofly03 //海鳥羽ばたき３
+SD_A_KMOFLY04 0x10 0x01 0x00 ..\se5c\kmofly04 //海鳥羽ばたき４
+SD_A_KMOFLY11 0x10 0x01 0x00 ..\se5c\kmofly11 //海鳥羽ばたき５
+SD_A_KMOFLY12 0x10 0x01 0x00 ..\se5c\kmofly12 //海鳥羽ばたき６
+SD_A_KMOFLY13 0x10 0x01 0x00 ..\se5c\kmofly13 //海鳥羽ばたき７
+SD_A_KMOFLY14 0x10 0x01 0x00 ..\se5c\kmofly14 //海鳥羽ばたき８
+SD_A_KMOSOR01 0x20 0x01 0x00 ..\se5c\kmosor01 //海鳥飛び立ち羽ばたき１
+SD_A_KMOSOR02 0x20 0x01 0x00 ..\se5c\kmosor02 //海鳥飛び立ち羽ばたき２
+SD_A_KMOATK01 0x40 0x01 0x00 ..\se5c\kmoatk01 //海鳥くちばし攻撃ヒット
+SD_A_FUNHIT01 0x30 0x01 0x00 ..\se5c\funhit01 //海鳥フン、プレイヤーに当たる
+SD_A_FUNOTI01 0x10 0x01 0x00 ..\se5c\funoti01 //海鳥フン、床に落ちる１
+SD_A_FUNOTI02 0x10 0x01 0x00 ..\se5c\funoti02 //海鳥フン、床に落ちる２
+SD_A_KMOVOX01 0x20 0x01 0x00 ..\se5c\kmovox01 //海鳥鳴き声１
+SD_A_KMOVOX02 0x20 0x01 0x00 ..\se5c\kmovox02 //海鳥鳴き声２
+SD_A_KMOVOX03 0x20 0x01 0x00 ..\se5c\kmovox03 //海鳥鳴き声３
+SD_A_KMOVOX04 0x20 0x01 0x00 ..\se5c\kmovox04 //海鳥鳴き声４
+SD_A_KMODMG01 0x50 0x01 0x00 ..\se5c\kmodmg01 //海鳥ダメージ鳴き声１
+SD_A_KMODMG02 0x50 0x01 0x00 ..\se5c\kmodmg02 //海鳥ダメージ鳴き声２
+SD_A_KMOOUT01 0x50 0x01 0x00 ..\se5c\kmoout01 //海鳥アウト鳴き声１
+SD_A_KMOOUT02 0x50 0x01 0x00 ..\se5c\kmoout02 //海鳥アウト鳴き声２
+SD_A_KMODWN01 0x30 0x01 0x00 ..\se5c\kmodwn01 //カモメダウン
+SD_A_KMOFOOTL 0x30 0x01 0x00 ..\se5c\kmofootl //カモメ足音（左）
+SD_A_KMOFOOTR 0x30 0x01 0x00 ..\se5c\kmofootr //カモメ足音（右）
+SD_A_KMOTUTUK 0x30 0x01 0x00 ..\se5c\kmotutuk //カモメ床ついばみ
+
+SD_A_SYONBE01 0x30 0x01 0x00 ..\se5c\syonbe01 //敵兵小便かかる１
+SD_A_SYONBE02 0x30 0x01 0x00 ..\se5c\syonbe02 //敵兵小便かかる２
+SD_A_SYONBE03 0x30 0x01 0x00 ..\se5c\syonbe03 //敵兵小便かかる３
+SD_A_SYONMT01 0x30 0x01 0x00 ..\se5c\syonmt01 //敵兵小便床アタリ１
+SD_A_SYONMT02 0x30 0x01 0x00 ..\se5c\syonmt02 //敵兵小便床アタリ２
+SD_A_SYONMT03 0x30 0x01 0x00 ..\se5c\syonmt03 //敵兵小便床アタリ３
+SD_A_SYONDM01 0x30 0x01 0x00 ..\se5c\syondm01 //敵兵小便ダンボール１
+SD_A_SYONDM02 0x30 0x01 0x00 ..\se5c\syondm02 //敵兵小便ダンボール２
+SD_A_SYONDM03 0x30 0x01 0x00 ..\se5c\syondm03 //敵兵小便ダンボール３
+SD_A_FLOORBR1 0x80 0x01 0x00 ..\se5c\floorbr1 //床壊れる
+
+SD_A_FOOTW01L 0x10 0x01 0x00 ..\se5c\footckl2 //プレイヤー通常歩き（左）
+SD_A_FOOTW01R 0x10 0x01 0x00 ..\se5c\footckr2 //プレイヤー通常歩き（右）
+SD_A_FOOTW02L 0x10 0x01 0x00 ..\se5c\footmll2 //プレイヤー鉄板歩き（左）
+SD_A_FOOTW02R 0x10 0x01 0x00 ..\se5c\footmlr2 //プレイヤー鉄板歩き（右）
+SD_A_FOOTW03L 0x10 0x01 0x00 ..\se5c\footmkl2 //プレイヤー軋み床歩き（左）
+SD_A_FOOTW03R 0x10 0x01 0x00 ..\se5c\footmkr2 //プレイヤー軋み床歩き（右）
+
+
+//se5a(w24c,人質)//
+SD_S_EYECHK01 0x50 0x01 0x00 ..\se5a\eyechk01 //網膜チェックスタート
+SD_S_EYESCN01 0x20 0x01 0x00 ..\se5a\eyescn01 //網膜チェック中(8fps連)
+SD_S_EYENOT01 0x50 0x01 0x00 ..\se5a\eyenot01 //網膜チェック失敗
+SD_S_EYEOK01 0x50 0x01 0x00 ..\se5a\eyeok01 //網膜チェック成功
+SD_A_PMHEART1 0x30 0x01 0x00 ..\se5a\pmheart1 //ペースメーカー付心音
+SD_A_PMHIGH01 0x10 0x01 0x00 ..\se5a\pmhigh01 //ペースメーカー自体(12fps連)
+SD_A_HOSTMZC1 0x10 0x01 0x00 ..\se5a\hostmzc1 //人質もぞもぞ衣擦れ１
+SD_A_HOSTMZC2 0x10 0x01 0x00 ..\se5a\hostmzc2 //人質もぞもぞ衣擦れ２
+SD_A_HOSTMZR1 0x10 0x01 0x00 ..\se5a\hostmzr1 //人質もぞもぞロープ軋み１
+SD_A_HOSTMZR2 0x10 0x01 0x00 ..\se5a\hostmzr2 //人質もぞもぞロープ軋み２
+SD_A_TABLEGG1 0x50 0x01 0x00 ..\se5a\tablegg1 //人質もぞもぞ机ゴトゴト１
+SD_A_TABLEGG2 0x50 0x01 0x00 ..\se5a\tablegg2 //人質もぞもぞ机ゴトゴト２
+SD_A_HOSTFDMG 0x30 0x01 0x00 ..\se5a\hostfdmg //人質女１ダメージ
+SD_A_HOSTFOUT 0x30 0x01 0x00 ..\se5a\hostfout //人質女１アウト
+SD_A_HOSTFDM2 0x30 0x01 0x00 ..\se5a\hostfdm2 //人質女２ダメージ
+SD_A_HOSTFOU2 0x30 0x01 0x00 ..\se5a\hostfou2 //人質女２アウト
+SD_A_HOSTMDMG 0x30 0x01 0x00 ..\se5a\hostmdmg //人質男１ダメージ
+SD_A_HOSTMOUT 0x30 0x01 0x00 ..\se5a\hostmout //人質男１アウト
+SD_A_HOSTMDM2 0x30 0x01 0x00 ..\se5a\hostmdm2 //人質男２ダメージ
+SD_A_HOSTMOU2 0x30 0x01 0x00 ..\se5a\hostmou2 //人質男２アウト
+SD_A_HOSTFAFR 0x30 0x01 0x00 ..\se5a\hostfafr //人質女１もがく声
+SD_A_HOSTFSLP 0x30 0x01 0x00 ..\se5a\hostfslp //人質女１寝息
+SD_A_HOSTFAF2 0x30 0x01 0x00 ..\se5a\hostfaf2 //人質女２もがく声
+SD_A_HOSTFSL2 0x30 0x01 0x00 ..\se5a\hostfsl2 //人質女２寝息
+SD_A_HOSTMAFR 0x30 0x01 0x00 ..\se5a\hostmafr //人質男１もがく声
+SD_A_HOSTMSLP 0x30 0x01 0x00 ..\se5a\hostmslp //人質男１いびき
+SD_A_HOSTMAF2 0x30 0x01 0x00 ..\se5a\hostmaf2 //人質男２もがく声
+SD_A_HOSTMSL2 0x30 0x01 0x00 ..\se5a\hostmsl2 //人質男２いびき
+SD_A_AHEART01 0x20 0x01 0x00 ..\se5a\aheart01 //人質心臓音１
+SD_A_AHEART02 0x20 0x01 0x00 ..\se5a\aheart02 //人質心臓音２
+SD_A_AHEART03 0x20 0x01 0x00 ..\se5a\aheart03 //人質心臓音３
+SD_A_AHEART04 0x20 0x01 0x00 ..\se5a\aheart04 //人質心臓音４
+SD_A_RICDMG01 0x30 0x01 0x00 ..\se5a\ricdmg01 //エイムズダメージ
+SD_A_RICOUT01 0x30 0x01 0x00 ..\se5a\ricout01 //エイムズアウト
+SD_V_GBSIBKS1 0x50 0x01 0x00 ..\se5a\gbsibks1 //人質イベント用スーパーいびき
+SD_A_KCEJ_TEL 0x10 0x01 0x00 ..\se5a\kcej_tel //心音まぎらわシリーズ１ダイヤル
+SD_A_KCEJ_BSY 0x10 0x01 0x00 ..\se5a\kcej_bsy //心音まぎらわシリーズ２話し中
+SD_A_SHINDEN1 0x10 0x01 0x00 ..\se5a\shinden1 //心音まぎらわシリーズ３心電
+SD_A_SHINDEN2 0x10 0x01 0x00 ..\se5a\shinden2 //心音まぎらわシリーズ４心電氏
+SD_A_MAILTYPE 0x10 0x01 0x00 ..\se5a\mailtype //心音まぎらわシリーズ５メール打
+
+
+//se59(w20c,ファットマン戦)//
+SD_V_FATDMG01 0x50 0x01 0x08 ..\se59\fatdmg01 //ファットマンダメージ「うっ」
+SD_V_FATDMG02 0x50 0x01 0x08 ..\se59\fatdmg02 //ファットマンダメージ「ぐはっ」
+SD_V_FATDMG03 0x50 0x01 0x08 ..\se59\fatdmg03 //ファットマンダメージ「うぐっ」
+SD_V_FATDMG04 0x50 0x01 0x08 ..\se59\fatdmg04 //ファットマンダメージ「痛て」
+SD_V_FATSTN01 0x50 0x01 0x08 ..\se59\fatstn01 //ファットマンスタン「まぶしい」
+SD_V_FATSTN02 0x50 0x01 0x08 ..\se59\fatstn02 //ファットマンスタン「見えない」
+SD_V_FATHAA01 0x50 0x01 0x08 ..\se59\fathaa01 //ファットマン息切れ「ハァハァ」
+SD_V_FATOUT01 0x50 0x01 0x08 ..\se59\fatout01 //ファットマンアウト「ぬおーっ」
+SD_V_FATDMB01 0x50 0x01 0x08 ..\se59\fatdmb01 //ファットマン愚痴「邪魔をすな」
+SD_V_FATDMB02 0x50 0x01 0x08 ..\se59\fatdmb02 //ファットマン愚痴「何をする！」
+SD_V_FATWAH01 0x50 0x01 0x08 ..\se59\fatwah01 //ファットマン挑発「ぬはは」
+SD_V_FATWAH02 0x50 0x01 0x08 ..\se59\fatwah02 //ファットマン挑発「ぬふふ」
+SD_V_FATKIA01 0x50 0x01 0x08 ..\se59\fatkia01 //ファットマン気合「ふん！」
+SD_V_FATKIA02 0x50 0x01 0x08 ..\se59\fatkia02 //ファットマン気合「うりゃっ！」
+SD_V_FATKIA03 0x50 0x01 0x08 ..\se59\fatkia03 //ファットマン気合「くらえ！」
+SD_V_FATKIA04 0x50 0x01 0x08 ..\se59\fatkia04 //ファットマン気合「死ね！」
+SD_V_FATASE01 0x50 0x01 0x08 ..\se59\fatase01 //ファットマン焦り「畜生！」
+SD_V_FATASE02 0x50 0x01 0x08 ..\se59\fatase02 //ファットマン焦り「やるな！」
+SD_V_FATDOKN5 0x50 0x01 0x08 ..\se59\fatdokn5 //ファットマン秒読み「５」
+SD_V_FATDOKN4 0x50 0x01 0x08 ..\se59\fatdokn4 //ファットマン秒読み「４」
+SD_V_FATDOKN3 0x50 0x01 0x08 ..\se59\fatdokn3 //ファットマン秒読み「３」
+SD_V_FATDOKN2 0x50 0x01 0x08 ..\se59\fatdokn2 //ファットマン秒読み「２」
+SD_V_FATDOKN1 0x50 0x01 0x08 ..\se59\fatdokn1 //ファットマン秒読み「１」
+SD_V_FATDOKN0 0x50 0x01 0x08 ..\se59\fatdokn0 //ファットマン秒読み「ドカン！」
+SD_V_FATWHE01 0x50 0x01 0x08 ..\se59\fatwhe01 //ファットマン見失い「どこだ？」
+SD_V_FATWHE02 0x50 0x01 0x08 ..\se59\fatwhe02 //ファットマン見失い「出てこい」
+SD_V_FATNOD01 0x50 0x01 0x08 ..\se59\fatnod01 //ファットマン無効「無駄だ！」
+SD_V_FATNOD02 0x50 0x01 0x08 ..\se59\fatnod02 //ファットマン無効「きかんな！」
+SD_V_FATOTT01 0x50 0x01 0x08 ..\se59\fatott01 //ファットマンよろけ「おっとと」
+SD_V_FATCUT01 0x50 0x01 0x08 ..\se59\fatcut01 //ファットマン踏付け「落ちろ！」
+SD_V_FATCUT02 0x50 0x01 0x08 ..\se59\fatcut02 //ファットマン踏付け「ばかめ！」
+
+SD_E_C4OUT08 0x80 0x00 0x00 ..\se59\c4out08 //Ｃ４爆発（ゲームオーバー）
+SD_E_C4TIME11 0x10 0x01 0x00 ..\se59\c4time01 //時限Ｃ４タイマー音１－１
+SD_E_C4TIME12 0x10 0x01 0x00 ..\se59\c4time02 //時限Ｃ４タイマー音１－２
+SD_E_C4TIME13 0x10 0x01 0x00 ..\se59\c4time03 //時限Ｃ４タイマー音１－３
+SD_E_C4TIME14 0x10 0x01 0x00 ..\se59\c4time04 //時限Ｃ４タイマー音１－４
+SD_E_C4TIME21 0x10 0x01 0x00 ..\se59\c4time01 //時限Ｃ４タイマー音２－１
+SD_E_C4TIME22 0x10 0x01 0x00 ..\se59\c4time02 //時限Ｃ４タイマー音２－２
+SD_E_C4TIME23 0x10 0x01 0x00 ..\se59\c4time03 //時限Ｃ４タイマー音２－３
+SD_E_C4TIME24 0x10 0x01 0x00 ..\se59\c4time04 //時限Ｃ４タイマー音２－４
+SD_E_C4TIME31 0x10 0x01 0x00 ..\se59\c4time01 //時限Ｃ４タイマー音３－１
+SD_E_C4TIME32 0x10 0x01 0x00 ..\se59\c4time02 //時限Ｃ４タイマー音３－２
+SD_E_C4TIME33 0x10 0x01 0x00 ..\se59\c4time03 //時限Ｃ４タイマー音３－３
+SD_E_C4TIME34 0x10 0x01 0x00 ..\se59\c4time04 //時限Ｃ４タイマー音３－４
+SD_E_ELATACK3 0x40 0x01 0x00 ..\se59\elatack3 //ブレード指斬り
+SD_A_FAHIKI03 0x10 0x01 0x00 ..\se59\fahiki03 //ファットマン死体引きずり
+SD_E_GLOCKF00 0x40 0x01 0x00 ..\se59\glockf00 //グロック発砲音
+SD_E_GLOCKH03 0x20 0x01 0x00 ..\se59\glockh03 //グロックマガジン外し
+SD_E_GLOCKR04 0x20 0x01 0x00 ..\se59\glockr04 //グロックリロード
+SD_E_SUITREV4 0x30 0x01 0x00 ..\se59\suitrev4 //ボムブラストスーツ跳弾
+SD_E_ROLLFTL0 0x20 0x01 0x00 ..\se59\rollftl0 //ローラーブレード通常滑走（左）
+SD_E_ROLLFTR0 0x20 0x01 0x00 ..\se59\rollftr0 //ローラーブレード通常滑走（右）
+SD_E_ROLLST00 0x30 0x01 0x00 ..\se59\rollst00 //ローラーブレード通常停止
+SD_E_LOOPCK02 0x10 0x01 0x00 ..\se59\loopck02 //ローラー通常持続(8fps連)
+SD_E_ROLLFEL2 0x20 0x01 0x00 ..\se59\rollfel2 //ローラーブレード鉄床滑走（左）
+SD_E_ROLLFER2 0x20 0x01 0x00 ..\se59\rollfer2 //ローラーブレード鉄床滑走（右）
+SD_E_ROLLSTF0 0x30 0x01 0x00 ..\se59\rollstf0 //ローラーブレード鉄床停止
+SD_E_LOOPMT01 0x10 0x01 0x00 ..\se59\loopmt01 //ローラー鉄床持続(10fps連)
+SD_E_ROLLFEL3 0x20 0x01 0x00 ..\se59\rollfel3 //ローラーブレード外鉄滑走（左）
+SD_E_ROLLFER3 0x20 0x01 0x00 ..\se59\rollfer3 //ローラーブレード外鉄滑走（右）
+SD_E_ROLLSTF1 0x30 0x01 0x00 ..\se59\rollstf1 //ローラーブレード外鉄停止
+SD_E_LOOPMT02 0x10 0x01 0x00 ..\se59\loopmt02 //ローラー外鉄持続(10fps連)
+SD_E_ROLLTUN0 0x20 0x01 0x00 ..\se59\rolltun0 //ローラーブレードターン
+SD_E_C4PUT11 0x20 0x01 0x00 ..\se59\c4put11 //ファットマンＣ４セット
+SD_E_C4SW11 0x20 0x01 0x00 ..\se59\c4sw11 //ファットマンＣ４スイッチ
+
+
+//se56(w25a,ハリアー戦)//
+SD_V_OTADMG01 0x50 0x01 0x0B ..\se56\otadmg01 //オタコンダメージ１「あっあ！」
+SD_V_OTADMG02 0x50 0x01 0x0B ..\se56\otadmg02 //オタコンダメージ２「ぅあー！」
+SD_V_OTADMG03 0x50 0x01 0x0B ..\se56\otadmg03 //オタコンダメージ３「ぬあぁ！」
+SD_V_OTADMG04 0x50 0x01 0x0B ..\se56\otadmg04 //オタコンダメージ４「うわっ！」
+SD_V_OTAOUT11 0x50 0x01 0x0B ..\se56\otaout11 //オタコンアウト「うわあぁっ！」
+SD_V_SNADMG11 0x50 0x01 0x0A ..\se56\snadmg11 //NPCスネークダメージ１「うっ！」
+SD_V_SNADMG12 0x50 0x01 0x0A ..\se56\snadmg12 //NPCスネークダメージ２「ううっ」
+SD_V_SNADMG13 0x50 0x01 0x0A ..\se56\snadmg13 //NPCスネークダメージ３「おうっ」
+SD_V_SNADMG14 0x50 0x01 0x0A ..\se56\snadmg14 //NPCスネークダメージ４「うおっ」
+SD_V_SNAOUT11 0x50 0x01 0x0A ..\se56\snaout11 //NPCスネークアウト「うわあぁっ」
+SD_V_SOLAT101 0x50 0x00 0x0C ..\se56\solat101 //ハリアー汎用攻撃１「食らえ！」
+SD_V_SOLAT102 0x50 0x00 0x0C ..\se56\solat102 //ハリアー汎用攻撃２「何処だ？」
+SD_V_SOLAT103 0x50 0x00 0x0C ..\se56\solat103 //ハリアー汎用攻撃３「そこか！」
+SD_V_SOLAT201 0x50 0x00 0x0C ..\se56\solat201 //ハリアー汎用気合１「でえっ！」
+SD_V_SOLAT202 0x50 0x00 0x0C ..\se56\solat202 //ハリアー汎用気合２「でぇや！」
+SD_V_SOLAT301 0x50 0x00 0x0C ..\se56\solat301 //ハリアー機銃「蜂の巣にして～」
+SD_V_SOLAT401 0x50 0x00 0x0C ..\se56\solat401 //ハリアークラスタ爆「くたばれ」
+SD_V_SOLAT501 0x50 0x00 0x0C ..\se56\solat501 //ハリアーロケット弾「よけら～」
+SD_V_SOLAT601 0x50 0x00 0x0C ..\se56\solat601 //ハリアーミサイル「あの世に～」
+SD_V_SOLAT701 0x50 0x00 0x0C ..\se56\solat701 //ハリアー排気炎「焼け死ねぇ！」
+SD_V_SOLDM101 0x50 0x00 0x0C ..\se56\soldm101 //ハリアーヘリダメージ１「ぬぅ」
+SD_V_SOLDM102 0x50 0x00 0x0C ..\se56\soldm102 //ハリアーヘリダメージ２「糞っ」
+SD_V_SOLDM103 0x50 0x00 0x0C ..\se56\soldm103 //ハリアーヘリダメージ３「ちっ」
+SD_V_SOLDM201 0x50 0x00 0x0C ..\se56\soldm201 //ハリアー小ダメジ１「どうした」
+SD_V_SOLDM202 0x50 0x00 0x0C ..\se56\soldm202 //ハリアー小ダメジ２「効かんな」
+SD_V_SOLDM203 0x50 0x00 0x0C ..\se56\soldm203 //ハリアー小ダメジ３「くっ！」
+SD_V_SOLDM301 0x50 0x00 0x0C ..\se56\soldm301 //ハリアー中ダメジ１「うおっ！」
+SD_V_SOLDM302 0x50 0x00 0x0C ..\se56\soldm302 //ハリアー中ダメジ２「うぅっ！」
+SD_V_SOLDM401 0x50 0x00 0x0C ..\se56\soldm401 //ハリアー大ダメジ１「なにぃ！」
+SD_V_SOLDM402 0x50 0x00 0x0C ..\se56\soldm402 //ハリアー大ダメジ２「馬鹿な！」
+SD_V_SOLDM403 0x50 0x00 0x0C ..\se56\soldm403 //ハリアー大ダメジ３「ぐわぁぁ」
+SD_V_SOLOUT01 0x50 0x00 0x0C ..\se56\solout01 //ハリアーアウト「ぐぁぁぁぁ！」
+
+SD_E_CLMOPN03 0x40 0x01 0x00 ..\se56\clmopn03 //クラスター爆弾投下開始
+SD_E_CLMFAL04 0x30 0x01 0x0F ..\se56\clmfal04 //クラスター爆弾降下
+SD_E_CLMPAN04 0x80 0x01 0x0F ..\se56\clmpan04 //クラスター爆弾分裂
+SD_E_CLMFLY04 0x30 0x01 0x15 ..\se56\clmfly04 //クラスター爆弾分裂後飛散
+SD_E_CLMBOM04 0x50 0x01 0x15 ..\se56\clmbom04 //クラスター爆弾爆発１
+SD_E_CLMBOM05 0x50 0x01 0x00 ..\se56\clmbom05 //クラスター爆弾爆発２
+SD_E_GUNST01 0x50 0x01 0x00 ..\se56\gunst01 //ガンポッド機銃開始
+SD_E_GUNLP02 0x50 0x01 0x00 ..\se56\gunlp02 //ガンポッド機銃(13fps連)
+SD_E_GUN_WTR1 0x20 0x01 0x00 ..\se56\ricwtr03 //ガンポッド海着水
+SD_E_MISOPN01 0x50 0x01 0x00 ..\se56\misopn01 //アムラーム発射開始
+SD_E_MISFIRL1 0x50 0x01 0x00 ..\se56\misfirl1 //アムラーム誘導ミサイル噴射
+SD_E_MISFIRL5 0x50 0x01 0x00 ..\se56\misfirl5 //アムラーム誘導ミサイル射出
+SD_E_AM_FLY01 0x20 0x01 0x00 ..\se56\am_fly01 //アムラーム飛行音(12fps連)
+SD_E_AM_SWIN1 0x30 0x01 0x00 ..\se56\am_swin1 //アムラーム交錯(発射120fps後)
+SD_E_AM_EXP04 0x50 0x01 0x00 ..\se56\am_exp04 //アムラーム爆発
+SD_E_MISFIRS2 0x50 0x01 0x00 ..\se56\misfirs2 //ロケット弾発射
+SD_E_M38BOM07 0x50 0x01 0x00 ..\se56\m38bom07 //ロケット弾爆発1（ランダム呼び）
+SD_E_M38BOM08 0x50 0x01 0x00 ..\se56\m38bom08 //ロケット弾爆発2（ランダム呼び）
+SD_E_NEPPOST1 0x50 0x01 0x00 ..\se56\neppost1 //ハリアー熱風開始
+SD_E_NEPPOLP1 0x50 0x01 0x00 ..\se56\neppolp1 //ハリアー熱風(始25fps後13fps連)
+SD_E_H_FLARE1 0x50 0x01 0x00 ..\se56\h_flare1 //ハリアーフレア発射
+SD_E_H_ATACK1 0x50 0x01 0x00 ..\se56\h_atack1 //ハリアー翼体当たり
+SD_E_H_DMGB03 0x50 0x01 0x00 ..\se56\h_dmgb03 //ハリアー被弾
+SD_E_H_SWING1 0x50 0x00 0x00 ..\se56\h_swing1 //ハリアー交錯（中央）
+SD_E_KA_GUN01 0x50 0x01 0x00 ..\se56\ka_gun01 //カサッカ機銃
+
+SD_E_JETTRB01 0x40 0x01 0x00 ..\se56\jettrb01 //ハリアージェット(6fps連)
+SD_E_HELHOV00 0x30 0x01 0x00 ..\se56\helhov00 //ホバリング風切り(12fps連)
+SD_E_HELLOP00 0x40 0x01 0x00 ..\se56\hellop00 //カサッカ羽音(12fps連)
+
+
+//se55(w61a,ソリダス戦)//
+SD_V_SOLATK01 0x50 0x01 0x0C ..\se55\solatk01 //ソリダス攻撃気合１「は！」
+SD_V_SOLATK02 0x50 0x01 0x0C ..\se55\solatk02 //ソリダス攻撃気合２「ふん！」
+SD_V_SOLATK03 0x50 0x01 0x0C ..\se55\solatk03 //ソリダス攻撃気合３「ふっ！」
+SD_V_SOLATK04 0x50 0x01 0x0C ..\se55\solatk04 //ソリダス攻撃気合４「はっ！」
+SD_V_SOLATK05 0x50 0x01 0x0C ..\se55\solatk05 //ソリダス攻撃気合５「はあっ！」
+SD_V_SOLATK06 0x50 0x01 0x0C ..\se55\solatk06 //ソリダス攻撃気合６「おりぁ！」
+SD_V_SOLATK07 0x50 0x01 0x0C ..\se55\solatk07 //ソリダス攻撃気合７「てーっ！」
+SD_V_SOLATK08 0x50 0x01 0x0C ..\se55\solatk08 //ソリダス攻撃気合８「いやっ！」
+SD_V_SOLCHO01 0x50 0x01 0x0C ..\se55\solcho01 //ソリダス挑発１「ははははは！」
+SD_V_SOLCHO02 0x50 0x01 0x0C ..\se55\solcho02 //ソリダス挑発２「どうした」
+SD_V_SOLCHO03 0x50 0x01 0x0C ..\se55\solcho03 //ソリダス挑発３「そんなものか」
+SD_V_SOLCHO04 0x50 0x01 0x0C ..\se55\solcho04 //ソリダス挑発４「そこまでか～」
+SD_V_SOLDMG11 0x50 0x01 0x0C ..\se55\soldmg11 //ソリダスダメージ１「ぶぅぁ！」
+SD_V_SOLDMG12 0x50 0x01 0x0C ..\se55\soldmg12 //ソリダスダメージ２「うぅぁ！」
+SD_V_SOLDMG13 0x50 0x01 0x0C ..\se55\soldmg13 //ソリダスダメージ３「ふぐっ！」
+SD_V_SOLDMG14 0x50 0x01 0x0C ..\se55\soldmg14 //ソリダスダメージ４「おふっ！」
+SD_V_SOLELU01 0x50 0x01 0x0C ..\se55\solelu01 //ソリダス対エルド１「何をし～」
+SD_V_SOLELU02 0x50 0x01 0x0C ..\se55\solelu02 //ソリダス対エルド２「ふざけ～」
+SD_V_SOLFRA01 0x50 0x01 0x0C ..\se55\solfra01 //ソリダスよろけ１「おっ」
+SD_V_SOLFRA02 0x50 0x01 0x0C ..\se55\solfra02 //ソリダスよろけ２「うぅっ！」
+SD_V_SOLHAA01 0x50 0x01 0x0C ..\se55\solhaa01 //ソリダスライフ小「はぁはぁ」
+SD_V_SOLKIA11 0x50 0x01 0x0C ..\se55\solkia11 //ソリダス攻撃開始１「いくぞ！」
+SD_V_SOLKIA12 0x50 0x01 0x0C ..\se55\solkia12 //ソリダス攻撃開始２「くらえ！」
+SD_V_SOLKIA13 0x50 0x01 0x0C ..\se55\solkia13 //ソリダス攻撃開始３「しねぃ！」
+SD_V_SOLKIA14 0x50 0x01 0x0C ..\se55\solkia14 //ソリダス攻撃開始４「へぇっ！」
+SD_V_SOLKIA15 0x50 0x01 0x0C ..\se55\solkia15 //ソリダス攻撃開始５「はぁっ！」
+SD_V_SOLMUS01 0x50 0x01 0x0C ..\se55\solmus01 //ソリダスマッスル１「てやー！」
+SD_V_SOLMUS02 0x50 0x01 0x0C ..\se55\solmus02 //ソリダスマッスル２「ふんー！」
+SD_V_SOLOUT11 0x50 0x01 0x0C ..\se55\solout11 //ソリダスアウト「うおぉぉぉ！」
+SD_V_SOLSPE01 0x50 0x01 0x0C ..\se55\solspe01 //ソリダス加速装置１「こっちだ」
+SD_V_SOLSPE02 0x50 0x01 0x0C ..\se55\solspe02 //ソリダス加速装置２「むんっ！」
+SD_V_SOLSPE03 0x50 0x01 0x0C ..\se55\solspe03 //ソリダス加速装置３「てぇっ！」
+SD_V_SOLSTE01 0x50 0x01 0x0C ..\se55\solste01 //ソリダス蛇手捨て「さすがだ～」
+SD_V_SOLWHY01 0x50 0x01 0x0C ..\se55\solwhy01 //ソリダス攻かわされ１「なに？」
+SD_V_SOLWHY02 0x50 0x01 0x0C ..\se55\solwhy02 //ソリダス攻かわされ２「んっ！」
+SD_V_SOLWHY03 0x50 0x01 0x0C ..\se55\solwhy03 //ソリダス攻かわされ３「ぬぅ！」
+
+SD_E_GURDHEB1 0x50 0x01 0x00 ..\se55\gurdheb1 //ソリダス蛇手ガード
+SD_E_GURDKEN1 0x50 0x01 0x00 ..\se55\gurdken1 //ソリダス剣ガード
+SD_E_HEBATT01 0x50 0x01 0x00 ..\se55\hebatt01 //蛇手突き
+SD_E_HEBFURI1 0x50 0x01 0x00 ..\se55\hebfuri1 //蛇手振り１
+SD_E_HEBFURI2 0x50 0x01 0x00 ..\se55\hebfuri2 //蛇手振り２
+SD_E_HEBHIT01 0x50 0x01 0x00 ..\se55\hebhit01 //蛇手打撃ヒット
+SD_E_HEBOUT01 0x50 0x01 0x00 ..\se55\hebout01 //蛇手肩からはずす
+SD_E_HEBREDY1 0x50 0x01 0x00 ..\se55\hebredy1 //蛇手攻撃準備
+SD_E_HEBSIME1 0x50 0x01 0x00 ..\se55\hebsime1 //蛇手絞め中（振る毎に１コール）
+SD_E_HEBTKAM1 0x50 0x01 0x00 ..\se55\hebtkam1 //蛇手つかみ
+SD_E_KASOKU01 0x50 0x01 0x00 ..\se55\kasoku01 //加速装置スタート
+SD_E_KASOKU02 0x50 0x01 0x00 ..\se55\kasoku02 //加速装置フォロースルー
+SD_E_MUSLBRE1 0x50 0x01 0x00 ..\se55\muslbre1 //脊髄破壊アウト
+SD_E_MUSLON01 0x50 0x01 0x00 ..\se55\muslon01 //マッスル装置ため
+SD_E_TELBSWI1 0x50 0x01 0x00 ..\se55\telbswi1 //ソリダスエルボー振り
+SD_E_TKENBIT1 0x50 0x01 0x00 ..\se55\tkenbit1 //ソリダス剣刺し
+SD_E_TKENCUT1 0x50 0x01 0x00 ..\se55\tkencut1 //ソリダス剣斬り
+SD_E_TKICSWI1 0x50 0x01 0x00 ..\se55\tkicswi1 //ソリダス蹴り振り
+SD_A_TMISBOM1 0x50 0x01 0x00 ..\se55\tmisbom1 //ミサイル着弾爆発
+SD_E_TMISSTA1 0x50 0x01 0x00 ..\se55\tmissta1 //ミサイル発射
+SD_E_TSWING01 0x50 0x01 0x00 ..\se55\tswing01 //ソリダス剣振り（右）
+SD_E_TSWING02 0x50 0x01 0x00 ..\se55\tswing02 //ソリダス剣振り（左）
+SD_E_TSWING11 0x50 0x01 0x00 ..\se55\tswing11 //ソリダス剣振り（もろ手）
+
+
+//se54(w31a,大統領)//
+SD_V_PREDMG01 0x50 0x01 0x0D ..\se54\predmg01 //大統領ダメージ１「うぁーっ！」
+SD_V_PREDMG02 0x50 0x01 0x0D ..\se54\predmg02 //大統領ダメージ２「ぬぅうっ！」
+SD_V_PREDMG03 0x50 0x01 0x0D ..\se54\predmg03 //大統領ダメージ３「うわっ！」
+SD_V_PREOUT01 0x50 0x01 0x0D ..\se54\preout01 //大統領アウト「ぬぉぉぉぉ！！」
+SD_V_PRESUP01 0x50 0x01 0x0D ..\se54\presup01 //大統領びっくり１「ほっ！？」
+SD_V_PRESUP02 0x50 0x01 0x0D ..\se54\presup02 //大統領びっくり２「おぉぉ」
+SD_V_PRESUP03 0x50 0x01 0x0D ..\se54\presup03 //大統領びっくり３「ふ！？」
+SD_V_PRESUP04 0x50 0x01 0x0D ..\se54\presup04 //大統領びっくり４「んむぅ」
+SD_V_PRESUP05 0x50 0x01 0x0D ..\se54\presup05 //大統領びっくり５「ほぉっ！？」
+
+
+//se53(w31c,ヴァンプ戦)//
+SD_V_RAISIB01 0x50 0x01 0x01 ..\se53\raisib01 //ライデン影縛られ１「動けない」
+SD_V_RAISIB02 0x50 0x01 0x01 ..\se53\raisib02 //ライデン影縛られ２「体が！？」
+SD_V_VMPAKT01 0x50 0x01 0x0E ..\se53\vmpakt02 //ヴァンプ影縛解除悪態１「ちっ」
+SD_V_VMPAKT02 0x50 0x01 0x0E ..\se53\vmpakt03 //ヴァンプ影縛解除悪態２「えぃ」
+SD_V_VMPASE01 0x50 0x01 0x0E ..\se53\vmpase01 //ヴァンプ焦り１「まだまだ！」
+SD_V_VMPASE02 0x50 0x01 0x0E ..\se53\vmpase02 //ヴァンプ焦り２「やるな！」
+SD_V_VMPASE03 0x50 0x01 0x0E ..\se53\vmpase03 //ヴァンプ焦り３「うっうぅ」
+SD_V_VMPASE04 0x50 0x01 0x0E ..\se53\vmpase04 //ヴァンプ焦り４「えひぃ」
+SD_V_VMPCUT01 0x50 0x01 0x0E ..\se53\vmpcut01 //ヴァンプナイフ攻撃強「シャー」
+SD_V_VMPCUT02 0x50 0x01 0x0E ..\se53\vmpcut02 //ヴァンプナイフ攻撃１「シェッ」
+SD_V_VMPCUT03 0x50 0x01 0x0E ..\se53\vmpcut03 //ヴァンプナイフ攻撃２「フンッ」
+SD_V_VMPCUT04 0x50 0x01 0x0E ..\se53\vmpcut04 //ヴァンプナイフ攻撃３「ホッ！」
+SD_V_VMPCUT05 0x50 0x01 0x0E ..\se53\vmpcut05 //ヴァンプナイフ攻撃４「ハッ！」
+SD_V_VMPDMG01 0x50 0x01 0x0E ..\se53\vmpdmg01 //ヴァンプダメージ１「ウッ！」
+SD_V_VMPDMG02 0x50 0x01 0x0E ..\se53\vmpdmg03 //ヴァンプダメージ２「イッ！」
+SD_V_VMPDMG03 0x50 0x01 0x0E ..\se53\vmpdmg05 //ヴァンプダメージ３「オォッ！」
+SD_V_VMPDMG04 0x50 0x01 0x0E ..\se53\vmpdmg06 //ヴァンプダメージ４「カァッ！」
+SD_V_VMPDMH01 0x50 0x01 0x0E ..\se53\vmpdmh01 //ヴァンプ強ダメージ１「ウアッ」
+SD_V_VMPDMH02 0x50 0x01 0x0E ..\se53\vmpdmh02 //ヴァンプ強ダメージ２「アァア」
+SD_V_VMPDMH03 0x50 0x01 0x0E ..\se53\vmpdmh04 //ヴァンプ強ダメージ３「ウァア」
+SD_V_VMPESB01 0x50 0x01 0x0E ..\se53\vmpesb01 //ヴァンプバレエ嘲笑「ハハハッ」
+SD_V_VMPESB02 0x50 0x01 0x0E ..\se53\vmpesb02 //ヴァンプバレエ避１「無駄だ！」
+SD_V_VMPESB03 0x50 0x01 0x0E ..\se53\vmpesb03 //ヴァンプバレエ避２「読めるぞ」
+SD_V_VMPESR01 0x50 0x01 0x0E ..\se53\vmpesr02 //ヴァンプ水面避け１「遅い」
+SD_V_VMPESR02 0x50 0x01 0x0E ..\se53\vmpesr03 //ヴァンプ水面避け２「無駄だ」
+SD_V_VMPGRE01 0x50 0x01 0x0E ..\se53\vmpgre01 //ヴァンプグレネード１「食らえ」
+SD_V_VMPGRE02 0x50 0x01 0x0E ..\se53\vmpgre02 //ヴァンプグレネード２「フッ！」
+SD_V_VMPGRE03 0x50 0x01 0x0E ..\se53\vmpgre03 //ヴァンプグレネード３「ヘァッ」
+SD_V_VMPGRE04 0x50 0x01 0x0E ..\se53\vmpgre04 //ヴァンプグレネード４「テヤッ」
+SD_V_VMPIND01 0x50 0x01 0x0E ..\se53\vmpind01 //ヴァンプLIFE稀少潜り１「ちぃ」
+SD_V_VMPIND02 0x50 0x01 0x0E ..\se53\vmpind02 //ヴァンプLIFE稀少潜り２「くそ」
+SD_V_VMPINW01 0x50 0x01 0x0E ..\se53\vmpinw01 //ヴァンプダメージ潜り１「ふっ」
+SD_V_VMPINW02 0x50 0x01 0x0E ..\se53\vmpinw02 //ヴァンプダメージ潜り２「くっ」
+SD_V_VMPJAW01 0x50 0x01 0x0E ..\se53\vmpjaw01 //ヴァンプ上陸１「こっちだ！」
+SD_V_VMPJAW02 0x50 0x01 0x0E ..\se53\vmpjaw02 //ヴァンプ上陸２「ここだ！」
+SD_V_VMPJAW03 0x50 0x01 0x0E ..\se53\vmpjaw03 //ヴァンプ上陸３「どこを見て～」
+SD_V_VMPJAW04 0x50 0x01 0x0E ..\se53\vmpjaw05 //ヴァンプ上陸４「だあぁっ！」
+SD_V_VMPKIK01 0x50 0x01 0x0E ..\se53\vmpkik01 //ヴァンプキック気合１「フエッ」
+SD_V_VMPKIK02 0x50 0x01 0x0E ..\se53\vmpkik02 //ヴァンプキック気合２「テエッ」
+SD_V_VMPKIK03 0x50 0x01 0x0E ..\se53\vmpkik03 //ヴァンプキック気合３「イヤッ」
+SD_V_VMPKIK04 0x50 0x01 0x0E ..\se53\vmpkik04 //ヴァンプキック気合４「フンッ」
+SD_V_VMPMAN01 0x50 0x01 0x0E ..\se53\vmpman01 //ヴァンプ手動命中１「くうっ！」
+SD_V_VMPMAN02 0x50 0x01 0x0E ..\se53\vmpman02 //ヴァンプ手動命中２「やるな！」
+SD_V_VMPMAN03 0x50 0x01 0x0E ..\se53\vmpman03 //ヴァンプ手動命中３「ぬえぇい」
+SD_V_VMPMAN04 0x50 0x01 0x0E ..\se53\vmpman04 //ヴァンプ手動命中４「ちぇえい」
+SD_V_VMPRUN01 0x50 0x01 0x0E ..\se53\vmprun02 //ヴァンプ壁走り１「ケッヘヘヘ」
+SD_V_VMPRUN02 0x50 0x01 0x0E ..\se53\vmprun04 //ヴァンプ壁走り２「ィアーーー」
+SD_V_VMPSTN01 0x50 0x01 0x0E ..\se53\vmpstn01 //ヴァンプスタン被爆１「目が！」
+SD_V_VMPSTN02 0x50 0x01 0x0E ..\se53\vmpstn02 //ヴァンプスタン被爆２「見えん」
+SD_V_VMPTAM01 0x50 0x01 0x0E ..\se53\vmptam01 //ヴァンプ気を集中１「ぬぅぅぅ」
+SD_V_VMPTAM02 0x50 0x01 0x0E ..\se53\vmptam02 //ヴァンプ気を集中２「はぁぁぁ」
+
+SD_P_R_MIZIN1 0x40 0x01 0x00 ..\se53\r_mizin1 //ライデン水有エルード飛込
+SD_P_R_MIZOT1 0x40 0x01 0x00 ..\se53\r_mizot1 //ライデン水有エルード飛出
+SD_E_V_FOOTL3 0x20 0x01 0x00 ..\se53\v_footl3 //ヴァンプ足踏み左
+SD_E_V_FOOTR3 0x20 0x01 0x00 ..\se53\v_footr3 //ヴァンプ足踏み右
+SD_E_V_FOOT02 0x30 0x01 0x00 ..\se53\v_foot02 //ヴァンプ足踏み強打
+SD_E_V_FOTML3 0x20 0x01 0x00 ..\se53\v_fotml3 //ヴァンプ足踏み左（鉄棒）
+SD_E_V_FOTMR3 0x20 0x01 0x00 ..\se53\v_fotmr3 //ヴァンプ足踏み右（鉄棒）
+SD_E_V_FOOTM2 0x30 0x01 0x00 ..\se53\v_footm2 //ヴァンプ足踏み強打（鉄棒）
+SD_E_V_JUMP04 0x30 0x01 0x00 ..\se53\v_jump04 //ヴァンプジャンプ音
+SD_E_V_JUMPM4 0x30 0x01 0x00 ..\se53\v_jumpm4 //ヴァンプジャンプ音（鉄棒）
+SD_E_V_TYAKU1 0x30 0x01 0x00 ..\se53\v_tyaku1 //ヴァンプ着地
+SD_E_V_TYAKM1 0x30 0x01 0x00 ..\se53\v_tyakm1 //ヴァンプ着地（鉄棒）
+SD_E_V_HNCL01 0x20 0x01 0x00 ..\se53\v_hncl01 //ヴァンプ手拍子１
+SD_E_V_HNCL02 0x20 0x01 0x00 ..\se53\v_hncl02 //ヴァンプ手拍子２
+SD_E_V_ROOL01 0x50 0x01 0x00 ..\se53\v_rool01 //ヴァンプ回転ダンス
+SD_E_V_KICK01 0x20 0x01 0x00 ..\se53\v_kick01 //ヴァンプキック音
+SD_E_V_NNAGE1 0x20 0x01 0x00 ..\se53\v_nnage1 //ヴァンプナイフ投げ音
+SD_E_MIZU_IN2 0x50 0x01 0x00 ..\se53\mizu_in2 //ヴァンププール飛込み着水(高)
+SD_E_MIZU_IN3 0x50 0x01 0x00 ..\se53\mizu_in3 //ヴァンププール飛込み着水(低)
+SD_E_MIZU_OT1 0x50 0x01 0x00 ..\se53\mizu_ot1 //ヴァンププール上がり飛び出し
+SD_E_V_SWIM01 0x40 0x01 0x00 ..\se53\v_swim01 //ヴァンプ泳ぎ中（12fps連）
+SD_E_V_HEAR01 0x50 0x01 0x00 ..\se53\v_hear01 //ヴァンプ心臓音（アウト後？）
+SD_E_N_YUKA01 0x20 0x01 0x00 ..\se53\n_yuka01 //ナイフ壁、床刺さり1（rdm呼）
+SD_E_N_YUKA02 0x20 0x01 0x00 ..\se53\n_yuka02 //ナイフ壁、床刺さり2（rdm呼）
+SD_E_N_KABE01 0x20 0x01 0x00 ..\se53\n_kabe01 //ナイフ壁、壁刺さり1（rdm呼）
+SD_E_N_KABE02 0x20 0x01 0x00 ..\se53\n_kabe02 //ナイフ壁、壁刺さり2（rdm呼）
+SD_P_N_DMG003 0x50 0x01 0x00 ..\se53\n_dmg003 //ナイフ刺さりダメージ音
+SD_P_N_SHOT02 0x30 0x01 0x00 ..\se53\n_shot02 //ナイフ打ち落し
+SD_E_V_NCUT01 0x50 0x01 0x00 ..\se53\v_ncut01 //ナイフ斬られ
+SD_P_V_NFURI2 0x20 0x01 0x00 ..\se53\v_nfuri2 //ナイフ振り
+SD_E_V_KAGE02 0x50 0x01 0x00 ..\se53\v_kage02 //影縛りダメージ
+SD_A_GUN_WTR2 0x30 0x01 0x00 ..\se53\gun_wtr2 //銃弾プール着水
+
+
+//se50(w46a,量産型ＲＡＹ戦)//
+SD_E_ARMGUN01 0x30 0x01 0x00 ..\se50\armgun01 //ＲＡＹ腕部機銃発砲
+SD_E_ARMREB01 0x10 0x01 0x00 ..\se50\armreb01 //ＲＡＹ機銃跳弾
+SD_E_ARMSWI01 0x50 0x01 0x00 ..\se50\armswi01 //ＲＡＹ機銃構える
+SD_E_GROWL001 0x50 0x01 0x00 ..\se50\growl001 //ＲＡＹ吠える１（ダメージ１）
+SD_E_GROWL002 0x50 0x01 0x00 ..\se50\growl002 //ＲＡＹ吠える２（近気合）
+SD_E_GROWL003 0x50 0x01 0x00 ..\se50\growl003 //ＲＡＹ吠える３（遠気合）
+SD_E_GROWL004 0x50 0x01 0x00 ..\se50\growl004 //ＲＡＹ吠える４（ダメージ２）
+SD_E_LASCLS01 0x40 0x01 0x00 ..\se50\lascls01 //ＲＡＹレーザー口閉まる
+SD_E_LASER101 0x30 0x01 0x00 ..\se50\laser101 //ＲＡＹレーザー発射開始(12fps待)
+SD_E_LASER201 0x30 0x01 0x00 ..\se50\laser201 //ＲＡＹレーザー発射中(8fps連)
+SD_E_LASOPN01 0x40 0x01 0x00 ..\se50\lasopn01 //ＲＡＹレーザー口開く
+SD_E_LEGMISE1 0x20 0x01 0x00 ..\se50\legmise1 //ＲＡＹミサイル飛行１(左足側)
+SD_E_LEGMISE2 0x20 0x01 0x00 ..\se50\legmise2 //ＲＡＹミサイル飛行２(右足側)
+SD_E_LEGMISF1 0x50 0x01 0x00 ..\se50\legmisf1 //ＲＡＹミサイル発射
+SD_E_LEGSWI01 0x50 0x01 0x00 ..\se50\legswi01 //ＲＡＹ踏み付け足上げ
+SD_E_RBRESS01 0x50 0x01 0x00 ..\se50\rbress01 //ＲＡＹ白い息を吐く
+SD_E_R_FTAT01 0x50 0x01 0x00 ..\se50\r_ftat01 //ＲＡＹ踏み付け足音
+SD_E_R_FTFG01 0x40 0x01 0x00 ..\se50\r_ftfg01 //ＲＡＹ遠距離で着地
+SD_E_R_FTFJ01 0x40 0x01 0x00 ..\se50\r_ftfj01 //ＲＡＹ遠距離でジャンプ
+SD_E_R_FTFL01 0x10 0x01 0x00 ..\se50\r_ftfl01 //ＲＡＹ遠距離足音１（左）
+SD_E_R_FTFR01 0x10 0x01 0x00 ..\se50\r_ftfr01 //ＲＡＹ遠距離足音１（右）
+SD_E_R_FTFL02 0x10 0x01 0x00 ..\se50\r_ftfl01 //ＲＡＹ遠距離足音２（左）
+SD_E_R_FTFR02 0x10 0x01 0x00 ..\se50\r_ftfr01 //ＲＡＹ遠距離足音２（右）
+SD_E_R_FTFL03 0x10 0x01 0x00 ..\se50\r_ftfl01 //ＲＡＹ遠距離足音３（左）
+SD_E_R_FTFR03 0x10 0x01 0x00 ..\se50\r_ftfr01 //ＲＡＹ遠距離足音３（右）
+SD_E_R_FTNG01 0x80 0x01 0x00 ..\se50\r_ftng01 //ＲＡＹ近距離で着地
+SD_E_R_FTNJ01 0x80 0x01 0x00 ..\se50\r_ftnj01 //ＲＡＹ近距離でジャンプ
+SD_E_R_FTNL01 0x40 0x01 0x00 ..\se50\r_ftnl01 //ＲＡＹ近距離足音（左）
+SD_E_R_FTNR01 0x40 0x01 0x00 ..\se50\r_ftnr01 //ＲＡＹ近距離足音（右）
+SD_E_TAILHIT1 0x80 0x01 0x00 ..\se50\tailhit1 //ＲＡＹ尻尾攻撃ヒット
+SD_E_TAILSW01 0x50 0x01 0x00 ..\se50\tailsw01 //ＲＡＹ尻尾振り音
+SD_E_GISIGI01 0x30 0x01 0x00 ..\se50\gisigi01 //ＲＡＹチャフ受け軋み
+
+
+//se4f(w16a,w16b,Ｃ脚トイレ)//
+SD_A_SAINTWTR 0x10 0x01 0x00 ..\se4f\saintwtr //小便器への小便(12fps連)
+SD_A_DRYERSTR 0x20 0x01 0x00 ..\se4f\dryerstr //ハンドドライヤー開始(12fps開け)
+SD_A_DRYEREND 0x20 0x01 0x00 ..\se4f\dryerend //ハンドドライヤー中(12fps連)
+SD_A_BIGBEN01 0x50 0x01 0x00 ..\se4f\bigben01 //大便器流す
+SD_A_SMLBEN01 0x50 0x01 0x00 ..\se4f\smlben01 //小便器流す
+
+
+
+//以下、追加分配置場所デス。//
+
+SD_A_YUBIBUE2 0x50 0x01 0x00 ..\se59\yubibue2 //ファットマン指笛
+
+SD_A_FOOT_S1L 0x50 0x01 0x00 ..\g\foot_s1l //裸足足音左（呼び分け用）
+SD_A_FOOT_S1R 0x50 0x01 0x00 ..\g\foot_s1r //裸足足音右（呼び分け用）
+
+SD_A_ROLLFIX1 0x20 0x01 0x00 ..\se59\rollfix1 //ローラーブレード調子直し１
+SD_A_ROLLFIX2 0x20 0x01 0x00 ..\se59\rollfix2 //ローラーブレード調子直し２
+
+SD_A_OMORASI1 0x20 0x01 0x00 ..\se5a\omorasi1 //人質おもらし音
+
+SD_E_H_SWINGR 0x50 0x00 0x00 ..\se56\h_swingr //ハリアー交錯（左から右）
+SD_E_H_SWINGL 0x50 0x00 0x00 ..\se56\h_swingl //ハリアー交錯（右から左）
+SD_E_AMALERT1 0x50 0x00 0x00 ..\se56\amalert1 //ハリアーアムラーム接近警告音
+
+SD_E_PHYFAR09 0x10 0x01 0x11 ..\g\phyfar03 //サイファーよたよた飛行音１
+SD_E_PHYFAR0A 0x10 0x01 0x12 ..\g\phyfar03 //サイファーよたよた飛行音２
+SD_E_PHYFAR0B 0x10 0x01 0x13 ..\g\phyfar03 //サイファーよたよた飛行音３
+SD_E_PHYFAR0C 0x10 0x01 0x14 ..\g\phyfar03 //サイファーよたよた飛行音４
+SD_E_PHYFAR0D 0x10 0x01 0x11 ..\g\phyfar04 //サイファー継ぎ目飛行音１
+SD_E_PHYFAR0E 0x10 0x01 0x12 ..\g\phyfar04 //サイファー継ぎ目飛行音２
+SD_E_PHYFAR0F 0x10 0x01 0x13 ..\g\phyfar04 //サイファー継ぎ目飛行音３
+SD_E_PHYFAR10 0x10 0x01 0x14 ..\g\phyfar04 //サイファー継ぎ目飛行音４
+SD_E_CYPHDMG1 0x50 0x01 0x00 ..\g\cyphdmg1 //サイファー弾丸ヒット音
+
+//<7/13追加本田ハリアー戦関連>//
+SD_E_H_SWIDM1 0x50 0x00 0x00 ..\se56\h_swidm1 //ハリアー飛び去りデモ
+SD_E_H_SWIDM2 0x50 0x00 0x00 ..\se56\h_swidm2 //ハリアーホバリング後飛去りデモ
+SD_E_H_SWIDM3 0x50 0x00 0x00 ..\se56\h_swidm3 //ハリアーホバリング上昇デモ
+//<7/14追加本田ハリアー戦関連>//
+SD_E_H_SWIDM4 0x50 0x00 0x00 ..\se56\h_swidm4 //ハリアーカメラかすめデモ
+SD_E_H_HOVUP1 0x50 0x00 0x00 ..\se56\h_hovup1 //ハリアーホバリング上昇音
+SD_E_H_HOVAS1 0x50 0x00 0x00 ..\se56\h_hovas1 //ハリアーホバリング後飛び去り
+SD_A_KA_GRE01 0x50 0x01 0x00 ..\se56\ka_gre01 //スネークＭ４グレネード発射
+//<7/17追加本田ハリアー戦関連>//
+SD_A_BRIDGEX1 0x50 0x01 0x00 ..\se56\bridgex1 //橋壊れ破片音
+
+
+
+//se3e(w24e,会話盗み聞き)//
+SD_A_CHUSHA01 0x50 0x01 0x00 ..\se3e\chusha01 //注射（リキッド腕抑制）
+SD_A_DM_KINU1 0x20 0x01 0x00 ..\se3e\dm_kinu1 //シナリオデモ用衣擦れ１遅
+SD_A_DM_KINU2 0x20 0x01 0x00 ..\se3e\dm_kinu2 //シナリオデモ用衣擦れ２普
+SD_A_DM_KINU3 0x20 0x01 0x00 ..\se3e\dm_kinu3 //シナリオデモ用衣擦れ３速
+SD_A_G_HOLSTR 0x30 0x01 0x00 ..\se3e\g_holstr //オセロット銃しまう
+SD_A_G_KAMAE1 0x30 0x01 0x00 ..\se3e\g_kamae1 //オセロット銃構える
+SD_A_G_PLAY01 0x10 0x01 0x00 ..\se3e\g_play01 //オセロットガンプレイ回し１
+SD_A_G_PLAY02 0x10 0x01 0x00 ..\se3e\g_play02 //オセロットガンプレイ回し２
+SD_A_G_PLAY03 0x20 0x01 0x00 ..\se3e\g_play03 //オセロットガンプレイ回転止め
+SD_A_G_WALK1L 0x10 0x01 0x00 ..\se3e\g_walk1l //オセロット足音左
+SD_A_G_WALK1R 0x10 0x01 0x00 ..\se3e\g_walk1r //オセロット足音右
+SD_A_G_WALK2S 0x10 0x01 0x00 ..\se3e\g_walk2s //オセロット停止足音
+SD_A_O_KAMAE1 0x30 0x01 0x00 ..\se3e\o_kamae1 //オルガ銃構える
+SD_A_O_WALK1L 0x10 0x01 0x00 ..\se3e\o_walk1l //オルガ足音左
+SD_A_O_WALK1R 0x10 0x01 0x00 ..\se3e\o_walk1r //オルガ足音右
+SD_A_O_WALK2S 0x10 0x01 0x00 ..\se3e\o_walk2s //オルガ停止足音
+SD_A_S_MANTOB 0x30 0x01 0x00 ..\se3e\s_mantob //ソリダスマント翻す
+SD_A_S_WALK1L 0x10 0x01 0x00 ..\se3e\s_walk1l //ソリダス足音左
+SD_A_S_WALK1R 0x10 0x01 0x00 ..\se3e\s_walk1r //ソリダス足音右
+SD_A_S_WALK2S 0x10 0x01 0x00 ..\se3e\s_walk2s //ソリダス停止足音
+
+SD_A_O_WALM1L 0x10 0x01 0x00 ..\se54\o_walm1l //オルガ鉄床足音左
+SD_A_O_WALM1R 0x10 0x01 0x00 ..\se54\o_walm1r //オルガ鉄床足音右
+SD_A_O_WALM2S 0x10 0x01 0x00 ..\se54\o_walm2s //オルガ鉄床停止足音
+SD_A_O_HWALL1 0x30 0x01 0x00 ..\se54\o_hwall1 //オルガ壁パンチ
+
+SD_A_BODYBLOW 0x30 0x01 0x00 ..\se41\bodyblow //オルガボディブロウ
+SD_A_KASEOPEN 0x50 0x01 0x00 ..\se41\kaseopen //拷問台カセ外れる
+SD_A_KASESTOP 0x30 0x01 0x00 ..\se41\kasestop //拷問台カセで動けない
+SD_A_HEBATT02 0x10 0x01 0x00 ..\se41\hebatt02 //蛇手突き振り
+SD_A_HEBFURI3 0x10 0x01 0x00 ..\se41\hebfuri3 //蛇手振り
+SD_A_HEBREDY2 0x20 0x01 0x00 ..\se41\hebredy2 //蛇手構える
+SD_A_HEBSCAN1 0x50 0x01 0x00 ..\se41\hebscan1 //蛇手スキャニング（12fps連）
+SD_A_HEBSIME2 0x20 0x01 0x00 ..\se41\hebsime2 //蛇手首絞め
+SD_A_HEBTKAM2 0x30 0x01 0x00 ..\se41\hebtkam2 //蛇手掴みヒット
+
+SD_A_DRIPPY13 0x10 0x01 0x00 ..\se4c\drippy13 //ポンプ室水滴落ち
+
+SD_A_SVERY_01 0x20 0x01 0x00 ..\se4d\svery_01 //ライデン糞スベリ足音１遭遇
+SD_A_SVERY_02 0x10 0x01 0x00 ..\se4d\svery_02 //ライデン糞スベリ足音２足掻き
+
+SD_A_EV_RMOV1 0x30 0x01 0x00 ..\se4d\ev_rmov1 //エレベータ屋上柵動く
+SD_A_EV_RSAK1 0x50 0x01 0x00 ..\se4d\ev_rsak1 //エレベータ屋上柵開き切る
+SD_A_EV_RSAK2 0x50 0x01 0x00 ..\se4d\ev_rsak2 //エレベータ屋上柵閉まり切る
+
+
+//<7/22追加本田ヴァンプ関連>//
+SD_E_V_ROOL02 0x50 0x01 0x00 ..\se53\v_rool02 //ヴァンプ空中回転
+SD_E_V_ROOL03 0x50 0x01 0x00 ..\se53\v_rool03 //ヴァンプ遅い空中回転
+SD_E_V_WALKL2 0x50 0x01 0x00 ..\se53\v_walkl2 //ヴァンプ歩行左
+SD_E_V_WALKR2 0x50 0x01 0x00 ..\se53\v_walkr2 //ヴァンプ歩行右
+SD_E_V_RUNL02 0x50 0x01 0x00 ..\se53\v_runl02 //ヴァンプ走行左
+SD_E_V_RUNR02 0x50 0x01 0x00 ..\se53\v_runr02 //ヴァンプ走行右
+SD_A_WPN_WTR1 0x50 0x01 0x00 ..\se53\wpn_wtr1 //ウエポン着水
+
+
+SD_A_PC_INST1 0x50 0x01 0x00 ..\se77\pc_inst1 //端末にメディアを挿入
+SD_A_PC_BOOT1 0xFF 0x00 0x00 ..\se77\pc_boot1 //端末電源ＯＮ～ファン回転(持続)
+SD_A_PC_HDSEK 0x30 0x00 0x00 ..\se77\pc_hdsek //端末ＨＤシーク(2fps連射で使う)
+SD_A_PC_START 0x50 0x00 0x00 ..\se77\pc_start //端末起動開始BEEP「ピポッ」
+SD_A_PC_ALART 0x50 0x00 0x00 ..\se77\pc_alart //端末警告BEEP「ピーッ」
+SD_A_PC_OKOK1 0x50 0x00 0x00 ..\se77\pc_okok1 //端末了承BEEP「ピロリロッ」
+SD_A_HA_CMPLT 0x50 0x00 0x00 ..\se77\ha_cmplt //HAL5000ロード完了
+SD_A_HA_SCLWI 0x30 0x00 0x00 ..\se77\ha_sclwi //HAL5000大ラインスクロール
+SD_A_HA_MOVLI 0x30 0x00 0x00 ..\se77\ha_movli //HAL5000小ライン枠移動
+SD_A_HA_DISCN 0x50 0x00 0x00 ..\se77\ha_discn //HAL5000接続完了文字点滅
+SD_A_OTA_IN_1 0x30 0x00 0x00 ..\se77\ota_in_1 //HAL5000オタコン生える
+SD_A_OTA_OUT1 0x30 0x00 0x00 ..\se77\ota_out1 //HAL5000オタコン沈む
+SD_A_OTA_OK_1 0x30 0x00 0x00 ..\se77\ota_ok_1 //HAL5000オタコンＯＫ
+SD_A_OTA_NG_1 0x30 0x00 0x00 ..\se77\ota_ng_1 //HAL5000オタコンだめ
+SD_A_OTA_LAU1 0x30 0x00 0x00 ..\se77\ota_lau1 //HAL5000オタコン笑い
+SD_A_OTA_SHY1 0x30 0x00 0x00 ..\se77\ota_shy1 //HAL5000オタコン恥辱
+SD_A_OTA_SPR1 0x30 0x00 0x00 ..\se77\ota_spr1 //HAL5000オタコン驚き
+
+SD_A_FLOORON1 0x50 0x01 0x00 ..\se5c\flooron1 //壊れ床スタート（踏んだ瞬間）
+SD_A_FLOORVB1 0x30 0x01 0x00 ..\se5c\floorvb1 //壊れ床軋む１（周期合わせて連）
+SD_A_FLOORVB2 0x30 0x01 0x00 ..\se5c\floorvb1 //壊れ床軋む２（周期合わせて連）
+SD_A_FLOOROU1 0x80 0x01 0x00 ..\se5c\floorbr2 //壊れ床外れる１
+SD_A_FLOOROU2 0x80 0x01 0x00 ..\se5c\floorbr2 //壊れ床外れる２
+SD_A_FLOORFL1 0x80 0x01 0x00 ..\se5c\floorfl1 //壊れ床床に落ちる
+
+SD_A_BLTCNV1A 0x20 0x01 0x00 ..\se48\bltconv1 //コンベヤ駆動１－１
+SD_A_BLTCNV2A 0x20 0x01 0x00 ..\se48\bltconv2 //コンベヤ駆動１－２(22fps交互)
+SD_A_BLTCNV1B 0x20 0x01 0x00 ..\se48\bltconv1 //コンベヤ駆動２－１
+SD_A_BLTCNV2B 0x20 0x01 0x00 ..\se48\bltconv2 //コンベヤ駆動２－２(22fps交互)
+SD_A_BLTCNV1C 0x20 0x01 0x00 ..\se48\bltconv1 //コンベヤ駆動３－１
+SD_A_BLTCNV2C 0x20 0x01 0x00 ..\se48\bltconv2 //コンベヤ駆動３－２(22fps交互)
+
+SD_V_RAISNZ01 0x50 0x01 0x01 ..\se5d\raisnz01 //ライデン裸くしゃみ「へっし！」
+
+SD_V_RAIELE01 0x50 0x01 0x01 ..\se54\raiele01 //ライデン電気床悲鳴１「あはぁ」
+SD_V_RAIELE02 0x50 0x01 0x01 ..\se54\raiele02 //ライデン電気床悲鳴２「あっは」
+SD_V_RAIELE03 0x50 0x01 0x01 ..\se54\raiele03 //ライデン電気床悲鳴３「あがっ」
+SD_V_RAIELE04 0x50 0x01 0x01 ..\se54\raiele04 //ライデン電気床悲鳴４「うっふ」
+
+SD_A_MONINOZ1 0x10 0x01 0x00 ..\se4c\moninoz1 //中央モニターノイズ１
+SD_A_MONINOZ2 0x10 0x01 0x00 ..\se4c\moninoz1 //中央モニターノイズ２(6fps連)
+SD_A_MONITOR1 0x50 0x01 0x00 ..\se4c\monitor1 //中央モニター破壊
+
+SD_A_TRSPARK1 0x30 0x01 0x00 ..\se57\trspark1 //変電室火花スパーク
+SD_A_TRSPARK2 0x10 0x01 0x00 ..\se57\trspark2 //変電室火花粒落ち
+
+SD_A_ONARA001 0x30 0x01 0x00 ..\se5a\onara001 //人質オナラ１「ブォ」
+SD_A_ONARA002 0x30 0x01 0x00 ..\se5a\onara002 //人質オナラ２「ブッ」
+SD_A_ONARA003 0x30 0x01 0x00 ..\se5a\onara003 //人質オナラ３「プゥ」
+SD_A_ONARA004 0x30 0x01 0x00 ..\se5a\onara004 //人質オナラ４「ピィー」
+SD_A_FLAG_L01 0x30 0x01 0x00 ..\se5a\flag_l01 //旗接触大（撃つ、殴る蹴る）
+SD_A_FLAG_S02 0x30 0x01 0x00 ..\se5a\flag_s02 //旗接触小（走って通りぬける）
+
+SD_A_HO_WIND1 0x50 0x01 0x00 ..\se48\ho_wind1 //外部へのハッチ風(w28a)
+SD_A_HO_WIND2 0x50 0x01 0x00 ..\se48\ho_wind2 //外部からのハッチ風(w20a)
+
+SD_A_CANWTR01 0x30 0x01 0x00 ..\se5b\canwtr01 //水浮き缶飛ぶ
+SD_A_CANWALL1 0x10 0x01 0x00 ..\se5b\canwall1 //水浮き缶壁弾み
+SD_A_CANWIN01 0x10 0x01 0x00 ..\se5b\canwin01 //水浮き缶着水
+SD_A_FALLWTR1 0x20 0x01 0x00 ..\se5b\fallwtr1 //滝水１
+SD_A_FALLWTR2 0x20 0x01 0x00 ..\se5b\fallwtr2 //滝水２(交互15fps連)
+SD_A_FALLHIT1 0x30 0x01 0x00 ..\se5b\fallhit1 //滝水カブリ１
+SD_A_FALLHIT2 0x30 0x01 0x00 ..\se5b\fallhit2 //滝水カブリ２(交互15fps連)
+
+SD_A_INWDOOR2 0x30 0x01 0x00 ..\se5b\inwdoor2 //水中水密ドア取っ手回す
+
+SD_P_HEADNET1 0x50 0x01 0x00 ..\se4e\headnet1 //イントルード主観柵あたり
+
+SD_P_LAMPON01 0x10 0x01 0x00 ..\se7b\lampon01 //長廊下ランプ点灯
+SD_P_LAMPOFF1 0x10 0x01 0x00 ..\se7b\lampoff1 //長廊下ランプ消え
+
+SD_A_SLOCKOP2 0x50 0x01 0x00 ..\se5b\slockop2 //横開ロッカー開かない（ガチ）
+SD_A_SLOCKOP1 0x50 0x01 0x00 ..\se5b\slockop1 //横開ロッカー開く（カチャ）
+SD_A_SLOCKMV1 0x30 0x01 0x00 ..\se5b\slockmv1 //横開ロッカー動作（キィ…）
+SD_A_SLOCKCL2 0x50 0x01 0x00 ..\se5b\slockcl2 //横開ロッカー開き切る（カチン）
+SD_A_SLOCKCL1 0x50 0x01 0x00 ..\se5b\slockcl1 //横開ロッカー閉リ切る（ガツン）
+
+SD_A_PDOOROP1 0x50 0x01 0x00 ..\se4f\pdoorop1 //厨房ドア開かない（ガツ）
+
+SD_A_PIPEWTR1 0x20 0x01 0x00 ..\se4a\pipewtr1 //ＢＣ橋パイプ水１
+SD_A_PIPEWTR2 0x20 0x01 0x00 ..\se4a\pipewtr2 //ＢＣ橋パイプ水２(交互15fps連)
+
+SD_A_DAZZHIT1 0x80 0x01 0x00 ..\se7a\dazzhit1 //投光器角度変更跳弾
+SD_A_DAZZLING 0x40 0x01 0x00 ..\se7a\dazzling //投光器まぶしい(6fps連)
+
+SD_A_BLTSTOP1 0x40 0x01 0x00 ..\se48\bltstop1 //コンベヤ駆動停止
+SD_A_BLTSTRT1 0x40 0x01 0x00 ..\se48\bltstrt1 //コンベヤ駆動開始
+SD_A_LED_BLUE 0x50 0x01 0x00 ..\se48\led_blue //コンベア制御ランプ青点灯
+SD_A_LED_YELL 0x50 0x01 0x00 ..\se48\led_yell //コンベア制御ランプ黄点灯
+SD_A_LED_RED1 0x50 0x01 0x00 ..\se48\led_red1 //コンベア制御ランプ赤点灯
+
+SD_A_ELTSTAR1 0x50 0x01 0x00 ..\se44\eltstar1 //服装検査作動開始
+SD_A_ELTSCAN1 0x50 0x01 0x00 ..\se44\eltscan1 //服装検査検査中(点滅に合わせ)
+SD_A_ELTNOT01 0x50 0x01 0x00 ..\se44\eltnot01 //服装検査ＮＧ(敵発見まで12fps連)
+SD_A_ELTGOOD1 0x50 0x01 0x00 ..\se44\eltgood1 //服装検査ＯＫ
+
+SD_A_DANB_IN1 0x80 0x01 0x00 ..\se57\danb_in1 //段ボール到着スタート
+
+SD_A_INWTRG01 0x30 0x01 0x00 ..\se4d\inwtrg01 //投擲物投げ入れ
+
+SD_A_SWIGUARD 0x50 0x01 0x00 ..\se5d\swiguard //刀ガード構える
+
+SD_A_SNAPPK01 0x80 0x00 0x00 ..\se4e\snappk01 //NPCスネークw11a敵を気絶させる
+SD_P_INWBRES1 0x80 0x00 0x00 ..\se5b\inwbres1 //水中マスク呼吸
+
+SD_A_BF_ROLL1 0x50 0x00 0x00 ..\se59\bf_roll1 //ファットマン戦前デモ前滑走音
+
+SD_A_ELFLOOR1 0x80 0x00 0x00 ..\se54\elfloor1 //電気床感電カット切れ目１
+SD_A_ELFLOOR2 0x80 0x00 0x00 ..\se54\elfloor2 //電気床感電カット切れ目２
+SD_A_ELFLOOR3 0x80 0x00 0x00 ..\se54\elfloor3 //電気床感電カット切れ目３
+SD_A_ELFLOOR4 0x80 0x00 0x00 ..\se54\elfloor4 //電気床感電カット切れ目４
+SD_A_ELFSPRK1 0x30 0x00 0x00 ..\se54\elfsprk1 //電気床スパーク
+
+SD_E_LEGMISE3 0x20 0x01 0x00 ..\se50\legmise3 //ＲＡＹミサイル落下１(左足側)
+SD_E_LEGMISE4 0x20 0x01 0x00 ..\se50\legmise4 //ＲＡＹミサイル落下２(右足側)
+
+SD_A_OFFSENS1 0x80 0x01 0x00 ..\se56\offsens1 //セムテックス赤外線トラップ解除
+
+SD_E_DOWNFAT1 0x80 0x01 0x00 ..\se59\downfat1 //ファットマンダウン音
+SD_E_REBFAT01 0x50 0x01 0x00 ..\se59\rebfat01 //ファットマン反射ボイーン
+
+SD_E_RWATER01 0x50 0x01 0x00 ..\se50\rwater01 //ＲＡＹ外環動作水飛沫１
+
+SD_A_THUND_P1 0x50 0x00 0x00 ..\se3c\thund_p1 //タイトルフラッシュ
+SD_A_OP_NPAP1 0x50 0x00 0x00 ..\se3c\op_npap1 //新聞摩擦（上スクロール）
+SD_A_OP_BOOK1 0x50 0x00 0x00 ..\se3c\op_book1 //本摩擦（右スクロール）
+SD_A_OP_BOOK2 0x50 0x00 0x00 ..\se3c\op_book2 //本消え（消失）
+SD_A_PAGEN001 0x50 0x00 0x00 ..\se3c\pagen001 //新聞１Ｐめくり
+SD_A_PAGEB001 0x50 0x00 0x00 ..\se3c\pageb001 //本１Ｐめくり
+SD_A_PAGE10N1 0x50 0x00 0x00 ..\se3c\page10n1 //新聞１０Ｐめくり
+SD_A_PAGE10B1 0x50 0x00 0x00 ..\se3c\page10b1 //本１０Ｐめくり
+SD_A_PAGECLN1 0x50 0x00 0x00 ..\se3c\pagecln1 //新聞とじる
+SD_A_PAGECLB1 0x50 0x00 0x00 ..\se3c\pageclb1 //本閉じる
+
+SD_A_C4SURE01 0x50 0x01 0x00 ..\se4f\c4sure01 //Ｃ４引き摺り１（右から中）
+SD_A_C4SURE02 0x50 0x01 0x00 ..\se4f\c4sure02 //Ｃ４引き摺り２（中から前）
+SD_A_C4SWIT11 0x50 0x01 0x00 ..\se4f\c4swit11 //Ｃ４タイマースイッチＯＮ
+SD_A_SPRYGET1 0x50 0x01 0x00 ..\se4f\spryget1 //冷却スプレー缶持つ
+SD_A_SPRYPUT1 0x50 0x01 0x00 ..\se4f\spryput1 //冷却スプレー缶置く
+SD_A_SENSGET1 0x50 0x01 0x00 ..\se4f\sensget1 //センサーＡ持つ
+SD_A_SENSPUT1 0x50 0x01 0x00 ..\se4f\sensput1 //センサーＡ置く
+
+SD_S_JINGLE02 0x90 0x00 0x00 ..\se7c\tan_fnd2 //緊迫ジングル音２(死体ロッカー)
+SD_S_JINGLE03 0x90 0x00 0x16 ..\se4e\cyp_fnd2 //緊迫ジングル音３(敵兵発見)
+
+SD_E_RWATER02 0x50 0x01 0x00 ..\se50\rwater02 //ＲＡＹ外環動作水飛沫２
+SD_E_RBLOOD01 0x50 0x01 0x00 ..\se50\rblood01 //ＲＡＹ血を流す
+
+SD_A_AF_ROLL1 0x50 0x00 0x17 ..\se59\af_roll1 //ファットマン戦終了デモ前滑走音
+
+SD_A_O_WALK3M 0x10 0x01 0x00 ..\se41\o_walk3m //オルガ足音フォロー(拷問デモ)
+
+SD_A_ELFNOZ01 0x10 0x01 0x00 ..\se54\elfnoz01 //電気床駆動音ヴーーン(6fps連)
+
+SD_V_SOLMUTE1 0x50 0x01 0x0C ..\g\dummy //ソリダスＳＥ音声ミュート
+
+SD_A_INWBOMS1 0x30 0x01 0x00 ..\se4d\inwboms1 //水中爆発水飛沫
+
+SD_A_TOILCLO1 0x50 0x01 0x00 ..\se4f\toilclo1 //トイレ扉ドア閉まる（バタン）
+SD_A_TOILMOV1 0x50 0x01 0x00 ..\se4f\toilmov1 //トイレ扉ドア動作（キィ…）
+SD_A_TOILOPN1 0x50 0x01 0x00 ..\se4f\toilopn1 //トイレ扉ドア開く（カチャ）
+SD_A_TOILHIT1 0x50 0x01 0x00 ..\se4f\toilhit1 //トイレ扉に主観で頭をぶつける。
+SD_A_TOILOPN2 0x50 0x01 0x00 ..\se4f\toilopn2 //トイレ扉ドア開かない（ガチン）
+SD_A_TOILDWN1 0x50 0x01 0x00 ..\se4f\toildwn1 //トイレ扉ドア外れる
+SD_A_TOILDWN2 0x30 0x01 0x00 ..\se4f\toildwn2 //トイレ扉ドア弾む
+SD_A_TOILDWN3 0x50 0x01 0x00 ..\se4f\toildwn3 //トイレ扉ドア倒れる
+SD_A_TOILDMG1 0x50 0x01 0x00 ..\se4f\toildmg1 //トイレ扉ドア軋みズレ
+SD_A_TOILATK1 0x30 0x01 0x00 ..\se4f\toilatk1 //トイレ扉ドア攻撃当たり
+
+SD_A_TEJOHGT1 0x30 0x01 0x00 ..\se40\tejohgt1 //後ろ手に手錠で動けない
+
+SD_A_FENCEBR1 0x80 0x01 0x00 ..\se54\FENCEBR1 //ダクト内フェンスダメージ
+SD_A_FENCEBR2 0x80 0x01 0x00 ..\se54\FENCEBR2 //ダクト内フェンス壊れ
+
+SD_W_SOCOMNP1 0x30 0x01 0x00 ..\se5d\socomnp1 //NPCスネーク拳銃ショット
+SD_W_FAMASNP1 0x30 0x01 0x00 ..\se5d\famasnp1 //NPCスネーク自動小銃ショット
+
+SD_A_SEALSGNB 0x90 0x00 0x00 ..\se57\sealsgnb //w14aＣＤ橋でシールズ頑張る
+
+SD_A_KAIDANGR 0x40 0x01 0x00 ..\se5c\kaidangr //グラグラ階段グラグラ
+SD_A_KAIDANFA 0x60 0x01 0x00 ..\se5c\kaidanfa //グラグラ階段取れる
+
+SD_A_FLOORTK1 0x30 0x01 0x00 ..\se5c\floortk1 //壊れ床完全に取れる
+
+SD_E_N_NUKI01 0x30 0x01 0x00 ..\se53\n_nuki01 //ヴァンプ、鞘からナイフ抜く
+
+SD_E_BROODSW1 0x30 0x01 0x00 ..\se5d\broodsw1 //天狗兵、血プシー！
+
+SD_A_HA_LOAD1 0x30 0x00 0x00 ..\se77\HA_LOAD1 //HAL5000読み込み中
+
+SD_A_FNALPES1 0x20 0x01 0x00 ..\se5b\fnalpesc //船虫スプレー逃げ１
+SD_A_FNALPES2 0x20 0x01 0x00 ..\se5b\fnalpesc //船虫スプレー逃げ２(交互18fps連)
+
+SD_A_C4COUNTS 0x80 0x00 0x00 ..\se59\c4counts //カウントダウン（ファットマン）
+
+SD_E_TKALAND1 0x50 0x01 0x00 ..\se55\tkaland1 //ソリダスハイジャンプ着地
+
+SD_P_FOOT2S1L 0x10 0x01 0x00 ..\g\foot2s1l //プレイヤー裸足歩き足音（左）
+SD_P_FOOT2S1R 0x10 0x01 0x00 ..\g\foot2s1r //プレイヤー裸足歩き足音（右）
+SD_P_SENAKA2N 0x20 0x01 0x00 ..\g\senaka2n //裸足で壁に張付く
+SD_P_STAND02N 0x20 0x01 0x00 ..\g\stand2n //裸足でしゃがみ、立ち上がり
+SD_P_STAND03N 0x20 0x01 0x00 ..\g\stand3n //裸足で側転着地(ライデン)
+
+SD_S_MUTEW11A 0xA0 0x00 0x16 ..\se4e\mutew11a //w11a緊迫ジングル音ミュート
+
+SD_A_WPN_WTR2 0x50 0x01 0x00 ..\se53\wpn_wtr2 //浮いてる足音着水
+
+SD_S_JINGLE04 0x90 0x00 0x16 ..\se57\bom_fnd1 //緊迫ジングル音４(爆弾発見)
+
+SD_P_FOOTW01L 0x10 0x01 0x00 ..\g\footw02l //プレイヤー歩き足音１（左）
+SD_P_FOOTW01R 0x10 0x01 0x00 ..\g\footw02r //プレイヤー歩き足音１（右）
+SD_P_FOOTW02L 0x10 0x01 0x00 ..\g\footwm2l //プレイヤー歩き足音２（左）
+SD_P_FOOTW02R 0x10 0x01 0x00 ..\g\footwm2r //プレイヤー歩き足音２（右）
+SD_P_FOOTW03L 0x10 0x01 0x00 ..\g\footwm2l //プレイヤー歩き足音３（左）
+SD_P_FOOTW03R 0x10 0x01 0x00 ..\g\footwm2r //プレイヤー歩き足音３（右）
+SD_P_FOOTW04L 0x10 0x01 0x00 ..\g\footwm2l //プレイヤー歩き足音４（左）
+SD_P_FOOTW04R 0x10 0x01 0x00 ..\g\footwm2r //プレイヤー歩き足音４（右）
+SD_P_FOOTW05L 0x10 0x01 0x00 ..\g\footwm2l //プレイヤー歩き足音５（左）
+SD_P_FOOTW05R 0x10 0x01 0x00 ..\g\footwm2r //プレイヤー歩き足音５（右）
+SD_P_FOOTW06L 0x10 0x01 0x00 ..\g\footwm2l //プレイヤー歩き足音６（左）
+SD_P_FOOTW06R 0x10 0x01 0x00 ..\g\footwm2r //プレイヤー歩き足音６（右）
+SD_P_FOOTW07L 0x10 0x01 0x00 ..\g\footwm2l //プレイヤー歩き足音７（左）
+SD_P_FOOTW07R 0x10 0x01 0x00 ..\g\footwm2r //プレイヤー歩き足音７（右）
+SD_P_FOOTW08L 0x10 0x01 0x00 ..\g\footwm2l //プレイヤー歩き足音８（左）
+SD_P_FOOTW08R 0x10 0x01 0x00 ..\g\footwm2r //プレイヤー歩き足音８（右）
+
+SD_V_SNADKN01 0x50 0x01 0x0A ..\se58\snadkn01 //NPCスネーク「どこを狙ってる！」
+
+//ヴァンプ追加2001/9/28本田
+SD_E_V_JMPOUT 0x50 0x00 0x00 ..\se53\v_jmpout //ヴァンプアウト後ジャンプ
+
+SD_A_FLAGBT12 0x10 0x01 0x00 ..\se7d\flagbt12 //旗バタ１（1と2をランダムに）
+SD_A_FLAGBT13 0x10 0x01 0x00 ..\se7d\flagbt13 //旗バタ２（mtnの周期に合わせて）
+SD_A_LADERLP1 0x20 0x01 0x00 ..\se7d\laderlp1 //アンテナ回転きしみ（１回転毎）
+SD_A_LADERMT1 0x20 0x01 0x00 ..\se7d\ladermt1 //アンテナ回転駆動（8fps毎連）
+
+SD_A_NETCLSD1 0x50 0x01 0x00 ..\se4e\netclsd1 //鉄ネット柵ドア開かない
+
+SD_P_SLW_IN02 0x20 0x01 0x00 ..\se5b\slw_in02 //水面ハシゴ降り
+SD_P_SLWOUT02 0x20 0x01 0x00 ..\se5b\slwout02 //水面ハシゴ登り
+SD_P_OUTMOVE1 0x20 0x01 0x00 ..\se5b\outmove1 //水面動作１（エルード移動）
+SD_P_OUTMOVE2 0x20 0x01 0x00 ..\se5b\outmove2 //水面動作２（懸垂上がり）
+SD_P_OUTMOVE3 0x20 0x01 0x00 ..\se5b\outmove3 //水面動作３（懸垂下がり）
+
+SD_E_INWTERL4 0x80 0x01 0x00 ..\se5c\inwater4 //敵兵水落ち、連絡橋シナリオ呼び
+
+SD_S_SHAFFLE1 0x50 0x00 0x00 ..\se3c\shaffle1 //ローポリ劇場シャッフル音
+
+SD_A_NOIZPTR1 0x80 0x01 0x00 ..\se4f\noizptr1 //ピーターの物音
+
+SD_A_AF_MUTE1 0x50 0x00 0x17 ..\se59\af_mute1 //ファットマン終了滑走ミュート

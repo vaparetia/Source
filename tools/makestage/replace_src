@@ -1,0 +1,386 @@
+#!/usr/bin/perl
+# 
+#  replace_src
+#      Replace 'mgs2/list/*.src' examming in the lst-file, the output of DEMO Max 
+#
+#  2000/11/17   T. Morita
+#  $Id: replace_src,v 5.0 2002/03/11 01:50:28 usr04098 Exp $
+#
+
+die "Usage: replace <LST-file>\n",
+    "   replace a list file.\n",
+    "   Examming in the lst-file, the output of DEMO Max.\n" if ( $#ARGV == -1 ) ;
+
+&arg_and_init_phase() ;
+&lst_check_phase() ;
+&src_check_phase() ;
+&src_replace_phase() ;
+
+printf( "Completed successfully\n" ) ;
+exit( 2 ) ;
+
+
+
+#
+# Phase Subroutines
+#
+#
+#
+sub arg_and_init_phase()
+{
+    local $i ;
+
+    for( $i=0 ; $i<$#ARGV+1 ; $i++ )
+    {
+	$lst  = $ARGV[$i], next if ( not $lst ) ;
+    }
+    
+    $| = 1 ;
+}
+
+sub lst_check_phase()
+{
+    local $i ;
+
+    open( NAMELIST, "sed -e '1,/\\/\\*/d' -e '\$d' $lst |" ) ;
+    foreach( <NAMELIST> )
+    {
+	s/[\n\r]+//g ;
+	s/ //g ;
+	$_ .= ".mdl" if ( !/\./ ) ;
+	for( $i=0 ; $i<=$#name ; $i++ )
+	{
+	    $i=0, last if ( $name[$i] eq $_ ) ;
+	}
+	push( @name, $_ ) if ( $i >= $#name+1 ) ;
+    }
+    close( NAMELIST ) ;
+}
+
+sub src_check_phase()
+{
+    local $ok ;
+
+    $src = $lst ;
+#    $src =~ s/\.lst$/\.src/ ;
+    $src =~ s/\/([^\/]+)$/.src/ ;
+    $src =~ s/cdrom\.img\/stage/list/ ;
+    &dpack( $src ) ;
+
+    $ok = 0 ;
+    for( $i=0 ; $i<=$#name ; $i++ )
+    {
+	$ok++ if ( $name[$i] ne "" ) ;
+    }
+    if ( $ok == 0 )
+    {
+	printf( "Completed successfully\n" ) ;
+	exit( 1 )  ;
+    }
+}
+
+sub src_replace_phase()
+{
+    local $i, $ok ;
+
+    print "Change the src file, and search for ...\n" ;
+    for( $i=0 ; $i<=$#name ; $i++ )
+    {
+	print "  $name[$i]\n" if ( $name[$i] ne "" ) ;
+    }
+    print "\n" ;
+
+    open( SRC, ">>$src" ) ; 
+    print SRC "/* mgdemo added ----from here (".localtime().") ---- */\n" ;
+    for( $i=0 ; $i<=$#name ; $i++ )
+    {
+	if ( $name[$i] ne "" )
+	{
+	    $ok = 0 ;
+	    undef( @find ) ;
+	    print "Start add $name[$i]\n" ;
+
+#ファイルを捜す必要のないコマンド
+	    &com_mar( $i, $name[$i] ), next if ( $name[$i] =~ m/mar$/ ) ;
+	    &com_kls( $i, $name[$i] ), next if ( $name[$i] =~ m/kls$/ ) ;
+	    next if ( $name[$i] =~ m/tri$/ ) ;
+
+#すべての拡張子に関してファイルを捜す
+	    $file =  $name[$i] ;
+	    $file =~ s/\.[^\.]+$// ;
+	    open( FIND, "find /u/develop/mj001data/fix -name '$file.*' |" ) ;
+	    foreach( <FIND> )
+	    {
+		chop ;
+		s/\/u\/develop\/mj001data\/fix\/// ;
+		push( @find, $_ ) ;
+	    }
+	    close( FIND ) ;
+	    if ( $#find == -1 )
+	    {
+		print "No such files as <$file.*>\n" ;
+		exit( 0 ) ;
+	    }
+
+	  SWITCH:
+	    for( $j=$i ; $j<=$#name ; $j++ )
+	    {
+		if ( $name[$j] ne "" )
+		{
+		    $ext   =  $name[$j] ;
+		    $ext   =~ s/.*\.([^\.]+)$/$1/ ;
+		    $file2 =  $name[$j] ;
+		    $file2 =~ s/\.[^\.]+$// ;
+
+		    if ( $file eq $file2 )
+		    {
+#ここからファイルを捜す必要のあるコマンド
+			&com_mdl( $j, @find ), next if ( $ext =~ m/(mdl|evm|kms)$/ ) ;
+			&com_l2d( $j, @find ), next if ( $ext =~ m/(l2d|o2d)$/ ) ;
+			&com_bmp( $j, @find ), next if ( $ext =~ m/(bmp|pic|dar)$/ ) ;
+			&com_cv2( $j, @find ), next if ( $ext =~ m/(cv2|cvd)$/     ) ;
+			&com_xsi( $j, @find ), next if ( $ext =~ m/(xsi|anm)$/     ) ;
+			&com_rwv( $j, @find ), next if ( $ext =~ m/rwv$/     ) ;
+			&com_default( $j, $ext, @find ) ;
+		    }
+		}
+	    }
+
+	    if ( !$ok )
+	    {
+		printf "Cannot find file <$_>\n" ;
+		print SRC "/* mgdemo added ----upto here ---- */\n" ;
+		close( SRC ) ;
+		exit( 0 ) ;
+	    }
+	}
+    }
+    print SRC "/* mgdemo added ----upto here ---- */\n" ;
+    close( SRC ) ;
+}
+
+
+
+
+
+
+
+
+
+#
+# Command Subroutines
+#
+#
+#ファイルを捜すコマンド
+sub com_bmp()
+{
+    my ( $j, @files ) = @_ ;
+    my $file ;
+
+    $file = &choose_file( "(bmp)", @files ) ;
+    print SRC "pack_trnall trn.tri $file\n" ;
+    &complete( $j ) ;
+}
+sub com_cv2()
+{
+    my ( $j, @files ) = @_ ;
+    my $file ;
+
+    $file = &choose_file( "(cvd|cv2)", @files ) ;
+    print SRC "cvd\t$file\n" ;
+    &complete( $j ) ;
+}
+sub com_l2d()
+{
+    my ( $j, @files ) = @_ ;
+    my $file ;
+
+    $file = &choose_file( "l2d", @files ) ;
+    print SRC "l2d\t$file\n" ;
+    &complete( $j ) ;
+}
+sub com_rwv()
+{
+    my ( $j, @files ) = @_ ;
+    my $file ;
+
+    $file = &choose_file( "(kms|evm)", @files ) ;
+    print SRC "cloth\t$file\n" ;
+    &complete( $j ) ;
+}
+sub com_xsi()
+{
+    my ( $j, @files ) = @_ ;
+    my $file, $rpt ;
+    
+    $file = &choose_file( "(xsi|anm)", @files ) ;
+    $rpt  = $file ;
+    $rpt  =~ s/\.xsi/.rpt/ ;
+    $file =~ s/^anm\/// ;
+    if ( -e "/u/develop/mj001data/runtime/$rpt" )
+    {
+	open( RPT, "grep Scale /u/develop/mj001data/runtime/$rpt |" ) ;
+	$_ = <RPT> ;
+	s/[\n\r]+//g ;
+	s/Scale[ \t]*// ;
+	close RPT ;
+	print SRC "anm\t$file -N -S $_\n" ;
+	&complete( $j ) ;
+    }
+    else
+    {
+	print( "No RPT-file<$rpt> !!!\n" ) ;
+    }
+}
+sub com_mdl()
+{
+    my ( $j, @files ) = @_ ;
+
+    $file = &choose_file( "(kms|evm|mdl)", @files ) ;
+    $file =~ s/^([^\/]+)\//$1\t/ ;
+    print SRC "$file\n" ;
+    &complete( $j ) ;
+}
+sub com_default()
+{
+    my ( $j, $ext, @files ) = @_ ;
+
+    $file = &choose_file( $ext, @files ) ;
+    $file =~ s/^([^\/]+)\//$1\t/ ;
+    print SRC "$file\n" ;
+    &complete( $j ) ;
+}
+
+#ファイルを捜さないコマンド
+sub com_mar()
+{
+    my ( $j, $file ) = @_ ;
+
+#    $file =~ s/\.[^\.]+$// ;
+    print SRC "mtn\t$file\n" ;
+
+    &complete( $j ) ;
+}
+sub com_kls()
+{
+    my ( $j, $file ) = @_ ;
+
+#    $file =~ s/\.[^\.]+$// ;
+    print SRC "arkms\t$file\n" ;
+
+    &complete( $j ) ;
+}
+
+
+#
+# Subroutines
+#
+#
+#
+sub dpack
+{
+    my ( $in ) = @_ ;
+    my $name2, $renamed, $replace ;
+
+    if ( &fork( "dpack $in -lst > .tmp_dpack_list" ) )
+    {
+	unlink( ".tmp_dpack_list" ) ;
+	print "SRC-file<$in> has an ERROR\n" ;
+	exit( 0 ) ;
+    }
+
+    open( DPACK, "grep '.rename ' .tmp_dpack_list | sed -e 's/^.rename //' |" )  ;
+    foreach( <DPACK> )
+    {
+	chop ;
+
+	$replace = $_ ;
+	s/\-\>.*// ;
+	s/(rwt|kms|evm)$/mdl/ ;
+	s/anm$/xsi/ ;
+	for( $i=0 ; $i<=$#name ; $i++ )
+	{
+	    $name2 = $name[$i] ;
+	    $name2 =~ s/(rwt|kms|evm)$/mdl/ ;
+	    $name2 =~ s/anm$/xsi/ ;
+	    if ( $name2 eq $_ )
+	    {
+		print "MAX の mdlモデルを\n",
+		      "\t$replace\n",
+		      "に変え、DE2を吐き直して下さい。\n" ;
+		exit( 0 ) ;
+	    }
+	}
+    }
+    close( DPACK ) ;
+
+    open( DPACK, "grep -v '.rename' .tmp_dpack_list |" )  ;
+    foreach( <DPACK> )
+    {
+	chop ;
+
+	s/.*\/([^\/]+)$/$1/ ;
+	s/(rwt|kms|evm)$/mdl/ ;
+	s/anm$/xsi/ ;
+	for( $i=0 ; $i<=$#name ; $i++ )
+	{
+	    $name2 = $name[$i] ;
+	    $name2 =~ s/(rwt|kms|evm)$/mdl/ ;
+	    $name2 =~ s/anm$/xsi/ ;
+	    $name[$i] = "" if ( $name2 eq $_ ) ;
+	}
+    }
+    close( DPACK ) ;
+#    unlink( ".tmp_dpack_list" ) ;
+}
+
+sub complete()
+{
+    my ( $j ) = @_ ;
+
+    $name[$j] = "" ;
+    $ok++ ;
+    print "  done.\n" ;
+}
+
+sub choose_file()
+{
+    my ( $match, @files ) = @_ ;
+    my @pool, $i=1 ;
+
+    undef @pool ;
+    foreach( @files )
+    {
+	if ( m/$match$/ )
+	{
+	    print "  [$i] <<$_>>\n" ;
+	    push( @pool, $_ ) ;
+	    $i++ ;
+	}
+    }
+    $i = 0 ;
+    if ( $#pool>0 )
+    {
+	do
+	{
+	    print "  Choose the file, inputing number ?:" if ( $i != int( '\n' - '1') ) ;
+	    $i = int( getc() - '1') ;
+	}
+	while( $i > $#pool || $i < 0 ) ;
+    }
+
+    return $pool[$i] ;
+}
+
+sub fork
+{
+    my $pid ;
+
+    unless ( $pid = fork )
+    {
+	exec( $_[0] ) ;
+	exit 0 ;
+    }
+    waitpid( $pid, 0 ) ;
+    return $? ;
+}

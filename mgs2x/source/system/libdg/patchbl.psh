@@ -1,0 +1,33 @@
+/*
+
+	パッチバンプテスト
+	2001/05/16 M.Kobayashi
+	$Id: patchbl.psh,v 1.1.1.3 2002/11/19 11:42:18 Yoshizawa1 Exp $
+ */
+
+/*
+
+	t0:  通常テクスチャ
+	t1:  バンプテクスチャ
+	t3:	 スペキュラマップテクスチャ
+ */
+
+xps.1.1
+
+tex t0
+tex t1
+;texm3x2pad t2, t1_bx2
+;texm3x2tex t3, t1_bx2
+texbem t3,t1
+
+;add_x2 r0, v0, t3
+mov r0,t0
+
+// ファイナルコンバイナの設定
+;xfc	zero_sat, r0_sat, r0_sat, t3_sat.a, zero_sat, zero_sat, r0_sat.a
+;xfc	zero_sat, r0_sat, r0_sat, zero_sat, zero_sat, zero_sat, r0_sat.a
+;xfc	zero_sat, r0_sat, r0_sat, t3_sat, zero_sat, zero_sat, r0_sat.a
+;xfc	r0_sat, v0_sat, zero, prod_sat, t3, v1, r0_sat.a
+xfc		zero, r0_sat, r0_sat, prod_sat, t3, v1, r0_sat.a
+
+

@@ -1,0 +1,543 @@
+#
+# Makefile for PS2
+# ¿∏¿Æµ¨¬ß
+#
+# 1999/03/12 K.Uehara
+# $Id: makefile.def,v 1.19 2002/12/26 20:39:58 takaki Exp $
+#
+
+# ≥∆•◊•˙¡∏•ß•Ø•»∏«Õ≠§Œ•™•◊•∑•Á•Û≈˘§Œ•ÅEπ•»
+
+MEDIA_TYPE = MEDIA_DVD
+
+ifeq ($(MGS2_DESIGN),1)
+# •«•∂•§• °º¥ƒ∂≠§œ128M¡¥…Ù§ƒ§´§¶
+SYSTEM_HEAP_SIZE =  0x4000
+SYSTEM_STACK_TOP =  0x01FFF000
+SYSTEM_STACK_SIZE = 0x00000FF0
+else
+# …∏Ω‡¥ƒ∂≠§œ32M§Œ§ﬂ
+SYSTEM_HEAP_SIZE =  0x4000
+SYSTEM_STACK_TOP =  0x01FFF000
+SYSTEM_STACK_SIZE = 0x00000FF0
+endif
+
+ifeq ($(MTS_MASTER),1)
+MTSLIB = mts_m.a
+else
+MTSLIB = mts.a
+endif
+
+ifeq ($(MGS2_XBOX),1)	# ------------------------------- XBOX ver.
+
+SYSMODULE = $(MTSLIB) sound.a zlibdec.a
+
+ifeq ($(MGS2_WIN),1)
+SYSMODULEDIR = ../wmodule
+else
+SYSMODULEDIR = ../xmodule
+endif
+
+SYSMODULE_INCLUDE = $(SYSMODULEDIR)/include
+SYSMODULE_LIB = $(SYSMODULEDIR)/lib
+
+### CRI Middleware
+
+CRIDIR = ../cri
+CRI_INCLUDE = $(CRIDIR)/include $(CRIDIR)/xb/include
+CRI_LIB = $(CRIDIR)/xb/lib
+#CRIMODULE = cri_mwsfdx.lib cri_adxx.lib
+CRIMODULE = 
+
+else					# ------------------------------- PS2 ver.
+
+SYSMODULE = $(MTSLIB) usbfs.a cdbios.a sound_ee.a jsifman.a zlibdec.a
+
+SYSMODULEDIR = ../module
+SYSMODULE_INCLUDE = $(SYSMODULEDIR)/include
+SYSMODULE_LIB = $(SYSMODULEDIR)/lib
+
+endif
+
+
+ifneq ($(MGS2_XBOX),1)	# ------------------------------- PS2 ver.
+INCLUDES = include game $(addprefix system/, libgv libdg libgcl libfs libmt libhzx libgcl libutl ) $(SYSMODULE_INCLUDE)
+
+else
+ifneq ($(MGS2_WIN),1)	# ------------------------------- XBOX ver.
+INCLUDES = include game $(addprefix system/, libgv libdg libgcl libfs libmt libhzx libgcl libutl ) $(SYSMODULE_INCLUDE)
+else
+INCLUDES = include game $(addprefix system/, libgv libdg libgcl libfs libmt libhzx libgcl libutl libx2w libwbc) $(SYSMODULE_INCLUDE)
+endif
+endif
+
+# -----------------------------------------------------------------
+
+# ¥ƒ∂≠ —øÙ§À§Ë§ÅEefineƒÅE¡
+
+ifeq ($(MGS2_MASTER),1)
+DEBUG_DEFS = DEBUG MGS_MASTER
+else
+ifeq ($(MGS2_NODEBUG),1)
+DEBUG_DEFS = DEBUG
+else
+DEBUG_DEFS = DEBUG DEBUG_MODE
+endif
+endif
+
+ifeq ($(MGS2_LANG),ENGLISH)
+
+ifeq ($(MGS2_PAL),SPANISH)
+
+LANG_DEFS = ENGLISH SPANISH
+
+else
+
+ifeq ($(MGS2_PAL),ITALIAN)
+
+LANG_DEFS = ENGLISH ITALIAN
+
+else
+
+LANG_DEFS = ENGLISH
+
+endif
+
+endif
+
+else
+LANG_DEFS = JAPANESE
+endif
+
+ifeq ($(MGS2_VMODE),PAL)
+VMODE_DEFS = PAL EU
+else
+VMODE_DEFS = NTSC
+endif
+
+ifeq ("$(MGS2_USESSE)","1")
+SSE_DEFS    = _USE_SSE
+SSE_COMMENT = "(SSE) "
+else
+SSE_DEFS    =
+SSE_COMMENT =
+endif
+
+ifeq ($(MGS2_WIN),1)		#-- for Windows
+	ifeq ("$(MGS2_AREA)","EU")
+		AREA_DEFS	= AREA_EU	# Euro
+	else
+		AREA_DEFS	= AREA_US	# USA
+	endif
+else						#-- for X-BOX, PS2
+	AREA_DEFS	= 
+endif
+
+ifeq ($(MGS2_WIN),1)		#-- for Windows
+	ifeq ("$(MGS2_RELAREA)","EU")
+		RELAREA_DEFS	= RELAREA_EU	# Euro
+	else
+		RELAREA_DEFS	= RELAREA_US	# USA
+	endif
+else						#-- for X-BOX, PS2
+	RELAREA_DEFS	= 
+endif
+
+ifeq ($(MGS2_XBOX),1)
+ifeq ($(MGS2_WIN),1)		#-- for Windows
+DEFINES	= $(DEBUG_DEFS) $(VMODE_DEFS) $(LANG_DEFS) $(AREA_DEFS) $(RELAREA_DEFS) WIN32 _XBOX _WINDOWS $(MEDIA_TYPE) $(SSE_DEFS)
+else						#-- for X-Box
+DEFINES	= $(DEBUG_DEFS) $(VMODE_DEFS) $(LANG_DEFS) $(AREA_DEFS) $(RELAREA_DEFS) WIN32 _XBOX $(MEDIA_TYPE)
+endif
+else						#-- for PS2
+DEFINES	= $(DEBUG_DEFS) $(VMODE_DEFS) $(LANG_DEFS) $(AREA_DEFS) $(RELAREA_DEFS) PSX2 EE USBKBD $(MEDIA_TYPE)
+endif
+
+
+# ¥ƒ∂≠ —øÙ§À§Ë§ÅE⁄¬ÿ§®
+ifeq ($(MGS2_DESIGN),1)
+DEFINES := $(DEFINES) DESIGN_PREVIEW
+endif
+
+
+# •Ë°º•˙¡√•—∏˛§±∫«Ω™¬Œ∏≥»«Õ—
+ifeq ($(MGS2_EU_TRIAL),ENGLISH)
+DEFINES := $(DEFINES) EU_TRIAL
+endif
+
+ifeq ($(MGS2_EU_TRIAL),GERMAN)
+DEFINES := $(DEFINES) EU_TRIAL GERMAN_TRIAL
+endif
+
+# TGS2001Ω©Õ—§Œ —ππ§ÚÕ≠∏˙§À§π§ÅE
+ifeq ($(TGS2001F),1)
+DEFINES := $(DEFINES) TGS2001F
+endif
+
+# •·•§•≠•Û•∞£÷£“¬Œ∏≥»«Õ—§Œ —ππ§ÚÕ≠∏˙§À§π§ÅE
+ifeq ($(MGS2_VRTRIAL),1)
+DEFINES := $(DEFINES) MGS2_VRTRIAL
+endif
+
+
+# -----------------------------------------------------------------
+# SYSTEM DIRECTORY & FILES
+
+SHELL = /bin/sh
+
+ifneq ($(MGS2_XBOX),1)  # ----------------- PS2»«¿ﬂƒÅE
+
+PREFIX  = ee
+
+# dsjw012Õ—§Œ∆√ºÅEﬂƒÅE
+# dsjw012§œ°¢•–°º•∏•Á•Û§Œ∞„§¶•È•§•÷•È•Í§Ú∂¶¬∏§µ§ª§ §±§ÅE–§ §È§ §§§ø§·°¢
+# §≥§Œ§Ë§¶§ÀSCEDIR§Ú≤ƒ —§À§«§≠§ÅEË§¶§À§∑§ø°£
+# 2001/7/5  Ken Kano
+
+ifneq ($(SCEDIR_DEFINED),1)
+
+SCEDIR = /usr/local/sce
+
+endif
+
+
+BINDIR = $(SCEDIR)/bin
+
+GCCDIR = $(SCEDIR)/$(PREFIX)/gcc/bin
+LIBDIR = $(SCEDIR)/$(PREFIX)/lib
+INCDIR = $(SCEDIR)/$(PREFIX)/include
+
+LCFILE = $(BASEDIR)/app.cmd
+
+LIBS   =  \
+		 $(addprefix $(BASEDIR)/$(SYSMODULE_LIB)/, $(SYSMODULE))\
+		 $(LIBDIR)/libgraph.a \
+         $(LIBDIR)/libdma.a \
+         $(LIBDIR)/libdev.a \
+         $(LIBDIR)/libpkt.a \
+		 $(LIBDIR)/libcdvd.a \
+		 $(LIBDIR)/libpad.a \
+         $(LIBDIR)/libvu0.a \
+         $(LIBDIR)/libpc.a \
+         $(LIBDIR)/libmpeg.a \
+         $(LIBDIR)/libipu.a \
+         $(LIBDIR)/libscf.a \
+		 $(LIBDIR)/libmc.a
+
+#		 $(LIBDIR)/libkernl.a # libkernl §œ app.cmd§«•ÅEÛ•Ø§µ§ÅEÅE
+
+AS      = $(GCCDIR)/$(PREFIX)-gcc
+CC      = $(GCCDIR)/$(PREFIX)-gcc
+LD      = $(GCCDIR)/$(PREFIX)-gcc
+DVPASM  = $(GCCDIR)/$(PREFIX)-dvp-as
+AR      = $(GCCDIR)/$(PREFIX)-ar
+OBJDUMP = $(GCCDIR)/$(PREFIX)-objdump -mmips:5900
+OBJCOPY = $(GCCDIR)/$(PREFIX)-objcopy
+DSEDB     = $(BINDIR)/dsedb
+RM      = /bin/rm -f
+
+OPTS = -Wall -O0 -Wno-format -Wa,-mips4 -G0 -g -pipe
+
+# GCC version§À§Ë§ÅE™•◊•∑•Á•Û —ππ
+GCCVERSION = $(shell $(CC) --version)
+
+OPTS := $(OPTS) -fno-strict-aliasing -fsingle-precision-constant -Wno-paste
+NOCRT_OPT = -mno-crt0 
+
+COPTIONS = $(OPTS) $(LOCAL_OPTIONS) $(addprefix -D, $(DEFINES) $(LOCAL_DEFINES)) \
+			 $(addprefix -I$(BASEDIR)/, $(INCLUDES)) $(addprefix -I, $(LOCAL_INCLUDES))
+LDOPTIONS= -Wl,-defsym,HEAPSIZE=$(SYSTEM_HEAP_SIZE),-defsym,STACK_TOP=$(SYSTEM_STACK_TOP),-defsym,STACK_SIZE=$(SYSTEM_STACK_SIZE),-defsym,_COMPILE_DATE=`date +%s`
+
+# FLAGS
+
+CFLAGS      = $(COPTIONS)
+CXXFLAGS    = -O0 -fno-exceptions -fno-common
+ASFLAGS     = -c -xassembler-with-cpp
+DVPASMFLAGS =
+
+LDFLAGS     = -Wl,-Map,$(TARGET).map,-G0 $(NOCRT_OPT) -L$(LIBDIR) -L$(MODULEDIR)
+ARFLAGS     = rus
+
+# -----------------------------------------------------------------
+# DEFAULT MAKE RULE
+
+.SUFFIXES: .a .c .s .cc .dsm
+
+$(STARTUP) : $(STARTUPSRC)
+	$(AS) $(ASFLAGS) -o $@ $<
+
+.s.o:
+	$(AS) $(ASFLAGS) $(TMPFLAGS) -I$(INCDIR) -o $@ $<
+
+.dsm.o:
+	$(DVPASM) $(DVPASMFLAGS) -I$(INCDIR) -o $@ $<
+
+.c.o:
+ifeq ($(MGS2_ECHO_SHORT),1)
+	@echo Compile $<
+	@$(CC) $(CFLAGS) -I$(INCDIR) -c $< -o $*.o
+else
+	$(CC) $(CFLAGS) -I$(INCDIR) -c $< -o $*.o
+endif
+
+.cc.o:
+	$(CC) $(CXXFLAGS) -I$(INCDIR) -c $< -o $*.o
+
+(%.o) : %.o
+	$(AR) rs $@ $*.o
+
+# COMMAND
+
+source :
+	$(CC) $(CFLAGS) -g0 -I$(INCDIR) -S $(FILE) -o $(FILE:.c=.S)
+
+
+else # ------------------------------------ XBOX»«¿ﬂƒÅE
+
+CC = cl
+AS = cl
+LD = link
+AR = ar
+OBJDUMP = objdump
+OBJCOPY = objcopy
+RM = rm -f
+
+ifeq ("$(MGS2_WIN)","1")	#-- For Windows
+
+INCDIR = "$(VC_DIR)/include"
+LIBDIR = "$(VC_DIR)/lib"
+DXINCDIR = "$(DXSDK_DIR)/include"
+DXLIBDIR = "$(DXSDK_DIR)/lib"
+
+OPT_TMP      = 
+LD_TMP       = 
+LD_SUBSYSTEM = windows
+
+else				#-- For X-Box
+
+INCDIR = "$(XDK)\xbox\include"
+LIBDIR = "$(XDK)\xbox\lib"
+
+OPT_TMP      = /Ztmp
+LD_TMP       = tmp
+LD_SUBSYSTEM = xbox
+endif
+
+ifneq ("$(XBOX_RELEASE)","1")
+
+# ------------- DEBUG VERSION ------------
+
+ifeq ("$(MGS2_WIN)","1")	#-- For Windows
+
+LIBS = \
+	$(addprefix $(BASEDIR)/$(SYSMODULE_LIB)/, $(SYSMODULE))\
+	d3d8.lib \
+	d3dx8.lib \
+	dxerr8.lib \
+	dsound.lib \
+	dinput8.lib \
+	dinput.lib \
+	dxguid.lib \
+	ksuser.lib \
+	libcmt.lib \
+	libcpmt.lib \
+	kernel32.lib \
+	user32.lib \
+	gdi32.lib \
+	winspool.lib \
+	comdlg32.lib \
+	advapi32.lib \
+	shell32.lib \
+	ole32.lib \
+	oleaut32.lib \
+	uuid.lib \
+	odbc32.lib \
+	odbccp32.lib \
+	winmm.lib \
+	oldnames.lib \
+	msacm32.lib	\
+	amstrmid.lib	\
+	strmiids.lib
+else				#-- For X-Box
+
+LIBS = \
+	$(addprefix $(BASEDIR)/$(SYSMODULE_LIB)/, $(SYSMODULE))\
+	$(addprefix $(BASEDIR)/$(CRI_LIB)/, $(CRIMODULE)) \
+	xapilibd.lib \
+	d3d8i.lib \
+	d3dx8.lib \
+	xgraphicsd.lib \
+	dsoundd.lib \
+	dmusicd.lib \
+	xnetd.lib \
+	xboxkrnl.lib \
+	xbdm.lib \
+	libcmtd.lib \
+	libcpmtd.lib
+endif
+
+#OPTS = /nologo /MTd /W3 /Gi /GX /O2 /FD /G6 $(OPT_TMP) /Zi -U_DEBUG 
+OPTS = /nologo /MTd /W3 /Gi /GX /Od /FD /G6 $(OPT_TMP) /Zi -U_DEBUG \
+		/Fd$(BASEDIR)/mgs2lib.pdb
+ifeq ("$(MGS2_WIN)","1")		#-- for Windows
+LDFLAGS = /nologo /incremental:no /debug /machine:I386 /libpath:$(DXLIBDIR) /libpath:$(LIBDIR) \
+			 /opt:ref /opt:icf \
+			/subsystem:$(LD_SUBSYSTEM) /fixed:no $(LD_TMP) /map /nodefaultlib
+
+else					#-- for XBox
+
+LDFLAGS = /nologo /incremental:no /debug /machine:I386 /libpath:$(LIBDIR) \
+			 /opt:ref /opt:icf \
+			/subsystem:$(LD_SUBSYSTEM) /fixed:no $(LD_TMP) /map /nodefaultlib
+
+endif
+
+else
+
+# ------------- RELEASE VERSION ------------
+
+ifeq ("$(MGS2_WIN)","1")	#-- For Windows
+
+LIBS = \
+	$(addprefix $(BASEDIR)/$(SYSMODULE_LIB)/, $(SYSMODULE))\
+	d3d8.lib \
+	d3dx8.lib \
+	dxerr8.lib \
+	dsound.lib \
+	dinput8.lib \
+	dinput.lib \
+	dxguid.lib \
+	ksuser.lib \
+	libcmt.lib \
+	libcpmt.lib \
+	kernel32.lib \
+	user32.lib \
+	gdi32.lib \
+	winspool.lib \
+	comdlg32.lib \
+	advapi32.lib \
+	shell32.lib \
+	ole32.lib \
+	oleaut32.lib \
+	uuid.lib \
+	odbc32.lib \
+	odbccp32.lib \
+	winmm.lib \
+	oldnames.lib \
+	msacm32.lib	\
+	amstrmid.lib	\
+	strmiids.lib
+else				#-- For X-Box
+
+LIBS = \
+	$(addprefix $(BASEDIR)/$(SYSMODULE_LIB)/, $(SYSMODULE))\
+	$(addprefix $(BASEDIR)/$(CRI_LIB)/, $(CRIMODULE)) \
+	xapilib.lib \
+	d3d8.lib \
+	d3dx8.lib \
+	xgraphics.lib \
+	dsound.lib \
+	dmusic.lib \
+	xnet.lib \
+	xboxkrnl.lib \
+	xbdm.lib \
+	libcmt.lib \
+	libcpmt.lib
+endif
+
+OPTS = /nologo /MTd /W3 /GX /O2 /FD /G6 $(OPT_TMP) /Zi /U_DEBUG /Fd$(BASEDIR)/mgs2lib.pdb
+#OPTS = /nologo /MTd /W3 /GX /Od /FD /G6 $(OPT_TMP) /Zi /U_DEBUG /Fd$(BASEDIR)/mgs2lib.pdb
+
+ifeq ("$(MGS2_WIN)","1")		#-- for Windows
+
+LDFLAGS = /nologo /incremental:no /debug /opt:ref /opt:icf /machine:I386 /libpath:$(DXLIBDIR) /libpath:$(LIBDIR) \
+			/subsystem:$(LD_SUBSYSTEM) /fixed:no $(LD_TMP) /map /nodefaultlib
+
+else					#-- for XBox
+
+LDFLAGS = /nologo /incremental:no /debug /opt:ref /opt:icf /machine:I386 /libpath:$(LIBDIR) \
+			/subsystem:$(LD_SUBSYSTEM) /fixed:no $(LD_TMP) /map /nodefaultlib
+endif
+
+endif
+
+
+DEFINES := $(DEFINES) _USE_XGMATH
+
+ifeq ("$(MGS2_WIN)","1")		#-- for Windows
+
+COPTIONS = $(OPTS) $(LOCAL_OPTIONS) $(addprefix -D, $(DEFINES) $(LOCAL_DEFINES) ) \
+			$(addprefix -I$(BASEDIR)/, $(INCLUDES)) $(addprefix -I, $(LOCAL_INCLUDES)) \
+			-I$(DXINCDIR) -I$(INCDIR)
+else					#-- for XBox
+
+COPTIONS = $(OPTS) $(LOCAL_OPTIONS) $(addprefix -D, $(DEFINES) $(LOCAL_DEFINES) ) \
+			 $(addprefix -I$(BASEDIR)/, $(INCLUDES)) $(addprefix -I, $(LOCAL_INCLUDES)) \
+			 -I$(INCDIR)
+endif
+CFLAGS      = $(COPTIONS)
+
+ARFLAGS = rus
+
+
+# -----------------------------------------------------------------
+# DEFAULT MAKE RULE
+
+.SUFFIXES: .a .obj .cpp .c .s .dsm
+
+%.obj: %.c
+ifeq ($(MGS2_ECHO_PWD),1)
+	@echo
+	@pwd
+endif
+ifeq ($(MGS2_ECHO_SHORT),1)
+	@echo [ Compile $(SSE_COMMENT)] $<
+	@$(CC) $(CFLAGS) -c $< -Fo$@
+else
+	$(CC) $(CFLAGS) -c $< -Fo$@
+endif
+
+%.obj: %.cpp
+ifeq ($(MGS2_ECHO_PWD),1)
+	@echo
+	@pwd
+endif
+ifeq ($(MGS2_ECHO_SHORT),1)	
+	@echo [ Compile ] $<
+	@$(CC) $(CFLAGS) -c $< -Fo$@
+else
+	$(CC) $(CFLAGS) -c $< -Fo$@
+endif
+
+%_cpp.obj: %.cpp
+ifeq ($(MGS2_ECHO_PWD),1)
+	@echo
+	@pwd
+endif
+ifeq ($(MGS2_ECHO_SHORT),1)	
+	@echo [ Compile ] $<
+	@$(CC) $(CFLAGS) -c $< -Fo$@
+else
+	$(CC) $(CFLAGS) -c $< -Fo$@
+endif
+
+(%.obj) : %.obj
+ifeq ($(MGS2_ECHO_SHORT),1)	
+	@echo [ ar ] $@
+	@$(AR) $(ARFLAGS) $@ $*.obj
+else
+	$(AR) $(ARFLAGS) $@ $*.obj
+endif
+
+%_g.c : %.c
+	stridconv.pl $< $(STRID_BIT) > $@
+
+source :
+	$(CC) $(CFLAGS) -c $(FILE) /FAs
+
+endif #-------------------------------------- µ°ºÅEÃ¿ﬂƒÅE™§ÅEÅE
+
+ifneq ($(STAGELINK),1)
+lib :
+	@true
+endif

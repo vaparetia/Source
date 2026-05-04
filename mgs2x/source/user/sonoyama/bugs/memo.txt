@@ -1,0 +1,93 @@
+/*
+	memo.txt
+	メモ
+
+	2001/05/10	M.Sonoyama
+	$Id: memo.txt,v 1.1.1.3 2002/11/19 11:50:39 Yoshizawa1 Exp $
+*/
+
+■武器・アイテムを増やしたい！減らしたい！
+	変更するものリスト
+		scn/equip.h
+		scn/varinit.h
+		scn/menu_exp_j.h
+		scn/menu_exp_e.h
+		source/game/g_define.h
+		source/game/getitem.c
+	    source/game/no_use.c
+		source/user/mode/menu/wp_chng1.c
+		source/user/mode/menu/wp_chng2.c
+		source/user/mode/menu/it_chng1.c
+		source/user/mode/menu/it_chng2.c
+		source/user/mode/menu/menu_sub.c
+		source/user/sonoyama/raiden/item.h
+		source/user/sonoyama/raiden/weapon.h
+
+		//場合によっては（サプレッサなど）
+		game/game.d
+		source/user/sonoyama/rai_init.c
+
+■sed で置換
+
+//置き換える
+cat w11abc_common.h | sed -e "s/.*include.*wp_plant\.h.*/hogehoge/g" | less
+
+//コメントアウトする
+cat w11abc_common.h | sed -e "s/.*include.*wp_plant\.h.*/\/\/&/g" | less
+
+■ＤＶＤ焼く
+
+mejiにtelnet
+su worm
+download
+mkcd
+
+植原さんの後ろのマシンを起動
+
+Administratorで入る。（パスワード不要）
+
+Ｍ：に meji\local4 をつなぐ
+
+ＤＶＤライターを起動
+
+mgs2が最後になるようにＤ＆Ｄ（下から順番でＯＫ）
+
+SLPS99999といれる
+
+イメージ作成場所は、DVDなんたらに設定する。（しないと落ちる！）
+
+ＤＶＤをいれる
+
+焼きまくる
+
+■Ｍｕｌｅ技
+
+Mark Set した後、
+C-x -r レクトアングルでカット、コピーなんかができる。
+
+M-x ( でキーボードマクロ開始
+
+C-x u 回数 で繰り返し
+
+C-x e で前のコマンド再実行
+
+■ＦＩＸされちゃったものリスト
+
+weapon/stun_grenade_rai/sgr_rai.mdl
+weapon/stun_grenade_rai/sgr_lever_rai.mdl
+weapon/stun_grenade_rai/sgr_pin_rai.mdl
+weapon/chaff_grenade_rai/cgr_rai.mdl
+weapon/chaff_grenade_rai/cgr_lever_rai.mdl
+weapon/chaff_grenade_rai/cgr_pin_rai.mdl
+weapon/grenade_rai/grn_rai.mdl
+weapon/grenade_rai/grn_lever_rai.mdl
+weapon/grenade_rai/grn_pin_rai.mdl
+
+mtn/sol/arm_mtn/sol_fire_combo_arm.mtn
+mtn/sol/sol_fire_combo_body.mtn
+
+mtn/rai/rai_nkd_non_combo_p.mtn
+mtn/rai/rai_nkd_non_combo.mtn
+
+mtn/sol/sol_stamp_body.mtn	/* 未ＦＩＸ */
+mtn/sol/arm_mtn/sol_stamp_arm.mtn	/* 未ＦＩＸ */

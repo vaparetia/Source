@@ -1,0 +1,374 @@
+radio_break/
+	radio.c
+		敵兵無線の壊れエフェクト呼び出し（ラッパー）
+		void *NewRadio_break( FMATRIX *mat, FVECTOR *force );
+		mat:	無線のマトリックス
+		force:	銃弾の方向
+	radio_comdl.c
+		未使用（敵兵無線の壊れエフェクト：破片）
+	ts_min_fog.c
+		敵兵無線の壊れエフェクト：小さな煙
+		（雑誌撃たれエフェクトでも使用）
+		void *NewTs_Min_Fog( FVECTOR *center );
+		center:	発生場所
+	ts_spark.c
+		敵兵無線の壊れエフェクト：火花
+		void *NewTs_Spark( FVECTOR *center, FVECTOR *vec, float pow );
+		center:	発生場所
+		vec:	方向
+		pow:	強さ
+	ts_min_smoke.c
+		敵兵無線の壊れエフェクト：小さな煙２
+		（雑誌撃たれエフェクトでも使用）
+		void *NewTs_Min_Smoke( FVECTOR *center, FVECTOR *force );
+		center:	発生ポイント
+		force : 発生方向
+
+parrot/
+	オウム制御（全て未使用）
+
+effect/
+	2d_sprt.c
+		２Ｄ汎用スプライト表示
+	2d_sprt_pause.c
+		２Ｄスプライト表示ポーズ時のみ
+	blade_eft.c
+		刀残像エフェクト
+	blood_water.c
+		水中血
+	cam_lamp.c
+		船倉カメラのランプ
+	flow_paper.c
+		水中のごみ（紙）
+	gnrl_sprt.c
+		３Ｄスプライト表示
+	gnrl_sprt2.c
+		３Ｄスプライト表示（点滅）
+	gnrl_poly.c
+		３Ｄポリゴン表示（アニメーション付き）
+	lens_flr_gm.c
+		絶対座標置きレンズフレア
+	line_smoke.c
+		ライン煙
+	plant_sky.c
+		未使用（旧プラント用空）
+	plant_sun.c
+		プラント用太陽
+	puddle.c
+		水溜り波紋管理
+	put_light.c
+		プットモーションモデル用ライト制御
+	ray_eye.c
+		プロトレイの目
+	ray_laser.c
+		レイの汚水ゲーム用
+	scr_crack.c
+		全画面効果：カメラ割れ
+	scr_water.c
+		全画面水効果：揺らぎ
+	scr_drop.c
+		全画面水効果：水滴
+	scr_goggles.c
+		全画面ライデンゴーグル歪み
+	scr_waterfilm.c
+		全画面水効果：水垂れ
+	scr_hex.c
+		全画面効果：ボスサバイバー用フェード
+	scr_shimmer.c
+		全画面効果：陽炎
+	scr_sight.c
+		全画面水効果：ＰＳＧ１の望遠歪み
+	scr_bubble.c
+		全画面水効果：泡
+	scr_trans.c
+		全画面水効果：フレームバッファー退避
+	sky_util.c
+		プラント用空（汎用化）
+	water_con.c
+		水位コントローラー
+	wc_flush.c
+		水洗便所流れ
+	win_rain.c
+		タンカー窓の水流れ
+
+demo/
+	blood_water_demo.c
+		デモ用水中血（ゲーム中の機能を一部削除）
+	cigarette.c
+		タンカーオープニングのタバコ
+	cinema_scr.c
+		デモなどの画面上下の黒帯び
+	cinema_scr_e3.c
+		デモなどの画面上下の黒帯びＥ３用
+	debris_cm.c
+		コモデル破片
+	debris_cm_snd.c
+		コモデル破片衝突時サウンド呼びつき
+	debris_tex.c
+		スプライト破片
+	depend_arms.c
+		ゲーム中のサプレッサーなどを
+		デモに反映：ライデン用
+	depend_arms2.c
+		ゲーム中のサプレッサーなどを
+		デモに反映：ＡＫのみ
+	depend_arms3.c
+		ゲーム中のサプレッサーなどを
+		デモに反映：スネーク用
+	depend_arms4.c
+		ゲーム中のサプレッサーなどを
+		デモに反映：ＵＳＰかＳＯＣＯＭ
+	eye_ctrl2.c
+		DemoEffectControl対応モデルの視線制御
+	lens_flare.c
+		デモ用レンズフレア
+	mesg_bomb.c
+		各種エフェクトメッセージ呼び出し
+		多分未使用
+	mesg_bomb2.c
+		各種エフェクトメッセージ呼び出し
+		多分未使用
+	mesg_bomb3.c
+		各種エフェクトメッセージ呼び出し
+	orn_face.c
+		半透明になるオルガ忍者のマスク
+	ray_colwater.c
+		プロトレイの汚水の衝突エフェクト
+	ray_console.c
+		プロトレイのコクピットエフェクト
+	ray_monoeye.c
+		量産レイの目制御：ゲーム用
+	ray_monoeye_demo.c
+		量産レイの目制御：デモ用
+	ray_waterpollute.c
+		プロトレイのウォーターカッターエフェクト
+	scr_conblur.c
+		画面の一点に集まるブラー
+	scr_drop_demo.c
+		デモ用全画面水効果：水滴
+	scr_goggles_demo.c
+		デモ用全画面効果：ライデンゴーグル歪み
+	scr_water_demo.c
+		デモ用全画面水効果：歪み
+	telop_trial.c
+		タンカーオープニングテロップ
+	traffic.c
+		タンカーオープニングの車と光の帯び
+	traffic_flush.c
+		タンカーオープニングの車のフラッシュ
+
+headmark/
+	ab_mind.c
+		敵兵放心状態時のエフェクト
+	discovery.c
+		敵兵プレイヤ発見時エフェクト
+	imagetrg.c
+		びっくりマークとハテナマークのターゲット
+	sleep.c
+		敵兵の眠りエフェクト（修正版）
+
+anime/
+	anime.h
+		anime.c呼び出しヘッダー
+	anm_list.h
+		extern宣言 アニメエフェクト
+	anime.c
+		アニメスクリプト再生
+	blastsgl.c
+		アニメの爆発
+	blood2.c
+		アニメの血
+	bullet.c
+		アニメのマズルフラッシュ
+	headmark.c
+		ヘッドマーク呼び出しラッパー関数
+	testeye.c
+		デバック用アニメ
+
+	conv/
+		animbin.c
+
+sea_slater/
+	prev_test.c
+		プレビュー用ふなむし表示
+	check_slater.c
+		踏み潰しと回避キャラチェックアクト
+	demo_slater.c
+		デモ用ふなむし
+	emm_slater.c
+		エマチェック付きふなむし
+
+	sea_slater.h
+		ふなむし構造体宣言とextern宣言
+	sea_slater.c
+		汎用ふなむしのアクト
+	all_slater.c
+		汎用ふなむしの踏み潰しと回避キャラチェックアクト
+
+	cam_slater.c
+		カメラに付くふなむし
+	body_route.h
+		身体ふなむしのルートデータ
+	body_slater.c
+		身体這うふなむし
+	trample_slater.c
+		潰れふなむしの表示用
+
+util/
+	dma_set.h
+		自前のＤＭＡパケットの構造体と初期化関数のextern宣言
+	dma_set.c
+		ＤＭＡパケット初期化関数
+	online_util.c
+		オンラインチェックを分割して調べるアクト
+	online_util2.c
+		オンラインチェックを分割して調べるアクト（ダイナミックハザードも）
+	prev_sky.c
+		プレビュー用空ツール
+	prev_sun.c
+		プレビュー用太陽ツール（空とセットで）
+	ts_util.h
+		ローカルユーティリティー関数extern宣言
+	sin_table.h
+		サインテーブル
+	ts_util.c
+		ローカルユーティリティー関数
+	ts_subwin.c
+		子画面制御
+	vib_edit.c
+		プレビュー用振動ツール
+	
+etc/
+	clear.c
+		体験版用クリアーコード表示
+	lowpoly_ag.c
+		デバック用ローポリ劇場エイジング
+	ctrl_exp.c
+		体験版用コントローラ説明
+	option_trial.c
+		体験版用オプション
+	title_trial.c
+		体験版用タイトル
+	gm_over.c
+		タンカー用ゲームオーバー
+	rankenc.h
+		体験版クリアーコードの暗号化関数のextern宣言
+	rankenc.c
+		体験版クリアーコードの暗号化関数
+	sp_menu.c
+		体験版日本語のベーシックアクション
+	sp_menu_eng.c
+		体験版英語のベーシックアクション
+		製品版日本語のベーシックアクション
+	sp_menu_page.c
+		製品版欧州のベーシックアクション
+	tobcon.c
+		体験版トゥービーコンテニュー表示
+
+t_headmark/
+	control_headmark.c
+		旧ヘッドマーク呼び出しアクト
+	headmark.h
+		下記の呼び出し宣言
+	control_headmark2.c
+		バージョンアップ版
+	headmark2.h
+		下記の呼び出し宣言
+	control_headmark3.c
+		バージョンアップ
+	piyori.c
+		敵兵気絶の星
+	piyori_anes.c
+		敵兵睡眠時の眠りエフェクト
+	zzz.c
+		敵兵睡眠時の眠りエフェクト
+	
+t_flour/
+	flour.c
+		小麦粉ターゲットとエフェクト呼び出しアクト
+	flour_Fall.c
+		小麦粉の床の溜まり
+	flour_gas3.c
+		カメラ前の漂う小麦粉
+	flour_moku.c
+		さらさらが床などに当たった時のエフェクト
+	flour_pers.c
+		カメラ前の漂う小麦粉（未使用）
+	flour_sara.c
+		小麦粉さらさら落ちるエフェクト
+	flour_splay.c
+		銃が当たった時のエフェクト１
+	flour_spread.c
+		銃が当たった時のエフェクト２
+
+vamp/
+	vmp_inline.h
+		インライン関数数学やその他もろもろ
+	vamp.h
+		宣言いっぱい
+	vamp.c
+		メインループ
+	vmp_think.c
+		ヴァンプ思考
+	vmp_action.c
+		ヴァンプモーション関係
+	vmp_zone.c
+		ヴァンプゾーン関係
+	vmp_shdwtrg.c
+		影縛りターゲット
+	vmp_knife.c
+		ヴァンプの投げナイフ
+	vmp_etc.c
+		その他もろもろ
+
+ヴァンプ戦のフェーズは大きく分けて４つになります。
+体力、気絶値が無くなるとクリアーです。
+
+各フェーズ：
+　　第一フェーズ
+　水の上から水中へ潜り、二階に出る攻撃です。
+　このフェーズは最初の一回きりです。
+　この時弱点に当てるチャンスが４回あるので
+　ここで戦闘が終わる場合もあります。
+
+　　第二フェーズ
+　二階攻撃と近距離攻撃を交互に繰り返します。
+　この時の近距離は歩いて近づきます。
+　体力が1/2位になると終わりです。
+
+　　第三フェーズ
+　第二フェーズにかげ縛りと壁からの攻撃げ加わり、
+　回転投げが無くなります。
+　体力が1/6位になると次です。
+
+　　第四フェーズ
+　２階と地上を飛び回ってナイフ投げをする。
+
+難易度別：
+ライフ、気絶値ともに固定１２８
+
+
+ 
+　 ヴァンプ難易度設定
+変更カテゴリ 				very easy	easy	normal	hard	extreame 
+最大ダメージ				48			40		32		24		16
+水中ダメージ				2			1 		1 		1 		1 
+水中ダメージ爆発			16			8 		4 		2 		2 
+爆発ダメージ 				24 			20 		14 		12 		8 
+パンチダメージ 				12 			10 		6 		4 		2 
+キックダメージ 				16 			14 		6 		6 		4 
+スタンダメージ 				18 			14 		8 		6 		4 
+斬り攻撃 					4 			12 		24 		26 		30 
+体当たり攻撃 				8 			16 		32 		32 		32 
+投げナイフ攻撃 				5 			10 		18 		22 		24 
+ナイフスピード倍率 			60% 		80% 	100% 	150% 	200% 
+斬り攻撃時の隙フレーム 1	160 		140 	120 	60 		60		(2フェーズ) 
+斬り攻撃時の隙フレーム 2	60 			40 		20 		13 		13 		(3フェーズ)
+体当たり攻撃時の隙フレーム	200 		160 	100 	80 		60
+影縛り解除カウント 			120 		120 	160 	200 	400 
+第三フェーズの投げナイフ 	１本 		１本 	３本 	３本 	３本 
+ラストフェーズの投げナイフ 	２本 		２本 	４本 	４本 	４本 
+歩き時の隙 					有り 		無し 	無し 	無し 	無し 
+ 
+
+ 

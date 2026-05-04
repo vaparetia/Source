@@ -1,0 +1,151 @@
+// a44a.src
+// ＡＧ・第ニメタルハンガー（アナザーミッション用）
+// 2001/02/15 S.Yamashita
+// $Id: a44a.src,v 1.6 2002/06/05 01:46:29 usr03379 Exp $
+
+
+
+// ステージ名
+#define		WN_W44A
+// アナザーミッション明示
+#define		WN_ANOTHER
+
+
+block .use r_vr_s
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"common.h"
+#include	"c_effect.h"
+//include		wp_plant.h
+
+//	オルタナティブ追加エフェクト
+#include	"alt_effect.h"
+
+
+// キャラクタ
+	// 髭剃りスネーク
+	// ・sna_def.kms を使用している場合
+	pack_all	sna_nm.tri \
+					human/sna_def/sna_def.dar \
+					human/sna_shaved/sna_shaved_mt.dar
+	// ・sna_def_mh.evm を使用している場合
+	pack_all	sna_mw.tri \
+					human/sna_def/sna_def_mh.dar \
+					human/sna_shaved/sna_shaved_mh_mt.dar
+
+include		ene_tng.h
+human		sna_def/sna_def.kms
+human		sna_def/sna_def_mh.evm
+human		sna_def/sna_bdn1.kms
+human		sna_def/sna_bdn2.kms
+far			sna_npc.far
+
+
+
+// 強制モーション
+mtn			rai_a44a.mls
+mtn			sna_a44a.mls
+mtn			npc_snake.mls		// ＮＰＣスネークのモーション
+mtn			npc_snake_cap.mls	// ＮＰＣスネークのモーション
+mtn			npc_snake_drag.mls	// ＮＰＣスネークのモーション
+mtn			sna_w44a.mls		// デモスネーク用モーション
+
+vib		rai/sna_npc_m4a_iya4rai_resist.vib
+
+
+
+
+// ワールド
+// マルチテクスチャモデル
+
+// それ以外のモデル
+pack_all	apdray.tri \
+				world/w44a/w44a_pdray/w44a_pdray_front.dar \
+				world/w44a/w44a_pdray/w44a_pdray_back.dar
+
+pack_all	zribbon.tri \
+				world/w44a/other/w44a_efct.dar
+
+pack_all	door.tri \
+				world/door/w42a_dr_left.dar \
+				world/door/w42a_dr_right.dar
+
+world		door/w42a_dr_left.kms
+world		door/w42a_dr_right.kms
+
+world		w44a/other
+world		w44a/w44a
+world		w44a/w44a_pdray
+world		another/a44a	//	アナザー用ロードモデル
+
+lt2			w44a.lt2
+hazard		a44a.hzx
+
+
+
+
+
+// オブジェクト
+// 小さいサイズのテクスチャはまとめておく
+
+// リボン
+pack_trnall	stage_effect.tri \
+				world/w44a/effect/w44a_efct_disp_01_alp_add_ovl.bmp \
+				world/w44a/effect/w44a_efct_disp_01_scr_alp_add_ovl.bmp \
+				world/w44a/effect/w44a_efct_disp_01_noiz_alp_add_ovl.bmp \
+				world/w44a/effect/w44a_efct_disp_02_alp_add_ovl.bmp \
+				world/w44a/effect/w44a_efct_disp_02_scr_alp_add_ovl.bmp \
+				world/w44a/effect/w44a_efct_disp_02_noiz_alp_add_ovl.bmp \
+				world/w44a/effect/w44a_efct_disp_03_alp_add_ovl.bmp \
+				world/w44a/effect/w44a_efct_disp_03_scr_alp_add_ovl.bmp \
+				world/w44a/effect/w44a_efct_disp_03_noiz_alp_add_ovl.bmp \
+				world/w44a/effect/w44a_efct_disp_04_alp_add_ovl.bmp \
+				world/w44a/effect/w44a_efct_disp_04_scr_alp_add_ovl.bmp \
+				world/w44a/effect/w44a_efct_disp_04_noiz_alp_add_ovl.bmp \
+				world/w44a/effect/w44a_efct_disp_05_alp_add_ovl.bmp \
+				world/w44a/effect/w44a_efct_disp_05_scr_alp_add_ovl.bmp \
+				world/w44a/effect/w44a_efct_disp_05_noiz_alp_add_ovl.bmp
+
+// カタナ
+pack_all	hfb_mt.tri \
+				weapon/hfb/hfb_mt.dar \
+				weapon/hfb/hfb_mineuchi_mt.dar \
+				weapon/hfb/hfb_sub_mt.dar \
+				weapon/hfb/hfb_mineuchi_sub_mt.dar
+
+weapon		hfb/hfb_mt.kms
+weapon		hfb/hfb_mineuchi_mt.kms
+weapon		hfb/hfb_sub_mt.kms
+weapon		hfb/hfb_mineuchi_sub_mt.kms
+mtn			rai_blade.mls
+
+// Ｍ４・ＵＳＰ
+pack_all	object2.tri \
+				weapon/m4/m4a_nm.dar \
+				weapon/usp/usp.dar
+
+weapon		m4/m4a_nm.kms
+weapon		usp/usp.kms
+
+// サイファ
+#define		NORM_CYP
+#include	"cypher.h"
+
+// ドッグタグ
+pack_trnall	kirari.tri \
+				effect/mark/kirari_alp_ovl.bmp
+goods		dogtag/dogtag_sna.kms
+
+// カメマップ
+l2d			2D/mapbug/mapbug.l2d
+
+// アイテム
+itembox
+
+
+
+
+
+// リネーム

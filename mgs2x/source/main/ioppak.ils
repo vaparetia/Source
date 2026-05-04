@@ -1,0 +1,47 @@
+// IOPモジュールをパッキングする
+
+#ifndef NOHDSYS
+
+
+$(SYSPATH)/dev9.irx
+$(SYSPATH)/atad.irx
+$(SYSPATH)/hdd.irx -o 2 -n 3
+$(SYSPATH)/pfs.irx -m 2 -n 10 -o 1
+
+#endif
+
+#ifndef HDSYSONLY
+
+$(SYSPATH)/sio2man.irx
+$(SYSPATH)/padman.irx
+$(SYSPATH)/mcman.irx
+$(SYSPATH)/mcserv.irx
+$(SYSPATH)/libsd.irx
+
+$(USRPATH)/jsifman.irx
+
+#ifdef USBFS
+$(SYSPATH)/usbd.irx dev=5 gtd=8 itd=3 ioreq=128 conf=256 hub=1 port=4
+$(USRPATH)/usbfs.irx
+$(USRPATH)/usbkbd.irx
+#endif
+
+#ifdef NOUSBFS
+$(SYSPATH)/usbd.irx dev=5 gtd=8 itd=3 ioreq=128 conf=256 hub=1 port=4
+$(USRPATH)/usbkbd.irx
+#endif
+
+#ifdef NOUSB
+#endif
+
+#ifdef MEDIA_CD
+$(USRPATH)/cdbios.irx	CD
+#endif
+#ifdef MEDIA_DVD
+$(USRPATH)/cdbios.irx	DVD2
+#endif
+
+$(USRPATH)/iop_main.irx
+
+#endif
+

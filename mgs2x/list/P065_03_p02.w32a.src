@@ -1,0 +1,92 @@
+//
+//	P065_03_p02.w32a.src
+//
+//	written by H.Yoshiike 2000.Nov
+//
+//	$Id: P065_03_p02.w32a.src,v 1.13 2002/05/31 11:51:49 usr02774 Exp $
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 汎用空用テクスチャのためのデファイン（c_effect.h の前で）
+//#define MORNING_SKY
+//#define DAY_SKY
+#define E_OTHER1
+//	7/18向手修正
+//#define EVENING_SKY
+#define			W32A_EVENING_SKY		//	夕空狙撃専用
+
+// 各ステージ共通要素
+#include		"common.h"
+#include		"c_effect.h"
+
+// キャラクタ
+// ライデン
+human		rai_def/rai_def_mh_mt.evm
+
+	//	エマ
+#define		W32A
+#include	"emma.h"
+
+	//	ＮＰＣスネーク
+human		sna_def/sna_def.kms
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル 
+pack_all	w32a.tri world/w32a/w32a
+
+world		w32a/w32a
+world		w32a/other
+lt2			w32a.lt2
+hazard		w32a.hzx
+
+
+//	海とオイルフェンス
+//include e_surface.h // 「夕方狙撃イベント」用海面
+//include s_surface.h // 「夕」用海面
+option makexti6 -l 256
+pack_all	oil.tri \
+		effect/plant_sea/s_oil_sea_alp_ovl_mod0022.bmp \
+		effect/plant_sea/s_oil_ref_add_alp_ovl_mod1120.bmp
+option makexti6
+
+debug takabe/oilfence/oilfence.kms
+
+
+/* 田中追加・拡張海 */
+pack_trnall	kakutyou.tri \
+		effect/plant_sea/entyou_oil_sea.bmp
+
+
+//	かもめ
+include		kamome.h // modified by Okuta 2001/05/10
+
+// キャラクタ
+	//	特殊敵兵
+//include		ene_plant_w32a.h
+#define ENE_P_GOL
+#define	ENE_MAR '-DDEL_WALKMAN=DUMMY -DDEL_SHIELD=DUMMY -DDEL_SHOTGUN=DUMMY -DDEL_TNG=DUMMY \
+	-DDEL_HIGH=DUMMY -DDEL_RADIO=DUMMY -DDEL_EROTICA=DUMMY -DDEL_BOX=DUMMY -DDEL_GRD=DUMMY \
+	-DDEL_NEAR_ATTACK=DUMMY -DDEL_LOCKER=DUMMY -DDEL_HANG=DUMMY -DDEL_CARRY=DUMMY \
+	-DDEL_TOILET=DUMMY -DDEL_SHOUBEN=DUMMY '
+#include	"ene_plant.h"
+
+
+weapon		aks
+
+// オブジェクト
+	//	サイファー
+meca		gun_cypher/gcyp.kms
+
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム
+texrename	w32a_24a.kms w10c_cntw04.bmp w10c_cntw04x.bmp
+/* mgdemo added ----from here (Thu Jul 19 13:51:31 2001) ---- */
+human	gba_def/gba_def_mt.kms
+/* mgdemo added ----upto here ---- */

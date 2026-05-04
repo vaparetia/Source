@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="BPE X360"
+	InheritedPropertySheets=".\bpe_common.vsprops"
+	>
+	<Tool
+		Name="VCBscMakeTool"
+		OutputFile="$(OutDir)/$(ProjectName).bsc"
+	/>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalOptions="/MP"
+		EnableFiberSafeOptimizations="true"
+		AdditionalIncludeDirectories=";&quot;$(BPE_ROOT)/Source/ExtLibraries/Devil-SDK-1.6.7/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/CG/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/Edge/Branch/host-common/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/Edge/Branch/target/common/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/Edge/Branch/target/common/include/vectormath&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/nvidia-texture-tools/branch/project/vc8/release.win32/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/Bullet/branch/bullet/src&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/ode-0.5/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/Opcode&quot;;&quot;$(BPE_ROOT)/Source/Game&quot;"
+		PreprocessorDefinitions="_XBOX;XBOX360;_HAS_EXCEPTIONS=0;USE_DLL=0;BOOST_DISABLE_THREADS;ICE_NO_DLL;NO_GETENV"
+		ExceptionHandling="0"
+		RuntimeLibrary="2"
+		EnableEnhancedInstructionSet="2"
+		DebugInformationFormat="3"
+		DisableSpecificWarnings="4251;4275;4793;4065"
+	/>
+   <Tool
+		Name="VCCLX360CompilerTool"
+		AdditionalOptions="/MP"
+		EnableFiberSafeOptimizations="true"
+		AdditionalIncludeDirectories="&quot;$(BPE_ROOT)/Source/ExtLibraries/FMod/inc&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/Devil/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/CG/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/Edge/Branch/host-common/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/Edge/Branch/target/common/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/Edge/Branch/target/common/include/vectormath&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/nvidia-texture-tools/branch/project/vc8/release.win32/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/Bullet/branch/bullet/src&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/ode-0.5/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/Opcode&quot;;&quot;$(BPE_ROOT)/Source/Game&quot;"
+		PreprocessorDefinitions="_XBOX;XBOX360;_HAS_EXCEPTIONS=0;USE_DLL=0;BOOST_DISABLE_THREADS;ICE_NO_DLL;NO_GETENV"
+		ExceptionHandling="0"
+		RuntimeLibrary="2"
+		EnableEnhancedInstructionSet="2"
+		DebugInformationFormat="3"
+		DisableSpecificWarnings="4251;4275;4793;4065"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		AdditionalLibraryDirectories=""
+		GenerateDebugInformation="true"
+		SubSystem="2"
+		ImportLibrary="$(BPE_ROOT)/Bin/$(ProjectName)_$(ConfigurationName).lib"
+		TargetMachine="1"
+	/>
+   <Tool
+		Name="VCX360LinkerTool"
+		AdditionalLibraryDirectories=""
+		GenerateDebugInformation="true"
+		SubSystem="2"
+		ImportLibrary="$(BPE_ROOT)/Bin/$(ProjectName)_$(ConfigurationName).lib"
+		TargetMachine="1"
+	/>
+</VisualStudioPropertySheet>

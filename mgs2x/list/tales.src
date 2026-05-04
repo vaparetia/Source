@@ -1,0 +1,47 @@
+//
+//	tales.src
+//
+//	2002/05/17 H.Yoshiike
+//
+//	$Id: tales.src,v 1.11 2002/09/24 05:03:14 usr03700 Exp $
+
+block .use r_vr_s
+block .nocache
+block .cache
+
+// テイルズ紙芝居用Ｌ２Ｄ
+#ifdef MGS2_XBOX_1
+l2d		2D/vr_book_x/vr_book.l2d
+#else
+l2d		2D/vr_book/vr_book.l2d
+#endif
+
+#ifdef MGS2_XBOX_1
+l2d		2D/node/save_load_sub/save_load.l2d
+#else
+l2d		2D/node/save_load/save_load.l2d
+#endif
+//icon	icon/tnkicon.cnf
+icon	icon/sub_sticon.cnf
+
+// テイルズ用の背景
+pack_all snake_tales_bg.tri \
+	2D/snake_tales_bg/a_bg.bmp \
+	2D/snake_tales_bg/b_bg.bmp \
+	2D/snake_tales_bg/c_bg.bmp \
+	2D/snake_tales_bg/d_bg.bmp \
+	2D/snake_tales_bg/e_bg.bmp \
+	2D/snake_tales_bg/r_bg.bmp
+
+//	テイルズＥ用いんちき新聞
+pack_all jpnw_news.tri \
+	2D/jpnw_news/jpnw_news_gollgon.bmp \
+	2D/jpnw_news/jpnw_news_genora.bmp
+
+// テイルズタイトルテロップ
+pack_all tales_title.tri \
+	2D/snake_tales_title/snake_tales_ltitlea_alp_ovl.bmp \
+	2D/snake_tales_title/snake_tales_ltitleb_alp_ovl.bmp \
+	2D/snake_tales_title/snake_tales_ltitlec_alp_ovl.bmp \
+	2D/snake_tales_title/snake_tales_ltitled_alp_ovl.bmp \
+	2D/snake_tales_title/snake_tales_ltitlee_alp_ovl.bmp

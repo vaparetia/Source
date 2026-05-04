@@ -1,0 +1,158 @@
+//
+//	a41a.src（アナザーミッション用）
+//
+//	written by S.Mukaide 2002.Feb
+//
+//	$Id: a41b.src,v 1.9 2002/08/28 05:18:40 usr04249 Exp $
+
+block .use r_vr_s
+block .nocache
+block .cache
+
+//	ステージ名表記用
+#define		WN_W41A
+// アナザーミッション明示
+#define		WN_ANOTHER
+
+// 各ステージ共通要素
+#include		"p_common.h"
+#include		"common.h"
+#include		"c_effect.h"
+//include		wp_plant.h
+
+//	オルタナティブ追加エフェクト
+#include	"alt_effect.h"
+
+// 敵兵
+//	天狗兵
+//include		ene_tng42.h
+
+
+
+//	モーション
+	//	強制モーション
+mtn		rai_a41a.mls
+mtn		sna_a41a.mls
+	//	ロッカー開閉モーション
+mtn 	rai_n_locker.mls
+
+	//	ロッカー扉開閉モーション
+mtn		locker.mls
+
+
+// ワールド
+pack_all	zzz.tri \
+			world/w41a/other
+
+world		w41a/w41a
+world		w41a/other
+
+
+lt2			w41a.lt2
+hazard		a41b.hzx
+
+//	ドア
+pack_all	w41a_dr.tri \
+				world/door/w41a_dr_left.dar \
+				world/door/w41a_dr_right.dar \
+				world/door/w41a_cell_sdr.dar \
+				world/door/w41a_cell_sdr_02.dar
+
+world		door/w41a_dr_left.kms
+world		door/w41a_dr_right.kms
+world		door/w41a_cell_sdr.kms
+world		door/w41a_cell_sdr_02.kms
+
+// オブジェ関係
+goods		locker/neo_locker_door.kms
+
+//	監視カメラ
+meca		svc_plant
+
+// アイテム
+//itembox
+
+//	全体マップ
+l2d         2D/mapbug/mapbug.l2d // map bug
+
+//	振動
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// オセロット
+	// モデル
+	human	rev_plant/rev_plant_mh_mt.evm
+	//human	rev_plant/rev_plant_sh_mt.kms
+	// 髪の毛
+	human	rev_coat/rev_hair_fix.kms
+	human	rev_coat/rev_coat_bounding.kms
+	// モーション
+	mtn		w24e_rev.mls
+
+// オルガ
+	// モデル
+	//human	org_plant/org_plant_sh_mt.kms
+	// 装備品
+	//goods	demo_org_plant_goods
+	// モーション
+	//mtn		w24e_orga.mls
+
+// 裸ライデン
+	// モデル
+	//human		rai_naked/rai_naked_sh_mt.kms
+	human		rai_naked/rai_dead_for_subs.kms
+	// 髪の毛
+	human		rai_def/rai_hair_mh_mt.evm
+	human		rai_def/rai_hair_shadow_mt.kms
+
+	// 簡易鬘
+	human		rai_def/rai_hair_shadow_mt.kms
+
+	// モーション
+	mtn			rai_naked.mls
+
+// ファットマン
+	// モデル
+	human		fat_def/fat_def_sh_mt.kms
+	// モーション
+	mtn			fatman.mls
+
+// ソリダス
+	//human	sol_def/sol_snakearm_mh_mt.evm
+	//human	sol_def/sol_def_mh_mt.evm
+	//human	sol_def/sol_def_sh_mt.kms
+
+	//	眼帯
+	//human	sol_def/sol_gantai_obj.kms
+	//pack_trnall	effect.tri \
+				//effect/bonbori/w_bonbori.bmp
+
+	//mtn		sol_w41a.mls
+	//mtn		sol_snakearm_w41a.mls
+
+// おばちゃん
+	human		hos_def/hos_femaleb_def_mt.kms
+	mtn			hosf_d.mls
+	human		hos_def/hos_femaleb_sk_mh_mt.evm	// おばちゃんスカート
+
+// ワイン
+	pack_all	wine.tri \
+				goods/w41a_wine/w41a_wine_liq_50hlf_mt.dar \
+				goods/w41a_wine/w41a_wineglass.dar
+
+	goods		w41a_wine/w41a_wine_liq_50hlf_mt.kms
+	goods		w41a_wine/w41a_wineglass.kms
+
+// ヴァンプ
+	human		vmp_def/vmp_naked_sh.kms
+	// ナイフ
+	human		vmp_def/vmp_parts_vkpa_mh.evm
+	// モーション
+	mtn			w31c_vmp_base.mls
+
+// スネークポスター
+	world		a41a/a41a_pos01.kms
+
+

@@ -1,0 +1,109 @@
+//
+//	w04b.src
+//
+//	written by Y.Matsuhana 1999.Dec
+//
+//	$Id: a04b.src,v 1.3 2002/06/04 07:52:18 usr04249 Exp $
+
+
+// 常駐データ
+block .use r_vr_s
+
+block .nocache
+block .cache
+
+#define WN_W04B
+
+// 各ステージ共通要素
+#include	"t_common.h"
+#include	"common.h"
+
+//エフェクト関連
+#define		EFFECT_CUSTUM
+
+#define		E_KOGETUKI				// 壁への焦げ付き
+#define		E_ENEMY					// 敵兵系
+#define		E_ENEMY_LIGHT			// 敵兵ライト
+//#define		E_DOOR_LUMP				// ドアランプ
+#define		E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define		E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+
+#include		"c_effect.h"
+// オルタナティブミッション用追加エフェクト
+#include	"alt_effect.h"
+
+//include		gover.h
+//include		codec.h
+//include		wp_tank.h
+include		item_box_tank.h
+//include		ene_tank.h
+//itembox
+
+//プロジェクタ塵
+pack_trnall stage_effect.tri \
+	debug/shibata/staffroll/alpha03_alp_ovl.bmp
+
+
+// キャラクタ
+include		marine.h
+
+// ワールド
+//debug		null
+world		w04b/w04b1.kms
+world		w04b/w04b2.kms
+world		w04b/w04b3.kms
+world		w04b
+lt2		w04b.lt2
+hazard	   	w04b.hzx
+world		door/w04_dr.kms
+world		w04/hatch.kms
+
+// 強制モーション
+mtn		sna_w04.mls
+mtn		rai_w04.mls
+
+mtn			hatch_w04.mls
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+//pack_all	debug.tri debug/test_door debug/sling_test debug/clear_test debug/locker debug/corpse_a debug/corpse_u
+
+//タイマーテスト
+//pack_all	debug.tri timer_test
+
+//野尻実験箱
+//world	w00b/obs_box3.kms
+world	w04/w04_box.kms
+
+/*
+debug	mogi/sp.kms
+debug	mogi/w04_box.kms
+debug	mogi/floor_sound.kms
+
+world	w04b/w04_box2.kms
+world	w04b/w04_box3.kms
+*/
+
+//プロジェクタリモコン
+goods	remocon/remocon.kms
+
+//debug		test_door
+//meca		ray
+//debug		usa_test
+//debug		corpse_a
+//debug		corpse_u
+
+
+
+// ビデオ撮影用スネーク顔表情
+//human		sna_def/sna_mmt.evm
+//rmt	sna_rmt
+
+
+
+
+//ドッグタグ
+goods	dogtag/dogtag_gps.kms
+//effect	mark/kirari_alp_ovl.bmp
+pack_trnall dogtag_effect.tri \
+	effect/mark/kirari_alp_ovl.bmp

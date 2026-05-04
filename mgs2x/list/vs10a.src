@@ -1,0 +1,81 @@
+//
+//	vs10a.src	
+//	ＶＲスニーキングミッション１０面
+//	written by H.Yoshiike 2002.Feb
+//
+//	$Id$
+
+#define WN_VS10A
+
+block .use r_vr_r
+block .nocache
+block .cache
+
+// 敵兵関連define
+// 敵兵タイプ
+#define ENE_VR_GOL		// ＶＲ兵
+#define ENE_ATTACKER	// 攻撃兵
+#define ENE_SHIELD		// 盾兵
+#define ENE_SHOT		// ショットガン兵
+#define ENE_HIGH_TECH	// 人質イベント後はハイテク兵
+
+// 特殊兵のモーション設定
+#define ENE_MAR '-DDEL_TNG=DUMMY -DDEL_WALKMAN=DUMMY'
+
+
+// 各ステージ共通要素
+#include	"vr_def.h"
+#include	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+
+// キャラクタ
+#include	"ene_plant.h"
+
+// 強制モーション
+mtn			rai_vs10a.mls
+mtn			sna_vs10a.mls			// ゴル兵肩回しモーション
+
+// ロッカー
+mtn			sna_locker.mls
+mtn			locker.mls
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル 
+option makexti6 -l 1024 -f PAL8
+pack_all	vs10a.tri \
+	world/vr_sneaking/vs10a
+option makexti6
+
+world		vr_sneaking/vs10a
+hazard		vs10a.hzx
+rol			world/vr_sneaking/vs10a/vs10a.rol
+
+// オブジェクト
+pack_all	object.tri \
+			goods/locker/vr2_locker_door.dar \
+			meca/svc_plant \
+			world/test/vr_test/vr2_pitfall_a0.dar
+
+goods		locker/vr2_locker_door.kms
+meca		svc_plant
+world		test/vr_test/vr2_pitfall_a0.kms
+
+//	落し穴
+include		pit_effect.h
+pack_trn	pitfall_tex.tri \
+			effect_vr/pitfall/vr2_pitfall_b0_all_add_alp.bmp
+
+
+//	ＶＲ追加エフェクト
+#include	"vr_effect.h"
+
+// アイテム
+itembox
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム

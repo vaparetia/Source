@@ -1,0 +1,975 @@
+#!/usr/bin/perl
+#
+# all right reserved by KCEJ 1999-2001
+#
+# Programmed by T.Morita
+#
+
+require "config.pl" ;
+
+$work_dir    = $homedir."/tmp.inf" ;
+$err_tmpfile = $msgdir."/err_tmp.inf" ;
+$fixrundir   = $infrundir ;
+$reportfile  = $infreport ;
+
+#Flush the buffer immeadiatly
+$| = 1 ;
+
+while( 1 )
+{
+    select( undef, undef, undef, 2.0 ) ;
+
+    open( POOL, "ls -t $fixrundir |" ) ;
+    foreach $files ( <POOL> )
+    {
+	chop( $files ) ;
+
+	open( CHECK, "tail -1 '$fixrundir/$files' | grep -F 'EOF' |" ) ;
+	if ( <CHECK> )
+	{
+	    print "start $files\n" ;
+	    &main_start() ;
+
+	    open( ENT, "$fixrundir/$files" ) ;
+	    chop( $dest_dir=<ENT> ) ;
+	    chop( $rest    =<ENT> ) ;
+	    foreach $ent ( <ENT> )
+	    {
+		$ent =~ s/[\n\r]*$// ;
+		if ( $ent ne "EOF" && $ent )
+		{
+		    &fork( "echo '$ent' > $err_tmpfile" ) ;
+		    &main_convert( $ent ) ;
+		    &main_error( $ent ) if ( $mode eq $MODE_ABORT ) ;
+		    unlink( $err_tmpfile ) ;
+		    &main_renew_bbs( $ent, $mode ) ;
+		}
+		$rest-- ;
+	    }
+	    close ENT ;
+
+	    &main_end() ;
+
+	    unlink( "$fixrundir/$files" ) ;
+	    print "end $files\n" ;
+	}
+	close( CHECK ) ;
+    }
+    close( POOL ) ;
+}
+exit( 0 ) ;
+
+
+
+
+#######################################################################################
+#
+# Main Subroutines 
+#
+#
+sub main_start()
+{
+    $date = substr( localtime, 4) ;
+
+    $logfile = $date ;
+    $logfile =~ s/[ ]+[0-9]+ [0-9]+:[0-9]+:[0-9]+ // ;
+    $logfile = $logdir."/Neofix".$logfile ;
+
+    $errfile = $date ;
+    $errfile =~ s/[0-9]+:[0-9]+:[0-9]+ // ;
+    $errfile =~ s/[ ]+/_/g ;
+    $errfile = $logdir."/err/".$errfile ;
+    $errflag = 0 ;
+
+    undef( %check_scn ) ;
+
+    &append( $logfile   , substr( localtime, 4)." FixRun 発動\n" ) ;
+    &append( $reportfile, substr( localtime, 4)." FixRun 発動\n" ) ;
+}
+
+sub main_convert
+{
+    local ( $file ) = @_ ;
+    local $flag, $dest_d ;
+    local $line, $num, $cmd ;
+    local $time ;
+
+    $mode = $MODE_FIXED ;
+
+    #ログを残す
+    $time = substr( localtime, 4) ;
+    &append( $reportfile, "$time FixRunは、$entを $dest_dir に更新中\n" ) ;
+    &append( $reportfile, "未更新ファイルの数は、現在のを含め$rest個です。\n");
+    &append( $logfile   , "\t$time FixRunは、$entを $dest_dir に更新\n" ) ;
+
+    $dest_d = $file ;
+    $dest_d =~ s/\/[^\/]*$//g ;
+    &fork( "mkdir -p $dest_dir/$dest_d" ) if ( !-e "$dest_dir/$dest_d" ) ;
+
+    #コンバートを掛ける
+  BRANCH:
+    {
+	&com_mdl( $file, $dest_d ), last BRANCH if ( $file =~ /\.mdl$/ ) ;
+	&com_mar( $file, $dest_d ), last BRANCH if ( $file =~ /\.mar$/ ) ;
+	&com_mtn( $file, $dest_d ), last BRANCH if ( $file =~ /\.mtn$/ ) ;
+	&com_tex( $file, $dest_d ), last BRANCH if ( $file =~ /\.(pic|bmp)$/ ) ;
+	&com_scn( $file, $dest_d ), last BRANCH if ( $file =~ /\.scn$/ ) ;
+	&com_inf( $file, $dest_d ), last BRANCH if ( $file =~ /\.inf$/ ) ;
+	&com_pcm( $file, $dest_d ), last BRANCH if ( $file =~ /\.pcm$/ ) ;
+	&com_wav( $file, $dest_d ), last BRANCH if ( $file =~ /\.wav$/ ) ;
+	&com_ipu( $file, $dest_d ), last BRANCH if ( $file =~ /\.ipu$/ ) ;
+	&com_l2d( $file, $dest_d ), last BRANCH if ( $file =~ /\.l2d$/ ) ;
+	&com_mpv( $file, $dest_d ), last BRANCH if ( $file =~ /\.mpv$/ ) ;
+	&com_de2( $file, $dest_d ), last BRANCH if ( $file =~ /\.de2$/ ) ;
+	&com_other( $file, $dest_d ) ;
+    }
+
+    &fork( "rm -rf $work_dir/*" ) ;
+}
+
+sub main_error()
+{
+    local ( $ent ) = @_ ;
+    local $file, $err_time ;
+
+    if ( $ent =~ "." )
+    {
+#既にファイルがあれば消す
+	open( DUP, "grep -H '$ent<' $entrydir/*  | sed -e 's/:.*\$//' |" ) ;
+	foreach( <DUP> ) { s/[\n\r]*$// ; unlink }
+	close( DUP ) ;
+
+#エントリーを追加しなおす
+	$file = "$entrydir/entry" ;
+	for ( $num=0 ; -e $file.sprintf( ".%04d", $num ) ; $num++ ){}
+	$file .= sprintf( ".%04d", $num ) ;
+	$err_time = localtime ;
+	open( ENT, "> $file" ) ;
+	print ENT "<OPTION>[Err][$err_time]$ent</OPTION>" ;
+	close( ENT ) ;
+    }
+
+#ログにエラーを残す
+    &fork( "echo '-----------------------------------------------------------' >> $errfile" ) ;
+    &fork( "echo '---------Error occur on $date Start---------' >> $errfile" ) ;
+    &fork( "cat $err_tmpfile >> $errfile" ) ;
+    &fork( "echo '---------Error occur on $date End  ---------' >> $errfile" ) ;
+    &fork( "echo '-----------------------------------------------------------' >> $errfile" ) ;
+}
+
+
+sub make_bbstime()
+{
+    local ( $fname, $content ) = @_ ;
+    local $file, $num ;
+
+    open( LS, "ls -t $bbstime/* | sed -e 's/:.*\$//' |" ) ;
+    for( $num=0 ; $file=<LS> ; $num++ )
+    {
+	s/[\n\r]*$// ;
+	open( DUP, "grep -H 'file=$fname>' $file |" ) ;
+	unlink( $file ) if ( <DUP> || $num>=100 ) ;
+        close( DUP ) ;
+    }
+    close( LS ) ;
+
+#新しいものを作る
+    $file = "$bbstime/bbs" ;
+    for ( $num=0 ; -e $file.sprintf( ".%04d", $num ) ; $num++ ){}
+    $file .= sprintf( ".%04d", $num ) ;
+
+    #&send_ipmsg( $from, "", $to, "ランタイムに上がっていたのですがFIXされていない" ) ;
+
+    open( BBT, "> $file" ) ;
+    print BBT $content ;
+    close( BBT ) ;
+}
+
+sub main_renew_bbs()
+{
+    local ( $fname, $gif ) = @_ ;
+    local $bbs_time, $bbs_file ;
+    local $num, $msg ;
+    local $tim1, $tim2 ;
+
+    $bbs_file = "$bbsdir/$fname" ;
+
+#BBSファイルがないので作る
+    if ( !-e $bbs_file )
+    {
+    }
+
+#BBSFIXファイルがないので作る
+    if ( !-e "$bbs_file.fix" )
+    {
+	$date = substr( localtime, 4) ;
+	$msg  = "<TR><TD></TD>" ;
+	$msg .= "<TD><IMG SRC=".$where{'gifFix'}."></TD>" ;
+	$msg .= "<TD></TD>" ;
+	$msg .= "<TD>&lt; 更新/Fix &gt;</TD>" ;
+	$msg .= "<TD>[Name: システム]</TD>" ;
+	$msg .= "<TD>$date</TD></TR>" ;
+	$date =~ s/ /+/g ; 
+	
+	open( BBS_IN, "$bbs_file" ) ;
+	if ( $_ = <BBS_IN> )
+	{
+	    open( BBS_OUT, ">$bbs_file.fix" ) ;
+	    s/&fname=[^&]*&/&fname=FIXUP&/ ;
+	    s/&fcnmt=[^&]*&/&fcnmt=&/ ;
+	    s/&fdate=[^&]*&/&fdate=$date&/ ;
+	    s/&fhost=[^&]*&/&fhost=mutsu.konami&/ ;
+	    s/&tmp_fix=[^&]*&/&tmp_fix=Fix&/ ;
+	    s/&fix=submit/&fix=hidden/ ;
+	    s/&icmnt=text/&icmnt=hidden/ ;
+	    #FIXがあればその情報をとる
+	    s/<TR><TD><\/TD><TD><IMG SRC=.*gif><\/TD><TD><\/TD><TD>&lt;.*&gt;<\/TD><TD>.+[0-9: ]+<\/TD><\/TR>// ;
+	    s/<TR><TD><\/TD><TD><IMG SRC=.*gif>.+[0-9: ]+<\/TD><\/TR>//      if ( !/fix.gif/ || /fxd.gif/ || /err.gif/ || /tmp.gif/ ) ;
+	    s/<TR><TD><\/TD><TD><\/TD><TD>/$msg<TR><TD><\/TD><TD><\/TD><TD>/ if ( !/fix.gif/ || /fxd.gif/ || /err.gif/ || /tmp.gif/ ) ;
+	    s/fxd\.gif/fix.gif/ if ( /fxd.gif/ ) ;
+	    s/err\.gif/fix.gif/ if ( /err.gif/ ) ;
+	    print BBS_OUT ;
+	    close( BBS_OUT ) ;
+	    
+	    &make_bbstime( $fname, $_ ) ;
+	}
+	close( BBS_IN ) ;
+    }
+
+#BBS更新
+    open( DUP, "grep -H 'file=$fname>' $bbstime/* | sed -e 's/:.*\$//' |" ) ;
+    if ( $bbs_time=<DUP> )
+    {
+	chop $bbs_time ;
+
+	open( BBS_TIM, "+<$bbs_time" ) ;
+	open( BBS_FIX, "+<$bbs_file.fix" ) ;
+	if ( $_ = <BBS_FIX> )
+	{
+	    #ビットマップを書き換える
+	    s/fix\./$gif./ ;
+	    seek( BBS_TIM, 0, 0 ) ;
+	    seek( BBS_FIX, 0, 0 ) ;
+	    print BBS_TIM ;
+	    print BBS_FIX ;
+	    close BBS_TIM ;
+	    close BBS_FIX ;
+
+	    #リネームするか?(アクセスタイムを比較して検討する)
+	    $tim1 = (stat( "$bbs_file.fix" ))[8] ;
+	    $tim2 = (stat(  $bbs_file      ))[8] ;
+	    print STDERR "Time NOT matched on BBS-File($tim1<=$tim2)\n" if ( $tim1 <= $tim2 ) ;
+	    rename( "$bbs_file.fix", $bbs_file ) if ( $tim1 > $tim2 ) ;
+	}
+    }
+    else
+    {
+	open( BBS_FIX, "+<$bbs_file.fix" ) ;
+	if ( $_ = <BBS_FIX> )
+	{
+	    #ビットマップを書き換える
+	    s/fix\./$gif./ ;
+	    seek( BBS_FIX, 0, 0 ) ;
+	    print BBS_FIX ;
+	    close BBS_FIX ;
+
+	    #リネームするか?(アクセスタイムを比較して検討する)
+	    $tim1 = (stat( "$bbs_file.fix" ))[8] ;
+	    $tim2 = (stat(  $bbs_file      ))[8] ;
+	    print STDERR "Time NOT matched on BBS-File($tim1<=$tim2)\n" if ( $tim1 <= $tim2 ) ;
+	    rename( "$bbs_file.fix", $bbs_file ) if ( $tim1 > $tim2 ) ;
+	}
+
+	print STDERR "BBS-File not found, searching('file=$fname>')\n" ;
+    }
+    close( DUP ) ;
+}
+
+sub main_end()
+{
+    unlink( $reportfile ) ;
+    &append( $logfile, substr( localtime, 4)." FixRun 停止\n" ) ;
+}
+
+
+
+#######################################################################################
+# コマンド群
+#
+#
+#
+sub com_mdl()
+{
+    local ( $file, $dest_d ) = @_ ;
+    local $cmd, $rpt, $cv2, $kms ;
+    local $dest = $file ;
+
+    $dest =~ s/[-._0-9a-zA-Z]*\///g ;
+    $dest =~ s/.mdl$// ;
+
+    $rpt = $runtime_dir."/".$file ;
+    $rpt =~ s/.mdl/.rpt/ ;
+    $cv2 = $file ;
+    $cv2 =~ s/.*\/([^\/]*)/$1/ ;
+    $cv2 =~ s/.mdl/.cv2/ ;
+    $kms = $file ;
+    $kms =~ s/.*\/([^\/]*)/$1/ ;
+    $kms =~ s/.mdl/.kms/ ;
+    $cmd = "$mdl2kc $runtime_dir/$file $kms $cv2 -l $work_dir -r $rpt" ;
+    &fork( "$cmd >> $err_tmpfile" ) and $mode = $MODE_ABORT ;
+
+    $file =~ s/.mdl$/.kms/ ;
+    &fork( "rm -f $dest_dir/$file" ) ;
+    if ( -f "$work_dir/$dest.kms" )
+    {
+	&fork( "cp $work_dir/$dest.kms $dest_dir/$file" ) ;
+    }
+    $file =~ s/.kms$/.cv2/ ;
+    &fork( "rm -f $dest_dir/$file" ) ;
+    if ( -f "$work_dir/$dest.cv2" )
+    {
+	&fork( "cp $work_dir/$dest.cv2 $dest_dir/$file" ) ;
+    }
+    $file =~ s/.cv2$/.evm/ ;
+    &fork( "rm -f $dest_dir/$file" ) ;
+    if ( -f "$work_dir/$dest.evm" )
+    {
+	&fork( "cp $work_dir/$dest.evm $dest_dir/$file" ) ;
+    }
+    $file =~ s/.evm$/.dar/ ;
+    $flag = 1 ;
+    open( LST, "ls $work_dir/*.bmp |" ) ;
+    while( <LST> )
+    {
+	chop ;
+	&fork( "$dar c $dest_dir/$file $_" ) and $mode = $MODE_ABORT if (  $flag ) ;
+	&fork( "$dar a $dest_dir/$file $_" ) and $mode = $MODE_ABORT if ( !$flag ) ;
+	$flag = 0 ;
+    }
+    close LST ;
+}
+
+sub com_mar()
+{
+    local ( $file, $dest_d ) = @_ ;
+
+    &fork( "cp $runtime_dir/$file $dest_dir/$file" ) ;
+    $file =~ s/.mar$/.h/ ;
+    &fork( "cp $runtime_dir/$file $dest_dir/$file" ) ;
+}
+
+sub com_mtn()
+{
+    local ( $file, $dest_d ) = @_ ;
+
+    if ( $file =~ m/^mtn/ )
+    {
+	if ( $file !~ m/^mtn\/demo/ )
+	{
+	    &fork( "$mtn_conv -i $runtime_dir/$file -d $dest_dir/$dest_d/ >> $err_tmpfile" ) and $mode=$MODE_ABORT ;
+	}
+    }
+    else
+    {
+	&make_mst( $file, $dest_d ) ;
+    }
+}
+
+sub com_tex()
+{
+    local ( $file, $dest_d ) = @_ ;
+
+    &fork( "$texconv -l$dest_dir/$dest_d $runtime_dir/$file >> $err_tmpfile" ) and $mode=$MODE_ABORT ;
+}
+
+sub com_scn()
+{
+    local ( $file, $dest_d ) = @_ ;
+    local $cmd, $base, $ext ;
+
+    $base = $file ;
+    $base =~ s/.*\/([^\/]+)\.scn$/$1/ ;
+    $base =~ s/([^_]+)_[a-zA-Z0-9]+$/$1/ ;
+
+    if ( ! $check_scn{$base} )
+    {
+	$check_scn{$base} = 1 ;
+	if ( -f "$runtime_dir/scn/$base.scn" )
+	{
+	    $cmd = "$mergescene -o $work_dir/$base.scn -i $runtime_dir/scn/$base.scn " ;
+	    
+	    $_ = "$runtime_dir/$file\n" ;
+	    open( LST, "ls $runtime_dir/scn/$base*.scn |" ) ;
+	    while( <LST> )
+	    {
+		chop ;
+
+		$ext = $_ ;
+		$ext =~ s/.*\/([^\/]+)\.scn$/$1/ ;
+		$ext  =~ s/[^_]+_([a-zA-Z0-9]+)$/$1/ ;
+
+		$cmd .= "-b $_ " if ( $ext =~ /^h/ ) ;
+		$cmd .= "-h $_ -f $_ " if ( $ext =~ /^b/ ) ;
+		$cmd .= "-h $_ " if ( $ext =~ /^r/ ) ;
+		$cmd .= "-r $_ " if ( $ext =~ /^c/ ) ;
+	    }
+	    close( LST ) ;
+
+	    &fork( "$cmd >> $err_tmpfile" ) and $mode=$MODE_ABORT ;
+	    &fork( "scn2hzx -i $work_dir/$base.scn -o $work_dir/$base.hzx >> $err_tmpfile" ) and $mode=$MODE_ABORT ; 
+
+	    &fork( "cp $work_dir/$base.hzx $dest_dir/$dest_d/$base.hzx" ) ;
+	}
+	else
+	{
+	    printf( "Base scn-file missing($base.scn)\n" ) ;
+	    $mode = $MODE_ABORT ;
+	}
+    }
+}
+
+sub com_inf()
+{
+    local ( $file, $dest_d ) = @_ ;
+    local $inf = $file ;
+    local $cap = $file ;
+    local $pcm = $file ;
+
+    #pcmがあれば口パクデータを作成
+    $pcm =~ s/inf/pcm/g ;
+    $pcm =~ s/.aif//g ;
+    $pcm =~ s/VC/vc/ ;
+    if ( -e "$fix_dir/$pcm" && $dest_d !~ m/sound(\....)?\/demo/ )
+    {
+	&make_lipsync( $file, $pcm, $dest_d ) ;
+    }
+
+    #ディレクトリを作る
+    $dest_d =~ s/inf/cap/g ;
+    &fork( "mkdir -p $fix_dir/$dest_d" ) if ( !-d "$fix_dir/$dest_d" ) ;
+
+    $cap =~ s/inf/cap/g ;
+    $cap =~ s/.aif//g ;
+    $cap =~ s/VC/vc/ ;
+    &fork( "convinf -f /u/develop/mj001b/tools/bin/linux -t /u/develop/mj001b/tools/bin/linux/zen_table -o $dest_dir/$cap $runtime_dir/$file >> $err_tmpfile" ) and $mode = $MODE_ABORT ;
+}
+
+sub com_pcm()
+{
+    local ( $file, $dest_d ) = @_ ;
+    local $inf = $file ;
+    local $pal = $file ;
+
+    &fork( "cp $runtime_dir/$file $dest_dir/$file" ) and $mode = $MODE_ABORT ;
+
+    #infがあれば口パクデータを作成
+    #$inf =~ s/pcm$/aif.inf/ ;
+    #$inf =~ s/pcm/inf/g ;
+    #$inf =~ s/vc/VC/ if ( not -e "$runtime_dir/$inf" ) ;
+    #if ( -e "$runtime_dir/$inf" && $dest_d !~ m/sound\/demo/ )
+    #{
+#	&make_lipsync( $inf, $file, $dest_d ) ;
+#    }
+
+#    if ( $file =~ ".eng" )
+#    {
+#	$pal    =~ s/\.eng/\.pal/g ;
+#	$dest_d =~ s/\.eng/\.pal/g ;
+
+#	&fork( "mkdir -p $fix_dir/$dest_d" )  if ( !-e "$fix_dir/$dest_d" ) ;
+
+#	&fork( "cp $runtime_dir/$file $dest_dir/$pal" ) and $mode = $MODE_ABORT ;
+#    }
+}
+
+
+sub com_wav()
+{
+    local ( $file, $dest_d ) = @_ ;
+    local $inf = $file ;
+
+    &fork( "cp $runtime_dir/$file $dest_dir/$file" ) and $mode = $MODE_ABORT ;
+
+    if ( $file !~ m/^demo\/data/ )
+    {
+	#infがあれば口パクデータを作成
+	&make_lipsync_wav( $file, $dest_d ) ;
+    }
+}
+
+sub com_ipu()
+{
+    local ( $file, $dest_d ) = @_ ;
+
+    &fork( "ipu2stream $runtime_dir/$file $work_dir/temp.ist" ) and $mode = $MODE_ABORT ;
+    $file =~ s/.ipu$/.ist/ ;
+    &fork( "cp $work_dir/temp.ist $dest_dir/$file" ) ;
+}
+
+sub com_l2d()
+{
+    local ( $file, $dest_d ) = @_ ;
+    local $o2d, $src_d ;
+
+    &com_other( $file, $dest_d ) ;
+
+    return ;
+    $src_d = $file ;
+    $src_d =~ s/\/[^\/]+$// ;
+
+    &fork( "layout2d -o $work_dir $runtime_dir/$file" )      and $mode = $MODE_ABORT ;
+    &fork( "makel2ddar -i $runtime_dir/$file -l $runtime_dir/$src_d -d $work_dir" ) and $mode = $MODE_ABORT ;
+    $file =~ s/.l2d$/.o2d/ ;
+    $o2d = $file ;
+    $o2d =~ s/.*\/([^\/]*)$/$1/g ;
+    &fork( "cp $work_dir/$o2d $dest_dir/$file" ) ;
+    &fork( "cp $work_dir/*.dar $dest_dir/$src_d" ) ;
+
+}
+
+
+sub com_mpv()
+{
+    local ( $file, $dest_d ) = @_ ;
+    local $dest ;
+
+    $dest = $file ;
+    if ( $file =~ "ipu" )
+    {
+	$dest =~ s/mpv$/ist/ ;
+	&fork( "mpv2ist $runtime_dir/$file $dest_dir/$dest >> $err_tmpfile" ) and $mode=$MODE_ABORT ;
+    }
+    else
+    {
+	$dest =~ s/mpv$/sst/ ;
+	&fork( "mpv2sst $runtime_dir/$file $dest_dir/$dest >> $err_tmpfile" ) and $mode=$MODE_ABORT ;
+    }
+}
+
+sub com_de2()
+{
+    local ( $file, $dest_d ) = @_ ;
+
+    &fork( "diet_de2 -i $runtime_dir/$file -o $dest_dir/$file >> $err_tmpfile" ) and $mode=$MODE_ABORT ;
+}
+
+
+sub com_other()
+{
+    local ( $file, $dest_d ) = @_ ;
+
+    &fork( "cp $runtime_dir/$file $dest_dir/$file" ) and $mode = $MODE_ABORT ;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#######################################################################################
+#
+#口ぱく変換ルーチン
+#
+#
+sub make_lipsync_wav()
+{
+    local ( $wav, $dest_d ) = @_ ;
+    local $vmtn_cmd ;
+    local $vsc_cmd = "" ;
+    local $name ;
+
+    $vmtn_cmd  = "vmtn -l /u/develop/mj001b/tools/shared/vmtn/" ;
+    $vmtn_cmd .= "blend_en.inf" if ( $dest_d =~ ".eng" || $dest_d =~ ".pal") ;
+    $vmtn_cmd .= "blend_jp.inf" if ( $dest_d !~ ".eng" && $dest_d !~ ".pal" ) ;
+    $vmtn_cmd .= " -o $work_dir" ;
+
+#格納先のディレクトリ
+    &fork( "mkdir -p $runtime_dir/$dest_d" ) if ( !-d "$runtime_dir/$dest_d" ) ;
+
+
+    $name = $wav ;
+    $name =~ s/.*([a-zA-Z][a-zA-Z][a-zA-Z])\.wav$/$1/ ;
+
+    if ( $dest_d =~ m/demo\/[pP]/ && $inf_name{"plant_wav$name"} )
+    {
+	$name = $inf_name{"plant_wav$name"} ;
+    }
+    else
+    {
+	$name = $inf_name{"wav$name"} ;
+    }
+
+    if ( $name =~ m/F$/ )
+    {
+	$vsc_cmd .= "-e " if ( $dest_d =~ ".eng" || $dest_d =~ ".pal") ;
+	$vsc_cmd .= "-F " ;
+    }
+    if ( $name =~ m/M$/ )
+    {
+	$vsc_cmd .= "-e " if ( $dest_d =~ ".eng" || $dest_d =~ ".pal") ;
+	$vsc_cmd .= "-M "  ;
+    }
+    chop( $name ) ;
+    $vmtn_cmd .= " -m /u/develop/mj001b/tools/shared/vmtn/$name.inf" ;
+
+
+#SEQを作成
+    if ( $vsc_cmd )
+    {
+	&fork( "vsc $vsc_cmd $runtime_dir/$wav > $work_dir/demo.seq 2>> $err_tmpfile" ) and $mode = $MODE_ABORT ;
+	&fork( "$vmtn_cmd -s $work_dir/demo.seq > /dev/null 2>> $err_tmpfile" ) and $mode = $MODE_ABORT ;
+	$name = $wav ;
+	$name =~ s/\.wav/\.mtn/ ;
+	&fork( "mv $work_dir/*.mtn $runtime_dir/$name" ) ;
+
+	&fork( "$vmtn_cmd:body -s $work_dir/demo.seq > /dev/null 2>> $err_tmpfile" ) and $mode = $MODE_ABORT ;
+	$name = $wav ;
+	$name =~ s/\.wav/_body\.mtn/ ;
+	&fork( "mv $work_dir/*.mtn $runtime_dir/$name" ) ;
+    }
+    else
+    {
+	&fork( "echo 'config.pl UNDEF. Please call T.Morita' >> $err_tmpfile" ) ;
+	$mode = $MODE_ABORT ;
+    }
+}
+
+
+
+#######################################################################################
+#
+#口ぱく変換ルーチン
+#
+#
+sub make_lipsync()
+{
+    local ( $inf, $pcm, $dest_d ) = @_ ;
+    local $vmtn_cmd ;
+    local $vsc_f_cmd = "", $vsc_m_cmd = "" ;
+    local $code, $name, $name2 ;
+    local $mtn_dest_d = $dest_d ;
+    local $mst_dest_d = $dest_d ;
+    local $pal_dest_d = $dest_d ;
+    local $mst_cmd ;
+
+#格納先のディレクトリ
+    $mtn_dest_d =~ s/pcm/mtn/ ;
+    $mtn_dest_d =~ s/inf/mtn/ ;
+    $mst_dest_d =~ s/pcm/mst/ ;
+    $mst_dest_d =~ s/inf/mst/ ;
+    $pal_dest_d =~ s/pcm/mst/ ;
+    $pal_dest_d =~ s/inf/mst/ ;
+    $pal_dest_d =~ s/\.eng/\.pal/g ;
+    &fork( "mkdir -p $fix_dir/$mst_dest_d" ) if ( !-d "$fix_dir/$mst_dest_d" ) ;
+    &fork( "mkdir -p $fix_dir/$pal_dest_d" ) if ( !-d "$fix_dir/$pal_dest_d" ) ;
+    &fork( "mkdir -p $runtime_dir/$mtn_dest_d" ) if ( !-d "$runtime_dir/$mtn_dest_d" ) ;
+
+    $vmtn_cmd  = "vmtn -l /u/develop/mj001b/tools/shared/vmtn/" ;
+    $vmtn_cmd .= "blend_en.inf" if ( $mst_dest_d =~ ".eng" || $mst_dest_d =~ ".pal") ;
+    $vmtn_cmd .= "blend_jp.inf" if ( $mst_dest_d !~ ".eng" && $mst_dest_d !~ ".pal" ) ;
+    $vmtn_cmd .= " -i $runtime_dir/$inf -o $work_dir" ;
+
+#SEQを作成
+    open( INF, "dumpinf $runtime_dir/$inf | grep 'name:' |" ) ;
+    foreach( <INF> )
+    {
+	chop ;
+	s/^name:// ;
+
+	$name = $inf_name{$_} ;
+	chop( $name ) ;
+	$vmtn_cmd .= " -m /u/develop/mj001b/tools/shared/vmtn/$name.inf" if ( $vmtn_cmd !~ $name ) ;
+	if ( $inf_name{$_} =~ m/F$/ && $vsc_f_cmd !~ "-F" )
+	{
+	    $vsc_f_cmd .= "-e " if ( $dest_d =~ ".eng" || $dest_d =~ ".pal") ;
+	    $vsc_f_cmd .= "-F " ;
+	}
+	if ( $inf_name{$_} =~ m/M$/ && $vsc_m_cmd !~ "-M" )
+	{
+	    $vsc_m_cmd .= "-e " if ( $dest_d =~ ".eng" || $dest_d =~ ".pal") ;
+	    $vsc_m_cmd .= "-M "  ;
+	}
+
+	if ( $name eq "" )
+	{
+	    &fork( "echo 'config.pl $_ UNDEF. Please call T.Morita' >> $err_tmpfile" ) ;
+	    $mode = $MODE_ABORT ;
+	    return ;
+	}
+    }
+    close INF ;
+
+    $name = $inf ;
+    $name =~ s/.*\/([^\/]+)\.aif\.inf$/$1/g ;
+    $name =~ s/VC/vc/ ;
+    if ( $vsc_f_cmd )
+    {
+	&fork( "vsc $vsc_f_cmd $fix_dir/$pcm > $work_dir/$name.female.seq 2>> $err_tmpfile" ) and $mode = $MODE_ABORT ;
+	&fork( "$vmtn_cmd -s $work_dir/$name.female.seq > /dev/null 2>> $err_tmpfile" ) and $mode = $MODE_ABORT ;
+    }
+    if ( $vsc_m_cmd )
+    {
+	&fork( "vsc $vsc_m_cmd $fix_dir/$pcm > $work_dir/$name.male.seq  2>> $err_tmpfile" ) and $mode = $MODE_ABORT ;
+	&fork( "$vmtn_cmd -s $work_dir/$name.male.seq > /dev/null 2>> $err_tmpfile" ) and $mode = $MODE_ABORT ;
+    }
+
+    $mst_cmd = "mtn2mst -e -o $dest_dir/$mst_dest_d/$name.mst" ;
+    open( LS, "ls $work_dir/*.mtn |" ) ;
+    foreach( <LS> )
+    {
+	chop ;
+	$code = $_ ;
+	$code =~ s/$name// ;
+	$code =~ s/_// ;
+	$code =~ s/.*\/([^\/]+)\.mtn$/$1/g ;
+
+	$mst_cmd .= " -i $code $_" ;
+	#print( "($code) cp $_ $runtime_dir/$mtn_dest_d/$name$inf_name{$code}.mtn\n" ) ;
+	&fork( "cp $_ $runtime_dir/$mtn_dest_d/$name$inf_name{$code}.mtn" ) and $mode = $MODE_ABORT ;
+    }
+    close( LS ) ;
+
+# PAL用に変換
+    if ( $mst_dest_d =~ ".pal" )
+    {
+	&fork( "mtn_util -r 6 $work_dir/ $work_dir/*.mtn" ) and $mode = $MODE_ABORT ;
+	$mst_cmd .= " -p" ;
+    }
+
+# MSTの生成
+    &fork( "$mst_cmd > /dev/null 2>> $err_tmpfile" ) and $mode = $MODE_ABORT ;
+
+    return ;
+}
+
+
+#######################################################################################
+#
+# mtn から mst を作る
+#
+#
+sub make_code()
+{
+    local ( $name ) = @_ ;
+    local $strcode, $num ;
+
+    $strcode = $name ;
+    $strcode =~ s/.mtn$// ;
+    $strcode =~ s/_[bo][_0-9]*// ;
+    $strcode =~ s/.+([a-zA-Z][a-zA-Z][a-zA-Z])$/$1/ ;
+    $strcode = $inf_name{$strcode} ;
+#    print "$strcode ->" ;
+    $strcode++ if ( $name =~ /_b.mtn$/ ) ;
+    if ( $name =~ /_o_[0-9]*.mtn$/ )
+    {
+	$num = $name ;
+	$num =~ s/.*_o_([0-9]*).mtn$/$1/ ;
+	$strcode += 2 + $num ;
+#	print "$strcode = 2 + $num($name)" ;
+    }
+#    print "\n" ;
+    return $strcode ;
+}
+
+sub make_mst()
+{
+    local ( $file,  $dest_d ) = @_ ;
+    local $code, $name, $name2 ;
+    local $mst_file, $mst_cmd ;
+    local $pal_dest_d ;
+    local %check_mtn ;
+
+    $mst_file = $file ;
+    $mst_file =~ s/mtn/mst/g ;
+    $mst_file =~ s/(.+)[a-zA-Z][a-zA-Z][a-zA-Z](_[bo][_0-9]*)?.mst$/$1.mst/ ;
+    $pal_dest_d = $dest_d ;
+    $pal_dest_d =~ s/\.eng/\.pal/g ;
+
+    # チェックをクリア
+    undef( %check_mtn ) ;
+
+    $name = $file ;
+    $name =~ s/\.mtn$// ;
+    $name =~ s/_[bo][_0-9]*$// ;
+    $name =~ s/(.+)[a-zA-Z][a-zA-Z][a-zA-Z]$/$1/ ;
+    $name =~ s/VC/vc/ ;
+    $name =~ s/\/vc/_mod\/vc/  if ( $name !~ m/_mod/ ) ;
+
+# PAL用
+    if ( $mst_file =~ ".pal" )
+    {
+	$mst_cmd = "mtn2mst -e -o $dest_dir/$mst_file " ;
+
+	# まず_modが先
+	$name =~ s/\/vc/_mod\/vc/  if ( $name !~ m/_mod/ ) ;
+	open( LS, "ls $runtime_dir/$name*.mtn |" ) ;
+	foreach( <LS> )
+	{
+	    chop ;
+	    $code = &make_code( $_ ) ;
+	    $name2 = $_ ;
+	    $name2 =~ s/.*\/([^\/]+\.mtn)$/$1/g ;
+	    $mst_cmd .= " -i $code $work_dir/$name2" ;
+	    &fork( "mtn_util -r 6 $work_dir/ $_" ) and $mode = $MODE_ABORT ;
+	    $check_mtn{$code} = 1 ;
+	}
+	close( LS ) ;
+	$name =~ s/_mod\//\// ;
+
+	# まず_jfが先
+	$name =~ s/\/vc/_jf\/vc/  if ( $name !~ m/_jf/ ) ;
+	open( LS, "ls $runtime_dir/$name*.mtn |" ) ;
+	foreach( <LS> )
+	{
+	    chop ;
+	    $code = &make_code( $_ ) ;
+	    if ( ! $check_mtn{$code} )
+	    {
+		$name2 = $_ ;
+		$name2 =~ s/.*\/([^\/]+\.mtn)$/$1/g ;
+		$mst_cmd .= " -i $code $work_dir/$name2" ;
+		&fork( "mtn_util -r 6 $work_dir/ $_" ) and $mode = $MODE_ABORT ;
+		$check_mtn{$code} = 1 ;
+	    }
+	}
+	close( LS ) ;
+	$name =~ s/_jf\//\// ;
+
+	# 修正前の残りを捜す
+	open( LS, "ls $runtime_dir/$name*.mtn |" ) ;
+	foreach( <LS> )
+	{
+	    chop ;
+	    $code = &make_code( $_ ) ;
+	    if ( ! $check_mtn{$code} )
+	    {
+		$name2 = $_ ;
+		$name2 =~ s/.*\/([^\/]+\.mtn)$/$1/g ;
+
+		$mst_cmd .= " -i $code $work_dir/$name2" ;
+		&fork( "mtn_util -r 6 $work_dir/ $_" ) and $mode = $MODE_ABORT ;
+	    }
+	}
+	close( LS ) ;
+
+	# mstの作成コマンドを発行
+	$mst_cmd .= " -p" ;
+    }
+    else
+    {
+	$mst_cmd = "mtn2mst -e -o $dest_dir/$mst_file " ;
+
+	# まず_modが先
+	open( LS, "ls $runtime_dir/$name*.mtn |" ) ;
+	foreach( <LS> )
+	{
+	    chop ;
+	    $code = &make_code( $_ ) ;
+	    $mst_cmd .= " -i $code $_" ;
+	    $check_mtn{$code} = 1 ;
+	}
+	close( LS ) ;
+	$name =~ s/_mod\//\// ;
+
+	# まず_jfが先
+	$name =~ s/\/vc/_jf\/vc/  if ( $name !~ m/_jf/ ) ;
+	open( LS, "ls $runtime_dir/$name*.mtn |" ) ;
+	foreach( <LS> )
+	{
+	    chop ;
+	    $code = &make_code( $_ ) ;
+	    $mst_cmd .= " -i $code $_" if ( ! $check_mtn{$code} ) ;
+	    $check_mtn{$code} = 1 ;
+	}
+	close( LS ) ;
+	$name =~ s/_jf\//\// ;
+
+	# 修正前の残りを捜す
+	open( LS, "ls $runtime_dir/$name*.mtn |" ) ;
+	foreach( <LS> )
+	{
+	    chop ;
+	    $code = &make_code( $_ ) ;
+	    $mst_cmd .= " -i $code $_" if ( ! $check_mtn{$code} ) ;
+	}
+	close( LS ) ;
+    }
+
+    # ディレクトリがなければ作る
+    $dest_d =~ s/mtn/mst/g ;
+    &fork( "mkdir -p $fix_dir/$dest_d" ) if ( !-d "$fix_dir/$dest_d" ) ;
+
+    # mstの作成コマンドを発行
+    &fork( "$mst_cmd > /dev/null 2>> $err_tmpfile" ) and $mode = $MODE_ABORT ;
+}
+
+
+
+
+
+
+#######################################################################################
+#
+# Subroutines
+#
+#
+
+sub append
+{
+    local ($in,$literal) = @_ ;
+
+    open( INOUT, ">>$in" ) ;
+    print INOUT $literal ;
+    close INOUT ;
+}
+
+sub renew
+{
+    local ( $in, $literal, $except ) = @_ ;
+    local $line ;
+
+    open( IN , $in ) ;
+    open( OUT, ">$in.out" ) ;
+    print OUT $literal ;
+    foreach $line ( <IN> )
+    {
+	print OUT $line if ( $line !~ $except ) ;
+    }
+    close IN  ;
+    close OUT ;
+    &fork( "cp $in.out $in" ) ;
+}
+
+sub fork
+{
+    local $pid ;
+
+#    if ( $mode = $MODE_ABORT )
+#	return 0 ;
+
+    #コマンドをフォークして実行する
+    unless ( $pid = fork )
+    {
+        exec( $_[0] ) ;
+        exit 0 ;
+    }
+    waitpid( $pid, 0 ) ;
+
+    #異常だった場合そのコマンドをログに吐く
+    $_[0] =~ s/\/u\/develop\/mj001b\/bin\/linux\/// ;
+    print STDERR (localtime)." com($_[0])" ;
+    print STDERR "==>$? [$mode]" if ( $? ) ;
+    print STDERR "\n" ;
+
+    return $? ;
+}
+

@@ -1,0 +1,403 @@
+//
+//	raiden.mls
+//	ライデン／モーションリスト
+//
+//	2001/04/17	M.Sonoyama
+//	$Id: raiden.mls,v 1.91 2002/05/13 06:22:18 usr03682 Exp $
+
+//	☆	： 未作成
+//	★	： 未組み込み
+//	×	： 廃止
+
+rai/rai_non_idle.mt3				//素手立ち静止
+rai/rai_m9_idle.mt3					dummy_mtn	DEL_HANDGUN		//Ｍ９立ち静止 
+//debug/rai_m9_fire_p_kari.mt3									//Ｍ９構え     
+//debug/rai_m9_fire_kari.mt3									//Ｍ９撃ち	   
+rai/rai_m9_fire_p.mt3				dummy_mtn	DEL_HANDGUN		//Ｍ９構え     
+rai/rai_m9_fire.mt3												//Ｍ９撃ち	   
+rai/rai_m9_fire_reload.mt3			dummy_mtn	DEL_HANDGUN		//Ｍ９リロード
+rai/rai_non_squat.mt3				//素手しゃがみ静止
+rai/rai_non_crouch_start.mt3		//素手匍匐開始
+rai/rai_non_crouch_idle.mt3			//素手匍匐静止
+rai/rai_non_crouch_move_f.mt3		//素手匍匐前進
+rai/rai_non_crouch_move_b.mt3		//素手匍匐後退
+rai/rai_non_crouch_end.mt3 			//素手匍匐から立ち
+rai/rai_non_dam_f.mt3				//素手ダメージのけぞり
+rai/rai_non_dam_b.mt3				//素手ダメージ前のめり
+rai/rai_non_dam_out.mt3				//素手死亡
+rai/rai_non_dam_near.mt3			//素手ふっとび
+rai/rai_non_down_idle.mt3			//素手ダウン静止
+rai/rai_non_down_okiru.mt3			//素手起き上がり
+rai/rai_non_walk.mt3				//素手歩き
+rai/rai_non_dash.mt3				//素手走り
+rai/rai_non_hang_idle.mt3			//首絞め静止
+rai/rai_non_hang_tie.mt3			//首絞め絞め
+rai/rai_non_hang_stun.mt3			//首絞め首折り
+rai/rai_non_hang_walk.mt3			//首絞め歩き
+rai/rai_non_combo_p.mt3				//素手危険モード静止
+rai/rai_non_combo.mt3				//コンボ
+rai/rai_non_carry_body_start_f.mt3	//死体運び抱えうつぶせ開始
+rai/rai_non_carry_body_start_b.mt3	//死体運び抱えあおむけ開始
+rai/rai_non_carry_body_idle.mt3		//死体運び抱え静止
+rai/rai_non_carry_body_walk.mt3		//死体運び抱え歩き
+rai/rai_non_carry_body_end.mt3		//死体運び抱え下ろし
+rai/rai_non_carry_leg_start.mt3		//死体運び足開始
+rai/rai_non_carry_leg_idle.mt3		//死体運び足静止
+rai/rai_non_carry_leg_walk.mt3		//死体運び足歩き
+rai/rai_non_carry_leg_end.mt3		//死体運び足下ろし
+rai/rai_non_throw_l.mt3				//投げ左
+rai/rai_non_throw_r.mt3				//投げ右
+rai/rai_non_carry_miss.mt3			//つかみ失敗
+rai/rai_non_dam_crouch.mt3			//匍匐ダメージ
+rai/rai_non_dam_down.mt3			//ダウンダメージうつぶせ
+rai/rai_non_dam_out_down.mt3		//ダウン死亡うつぶせ
+rai/rai_m9_crouch_fire_p.mt3		dummy_mtn	DEL_HANDGUN		//Ｍ９構え匍匐
+rai/rai_m9_crouch_fire.mt3			dummy_mtn	DEL_HANDGUN		//Ｍ９撃ち匍匐
+rai/rai_m9_crouch_fire_reload.mt3	dummy_mtn	DEL_HANDGUN		//Ｍ９リロード匍匐
+rai/rai_non_stair_walk.mt3			//素手階段歩き
+rai/rai_non_stair_run.mt3			//素手階段走り
+rai/rai_m9_walk.mt3					dummy_mtn	DEL_HANDGUN		//Ｍ９歩き
+rai/rai_m9_dash.mt3					dummy_mtn	DEL_HANDGUN		//Ｍ９走り
+rai/rai_m9_stair_walk.mt3			dummy_mtn	DEL_HANDGUN		//Ｍ９階段歩き
+rai/rai_m9_stair_run.mt3			dummy_mtn	DEL_HANDGUN		//Ｍ９階段走り
+rai/rai_non_tumble_start.mt3		//跳び込み前転開始
+rai/rai_m9_squat.mt3				dummy_mtn	DEL_HANDGUN		//Ｍ９しゃがみ静止
+rai/rai_box_idle.mt3				dummy_mtn	DEL_BOX			//ダンボール静止
+rai/rai_box_dash.mt3				dummy_mtn	DEL_BOX			//ダンボール走り
+rai/rai_box_walk.mt3				dummy_mtn	DEL_BOX			//ダンボール歩き
+rai/rai_box_stop.mt3				dummy_mtn	DEL_BOX			//ダンボールストップ
+rai/rai_non_behind_idle.mt3			//素手ビハインド静止
+rai/rai_non_behind_idle_squat.mt3	//素手ビハインドしゃがみ静止
+rai/rai_non_behind_move_l.mt3		//素手ビハインド左移動
+rai/rai_non_behind_move_r.mt3		//素手ビハインド右移動
+rai/rai_non_behind_look_l.mt3		//素手ビハインド左横覗き
+rai/rai_non_behind_look_r.mt3		//素手ビハインド右横覗き
+rai/rai_non_behind_look_lb_start.mt3	//素手ビハインド左奥覗き開始
+rai/rai_non_behind_look_lb_p.mt3		//素手ビハインド左奥覗き静止
+rai/rai_non_behind_look_rb_start.mt3	//素手ビハインド右奥覗き開始
+rai/rai_non_behind_look_rb_p.mt3		//素手ビハインド右奥覗き静止
+rai/rai_non_behind_look_lb_end.mt3		//素手ビハインド左奥覗き戻り
+rai/rai_non_behind_look_rb_end.mt3		//素手ビハインド右奥覗き戻り
+rai/rai_non_behind_knock_r_1.mt3	//素手壁ノック右1回目
+rai/rai_non_behind_knock_r_2.mt3	//素手壁ノック右2回目
+rai/rai_non_behind_knock_l_1.mt3	//素手壁ノック左1回目
+rai/rai_non_behind_knock_l_2.mt3	//素手壁ノック左2回目
+rai/rai_non_behind_squat_knock_l_1.mt3	//素手、Ｍ９、刀しゃがみ壁ノック1回目
+rai/rai_non_behind_squat_knock_l_2.mt3	//素手、Ｍ９、刀しゃがみ壁ノック2回目
+rai/rai_m4a_behind_squat_knock_r_1.mt3	dummy_mtn	DEL_A_RIFLE		//Ｍ４、ＡＫしゃがみ壁ノック1回目
+rai/rai_m4a_behind_squat_knock_r_2.mt3	dummy_mtn	DEL_A_RIFLE		//Ｍ４、ＡＫしゃがみ壁ノック2回目
+rai/rai_nkt_behind_squat_knock_l_1.mt3	dummy_mtn	DEL_NIKITA		//ニキータしゃがみ壁ノック1回目
+rai/rai_nkt_behind_squat_knock_l_2.mt3	dummy_mtn	DEL_NIKITA		//ニキータしゃがみ壁ノック2回目
+rai/rai_gm_behind_squat_knock_r_1.mt3	dummy_mtn	DEL_GRENADE		//グレネードしゃがみ壁ノック1回目
+rai/rai_gm_behind_squat_knock_r_2.mt3	dummy_mtn	DEL_GRENADE		//グレネードしゃがみ壁ノック2回目
+rai/rai_non_behind_idle.mt3			//Ｍ９ビハインド静止（素手兼用）
+rai/rai_m9_behind_idle_squat.mt3	dummy_mtn	DEL_HANDGUN		//Ｍ９ビハインドしゃがみ静止
+rai/rai_non_behind_move_l.mt3		//Ｍ９ビハインド左移動（素手兼用）
+rai/rai_non_behind_move_r.mt3		//Ｍ９ビハインド右移動（素手兼用）
+rai/rai_non_behind_look_l.mt3		//Ｍ９ビハインド左横覗き（素手兼用）
+rai/rai_m9_behind_look_r.mt3		dummy_mtn	DEL_HANDGUN		//Ｍ９ビハインド右横覗き
+rai/rai_non_behind_look_lb_start.mt3	//Ｍ９ビハインド左奥覗き開始（素手兼用）
+rai/rai_non_behind_look_lb_p.mt3		//Ｍ９ビハインド左奥覗き静止（素手兼用）
+rai/rai_m9_behind_look_rb_start.mt3	dummy_mtn	DEL_HANDGUN		//Ｍ９ビハインド右奥覗き開始
+rai/rai_non_behind_look_rb_p.mt3		//Ｍ９ビハインド右奥覗き静止（素手兼用）
+rai/rai_non_behind_look_lb_end.mt3		//Ｍ９ビハインド左奥覗き戻り（素手兼用）
+rai/rai_m9_behind_look_rb_end.mt3	dummy_mtn	DEL_HANDGUN		//Ｍ９ビハインド右奥覗き戻り
+rai/rai_non_behind_knock_r_1.mt3		//Ｍ９壁ノック右1回目（素手兼用）
+rai/rai_non_behind_knock_r_2.mt3		//Ｍ９壁ノック右2回目（素手兼用）
+rai/rai_non_behind_knock_l_1.mt3		//Ｍ９壁ノック左1回目（素手兼用）
+rai/rai_non_behind_knock_l_2.mt3		//Ｍ９壁ノック左2回目（素手兼用）
+rai/rai_m9_behind2wb_r_start.mt3	dummy_mtn	DEL_HANDGUN		//Ｍ９飛び出し撃ち右開始
+rai/rai_m9_behind2wb_r_end.mt3		dummy_mtn	DEL_HANDGUN		//Ｍ９飛び出し撃ち右戻り
+rai/rai_m9_behind2wb_l_start.mt3	dummy_mtn	DEL_HANDGUN		//Ｍ９飛び出し撃ち左開始
+rai/rai_m9_behind2wb_l_end.mt3		dummy_mtn	DEL_HANDGUN		//Ｍ９飛び出し撃ち左戻り
+rai/rai_m9_behind_squat_look_r.mt3			dummy_mtn	DEL_HANDGUN		//Ｍ９ビハインドしゃがみ右横覗き
+rai/rai_m9_behind_squat_look_l.mt3			dummy_mtn	DEL_HANDGUN		//Ｍ９ビハインドしゃがみ左横覗き
+rai/rai_m9_behind_squat_look_rb_start.mt3	dummy_mtn	DEL_HANDGUN		//Ｍ９ビハインドしゃがみ右奥覗き開始
+rai/rai_m9_behind_squat_look_rb_p.mt3		dummy_mtn	DEL_HANDGUN		//Ｍ９ビハインドしゃがみ右奥覗き静止
+rai/rai_m9_behind_squat_look_rb_end.mt3		dummy_mtn	DEL_HANDGUN		//Ｍ９ビハインドしゃがみ左奥覗き戻り
+rai/rai_m9_behind_squat_look_lb_start.mt3	dummy_mtn	DEL_HANDGUN		//Ｍ９ビハインドしゃがみ左奥覗き開始
+rai/rai_m9_behind_squat_look_lb_p.mt3		dummy_mtn	DEL_HANDGUN		//Ｍ９ビハインドしゃがみ左奥覗き静止
+rai/rai_m9_behind_squat_look_lb_end.mt3		dummy_mtn	DEL_HANDGUN		//Ｍ９ビハインドしゃがみ左奥覗き戻り
+rai/rai_m9_behind2wb_squat_r_start.mt3		dummy_mtn	DEL_HANDGUN		//Ｍ９飛び出し撃ちしゃがみ右開始
+rai/rai_m9_behind2wb_squat_r_end.mt3		dummy_mtn	DEL_HANDGUN		//Ｍ９飛び出し撃ちしゃがみ右戻り
+rai/rai_m9_behind2wb_squat_l_start.mt3		dummy_mtn	DEL_HANDGUN		//Ｍ９飛び出し撃ちしゃがみ左開始
+rai/rai_m9_behind2wb_squat_l_end.mt3		dummy_mtn	DEL_HANDGUN		//Ｍ９飛び出し撃ちしゃがみ左戻り
+rai/rai_non_tumble_end_crouch.mt3	//飛び込み前転匍匐終了
+rai/rai_non_behind_squat_move_r.mt3	//Ｍ９ビハインドしゃがみ右移動（素手兼用）
+rai/rai_non_behind_squat_move_l.mt3	//Ｍ９ビハインドしゃがみ左移動（素手兼用）
+rai/rai_non_tumble_end_stand.mt3	//飛び込み前転立ち終了
+rai/rai_non_down_f_idle.mt3			//ダウン仰向け静止
+rai/rai_non_down_f_rise.mt3			//ダウン仰向けから起き上がり
+rai/rai_non_crouch_move_f_fast.mt3	//素手匍匐前進高速
+rai/rai_non_tumble_miss.mt3			//飛び込み前転失敗
+rai/rai_non_dam_down_f.mt3			//ダウンダメージ仰向け
+rai/rai_non_crouch_end_squat_f.mt3	//匍匐からしゃがみ前壁
+rai/rai_non_crouch_end_squat_b.mt3	//匍匐からしゃがみ後壁
+rai/rai_non_walk_on_corpse.mt3		//素手死体上歩き
+sna/sna_non_push_l_ene_walk_l.mt3	//素手敵を押す左へ（スネーク兼用）
+sna/sna_non_push_l_ene_walk_r.mt3	//素手敵を押す右へ（スネーク兼用）
+sna/sna_non_squeezed_lf.mt3			//素手敵に押される左前から（スネーク兼用）
+sna/sna_non_squeezed_lb.mt3			//素手敵に押される右前から（スネーク兼用）
+rai/rai_non_behind_dam.mt3			//素手ビハインドエリアダメージ
+rai/rai_non_behind_out.mt3			//素手ビハインドエリア死亡
+rai/rai_non_behind_squat_dam.mt3	//素手ビハインドエリアしゃがみダメージ
+rai/rai_non_behind_squat_out.mt3	//素手ビハインドエリアしゃがみ死亡
+rai/rai_non_crouch_start_intrude.mt3		//素手しゃがみからイントルード
+rai/rai_non_crouch_end_stand_intrude.mt3 	//素手イントルードから立ち
+rai/rai_non_hang_escape.mt3			//首絞め逃げられ
+rai/rai_non_hang_release.mt3		//首絞め離し
+rai/rai_non_hang_miss.mt3			//首絞め失敗
+rai/rai_gm_idle.mt3						dummy_mtn	DEL_GRENADE		//Ｇｒｎ静止
+rai/rai_gm_squat.mt3					dummy_mtn	DEL_GRENADE		//Ｇｒｎしゃがみ静止
+sna/sna_gm_walk.mt3						dummy_mtn	DEL_GRENADE		//Ｇｒｎ歩き（スネーク兼用）
+sna/sna_gm_run.mt3						dummy_mtn	DEL_GRENADE		//Ｇｒｎ走り（スネーク兼用）
+rai/rai_non_behind_squat_move_r.mt3	//素手ビハインドしゃがみ右移動
+rai/rai_non_behind_squat_move_l.mt3	//素手ビハインドしゃがみ左移動
+sna/sna_gm_behind_idle.mt3				dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインド静止（スネーク兼用）
+sna/sna_gm_behind_move_r.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインド右移動（スネーク兼用）
+sna/sna_gm_behind_move_l.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインド左移動（スネーク兼用）
+sna/sna_gm_behind_idle_squat.mt3		dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインドしゃがみ静止（スネーク兼用）
+sna/sna_gm_behind_squat_move_r.mt3		dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインド右移動（スネーク兼用）
+sna/sna_gm_behind_squat_move_l.mt3		dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインド左移動（スネーク兼用）
+sna/sna_gm_behind_knock_r_1.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎ壁ノック右1回目（スネーク兼用）
+sna/sna_gm_behind_knock_r_2.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎ壁ノック右2回目（スネーク兼用）
+sna/sna_gm_behind_knock_l_1.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎ壁ノック左1回目（スネーク兼用）
+sna/sna_gm_behind_knock_l_2.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎ壁ノック左2回目（スネーク兼用）
+rai/rai_non_behind_squat_look_r.mt3			//素手ビハインドしゃがみ右横覗き	
+rai/rai_non_behind_squat_look_l.mt3			//素手ビハインドしゃがみ左横覗き
+rai/rai_non_behind_squat_look_rb_start.mt3	//素手ビハインドしゃがみ右奥覗き開始
+rai/rai_non_behind_squat_look_rb_p.mt3		//素手ビハインドしゃがみ右奥覗き静止
+rai/rai_non_behind_squat_look_rb_end.mt3	//素手ビハインドしゃがみ右奥覗き戻り
+rai/rai_non_behind_squat_look_lb_start.mt3	//素手ビハインドしゃがみ左奥覗き開始
+rai/rai_non_behind_squat_look_lb_p.mt3		//素手ビハインドしゃがみ左奥覗き静止
+rai/rai_non_behind_squat_look_lb_end.mt3	//素手ビハインドしゃがみ左奥覗き戻り
+sna/sna_gm_behind_look_r.mt3				dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインド右横覗き（スネーク兼用）
+sna/sna_gm_behind_look_l.mt3				dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインド左横覗き（スネーク兼用）
+sna/sna_gm_behind_look_rb_start.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインド右奥覗き開始（スネーク兼用）
+sna/sna_gm_behind_look_rb_p.mt3				dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインド右奥覗き静止（スネーク兼用）
+sna/sna_gm_behind_look_rb_end.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインド右奥覗き戻り（スネーク兼用）
+sna/sna_gm_behind_look_lb_start.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインド左奥覗き開始（スネーク兼用）
+sna/sna_gm_behind_look_lb_p.mt3				dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインド左奥覗き静止（スネーク兼用）
+sna/sna_gm_behind_look_lb_end.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインド左奥覗き戻り（スネーク兼用）
+sna/sna_gm_behind_squat_look_r.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインドしゃがみ右横覗き（スネーク兼用）
+sna/sna_gm_behind_squat_look_l.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインドしゃがみ左横覗き（スネーク兼用）
+sna/sna_gm_behind_squat_look_rb_start.mt3	dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインドしゃがみ右奥覗き開始（スネーク兼用）
+sna/sna_gm_behind_squat_look_rb_p.mt3		dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインドしゃがみ右奥覗き静止（スネーク兼用）
+sna/sna_gm_behind_squat_look_rb_end.mt3		dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインドしゃがみ右奥覗き戻り（スネーク兼用）
+sna/sna_gm_behind_squat_look_lb_start.mt3	dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインドしゃがみ左奥覗き開始（スネーク兼用）
+sna/sna_gm_behind_squat_look_lb_p.mt3		dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインドしゃがみ左奥覗き静止（スネーク兼用）
+sna/sna_gm_behind_squat_look_lb_end.mt3		dummy_mtn	DEL_GRENADE		//Ｇｒｎビハインドしゃがみ左奥覗き戻り（スネーク兼用）
+rai/rai_nom_dam_down_f_soft.mt3				//素手ソフト吹っ飛び
+sna/sna_gm_fire_start.mt3					dummy_mtn	DEL_GRENADE		//Ｇｒｎ構え開始（スネーク兼用）
+sna/sna_gm_fire_low_5pose.mt3				dummy_mtn	DEL_GRENADE		//Ｇｒｎ構え５ポーズ（スネーク兼用）
+sna/sna_gm_fire_low_min.mt3					dummy_mtn	DEL_GRENADE		//Ｇｒｎ投げ小（スネーク兼用）
+sna/sna_gm_fire_low_max.mt3					dummy_mtn	DEL_GRENADE		//Ｇｒｎ投げ大（スネーク兼用）
+rai/rai_non_dam_out_down_f.mt3				//ダウン死亡仰向け
+rai/rai_non_dam_out_intrude.mt3				//イントルード死亡
+rai/rai_box_walk_on_corpse.mt3				dummy_mtn	DEL_BOX			//ダンボール死体上移動
+sna/sna_gm_behind_fire_lb_start.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎ左覗き構え開始（スネーク兼用）
+sna/sna_gm_behind_fire_lb_min.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎ左覗き投げ小（スネーク兼用）
+sna/sna_gm_behind_fire_lb_max.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎ左覗き投げ大（スネーク兼用）
+sna/sna_gm_behind_fire_lb_5pose.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎ左覗き５ポーズ（スネーク兼用）
+sna/sna_gm_behind_fire_rb_start.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎ右覗き構え開始（スネーク兼用）
+sna/sna_gm_behind_fire_rb_min.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎ右覗き投げ小（スネーク兼用）
+sna/sna_gm_behind_fire_rb_max.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎ右覗き投げ大（スネーク兼用）
+sna/sna_gm_behind_fire_rb_5pose.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎ右覗き５ポーズ（スネーク兼用）
+rai/rai_non_sneeze.mt3						//くしゃみ立ち
+rai/rai_non_sneeze_crouch.mt3				//くしゃみ匍匐
+rai/rai_non_sneeze_behind.mt3				//くしゃみ張り付き
+sna/sna_gm_crouch_fire_start.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎ構え開始匍匐（スネーク兼用）
+sna/sna_gm_crouch_fire_min.mt3				dummy_mtn	DEL_GRENADE		//Ｇｒｎ投げ小匍匐（スネーク兼用）
+sna/sna_gm_crouch_fire_max.mt3				dummy_mtn	DEL_GRENADE		//Ｇｒｎ投げ大匍匐（スネーク兼用）
+sna/sna_gm_crouch_fire_5pose.mt3			dummy_mtn	DEL_GRENADE		//Ｇｒｎ構え５ポーズ匍匐（スネーク兼用）
+//双眼鏡、カメラ
+rai/rai_sogun_fire_p.mt3				dummy_mtn	DEL_SCOPE		//双眼鏡構え
+rai/rai_sogun_fire_p_crouch.mt3			dummy_mtn	DEL_SCOPE		//双眼鏡構え匍匐
+rai/rai_cam_fire_p.mt3					dummy_mtn	DEL_CAMERA		//カメラ構え
+rai/rai_cam_fire_p_crouch.mt3			dummy_mtn	DEL_CAMERA		//カメラ構え匍匐
+//以下ライデン専用
+rai/rai_hfb_fire_p.mt3						//刀構え
+rai/rai_hfb_walk.mt3						//刀歩き
+rai/rai_hfb_dash.mt3						//刀走り
+rai/rai_non_dam_sps_f.mt3					//ＳＰＳダメージ仰向け
+rai/rai_non_dam_sps_b.mt3					//ＳＰＳダメージうつぶせ
+rai/rai_psg_fire_stand_p.mt3				//ＰＳＧ立ち構え
+rai/rai_psg_fire_squat_p.mt3				//ＰＳＧしゃがみ構え
+rai/rai_psg_fire_p.mt3						//ＰＳＧ匍匐構え
+
+//Ｍ４セット
+rai/rai_m4a_idle.mt3					dummy_mtn	DEL_A_RIFLE		//Ｍ４立ち
+rai/rai_m4a_fire_p.mt3					dummy_mtn	DEL_A_RIFLE		//Ｍ４構え
+rai/rai_m4a_fire.mt3					dummy_mtn	DEL_A_RIFLE		//Ｍ４撃ち
+rai/rai_m4a_fire_end.mt3				dummy_mtn	DEL_A_RIFLE		//Ｍ４反動
+rai/rai_m4a_fire_reload.mt3				dummy_mtn	DEL_A_RIFLE		//Ｍ４リロード
+rai/rai_m4a_crouch_fire_p.mt3			dummy_mtn	DEL_A_RIFLE		//Ｍ４匍匐構え
+rai/rai_m4a_crouch_fire.mt3				dummy_mtn	DEL_A_RIFLE		//Ｍ４匍匐撃ち
+rai/rai_m4a_crouch_fire_end.mt3			dummy_mtn	DEL_A_RIFLE		//Ｍ４匍匐反動
+rai/rai_m4a_crouch_fire_reload.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４匍匐リロード
+rai/rai_m4a_squat.mt3					dummy_mtn	DEL_A_RIFLE		//Ｍ４しゃがみ
+rai/rai_m4a_walk.mt3					dummy_mtn	DEL_A_RIFLE		//Ｍ４歩き
+rai/rai_m4a_dash.mt3					dummy_mtn	DEL_A_RIFLE		//Ｍ４走り
+rai/rai_m4a_crouch_start.mt3			dummy_mtn	DEL_A_RIFLE		//Ｍ４匍匐開始
+rai/rai_m4a_crouch_idle.mt3				dummy_mtn	DEL_A_RIFLE		//Ｍ４匍匐静止
+rai/rai_m4a_crouch_move_f.mt3			dummy_mtn	DEL_A_RIFLE		//Ｍ４匍匐前進
+rai/rai_m4a_crouch_move_b.mt3			dummy_mtn	DEL_A_RIFLE		//Ｍ４匍匐後退
+rai/rai_m4a_crouch_move_f_fast.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４匍匐前進高速
+rai/rai_m4a_crouch_end.mt3 				dummy_mtn	DEL_A_RIFLE		//Ｍ４匍匐から立ち
+rai/rai_m4a_crouch_end_squat_f.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４匍匐からしゃがみ前壁
+rai/rai_m4a_crouch_end_squat_b.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４匍匐からしゃがみ後壁
+rai/rai_m4a_crouch_start_intrude.mt3	dummy_mtn	DEL_A_RIFLE		//Ｍ４しゃがみからイントルード
+rai/rai_m4a_crouch_end_stand_intrude.mt3 dummy_mtn	DEL_A_RIFLE		//Ｍ４イントルードから立ち
+rai/rai_m4a_stair_walk.mt3				dummy_mtn	DEL_A_RIFLE		//Ｍ４階段歩き
+rai/rai_m4a_stair_run.mt3				dummy_mtn	DEL_A_RIFLE		//Ｍ４階段走り
+rai/rai_m4a_behind_idle.mt3				dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインド静止
+rai/rai_m4a_behind_move_r.mt3			dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインド右移動
+rai/rai_m4a_behind_move_l.mt3			dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインド左移動
+rai/rai_m4a_behind_idle_squat.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインドしゃがみ静止
+rai/rai_m4a_behind_squat_move_r.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４しゃがみビハインド右移動
+rai/rai_m4a_behind_squat_move_l.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４しゃがみビハインド左移動
+rai/rai_m4a_behind_knock_r_1.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４壁ノック右1回目
+rai/rai_m4a_behind_knock_r_2.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４壁ノック右2回目
+rai/rai_m4a_behind_knock_l_1.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４壁ノック左1回目
+rai/rai_m4a_behind_knock_l_2.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４壁ノック左2回目
+rai/rai_m4a_behind_look_r.mt3			dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインド右横覗き
+rai/rai_m4a_behind_look_l.mt3			dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインド左横覗き
+rai/rai_m4a_behind_look_rb_start.mt3	dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインド右奥覗き開始
+rai/rai_m4a_behind_look_rb_p.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインド右奥覗き静止
+rai/rai_m4a_behind_look_rb_end.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインド右奥覗き戻り
+rai/rai_m4a_behind_look_lb_start.mt3	dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインド左奥覗き開始
+rai/rai_m4a_behind_look_lb_p.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインド左奥覗き静止
+rai/rai_m4a_behind_look_lb_end.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインド左奥覗き戻り
+rai/rai_m4a_behind_squat_look_r.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインドしゃがみ右横覗き	
+rai/rai_m4a_behind_squat_look_l.mt3			dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインドしゃがみ左横覗き
+rai/rai_m4a_behind_squat_look_rb_start.mt3	dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインドしゃがみ右奥覗き開始
+rai/rai_m4a_behind_squat_look_rb_p.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインドしゃがみ右奥覗き静止
+rai/rai_m4a_behind_squat_look_rb_end.mt3	dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインドしゃがみ右奥覗き戻り
+rai/rai_m4a_behind_squat_look_lb_start.mt3	dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインドしゃがみ左奥覗き開始
+rai/rai_m4a_behind_squat_look_lb_p.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインドしゃがみ左奥覗き静止
+rai/rai_m4a_behind_squat_look_lb_end.mt3	dummy_mtn	DEL_A_RIFLE		//Ｍ４ビハインドしゃがみ左奥覗き戻り
+rai/rai_m4a_behind2wb_r_start.mt3			dummy_mtn	DEL_A_RIFLE		//Ｍ４飛び出し撃ち右開始
+rai/rai_m4a_behind2wb_r_end.mt3				dummy_mtn	DEL_A_RIFLE		//Ｍ４飛び出し撃ち右戻り
+rai/rai_m4a_behind2wb_l_start.mt3			dummy_mtn	DEL_A_RIFLE		//Ｍ４飛び出し撃ち左開始
+rai/rai_m4a_behind2wb_l_end.mt3				dummy_mtn	DEL_A_RIFLE		//Ｍ４飛び出し撃ち左戻り
+rai/rai_m4a_behind2wb_squat_r_start.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４飛び出し撃ちしゃがみ右開始
+rai/rai_m4a_behind2wb_squat_r_end.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４飛び出し撃ちしゃがみ右戻り
+rai/rai_m4a_behind2wb_squat_l_start.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４飛び出し撃ちしゃがみ左開始
+rai/rai_m4a_behind2wb_squat_l_end.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４飛び出し撃ちしゃがみ左戻り
+dummy_motion/dummy21joint.mt3				//×Ｍ４くしゃみ立ち
+dummy_motion/dummy21joint.mt3				//×Ｍ４くしゃみ匍匐
+dummy_motion/dummy21joint.mt3				//×Ｍ４くしゃみ張り付き
+
+//ニキータセット
+rai/rai_nkt_idle.mt3						dummy_mtn	DEL_NIKITA		//Ｎｋｔ立ち
+rai/rai_nkt_squat.mt3						dummy_mtn	DEL_NIKITA		//Ｎｋｔしゃがみ
+rai/rai_nkt_walk.mt3						dummy_mtn	DEL_NIKITA		//Ｎｋｔ歩き
+rai/rai_nkt_dash.mt3						dummy_mtn	DEL_NIKITA		//Ｎｋｔ走り
+rai/rai_nkt_wall_check_idle.mt3				dummy_mtn	DEL_NIKITA		//Ｎｋｔ壁チェック静止
+rai/rai_nkt_wall_check_move.mt3				dummy_mtn	DEL_NIKITA		//Ｎｋｔ壁チェック移動
+rai/rai_nkt_stair_walk.mt3					dummy_mtn	DEL_NIKITA		//Ｎｋｔ階段歩き
+rai/rai_nkt_stair_run.mt3					dummy_mtn	DEL_NIKITA		//Ｎｋｔ階段走り
+rai/rai_nkt_behind_idle.mt3					dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインド静止
+rai/rai_nkt_behind_move_r.mt3				dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインド右移動
+rai/rai_nkt_behind_move_l.mt3				dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインド左移動
+rai/rai_nkt_behind_idle_squat.mt3			dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインドしゃがみ静止
+rai/rai_nkt_behind_squat_move_r.mt3			dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインドしゃがみ右移動
+rai/rai_nkt_behind_squat_move_l.mt3			dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインドしゃがみ左移動
+rai/rai_nkt_behind_knock_r_1.mt3			dummy_mtn	DEL_NIKITA		//Ｎｋｔ壁ノック右1回目
+rai/rai_nkt_behind_knock_r_2.mt3			dummy_mtn	DEL_NIKITA		//Ｎｋｔ壁ノック右2回目
+rai/rai_nkt_behind_knock_l_1.mt3			dummy_mtn	DEL_NIKITA		//Ｎｋｔ壁ノック左1回目
+rai/rai_nkt_behind_knock_l_2.mt3			dummy_mtn	DEL_NIKITA		//Ｎｋｔ壁ノック左2回目
+rai/rai_nkt_behind_look_r.mt3				dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインド右横覗き
+rai/rai_nkt_behind_look_l.mt3				dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインド左横覗き
+rai/rai_nkt_behind_look_rb_start.mt3		dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインド右奥覗き開始
+rai/rai_nkt_behind_look_rb_p.mt3			dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインド右奥覗き静止
+rai/rai_nkt_behind_look_rb_end.mt3			dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインド右奥覗き戻り
+rai/rai_nkt_behind_look_lb_start.mt3		dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインド左奥覗き開始
+rai/rai_nkt_behind_look_lb_p.mt3			dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインド左奥覗き静止
+rai/rai_nkt_behind_look_lb_end.mt3			dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインド左奥覗き戻り
+rai/rai_nkt_behind_squat_look_r.mt3			dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインドしゃがみ右横覗き	
+rai/rai_nkt_behind_squat_look_l.mt3			dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインドしゃがみ左横覗き
+rai/rai_nkt_behind_squat_look_rb_start.mt3	dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインドしゃがみ右奥覗き開始
+rai/rai_nkt_behind_squat_look_rb_p.mt3		dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインドしゃがみ右奥覗き静止
+rai/rai_nkt_behind_squat_look_rb_end.mt3	dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインドしゃがみ右奥覗き戻り
+rai/rai_nkt_behind_squat_look_lb_start.mt3	dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインドしゃがみ左奥覗き開始
+rai/rai_nkt_behind_squat_look_lb_p.mt3		dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインドしゃがみ左奥覗き静止
+rai/rai_nkt_behind_squat_look_lb_end.mt3	dummy_mtn	DEL_NIKITA		//Ｎｋｔビハインドしゃがみ左奥覗き戻り
+rai/rai_nkt_fire_p.mt3						dummy_mtn	DEL_NIKITA		//Ｎｋｔ構え
+rai/rai_nkt_fire_p_squat.mt3				dummy_mtn	DEL_NIKITA		//Ｎｋｔ構えしゃがみ
+rai/rai_nkt_crouch_fire_p.mt3				dummy_mtn	DEL_NIKITA		//Ｎｋｔ構え匍匐
+
+//スティンガー
+rai/rai_stg_fire_p.mt3						//Ｓｔｇ構え
+
+//Ａｋ
+rai/rai_ak_fire_reload.mt3					dummy_mtn	DEL_A_RIFLE		//Ａｋリロード
+rai/rai_ak_crouch_fire_reload.mt3			dummy_mtn	DEL_A_RIFLE		//Ａｋ匍匐リロード
+
+//Ｃ４セット
+rai/rai_c4_behind_idle.mt3			dummy_mtn	DEL_C4		//Ｃ４はりつき静止
+rai/rai_c4_behind_squat_idle.mt3	dummy_mtn	DEL_C4		//Ｃ４しゃがみはりつき静止
+rai/rai_c4_fire_behind.mt3			dummy_mtn	DEL_C4		//Ｃ４はりつきセット
+rai/rai_c4_fire_behind_squat.mt3	dummy_mtn	DEL_C4		//Ｃ４しゃがみはりつきセット
+rai/rai_c4_fire_stand.mt3			dummy_mtn	DEL_C4		//Ｃ４敵つけ
+rai/rai_c4_fire_floor.mt3			dummy_mtn	DEL_C4		//Ｃ４床セット
+rai/rai_c4_fair_crouch.mt3			dummy_mtn	DEL_C4		//Ｃ４ほふく床セット
+
+//クレイモアセット
+rai/rai_non_idle.mt3				dummy_mtn	DEL_CLAYMORE		//☆クレイモア静止
+sna/sna_non_squat.mt3				dummy_mtn	DEL_CLAYMORE		//☆クレイモアしゃがみ静止
+rai/rai_clm_fire_start.mt3			dummy_mtn	DEL_CLAYMORE		//クレイモア床つけ（しゃがみ兼用）開始
+rai/rai_clm_fire_p.mt3				dummy_mtn	DEL_CLAYMORE		//クレイモア床つけ（しゃがみ兼用）静止
+rai/rai_clm_fire_end.mt3			dummy_mtn	DEL_CLAYMORE		//クレイモア床つけ（しゃがみ兼用）終了
+rai/rai_clm_crouch_fire_start.mt3	dummy_mtn	DEL_CLAYMORE		//クレイモア匍匐床つけ開始
+rai/rai_clm_crouch_fire_p.mt3		dummy_mtn	DEL_CLAYMORE		//クレイモア匍匐床つけ静止
+rai/rai_clm_crouch_fire_end.mt3		dummy_mtn	DEL_CLAYMORE		//クレイモア匍匐床つけ終了
+
+//ＲＧＢ６セット
+rai/rai_rgb_crouch_idle.mt3			dummy_mtn	DEL_RGB6		//ＲＧＢ６匍匐静止
+rai/rai_rgb_fire_p.mt3				dummy_mtn	DEL_RGB6		//ＲＧＢ６構え
+rai/rai_rgb_fire.mt3				dummy_mtn	DEL_RGB6		//ＲＧＢ６撃ち
+rai/rai_rgb_fire_reload.mt3			dummy_mtn	DEL_RGB6		//ＲＧＢ６リロード
+rai/rai_rgb_fire_p_crouch.mt3		dummy_mtn	DEL_RGB6		//ＲＧＢ６匍匐構え
+rai/rai_rgb_fire_crouch.mt3			dummy_mtn	DEL_RGB6		//ＲＧＢ６匍匐撃ち
+rai/rai_rgb_fire_crouch_reload.mt3	dummy_mtn	DEL_RGB6		//ＲＧＢ６匍匐リロード
+
+//スプレー
+dummy_motion/dummy21joint.mt3		//×Ｓｐｒ構え
+dummy_motion/dummy21joint.mt3		//×Ｓｐｒ構え匍匐
+
+//指向性マイク
+rai/rai_mic_idle.mt3				dummy_mtn	DEL_MIC		//マイク構え
+rai/rai_mic_crouch_fire_p.mt3		dummy_mtn	DEL_MIC		//マイク構え匍匐
+
+//抜けやあまり
+rai/rai_non_dam_trip_f.mt3			//転び前から→うつぶせ
+rai/rai_non_dam_trip_b.mt3			//転び後から→仰向け
+
+//ニキータほふく関連追加
+rai/rai_nkt_crouch_start.mt3				dummy_mtn	DEL_NIKITA		//ニキータ匍匐開始
+rai/rai_nkt_crouch_idle.mt3					dummy_mtn	DEL_NIKITA		//ニキータ匍匐静止
+rai/rai_nkt_crouch_move_f.mt3				dummy_mtn	DEL_NIKITA		//ニキータ匍匐前進
+rai/rai_nkt_crouch_move_b.mt3				dummy_mtn	DEL_NIKITA		//ニキータ匍匐後退
+rai/rai_nkt_crouch_move_f_fast.mt3			dummy_mtn	DEL_NIKITA		//ニキータ匍匐前進高速
+rai/rai_nkt_crouch_end.mt3 					dummy_mtn	DEL_NIKITA		//ニキータ匍匐から立ち
+rai/rai_nkt_crouch_end_squat_f.mt3			dummy_mtn	DEL_NIKITA		//ニキータ匍匐からしゃがみ前壁
+rai/rai_nkt_crouch_end_squat_b.mt3			dummy_mtn	DEL_NIKITA		//ニキータ匍匐からしゃがみ後壁
+rai/rai_nkt_crouch_start_intrude.mt3		dummy_mtn	DEL_NIKITA		//ニキータしゃがみからイントルード
+rai/rai_nkt_crouch_end_stand_intrude.mt3 	dummy_mtn	DEL_NIKITA		//ニキータイントルードから立ち
+rai/rai_nkt_down_okiru.mt3					dummy_mtn	DEL_NIKITA		//ニキータうつぶせから起き上がり
+rai/rai_nkt_down_f_rise.mt3					dummy_mtn	DEL_NIKITA		//ニキータ仰向けから起き上がり
+
+//Ｍ４死体上あるき
+rai/rai_m4a_walk_on_corpse.mt3		dummy_mtn	DEL_A_RIFLE		//Ｍ４死体上歩き
+
+//Ｍ９壁チェック
+rai/rai_m9_wall_check_idle.mt3		dummy_mtn	DEL_HANDGUN
+rai/rai_m9_wall_check_move.mt3		dummy_mtn	DEL_HANDGUN
+
+//武器別コンボ
+rai/rai_m4a_combo.mt3				dummy_mtn	DEL_A_RIFLE		//Ｍ４コンボ
+rai/rai_nkt_fire_strike.mt3			dummy_mtn	DEL_NIKITA		//ニキータなぐり
+
+//首太いスカリ
+rai/rai_non_hang_miss_htc.mt3			//ハイテク兵つかみ失敗

@@ -1,0 +1,2191 @@
+/*
+	w45a.gcl                     
+	    アーセナルギア小部屋Ｂ
+
+	2000/12/06 H.Yoshiike         
+	$Id: w45a.gcl,v 1.121 2001/11/14 01:38:13 usr03379 Exp $                      
+
+	
+*/
+
+// 各種スイッチ用define
+// ------------------------------------
+// サウンド
+#define		SOUND			1		// サウンドデータは最初に呼ぶ
+#define		BGM				1		// BGMは敵兵コマンダーの後に呼ぶ
+// キャラクター関係
+#define		RAIDEN			1		// SNAKEとは排他
+#define		SNAKE			0
+#define		ENEMY			1		// コマンダーと警備兵(敵を出すときは必須)
+#define		SUPPORT			0		// サポート兵
+#define		ATTACKER		0		// 攻撃兵
+#define		SHIELD			0		// 盾兵(1) or 通常攻撃兵(0)
+#define		DOLL			1
+// 監視カメラ関係
+#define		CYPHER			0		// サイファー
+// ドア
+#define		SLIDE_DOOR		1		// スライドドア
+// 入出トラップ
+#define		LOAD_TRAP		1
+#define		STAGE_END		1		// ステージ終了時処理を使用可にする
+// フォグ
+#define		FOG				1
+// エフェクト関係
+#define		EFFECT			0		// エフェクト全般
+#define		BLUR			0		// ブラー
+#define		Z_MANAGER		0		// Ｚフォーカス管理(敵のライト等で仕様)
+#define		BODY_SHADOW		0		// 敵のライトによって出る影
+
+#define		BREATH			1		// 白い息
+// 子画面
+#define		SUB_CAMERA		0
+// カメラ関係
+#define		CLEAR_CAMERA	0		// クリアリング専用カメラ(要子画面)
+
+// 天井
+#define		CHARA_CEIL		0		// 天井君
+// 透明壁
+#define		TR_WALL			0		// シナリオ置きの透明壁
+// ライト関係
+#define		SPOT_LIGHT		0		// スポットライト
+#define		CHARA_LIGHT		1		// キャラ専用ライト
+
+// オブジェ関係
+// アイテム
+#define		ITEM			1
+// 強制モーション
+#define		BY_MOTION		0		// ビヨンドモーション
+
+//	デモ
+#define		POLY_DEMO		1		//	ポリデモ
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME			w45a
+#define		KMS_NAME			w45a
+#define		KMS_NAME0			w44a_dummy
+#define		LT2_NAME			w45a
+//#define		DOOR_NAME_LOAD		w41a_dr_left
+#define		DOOR_NAME_LOAD1A	w45a_dr_left_temae
+#define		DOOR_NAME_LOAD1B	w45a_dr_right_temae
+#define		DOOR_NAME_1A		w45a_dr_left_oku
+#define		DOOR_NAME_1B		w45a_dr_right_oku
+
+
+
+// キャラクター関係
+#if d:RAIDEN
+	#define		PLAYER		ライデン	// モーションができるまで名前はスネーク
+#else
+	#define		PLAYER		スネーク
+#endif
+
+//	薬莢系
+#define		ENE_TNG					1	//	天狗兵
+#define		NPC_SNAKE				1	//	ＮＰＣスネーク
+
+//	ステージ系
+#define		STAGE_W45A				1
+	
+#define		STAGE_PLANT				1	//	プラント編
+
+#define		POLYDEMO_LOAD		1
+
+// ローカル変数
+//	$f:w45a_天狗兵登場フラグ			天狗兵が登場したかどうか
+
+//	$i:w45a_天狗兵刀ガード回数			天狗兵の連続刀ガードの回数
+//	$i:w45a_天狗兵復活人数				天狗兵の復活人数（総数は＋８人）
+//	$f:w45a_偽ゲームオーバーフラグ		偽ゲームオーバー中かどうか
+
+//	$i:スネークＸ座標変数				スネークの座標
+//	$i:スネークＹ座標変数				スネークの座標
+//	$i:スネークＺ座標変数				スネークの座標
+//	$i:スネークＺ座標変数				スネークの座標
+
+//	$i:w45a_スネークレベル				スネークのレベル
+//	$i:w45a_スネークレーション数		スネークのレーション供給数
+//	$i:w45a_スネークソコム数			スネークのソコム弾供給数
+//	$i:w45a_スネークＭ４数				スネークのＭ４弾供給数
+//	$i:w45a_スネークライフ				スネークのライフ
+
+//	$w:w45a_天狗兵体力					天狗兵ライフ
+//	$w:w45a_天狗兵気絶					天狗兵気絶値
+
+// モーション関係
+// ------------------------------------
+enum スネークモーションリスト {
+	sna_idle = 0,
+	sna_run,
+	sna_fire
+}
+
+
+
+// include
+// ------------------------------------
+#include "rai_w45a.mh"		// 強制モーションリスト
+#include "stdch.h"
+#include "sload.h"
+#include "sound.h"
+#include "enevoice.h"
+#include "item_info.h"
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+
+#include "snake_voice.h"
+
+#include "w45a_d_common.h"	//	デモ／ゲーム共通プロック
+
+
+// マップ設定
+// ------------------------------------
+chara マップ アーセナルギア小部屋Ｂ	-k d:KMS_NAME \
+									-h d:HZX_NAME,0 \
+									-l d:LT2_NAME
+
+
+command マップ設定 アーセナルギア小部屋Ｂ -set {
+	@サウンド設定		//	サウンド設定はゲーム、デモ共通
+}
+
+// 平野追加。デモ再生用ヘッダ。この位置を変えないこと。
+#include "polydemo_w45a.h"
+
+command マップ設定 アーセナルギア小部屋Ｂ -set {
+
+#if 0
+	eval ($f:w45a_天狗兵登場フラグ = d:TRUE)
+
+	eval($s:登場ポイント = 天狗兵降下デモ終了後)
+
+	//	登場位置を再代入
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -149250 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+#endif
+
+	// 平野追加。デモ呼び分け用。
+	if ($s:d_num == not_demo) {
+		#if d:SOUND	
+//		@サウンド設定	// データは最初に呼ぶ。
+		#endif
+	}
+	@常駐キャラ設定
+
+	// 平野追加。デモ呼び分け用。
+	if ($s:d_num == not_demo) {
+		@ローカル変数初期化
+		@設定値変更
+		@プラグイン設定
+		@プレイヤー設定
+		@亀甲床設定
+		@スネーク設定
+		#if d:ENEMY
+		@コマンダー設定
+		#endif
+		#if d:DOLL
+//		@フォーチュン設定
+		#endif
+		#if d:BGM
+		@ＢＧＭ設定	// プレイヤー→敵兵→BGMの順で呼ぶ
+		#endif
+		#if d:SLIDE_DOOR
+		@ドア設置
+		#endif
+		#if d:LOAD_TRAP
+		@アーセナルギア小部屋Ｂロード設定
+		#endif
+		@オブジェクト設定
+		#if d:ITEM
+		@アイテム設定
+		#endif
+		#if d:FOG
+		@フォグ設定
+		#endif
+		#if d:EFFECT
+		@エフェクト設定
+		#endif
+		@レンズフレア設定
+		#if d:BREATH
+		@息設定
+		#endif
+		@空中文字設定
+
+		@カメラセット
+		@アーセナルギア小部屋Ｂカメラ設定
+		#if d:CHARA_LIGHT
+		@キャラ用ライト設定		// マップ設定の最後に呼ぶ
+		#endif
+
+		@危険スタート
+		@刀設定
+		# if d:POLY_DEMO
+		@天狗兵降下デモ
+		# endif
+		if ($f:w41a_ノードフラグ == 1) {
+			@プラント編全体マップ設定 d:アーセナルギアＳ状結腸	//	全体マップ表示
+		} else {
+			@ポーズ時ステージ名表示設定 d:wn_アーセナルギアＳ状結腸	//	ポーズ時ステージ名表示
+		}
+
+		@偽ゲームオーバー設定
+		@シナリオデモキャラセット
+//		@ゲームオーバー設定
+
+		#if d:DEBUG_CHARA
+//		@デバッグキャラセット
+		#endif
+
+		#if d:USB_KEY
+//		@ＵＳＢキーボードセット
+		#endif
+	}
+}
+
+// 無線用include ※位置は動かさないこと
+#include "w45a_cdc.ch"
+#include "p_force_cdc.ch"
+
+//初期マップの表示
+command マップ表示 -show アーセナルギア小部屋Ｂ
+
+
+// 全てのセットが終わったところでフェードイン
+	// 平野追加。デモ呼び分け用。
+	if($s:d_num == not_demo){
+		@アーセナルギア小部屋Ｂ開始時処理
+	} else {
+/*
+		chara フェードインアウト フェードイン \
+			-i 0,0,0 128 \
+			-c 0,0,0 0 \
+			-t d:FADEIN_TIME
+*/
+	}
+
+
+
+//###################################################################################
+//									各proc設定
+//###################################################################################
+
+
+//###################################################################################
+//									全マップ共通
+//###################################################################################
+
+	proc サウンド設定 {
+		#if d:DEBUG_PRINT 
+			print 'sound_set'
+		#endif
+
+		chara サウンドマネージャー ＳＤマネ -pak 0
+
+		@サウンド効果音設定
+		command 弾痕ノーマル -n 0
+		command 弾痕ノーマル -n 1
+		command 弾痕ノーマル -n 3
+
+		command 跳弾ノーマル -n 0
+		command 跳弾ノーマル -n 1
+		command 跳弾ノーマル -n 3
+	}
+
+	proc ローカル変数初期化 {
+		#if d:DEBUG_PRINT 
+			print 'localvar_init'
+		#endif
+
+//		eval( $i:w45a_天狗兵刀ガード回数 = 20 )
+		eval( $i:w45a_天狗兵刀ガード回数 = 10 )
+		eval ($f:w45a_偽ゲームオーバーフラグ = d:FALSE)
+
+		//	デモ後特殊装備外す
+		@デモ後武器アイテム制御 d:デモ後前を継続 d:デモ後特殊装備なし
+
+		//	武器をソーコムかＭ９に変える
+		if($f:w45a_天狗兵登場フラグ == d:TRUE ) {
+			//	Ｍ９だったら
+			if ($w:武器 == d:武器:Ｍ９) {
+				eval ($w:武器 = d:武器:Ｍ９)
+				eval ( $w:プレイヤーフラグ = $w:プレイヤーフラグ & ~d:PL_START_STATE_BLADE_OUT )
+			//	Ｍ９以外だったら
+			} else {
+				//	武器をソーコムに変える
+				if ($w:武器 != d:武器:ソコム) {
+					eval ($w:武器 = d:武器:ソコム)
+					eval ( $w:プレイヤーフラグ = $w:プレイヤーフラグ & ~d:PL_START_STATE_BLADE_OUT )
+				}
+			}
+		}
+
+	}
+
+	proc 設定値変更 {
+		#if d:DEBUG_PRINT 
+			print 'status_set'
+		#endif
+
+	//	刀ダメージ値	体のどの部位に当たっても１５００減る
+	//	刀の一降りで理論上最高３回当たるので（間合いがシビア）、計１５００＊３＝４５００となる
+
+	//	刀気絶値		体のどの部位に当たっても６減る
+
+		if ($w:ゲーム設定 == d:LEVEL_VERYEASY) {
+
+			eval ($i:w45a_スネークレベル = 7)
+			eval ($i:w45a_スネークソコム数 = -1)
+			eval ($i:w45a_スネークＭ４数 = -1)
+			eval ($i:w45a_スネークレーション数 = -1)
+			eval ($i:w45a_スネークライフ = 600)
+
+			eval ($i:w45a_天狗兵復活人数 = 42)
+			eval ($w:w45a_天狗兵体力 = 1500)		//	最低１振りで死ぬ
+			eval ($w:w45a_天狗兵気絶 = 3)			//	１振りで気絶
+
+		} else if ($w:ゲーム設定 == d:LEVEL_EASY) {
+
+			eval ($i:w45a_スネークレベル = 5)
+			eval ($i:w45a_スネークソコム数 = 10)
+			eval ($i:w45a_スネークＭ４数 = 10)
+			eval ($i:w45a_スネークレーション数 = -1)
+			eval ($i:w45a_スネークライフ = 600)
+
+			eval ($i:w45a_天狗兵復活人数 = 42)
+			eval ($w:w45a_天狗兵体力 = 1500)		//	最低１振りで死ぬ
+			eval ($w:w45a_天狗兵気絶 = 7)			//	２振りで気絶
+
+		} else if ($w:ゲーム設定 == d:LEVEL_NORMAL) {
+
+			eval ($i:w45a_スネークレベル = 3)
+			eval ($i:w45a_スネークソコム数 = 5)
+			eval ($i:w45a_スネークＭ４数 = 5)
+			eval ($i:w45a_スネークレーション数 = 5)
+			eval ($i:w45a_スネークライフ = 600)
+
+			eval ($i:w45a_天狗兵復活人数 = 58)
+			eval ($w:w45a_天狗兵体力 = 3000)		//	最低２振り（最高１振り）で死ぬ
+			eval ($w:w45a_天狗兵気絶 = 9)			//	２振りで気絶
+
+		} else if ($w:ゲーム設定 == d:LEVEL_HARD) {
+
+			eval ($i:w45a_スネークレベル = 3)
+			eval ($i:w45a_スネークソコム数 = 3)
+			eval ($i:w45a_スネークＭ４数 = 3)
+			eval ($i:w45a_スネークレーション数 = 3)
+			eval ($i:w45a_スネークライフ = 500)
+
+			eval ($i:w45a_天狗兵復活人数 = 90)
+			eval ($w:w45a_天狗兵体力 = 3000)		//	最低２振り（最高１振り）で死ぬ
+			eval ($w:w45a_天狗兵気絶 = 13)			//	３振りで気絶
+
+		} else if ($w:ゲーム設定 >= d:LEVEL_EXTREME) {
+
+			eval ($i:w45a_スネークレベル = 3)
+			eval ($i:w45a_スネークソコム数 = 0)
+			eval ($i:w45a_スネークＭ４数 = 0)
+			//	エクストリームの場合
+			if ($w:ゲーム設定 == d:LEVEL_EXTREME) {
+				//	ステージ開始時のレーション数に依存(最大２個まで)
+				if ($f:w45a_天狗兵登場フラグ == d:FALSE) {
+					if ($w:アイテム数Ｒ[ d:アイテム:レーション ] >= 2) {
+						eval ($i:w45a_スネークレーション数 = 0)
+					} else if ($w:アイテム数Ｒ[ d:アイテム:レーション ] == 1) {
+						eval ($i:w45a_スネークレーション数 = 1)
+					} else if ($w:アイテム数Ｒ[ d:アイテム:レーション ] == 0) {
+						eval ($i:w45a_スネークレーション数 = 2)
+					}
+				}
+			//	ヨーロピアンエクストリームの場合
+			} else {
+				//	レーションは出さない
+				eval ($i:w45a_スネークレーション数 = 0)
+			}
+			eval ($i:w45a_スネークライフ = 500)
+
+			eval ($i:w45a_天狗兵復活人数 = 122)
+			eval ($w:w45a_天狗兵体力 = 4500)		//	最低３振り（最高１振り）で死ぬ
+			eval ($w:w45a_天狗兵気絶 = 17)			//	３振りで気絶
+
+		}
+	}
+
+	proc プラグイン設定 {
+		#if d:DEBUG_PRINT
+			print 'plugin_set'
+		#endif
+
+		command プラグインはしご
+		command プラグインブレード -m rai_blade
+	}
+
+
+//###################################################################################
+//									 プレイヤー
+//###################################################################################
+
+	proc プレイヤー設定 {
+		#if d:DEBUG_PRINT
+			print 'player_set'
+		#endif
+//		-res	(-11500) (9000) (-152000) \
+//			 	(11600) (9000) (-146500) 
+/*
+eval( $i:プレイヤー初期Ｘ位置 = 11600 );
+eval( $i:プレイヤー初期Ｙ位置 = 9000 );
+eval( $i:プレイヤー初期Ｚ位置 = -146500 );
+eval( $i:プレイヤー初期Ｘ位置 = -11500 );
+eval( $i:プレイヤー初期Ｙ位置 = 9000 );
+eval( $i:プレイヤー初期Ｚ位置 = -152000 );
+*/
+
+		#if d:RAIDEN
+			chara プレイヤー d:PLAYER \
+				-p $i:プレイヤー初期Ｘ位置,$i:プレイヤー初期Ｙ位置,$i:プレイヤー初期Ｚ位置 \
+				-d 0,$i:プレイヤー初期方向,0 \
+				-s 0 \
+				-m rai_def \
+				-a raiden \
+				-o rai_w45a \
+				-f 0
+
+				//髪の毛
+				@ライデン髪の毛設定 d:NORMAL_HAIR
+
+				//	ＬＯＤ機能
+				@プレイヤーＬＯＤ設定 d:C_DISTANCE_TYPE 4000
+
+
+		#else if d:SNAKE
+			chara プレイヤー d:PLAYER \
+				-p $i:プレイヤー初期Ｘ位置,$i:プレイヤー初期Ｙ位置,$i:プレイヤー初期Ｚ位置 \
+				-d 0,$i:プレイヤー初期方向,0 \
+				-s 0 \
+				-m sna_def -a snake -o rai_w32a
+
+				//バンダナ
+				chara ロープモデル３ バンダナ１ \
+					-n sna_bdn1 \
+					-d 1 \
+					-y スネーク \
+					-z 12 \
+					-x 0,60,-90 \
+					-m 12 \
+					-p 250 \
+					-k 350 \
+					-o 110 \
+					-f 1
+
+				chara ロープモデル３ バンダナ２ \
+					-n sna_bdn2 \
+					-d 1 \
+					-y スネーク \
+					-z 12 \
+					-x 0,50,-90 \
+					-m 22 \
+					-p 250 \
+					-k 350 \
+					-o 110 \
+					-f 1
+		#endif
+	}
+
+//###################################################################################
+//								敵兵
+//###################################################################################
+
+	proc 危険スタート{
+		if($f:w45a_天狗兵登場フラグ == d:TRUE ) {
+				mesg 天狗兵コマンダー tng_com 危険開始
+		}
+	}
+
+	// 敵兵設定
+	proc 天狗兵０ {
+#if d:DEBUG_PRINT
+	print '*** Tengu 0'
+#endif
+
+	// 天狗兵Ｂ
+		chara 天狗兵Ｂ 敵兵:01 \
+			-r 8  \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:w45a_天狗兵体力 -h $w:敵標準聴力 -f $w:w45a_天狗兵気絶 \
+			-type 2
+
+		chara 天狗兵Ｂ 敵兵:02 \
+			-r 9  \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:w45a_天狗兵体力 -h $w:敵標準聴力 -f $w:w45a_天狗兵気絶 \
+			-type 3
+
+/*
+		chara 天狗兵Ｂ 敵兵:03 \
+			-r 10 \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:w45a_天狗兵体力 -h $w:敵標準聴力 -f $w:w45a_天狗兵気絶 \
+			-type 2
+*/
+		chara 天狗兵Ｂ 敵兵:04 \
+			-r 11 \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:w45a_天狗兵体力 -h $w:敵標準聴力 -f $w:w45a_天狗兵気絶 \
+			-type 3
+
+
+		chara 天狗兵Ｂ 敵兵:05 \
+			-r 1  \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:w45a_天狗兵体力 -h $w:敵標準聴力 -f $w:w45a_天狗兵気絶 \
+			-type 2
+/*
+		chara 天狗兵Ｂ 敵兵:06 \
+			-r 0 \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:w45a_天狗兵体力 -h $w:敵標準聴力 -f $w:w45a_天狗兵気絶 \
+			-type 3
+*/
+		chara 天狗兵Ｂ 敵兵:07 \
+			-r 1  \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:w45a_天狗兵体力 -h $w:敵標準聴力 -f $w:w45a_天狗兵気絶 \
+			-type 2
+
+		chara 天狗兵Ｂ 敵兵:08 \
+			-r 0  \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:w45a_天狗兵体力 -h $w:敵標準聴力 -f $w:w45a_天狗兵気絶 \
+			-type 3
+	}
+
+	proc 天狗兵コマンダー {
+#if d:DEBUG_PRINT
+	print '*** Tengu Commander'
+#endif
+
+		chara 天狗兵コマンダー tng_com -e { 天狗兵０ } \
+			-warp ch001 \
+			-sub スネーク \
+			-type 1 \
+			-defense \
+
+			4  0 0 \
+			5  1 0 \
+			6  0 0 \
+			7  1 0 \
+			8  0 0 \
+			9  1 0 \
+			10  0 0 \
+			11  1 0 \
+
+			4  0 0 \
+			5  1 0 \
+			6  0 0 \
+			7  1 0 \
+			8  0 0 \
+			9  1 0 \
+			10  0 0 \
+			11  1 0 \
+			4  0 0 \
+			5  1 0 \
+			6  0 0 \
+			7  1 0 \
+			8  0 0 \
+			9  1 0 \
+			10  0 0 \
+			11  1 0 \
+			4  0 0 \
+			5  1 0 \
+			6  0 0 \
+			7  1 0 \
+			8  0 0 \
+			9  1 0 \
+			10  0 0 \
+			11  1 0 \
+		-final	(0 ),(0),(0) \
+		-res	(-11750) (8000) (-152000) \
+			 	(11750) (8000) (-146500) \
+
+		-proc フォーチュン登場デモ \
+		-guard $i:w45a_天狗兵刀ガード回数 \
+//		-mode d:TNG_COM_DEBUG \		//	デバッグ用
+		-c 0
+	}
+
+	proc コマンダー設定 {
+#if d:DEBUG_PRINT
+	print '*** Enemy Set'
+#endif
+		if ($f:w45a_天狗兵登場フラグ == d:TRUE) {
+			// コマンダー
+			chara コマンダー 敵兵セット \
+				-a 天狗兵コマンダー \
+				-r -11750,8000,-152000 アーセナルギア小部屋Ｂ 11750,8000,-146500 アーセナルギア小部屋Ｂ \
+				-c -11750,8000,-152000 アーセナルギア小部屋Ｂ 11750,8000,-146500 アーセナルギア小部屋Ｂ \
+				-v [ene_plant_voice:01] \
+				-b $i:w45a_天狗兵復活人数 \	// $i:危険モードでの復活人数 
+				-k $i:w45a_天狗兵復活人数 \
+				-s (d:ENE_STAGE_NPC_SNAKE | d:ENE_STAGE_NO_STRM | d:ENE_STAGE_ALERT2SNEAK | d:ENE_STAGE_NO_WC_GOVER) \
+				-m $w:スタートアラートモード \
+				-h $i:標準警戒時間		// 警戒時間
+		}
+	}
+
+
+
+//###################################################################################
+//								ＢＧＭ設定
+//###################################################################################
+
+	proc ＢＧＭ設定 {
+		#if d:DEBUG_PRINT 
+			print 'bgm_set'
+		#endif
+		//	手動切替えに変更
+//		chara ＢＧＭマネージャー ＢＧＭマネ
+	}
+
+//###################################################################################
+//									 ドア＆マップ切り替え
+//###################################################################################
+
+#if 0
+	//	w45a_d_common.h内に記述
+	proc ドア設置 {
+		#if d:DEBUG_PRINT
+			print 'slide_door_set'
+		#endif
+
+		chara ドア 南側ドア \
+			-m d:DOOR_NAME_LOAD1A \
+			-d 0,0,0 \
+//			-p -750,0, -134125 \
+			-p 1250,0, -133125 \
+			-slide d:SD_SLIDE_ARSENAL_LEFT \
+			-time (d:SD_OPEN_TIME + 10)\
+			-between アーセナルギア小部屋Ｂ アーセナルギア小部屋Ｂ \
+			-w_door d:DOOR_NAME_LOAD1B d:SD_SLIDE_ARSENAL_RIGHT \
+			-h 1500 \
+//			-card_level 7 \			//	無理矢理開かなくする
+			-exec {
+				if ( !($:開閉フラグ) ) {
+					mesg プットオブジェ ロードエリア off
+				} else {
+					mesg プットオブジェ ロードエリア on
+				}
+
+			}
+
+		//	ドアは開かない
+		trap dr001 ？ \
+			-mask ？ \	
+			-exec {
+					if ($3 == 入る) {
+						mesg ドア 南側ドア open $2
+					} else {
+						mesg ドア 南側ドア close $2
+					}
+			}
+
+	}
+#endif
+
+
+//###################################################################################
+//									開始時処理
+//###################################################################################
+
+	proc アーセナルギア小部屋Ｂ開始時処理 {
+
+		// 通路Ｂから
+		if ( $s:登場ポイント == sp_w44a_w45a_0 ) {
+			@ステージ開始時処理（ステージ名表示）\
+			d:LOAD_TYPE:SL_DOOR_TYPE 南側ドア 4500 d:DEFAULT_M_TYPE \
+			d:wn_アーセナルギアＳ状結腸
+//			@ロード時カメラ設定
+			@無線設定
+			//	ＢＧＭを鳴らす
+			command セットサウンドコード -c d:SNG_PLAY_06
+
+		//	天狗兵降下デモ終了後
+		} else if ($s:登場ポイント == 天狗兵降下デモ終了後) {
+			@ステージ開始時処理 d:LOAD_TYPE:NO_MOVE_TYPE 0 0 0
+			//	ＢＧＭを鳴らす
+			command セットサウンドコード -c d:SNG_PLAY_02
+
+		}
+	}
+
+
+
+//###################################################################################
+//									ロード設定
+//###################################################################################
+
+	proc ロードプロック {
+		#if d:DEBUG_PRINT 
+			print 'load_proc'
+		#endif
+
+		if ($s:呼び出しプロック == mv_w45a_w44a_0) {
+			// 通路Ｂへ
+//			@mv_w45a_w44a_0
+		} else if ($s:呼び出しプロック == mv_w45a_d078p01_0) {
+			@mv_w45a_d078p01_0
+		}
+	}
+	
+	proc アーセナルギア小部屋Ｂロード設定 {
+	/*
+		trap ld001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if($f:ロードチェックＯＮフラグ == 1) {
+					@ステージ終了時処理 0 0 -133000 0 mv_w45a_w44a_0 d:DEFAULT_M_TYPE
+				}
+			}
+	*/
+	}
+
+	proc 天狗兵終了ロード設定 {
+		command セットサウンドコード -c d:SNG_FOUTS_S
+//		@ステージ終了時処理 0 0 -159000 2048 mv_w45a_d078p01_0 d:DEFAULT_M_TYPE
+		@ステージ終了時処理 0 0 0 0 mv_w45a_d078p01_0 d:NO_MOVE_M_TYPE
+		//	先読み
+		preseek 'd078p01'
+	}
+
+	proc ロード時カメラ設定 {
+		chara カメラ設定 ロードカメラ \
+						-c 1 \	
+						-p -216,3345,-135845 \
+						-t 1469,1904,-133903 \
+						-a 200 \
+						-i 0 1 0 0 \
+						-s 1
+
+		chara プロック連続実行 カメラ戻し管理人 \
+			-proc カメラ戻し管理
+	}
+
+	proc カメラ戻し管理 {
+		command パッドチェック \
+			-no_use
+		if ($status != 1) {
+			chara カメラ設定 ロードカメラ \
+				-s -1
+			mesg プロック連続実行 カメラ戻し管理人 kill
+		}
+	}
+
+	proc 無線設定 {
+		//	ここのドアは開いた状態でスタート
+		mesg ドア 南側ドア openstart
+
+		chara プロック連続実行 無線管理人 \
+			-t -1 \
+			-e {
+				print'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+				if (`command パッドチェック -no_use` != 1) {
+					//	２度と開かない
+					mesg ドア 南側ドア locked
+					//	ＢＧＭフェードアウト
+					command セットサウンドコード -c d:SNG_FOUTS_S
+					eval( $w:p_story = d:ST:P077_01_R01ローズ拉致１無線機デモ１開始 )
+					@rt_P077_01_R01ローズ拉致１無線機デモ１
+					mesg プロック連続実行 無線管理人 kill
+				}
+			}
+	}
+
+//###################################################################################
+//									オブジェクト
+//###################################################################################
+
+	proc オブジェクト設定 {
+		chara プットオブジェ 開きっぱ左ドア \
+			-m d:DOOR_NAME_1A \
+			-r 0,0,0 \
+			-p -1225,0,-139625 -l d:LT2_NAME \
+			-s 100,100,100
+		chara プットオブジェ 開きっぱ右ドア \
+			-m d:DOOR_NAME_1B \
+			-r 0,0,0 \
+			-p 750,0,-139625  -l d:LT2_NAME \
+			-s 100,100,100
+
+		chara プットオブジェ ロードエリア \
+			-m d:KMS_NAME0 \
+			-r 0,0,0 \
+			-p 0,0,0 -l d:LT2_NAME \
+			-s 100,100,100
+
+	}
+
+
+
+//###################################################################################
+//									アイテム
+//###################################################################################
+
+	proc アイテム設定 {
+		#if d:DEBUG_PRINT
+			print 'item_set'
+		#endif
+
+		@アイテム再セットチェック（難易度対応） $b:w45a_取得ロード回数[0]
+		if ($f:再セットフラグ) {
+			@レーション_初期設置 レーション:01 2500 0 -138750 0
+		}
+	}
+
+	proc アイテム取得時番号設定 $:ボックス名 {
+		#if d:DEBUG_PRINT
+		print '*** Item No Set ***'
+		#endif
+
+		if($:ボックス名 == レーション:01) {
+			eval($b:w45a_取得ロード回数[0] = $w:グローバルロード回数);
+		}
+
+	}
+
+
+//###################################################################################
+//									 エフェクト
+//###################################################################################
+
+/*
+	//	w45a_d_common.h内に記述
+	proc フォグ設定 {
+		#if d:DEBUG_PRINT
+			print 'fog_set'
+		#endif
+
+		chara フォグ 霧\
+			-c 143,186,159 \
+			-n 0 \
+			-f 80000
+	}
+*/
+	proc エフェクト設定 {
+		#if d:DEBUG_PRINT
+			print 'effect_set'
+		#endif
+
+		#if d:BLUR
+			chara ブラー ブラー
+		#endif
+
+		#if d:Z_MANAGER
+			chara Ｚフォーカス管理 Z_manager
+			mesg Ｚフォーカス管理 Z_manager パラメータ 5000 30
+		#endif
+
+		#if d:BODY_SHADOW
+			chara ＯＦＦ制御 off_man
+			mesg ＯＦＦ制御 off_man ボディシャドウＯＦＦ
+		#endif
+	}
+
+	proc キャラ用ライト設定 {
+		#if d:DEBUG_PRINT
+			print 'chara_light_set'
+		#endif
+	# if 1
+		chara 環境光 環境光源 \
+			 -c 40 90 75
+
+		chara 平行光 平行光源 \
+			 -c 68 113 94 \
+			 -p 1069 -2860 -3958
+	# endif
+	}
+
+	proc 息設定 {
+		#if d:DEBUG_PRINT
+		print 'PLAYER_BREARH'
+		#endif
+		chara 白息 プレイヤー息 \
+			-name d:PLAYER \
+			-object 12 \
+			-shift 0,-30,130 \
+			-interval 136
+		mesg 白息 プレイヤー息 on
+	}
+
+	proc レンズフレア設定 {
+		chara レンズフレア  レンズフレアくん天井 \
+			-pos -4500,15000,-158000 \
+			-size 1 \
+			-alpha 16
+
+		chara レンズフレア  レンズフレアくん地下 \
+			-pos 0,0,-149250 \
+			-size 1 \
+			-alpha 12
+	}
+
+
+#if 0
+	//	w45a_d_common.h内に記述
+	proc 空中文字設定 {
+#if 1
+		chara 円筒テクスチャ 空中帯１−１ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 8750  \
+			-posy 2000  \
+			-width 7200 \
+			-height  500 \
+			-inner 4096 \
+			-tex f_window w45a_efct_rbn_02_alp_add_ovl \
+//			-spin 0 18000		// 軸回転
+			-spin 0 36000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯１−２ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 8750  \
+			-posy 2000  \
+			-width 7200 \
+			-height  500 \
+			-inner 4096 \
+			-tex f_window w45a_efct_rbn_02_alp_add_ovl \
+//			-spin 683 18000		// 軸回転
+			-spin 683 36000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯１−３ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 8750  \
+			-posy 2000  \
+			-width 7200 \
+			-height  500 \
+			-inner 4096 \
+			-tex f_window w45a_efct_rbn_02_alp_add_ovl \
+//			-spin 1362 18000		// 軸回転
+			-spin 1362 36000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯１−４ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 8750  \
+			-posy 2000  \
+			-width 7200 \
+			-height  500 \
+			-inner 4096 \
+			-tex f_window w45a_efct_rbn_02_alp_add_ovl \
+//			-spin 2048 18000		// 軸回転
+			-spin 2048 36000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯１−５ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 8750  \
+			-posy 2000  \
+			-width 7200 \
+			-height  500 \
+			-inner 4096 \
+			-tex f_window w45a_efct_rbn_02_alp_add_ovl \
+//			-spin -1362 18000		// 軸回転
+			-spin -1362 36000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯１−６ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 8750  \
+			-posy 2000  \
+			-width 7200 \
+			-height  500 \
+			-inner 4096 \
+			-tex f_window w45a_efct_rbn_02_alp_add_ovl \
+//			-spin -683 18000		// 軸回転
+			-spin -683 36000		// 軸回転
+
+
+		chara 円筒テクスチャ 空中帯２−１ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 8250  \
+			-posy 1650  \
+			-width 4800 \
+			-height  300 \
+			-inner 4096 \
+			-tex f_window w45a_efct_rbn_01_alp_add_ovl \
+//			-spin 0 -18000		// 軸回転
+			-spin 0 -36000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯２−２ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 8250  \
+			-posy 1650  \
+			-width 4800 \
+			-height  300 \
+			-inner 4096 \
+			-tex f_window w45a_efct_rbn_01_alp_add_ovl \
+//			-spin 512 -18000		// 軸回転
+			-spin 512 -36000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯２−３ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 8250  \
+			-posy 1650  \
+			-width 4800 \
+			-height  300 \
+			-inner 4096 \
+			-tex f_window w45a_efct_rbn_01_alp_add_ovl \
+//			-spin 1024 -18000		// 軸回転
+			-spin 1024 -36000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯２−４ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 8250  \
+			-posy 1650  \
+			-width 4800 \
+			-height  300 \
+			-inner 4096 \
+			-tex f_window w45a_efct_rbn_01_alp_add_ovl \
+//			-spin 1536 -18000		// 軸回転
+			-spin 1536 -36000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯２−５ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 8250  \
+			-posy 1650  \
+			-width 4800 \
+			-height  300 \
+			-inner 4096 \
+			-tex f_window w45a_efct_rbn_01_alp_add_ovl \
+//			-spin 2048 -18000		// 軸回転
+			-spin 2048 -36000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯２−６ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 8250  \
+			-posy 1650  \
+			-width 4800 \
+			-height  300 \
+			-inner 4096 \
+			-tex f_window w45a_efct_rbn_01_alp_add_ovl \
+//			-spin -512 -18000		// 軸回転
+			-spin -512 -36000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯２−７ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 8250  \
+			-posy 1650  \
+			-width 4800 \
+			-height  300 \
+			-inner 4096 \
+			-tex f_window w45a_efct_rbn_01_alp_add_ovl \
+//			-spin -1024 -18000		// 軸回転
+			-spin -1024 -36000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯２−８ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 8250  \
+			-posy 1650  \
+			-width 4800 \
+			-height  300 \
+			-inner 4096 \
+			-tex f_window w45a_efct_rbn_01_alp_add_ovl \
+//			-spin -1536 -18000		// 軸回転
+			-spin -1536 -36000		// 軸回転
+
+#endif
+
+#if 1
+		chara 円筒テクスチャ 空中帯３−１ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 5275  \
+			-posy 1200  \
+			-width 15572 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_alp_add_ovl \
+//			-spin  1024 18000		// 軸回転
+			-spin  1024 0		// 軸回転
+
+		chara 円筒テクスチャ 空中帯３−２ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 5275  \
+			-posy 1200  \
+			-width 15572 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_alp_add_ovl \
+//			-spin  3072 18000		// 軸回転
+			-spin  3072 0		// 軸回転
+
+		chara 円筒テクスチャ 空中帯３−３ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 5275  \
+			-posy 1200  \
+			-width 1000 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_2_alp_add_ovl \
+//			-spin  0 18000		// 軸回転
+			-spin  0 0		// 軸回転
+
+		chara 円筒テクスチャ 空中帯３−４ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 5275  \
+			-posy 1200  \
+			-width 1000 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_2_alp_add_ovl \
+//			-spin  2048 18000		// 軸回転
+			-spin  2048 0		// 軸回転
+
+#endif
+
+#if 1
+		chara 円筒テクスチャ 空中帯４−１ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 5275  \
+			-posy 3900  \
+			-width 15572 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_alp_add_ovl \
+//			-spin  1024 -18000		// 軸回転
+			-spin  1024 -36000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯４−２ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 5275  \
+			-posy 3900  \
+			-width 15572 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_alp_add_ovl \
+//			-spin  3072 -18000		// 軸回転
+			-spin  3072 -36000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯４−３ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 5275  \
+			-posy 3900  \
+			-width 1000 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_3_alp_add_ovl \
+//			-spin  0 -18000		// 軸回転
+			-spin  0 -36000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯４−４ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 5275  \
+			-posy 3900  \
+			-width 1000 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_3_alp_add_ovl \
+//			-spin  2048 -18000		// 軸回転
+			-spin  2048 -36000		// 軸回転
+
+#endif
+
+#if 1
+		chara 円筒テクスチャ 空中帯５−１ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 5275  \
+			-posy 8800  \
+			-width 15572 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_alp_add_ovl \
+//			-spin  2048 -18000		// 軸回転
+			-spin  2048 -54000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯５−２ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 5275  \
+			-posy 8800  \
+			-width 15572 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_alp_add_ovl \
+//			-spin  4096 -18000		// 軸回転
+			-spin  4096 -54000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯５−３ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 5275  \
+			-posy 8800  \
+			-width 1000 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_3_alp_add_ovl \
+//			-spin  1024 -18000		// 軸回転
+			-spin  1024 -54000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯５−４ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 5275  \
+			-posy 8800  \
+			-width 1000 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_3_alp_add_ovl \
+//			-spin  3072 -18000		// 軸回転
+			-spin  3072 -54000		// 軸回転
+
+#endif
+
+#if 0
+	//	原形
+		chara 円筒テクスチャ 空中帯６−１ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 7500  \
+			-posy 6800  \
+			-width 22562 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_alp_add_ovl \
+//			-spin  1024 18000		// 軸回転
+			-spin  1024 54000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯６−２ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 7500  \
+			-posy 6800  \
+			-width 22562 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_alp_add_ovl \
+//			-spin  3072 18000		// 軸回転
+			-spin  3072 54000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯６−３ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 7500  \
+			-posy 6800  \
+			-width 1000 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_2_alp_add_ovl \
+//			-spin  0 18000		// 軸回転
+			-spin  0 54000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯６−４ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 7500  \
+			-posy 6800  \
+			-width 1000 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_2_alp_add_ovl \
+//			-spin  2048 18000		// 軸回転
+			-spin  2048 54000		// 軸回転
+
+#else 
+
+	//	分割
+		chara 円筒テクスチャ 空中帯６−１Ａ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 7500  \
+			-posy 6800  \
+			-width 11281 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_alp_add_ovl \
+			-spin  534 54000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯６−１Ｂ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 7500  \
+			-posy 6800  \
+			-width 11281 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_alp_add_ovl \
+			-spin  1514 54000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯６−２Ａ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 7500  \
+			-posy 6800  \
+			-width 11281 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_alp_add_ovl \
+			-spin  2582 54000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯６−３Ａ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 7500  \
+			-posy 6800  \
+			-width 11281 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_alp_add_ovl \
+			-spin  3562 54000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯６−３ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 7500  \
+			-posy 6800  \
+			-width 1000 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_2_alp_add_ovl \
+			-spin  0 54000		// 軸回転
+
+		chara 円筒テクスチャ 空中帯６−４ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 7500  \
+			-posy 6800  \
+			-width 1000 \
+			-height  200 \
+			-tex f_window w45a_efct_rbn_smt01_2_alp_add_ovl \
+			-spin  2048 54000		// 軸回転
+
+#endif
+
+#if 1
+		//	ＣＡＵＴＩＯＮ	右上
+		chara 円筒テクスチャ 空中文字１-１ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 6750  \
+			-posy 2570  \
+			-width 800 \
+			-height 288 \
+			-tex f_window w45a_efct_caution_alp_add_ovl \
+			-blink \
+			-spin  1650 0		// 軸回転
+
+		//	ＣＡＵＴＩＯＮ	左上
+		chara 円筒テクスチャ 空中文字１-２ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+//			-r 7000  \
+			-r 6000  \
+			-posy 1100  \
+			-width 800 \
+			-height 288 \
+			-tex f_window w45a_efct_caution_alp_add_ovl \
+			-blink \
+			-spin  2674 0		// 軸回転
+
+		//	メニューっぽいやつ
+		chara 円筒テクスチャ 空中文字２ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+			-r 5410  \
+			-posy 0  \
+			-width 1000 \
+			-height 2000 \
+			-tex f_window w45a_efct_disp_06_alp_add_ovl \
+			-blink \
+			-spin  2389 0		// 軸回転
+
+		//	スクロール系	正面
+		chara 空中文字 空中文字３−１ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+//			-r 7000 \
+			-r 6000 \
+			-posy 2600 \
+			-width 1000 \
+			-height 562 \
+			-tex f_window w45a_efct_disp_01_alp_add_ovl w45a_efct_disp_01_scr_alp_add_ovl \
+			-chr 0 295 1000 636 \
+			-spin 2048 0 \		// 軸回転
+			-uvanim 3000 \
+				0 1000 0 350 \
+				0 1000 650 350
+
+		//	スクロール系	左下
+		chara 空中文字 空中文字３−２ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+//			-r 7000 \
+			-r 6000 \
+			-posy 3000 \
+			-width 1000 \
+			-height 562 \
+			-tex f_window w45a_efct_disp_01_alp_add_ovl w45a_efct_disp_01_scr_alp_add_ovl \
+			-chr 0 295 1000 636 \
+			-spin 3427 0 \		// 軸回転
+			-uvanim 3000 \
+				0 1000 0 350 \
+				0 1000 650 350
+
+
+		//	スクロール系	右上
+		chara 空中文字 空中文字４−１ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+//			-r 6700 \
+			-r 5700 \
+			-posy 1200 \
+			-width 2000 \
+			-height 1250 \
+			-tex f_window w45a_efct_disp_02_alp_add_ovl w45a_efct_disp_02_scr_alp_add_ovl \
+			-chr 0 194 1000 722 \
+			-spin 1479 0 \		// 軸回転
+			-uvanim 3000 \
+				0 1000 0 541 \
+				0 1000 459 541
+
+		//	スクロール系	左下
+		chara 空中文字 空中文字４−２ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+//			-r 6700 \
+			-r 5700 \
+			-posy 1200 \
+			-width 2000 \
+			-height 1250 \
+			-tex f_window w45a_efct_disp_02_alp_add_ovl w45a_efct_disp_02_scr_alp_add_ovl \
+			-chr 0 194 1000 722 \
+			-spin 3243 0 \		// 軸回転
+			-uvanim 3000 \
+				0 1000 0 541 \
+				0 1000 459 541
+
+
+		//	スクロール系	右上
+		chara 空中文字 空中文字５−１ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+//			-r 6250 \
+			-r 5250 \
+			-posy 1600 \
+			-width 1200 \
+			-height 562 \
+			-tex f_window w45a_efct_disp_03_alp_add_ovl w45a_efct_disp_03_scr_alp_add_ovl \
+			-chr 0 90 1000 727 \
+			-spin 1650 0 \		// 軸回転
+			-uvanim 3000 \
+				0 1000 0 500 \
+				0 1000 500 500
+
+		//	スクロール系	右下
+		chara 空中文字 空中文字５−２ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+//			-r 6250 \
+			-r 5250 \
+			-posy 1600 \
+			-width 1200 \
+			-height 562 \
+			-tex f_window w45a_efct_disp_03_alp_add_ovl w45a_efct_disp_03_scr_alp_add_ovl \
+			-chr 0 90 1000 727 \
+			-spin 398 0 \		// 軸回転
+			-uvanim 3000 \
+				0 1000 0 500 \
+				0 1000 500 500
+
+
+		//	スクロール系	右下
+		chara 空中文字 空中文字６−１ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+//			-r 7000 \
+			-r 6000 \
+			-posy 1000 \
+			-width 1400 \
+			-height 862 \
+			-tex f_window w45a_efct_disp_04_alp_add_ovl w45a_efct_disp_04_scr_alp_add_ovl \
+			-chr 0 63 1000 875 \
+			-spin 569 0 \		// 軸回転
+			-uvanim 3000 \
+				0 1000 0 656 \
+				0 1000 344 656
+
+		//	スクロール系	左上
+		chara 空中文字 空中文字６−２ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+//			-r 7000 \
+			-r 6000 \
+			-posy 1000 \
+			-width 1400 \
+			-height 862 \
+			-tex f_window w45a_efct_disp_04_alp_add_ovl w45a_efct_disp_04_scr_alp_add_ovl \
+			-chr 0 63 1000 875 \
+			-spin 2503 0 \		// 軸回転
+			-uvanim 3000 \
+				0 1000 0 656 \
+				0 1000 344 656
+
+
+		//	スクロール系	左上
+		chara 空中文字 空中文字７−１ \
+			-alpha 64 \
+			-O 0,0,-149250 \  // 起点
+//			-r 7000 \
+			-r 6000 \
+			-posy 2500 \
+			-width 1000 \
+			-height 1850 \
+			-tex f_window w45a_efct_disp_05_alp_add_ovl w45a_efct_disp_05_scr_alp_add_ovl \
+			-chr 0 78 1000 859 \
+			-spin 1536 0 \		// 軸回転
+			-uvanim 3000 \
+				0 1000 0 658 \
+				0 1000 342 658
+#endif
+
+	}
+
+
+#endif
+
+	
+//###################################################################################
+//									カメラ
+//###################################################################################
+
+	proc カメラセット {
+		#if d:DEBUG_PRINT
+			print 'stage_camera_set'
+		#endif
+
+		chara カメラ ステージカメラ		-c 0 -l 3 -p 0 
+		chara カメラ 小部屋カメラ		-c 0 -l 2 -p 40
+		chara カメラ 通路カメラ		-c 0 -l 2 -p 30
+		chara カメラ ロードカメラ		-c 0 -l 2 -p 20
+		chara カメラ モーションカメラ		-c 0 -l 2 -p 10
+		chara カメラ ゲームオーバーカメラ		-c 0 -l 0 -p 5
+
+		// デフォルトカメラ
+		chara カメラ設定 ステージカメラ \
+			-c 0 \	
+			-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-r 425,2048,0 \
+			-f 7500 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s 1
+	}
+	proc アーセナルギア小部屋Ｂカメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w45a_camera_set'
+		#endif
+
+		// 南側通路
+		trap ca001 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -133750 -139750 900 100
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				chara カメラ設定 通路カメラ \
+					-c 0 \
+/*
+					-b  250,d:CAM_MIN,d:CAM_MIN 1750,d:CAM_MAX,-134000 \
+					-l  250,d:CAM_MIN,d:CAM_MIN 1750,d:CAM_MAX,-134250 \
+*/
+					-b  70,d:CAM_MIN,d:CAM_MIN 1935,d:CAM_MAX,-134124 \
+					-l  70,d:CAM_MIN,d:CAM_MIN 1935,d:CAM_MAX,-134303 \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 4500 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+		// 大部屋
+		trap ca002 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -140750 -150750 900 450
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				chara カメラ設定 小部屋カメラ \
+					-c 0 \	
+					-b -4000,d:CAM_MIN,d:CAM_MIN 4000,10000,-140750 \
+					-l -4000,d:CAM_MIN,d:CAM_MIN 4000,10000,-141000 \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 9000 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-s $3
+			}
+	}
+
+	proc 亀甲床設定 {
+# if 0
+		chara 亀甲床 亀甲床ちゃん \
+				-size $i:外接円半径  \		//	200	大きくしたいときは多くする
+				-prims $i:プリミティブ数 \	//	128	はでにしたいときは多くする
+				-vertex $i:最大頂点数 \		//	10	広くしたいときは多くする
+				-time $i:消去までの時間 \	//	150/300	0.5秒
+				-alpha $i:最大アルファ値 \	//	32	
+				-color $i:R $i:G $i:B \		//	
+				-maxpoint $i:最大発生点数	//	はでに線をのばしたいときは多くする
+
+			//	原点		0,0,-149250
+			//	半径		7000
+# endif
+		chara 亀甲床 亀甲床ちゃん \
+				-prims 128 \
+				-alpha 10 \
+				-vertex 10 \
+				-user 32 \
+				-region 0 -149250 7000
+	}
+
+
+
+//###################################################################################
+//									デモ
+//###################################################################################
+
+proc 天狗兵降下デモ {
+	trap de001 d:PLAYER \
+		-mask 入る \
+		-e {
+			if ($f:w45a_天狗兵登場フラグ == d:FALSE) {
+				eval ($f:w45a_天狗兵登場フラグ = d:TRUE)
+				//	ＢＧＭフェードアウト
+				command セットサウンドコード -c d:SNG_FOUTS_S
+
+				//	強制姿勢制御
+				mesg プレイヤー d:PLAYER stance 0  -1  2048 0
+				//	登場ポイントを変更
+				eval($s:登場ポイント = 天狗兵降下デモ終了後)
+
+				//	登場位置を再代入
+				eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+				eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+				eval( $i:プレイヤー初期Ｚ位置 = -149250 ) ;
+				eval( $i:プレイヤー初期方向 = 2048 ) ;
+
+				//	ストーリーフラグを立ててリスタートでデモへ
+				if($w:アイテム == d:アイテム:ゴル兵制服){
+					@ポリゴンデモロード d:ST:P077_02_P01天狗兵降下ラッシュポリゴンデモ１開始
+				} else {
+					@ポリゴンデモスタート d:ST:P077_02_P01天狗兵降下ラッシュポリゴンデモ１開始
+				}
+			}
+		}
+
+}
+
+	proc ポリデモロードスタート {
+		//	レジデント５へ読み替える
+		load "w45a" -r 'r_plt5'
+	}
+
+	proc フォーチュン登場デモ {
+		chara delay 登場デモディレイ \
+			-t 120 \
+			-e {
+				//	ストーリーフラグを立ててリスタートでデモへ
+				//@ポリゴンデモスタート d:ST:P078_01_P01ＡＧフォーチュン登場１ポリゴンデモ１開始
+				eval($w:p_story = d:ST:P078_01_P01ＡＧフォーチュン登場１ポリゴンデモ１開始)
+				@天狗兵終了ロード設定
+			}
+
+}
+
+
+
+//###################################################################################
+//									ストーリーフラグ
+//###################################################################################
+
+
+
+//###################################################################################
+//									特殊ゲームオーバー
+//###################################################################################
+
+	proc 偽ゲームオーバー終了 {
+		//	ゲームオーバーが終了したらフラグを戻す
+		eval($f:w45a_偽ゲームオーバーフラグ =d:FALSE )
+		//	ラジオオン
+		command メニュー設定 \
+			-radio on
+		print 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
+		print '$f:w45a_偽ゲームオーバーフラグ'$f:w45a_偽ゲームオーバーフラグ
+	}
+	
+	proc 偽ゲームオーバー設定 {
+
+		if ($f:w45a_天狗兵登場フラグ == d:TRUE) {
+			chara プロック連続実行 天狗兵死亡数管理人 \
+				-t -1 \
+				-e {
+					if (`command ゲット倒した天狗兵` == 20 ) {
+						if ($f:w45a_偽ゲームオーバーフラグ == d:FALSE) {
+							eval($f:w45a_偽ゲームオーバーフラグ = d:TRUE )
+							print 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+							print '$f:w45a_偽ゲームオーバーフラグ'$f:w45a_偽ゲームオーバーフラグ
+							command メニュー設定 \
+								-radio off
+
+							chara 偽ゲームオーバー画面 偽ゲームオーバー \
+								-time 6000 \		//	1/300秒単位
+								-x	fake_gameover fake_failed_alp_ovl fake_exit_alp_ovl fake_cont_alp_ovl \
+								-proc 偽ゲームオーバー終了 \
+								-vox t:vc130000
+						}
+					} else if (`command ゲット倒した天狗兵` == 40) {
+						if ($f:w45a_偽ゲームオーバーフラグ == d:FALSE) {
+							eval($f:w45a_偽ゲームオーバーフラグ = d:TRUE )
+							print 'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC'
+							print '$f:w45a_偽ゲームオーバーフラグ'$f:w45a_偽ゲームオーバーフラグ
+
+							chara 偽ゲームオーバー画面 偽ゲームオーバー \
+								-time 3000 \		//	1/300秒単位
+								-x	fake_gameover fake_failed_alp_ovl fake_exit_alp_ovl fake_cont_alp_ovl \
+								-proc 偽ゲームオーバー終了 \
+								-vox t:vc130000
+						}
+					}
+
+				}
+		}
+	}
+
+
+
+
+
+
+
+
+
+
+//###################################################################################
+//								ＮＰＣ設定
+//###################################################################################
+
+	//	スネーク死亡
+	proc スネーク死亡 {
+		if(`command ゲームオーバーチェック` == 1) {
+			return
+		}
+
+		print 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+		eval($f:pgo_ＮＰＣスネーク死亡 = 1)
+
+		//	特殊装備解除
+		@特殊装備解除
+
+		//	ニキータ、サーマル、ナイトビジョンも外す
+		if ($w:武器 == d:武器:ニキータ) {
+			eval($w:武器 = d:武器:素手)
+		}
+		if ( ($w:アイテム == d:アイテム:暗視ゴーグル) || \
+			($w:アイテム == d:アイテム:サーマルゴーグル) ){
+			eval($w:アイテム = d:アイテム:素手)
+		}
+
+		//	ゲームオーバーカメラ設定
+
+		//	念のためサイトを消す
+		command サイト表示制御 \
+			-switch off
+
+		command コントロール座標取得 \
+			スネーク $i:スネークＸ座標変数 $i:スネークＹ座標変数 $i:スネークＺ座標変数
+
+		//	シネマスクリーン起動
+//		mesg シネマスクリーン シネマ フェードアウト 1
+
+		if ($i:スネークＺ座標変数 < -142250) {
+			chara カメラ設定 ゲームオーバーカメラ \
+				-c 1\	
+				-p $i:スネークＸ座標変数,($i:スネークＹ座標変数+4000),($i:スネークＺ座標変数+500) \
+				-t $i:スネークＸ座標変数,$i:スネークＹ座標変数,$i:スネークＺ座標変数 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-d 1 \
+				-s 1
+		} else if ($i:スネークＺ座標変数 < -139750) {
+			chara カメラ設定 ゲームオーバーカメラ \
+				-c 1\	
+				-p 54,6470,-139980 \
+				-t 54,-2483,-140820 \
+				-a 180 \
+				-i 0 -1 0 0 \
+				-d 1 \
+				-s 1
+		} else {
+			chara カメラ設定 ゲームオーバーカメラ \
+				-c 1\	
+				-p $i:スネークＸ座標変数,($i:スネークＹ座標変数+2000),-134124 \
+				-t $i:スネークＸ座標変数,$i:スネークＹ座標変数,$i:スネークＺ座標変数 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-d 1 \
+				-s 1
+		}
+	}
+	
+	proc スネーク設定 {
+
+		//	髭剃りスネーク対応
+		@髭剃りスネークテクスチャ入れ替え処理
+
+		if ($f:w45a_天狗兵登場フラグ == d:TRUE) {
+			chara ＮＰＣスネーク スネーク \
+				-m sna_def \
+				-a npc_snake \
+				-c npc_snake_cap \
+				-d npc_snake_drag \
+				-y sna_npc \
+				-x 875,0,-148750 \
+				-r 0, 2048, 0 \
+//				-l 2 \
+				-l $i:w45a_スネークレベル \
+				-t 1 \
+				-s 10 \
+				   -125,0,-152625 0x00000000 \
+				  -2000,0,-152125 0x00000000 \
+				  -3500,0,-150375 0x00000000 \
+				  -3375,0,-148375 0x00000000 \
+				  -2125,0,-146625 0x00000000 \
+				   -125,0,-146000 0x00000000 \
+				   2000,0,-146750 0x00000000 \
+				   3125,0,-148375 0x00000000 \
+				   3125,0,-150375 0x00000000 \
+				   1875,0,-151875 0x00000000 \
+				-h 1 \
+				-n sna_def_mh \
+				-u ドッグタグ_敵兵 \
+				[dogtag:plt_w43a_snake_ve] [dogtag:plt_w43a_snake_ea] [dogtag:plt_w43a_snake_no] \
+				[dogtag:plt_w43a_snake_ha] [dogtag:plt_w43a_snake_vh] \
+				-g スネーク死亡 \
+				-v $i:w45a_スネークライフ \
+				-w 1			//	$f:足影を有効にするかどうかのフラグ
+
+		} else {
+			chara ＮＰＣスネーク スネーク \
+				-m sna_def \
+				-a npc_snake \
+				-c npc_snake_cap \
+				-d npc_snake_drag \
+				-y sna_npc \
+				-x $i:プレイヤー初期Ｘ位置,$i:プレイヤー初期Ｙ位置,($i:プレイヤー初期Ｚ位置+1000) \
+				-r 0,$i:プレイヤー初期方向,0 \
+				-t 2 \
+				-h 1 \
+				-n sna_def_mh \
+				-u ドッグタグ_敵兵 \
+				[dogtag:plt_w43a_snake_ve] [dogtag:plt_w43a_snake_ea] [dogtag:plt_w43a_snake_no] \
+				[dogtag:plt_w43a_snake_ha] [dogtag:plt_w43a_snake_vh] \
+				-g スネーク死亡 \
+				-v $i:w45a_スネークライフ \
+				-w 1			//	$f:足影を有効にするかどうかのフラグ
+		}
+		//バンダナ
+		chara ロープモデル３ バンダナ１ \
+			-n sna_bdn1 \
+			-d 1 \
+			-y スネーク \
+			-z 12 \
+			-x 0,60,-90 \
+			-m 12 \
+			-p 250 \
+			-k 350 \
+			-o 110 \
+			-v \
+			-f 1
+
+		chara ロープモデル３ バンダナ２ \
+			-n sna_bdn2 \
+			-d 1 \
+			-y スネーク \
+			-z 12 \
+			-x 0,50,-90 \
+			-m 22 \
+			-p 250 \
+			-k 350 \
+			-o 110 \
+			-v \
+			-f 1
+
+		//	息設定
+		mesg ＮＰＣスネーク スネーク 白い息 136
+
+		//スネークアイテム制限
+		mesg ＮＰＣスネーク スネーク アイテムを出す数の制限 \
+			$i:w45a_スネークレーション数 \
+			$i:w45a_スネークソコム数 \
+			$i:w45a_スネークＭ４数
+
+	}
+
+	proc フォーチュン設定 {
+		#if d:DEBUG_PRINT 
+			print 'fortune_set'
+		#endif
+
+		chara ルートデモ人形 デモフォーチュン \
+			-route 3 0 \ 
+			-kms for_def_sh_mt \
+			-mar sna_w45a \
+			-number d:スネークモーションリスト:sna_run
+	}
+
+
+
+//###################################################################################
+//								武器設定
+//###################################################################################
+
+	proc 刀設定 {
+		eval ( $w:武器最大数Ｒ[ d:武器:ブレード ] = 1 )
+		eval ( $w:武器弾数Ｒ[ d:武器:ブレード ] = 1 )
+		eval ( $w:武器最大数[ d:武器:ブレード ] = 1 )
+		eval ( $w:武器弾数[ d:武器:ブレード ] = 1 )
+	}
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+
+
+
+
+// 以下仮キャラ用proc
+// -----------------------------------------------------------------------------------
+// 仮キャラ
+// ------------------------------------
+proc 水面セット {
+	#if d:DEBUG_PRINT
+		print 'water_set'
+	#endif
+
+	chara 頂点アニメブラー 仮水面 \
+		-model w11a_sea \
+		-base 10 \
+		-width 1 \
+		-flag 5 \
+		-pos 0,0,0
+}
+
+	proc ゲームオーバー設定 {
+		command システムコールバック \
+			-gameover コンティニュー設定 \
+			-continue コンティニュー設定
+	}
+
+	proc コンティニュー設定 {
+		print '####################################################CONTINYU'
+		command ゲット倒した天狗兵
+		print '####################################################TENGUHEISCORE' $status
+	}
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------
+proc デバッグキャラセット {
+	#if d:DEBUG_PRINT
+		print 'debug_chara_set'
+	#endif
+
+	#if d:CHARA_CAMERA
+		chara キャラカメラ 敵兵カメラ \
+			-c d:TARGET_CHARA \
+			-s -920,610,200 \
+			-r -200,1024,0 
+	#endif
+
+	#if d:SCREENSHOT
+		chara スクリーンショット shot
+	#endif
+
+	#if d:USB_KEY
+		chara USBキーボード実行 test \
+			-e d:KBD_ESC {	
+				mesg プレイヤー d:PLAYER position -5500, -13000, -500
+			} \
+	#endif
+}
+
+/*
+	proc ＵＳＢキーボードセット {
+			chara USBキーボード実行 ＵＳＢキーボード \
+					-e d:KBD_R	{ 	command メニュー設定 -menu on -gage on -radar on -subwin on	} \
+					-e d:KBD_T	{	command メニュー設定 -menu off -gage off -radar off -subwin off	} \
+					-e d:KBD_F9 {
+						//mesg 警備兵 警備兵Ａ ルート変更 27 -5000,3000,-9000 １Fリフレッシュルーム
+					} \
+					-e d:KPD_0	{ /* restart */ } \
+					-e d:KPD_PLUS		{ mesg  プットオブジェ 空中文字 on } \
+					-e d:KPD_MINUS		{ mesg  プットオブジェ 空中文字 off } \
+					-e d:KPD_ENTER		{ /* mesg Ｃ４ Ｃ４ bomb */ } \
+					-e d:KBD_ESC {	mesg 臨時顔アニメキャラ アニメキャラ モーション再生 normal 30
+									mesg delay カメラディレイ kill
+									mesg 臨時顔アニメキャラ アニメキャラ 視線変更 -1
+									mesg 遠景ぼかし 遠景ぼかし１ off
+									mesg 遠景ぼかし 遠景ぼかし２ off
+									mesg 遠景ぼかし 遠景ぼかし３ off
+									mesg 近景ぼかし 近景ぼかし１ off
+									mesg 近景ぼかし 近景ぼかし２ off
+									mesg 近景ぼかし 近景ぼかし３ off
+								} \
+					-e d:KBD_F1	{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_speech_a 30 } \
+					-e d:KBD_F2 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_speech_i 30 } \
+					-e d:KBD_F3 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_speech_u 30 } \
+					-e d:KBD_F4 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_speech_e 30 } \
+					-e d:KBD_F5 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_speech_o 30 } \
+					-e d:KBD_F6 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_speech_n 30 } \
+					-e d:KBD_F7 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_teeth 30 } \
+					-e d:KBD_F8 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_scream 0 } \
+					-e d:KBD_F9 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_relax 30 } \
+					-e d:KBD_F10{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_surprise 30 } \
+					-e d:KBD_F11{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_sigh 30 } \
+					-e d:KBD_F12{ mesg 臨時顔アニメキャラ アニメキャラ 視線変更 2 } \
+					-e d:KBD_Q	{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_tension 30 } \
+					-e d:KBD_W	{
+								  chara delay カメラディレイ \
+									-time 1 \
+									-exec {
+										mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_exciting 30
+										return 60
+									}
+								} \
+					-e d:KBD_E	{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_pain 30 } \
+					-e d:KBD_R	{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_T12a1D71 30 } \
+					-e d:KBD_T	{
+									mesg 臨時顔アニメキャラ アニメキャラ 視線変更 0 120 -7707,-3929,-14119
+									chara delay カメラディレイ \
+										-time 90 \
+										-exec {
+											mesg 臨時顔アニメキャラ アニメキャラ 視線変更 0 60 6710,-3960,-18261
+										}
+								} \
+					-e d:KBD_Y	{
+								mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_sneeze 0
+								//mesg プレイヤー d:PLAYER motion d:モーションリスト:sna_m9_behind_squat_r_sneez_e3 \
+								//	 -1 -1 -1 0x00000004
+								} \
+					-e d:KBD_U	{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_teeth 30
+								  chara delay カメラディレイ \
+									-time 20 \
+									-exec {
+											mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_surprise 20
+									}
+								  chara delay カメラディレイ \
+									-time 40 \
+									-exec {
+											mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_teeth 20
+									}
+								} \
+					-e d:KBD_I	{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_teeth 20
+								  chara delay カメラディレイ \
+									-time 30 \
+									-exec {
+											mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_relax 20
+									}
+								  chara delay カメラディレイ \
+									-time 60 \
+									-exec {
+											mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_surprise 20
+									}
+								  chara delay カメラディレイ \
+									-time 90 \
+									-exec {
+											mesg 臨時顔アニメキャラ アニメキャラ モーション再生  normal 20
+									}
+								} \
+					-e d:KBD_O	{
+									mesg 臨時顔アニメキャラ アニメキャラ 視線変更 0 90 \
+											($i:プレイヤー位置Ｘ-1000),($i:プレイヤー位置Ｙ-200),($i:プレイヤー位置Ｚ+3000)
+									chara delay カメラディレイ \
+										-time 90 \
+										-exec {
+											mesg 臨時顔アニメキャラ アニメキャラ 視線変更 0 90 \
+											($i:プレイヤー位置Ｘ+1000),($i:プレイヤー位置Ｙ-200),($i:プレイヤー位置Ｚ+3000)
+										}
+									chara delay カメラディレイ \
+										-time 180 \
+										-exec {
+											mesg 臨時顔アニメキャラ アニメキャラ 視線変更 -1
+										}
+								} \
+					-e d:KBD_P	{
+								  chara delay カメラディレイ \
+									-time 1 \
+									-exec {
+											command ゲット敵兵座標 敵兵:01 $i:敵兵Ｘ $i:敵兵Ｙ $i:敵兵Ｚ
+											mesg 臨時顔アニメキャラ アニメキャラ 視線変更 0 5 $i:敵兵Ｘ $i:敵兵Ｙ $i:敵兵Ｚ
+											return 5
+									}
+								} \
+					-e d:KBD_1 { mesg 遠景ぼかし 遠景ぼかし１ on } \
+					-e d:KBD_2 { mesg 遠景ぼかし 遠景ぼかし２ on } \
+					-e d:KBD_3 { mesg 遠景ぼかし 遠景ぼかし３ on } \
+					-e d:KBD_4 { mesg 近景ぼかし 近景ぼかし１ on } \
+					-e d:KBD_5 { mesg 近景ぼかし 近景ぼかし２ on } \
+					-e d:KBD_6 { mesg 近景ぼかし 近景ぼかし３ on } \
+					-e d:KPD_MINUS {
+//									mesg プレイヤー スネーク position \
+//									2966 2000 -15180
+								} \
+					-e d:KPD_NUMLOCK {
+//							mesg プット大ガラスオブジェ でかガラス 割れる
+					} \
+					-e d:KPD_7 {
+						mesg プレイヤー d:PLAYER shadow 1
+					} \
+					-e d:KPD_8 {
+						mesg プレイヤー d:PLAYER shadow 0
+					} \
+					-e d:KPD_9 {
+						mesg コマンダー 敵兵セット 視界オン
+					} \
+
+					-e d:KBD_L {
+										mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_teeth 40
+										chara delay カメラディレイ \
+											-time 20 \
+											-exec {
+													mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_tension 30
+											}
+					} \
+					-e d:KBD_A {
+//						mesg プレイヤー d:PLAYER position 1000 1000 5000
+						command プレイヤー無敵セット
+					 } \
+					-e d:KBD_B {
+						mesg コマンダー 敵兵セット 視界オフ
+					} \
+					-e d:KBD_0 { /* restart */}
+}
+*/

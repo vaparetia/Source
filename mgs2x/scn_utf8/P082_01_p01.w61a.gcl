@@ -1,0 +1,483 @@
+/*
+	P082_01_p01.w61a.gcl
+		エンディングデモ専用
+
+	2001/05/28 H.Yoshiike         
+	$Id: P082_01_p01.w61a.gcl,v 1.39 2002/07/25 10:35:53 usr01475 Exp $                      
+
+	
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+#define		DEMO_STAGE		1		// デモステージかどうかで起動するキャラを切り分ける
+
+// include
+// ------------------------------------
+#include "5sec_bfr_demo.h"
+#include "demo_vardef.h"
+#include "demo_stdch.h"
+#include "demo_stdch2.h"
+#include "story.h"
+#include "sload.h"
+
+// 各種スイッチ用define
+// ------------------------------------
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+#endif
+#define		SCREENSHOT		0		// スクリーンショット
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME		d00a3
+#define		KMS_NAME0		w62a0
+#define		KMS_NAME1		w62a1
+#define		KMS_NAME2		w62a_smoke
+#define		KMS_NAME_JW		w62a2
+#define		KMS_NAME_FG		w61a_flag_fall2	// 2001/08/24 水谷
+#define		KMS_NAME_VMP	vw62a3	// 2001/09/05 田中(信)
+#define		LT2_NAME_0700	w62a_scale10_am700
+#define		LT2_NAME_0730	w62a_scale10_am730
+#define		FLAG_NAME		w61a_flag	// 2001/08/09 Uehara Masatoshi
+
+#if d:PLANT_DEMO_ALL_SKIP
+	#define		DEMO_SKIP_ENABLE 1
+#else
+	#define		DEMO_SKIP_ENABLE 0
+#endif
+
+#if d:MGS2_DEMO
+	// デモ班がいじる↓↓↓↓
+	// 0 - 7:00
+	// 1 - 7:30
+	#define ７時のライトと空とフォグ 1
+
+	// ドッグタグを使うデモのときは指定してください。
+	// 0 : ドッグタグを使わない
+	// 1 : ドッグタグを使う
+	#define ドッグタグ使用           1
+
+	// 風が必要なときに指定してください。
+	// 0 : 風を使わない
+	// 1 : 風を使う
+	#define 風使用           1
+
+	// ヴァンプが必要なときは指定してください
+	// 0 : ヴァンプを使わない
+	// 1 : ヴァンプを使う
+	#define ヴァンプ使用           1
+#endif
+
+// キャスティングシアター対応。
+#include "lowpoly.h"
+@ローポリ設定
+
+
+// マップ設定
+// ------------------------------------
+
+// デモのデバッグ環境下かどうかで切り分け。
+// 削除しないで下さい。詳しくは田中(信)まで。
+#if d:MGS2_DEMO
+	if(d:７時のライトと空とフォグ == 0){
+		// 最初のポリデモはまだ暗いのでこのライト
+		chara マップ フェデラルホール -h d:HZX_NAME,0 -l d:LT2_NAME_0700
+	}else{
+		// 二つ目以降は明るくなる
+		chara マップ フェデラルホール -h d:HZX_NAME,0 -l d:LT2_NAME_0730
+	}
+#else
+	// 本ちゃんではストーリーフラグで分岐させる
+	if ( $w:p_story < d:ST:P082_02_P02エンディング２ポリゴンデモ２開始 ) {
+		// 最初のポリデモはまだ暗いのでこのライト
+		chara マップ フェデラルホール -h d:HZX_NAME,0 -l d:LT2_NAME_0700
+	} else {
+		// 二つ目以降は明るくなる
+		chara マップ フェデラルホール -h d:HZX_NAME,0 -l d:LT2_NAME_0730
+	}
+#endif
+
+command マップ設定 フェデラルホール -set {
+	// デモ環境かどうか。
+	#if d:MGS2_DEMO
+		eval( $s:d_num = p082_04_p03 );
+	
+chara デモアクトデバッグ demodebug  -i t:p082_04_p03 -d 'p082_04_p03' -l   \
+			-p 空切り替え \
+			   ジョージワシントン像ちょっと前 ジョージワシントン像元に戻る \
+			   ライデン影オン ライデン影オフ \
+			   旗オン 旗オフ 静止星条旗オン 静止星条旗オフ \
+			   ヴァンプオン ヴァンプオフ
+	#else
+		@ポリデモ再生
+	#endif
+	@常駐キャラ設定				// stdch.hで定義0
+	@デモ開始時シネマスクリーンセット	// demo_stdproc.hで定義
+	@フェデラルホールステージセット
+	@ジョージワシントン像セット
+	@フェデラルホール旗設置			// 2001/08/09 Uehara Masatoshi
+	@静止星条旗セット			// 2001/08/25 水谷（仮） 
+
+	if ($s:d_num == p082_04_p03){
+		@リアル影セット
+	}
+
+	// 時間によって空とフォグの値を変える
+	// デモのデバッグ環境下かどうかで切り分け。
+	// 削除しないで下さい。詳しくは田中(信)まで。
+#if d:MGS2_DEMO
+	if(d:７時のライトと空とフォグ == 0){
+		@0700_空_フォグセット
+	} else {
+		@0730_空_フォグセット
+	}
+
+	// 風制御
+	if(d:風使用 == 1) {
+		@デモ風設定
+	}
+
+	if(d:ドッグタグ使用 == 1){
+		@ドッグタグセット
+	}
+
+	if(d:ヴァンプ使用 == 1){
+		@ヴァンプセット
+	}
+
+#else
+	if ( $w:p_story < d:ST:P082_02_P02エンディング２ポリゴンデモ２開始 ) {
+		@0700_空_フォグセット
+	} else {
+		@0730_空_フォグセット
+	}
+
+	// 風制御
+	if($s:d_num != p082_01_p01) {
+		@デモ風設定
+	}
+
+	if($s:d_num == p082_04_p03){
+		@ドッグタグセット
+	}
+
+	if($s:d_num != p082_01_p01){
+		@ヴァンプセット
+	}
+#endif
+} 
+//初期マップの表示
+command マップ表示 -show フェデラルホール
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ポリデモ処理
+// ------------------------------------
+proc ポリデモ再生 {
+	#if d:DEBUG_PRINT
+		print 'polydemo_start!!  p_story ='
+		print $w:p_story
+	#endif
+	chara デモキャンセルチェック デモキャンセル \
+		-p ポリデモキャンセル
+	if ( $w:p_story == d:ST:P082_01_P01エンディング１ポリゴンデモ１開始 ) {
+		#if d:DEBUG_PRINT
+			print'd:ST:P082_01_P01エンディング１ポリゴンデモ１開始'
+		#endif
+		/* ソリダス死亡 */
+		// デモ特有の変数代入
+		eval( $s:d_num = p082_01_p01 );
+		@デモモデル差し替え処理
+		chara demo デモ再生 \
+			-i t:p082_01_p01 \
+			-p 空切り替え \
+			   ジョージワシントン像ちょっと前 ジョージワシントン像元に戻る \
+			   ライデン影オン ライデン影オフ \
+			   旗オン 旗オフ 静止星条旗オン 静止星条旗オフ \
+   			   ヴァンプオン ヴァンプオフ \
+			-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+			-next ポリデモ終了		// ポリデモ２へ
+	} else if ( $w:p_story == d:ST:P082_02_P02エンディング２ポリゴンデモ２開始 ) {
+		#if d:DEBUG_PRINT
+			print'd:ST:P082_02_P02エンディング２ポリゴンデモ２開始'
+		#endif
+		/* 「俺はだれなんだ」というライデンの肩に手をやるスネーク */
+		// デモ特有の変数代入
+		eval( $s:d_num = p082_02_p02 );
+		@デモモデル差し替え処理
+		chara demo デモ再生 \
+			-i t:p082_02_p02 \
+			-p 空切り替え ジョージワシントン像ちょっと前 ジョージワシントン像元に戻る \
+			   ライデン影オン ライデン影オフ \
+			   旗オン 旗オフ 静止星条旗オン 静止星条旗オフ \
+   			   ヴァンプオン ヴァンプオフ \
+			-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+			-next ポリデモ終了		// ムービー後ポリデモへ
+	} else if($w:p_story == d:ST:P082_04_P03エンディング４ポリゴンデモ３開始) {
+		#if d:DEBUG_PRINT
+			print'd:ST:P082_04_P03エンディング４ポリゴンデモ３開始'
+		#endif
+		/* ドッグタグ「知ってる名前か？」本物ローズ登場 */
+		// デモ特有の変数代入
+		eval( $s:d_num = p082_04_p03 );
+		@デモモデル差し替え処理
+		chara demo デモ再生 \
+//			-i t:data_dummy_raiden \
+			-i t:p082_04_p03 \
+			-p 空切り替え ジョージワシントン像ちょっと前 ジョージワシントン像元に戻る \
+			   ライデン影オン ライデン影オフ \
+			   旗オン 旗オフ 静止星条旗オン 静止星条旗オフ \
+   			   ヴァンプオン ヴァンプオフ \
+			-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+			-next ポリデモ終了		// ムービーへ
+	}
+}
+
+// 終了proc
+// ------------------------------------
+proc ポリデモ終了 {
+	#if d:DEBUG_PRINT
+		print 'polydemo_end!!  d_num ='
+		print $s:d_num
+	#endif
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+	if ( $s:d_num == p082_01_p01 ) {
+		if ($f:ローポリ劇場フラグ == d:TRUE) {
+			// ローポリ劇場中
+			@mv_lowpoly
+
+		} else {
+			// 通常ゲーム中
+			eval( $w:p_story = d:ST:P082_01_P01エンディング１ポリゴンデモ１終了 );
+			eval( $w:p_story = d:ST:P082_02_P02エンディング２ポリゴンデモ２開始 );
+			chara delay ディレイ -time 1 -exec{ restart -s }
+		}
+	} else if ( $s:d_num == p082_02_p02 ) {
+		eval( $w:p_story = d:ST:P082_02_P02エンディング２ポリゴンデモ２終了 );
+		eval( $w:p_story = d:ST:P082_03_M01エンディング３ムービーデモ１開始 );
+		chara delay ディレイ -time 1 -exec{ @mv_init_wmovie_0 }
+
+	} else if ( $s:d_num == p082_04_p03 ) {
+		eval( $w:p_story = d:ST:P082_04_P03エンディング４ポリゴンデモ３終了 );
+		eval( $w:p_story = d:ST:P082_05_M02エンディング５ムービーデモ２開始 );
+		chara delay ディレイ -time 1 -exec{ @mv_init_wmovie_0 }
+	}
+
+}
+
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// 全マップ共通
+// ステージのセット
+proc フェデラルホールステージセット {
+	chara プットオブジェ ステージ０ \
+		-m d:KMS_NAME0 \
+		-r 0,0,0 \
+		-p 0,0,0 \
+		-l d:LT2_NAME_0700 \
+		-f 0x0010 \
+		-s 1000,1000,1000 
+	chara プットオブジェ ステージ１ \
+		-m d:KMS_NAME1 \
+		-r 0,0,0 \
+		-p 0,0,0 \
+		-l d:LT2_NAME_0700 \
+		-f 0x0010 \
+		-s 1000,1000,1000 
+	chara プットオブジェ ステージ２ \
+		-m d:KMS_NAME2 \
+		-r 0,0,0 \
+		-p 0,0,0 \
+		-l d:LT2_NAME_0700 \
+		-f 0x0010 \
+		-s 1000,1000,1000 
+}
+
+proc ジョージワシントン像セット {
+	chara プットオブジェ JW像 \
+		-m d:KMS_NAME_JW \
+		-r 0,0,0 \
+		-p 0,0,0 \
+		-l d:LT2_NAME_0700 \
+		-f 0x0010 \
+		-s 1000,1000,1000 
+}
+
+// 静止星条旗 追記ﾐｽﾞﾀﾆ P082_02_p02から出しっぱなしにする。
+
+proc 静止星条旗セット {
+	chara プットオブジェ 静止星条旗 \
+		-m d:KMS_NAME_FG \
+		-r 0,0,0 \
+		-p 0,2600,23600 \
+		-l d:LT2_NAME_0700 \
+		-f 0x0010 \
+		-s 100,100,100
+}
+
+proc 静止星条旗オン { mesg プットオブジェ 静止星条旗 on }
+proc 静止星条旗オフ { mesg プットオブジェ 静止星条旗 off }
+
+// ジョージワシントン像をちょっと前にずらす
+proc ジョージワシントン像ちょっと前 {
+	mesg プットオブジェ JW像 move 0 0 400
+}
+
+// ジョージワシントン像を元の位置に戻す
+proc ジョージワシントン像元に戻る {
+	mesg プットオブジェ JW像 move 0 0 0
+}
+
+proc 0700_空_フォグセット {
+	// ここで使うモデルは専用なので、sea_surface.h のプロックは使わず。
+	chara 汎用空 空_0700 \
+		-c 96 110 102 \
+		-pos 0 -40000 0 \
+		-f	 3 \ // 0?
+		-t	 0 0 0 0 0 0 \
+		-m 1 w62a_sky_wall1 100 104 64 100 0
+
+	chara 太陽 ソル_0700 \
+		-a 10 \
+		-w 0 \
+		-h 0 \
+		-p -3621 -3219 -1232 \    //中心の位置
+		-f -2700 -3100 -2700     //平行光源の-pと同じ値　まだ正しい値で無い(0707）
+
+	// 0700 のフォグ値。
+	chara フォグ 霧\
+		-c 120, 130, 107 \
+		-n -10000 \
+		-f 300000
+}
+
+proc 0730_空_フォグセット {
+	// ここで使うモデルは専用なので、sea_surface.h のプロックは使わず。
+	chara 汎用空 空_0730 \
+		-c 92 106 90 \
+		-pos 0 -40000 0 \
+		-f	 3 \ // 0?
+		-t	 0 0 0 0 0 0 \
+		-m 1 w62a_sky_wall1 70 76 64 100 0 // 後に、w62a_sky_wall2に変更する。
+
+	chara 太陽 ソル_0730 \
+		-a 3 \
+		-w 0 \
+		-h 0 \
+		-p -3621 -3219 -1232 \    //中心の位置
+		-f -2700 -3100 -2700     //平行光源の-pと同じ値　まだ正しい値で無い(0707）
+
+	// 0730 のフォグ値。
+	chara フォグ 霧\
+		-c 120, 130, 100 \
+		-n -10000 \
+		-f 300000
+
+	// 最初は非表示
+//	mesg 汎用空 空_0730 非表示
+//	mesg 太陽 ソル_0730 非表示
+}
+
+proc 空切り替え {
+	mesg 汎用空 空_0700 非表示
+	mesg 太陽 ソル_0700 非表示
+
+	mesg 汎用空 空_0730 表示
+	mesg 太陽 ソル_0730 表示
+}
+
+// 2001/08/09 Uehara Masatoshi
+proc フェデラルホール旗設置 {
+	#if d:DEBUG_PRINT 
+		print 'w61a_flag_set'
+	#endif
+
+//	chara プット頂点アニメオブジェ アメリカの旗 \
+//		-m d:FLAG_NAME \
+//		-b 5 \
+//		-w 1 \
+//		-p 0,0,0
+
+}
+
+proc 旗オン { mesg プット頂点アニメオブジェ アメリカの旗 表示 }
+proc 旗オフ { mesg プット頂点アニメオブジェ アメリカの旗 非表示 }
+
+proc ドッグタグセット {
+	#if d:DEBUG_PRINT 
+		print 'set dogtag'
+	#endif
+	#if d:MGS2_DEMO
+		chara ユーザードックタグ タグネーム切り替え \
+			-tri_id dogtag_mh_mt \
+			-debug
+	#else
+		chara ユーザードックタグ ドッグタグネーム切り替え \
+			-tri_id dogtag_mh_mt
+	#endif
+}
+
+proc デモ風設定 {
+	chara 風制御 風	\
+		-i 100 \
+		-j 150 \
+		-r -1024 0 0 \
+		-a 512 \
+		-b 300 \
+		-c 150
+}
+
+proc ヴァンプセット {
+	#if d:DEBUG_PRINT 
+		print 'set vmp model'
+	#endif
+	chara プットオブジェ こっそりヴァンプ \
+		-m d:KMS_NAME_VMP \
+		-r 0,0,0 \
+		-p 60000,0,32000 \
+		-l d:LT2_NAME_0730 \
+		-f 0x0010 \
+		-s 1000,1000,1000
+}
+
+proc ヴァンプオン { mesg プットオブジェ こっそりヴァンプ on }
+proc ヴァンプオフ { mesg プットオブジェ こっそりヴァンプ off }
+
+// [追加] 2001/09/05 Uehara Masatoshi
+proc リアル影セット {
+	chara 影投影モデル フェデ前通りの影もでる \
+		-m w62a_demo_sdw_1 \
+		-p 0 2 0
+
+	chara 影管理 影かんり \
+		-t 0 \
+		-p -4000 -3000 -3000
+}
+proc ライデン影オン {
+	mesg 影管理 影かんり demo_add "rai_def ライデン01" フェデ前通りの影もでる	// ライデン
+}
+proc ライデン影オフ {
+	mesg 影管理 影かんり del "rai_def ライデン01"	// ライデン
+}

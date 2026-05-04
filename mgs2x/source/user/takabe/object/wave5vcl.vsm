@@ -1,0 +1,216 @@
+; flowMon::Emit() vcl version 0.91 produced this code:
+        .vu
+	.global	CalcPatchRayPick_CodeStart
+	.global	CalcPatchRayPick_CodeEnd
+CalcPatchRayPick_CodeStart:
+; iStream '__vcl__MMwave5vcl_vcl_2' [ln 1 lp 0] entry 0
+__vcl__MMwave5vcl_vcl_2:
+; EMITTED_AS_ITABLE OPT_normal1
+; maxtab 80 start 0 end 0 count 0 m_EndType ISTET_FALL
+; 
+; iStream '__vcl__MMwave5vcl_vcl_3' [ln 2 lp 0] entry 1
+__vcl__MMwave5vcl_vcl_3:
+; EMITTED_AS_ITABLE OPT_normal1
+; maxtab 144 start 0 end 2 count 2 m_EndType ISTET_FALL
+              sub             VF02,VF00,VF00                                                iaddiu          VI15,VI00,0                                     
+              nop                                                                           iaddiu          VI01,VI00,0                                     
+; 
+; iStream 'LOOP_T' [ln 62 lp 0] entry 2
+LOOP_T:
+; EMITTED_AS_ITABLE OPT_normal
+; maxtab 3984 start 0 end 75 count 75 m_EndType ISTET_COND
+              nop                                                                           nop                                                             
+              nop                                                                           lq              VF01,FV_TTBL(VI01)                              
+              nop                                                                           move            VF19,VF04                                       
+              nop                                                                           lq              VF20,MAT_HERMITE+0(VI00)                        
+              nop                                                                           move            VF24,VF06                                       
+              subz.w          VF16,VF00,VF01z                                               move            VF23,VF12                                       
+              subz.w          VF17,VF00,VF01z                                               move            VF22,VF14                                       
+              mulax           ACC,VF19,VF20x                                                lq              VF18,MAT_HERMITE+1(VI00)                        
+              madday          ACC,VF24,VF20y                                                nop                                                             
+              maddaz          ACC,VF23,VF20z                                                nop                                                             
+              maddw           VF25,VF22,VF20w                                               nop                                                             
+              mulax           ACC,VF19,VF18x                                                lq              VF27,MAT_HERMITE+2(VI00)                        
+              madday          ACC,VF24,VF18y                                                nop                                                             
+              maddaz          ACC,VF23,VF18z                                                lq              VF21,MAT_HERMITE+0(VI00)                        
+              maddw           VF26,VF22,VF18w                                               move            VF18,VF07                                       
+              mulax           ACC,VF19,VF27x                                                lq              VF28,MAT_HERMITE+3(VI00)                        
+              madday          ACC,VF24,VF27y                                                move            VF20,VF05                                       
+              maddaz          ACC,VF23,VF27z                                                lq              VF31,WORK_MEM+4+0(VI00)                         
+              maddw           VF27,VF22,VF27w                                               lq              VF30,WORK_MEM+4+1(VI00)                         
+              mulax           ACC,VF19,VF28x                                                lq              VF29,WORK_MEM+4+2(VI00)                         
+              madday          ACC,VF24,VF28y                                                lq              VF24,WORK_MEM+4+3(VI00)                         
+              maddaz          ACC,VF23,VF28z                                                sq              VF31,WORK_MEM+0(VI00)                           
+              maddw           VF19,VF22,VF28w                                               sq              VF30,WORK_MEM+1(VI00)                           
+              mulax           ACC,VF25,VF01x                                                sq              VF29,WORK_MEM+2(VI00)                           
+              madday          ACC,VF26,VF01y                                                sq              VF24,WORK_MEM+3(VI00)                           
+              maddaz          ACC,VF27,VF01z                                                move            VF23,VF13                                       
+              maddw           VF19,VF19,VF01w                                               move            VF22,VF15                                       
+              mulax           ACC,VF20,VF21x                                                lq              VF26,MAT_HERMITE+1(VI00)                        
+              madday          ACC,VF18,VF21y                                                nop                                                             
+              maddaz          ACC,VF23,VF21z                                                nop                                                             
+              maddw           VF24,VF22,VF21w                                               nop                                                             
+              mulax           ACC,VF20,VF26x                                                lq              VF25,MAT_HERMITE+2(VI00)                        
+              madday          ACC,VF18,VF26y                                                nop                                                             
+              maddaz          ACC,VF23,VF26z                                                nop                                                             
+              maddw           VF21,VF22,VF26w                                               nop                                                             
+              mulax           ACC,VF20,VF25x                                                lq              VF26,MAT_HERMITE+3(VI00)                        
+              madday          ACC,VF18,VF25y                                                nop                                                             
+              maddaz          ACC,VF23,VF25z                                                nop                                                             
+              maddw           VF25,VF22,VF25w                                               nop                                                             
+              mulax           ACC,VF20,VF26x                                                nop                                                             
+              madday          ACC,VF18,VF26y                                                nop                                                             
+              maddaz          ACC,VF23,VF26z                                                nop                                                             
+              maddw           VF20,VF22,VF26w                                               nop                                                             
+              mulax           ACC,VF24,VF01x                                                nop                                                             
+              madday          ACC,VF21,VF01y                                                nop                                                             
+              maddaz          ACC,VF25,VF01z                                                nop                                                             
+              maddw           VF20,VF20,VF01w                                               nop                                                             
+              mulaz           ACC,VF08,VF01z                                                nop                                                             
+              maddw           VF23,VF10,VF17w                                               lq              VF22,MAT_HERMITE+0(VI00)                        
+              mulaz           ACC,VF09,VF01z                                                move            VF18,VF19                                       
+              maddw           VF20,VF11,VF16w                                               move            VF01,VF20                                       
+              nop                                                                           nop                                                             
+              nop                                                                           move            VF19,VF23                                       
+              mulax           ACC,VF18,VF22x                                                nop                                                             
+              madday          ACC,VF01,VF22y                                                move            VF20,VF20                                       
+              nop                                                                           lq              VF24,MAT_HERMITE+1(VI00)                        
+              maddaz          ACC,VF19,VF22z                                                nop                                                             
+              nop                                                                           nop                                                             
+              maddw           VF22,VF20,VF22w                                               nop                                                             
+              mulax           ACC,VF18,VF24x                                                lq              VF23,MAT_HERMITE+2(VI00)                        
+              madday          ACC,VF01,VF24y                                                nop                                                             
+              maddaz          ACC,VF19,VF24z                                                nop                                                             
+              maddw           VF24,VF20,VF24w                                               sq              VF22,WORK_MEM+4+0(VI00)                         
+              mulax           ACC,VF18,VF23x                                                lq              VF22,MAT_HERMITE+3(VI00)                        
+              madday          ACC,VF01,VF23y                                                nop                                                             
+              maddaz          ACC,VF19,VF23z                                                nop                                                             
+              maddw           VF23,VF20,VF23w                                               sq              VF24,WORK_MEM+4+1(VI00)                         
+              mulax           ACC,VF18,VF22x                                                nop                                                             
+              madday          ACC,VF01,VF22y                                                nop                                                             
+              maddaz          ACC,VF19,VF22z                                                nop                                                             
+              maddw           VF01,VF20,VF22w                                               sq              VF23,WORK_MEM+4+2(VI00)                         
+              nop                                                                           nop                                                             
+              nop                                                                           nop                                                             
+              nop                                                                           ibeq            VI01,VI00,LOOP_T_CNT                            
+              nop                                                                           sq              VF01,WORK_MEM+4+3(VI00)                         
+; 
+; iStream '__vcl__MMwave5vcl_vcl_8' [ln 2 lp 0] entry 1
+__vcl__MMwave5vcl_vcl_8:
+; EMITTED_AS_ITABLE OPT_normal1
+; maxtab 144 start 0 end 2 count 2 m_EndType ISTET_FALL
+              sub.xyz         VF16,VF00,VF00                                                iaddiu          VI02,VI00,0                                     
+              sub.xyz         VF01,VF00,VF00                                                nop                                                             
+; 
+; iStream 'LOOP_S' [ln 12 lp 0] entry 2
+LOOP_S:
+; EMITTED_AS_ITABLE OPT_normal
+; maxtab 784 start 0 end 15 count 15 m_EndType ISTET_COND
+              nop                                                                           lq              VF19,FV_TTBL(VI02)                              
+              nop                                                                           lq.xyz          VF21,WORK_MEM+0(VI00)                           
+              nop                                                                           lq.xyz          VF20,WORK_MEM+1(VI00)                           
+              nop                                                                           lq.xyz          VF18,WORK_MEM+2(VI00)                           
+              nop                                                                           move.xyz        VF17,VF01                                       
+              mulax.xyz       ACC,VF21,VF19x                                                lq.xyz          VF01,WORK_MEM+3(VI00)                           
+              madday.xyz      ACC,VF20,VF19y                                                lq.xyz          VF20,WORK_MEM+4+0(VI00)                         
+              maddaz.xyz      ACC,VF18,VF19z                                                move.xyz        VF18,VF16                                       
+              nop                                                                           lq.xyz          VF22,WORK_MEM+4+1(VI00)                         
+              maddw.xyz       VF01,VF01,VF19w                                               lq.xyz          VF21,WORK_MEM+4+2(VI00)                         
+              nop                                                                           lq.xyz          VF16,WORK_MEM+4+3(VI00)                         
+              mulax.xyz       ACC,VF20,VF19x                                                nop                                                             
+              madday.xyz      ACC,VF22,VF19y                                                nop                                                             
+              maddaz.xyz      ACC,VF21,VF19z                                                ibeq            VI02,VI00,LOOP_S_CNT                            
+              maddw.xyz       VF16,VF16,VF19w                                               nop                                                             
+; 
+; iStream '__vcl__MMwave5vcl_vcl_13' [ln 19 lp 0] entry 1
+__vcl__MMwave5vcl_vcl_13:
+; EMITTED_AS_ITABLE OPT_normal
+; maxtab 1232 start 0 end 24 count 24 m_EndType ISTET_COND
+              sub.xyz         VF02,VF01,VF17                                                nop                                                             
+              sub.xyz         VF23,VF03,VF17                                                nop                                                             
+              sub.xyz         VF21,VF03,VF01                                                nop                                                             
+              sub.xyz         VF22,VF16,VF01                                                nop                                                             
+              sub.xyz         VF20,VF18,VF16                                                nop                                                             
+              sub.xyz         VF17,VF17,VF18                                                nop                                                             
+              sub.xyz         VF24,VF03,VF16                                                nop                                                             
+              sub.xyz         VF19,VF03,VF18                                                nop                                                             
+              opmula.xyz      ACCxyz,VF23xyz,VF02xyz                                        nop                                                             
+              opmsub.xyz      VF23xyz,VF02xyz,VF23xyz                                       nop                                                             
+              opmula.xyz      ACCxyz,VF21xyz,VF22xyz                                        nop                                                             
+              opmsub.xyz      VF21xyz,VF22xyz,VF21xyz                                       nop                                                             
+              opmula.xyz      ACCxyz,VF24xyz,VF20xyz                                        iaddiu          VI03,VI00,0x40                                  
+              opmsub.xyz      VF20xyz,VF20xyz,VF24xyz                                       fmand           VI04,VI03                                       
+              opmula.xyz      ACCxyz,VF19xyz,VF17xyz                                        nop                                                             
+              opmsub.xyz      VF20xyz,VF17xyz,VF19xyz                                       fmand           VI05,VI03                                       
+              opmula.xyz      ACCxyz,VF02xyz,VF17xyz                                        ior             VI04,VI04,VI05                                  
+              opmsub.xyz      VF02xyz,VF17xyz,VF02xyz                                       fmand           VI05,VI03                                       
+              nop                                                                           ior             VI04,VI04,VI05                                  
+              nop                                                                           fmand           VI03,VI03                                       
+              nop                                                                           ior             VI03,VI04,VI03                                  
+              mul.xyz         VF20,VF02,VF02                                                nop                                                             
+              nop                                                                           ibne            VI03,VI00,LOOP_S_CNT                            
+              nop                                                                           nop                                                             
+; 
+; iStream '__vcl__MMwave5vcl_vcl_17' [ln 24 lp 0] entry 1
+__vcl__MMwave5vcl_vcl_17:
+; EMITTED_AS_ITABLE OPT_normal1
+; maxtab 1552 start 0 end 25 count 25 m_EndType ISTET_JUMP
+              mul.xyz         VF01,VF19,VF02                                                iaddi           VI15,VI00,-1                                    
+              mulax.w         ACC,VF00,VF20x                                                nop                                                             
+              madday.w        ACC,VF00,VF20y                                                nop                                                             
+              maddz.w         VF02,VF00,VF20z                                               nop                                                             
+              mulax.w         ACC,VF00,VF01x                                                nop                                                             
+              madday.w        ACC,VF00,VF01y                                                nop                                                             
+              nop                                                                           nop                                                             
+              nop                                                                           rsqrt           Q,VF00w,VF02w                                   
+              nop                                                                           nop                                                             
+              nop                                                                           nop                                                             
+              nop                                                                           nop                                                             
+              nop                                                                           nop                                                             
+              nop                                                                           nop                                                             
+              nop                                                                           nop                                                             
+              nop                                                                           nop                                                             
+              nop                                                                           nop                                                             
+              maddz.w         VF02,VF00,VF01z                                               nop                                                             
+              nop                                                                           nop                                                             
+              nop                                                                           nop                                                             
+              nop                                                                           nop                                                             
+              mulq            VF02,VF02,Q                                                   nop                                                             
+              nop                                                                           nop                                                             
+              nop                                                                           nop                                                             
+              nop                                                                           b               END_PROG                                        
+              subw.y          VF03,VF03,VF02w                                               nop                                                             
+; 
+; iStream 'LOOP_S_CNT' [ln 4 lp 0] entry 2
+LOOP_S_CNT:
+; EMITTED_AS_ITABLE OPT_normal1
+; maxtab 272 start 0 end 6 count 6 m_EndType ISTET_COND
+              nop                                                                           iaddiu          VI03,VI00,16                                    
+              nop                                                                           iaddi           VI02,VI02,4                                     
+              nop                                                                           isub            VI03,VI03,VI02                                  
+              nop                                                                           nop                                                             
+              nop                                                                           ibgez           VI03,LOOP_S                                     
+              nop                                                                           nop                                                             
+; 
+; iStream 'LOOP_S_END' [ln 4 lp 0] entry 2
+LOOP_S_END:
+LOOP_T_CNT:
+; EMITTED_AS_ITABLE OPT_normal1
+; maxtab 272 start 0 end 6 count 6 m_EndType ISTET_COND
+              nop                                                                           iaddiu          VI02,VI00,16                                    
+              nop                                                                           iaddi           VI01,VI01,4                                     
+              nop                                                                           isub            VI02,VI02,VI01                                  
+              nop                                                                           nop                                                             
+              nop                                                                           ibgez           VI02,LOOP_T                                     
+              nop                                                                           nop                                                             
+; 
+; iStream 'LOOP_T_END' [ln 1 lp 0] entry 2
+LOOP_T_END:
+END_PROG:
+; EMITTED_AS_ITABLE OPT_normal1
+; maxtab 80 start 0 end 2 count 2 m_EndType ISTET_END_END
+              nop[ED]                                                                       nop                                                             
+              nop                                                                           nop                                                             
+; 
+CalcPatchRayPick_CodeEnd:
+;	iCount=157

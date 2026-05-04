@@ -1,0 +1,96 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2007 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+.cfunc void edgeAnimMultiplyMatrices3x4(float* __restrict__ outputMatrices, 
+                                  const float* __restrict__ leftMatrices, 
+                                 const float* __restrict__ rightMatrices, 
+                                  unsigned int count)
+
+	//----------------------------------------------------------------------------------------------
+	// Early out
+	//----------------------------------------------------------------------------------------------    
+   
+   	brz		count, NoLoop
+
+    //----------------------------------------------------------------------------------------------
+    // Constants
+    //----------------------------------------------------------------------------------------------    
+    
+	// Constants
+	.reg	kW1
+    il128   kW1, 0x00000000_00000000_00000000_3F800000
+	
+	// Shuffle masks
+	.reg	shufAAAA, shufBBBB, shufCCCC
+	il128	shufAAAA, "AAAA"
+	il128	shufBBBB, "BBBB"
+	il128	shufCCCC, "CCCC"
+	
+    //----------------------------------------------------------------------------------------------
+    // Loop
+    //----------------------------------------------------------------------------------------------    
+	
+Loop:
+	ai		count, count, -1
+	ai		outputMatrices, outputMatrices, 0x30
+	ai		leftMatrices, leftMatrices, 0x30
+	ai		rightMatrices, rightMatrices, 0x30
+	
+	// Load
+	.reg	l0, l1, l2
+	lqd		l0, -0x30(leftMatrices)
+	lqd		l1, -0x20(leftMatrices)
+	lqd		l2, -0x10(leftMatrices)
+	
+	.reg	r0, r1, r2
+	lqd		r0, -0x30(rightMatrices)
+	lqd		r1, -0x20(rightMatrices)
+	lqd		r2, -0x10(rightMatrices)
+	
+	// Splat left components
+	.reg	l0x, l0y, l0z
+	shufb	l0x, l0, l0, shufAAAA
+	shufb	l0y, l0, l0, shufBBBB
+	shufb	l0z, l0, l0, shufCCCC
+	.reg	l1x, l1y, l1z
+	shufb	l1x, l1, l1, shufAAAA
+	shufb	l1y, l1, l1, shufBBBB
+	shufb	l1z, l1, l1, shufCCCC
+	.reg	l2x, l2y, l2z
+	shufb	l2x, l2, l2, shufAAAA
+	shufb	l2y, l2, l2, shufBBBB
+	shufb	l2z, l2, l2, shufCCCC
+
+	.reg	out0, out1, out2
+	
+	// row 0
+	fm		out0, r0, l0x
+	fma		out0, r1, l0y, out0
+	fma		out0, r2, l0z, out0
+	fma		out0, kW1, l0, out0
+
+	// row 1
+	fm		out1, r0, l1x
+	fma		out1, r1, l1y, out1
+	fma		out1, r2, l1z, out1
+	fma		out1, kW1, l1, out1
+
+	// row 2
+	fm		out2, r0, l2x
+	fma		out2, r1, l2y, out2
+	fma		out2, r2, l2z, out2
+	fma		out2, kW1, l2, out2
+
+	// Store    
+    stqd	out0, -0x30(outputMatrices)
+    stqd	out1, -0x20(outputMatrices)
+    stqd	out2, -0x10(outputMatrices)
+  
+    brnz	count, Loop
+
+NoLoop:
+
+.endfunc

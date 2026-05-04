@@ -1,0 +1,71 @@
+//
+//	vs06a.src
+//	ＶＲスニーキングミッション６面 (鳴床 水床 落とし穴 台登り ローリング)
+//	written by T.Ohtani 2002.Feb
+//
+//	$Id$
+
+#define WN_VS06A
+
+block .use r_vr_r
+block .nocache
+block .cache
+
+// 敵兵関連define
+// 敵兵タイプ
+#define ENE_VR_GOL		// ＶＲ兵
+#define ENE_ATTACKER	// 攻撃兵
+#define ENE_SHIELD		// 盾兵
+#define ENE_SHOT		// ショットガン兵
+#define ENE_HIGH_TECH	// 人質イベント後はハイテク兵
+
+// 特殊兵のモーション設定
+#define ENE_MAR '-DDEL_TNG=DUMMY -DDEL_WALKMAN=DUMMY'
+
+// ＶＲ空の半透明テクスチャ
+#include	"vr_def.h"
+
+// 各ステージ共通要素
+#include	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+
+// VR追加エフェクト
+#include	"vr_effect.h"
+
+// キャラクタ
+#include	"ene_plant.h"
+
+// 強制モーション
+mtn			rai_vs06a.mls
+mtn			sna_vs06a.mls
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+option makexti6 -l 1024 -f PAL8 // ↓↓↓↓↓↓ここから テクスチャ品質向上委員会(ゲイツ用)
+	pack_all	vs06a.tri \
+				world/vr_sneaking/vs06a
+option makexti6					// ↑↑↑↑↑↑↑↑ ここまで
+
+world		vr_sneaking/vs06a
+hazard		vs06a.hzx
+rol			world/vr_sneaking/vs06a/vs06a.rol
+
+// オブジェクト
+world		test/vr_test/vr2_pitfall_a0.kms
+
+//	落し穴
+include		pit_effect.h
+pack_trn	pitfall_tex.tri \
+			effect_vr/pitfall/vr2_pitfall_b0_all_add_alp.bmp
+
+// 消火器
+// アイテム
+itembox
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム

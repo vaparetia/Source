@@ -1,0 +1,50 @@
+#! /usr/bin/perl
+#
+# 2000/06/27 T.Morita
+# $Id: mk_dbglst,v 1.1.1.3 2002/11/19 11:46:09 Yoshizawa1 Exp $
+#
+
+open( FILE, ">action/fort_dbglst.org" ) ;
+print FILE "struct\n{\n\tvoid *adr ;\n\tchar *name ;\n} FRT_ActionFunctionLists[] = {\n" ;
+
+opendir( DIR, "action" ) ;
+foreach( readdir( DIR ) )
+{
+    if ( m/\.h$/ && !m/dbug|dbg/ )
+    {
+	$stk[$lvl=0] = 1 ;
+	$comment = 0 ;
+
+	print "Now examing in <$_>\n" ;
+	print FILE "/* ------------- Beginning for $_  ------------- */\n" ;
+
+	open( SRC, "<action/$_" ) || die "Cannot open file<$_>.\n" ;
+	foreach ( <SRC> )
+	{
+	    chop ;
+	    $stk[++$lvl] = (/0/ ? -1 : 1) if ( /^\#if/    ) ;
+	    $stk[$lvl] *= -1              if ( /^\#else/  ) ;
+	    $stk[$lvl--] = 0              if ( /^\#endif/ ) ;
+	    $comment = 1 if ( /\/\*/ ) ;
+	    $comment = 0 if ( /\*\// ) ;
+
+	    next if ( $stk[$lvl] < 1 || $comment ) ;
+	    s/^static +//g ;
+	    #next if ( !m/^void/ && ( !m/\(.*\)/ || !m/\[.*\]/ ) ) ;
+	    next if ( !m/^void/) ;
+	    s/void |inline // ;
+	    s/\(\*+// ;
+	    s/\[.*$// ;
+	    s/\(.*$// ;
+	    s/[\(\)]//g ;
+	    print FILE "\t{ $_,\t\"$_\" },\n" ;
+	}
+	close( SRC ) ;
+
+	print FILE "/* ------------- End for $_  ------------- */\n\n" ;
+    }
+}
+closedir( DIR ) ;
+
+print FILE "\t{ NULL,\t\"Undefined Function\" }\n} ;\n" ;
+close( FILE ) ;

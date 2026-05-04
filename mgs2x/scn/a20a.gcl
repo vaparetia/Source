@@ -1,0 +1,3075 @@
+/*
+	a20a.gcl
+		Ｅ脚室内(アナザーミッション用)
+
+	2002/02/01 H.Yoshiike
+	$Id: a20a.gcl,v 1.37 2002/10/02 03:42:14 usr03379 Exp $
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+#define		STAGE_ALT		1		// オルタナティブミッション切り分け用
+// ステージ名
+#define		STAGE_W20A		1		// 共通プロック切り分け用
+// 敵兵、ＮＰＣ状況（薬莢を呼び分けるのに必要）
+#define		ENE_P_GOL		1		// 都市迷彩ゴル兵
+#define		ENE_SHOT		1		// ショットガン兵
+#define		ENE_HIGH_TECH	1		// ハイテク兵
+#define		ENE_SHIELD		1		// 盾兵
+
+// エマ関係(テイルズＢで使用するため)
+#define		WITH_EMMA		1		// エマと一緒のロード処理をするのに必要
+#define		EMMA_STAGE		a20e	// エマと一緒のロード処理をするのに必要
+#define		EMMA_GEOVER_CAMERA	1	// エマのゲームオーバー時のカメラ
+
+
+// 各種スイッチ用define
+// ------------------------------------
+// 入出トラップ
+#define		STAGE_END		1		// ステージ終了時処理を使用可にする
+// カメラ関係
+#define		START_CAMERA	1		// ステージ開始時のカメラ
+// ベルトコンベア
+#define		BELT			1		// ベルトコンベアを組み込むかどうかのスイッチ(BELT=0なら以下は無意味)
+#define		BELT_SPEED		25		// ベルトコンベアのスピード
+#define		BELT_STOP_TIME	4		// ベルトコンベアが止まりきるまでの時間
+#define		BELT_MOVE_TIME	4		// ベルトコンベアが加速しきるまでの時間
+#define		BELT_ON_START	0		// ベルトコンベア登り始め
+#define		BELT_ON_END		1		// ベルトコンベア登り終了
+#define		BELT_OFF_START	2		// ベルトコンベア降り始め
+#define		BELT_OFF_END	3		// ベルトコンベア降り終了
+#define		BELT_ARRIVED	4		// ベルトコンベアにのって降りポイントに到着
+#define		BELT_RESTART	5		// 降りポイントで降りなかったので再稼動
+#define		1F_BELT			0		// 上のポイントから乗った
+#define		B1_BELT			1		// 下のポイントから乗った
+#define		NO_OTHER_OBJECT	0		// チェック内に他の荷物がない
+#define		STL_BOX_L		w20a_bltobj_abx01		// 鉄箱
+#define		STL_BOX_L_BRK	w20a_bltobj_abx01_bk	// 鉄箱壊れ
+#define		CB_BOX_L		w20a_bltobj_dbbx01		// ダンボール
+#define		CB_BOX_S		w20a_bltobj_dbbx02		// ダンボール小
+
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME			a20a
+#define		KMS_NAME0			w20a0
+#define		KMS_NAME1			w20a1
+#define		KMS_NAME2			w20a2
+#define		KMS_NAME3			w20a3
+#define		KMS_NAME4			w20a4
+#define		KMS_NAME0_19		w20a_19a
+#define		KMS_NAME0_21		w20a_21a
+#define		KMS_NAME1_20		w20a_20b
+#define		CEIL_NAME0			w20a0r
+#define		DOOR_NAME_LV5_R		w20a_dr03		// カード５向かって右開きドア
+#define		DOOR_NAME_LV5_L		dr_lv5_02		// カード５向かって左開きドア
+#define		DOOR_NAME_W19A		w20a_dr00		// 外周用(DE連絡橋)
+#define		DOOR_NAME_W21A		w20a_dr01		// 外周用(EF連絡橋)
+#define		DOOR_NAME_W20B		w20a_dr02		// 外周用(ヘリポート)
+
+#define		DOOR_NAME_LV0		dr_free			// カードレベルなし室内共通ドア
+#define		DOOR_NAME_EF_LV1	w20a_dr01x		// カードレベル１外周用ドア(EF連絡橋)
+#define		DOOR_NAME_LV0_R		w20a_dr03x		// カードレベルなし梯子部屋ドア
+
+#define		LT2_NAME			w20a
+
+#define		PLAYER		ライデン	// モーションができるまで名前はスネーク
+
+// ------------------------------------
+// 敵兵音声
+// ------------------------------------
+// 司令官、危険モード時の音声リソース
+resource ghq_area_alert_voice {
+	w20a:
+		$t{
+			// PLAREA0 ＤＥ連絡橋側
+			t:vc040176,	// 指揮官「了解。増援部隊、Ｅ脚に向かえ！ＤＥ連絡橋への扉を固めろ！」
+			t:vc040177,	// 指揮官「了解。増援部隊、Ｅ脚・ＤＥ連絡橋への扉付近に向かえ！敵を逃がすな！」
+			-2, // PLAREA0の登録終了
+			// PLAREA1 ＥＦ連絡橋側
+			t:vc040178,	// 指揮官「了解。応援部隊、Ｅ脚に向かえ！ＥＦ連絡橋への扉を守れ！」
+			t:vc040179,	// 指揮官「了解。増援部隊、Ｅ脚・ＥＦ連絡橋への扉付近に向かえ！敵を逃がすな！」
+			-2, // PLAREA1の登録終了
+			// PLAREA2 ヘリポート扉
+			t:vc040180,	// 指揮官「了解。応援部隊をＥ脚・ヘリポートへの扉付近に送る！敵の前進を阻止せよ！」
+			t:vc040181,	// 指揮官「了解。増援部隊、Ｅ脚に向かえ！ヘリポートへの扉を固めろ！」
+			-2, // PLAREA2の登録終了
+			// PLAREA3 ヘリポートへの階段
+			t:vc040182,	// 指揮官「了解。バックアップをＥ脚・ヘリポートへの階段に派遣する！敵を食い止めろ！」
+			t:vc040183,	// 指揮官「了解。増援部隊、Ｅ脚に急行せよ！ヘリポートへの階段を守れ！」
+			-2, // PLAREA3の登録終了
+			// PLAREA4 Ｂ１への階段
+			t:vc040184,	// 指揮官「了解。増援部隊、Ｅ脚１Ｆ・に向かえ！Ｂ１への階段を守れ」
+			t:vc040185,	// 指揮官「了解。応援部隊をＥ脚１Ｆ・Ｂ１への階段に送る。敵を逃がすな！」
+			-2, // PLAREA4の登録終了
+			// PLAREA5 １Ｆ全体
+			t:vc040186,	// 指揮官「了解。増援部隊、Ｅ脚に急行せよ！侵入者を仕留めろ！」
+			t:vc040187,	// 指揮官「了解。増援部隊をＥ脚に派遣する！敵を包囲せよ！」
+			-1 // 全ての登録終了
+		}
+}
+
+// 司令官、警戒モード時の音声リソース
+resource ghq_caution_voice {
+	w20a:
+		$t{
+			t:vc040348,		// 指揮官「了解。Ｅ脚に増員を派遣する。警戒を強化しろ」
+			t:vc040349,		// 指揮官「了解。Ｅ脚に増員を送る。警戒を強化しろ」
+			-2
+			t:vc040427,		// 指揮官「Ｅ脚との連絡が途絶えた」
+			-3
+			t:vc040609		// 指揮官「Ｅ脚で異常発生、至急確認に向かえ」
+			-1
+		}
+}
+
+// 敵兵ルート番号
+enum E_R {
+	攻撃兵待機ルート下 = 4,
+	攻撃兵待機ルート上,
+	定時連絡ルート,
+	中央巡回ルート,
+	階段巡回ルート,
+	定時連絡ルートＥＸ,
+	中央巡回ルートＥＸ,
+	階段巡回ルートＥＸ,
+	定時連絡ルート補助,
+	警戒追加ルート,
+	のりのりルートＶＥ,
+	のりのりルートＥ,
+	のりのりルートＮ,
+	のりのりルートＨ,
+	のりのりルートＥＸ
+}
+
+// クリアリングルート
+enum C_R0 {
+	先頭兵ルート = 0,
+	２番兵ルート,
+	３番兵ルート
+}
+
+
+// アイテム番号（アイテムが多いのでenumで）
+enum I_NO {
+	M9_R01 = 0,
+	SOCOM_R01,
+	SOCOM_R02,
+	SOCOM_R03,
+	M4_R01,
+	STUN_01,
+	RATION_01,
+	PSG1T_R01,
+	STINGER_R01
+}
+
+
+// モーションリスト
+enum ハッチモーションリスト {
+	non_ladder_open2hatch_radio_hatch= 0
+}
+
+
+
+// ドア設定用ステージ内ローカル変数(a_mode.hよりも先に定義する)
+dim $$b:ドアフラグ[ 5 ]
+dim $$s:ドアモデル名[ 5 ]
+
+command	配列セット $$b:ドアフラグ[0] {
+	0,	0,	0,	0,	0
+}
+command	配列セット $$s:ドアモデル名[0] {
+	0,	0,	0,	0,	0
+}
+
+// ステージ内ローカル変数
+$$s:ヘリポートロードプロック = a20b;
+
+
+// include
+// ------------------------------------
+#include "rai_a20a.mh"		// 強制モーションリスト
+#include "stdch.h"
+#include "enevoice.h"
+#include "a_mode.h"			// アナザーミッション設定ファイル
+#include "sload.h"
+#include "jump.h"
+#include "beyond.h"
+#include "sound.h"
+#include "equip.h"
+#include "item_info.h"
+#include "node_res.h"
+#include "ene_item.h"
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+// アナザー用でマップ設定前に設定する
+// ------------------------------------
+@アナザー用マップ定義前設定
+
+// マップ設定
+// ------------------------------------
+chara マップ Ｅ脚１Ｆ -k d:KMS_NAME0 -k d:KMS_NAME0_19 -h d:HZX_NAME,0 -l d:LT2_NAME
+chara マップ Ｅ脚２Ｆ -k d:KMS_NAME1 -k d:KMS_NAME1_20 -h d:HZX_NAME,1 -l d:LT2_NAME
+chara マップ Ｅ脚Ｂ１ -k d:KMS_NAME2 -h d:HZX_NAME,2 -l d:LT2_NAME
+chara マップ Ｅ脚Ｂ１倉庫 -k d:KMS_NAME3 -h d:HZX_NAME,3 -l d:LT2_NAME
+chara マップ Ｅ脚Ｂ１梯子部屋 -k d:KMS_NAME4 -h d:HZX_NAME,4 -l d:LT2_NAME
+
+chara マップ接合 １Ｆ／２Ｆ Ｅ脚１Ｆ Ｅ脚２Ｆ -type 1
+chara マップ接合 １Ｆ／Ｂ１ Ｅ脚１Ｆ Ｅ脚Ｂ１ -type 1
+chara マップ接合 Ｂ１／倉庫 Ｅ脚Ｂ１ Ｅ脚Ｂ１倉庫
+chara マップ接合 Ｂ１／梯子部屋 Ｅ脚Ｂ１ Ｅ脚Ｂ１梯子部屋
+chara マップ接合 １Ｆ／倉庫 Ｅ脚１Ｆ Ｅ脚Ｂ１倉庫
+
+command マップ設定 Ｅ脚１Ｆ Ｅ脚２Ｆ Ｅ脚Ｂ１ Ｅ脚Ｂ１倉庫 Ｅ脚Ｂ１梯子部屋 -set {
+	// サウンド、キャラクターのセット
+	// ------------------------------------
+	@常駐キャラ設定
+	@ローカル変数初期化
+	@設定値変更
+	@シナリオデモキャラセット	// stdproc.hで定義
+	@プラグイン設定
+	@A_プレイヤー設定 sna_a20a rai_a20a
+	@ダンボール柄設定
+}
+
+// アナザー用でマップ設定後に設定する
+// ------------------------------------
+@アナザー用マップ定義後設定
+
+command マップ設定 Ｅ脚１Ｆ Ｅ脚２Ｆ Ｅ脚Ｂ１ Ｅ脚Ｂ１倉庫 Ｅ脚Ｂ１梯子部屋 -set {
+	@弾痕跳弾設定
+	// マップ切り替え、ロード、ドア
+	// ------------------------------------
+	@ドア設置
+	@ロード設定
+	// ステージ、オブジェクト関連
+	// ------------------------------------
+	@ベルトコンベア管理設定
+	@ベルトコンベア移動時フェードイン設定
+	@アイテム収得範囲変更
+	@フォグ設定
+	@カメラセット
+	@子画面設定
+#if d:DEBUG_CHARA
+//	@デバッグキャラセット
+#endif
+}
+
+command マップ設定 Ｅ脚１Ｆ Ｅ脚Ｂ１倉庫 -set {
+	@ベルトコンベア移動時マップ切り替え
+}
+
+command マップ設定 Ｅ脚Ｂ１ Ｅ脚Ｂ１倉庫 Ｅ脚Ｂ１梯子部屋 -set {
+	@１Ｆマップ切り替え
+}
+
+command マップ設定 Ｅ脚１Ｆ -set {
+	@２Ｆマップ切り替え
+	@Ｂ１マップ切り替え
+	@ＥＦ連絡橋マップ切り替え
+	@主観禁止壁設定１Ｆ
+	@A_ドア開閉設定１Ｆ
+	@Ｅ脚１Ｆ壊れライト設定
+	@Ｅ脚１Ｆ天井設置
+	@Ｅ脚１Ｆ南壁設置
+	@１Ｆベルトコンベア設定
+	@１Ｆビヨンド設定
+	@１Ｆジャンプ設定
+	@１Ｆカメラ設定
+}
+
+command マップ設定 Ｅ脚２Ｆ -set {
+	@主観禁止壁設定２Ｆ
+	@A_ドア開閉設定２Ｆ
+	@２Ｆカメラ設定
+}
+
+command マップ設定 Ｅ脚Ｂ１ -set {
+	@Ｅ脚Ｂ１壊れライト設定
+	@Ｂ１透明壁設置
+	@イントルード金網設定
+	@A_ドア開閉設定Ｂ１
+	@Ｂ１カメラ設定
+}
+
+command マップ設定 Ｅ脚Ｂ１倉庫 -set {
+	@Ｅ脚Ｂ１倉庫壊れライト設定
+	@Ｂ１倉庫ベルトコンベア設定
+	@Ｂ１倉庫ジャンプ設定
+	@Ｂ１倉庫カメラ設定
+}
+
+command マップ設定 Ｅ脚Ｂ１梯子部屋 -set {
+	@水密ドア設置
+	@ハッチ設置
+	@Ｂ１梯子部屋カメラ設定
+}
+
+command マップ設定 Ｅ脚１Ｆ Ｅ脚２Ｆ Ｅ脚Ｂ１ Ｅ脚Ｂ１倉庫 Ｅ脚Ｂ１梯子部屋 -set {
+	@キャラ用ライト設置
+}
+
+
+switch ( $s:登場ポイント ) {
+	case ( ＤＥ連絡橋から ) {
+		// ＤＥ連絡橋から
+		//初期マップの表示
+		command マップ表示 -show Ｅ脚１Ｆ
+		command マップ表示 -show Ｅ脚Ｂ１
+
+		mesg マップ接合 １Ｆ／Ｂ１ on
+
+		$f:w20a_Ｂ１いるフラグ = 0;
+
+		// 全てのセットが終わったところでフェードイン
+		@ステージ開始時処理（ステージ名表示） \
+			d:LOAD_TYPE:SL_DOOR_TYPE １Ｆ上ドア 2250 d:DEFAULT_M_TYPE \
+			d:wn_Ｅ脚集配場１Ｆ
+	}
+	case ( ＥＦ連絡橋から ) {
+		// ＥＦ連絡橋から
+		//初期マップの表示
+		command マップ表示 -show Ｅ脚１Ｆ
+		command マップ表示 -show Ｅ脚Ｂ１
+
+		mesg マップ接合 １Ｆ／Ｂ１ on
+
+		$f:w20a_Ｂ１いるフラグ = 0;
+
+		// 全てのセットが終わったところでフェードイン
+		@ステージ開始時処理（ステージ名表示） \
+			d:LOAD_TYPE:SL_DOOR_TYPE １Ｆ下ドア 1600 d:DEFAULT_M_TYPE \
+			d:wn_Ｅ脚集配場１Ｆ
+	}
+	case ( ヘリポートから ) {
+		// ヘリポートから
+		//初期マップの表示
+		command マップ表示 -show Ｅ脚１Ｆ
+		command マップ表示 -show Ｅ脚２Ｆ
+
+		mesg マップ接合 １Ｆ／２Ｆ on
+
+		$f:w20a_Ｂ１いるフラグ = 0;
+
+		// 全てのセットが終わったところでフェードイン
+		@ステージ開始時処理（ステージ名表示） \
+			d:LOAD_TYPE:SL_DOOR_TYPE ２Ｆドア 2000 d:DEFAULT_M_TYPE \
+			d:wn_Ｅ脚集配場２Ｆ
+	}
+	case ( テイルズＢエマノードアクセス後から ) {
+		// ＥＦ連絡橋から
+		//初期マップの表示
+		command マップ表示 -show Ｅ脚１Ｆ
+		command マップ表示 -show Ｅ脚Ｂ１
+
+		mesg マップ接合 １Ｆ／Ｂ１ on
+
+		$f:w20a_Ｂ１いるフラグ = 0;
+
+		// 全てのセットが終わったところでフェードイン
+		@ステージ開始時処理（ステージ名表示） \
+			d:LOAD_TYPE:NO_MOVE_TYPE 紙芝居 0 d:DEFAULT_M_TYPE \
+			d:wn_Ｅ脚集配場１Ｆ
+	}
+	default {
+		//初期マップの表示
+		command マップ表示 -show Ｅ脚１Ｆ
+		command マップ表示 -show Ｅ脚Ｂ１
+		mesg マップ接合 １Ｆ／Ｂ１ on
+	}
+}
+
+
+//	スネークテイルズＢのＥ脚脱出前以後はベルトコンベア止まる
+if ( ($b:ミッション番号 == d:MISSION:スネークテイルズ) && \
+	 ($b:tales_story_no == d:TALES_NO:B) && \
+	 ($b:tales_story_b >= d:TALES_B:Ｅ脚脱出前) ) {
+	//	ベルトコンベアは停止する
+	command ベルトコンベア動作 -stop
+	command トラップ切り替え -trap onbl001 -switch 0
+	command トラップ切り替え -trap onbl101 -switch 0
+}else if($b:ミッション番号 == d:MISSION:敵兵排除){
+	// 敵兵排除のＶＲウィンドウ表示中はベルトコンベアとまる。
+	#if d:DEBUG_PRINT
+		print '------------------------------- Elim belt stop'
+	#endif
+	command ベルトコンベア動作 -stop
+}
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// 全マップ共通
+	// ローカル変数初期化
+	// ------------------------------------
+	proc ローカル変数初期化 {
+		#if d:DEBUG_PRINT
+			print 'localvar_init'
+		#endif
+		eval( $i:w20a_コンベア待ち時間 = 0 );
+		eval( $f:w20a_合流ＮＧフラグ = 0 );
+		// ゲームステータスを格納するための変数
+		eval( $i:ローカル変数Ｉ１ = 0 );
+		// ベルトコンベアstopの二重呼び防止用
+		eval( $f:ローカルフラグ１ = 0 );
+		// ベルトコンベアにのったかどうかのフラグ
+		eval( $f:ローカルフラグ２ = 0 );
+
+		// クリアリング用子画面を初期化
+		eval( $f:クリアリング子画面フラグ = 0 );
+
+		// ＺＯＥダンボール再セット用
+		eval( $f:w20a_アイテム再セット１ = 0 );
+	}
+
+	// 設定値を変更
+	// ------------------------------------
+	proc 設定値変更 {
+		#if d:DEBUG_PRINT
+			print 'status_set'
+		#endif
+
+		// 集配場はうるさいので従来の聴力の半分に設定
+		eval( $w:敵標準聴力 = ($w:敵標準聴力/2) );
+	}
+
+
+	// プラグインプログラム
+	// ------------------------------------
+	proc プラグイン設定 {
+		#if d:DEBUG_PRINT
+			print 'plugin_set'
+		#endif
+
+		command プラグイン自動ジャンプ
+	}
+
+	proc ダンボール柄設定 {
+		#if d:DEBUG_PRINT
+			print 'cb_box_area_set'
+		#endif
+
+		// ＺＯＥダンボールエリア
+		chara ダンボール柄トラップ設定 ダンボールエリア \
+			-name d:PLAYER \
+			-traps d:アイテム:ダンボールＥ bx001
+	}
+
+
+	// Ｂ１のクリアリング
+	//---------------------------------------
+	proc クリアリングエリア０初期設定 {
+		#if d:DEBUG_PRINT
+			print '$b:w20a_クリアリング回避回数='$b:w20a_クリアリング回避回数
+		#endif
+
+		command セットクリアリング \
+			-i	d:C_R0:先頭兵ルート, \
+				d:C_R0:２番兵ルート, \
+				d:C_R0:３番兵ルート, \
+			-p	0, d:C_R0:先頭兵ルート, 1 スタンチェック０ \
+				0, d:C_R0:先頭兵ルート, 17 ダクトチェック０ \
+				0, d:C_R0:先頭兵ルート, 20 隙間チェック０ \
+				0, d:C_R0:先頭兵ルート, 25 ノードスキップ０−２７ \
+				0, d:C_R0:先頭兵ルート, 1 子画面オンオフチェック０ \
+				0, d:C_R0:先頭兵ルート, 1 クリアリングカメラ０−１ \
+				0, d:C_R0:先頭兵ルート, 5 クリアリングカメラ０−２ \
+				0, d:C_R0:先頭兵ルート, 10 クリアリングカメラ０−３ \
+				0, d:C_R0:先頭兵ルート, 16 クリアリングカメラ０−４ \
+				0, d:C_R0:先頭兵ルート, 27 クリアリングカメラ０−５
+	}
+
+	proc スタンチェック０ {
+		// 規定回数に行くまではスタン投げを飛ばす
+		if ( $b:w20a_クリアリング回避回数 < $w:クリアリングレベルアップ回数 || \
+			 `command プレイヤーマップ名` != Ｅ脚Ｂ１ ) {
+			command チェンジクリアリングルート 敵兵:61 -r d:C_R0:先頭兵ルート -p 3
+		}
+	}
+
+	proc ダクトチェック０ {
+		// normal以下で規定数以内またはダンボールをかぶっているときはダクトの中を見ない
+		if ( $b:w20a_クリアリング回避回数 <= $w:クリアリングレベルアップ回数 || $w:ゲーム設定 <= d:LEVEL_NORMAL || \
+			 $w:アイテム == d:アイテム:ダンボール || $w:アイテム == d:アイテム:ダンボールＢ || \
+			 $w:アイテム == d:アイテム:ダンボールＣ || $w:アイテム == d:アイテム:ダンボールＤ || \
+			 $w:アイテム == d:アイテム:ダンボールＥ || $w:アイテム == d:アイテム:濡れダンボール ) {
+
+			if ( $i:プレイヤー位置Ｘ < 45250 ) {
+				command チェンジクリアリングルート 敵兵:61 -r d:C_R0:先頭兵ルート -p 19
+			}
+		}
+	}
+
+	proc 隙間チェック０ {
+		// normal以下で規定数以内のときは隙間の中を見ない
+		if ( $b:w20a_クリアリング回避回数 <= $w:クリアリングレベルアップ回数 || $w:ゲーム設定 <= d:LEVEL_NORMAL ) {
+			if ( $i:プレイヤー位置Ｘ > 46000 && $i:プレイヤー位置Ｚ > -85750 ) {
+				command チェンジクリアリングルート 敵兵:61 -r d:C_R0:先頭兵ルート -p 26
+			}
+		}
+	}
+
+	proc ノードスキップ０−２７ {
+		// 隙間をのぞいたときは26の静止はスキップする
+		command チェンジクリアリングルート 敵兵:61 -r d:C_R0:先頭兵ルート -p 27
+	}
+
+	// クリアリング子画面チェック
+	//---------------------------------------
+	proc クリアリング子画面チェック {
+		#if d:DEBUG_PRINT
+			print 'clearing_sub_camera_check'
+		#endif
+
+		chara プロック連続実行 子画面チェック \
+			-time -1 \
+			-exec { \
+				if ( $f:クリアリング子画面フラグ == 1 ) {
+					if ( (`command プレイヤー状態取得` & d:PFLAG_INTRUDE) ) {
+						command ゲットゲームステータス $i:ローカル変数Ｉ１
+						if ( $i:ローカル変数Ｉ１ & d:STATE_CLEARING ) {
+							mesg サブ画面 子画面 on
+						}
+					} else {
+						mesg サブ画面 子画面 off
+					}
+				}
+			}
+	}
+
+	proc 子画面オンオフチェック０ {
+		eval( $f:クリアリング子画面フラグ = 1 );
+	}
+
+	proc クリアリングカメラ０−１ {
+		command カメラマップ設定 -chanl 1 -map Ｅ脚１Ｆ
+		chara カメラ設定 クリアリングカメラ \
+			-c 1 \
+			-p 42453,3458,-86974 -t 42806,2990,-85921 \
+			-r 260,211,0 -f 1205 \
+			-a 200 \
+			-i 0 -1 0 0 \
+			-s 1
+
+		chara カメラ設定 クリアリングカメラ \
+			-c 1 \
+			-p 42426,3458,-86966 -t 42681,3047,-85863 \
+			-r 227,148,0 -f 1204 \
+			-a 374 \
+			-i 0 -1 0 0 \
+			-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+			-interp_time (60*2) \ // 補完時間を指定
+			-s 1
+	}
+
+	proc クリアリングカメラ０−２ {
+		command カメラマップ設定 -chanl 1 -map Ｅ脚Ｂ１
+		chara カメラ設定 クリアリングカメラ \
+			-c 1 \
+			-p 43600,-1638,-91022 -t 42948,-829,-87229 \
+			-r -135,3985,0 -f 3932 \
+			-a 270 \
+			-i 0 -1 0 0 \
+			-s 1
+
+		chara カメラ設定 クリアリングカメラ \
+			-c 1 \
+			-p 43885,-1984,-90948 -t 42747,-4464,-88129 \
+			-r 446,3846,0 -f 3923 \
+			-a 170 \
+			-i 0 -1 0 0 \
+			-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+			-interp_time (60*10) \ // 補完時間を指定
+			-s 1
+	}
+
+	proc クリアリングカメラ０−３ {
+		command カメラマップ設定 -chanl 1 -map Ｅ脚Ｂ１
+		chara カメラ設定 クリアリングカメラ \
+			-c 1 \
+			-p 47341,-865,-90760 -t 44658,-3437,-89522 \
+			-r 467,3354,0 -f 3917 \
+			-a 170 \
+			-i 2 -1 0 0 \
+			-s 1
+
+		chara カメラ設定 クリアリングカメラ \
+			-c 1 \
+			-p 47457,-1279,-90944 -t 45818,-3715,-88356 \
+			-r 438,3728,0 -f 3914 \
+			-a 170 \
+			-i 0 -1 0 0 \
+			-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+			-interp_time (60*7) \ // 補完時間を指定
+			-s 1
+	}
+
+	proc クリアリングカメラ０−４ {
+		command カメラマップ設定 -chanl 1 -map Ｅ脚Ｂ１
+		chara カメラ設定 クリアリングカメラ \
+			-c 1 \
+			-p 47457,-1279,-90944 -t 45818,-3715,-88356 \
+			-r 438,3728,0 -f 3914 \
+			-a 170 \
+			-i 2 -1 0 0 \
+			-s 1
+
+		chara カメラ設定 クリアリングカメラ \
+			-c 1 \
+			-p 47684,-1814,-90793 -t 45813,-3275,-87693 \
+			-r 250,3742,0 -f 3905 \
+			-a 250 \
+			-i 0 -1 0 0 \
+			-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+			-interp_time (60*2) \ // 補完時間を指定
+			-s 1
+	}
+
+	proc クリアリングカメラ０−５ {
+		command カメラマップ設定 -chanl 1 -map Ｅ脚Ｂ１
+		chara カメラ設定 クリアリングカメラ \
+			-c 1 \
+			-p 47461,-1095,-90456 -t 44895,-4967,-87445 \
+			-r 505,3636,0 -f 5536 \
+			-a 170 \
+			-i 2 -1 0 0 \
+			-s 1
+
+		chara カメラ設定 クリアリングカメラ \
+			-c 1 \
+			-p 47461,-1095,-90454 -t 43762,-4762,-88578 \
+			-r 472,3378,0 -f 5536 \
+			-a 170 \
+			-a 170 \
+			-i 0 -1 0 0 \
+			-z d:CAMERA_INTERP_CAMERA \ // 補完カメラフラグを指定。
+			-interp_time (60*2) \ // 補完時間を指定
+			-s 1
+	}
+
+
+	// クリアリングが終了したら呼ぶプロック
+	//---------------------------------------
+	proc クリアリング回避回数処理 {
+		if ( $b:w20a_クリアリング回避回数 < 255 ) {
+			eval( $b:w20a_クリアリング回避回数 = $b:w20a_クリアリング回避回数 + 1 );
+		}
+	}
+
+	// すべてのクリアリングのキャンセル＆終了プロック
+	//---------------------------------------
+	proc クリアリングカメラオフ {
+		eval( $f:クリアリング中フラグ = 0 );
+		chara カメラ設定 クリアリングカメラ -s -1
+		eval( $f:クリアリング子画面フラグ = 0 );
+		mesg サブ画面 子画面 off
+	}
+
+	// ＢＧＭ
+	// ------------------------------------
+	proc ＢＧＭ設定 {
+		#if d:DEBUG_PRINT
+			print 'bgm_set'
+		#endif
+
+		chara ＢＧＭマネージャー ＢＧＭマネ
+	}
+
+	// 弾痕跳弾関係の設定
+	// ------------------------------------
+	proc 弾痕跳弾設定 {
+		#if d:DEBUG_PRINT
+			print 'recoil_set'
+		#endif
+
+		command 弾痕ノーマル -n 0	// 通常
+		command 弾痕ノーマル -n 1	// 階段、通常
+		command 弾痕ノーマル -n 2	// 鉄板
+		command 弾痕ノーマル -n 3	// 鉄筋
+		command 弾痕ノーマル -n 4	// ダンボール
+		command 弾痕ノーマル -n 5	// 木箱
+		command 弾痕ノーマル -n 6	// パイプ中
+		command 弾痕ノーマル -n 7	// パイプ大
+
+		command 跳弾ノーマル -n 0
+		command 跳弾ノーマル -n 1
+		command 跳弾ノーマル -n 2
+		command 跳弾ノーマル -n 3
+		command 跳弾ＳＥのみ -n 4
+		command 跳弾ＳＥのみ -n 5
+
+		command 跳弾水蒸気中 -n 6
+		command 跳弾水蒸気大 -n 7
+	}
+
+	// ドア＆マップ切り替え関係
+	// ------------------------------------
+	proc ２Ｆマップ切り替え {
+		#if d:DEBUG_PRINT
+			print 'w20a0_2F_map_change_set'
+		#endif
+
+		trap dr100 d:PLAYER \
+			-mask 出る \
+			-mapconnect \
+			-exec {
+				if($6 < -92250) {
+					mesg マップ接合 １Ｆ／２Ｆ on
+				} else {
+					mesg マップ接合 １Ｆ／２Ｆ off
+				}
+			}
+	}
+
+	proc Ｂ１マップ切り替え {
+		#if d:DEBUG_PRINT
+			print 'w20a0_B1_map_change_set'
+		#endif
+
+		// エルードによるマップチェンジ
+		command マップチェンジトラップ登録 \
+			-trap dr200 \
+			-map Ｅ脚１Ｆ Ｅ脚Ｂ１
+
+		// 表示のオンオフ
+		trap dr300 d:PLAYER \
+			-mask 出る \
+			-mapconnect \
+			-exec {
+				if ( $4 < 61000 ) {
+					mesg マップ接合 １Ｆ／Ｂ１ on
+				} else {
+					mesg マップ接合 １Ｆ／Ｂ１ off
+				}
+			}
+	}
+
+	proc ＥＦ連絡橋マップ切り替え {
+		#if d:DEBUG_PRINT
+			print 'w20a_19a_map_change_set'
+		#endif
+
+		chara プットオブジェ ＥＦ連絡橋 -m d:KMS_NAME0_21 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+
+		// ＥＦ連絡橋の表示非表示
+		trap dr700 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if ($3 == 入る) {
+					mesg プットオブジェ ＥＦ連絡橋 on
+				}
+			}
+
+		trap dr701 d:PLAYER \
+			-mask ＊ \
+			-exec {
+				if ( $3 == 出る ) {
+					mesg プットオブジェ ＥＦ連絡橋 on
+				} else if ( $i:カメラＹ位置 < 2000 ) {
+					mesg プットオブジェ ＥＦ連絡橋 on
+				} else {
+					mesg プットオブジェ ＥＦ連絡橋 off
+				}
+			}
+	}
+
+	proc １Ｆマップ切り替え {
+		#if d:DEBUG_PRINT
+			print 'w20a1_1F_map_change_set'
+		#endif
+
+		chara プロック連続実行 １Ｆチェック \
+			-time -1 \
+			-exec { \
+				if ( $f:w20a_Ｂ１いるフラグ == 1 ) {
+					if ( $i:カメラＹ位置 < 0 ) {
+						command エフェクトバウンド追加 0 0 0 2 2 2 1
+						command 即時マップ接合変更 １Ｆ／Ｂ１ on
+					} else {
+						command 即時マップ接合変更 １Ｆ／Ｂ１ off
+						// エフェクト削除範囲を最初に指定
+						if ( $f:エフェクトバウンドフラグ == 0 ) {
+							command エフェクトバウンド追加 40000 0 -97250 56000 2000 -83500 1
+							command エフェクトバウンド実行
+							eval( $f:エフェクトバウンドフラグ = 1 );
+						}
+					}
+				}
+			}
+
+
+		trap dr400 d:PLAYER \
+			-mask ＊ \
+			-mapconnect \
+			-exec {
+				if ( $3 == 入る || $3 == いる ) {
+					eval ( $f:w20a_Ｂ１いるフラグ = 1 );
+				} else {
+					eval ( $f:w20a_Ｂ１いるフラグ = 0 );
+					command エフェクトバウンド追加 0 0 0 2 2 2 1
+					command 即時マップ接合変更 １Ｆ／Ｂ１ on
+				}
+			}
+	}
+
+	proc ベルトコンベア移動時マップ切り替え {
+		#if d:DEBUG_PRINT
+			print 'belt_map_change_set'
+		#endif
+		trap dr500 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if ( $3 == 出る) {
+					mesg マップ接合 １Ｆ／倉庫 off
+				} else {
+					mesg マップ接合 １Ｆ／倉庫 on
+				}
+			}
+
+		trap dr600 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if ( $3 == 出る) {
+					mesg マップ接合 １Ｆ／倉庫 off
+				} else {
+					mesg マップ接合 １Ｆ／倉庫 on
+				}
+			}
+	}
+
+
+	proc 水密ドア設置 {
+		#if d:DEBUG_PRINT
+			print 'wt_door_set'
+		#endif
+
+		local $$:開閉用モーションファイル名;
+
+
+		// 水密ドア用透明壁を用意
+		chara 透明壁 水密ドア用透明壁１ \
+			-position	53125 -4500 -86000 2000 \
+						53125 -4500 -84875 2000 \
+			-seno 3 \
+			-attribute	( d:HZX_SEG_NO_C4 | d:HZX_SEG_NO_BULLETHOLE | d:HZX_SEG_NO_HARITSUKI )
+		chara 透明壁 水密ドア用透明壁２ \
+			-position	53125 -4500 -84875 2000 \
+						54000 -4500 -84875 2000 \
+			-attribute	( d:HZX_SEG_NO_C4 | d:HZX_SEG_NO_BULLETHOLE | d:HZX_SEG_NO_HARITSUKI )
+
+		// 水密扉が閉まっているときはoff
+		mesg 透明壁 水密ドア用透明壁１ off
+		mesg 透明壁 水密ドア用透明壁２ off
+
+		switch ( $s:選択プレイヤー ) {
+			case ( ライデン ) {
+				$$:開閉用モーションファイル名 = rai_wt_hatch;
+			}
+			case ( 刀ライデン ) {
+				$$:開閉用モーションファイル名 = rai_wt_hatch;
+			}
+			default {
+				$$:開閉用モーションファイル名 = sna_hatch;
+			}
+		}
+
+		// 水密ドア本体の設置
+		chara 水密ドア管理 ドア管理人 -n 1 \
+			-motions $$:開閉用モーションファイル名 hatch_door_sna hatch_handle_sna \
+			-seno 3
+
+		chara 水密ドア 水密君 \
+			-kms w28a_sdr_r w28_sdr_handle \
+			-position 53200,-4500,-85850 \
+			-rotate 0,2048,0 \
+			-type 1 \
+			-seno 3 \
+			-hazard 52125,-4500,-85900 53125,-4500,-85900 \
+			-exec {
+				if ($:トリガ == 0) {
+					mesg 透明壁 水密ドア用透明壁１ on
+					mesg 透明壁 水密ドア用透明壁２ on
+				}
+				//	スネークテイルズＤＥ脚梯子部屋到着前は
+				if (	($b:ミッション番号 == d:MISSION:スネークテイルズ) && \
+						($b:tales_story_no == d:TALES_NO:D) && \
+						($b:tales_story_d == d:TALES_D:Ｅ脚梯子部屋到着前)	) {
+					if ($:トリガ == 0) {
+						@スネークテイルズＤ用梯子部屋イベント設定
+					}
+				}
+			}
+
+		// 梯子側からopen
+		trap dr301 d:PLAYER \
+			-mask いる \
+			-button d:ACTION_BUTTON \
+			-state 0 \
+			-exec {
+				command 水密ドア状態 -n 水密君
+				mesg プレイヤー d:PLAYER wt_door 水密君 $status 2048,512 53200,-85850
+			}
+		trap dr301 d:PLAYER \
+			-mask ？ \
+			-state 6 \
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 1 \
+					-p 51236,-1358,-83657 -t 52216,-2676,-84975 \
+					-r 441,1631,0 -f 2106 \
+					-a 200 \
+					-i 0 2 0 0 \
+					-s $3
+			}
+
+		// Ｅ脚側からopen
+		trap dr302 d:PLAYER \
+			-mask いる \
+			-button d:ACTION_BUTTON \
+			-state 0 \
+			-exec {
+				command 水密ドア状態 -n 水密君
+				mesg プレイヤー d:PLAYER wt_door 水密君 $status 0,512 53200,-85850 1
+			}
+		trap dr302 d:PLAYER \
+			-mask ？ \
+			-state 6 \
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 1 \
+					-p 51259,-942,-88129 -t 51947,-2348,-86868 \
+					-r 505,326,0 -f 2010 \
+					-a 200 \
+					-i 0 2 0 0 \
+					-s $3
+			}
+	}
+
+	proc ドア設置 {
+		#if d:DEBUG_PRINT
+			print 'slide_door_set'
+		#endif
+
+		// ドアフラグを元にモデルを設定(※全てのパターンのモデルを用意するのはもったいないので使うところのみ変更していく)
+		// ドアモデル名セット $:配列番号 $:ドア名１(close) $:ドア名２(open) $:ドア名３(enemy) $:ドア名４(lv_close) $:ドア名５(lv_open)
+		// １Ｆ上ドア
+		@ドアモデル名セット 0 d:DOOR_NAME_W19A d:DOOR_NAME_W19A d:DOOR_NAME_W19A d:DOOR_NAME_W19A d:DOOR_NAME_W19A
+		// １Ｆ下ドア
+		if (($b:ミッション番号 == d:MISSION:スネークテイルズ) && \
+			($b:tales_story_no == d:TALES_NO:B) ) {
+			/*	スネークテイルズＢは独自でセット	*/
+		} else {
+			@ドアモデル名セット 1 d:DOOR_NAME_EF_LV1 d:DOOR_NAME_EF_LV1 d:DOOR_NAME_EF_LV1 d:DOOR_NAME_W21A d:DOOR_NAME_W21A
+		}
+		// ２Ｆドア
+		@ドアモデル名セット 2 d:DOOR_NAME_W20B d:DOOR_NAME_W20B d:DOOR_NAME_W20B d:DOOR_NAME_W20B d:DOOR_NAME_W20B
+		// Ｂ１倉庫ドア
+		@ドアモデル名セット 3 d:DOOR_NAME_LV0 d:DOOR_NAME_LV0 d:DOOR_NAME_LV0 d:DOOR_NAME_LV0 d:DOOR_NAME_LV0
+		// Ｂ１梯子部屋ドア
+		@ドアモデル名セット 4 d:DOOR_NAME_LV0_R d:DOOR_NAME_LV0_R d:DOOR_NAME_LV0_R d:DOOR_NAME_LV0_R d:DOOR_NAME_LV0_R
+
+
+		@ドアランプ設定 １Ｆ上ドアランプ 722 43900,0,-99050 2
+		chara ドア １Ｆ上ドア \
+			-m $$s:ドアモデル名[0] \
+			-d 0,721,0 \
+			-p 43900,0,-99050 \
+			-slide d:SD_SLIDE_OUTSIDE2 \
+			-time d:SD_OPEN_TIME \
+			-between Ｅ脚１Ｆ Ｅ脚１Ｆ \
+			-A １Ｆ上ドアランプ \
+			-r 43500 0 -99812 44750 0 -99750 \
+			-exec {
+			}
+		trap dr001 ？ \
+			-mask ？ \
+			-exec {
+				if($3==入る){
+					mesg ドア １Ｆ上ドア open $2
+				}else{
+					if ($$f:エマゲームオーバーフラグ == 0) {
+						mesg ドア １Ｆ上ドア close $2
+					}
+				}
+			}
+		trap dr001 d:PLAYER -mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if($3 == 入る) {
+					mesg 透明壁 １Ｆ上ドアへの透明壁 on
+				} else if($3 == 出る) {
+					mesg 透明壁 １Ｆ上ドアへの透明壁 off
+				}
+			}
+
+		@ドアランプ設定 １Ｆ下ドアランプ 2048 61000,0,-76625 2
+		chara ドア １Ｆ下ドア \
+			-m $$s:ドアモデル名[1] \
+			-d 0,2048,0 \
+			-p 61000,0,-76625 \
+			-slide d:SD_SLIDE_OUTSIDE \
+			-time d:SD_OPEN_TIME \
+			-between Ｅ脚１Ｆ Ｅ脚１Ｆ \
+			-A １Ｆ下ドアランプ \
+			-exec {
+			}
+		trap dr002 ？ \
+			-mask ？ \
+			-exec {
+					if($3==入る){
+						mesg ドア １Ｆ下ドア open $2
+					}else{
+						if ($$f:エマゲームオーバーフラグ == 0) {
+							mesg ドア １Ｆ下ドア close $2
+						}
+					}
+			}
+		trap dr002 d:PLAYER -mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if($3 == 入る) {
+					mesg 透明壁 １Ｆ下ドアへの透明壁 on
+				} else if($3 == 出る) {
+					mesg 透明壁 １Ｆ下ドアへの透明壁 off
+				}
+			}
+
+		@ドアランプ設定 ２Ｆドアランプ 3072 62625,4500,-91000 2
+		chara ドア ２Ｆドア \
+			-m $$s:ドアモデル名[2] \
+			-d 0,3072,0 \
+			-p 62625,4500,-91000 \
+			-slide d:SD_SLIDE_OUTSIDE \
+			-time d:SD_OPEN_TIME \
+			-between Ｅ脚２Ｆ Ｅ脚２Ｆ \
+			-A ２Ｆドアランプ \
+			-exec {
+			}
+		trap dr101 ？ \
+			-mask ？ \
+			-exec {
+				if($3==入る){
+					mesg ドア ２Ｆドア open $2
+				}else{
+					if ($$f:エマゲームオーバーフラグ == 0) {
+						mesg ドア ２Ｆドア close $2
+					}
+				}
+			}
+		trap dr101 d:PLAYER -mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if($3 == 入る) {
+					mesg 透明壁 ２Ｆドアへの透明壁 on
+				} else if($3 == 出る) {
+					mesg 透明壁 ２Ｆドアへの透明壁 off
+				}
+		}
+
+		@ドアランプ設定 Ｂ１倉庫ドアランプ 2048 44000,-4500,-91125 1
+		chara ドア Ｂ１倉庫ドア \
+			-m $$s:ドアモデル名[3] \
+			-d 0,2048,0 \
+			-p 44000,-4500,-91125 \
+			-slide d:SD_SLIDE_INSIDE \
+			-time d:SD_OPEN_TIME \
+			-between Ｅ脚Ｂ１ Ｅ脚Ｂ１倉庫 \
+			-A Ｂ１倉庫ドアランプ \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 Ｂ１／倉庫 off
+				} else {
+					mesg マップ接合 Ｂ１／倉庫 on
+				}
+			}
+		trap dr201 ？ \
+			-mask ？ \
+			-exec {
+				if($3==入る){
+					mesg ドア Ｂ１倉庫ドア open $2
+				}else{
+					if ($$f:エマゲームオーバーフラグ == 0) {
+						mesg ドア Ｂ１倉庫ドア close $2
+					}
+				}
+			}
+
+		@ドアランプ設定 Ｂ１梯子部屋ドアランプ 3072 47875,-4500,-90000 2
+		chara ドア Ｂ１梯子部屋ドア \
+			-m $$s:ドアモデル名[4] \
+			-d 0,3072,0 \
+			-p 47875,-4500,-90000 \
+			-slide d:SD_SLIDE_OUTSIDE \
+			-time d:SD_OPEN_TIME \
+			-between Ｅ脚Ｂ１ Ｅ脚Ｂ１梯子部屋 \
+			-A Ｂ１梯子部屋ドアランプ \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 Ｂ１／梯子部屋 off
+				} else {
+					mesg マップ接合 Ｂ１／梯子部屋 on
+				}
+			}
+		trap dr202 ？ \
+			-mask ？ \
+			-exec {
+					if($3==入る){
+						mesg ドア Ｂ１梯子部屋ドア open $2
+					}else{
+						if ($$f:エマゲームオーバーフラグ == 0) {
+							mesg ドア Ｂ１梯子部屋ドア close $2
+						}
+					}
+			}
+	}
+
+	proc 主観禁止壁設定１Ｆ {
+		@主観禁止壁 １Ｆ上ドアへの透明壁 43900,0,-99050 721 d:SD_SLIDE_OUTSIDE2
+		@主観禁止壁 １Ｆ下ドアへの透明壁 61000,0,-76625 2048 d:SD_SLIDE_OUTSIDE
+	}
+
+	proc 主観禁止壁設定２Ｆ {
+		@主観禁止壁 ２Ｆドアへの透明壁 62625,4500,-91000 3072 d:SD_SLIDE_OUTSIDE
+	}
+
+
+	proc A_ドア開閉設定１Ｆ {
+		@A_ドア開閉追加設定 １Ｆ上ドア $$b:ドアフラグ[0] 43900,0,-99050 721 d:SD_SLIDE_OUTSIDE2
+		@A_ドア開閉追加設定 １Ｆ下ドア $$b:ドアフラグ[1] 61000,0,-76625 2048 d:SD_SLIDE_OUTSIDE
+	}
+
+	proc A_ドア開閉設定２Ｆ {
+		@A_ドア開閉追加設定 ２Ｆドア $$b:ドアフラグ[2] 62625,4500,-91000 3072 d:SD_SLIDE_OUTSIDE
+	}
+
+	proc A_ドア開閉設定Ｂ１ {
+		@A_ドア開閉追加設定 Ｂ１倉庫ドア $$b:ドアフラグ[3] 44000,-4500,-91125 2048 d:SD_SLIDE_INSIDE
+		@A_ドア開閉追加設定 Ｂ１梯子部屋ドア $$b:ドアフラグ[4] 47875,-4500,-90000 3072 d:SD_SLIDE_OUTSIDE
+	}
+
+
+	proc ハッチ設置 {
+		#if d:DEBUG_PRINT
+			print 'hatch_set'
+		#endif
+
+		chara プットモーションモデル 非常口ハッチ \
+			-pos 51000, -4500, -85500 \
+			-dir 2048 \
+			-kms w28_hatch \ /*evmを表示する場合はダミーKMSが必要*/
+			-mar hatch_w20a \
+			-number d:ハッチモーションリスト:non_ladder_open2hatch_radio_hatch \ /*省略時０*/
+			-s (d:PUT_MOT_WAIT | d:PUT_MOT_PRESHADE )
+
+	}
+
+	// 入出トラップ
+	// ------------------------------------
+	proc ロードプロック {
+		#if d:DEBUG_PRINT
+			print 'load_proc'
+		#endif
+
+		// アイテムアタリをデフォルトに戻す
+		@アイテム収得範囲リセット
+
+		if ($s:呼び出しプロック == mv_a20a0_a19a_0) {
+			// ＤＥ連絡橋へ
+			@mv_a20a0_a19a_0
+		} else if ($s:呼び出しプロック == mv_a20a0_a21a_0) {
+			// ＥＦ連絡橋へ
+			@mv_a20a0_a21a_0
+		} else if ($s:呼び出しプロック == mv_a20a1_a20b_0) {
+			// ヘリポートへ
+			@mv_a20a1_a20b_0
+		} else if ($s:呼び出しプロック == mv_a20a1_a20c_0) {
+			// ヘリポートへ(敵兵、ハリアーなし)
+			@mv_a20a1_a20c_0
+		} else if ($s:呼び出しプロック == mv_a20a_a12b0_0 ) {
+			// Ａ脚１Ｆへ
+			@mv_a20a_a12b0_0
+		} else if ($s:呼び出しプロック == mv_a20a_a14a_0) {
+			// Ｂ脚へ
+			@mv_a20a_a14a_0
+		} else if ($s:呼び出しプロック == mv_a20a_a16a_0) {
+			// Ｃ脚へ
+			@mv_a20a_a16a_0
+		} else if ($s:呼び出しプロック == mv_a20a_a22a_0) {
+			// Ｆ脚へ
+			@mv_a20a_a22a_0
+		} else if ($s:呼び出しプロック == load_tales_book){
+			// 紙芝居へ
+			@load_tales_book
+		} else if ($s:呼び出しプロック == load_tales_book_g_over){
+			// 紙芝居へ
+			@load_tales_book_g_over
+
+
+		}
+	}
+
+	proc ロード設定 {
+		#if d:DEBUG_PRINT
+			print 'load_set'
+		#endif
+
+		trap ld001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if( $f:ロードチェックＯＮフラグ == 1 ) {
+					//	スネークテイルズＢ
+					if (($b:ミッション番号 == d:MISSION:スネークテイルズ) && \
+						($b:tales_story_no == d:TALES_NO:B) ) {
+						switch ($b:tales_story_b) {
+							//	テイルズＢ立ち話盗み聞き前
+							case (d:TALES_B:立ち話盗み聞き前) {
+								//	敵に発見されたりしたか判定
+								@スネークテイルズＢ用ハプニング監視		/*	複数ステージで使用するのでa_stdproc.hに定義	*/
+								// 紙芝居へ
+								@エンドカメラセット ＤＥ連絡橋
+								@ステージ終了時処理 \
+								42000 0 -101000 2769 load_tales_book d:DEFAULT_M_TYPE
+							}
+
+							//	テイルズＢＥ脚脱出前
+							case (d:TALES_B:Ｅ脚脱出前) {
+								//	エマと手をつないでいるときは
+								command ゲットエマ手繋ぎ状況 $$i:エマ手繋ぎ状況
+								if ($$i:エマ手繋ぎ状況 > 0) {
+									$b:tales_story_b = d:TALES_B:Ｅ脚脱出中;
+									//	Ｅ脚脱出イベント前のエマライフよりイベント後のライフが減っていたら
+									command ゲットエマライフ $$i:Ｅ脚脱出イベント後エマライフ
+									if ($$i:Ｅ脚脱出イベント前エマライフ > $$i:Ｅ脚脱出イベント後エマライフ) {
+										eval($f:テイルズＢエマ怪我したフラグ = 1)
+									}
+									// 紙芝居へ
+									@エンドカメラセット ＤＥ連絡橋
+									@ステージ終了時処理 \
+									42000 0 -101000 2769 load_tales_book d:DEFAULT_M_TYPE
+
+								//	手をつないでいない場合
+								} else {
+									//	エマがa19aにいるとき（向こう側に吹っ飛ばしたりした場合）は
+									if ($s:エマ存在ステージ == a19a) {
+										$b:tales_story_b = d:TALES_B:Ｅ脚脱出中;
+										//	Ｅ脚脱出イベント前のエマライフよりイベント後のライフが減っていたら
+										command ゲットエマライフ $$i:Ｅ脚脱出イベント後エマライフ
+										if ($$i:Ｅ脚脱出イベント前エマライフ > $$i:Ｅ脚脱出イベント後エマライフ) {
+											eval($f:テイルズＢエマ怪我したフラグ = 1)
+										}
+										// 紙芝居へ
+										@エンドカメラセット ＤＥ連絡橋
+										@ステージ終了時処理 \
+										42000 0 -101000 2769 load_tales_book d:DEFAULT_M_TYPE
+
+									//	エマを置きっぱなしにした場合は
+									} else {
+										// 紙芝居へ
+										@エンドカメラセット ＤＥ連絡橋
+										@ステージ終了時処理 \
+										42000 0 -101000 2769 load_tales_book_g_over d:DEFAULT_M_TYPE
+									}
+								}
+							}
+
+							//	通常は普通にロード
+							default {
+								// ＤＥ連絡橋へ
+								@エンドカメラセット ＤＥ連絡橋
+								preseek 'a19a'
+								@ステージ終了時処理（ステージ名表示） \
+									42000 0 -101000 2769 mv_a20a0_a19a_0 d:DEFAULT_M_TYPE \
+									d:wn_ＤＥ連絡橋
+							}
+
+						}
+
+					//	それ以外
+					} else {
+						// ＤＥ連絡橋へ
+						@エンドカメラセット ＤＥ連絡橋
+						preseek 'a19a'
+						@ステージ終了時処理（ステージ名表示） \
+							42000 0 -101000 2769 mv_a20a0_a19a_0 d:DEFAULT_M_TYPE \
+							d:wn_ＤＥ連絡橋
+					}
+				}
+			}
+
+		trap ld002 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if( $f:ロードチェックＯＮフラグ == 1 ) {
+					// ＥＦ連絡橋へ
+					@エンドカメラセット ＥＦ連絡橋
+					preseek 'a21a'
+					@ステージ終了時処理（ステージ名表示） \
+						60000 0 -75000 0 mv_a20a0_a21a_0 d:DEFAULT_M_TYPE \
+						d:wn_ＥＦ連絡橋
+				}
+			}
+
+		trap ld003 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if( $f:ロードチェックＯＮフラグ == 1 ) {
+					if ( $w:アイテム == d:アイテム:ダンボール ) {
+						// 食料品ダンボール→Ｃ脚へワープ
+						preseek 'a16a'
+						@ステージ終了時処理（ステージ名表示） \
+							0 0 0 0 mv_a20a_a16a_0 d:NO_MOVE_M_TYPE \
+							d:wn_Ｃ脚食堂
+					} else if ( $w:アイテム == d:アイテム:ダンボールＢ ) {
+						// 電化製品ダンボール→Ｂ脚へワープ
+						preseek 'a14a'
+						@ステージ終了時処理（ステージ名表示） \
+							0 0 0 0 mv_a20a_a14a_0 d:NO_MOVE_M_TYPE \
+							d:wn_Ｂ脚変電室
+					} else if ( $w:アイテム == d:アイテム:ダンボールＣ ) {
+						// 日用品ダンボール→Ａ脚へワープ
+						preseek 'a12b'
+						@ステージ終了時処理（ステージ名表示） \
+							0 0 0 0 mv_a20a_a12b0_0 d:NO_MOVE_M_TYPE \
+							d:wn_Ａ脚ポンプ室
+					} else if ( $w:アイテム == d:アイテム:ダンボールＤ ) {
+						// マクファーレンダンボール→Ｆ脚へワープ
+						preseek 'a22a'
+						@ステージ終了時処理（ステージ名表示） \
+							0 0 0 0 mv_a20a_a22a_0 d:NO_MOVE_M_TYPE \
+							d:wn_Ｆ脚倉庫Ｂ１
+					}
+				}
+			}
+
+		trap ld101 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if( $f:ロードチェックＯＮフラグ == 1 ) {
+					// ヘリポートへ
+					@エンドカメラセット ヘリポート
+					if ( $$s:ヘリポートロードプロック == a20b ) {
+						preseek 'a20b'
+						@ステージ終了時処理（ステージ名表示） \
+							64500 4500 -90250 1024 mv_a20a1_a20b_0 d:DEFAULT_M_TYPE \
+							d:wn_Ｅ脚ヘリポート
+					} else {
+						preseek 'a20c'
+						@ステージ終了時処理（ステージ名表示） \
+							64500 4500 -90250 1024 mv_a20a1_a20c_0 d:DEFAULT_M_TYPE \
+							d:wn_Ｅ脚ヘリポート
+					}
+				}
+			}
+	}
+
+	// 解体Ｃ４設置
+	// ------------------------------------
+	proc 解体Ｃ４設置 {
+		#if d:DEBUG_PRINT
+			print 'c4_bomb_set'
+		#endif
+		// 爆弾がついている荷物
+		if ( $w:ゲーム設定 <= d:LEVEL_HARD ) {
+			chara ベルトコンベア荷物 荷物:99 -m d:STL_BOX_L -break_model d:STL_BOX_L_BRK \
+				-p 47750,1000,-96500 -r 0,0,0  -flag d:BELTOBJ_FLAG_C4 -type 1
+		} else {
+			chara ベルトコンベア荷物 荷物:99 -m d:STL_BOX_L -break_model d:STL_BOX_L_BRK \
+				-p 47750,1000,-96500 -r 0,1024,0  -flag d:BELTOBJ_FLAG_C4 -type 1
+		}
+
+		if ( $f:w20a_爆弾処理完了 == 0 ) {
+			if ( $w:ゲーム設定 == d:LEVEL_HARD ) {
+				chara 解体Ｃ４ 解体Ｃ４ \
+					-position 320,400,-100 \
+					-rotate 0,1024,0 \
+					-type 0 \
+					-state 0 \
+					-enemy 荷物:99 0 \
+					-proc 爆弾解体後処理
+			} else {
+				chara 解体Ｃ４ 解体Ｃ４ \
+					-position 320,350,-100 \
+					-rotate 0,1024,0 \
+					-type 0 \
+					-state 0 \
+					-enemy 荷物:99 0 \
+					-proc 爆弾解体後処理
+			}
+
+			chara 爆弾検知領域 Bomb_Type_A \
+				-trap bm000
+		} else {
+			if ( $w:ゲーム設定 == d:LEVEL_HARD ) {
+				chara 解体Ｃ４ 解体Ｃ４ \
+					-position 320,400,-100 \
+					-rotate 0,1024,0 \
+					-type 0 \
+					-state 1 \
+					-enemy 荷物:99 0
+			} else {
+				chara 解体Ｃ４ 解体Ｃ４ \
+					-position 320,350,-100 \
+					-rotate 0,1024,0 \
+					-type 0 \
+					-state 1 \
+					-enemy 荷物:99 0
+			}
+		}
+	}
+
+	// アイテム
+	// ------------------------------------
+	proc アイテム収得範囲変更 {
+		command アイテム収得可能範囲設定 300 1000 300
+	}
+
+	proc アイテム収得範囲リセット {
+		command アイテム収得可能範囲設定 300 1500 300
+	}
+
+
+	// ベルトコンベアの設定
+	// ------------------------------------
+	proc ベルトコンベア管理設定 {
+		#if d:DEBUG_PRINT
+			print 'w20a_belt_manage_set'
+		#endif
+
+		command プラグインベルトコンベア
+
+		// 登録するベルトコンベアの数を記述
+		// 登録するベルトコンベアの数を記述
+		command ベルトコンベア管理 -n 32 \
+			-lamp ベルトコンベアランプ 2
+
+		// 登録するベルトコンベアの荷物を管理
+		command ベルトコンベア荷物管理
+
+		//ベルトコンベアランプ
+		chara 汎用アニメポリゴン ベルトコンベアランプ \
+			-tex w20a_bel_lig_add_alp \
+			-mode d:GPOLY_MODE_ALPHA \
+			-d 1 3 \
+			-n_ply 2 \
+				-color	128 128 128 128 \
+				-init	0 \
+				-pos	48516 839 -78928 \
+						48959 839 -78928 \
+						48516 767 -78883 \
+						48959 767 -78883 \
+				-color	128 128 128 128 \
+				-init	0 \
+				-pos	42928 -3661 -94734 \
+						42928 -3661 -94291 \
+						42883 -3733 -94734 \
+						42883 -3733 -94291
+
+		// ベルトコンベアの待ち時間を初期化
+		eval ( $i:w20a_コンベア待ち時間 = 0 );
+	}
+
+	// プレイヤーがベルトコンベアに乗っている場合に働く制御
+	//$1 = [ d:BELT_ON_START(0):乗り開始 d:BELT_ON_END(1):乗り終了 d:BELT_OFF_START(2):降り開始 d:BELT_OFF_END(3):降り終了 ]
+	proc ベルトコンベア動作制御 {
+		#if d:DEBUG_PRINT
+			print 'w20a_belt_ctrl'
+		#endif
+
+		if ( $1 == d:BELT_ON_START ) {
+			// 乗るときにカメラとフラグを立てる
+			eval( $f:ローカルフラグ２ = 1 );		// プレイヤーが乗り動作中を示すフラグ
+			@シナリオデモ開始処理
+			if ( $f:w20a_ベルトコンベア乗り位置 == d:1F_BELT ) {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,4043,d:CAM_MIN d:CAM_MAX,4043,d:CAM_MAX \
+					-l d:CAM_MIN,896,d:CAM_MIN d:CAM_MAX,896,d:CAM_MAX \
+//					-p 50853,4043,-77619 -t 48465,896,-79609 \
+					-r 516,2619,0 -f 4423 \
+					-a 200 \
+					-i 0 2 0 0 \
+					-s 1
+			} else {
+				chara カメラ設定 モーションカメラ \
+					-c 1 \
+					-p 42230,-130,-91379 -t 43668,-3251,-93441 \
+					-r 582,1651,0 -f 4007 \
+					-a 200 \
+					-i 0 2 0 0 \
+					-s 1
+			}
+
+			chara delay カメラディレイ \
+				-time 120 \
+				-exec {
+					command シナリオデモ終了
+					command メニュー設定 -menu on -gage on -radar on -subwin on
+					mesg シネマスクリーン シネマ フェードイン 0
+					command パッド操作 -cancel
+					command プレイヤー無敵解除
+					chara カメラ設定 モーションカメラ -s -1
+				}
+
+		} else if ( $1 == d:BELT_ON_END ) {
+			// 乗るのが終了したら動き出す
+			command ベルトコンベア動作 -move d:BELT_MOVE_TIME
+			// 音も動かす
+			command ゲットゲームステータス $i:ローカル変数Ｉ１
+			mesg ＢＧＭマネージャー ＢＧＭマネ SD_SNEAK_AUTO d:SD_AUTO_FADER1
+			eval( $f:ローカルフラグ１ = 0 );
+		} else if ( $1 == d:BELT_OFF_START ) {
+			// 降りるときはすでに止まっているのでいらない
+			if ( `command ゲームオーバーチェック` == 0 ) {
+				@シナリオデモ開始処理
+				if ( $2 == ofbl101 ) {
+					// 降りるところがＢ１ならそれようのカメラを用意
+					chara カメラ設定 モーションカメラ \
+						-c 1 \
+						-p 40910,-493,-91665 -t 43324,-3133,-93484 \
+						-r 468,1445,0 -f 4013 \
+						-a 200 \
+						-i 0 2 0 0 \
+						-s 1
+				} else if ( $2 == ofbl002 ) {
+					chara カメラ設定 モーションカメラ \
+						-c 0 \
+						-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+						-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+	//					-p 56459,4621,-91448 -t 57526,1628,-94265 \
+						-r 510,1812,0 -f 4247 \
+						-a 200 \
+						-i 0 2 0 0 \
+						-s 1
+				}
+
+				chara delay カメラディレイ \
+					-time 120 \
+					-exec {
+						@シナリオデモ終了処理
+						chara カメラ設定 モーションカメラ -s -1
+					}
+			}
+
+		} else if ( $1 == d:BELT_OFF_END ) {
+			// 降り終わったら動き出す
+			command ベルトコンベア動作 -move d:BELT_MOVE_TIME
+			// 音も動かす
+			command ゲットゲームステータス $i:ローカル変数Ｉ１
+			mesg ＢＧＭマネージャー ＢＧＭマネ SD_SNEAK_AUTO d:SD_AUTO_FADER1
+			eval ( $i:w20a_コンベア待ち時間 = -240 );
+			eval( $f:ローカルフラグ１ = 0 );
+			eval( $f:ローカルフラグ２ = 0 );
+		} else if ( $1 == d:BELT_ARRIVED ) {
+			// 降りポイントに到着した時にはすでに止まっているのでいらない
+		} else if ( $1 == d:BELT_RESTART ) {
+			// 降りポイントで時間内に降りなかったら動き出す。
+			command ベルトコンベア動作 -move d:BELT_MOVE_TIME
+			// 音も動かす
+			command ゲットゲームステータス $i:ローカル変数Ｉ１
+			mesg ＢＧＭマネージャー ＢＧＭマネ SD_SNEAK_AUTO d:SD_AUTO_FADER1
+			eval ( $i:w20a_コンベア待ち時間 = -240 ) ;
+			if ( $2 == ofbl101 ) {
+				//次のポイントの設定
+				mesg プレイヤー d:PLAYER beltconv \
+				Ｅ脚Ｂ１倉庫 onbl101 ofbl101 2048 \
+				Ｅ脚１Ｆ onbl002 ofbl002 1024
+			}
+		}
+	}
+
+	proc ベルトコンベア移動時フェードイン設定 {
+		#if d:DEBUG_PRINT
+			print 'w20a_fade_set'
+		#endif
+
+		// プレイヤーがマップチェンジする前はフェードアウト
+		trap ev002 d:PLAYER -mask 入る -exec {
+			if ( `command ゲームオーバーチェック` == 0 ) {
+				chara フェードインアウト フェードアウト \
+					-c 0,0,0 128 \
+					-t d:FADEOUT_TIME
+
+				command メニュー設定 -radio off -pause off
+				command パッド操作 -release
+			}
+		}
+		trap ev102 d:PLAYER -mask 入る -exec {
+			if ( `command ゲームオーバーチェック` == 0 ) {
+				chara フェードインアウト フェードアウト \
+					-c 0,0,0 128 \
+					-t d:FADEOUT_TIME
+
+				command メニュー設定 -radio off -pause off
+				command パッド操作 -release
+			}
+		}
+
+		// プレイヤーがマップチェンジする前はフェードイン
+		trap ev001 d:PLAYER -mask 出る -exec {
+			if ( `command ゲームオーバーチェック` == 0 ) {
+				chara フェードインアウト フェードイン \
+					-i 0,0,0 128 \
+					-c 0,0,0 0 \
+					-t d:FADEIN_TIME
+
+				command メニュー設定 -radio on -pause on
+				command パッド操作 -cancel
+			}
+		}
+		trap ev101 d:PLAYER -mask 出る -exec {
+			if ( `command ゲームオーバーチェック` == 0 ) {
+				chara フェードインアウト フェードイン \
+					-i 0,0,0 128 \
+					-c 0,0,0 0 \
+					-t d:FADEIN_TIME
+
+				command メニュー設定 -radio on -pause on
+				command パッド操作 -cancel
+			}
+		}
+
+	}
+
+	proc １Ｆベルトコンベア設定 {
+		#if d:DEBUG_PRINT
+			print 'w20a0_belt_set'
+		#endif
+
+		// ベルト部分の設定
+		command foreach -argc 7 -repeat 13 \
+			-data { \
+					{ ベルト:01 , 48000,1005,-96500 53000,1005,-96500 } \
+					{ ベルト:02 , 54000,1005,-96500 56000,1005,-96500 } \
+					{ ベルト:03 , 53500,1005,-96000 53500,1005,-94750 } \
+					{ ベルト:04 , 53000,1005,-94250 57000,1005,-94250 } \
+					{ ベルト:11 , 57000,1005,-80500 47000,1005,-80500 } \
+					{ ベルト:12 , 57750,1005,-86000 57750,1005,-84000 } \
+					{ ベルト:13 , 58250,1005,-83500 57000,1005,-83500 } \
+					{ ベルト:14 , 56500,1005,-84000 56500,1005,-81000 } \
+					{ ベルト:15 , 57000,1005,-80500 47000,1005,-80500 } \
+					{ ベルト:16 , 46500,1005,-80000 46500,1005,-87500 } \
+					{ ベルト:17 , 46000,1005,-88000 49000,1005,-88000 } \
+					{ ベルト:18 , 49500,1005,-87500 49500,1005,-91500 } \
+					{ ベルト:19 , 55000,1005,-92000 48000,1005,-92000 } \
+				} \
+				-exec { \
+					chara ベルトコンベアベルト $1 \
+						-model w20a_catp \
+						-t w20a_bel_b02 \
+						-position $2,$3,$4 $5,$6,$7 \
+						-speed d:BELT_SPEED
+				}
+
+		// プレイヤーがベルトコンベアに乗るための設定
+		trap onbl001 d:PLAYER -mask ＊ -exec {
+			command ゲットゲームステータス $i:ローカル変数Ｉ１
+
+			if ( ( $3 == 出る ) || !( `command プレイヤー状態取得` & d:PFLAG_BOX ) || \
+				 (`command プレイヤー状態取得` & d:PFLAG_WALK) || (`command プレイヤー状態取得` & d:PFLAG_RUN) || \
+				 ( $i:ローカル変数Ｉ１ & d:STATE_DETECT ) || ( $w:アラートモード == d:ALERT_MODE_KIKEN ) ) {
+				// トラップから出るかダンボールをかぶっていない状態かかぶってても動き回っているいるか敵兵に見つかっているなら変数を初期化
+				eval ( $i:w20a_コンベア待ち時間 = 0 );
+
+				// 止まっていたら動かす
+				if ( `command ベルトコンベア状態取得` == 1 ) {
+					// 実際の移動中に引っかからないようにするため１フレーム遅らせる
+					chara delay ベルトコンベア再起動ディレイ \
+						-time 1 \
+						-exec {
+							// ベルトコンベアに乗らずうろちょろしていたら再起動する。
+							if ( $f:ローカルフラグ２ == 0 ) {
+								command ベルトコンベア動作 -move d:BELT_MOVE_TIME
+								// 音も動かす
+								command ゲットゲームステータス $i:ローカル変数Ｉ１
+								mesg ＢＧＭマネージャー ＢＧＭマネ SD_SNEAK_AUTO d:SD_AUTO_FADER1
+								mesg コマンダー 敵兵セット 視界オン
+								eval( $f:ローカルフラグ１ = 0 );
+							}
+						}
+				}
+
+			} else {
+				// トラップ内でダンボールをかぶったら１秒以上待って、ベルトコンベアへ乗る
+				// 狙撃イベント後は乗れない
+				if ( $w:p_story < d:ST:P069_02_R01ヴァンプ狙撃終了２無線機デモ１終了 ) {
+					eval ( $i:w20a_コンベア待ち時間 = $i:w20a_コンベア待ち時間 + 1 )
+				}
+
+				// ベルトコンベアを止めるかどうかのチェック
+		  		command トラップ内荷物チェック -map Ｅ脚１Ｆ -trap ckob001
+				if ( $i:w20a_コンベア待ち時間 > 60 && $status == d:NO_OTHER_OBJECT && \
+					 $f:ローカルフラグ１ == 0 ) {
+					// 範囲内で一定時間じっとしていたらベルトコンベアが止まる
+					command ベルトコンベア動作	-stop d:BELT_STOP_TIME
+					// 音も止める
+					command ゲットゲームステータス $i:ローカル変数Ｉ１
+					mesg ＢＧＭマネージャー ＢＧＭマネ SD_SNEAK_AUTO d:SD_AUTO_FADER2
+					mesg コマンダー 敵兵セット 視界オフ
+					eval( $f:ローカルフラグ１ = 1 );
+				}
+
+				// プレイヤーが乗れるかどうかのチェック
+				if ( `command ベルトコンベア状態取得` == 1 && $w:アラートモード != d:ALERT_MODE_KIKEN && \
+					(`command パッドチェック -status` & d:PAD_U) ) {
+					// ベルトコンベア停止中に危険モードでない状態で上が押されていたらベルトコンベアにのる
+					if ( `command ゲームオーバーチェック` == 0 ) {
+						eval( $f:w20a_ベルトコンベア乗り位置 = d:1F_BELT );
+						if ( $w:アイテム == d:アイテム:ダンボールＥ ) {
+						// ZOEダンボールだけはＢ１へ出る
+							mesg プレイヤー d:PLAYER beltconv \
+								Ｅ脚１Ｆ onbl001 ofbl001 3072 \
+								Ｅ脚Ｂ１倉庫 onbl101 ofbl101 2048 \
+								240 //降りポイントでの待ち時間
+						} else {
+							mesg プレイヤー d:PLAYER beltconv \
+								Ｅ脚１Ｆ onbl001 ofbl001 3072 \
+								Ｅ脚１Ｆ onbl002 ofbl002 1024
+						}
+						command ベルトコンベア時プロック設定 -proc ベルトコンベア動作制御
+
+					}
+
+				}
+			}
+		}
+
+		// ベルトコンベアの登録（直線ごとに区切る）
+		command ベルトコンベア登録 -trap bl000 -route 1,4,5 -next 0,1 -s d:BELT_SPEED -area 0
+		command ベルトコンベア登録 -trap bl001 -route 0,1,2 -s d:BELT_SPEED -area 0
+
+		// プレイヤーはダンボールの種類によって分岐(ダンボールＥだけbl021へ)
+		command ベルトコンベア登録 -trap bl000 -route 1,4,5 -next 0,1 -chara d:PLAYER -s d:BELT_SPEED -area 0
+		command ベルトコンベア登録 -trap bl001 -route 0,1,2 -chara d:PLAYER -i d:アイテム:ダンボール -s d:BELT_SPEED -area 0
+		command ベルトコンベア登録 -trap bl001 -route 0,1,2 -chara d:PLAYER -i d:アイテム:ダンボールＢ -s d:BELT_SPEED -area 0
+		command ベルトコンベア登録 -trap bl001 -route 0,1,2 -chara d:PLAYER -i d:アイテム:ダンボールＣ -s d:BELT_SPEED -area 0
+		command ベルトコンベア登録 -trap bl001 -route 0,1,2 -chara d:PLAYER -i d:アイテム:ダンボールＤ -s d:BELT_SPEED -area 0
+		command ベルトコンベア登録 -trap bl001 -route 0,1,2 -next 2,1 -chara d:PLAYER -i d:アイテム:ダンボールＥ -s d:BELT_SPEED -area 0
+		command ベルトコンベア登録 -trap bl002 -route 0,2,3 -s d:BELT_SPEED -area 0
+		command ベルトコンベア登録 -trap bl003 -route 0,3,4 -s d:BELT_SPEED -area 0
+		command ベルトコンベア登録 -trap bl004 -route 0,4,5 -s d:BELT_SPEED -area 0
+		command ベルトコンベア登録 -trap bl005 -route 0,5,6 -s d:BELT_SPEED -area 2
+		command ベルトコンベア登録 -trap bl006 -route 0,6,7 -s d:BELT_SPEED -area 2
+		command ベルトコンベア登録 -trap bl007 -route 0,7,8 -s d:BELT_SPEED -area 2
+		command ベルトコンベア登録 -trap bl008 -route 0,8,9 -s d:BELT_SPEED -area 2
+		command ベルトコンベア登録 -trap bl009 -route 0,9,10 -s d:BELT_SPEED -area 2
+		command ベルトコンベア登録 -trap bl010 -route 0,10,11 -s d:BELT_SPEED -area 2
+		command ベルトコンベア登録 -trap bl011 -route 0,11,12 -s d:BELT_SPEED -area 2
+		command ベルトコンベア登録 -trap bl012 -route 0,12,14 -s d:BELT_SPEED -area 2
+		command ベルトコンベア登録 -trap bl013 -route 0,14,15 -s d:BELT_SPEED -area 1
+		command ベルトコンベア登録 -trap bl014 -route 0,15,16 -s d:BELT_SPEED -area 1
+		command ベルトコンベア登録 -trap bl015 -route 0,16,17 -s d:BELT_SPEED -area 1
+		command ベルトコンベア登録 -trap bl016 -route 0,17,18 -s d:BELT_SPEED -area 1
+		command ベルトコンベア登録 -trap bl017 -route 0,18,19 -s d:BELT_SPEED -area 1	// Ｂ１へ
+		// 別マップへ移動
+		trap bl018 荷物 -mask 入る -exec {
+			mesg ベルトコンベア荷物 $2 map Ｅ脚Ｂ１倉庫
+		}
+		trap bl018 d:PLAYER -mask 入る -exec {
+			// 荷物と完全に同期をあわせる
+			chara delay 強制ディレイ \
+				-time 1 \
+				-exec {
+					command キャラマップチェンジ -name d:PLAYER -map Ｅ脚Ｂ１倉庫
+				}
+		}
+
+
+		// プレイヤー分岐用
+		command ベルトコンベア登録 -trap bl019 -route 2,0,1 -chara d:PLAYER -s d:BELT_SPEED	-area 0
+		command ベルトコンベア登録 -trap bl020 -route 2,1,2 -chara d:PLAYER -s d:BELT_SPEED	-area 0
+
+		// プレイヤーが合流地点でぶつからないようにするためのチェック
+		trap bl013 d:PLAYER -mask ？ -exec {
+			if ( $3 == 入る ) {
+				eval( $f:w20a_合流ＮＧフラグ = 1 );
+			} else {
+				eval( $f:w20a_合流ＮＧフラグ = 0 );
+			}
+		}
+
+		// 通常荷物分岐用
+		trap bl021 荷物 -mask 入る -exec {
+	  		command トラップ内荷物チェック -map Ｅ脚１Ｆ -trap bl024
+			if ( $status == d:NO_OTHER_OBJECT ) {
+				mesg ベルトコンベア荷物 $2 position 58500,-3500,-92000
+			}
+		}
+
+/* 荷物が減ってしまったので、待機は二個だけ
+		trap bl021 荷物 -mask 入る -exec {
+	  		command トラップ内荷物チェック -map Ｅ脚１Ｆ -trap bl022
+			if ( $status == d:NO_OTHER_OBJECT ) {
+				mesg ベルトコンベア荷物 $2 position 62500,-3500,-92000
+			}
+		}
+		trap bl022 荷物 -mask いる -exec {
+	  		command トラップ内荷物チェック -map Ｅ脚１Ｆ -trap bl023
+			if ( $status == d:NO_OTHER_OBJECT ) {
+				mesg ベルトコンベア荷物 $2 position 60500,-3500,-92000
+			}
+		}
+		trap bl023 荷物 -mask いる -exec {
+	  		command トラップ内荷物チェック -map Ｅ脚１Ｆ -trap bl024
+			if ( $status == d:NO_OTHER_OBJECT ) {
+				mesg ベルトコンベア荷物 $2 position 58500,-3500,-92000
+			}
+		}
+*/
+		trap bl024 荷物 -mask いる -exec {
+	  		command トラップ内荷物チェック -map Ｅ脚１Ｆ -trap bl025
+			if ( $status == d:NO_OTHER_OBJECT ) {
+		  		command トラップ内荷物チェック -map Ｅ脚１Ｆ -trap ckob002
+				eval( $i:w20a_荷物チェック結果ckob002 = $status );
+		  		command トラップ内荷物チェック -map Ｅ脚１Ｆ -trap ckob003
+				eval( $i:w20a_荷物チェック結果ckob003 = $status );
+		  		command トラップ内荷物チェック -map Ｅ脚１Ｆ -trap ckob004
+				eval( $i:w20a_荷物チェック結果ckob004 = $status );
+				if ( $i:w20a_荷物チェック結果ckob002 == d:NO_OTHER_OBJECT && \
+					 $i:w20a_荷物チェック結果ckob003 == d:NO_OTHER_OBJECT && \
+					 $i:w20a_荷物チェック結果ckob004 == d:NO_OTHER_OBJECT && \
+					 $f:w20a_合流ＮＧフラグ == 0) {
+					mesg ベルトコンベア荷物 $2 position 56500,-3500,-92000
+				}
+			}
+		}
+		command ベルトコンベア登録 -trap bl025 -route 3,0,1 -s d:BELT_SPEED -area 1
+		command ベルトコンベア登録 -trap bl026 -route 3,1,2 -next 0,18 -s d:BELT_SPEED -area 1
+
+
+		// 運搬される荷物設定
+		// 通常荷物
+		command foreach -argc 7 -repeat 12 \
+			-data { \
+					{ 荷物:01 , d:CB_BOX_L	, 46750,0,-96500, 0, 0 } \
+					{ 荷物:02 , d:STL_BOX_L	, 49750,1000,-96500, d:STL_BOX_L_BRK, 1 } \
+					{ 荷物:03 , d:CB_BOX_S	, 51750,1000,-96500, 0, 0 } \
+					{ 荷物:04 , d:STL_BOX_L	, 63500,-3500,-90500, d:STL_BOX_L_BRK, 1 } \
+					{ 荷物:05 , d:CB_BOX_L	, 63500,-3500,-88500, 0, 0 } \
+					{ 荷物:06 , d:STL_BOX_L	, 62500,-3500,-87500, d:STL_BOX_L_BRK, 1 } \
+					{ 荷物:07 , d:CB_BOX_L	, 57750,1000,-83500, 0, 0 } \
+					{ 荷物:08 , d:STL_BOX_L	, 56500,1000,-82000, d:STL_BOX_L_BRK, 1 } \
+					{ 荷物:09 , d:CB_BOX_L	, 55500,1000,-80500, 0, 0 } \
+					{ 荷物:10 , d:STL_BOX_L	, 48500,1000,-80500, d:STL_BOX_L_BRK, 1 } \
+					{ 荷物:11 , d:STL_BOX_L	, 46500,1000,-80500, d:STL_BOX_L_BRK, 1 } \
+					{ 荷物:12 , d:CB_BOX_L	, 46500,1000,-82500, 0, 0 } \
+				} \
+				-exec { \
+					chara ベルトコンベア荷物 $1 -m $2 -r 0,1024,0 -p $3,$4,$5 \
+						-break_model $6 -type $7
+				}
+
+	}
+
+
+	proc Ｂ１倉庫ベルトコンベア設定 {
+		#if d:DEBUG_PRINT
+			print 'w20a3_belt_set'
+		#endif
+
+		// ベルト部分
+		command foreach -argc 7 -repeat 3 \
+			-data { \
+					{ ベルト:21 , 46000,-3495,-92000 45000,-3495,-92000 } \
+					{ ベルト:22 , 44500,-3495,-91500 44500,-3495,-97000 } \
+					{ ベルト:03 , 45000,-3495,-96500 46000,-3495,-96500 } \
+				} \
+				-exec { \
+					chara ベルトコンベアベルト $1 \
+						-model w20a_catp \
+						-t w20a_bel_b02 \
+						-position $2,$3,$4 $5,$6,$7 \
+						-speed d:BELT_SPEED
+				}
+
+		// プレイヤーがベルトコンベアに乗るための設定
+		trap onbl101 d:PLAYER -mask ＊ -exec {
+			command ゲットゲームステータス $i:ローカル変数Ｉ１
+
+			if ( ( $3 == 出る ) || !( `command プレイヤー状態取得` & d:PFLAG_BOX ) || \
+				 (`command プレイヤー状態取得` & d:PFLAG_WALK) || (`command プレイヤー状態取得` & d:PFLAG_RUN) || \
+				 ( $i:ローカル変数Ｉ１ & d:STATE_DETECT ) || ( $w:アラートモード == d:ALERT_MODE_KIKEN ) ) {
+				// トラップから出るかダンボールをかぶっていない状態かかぶってても動き回っているいるか敵兵に見つかっているなら変数を初期化
+				eval ( $i:w20a_コンベア待ち時間 = 0 );
+
+				// 止まっていたら動かす
+				if ( `command ベルトコンベア状態取得` == 1 ) {
+					// 実際の移動中に引っかからないようにするため１フレーム遅らせる
+					chara delay ベルトコンベア再起動ディレイ \
+						-time 1 \
+						-exec {
+							// ベルトコンベアに乗らずうろちょろしていたら再起動する。
+							if ( $f:ローカルフラグ２ == 0 ) {
+								command ベルトコンベア動作 -move d:BELT_MOVE_TIME
+								// 音も動かす
+								command ゲットゲームステータス $i:ローカル変数Ｉ１
+								mesg ＢＧＭマネージャー ＢＧＭマネ SD_SNEAK_AUTO d:SD_AUTO_FADER1
+								mesg コマンダー 敵兵セット 視界オン
+								eval( $f:ローカルフラグ１ = 0 );
+							}
+						}
+				}
+
+			} else {
+				// トラップ内でダンボールをかぶったら１秒以上待って、ベルトコンベアへ乗る
+				if ( $w:p_story < d:ST:P069_02_R01ヴァンプ狙撃終了２無線機デモ１終了 ) {
+					eval ( $i:w20a_コンベア待ち時間 = $i:w20a_コンベア待ち時間 + 1 )
+				}
+
+				// ベルトコンベアを止めるかどうかのチェック
+		  		command トラップ内荷物チェック -map Ｅ脚Ｂ１倉庫 -trap ckob101
+				eval( $i:w20a_荷物チェック結果ckob101 = $status );
+		  		command トラップ内荷物チェック -map Ｅ脚Ｂ１倉庫 -trap ckob102
+				eval( $i:w20a_荷物チェック結果ckob102 = $status );
+				if ( $i:w20a_コンベア待ち時間 > 60 && \
+					 $i:w20a_荷物チェック結果ckob101 == d:NO_OTHER_OBJECT && \
+					 $i:w20a_荷物チェック結果ckob102 == d:NO_OTHER_OBJECT && \
+					 $f:ローカルフラグ１ == 0) {
+					// 範囲内で一定時間じっとしていたらベルトコンベアが止まる
+					command ベルトコンベア動作	-stop d:BELT_STOP_TIME
+					// 音も止める
+					command ゲットゲームステータス $i:ローカル変数Ｉ１
+					mesg ＢＧＭマネージャー ＢＧＭマネ SD_SNEAK_AUTO d:SD_AUTO_FADER2
+					mesg コマンダー 敵兵セット 視界オフ
+					eval( $f:ローカルフラグ１ = 1 );
+				}
+
+				// プレイヤーが乗れるかどうかのチェック
+				if ( `command ベルトコンベア状態取得` == 1 && $w:アラートモード != d:ALERT_MODE_KIKEN && \
+					(`command パッドチェック -status` & d:PAD_R) ) {
+					// ベルトコンベア停止中に危険モードでない状態で右が押されていたらベルトコンベアにのる
+					if ( `command ゲームオーバーチェック` == 0 ) {
+						eval( $f:w20a_ベルトコンベア乗り位置 = d:B1_BELT );
+
+						mesg プレイヤー d:PLAYER beltconv \
+							Ｅ脚Ｂ１倉庫 onbl101 ofbl101 2048 \
+							Ｅ脚１Ｆ onbl002 ofbl002 1024
+						command ベルトコンベア時プロック設定 -proc ベルトコンベア動作制御
+
+					}
+				}
+			}
+		}
+
+
+		// プレイヤーが中継ポイントに近づいたときのチェック
+		trap stob101 d:PLAYER -mask 入る -exec {
+			if ( $w:アイテム == d:アイテム:ダンボールＥ ) {
+				command ベルトコンベア動作	-stop d:BELT_STOP_TIME
+				// 音も止める
+				command ゲットゲームステータス $i:ローカル変数Ｉ１
+				mesg ＢＧＭマネージャー ＢＧＭマネ SD_SNEAK_AUTO d:SD_AUTO_FADER2
+			}
+		}
+
+
+		// ベルトコンベアの登録（直線ごとに区切る）
+		command ベルトコンベア登録 -trap bl101 -route 0,18,19 -next 1,1 -s d:BELT_SPEED -area 2
+		command ベルトコンベア登録 -trap bl102 -route 1,0,1 -s d:BELT_SPEED -area 2
+		command ベルトコンベア登録 -trap bl103 -route 1,1,3 -s d:BELT_SPEED -area 2
+		command ベルトコンベア登録 -trap bl104 -route 1,3,4 -s d:BELT_SPEED -area 2
+		// 別マップへ移動
+		trap bl105 荷物 -mask 入る -exec {
+			mesg ベルトコンベア荷物 $2 map Ｅ脚１Ｆ
+		}
+		trap bl105 d:PLAYER -mask 入る -exec {
+			// 荷物と完全に同期をあわせる
+			chara delay 強制ディレイ \
+				-time 1 \
+				-exec {
+					command キャラマップチェンジ -name d:PLAYER -map Ｅ脚１Ｆ
+				}
+		}
+
+		// 運搬される荷物設定
+		command foreach -argc 7 -repeat 3 \
+			-data { \
+					{ 荷物:31 , d:STL_BOX_L	,44500,-3500,-95500, d:STL_BOX_L_BRK, 1 } \
+					{ 荷物:32 , d:CB_BOX_S	,44500,-3500,-93500, 0, 0 } \
+					{ 荷物:33 , d:CB_BOX_L	,45500,-3500,-92000, 0, 0 } \
+				} \
+				-exec { \
+					chara ベルトコンベア荷物 $1 -m $2 -r 0,1024,0 -p $3,$4,$5 \
+						-break_model $6 -type $7
+				}
+
+	}
+
+	// フォグ
+	// ------------------------------------
+	proc フォグ設定 {
+		#if d:DEBUG_PRINT
+			print 'fog_set'
+		#endif
+
+		chara フォグ 霧\
+			-c 23, 26, 14 \
+			-n -1000 \
+			-f 43000
+	}
+
+	// キャラ用光源(マップの設置が終わってから設定することで、キャラだけに光を当てる)
+	// ------------------------------------
+	proc キャラ用ライト設置 {
+		#if d:DEBUG_PRINT
+			print 'chara_light_set'
+		#endif
+
+		chara 環境光 環境光源 \
+			 -c 40 45 29
+
+		chara 平行光 平行光源 \
+			 -c 42 70 55 \
+			 -p -3200 -2600 -2800
+	}
+
+	// エフェクト関係
+	// -----------------------------------
+
+	// 子画面設定
+	// ------------------------------------
+	proc 子画面設定 {
+		#if d:DEBUG_PRINT
+			print 'sub_camera_set'
+		#endif
+
+		chara サブ画面 子画面 \
+			-w (512-d:SUB_MARGIN-d:SUB_WIDTH),d:SUB_MARGIN (512-d:SUB_MARGIN),(d:SUB_HEIGHT+d:SUB_MARGIN)
+	}
+
+	// ステージカメラ設定
+	// ------------------------------------
+	proc カメラセット {
+		#if d:DEBUG_PRINT
+			print 'stage_camera_set'
+		#endif
+
+		chara カメラ ステージカメラ		-c 0 -l 3 -p 0
+		chara カメラ メインカメラ		-c 0 -l 2 -p 50
+		chara カメラ サブカメラ１		-c 0 -l 2 -p 40
+		chara カメラ モーションカメラ	-c 0 -l 2 -p 10
+		chara カメラ クリアリングカメラ	-c 1 -l 2 -p 0
+
+		// デフォルトカメラ
+		chara カメラ設定 ステージカメラ \
+			-c 0 \
+//			-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+//			-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-b 47426,d:CAM_MIN,-92000 56546,d:CAM_MAX,d:CAM_MAX \
+			-l 47426,d:CAM_MIN,-97450 56546,d:CAM_MAX,d:CAM_MAX \
+			-r 545,2048,0 \
+			-f 8000 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s 1
+	}
+
+
+
+	// ステージ開始時カメラ
+	// ------------------------------------
+	proc スタートカメラセット {
+		#if d:DEBUG_PRINT
+			print 'start_camera_set'
+		#endif
+
+		if( $s:登場ポイント == ＤＥ連絡橋から ) {
+			// ＤＥ連絡橋から
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p 46477,4927,-96250 -t 45853,1351,-99661 \
+				-r 522,2166,0 -f 4981 \
+				-a 200 \
+				-i 0 2 0 0 \
+				-s 1
+		} else if( $s:登場ポイント == ＥＦ連絡橋から ) {
+			// ＥＦ連絡橋から
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p 60051,4574,-77198 -t 60029,682,-77533 \
+				-r 968,2092,0 -f 3906 \
+				-a 200 \
+				-i 0 2 0 0 \
+				-s 1
+		} else if( $s:登場ポイント == ヘリポートから ) {
+			// ヘリポートから
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p 61670,8554,-89122 -t 62302,5974,-90348 \
+				-r 704,1738,0 -f 2925 \
+				-a 200 \
+				-i 0 2 0 0 \
+				-s 1
+		} else if( $s:登場ポイント == sp_w32a_w20a2_0 ) {
+			// エマ狙撃イベント後
+			chara カメラ設定 モーションカメラ \
+				-c 0 \
+				-b 50691,-2535,d:CAM_MIN 51267,-1538,d:CAM_MAX \
+				-l 51143,-4651,d:CAM_MIN 51719,d:CAM_MAX,d:CAM_MAX \
+				-r 662,1819,0 -f 2490 \
+				-a 200 \
+				-i 0 0 0 0 \
+				-z d:CAMERA_NO_CUSHION \
+				-s 1
+		}
+	}
+
+	proc スタートカメラオフ {
+		#if d:DEBUG_PRINT
+			print 'start_camera_off'
+		#endif
+
+		chara カメラ設定 モーションカメラ -s -1
+	}
+
+	// ステージ終了時カメラ
+	// ------------------------------------
+	proc エンドカメラセット $:エンドポイント {
+		#if d:DEBUG_PRINT
+			print 'end_camera_set'
+		#endif
+
+		if( $:エンドポイント == ＤＥ連絡橋 ) {
+			// ＤＥ連絡橋へ
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p 46477,4927,-96250 -t 45853,1351,-99661 \
+				-r 522,2166,0 -f 4981 \
+				-a 200 \
+				-i 0 2 0 0 \
+				-s 1
+		} else if( $:エンドポイント == ＥＦ連絡橋 ) {
+			// ＥＦ連絡橋へ
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p 60107,4497,-77221 -t 60107,2557,-77340 \
+				-r 984,2048,0 -f 1944 \
+				-a 200 \
+				-i 0 2 0 0 \
+				-s 1
+		} else if( $:エンドポイント == ヘリポート ) {
+			// ヘリポートへ
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p 61670,8554,-89122 -t 62302,5974,-90348 \
+				-r 704,1738,0 -f 2925 \
+				-a 200 \
+				-i 0 2 0 0 \
+				-s 1
+		}
+	}
+
+
+
+// 各マップ別設定
+// ------------------------------------
+// １Ｆ
+	// 壊れライト設定
+	// ------------------------------------
+	proc Ｅ脚１Ｆ壊れライト設定 {
+		#if d:DEBUG_PRINT
+			print 'w20a0_bk_light_set'
+		#endif
+
+		// 天井ライト(電球型)
+		command foreach -argc 5 -repeat 13 \
+			-data { \
+				{ 0 天井ライト:01 46250, 5000, -98350 }
+				{ 1 天井ライト:02 50250, 5000, -98350 }
+				{ 2 天井ライト:03 53750, 5000, -98350 }
+				{ 3 天井ライト:04 57850, 5000, -98350 }
+				{ 4 天井ライト:05 50250, 5000, -93550 }
+				{ 5 天井ライト:06 53750, 5000, -93550 }
+				{ 6 天井ライト:07 50250, 5000, -88000 }
+				{ 7 天井ライト:08 53750, 5000, -88000 }
+				{ 8 天井ライト:09 50250, 5000, -83500 }
+				{ 9 天井ライト:10 53750, 5000, -83500 }
+				{ 10 天井ライト:11 46250, 5000, -79500 }
+				{ 11 天井ライト:12 50250, 5000, -79500 }
+				{ 12 天井ライト:13 53750, 5000, -79500 }
+			} \
+			-exec { \
+				chara プットスポットライトオブジェ $2 \
+					-m w20a0r_lig01 w20a0r_lig01_bro \
+					-t $3,($4-350),$5 150 1500 500 \
+					-r 0 0 0 \
+					-l d:LT2_NAME \
+					-b ライト破壊後処理 \
+					-p $3 $4 $5
+//					-f ( d:BRK_LGT_SHOWTRGT )
+
+				@壊れ物再セットチェック $b:w20a_破壊ロード回数[$1]
+print '---------------------------------------------lighton'$b:w20a_破壊ロード回数[$1]
+				if ( $f:再セットフラグ == 0 ) {
+print '---------------------------------------------lightoff'$b:w20a_破壊ロード回数[$1]
+				// 再セット回数に行っていなければ破壊する
+					command プットスポットライトオブジェライト消す -n $2
+				}
+			}
+
+		// 天井ライト(蛍光灯型)
+		command foreach -argc 5 -repeat 10 \
+			-data { \
+				{ 13 天井ライト２:01 48500, 3970, -97525 }
+				{ 14 天井ライト２:02 55500, 3970, -97525 }
+				{ 15 天井ライト２:03 48500, 3970, -93525 }
+				{ 16 天井ライト２:04 55500, 3970, -93525 }
+				{ 17 天井ライト２:05 48500, 3970, -90825 }
+				{ 18 天井ライト２:06 55500, 3970, -90825 }
+				{ 19 天井ライト２:07 48500, 3970, -87125 }
+				{ 20 天井ライト２:08 55500, 3970, -87125 }
+				{ 21 天井ライト２:09 48500, 3970, -84300 }
+				{ 22 天井ライト２:10 55500, 3970, -84300 }
+			} \
+			-exec { \
+				chara プットスポットライトオブジェ $2 \
+					-m w20a0_lig01 w20a0_lig01_bro \
+					-t $3 $4 $5 150 2000 500 \
+					-s 100 100 500 \
+					-r 0 0 0 \
+					-l d:LT2_NAME \
+					-b ライト破壊後処理 \
+					-p $3 $4 $5
+//					-f ( d:BRK_LGT_SHOWTRGT )
+
+				@壊れ物再セットチェック $b:w20a_破壊ロード回数[$1]
+				if ( $f:再セットフラグ == 0 ) {
+print '---------------------------------------------lightoff'$b:w20a_破壊ロード回数[$1]
+					command プットスポットライトオブジェライト消す -n $2
+				}
+			}
+
+		// 柱ライト(蛍光灯型)
+		command foreach -argc 6 -repeat 12 \
+			-data { \
+				{ 23 柱ライト:01 48075, 2350, -95500, 0 }
+				{ 24 柱ライト:02 48925, 2350, -95500, 2048 }
+				{ 25 柱ライト:03 55075, 2350, -95500, 0 }
+				{ 26 柱ライト:04 55925, 2350, -95500, 2048 }
+				{ 27 柱ライト:05 48075, 2350, -89000, 0 }
+				{ 28 柱ライト:06 48925, 2350, -89000, 2048 }
+				{ 29 柱ライト:07 55075, 2350, -89000, 0 }
+				{ 30 柱ライト:08 55925, 2350, -89000, 2048 }
+				{ 31 柱ライト:09 48075, 2350, -82500, 0 }
+				{ 32 柱ライト:10 48925, 2350, -82500, 2048 }
+				{ 33 柱ライト:11 55075, 2350, -82500, 0 }
+				{ 34 柱ライト:12 55925, 2350, -82500, 2048 }
+			} \
+			-exec { \
+				chara プットスポットライトオブジェ $2 \
+					-m w20a0_lig02 w20a0_lig02_bro \
+					-t $3 $4 $5 150 500 1000 \
+					-s 100 500 100 \
+					-r 0 $6 0 \
+					-l d:LT2_NAME \
+					-b ライト破壊後処理 \
+					-p $3 $4 $5 \
+					-f ( d:BRK_LGT_OBJ_FITALL )
+//					-f ( d:BRK_LGT_SHOWTRGT | d:BRK_LGT_OBJ_FITALL )
+
+				@壊れ物再セットチェック $b:w20a_破壊ロード回数[$1]
+				if ( $f:再セットフラグ == 0 ) {
+print '---------------------------------------------lightoff'$b:w20a_破壊ロード回数[$1]
+					command プットスポットライトオブジェライト消す -n $2
+				}
+			}
+
+	}
+
+	proc Ｅ脚Ｂ１壊れライト設定 {
+		#if d:DEBUG_PRINT
+			print 'w20a2_bk_light_set'
+		#endif
+
+		chara プットスポットライトオブジェ 柱ライト:13 \
+			-m w20a2_lig01 w20a2_lig01_bro \
+			-t 44250 -2500 -87250 150 3000 750 \
+			-s 100 500 100 \
+			-r 0 0 0 \
+			-l d:LT2_NAME \
+			-b ライト破壊後処理 \
+			-p 0 0 0
+//			-f ( d:BRK_LGT_SHOWTRGT )
+
+		@壊れ物再セットチェック $b:w20a_破壊ロード回数[35]
+		if ( $f:再セットフラグ == 0 ) {
+		// 再セット回数に行っていなければ破壊する
+			command プットスポットライトオブジェライト消す -n 柱ライト:13
+		}
+	}
+
+	proc Ｅ脚Ｂ１倉庫壊れライト設定 {
+		#if d:DEBUG_PRINT
+			print 'w20a2_bk_light_set'
+		#endif
+
+		chara プットスポットライトオブジェ 柱ライト:14 \
+			-m w20a3_lig01 w20a3_lig01_bro \
+			-t 46000 -2500 -94812 150 3000 750 \
+			-s 100 500 100 \
+			-r 0 0 0 \
+			-l d:LT2_NAME \
+			-b ライト破壊後処理 \
+			-p 0 0 0
+//			-f ( d:BRK_LGT_SHOWTRGT )
+
+		@壊れ物再セットチェック $b:w20a_破壊ロード回数[36]
+		if ( $f:再セットフラグ == 0 ) {
+		// 再セット回数に行っていなければ破壊する
+			command プットスポットライトオブジェライト消す -n 柱ライト:14
+		}
+	}
+
+
+	// 破壊されたときの処理
+	proc ライト破壊後処理 {
+		#if d:DEBUG_PRINT
+			print 'w20a0_light_broken'
+print '------------------------------------------'$w:グローバルロード回数
+		#endif
+
+		if ( $1 == 天井ライト:01 ) {
+			eval( $b:w20a_破壊ロード回数[0] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト:02 ) {
+			eval( $b:w20a_破壊ロード回数[1] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト:03 ) {
+			eval( $b:w20a_破壊ロード回数[2] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト:04 ) {
+			eval( $b:w20a_破壊ロード回数[3] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト:05 ) {
+			eval( $b:w20a_破壊ロード回数[4] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト:06 ) {
+			eval( $b:w20a_破壊ロード回数[5] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト:07 ) {
+			eval( $b:w20a_破壊ロード回数[6] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト:08 ) {
+			eval( $b:w20a_破壊ロード回数[7] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト:09 ) {
+			eval( $b:w20a_破壊ロード回数[8] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト:10 ) {
+			eval( $b:w20a_破壊ロード回数[9] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト:11 ) {
+			eval( $b:w20a_破壊ロード回数[10] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト:12 ) {
+			eval( $b:w20a_破壊ロード回数[11] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト:13 ) {
+			eval( $b:w20a_破壊ロード回数[12] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト２:01 ) {
+			eval( $b:w20a_破壊ロード回数[13] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト２:02 ) {
+			eval( $b:w20a_破壊ロード回数[14] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト２:03 ) {
+			eval( $b:w20a_破壊ロード回数[15] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト２:04 ) {
+			eval( $b:w20a_破壊ロード回数[16] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト２:05 ) {
+			eval( $b:w20a_破壊ロード回数[17] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト２:06 ) {
+			eval( $b:w20a_破壊ロード回数[18] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト２:07 ) {
+			eval( $b:w20a_破壊ロード回数[19] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト２:08 ) {
+			eval( $b:w20a_破壊ロード回数[20] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト２:09 ) {
+			eval( $b:w20a_破壊ロード回数[21] = $w:グローバルロード回数 );
+		} else if ( $1 == 天井ライト２:10 ) {
+			eval( $b:w20a_破壊ロード回数[22] = $w:グローバルロード回数 );
+		} else if ( $1 == 柱ライト:01 ) {
+			eval( $b:w20a_破壊ロード回数[23] = $w:グローバルロード回数 );
+		} else if ( $1 == 柱ライト:02 ) {
+			eval( $b:w20a_破壊ロード回数[24] = $w:グローバルロード回数 );
+		} else if ( $1 == 柱ライト:03 ) {
+			eval( $b:w20a_破壊ロード回数[25] = $w:グローバルロード回数 );
+		} else if ( $1 == 柱ライト:04 ) {
+			eval( $b:w20a_破壊ロード回数[26] = $w:グローバルロード回数 );
+		} else if ( $1 == 柱ライト:05 ) {
+			eval( $b:w20a_破壊ロード回数[27] = $w:グローバルロード回数 );
+		} else if ( $1 == 柱ライト:06 ) {
+			eval( $b:w20a_破壊ロード回数[28] = $w:グローバルロード回数 );
+		} else if ( $1 == 柱ライト:07 ) {
+			eval( $b:w20a_破壊ロード回数[29] = $w:グローバルロード回数 );
+		} else if ( $1 == 柱ライト:08 ) {
+			eval( $b:w20a_破壊ロード回数[30] = $w:グローバルロード回数 );
+		} else if ( $1 == 柱ライト:09 ) {
+			eval( $b:w20a_破壊ロード回数[31] = $w:グローバルロード回数 );
+		} else if ( $1 == 柱ライト:10 ) {
+			eval( $b:w20a_破壊ロード回数[32] = $w:グローバルロード回数 );
+		} else if ( $1 == 柱ライト:11 ) {
+			eval( $b:w20a_破壊ロード回数[33] = $w:グローバルロード回数 );
+		} else if ( $1 == 柱ライト:12 ) {
+			eval( $b:w20a_破壊ロード回数[34] = $w:グローバルロード回数 );
+		} else if ( $1 == 柱ライト:13 ) {
+			eval( $b:w20a_破壊ロード回数[35] = $w:グローバルロード回数 );
+		} else if ( $1 == 柱ライト:14 ) {
+			eval( $b:w20a_破壊ロード回数[36] = $w:グローバルロード回数 );
+		}
+ 	}
+
+	// 天井君と連動させるためのプロック
+	proc 天井ライト表示制御 {
+		#if d:DEBUG_PRINT
+			print 'w20a0_light_vanish'
+		#endif
+
+		command プットスポットライトオブジェライト管理 -n 天井ライト -f $1
+	}
+
+	// 天井の設定
+	// ------------------------------------
+	proc Ｅ脚１Ｆ天井設置 {
+		#if d:DEBUG_PRINT
+			print 'w20a0_cail_set'
+		#endif
+
+		chara 天井君 Ｅ脚天井 -m d:CEIL_NAME0 -h 4000 -p 0,0,0 -l d:LT2_NAME -v 天井ライト表示制御
+	}
+
+	// 南側の壁の設定
+	// ------------------------------------
+	proc Ｅ脚１Ｆ南壁設置 {
+		#if d:DEBUG_PRINT
+			print 'w20a0_southwall_set'
+		#endif
+
+		chara 天井君 南壁 -m w20a0_wall -a 5 -c 0 0 -77500 -p 0,0,0 -l d:LT2_NAME
+	}
+
+	// 監視カメラの設定
+	// ------------------------------------
+	proc １Ｆ監視カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w20a0_svc_camera_set'
+		#endif
+
+		@カメラ再セットチェック $b:w20a_カメラ破壊ロード回数[0]
+		if ( $f:再セットフラグ == d:TRUE ) {
+			eval( $b:w20a_カメラ破壊フラグ[0] = 0 );
+		}
+		chara プラントカメラ 北カメラ \
+			-pos 48950 3000 -95100 \
+			-rot 496 1024 0 \ /*ＸＹ値のみ有効*/
+			-center 1863 0 \
+			-dir 0 \
+			-xran 256 \ /*省略可*/
+			-yran 256 \ /*省略可*/
+			-i 5500 \ /*省略可*/
+			-status $b:w20a_カメラ破壊フラグ[0] \
+			-exec {
+				eval( $b:w20a_カメラ破壊ロード回数[0] = $w:グローバルロード回数);
+				eval( $b:w20a_カメラ破壊フラグ[0] = $2 );
+			}
+
+
+		@カメラ再セットチェック $b:w20a_カメラ破壊ロード回数[1]
+		if ( $f:再セットフラグ == d:TRUE ) {
+			eval( $b:w20a_カメラ破壊フラグ[1] = 0 );
+		}
+		chara プラントカメラ 南カメラ \
+			-pos 48950 3000 -82100 \
+			-rot 364 1024 0 \ /*ＸＹ値のみ有効*/
+			-center 317 0 \
+			-dir 0 \
+			-xran 256 \ /*省略可*/
+			-yran 256 \ /*省略可*/
+			-i 5500 \ /*省略可*/
+			-status $b:w20a_カメラ破壊フラグ[1] \
+			-exec {
+				eval( $b:w20a_カメラ破壊ロード回数[1] = $w:グローバルロード回数);
+				eval( $b:w20a_カメラ破壊フラグ[1] = $2 );
+			}
+
+		@カメラ再セットチェック $b:w20a_カメラ破壊ロード回数[2]
+		if ( $f:再セットフラグ == d:TRUE ) {
+			eval( $b:w20a_カメラ破壊フラグ[2] = 0 );
+		}
+		chara プラントカメラ 東カメラ \
+			-pos 55950 3000 -82900 \
+			-rot 452 1024 0 \ /*ＸＹ値のみ有効*/
+			-center 1433 0 \
+			-dir 0 \
+			-xran 256 \ /*省略可*/
+			-yran 256 \ /*省略可*/
+			-i 5500 \ /*省略可*/
+			-status $b:w20a_カメラ破壊フラグ[2] \
+			-exec {
+				eval( $b:w20a_カメラ破壊ロード回数[2] = $w:グローバルロード回数);
+				eval( $b:w20a_カメラ破壊フラグ[2] = $2 );
+			}
+
+	}
+
+	// 強制モーション用トラップ
+	// ------------------------------------
+	// ジャンプ設定
+	// ------------------------------------
+	proc １Ｆジャンプ設定 {
+		#if d:DEBUG_PRINT
+			print 'w20a0_jump_set'
+		#endif
+
+		trap ky001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				@ジャンプ発動 ky001 1000 10
+			}
+	}
+
+	// ビヨンド設定
+	// ------------------------------------
+	proc １Ｆビヨンド設定 {
+		#if d:DEBUG_PRINT
+			print 'w20a0_beyond_set'
+		#endif
+
+		// 右
+		trap by001 d:PLAYER \
+			-mask いる \
+			-key d:PAD_ACTION \		//アクションボタン
+			-state 0,4 \	//立ち状態or張り付き
+			-exec {
+				@西向きビヨンド発動 by001 43750 $6 -87750 -84000 0x00000002
+			}
+		trap by001 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 3072 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,-81000 d:CAM_MAX,3750,-79500 \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 615,2170,0 -f 5231 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		trap by001 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 1024 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,2000,-81000 d:CAM_MAX,d:CAM_MAX,-79500 \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 464,1908,0 -f 7296 \
+					-a 300 \
+					-i 3 2 0 0 \
+					-s $3 \
+					-z d:CAMERA_NO_CUSHION
+			}
+	}
+
+	// 各種カメラの設定
+	// ------------------------------------
+	proc １Ｆカメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w20a0_camera_set'
+		#endif
+
+		// １Ｆ、ＥＦ連絡橋側通路
+		trap ca001 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 メインカメラ \
+					-c 1 \
+					-p 60010,5448,-77077 -t 60010,1271,-78164 \
+					-r 858,2048,0 -f 4316 \
+					-a 178 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+
+		if ( ($b:ミッション番号 == d:MISSION:スネークテイルズ) && \
+			 ($b:tales_story_no == d:TALES_NO:B) ) {
+		/*	スネークテイルズＢでは独自カメラ設定a20a_tale.hで設定	*/
+		} else {
+			// １Ｆ、２Ｆへの階段に続く通路と下側の階段
+			trap ca002 d:PLAYER \
+				-mask ＊ \
+				-camera \
+				-exec {
+					@CS_スムーズカメラ降順 $5 3600 1300 54 275
+					eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+					chara カメラ設定 メインカメラ \
+						-c 0 \
+						-b 62648,2069,-86000 62648,3079,-56030 \
+						-l 62167,1279,d:CAM_MIN 62167,1674,-90427 \
+						-r $i:補完ＲＸ,2125,0 \
+						-f 4772 \
+						-a 200 \
+						-i 0 0 0 0 \
+						-s $3
+				}
+		}
+
+		// １Ｆ、２Ｆへと続く階段
+		trap ca003 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 メインカメラ \
+					-c 0 \
+					-b 61177,9249,-89112 61177,9321,-88764 \
+					-l 61330,5565,-92710 61330,5565,-91892 \
+					-r 556,2017,0 \
+					-f 4891 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+		// １Ｆ、Ｂ１へと続く階段
+		trap ca004 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -84000 -89000 886 364
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -84000 -89000 200 325
+				eval( $w:補完画角 = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \
+					-b 43182,3292,-79166 43182,6976,-79281 \
+					-l 43182,1096,d:CAM_MIN 43182,1652,-80842 \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 5548 \
+					-a $w:補完画角 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+		// １Ｆ中央部
+
+		if ( ($b:ミッション番号 == d:MISSION:スネークテイルズ) && \
+			 ($b:tales_story_no == d:TALES_NO:B) && \
+			 ($b:tales_story_b == d:TALES_B:Ｅ脚脱出前) ) {
+		/*	スネークテイルズＢのＥ脚脱出前（Ｅ脚脱出イベント中）は独自カメラ設定a20a_tale.hで設定	*/
+			@スネークテイルズＢＥ脚脱出イベントカメラ設定
+		} else {
+			trap ca005 d:PLAYER \
+				-mask ＊ \
+				-camera \
+				-exec {
+					@CS_スムーズカメラ昇順 $6 -89000 -85500 48400 47229
+					eval( $i:補完ＢＸ = $i:CS_結果１ );
+					eval( $i:補完ＬＸ = $i:CS_結果１ );
+
+					@CS_スムーズカメラ昇順 $6 -84000 -82000 55600 55436
+					eval( $i:補完ＢＸ２ = $i:CS_結果１ );
+					eval( $i:補完ＬＸ２ = $i:CS_結果１ );
+
+					@CS_スムーズカメラ降順 $6 -90000 -92750 6253 8990
+					eval( $i:補完ＢＹ = $i:CS_結果１ );
+
+					@CS_スムーズカメラ降順 $6 -90000 -92750 475 600
+					eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+					chara カメラ設定 メインカメラ \
+						-c 0 \
+						-b $i:補完ＢＸ,6253,-90683 $i:補完ＢＸ２,$i:補完ＢＹ,-73952 \
+						-l $i:補完ＬＸ,1920,-96738 $i:補完ＬＸ２,d:CAM_MAX,-79434 \
+						-r $i:補完ＲＸ,2048,0 \
+						-f 10000 \
+						-a 200 \
+						-i 3 -1 0 0 \
+						-z d:CAMERA_NO_CUSHION \
+						-s $3
+				}
+		}
+
+		// 階段部分の張り付きカメラ
+		trap ca006 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_CAUTION \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \
+					-b 60832,4496,-89184 62601,4496,-89184 \
+					-l 60832,1610,-89868 62601,1610,-89868 \
+					-r 871,2048,0 \
+					-f 2962 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+		// １Ｆ部分の張り付きカメラ
+		trap ca007 d:PLAYER \
+			-mask ？ \
+			-dir 2048 512 \
+			-state d:TRP_STATE_CAUTION \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \
+					-b 46750,8445,-89184 56276,8445,-78050 \
+					-l 46750,2021,-89868 56276,2021,-79400 \
+					-r 889,2048,0 \
+					-f 6567 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+		// 手すり部分の張り付きカメラ
+		trap ca008 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_CAUTION \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \
+					-b 43417,5395,-82866 56574,5395,-82866 \
+					-l 43543,1680,-87000 56574,1680,-84190 \
+					-r 795,1988,0 \
+					-f 4000 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3
+			}
+
+		// 匍匐カメラ
+		trap ca009 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SQUAT d:TRP_STATE_GROUND \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \
+					-b 48400,8990,-94558 55600,8990,-73952 \
+					-l 48400,1680,-97136 55600,1680,-79434 \
+					-r 850,2048,0 \
+					-f 8000 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3
+			}
+
+	}
+
+
+
+// ２Ｆ
+	// 各種カメラの設定
+	// ------------------------------------
+	proc ２Ｆカメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w20a1_camera_set'
+		#endif
+
+		// ２Ｆ上
+		trap ca101 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \
+					-b 61293,8904,-89248 61438,10186,-89259 \
+					-l 61293,5487,-94043 61438,5836,-90492 \
+					-r 798,2048,0 \
+					-f 4518 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-s $3
+			}
+	}
+
+
+// Ｂ１
+	// 透明壁の設定
+	// ------------------------------------
+	proc Ｂ１透明壁設置 {
+		#if d:DEBUG_PRINT
+			print 'w20a2_tr_wall_set'
+		#endif
+
+		@南北５０ｃｍ幅透明壁設置 Ｂ１左壁 46000 -4500 -85750 2000
+
+		trap wl201 d:PLAYER \
+			-mask ？ \
+			-state 4 \
+			-exec {
+					if ($3 == 入る) {
+						command パッド操作 -mask d:PAD_B
+						mesg 透明壁 Ｂ１左壁 off
+					} else {
+						command パッド操作 -cancel 0
+						mesg 透明壁 Ｂ１左壁 on
+					}
+				}
+	}
+
+	// イントルード金網設定
+	// ------------------------------------
+	proc イントルード金網設定 {
+		#if d:DEBUG_PRINT
+			print 'w20a_intrude_fence_set'
+		#endif
+
+		trap fence_w d:PLAYER \
+			-mask ＊ \
+			-dir 3072 256 \	//方向指定
+			-exec {
+				command イントルード主観カメラ補正 \
+					-se d:se_code:SD_P_HEADNET1 \
+					-len 1000 \
+					-inout $3
+			}
+	}
+
+
+	// 各種カメラの設定
+	// ------------------------------------
+	proc Ｂ１カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w20a2_camera_set'
+		#endif
+
+		// 階段
+		// Ｂ１階段
+		trap ca004 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -81000 -89000 886 364
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -81000 -89000 200 325
+				eval( $w:補完画角 = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \
+					-b 43182,2673,-79166 43182,6976,-79281 \
+					-l 43182,-3060,d:CAM_MIN 43182,1652,-80842 \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 5548 \
+					-a $w:補完画角 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+		// 通路
+		trap ca201 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -87000 -88000 600 500
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \
+					-b 46000,471,-84238 46000,1750,-85532 \
+					-l 46000,-3000,-89036 46000,d:CAM_MAX,-86750 \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 5350 \
+					-a 190 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+	}
+
+
+// Ｂ１倉庫
+	// 強制モーション用トラップ
+	// ------------------------------------
+	// ジャンプ設定
+	// ------------------------------------
+	proc Ｂ１倉庫ジャンプ設定 {
+		#if d:DEBUG_PRINT
+			print 'w20a3_jump_set'
+		#endif
+
+		trap ky001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				@ジャンプ発動 ky001 1000 10
+			}
+	}
+
+	// 各種カメラの設定
+	// ------------------------------------
+	proc Ｂ１倉庫カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w20a3_camera_set'
+		#endif
+
+		// 階段
+		// Ｂ１倉庫内
+		trap ca301 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \
+					-b 42746,3441,-91962 42746,3441,-91962 \
+					-l 42746,-3000,-94524 42746,-2535,-93401 \
+					-r 880,2048,0 \
+					-f 6502 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+	}
+
+
+// Ｂ１梯子部屋
+	// ふなむしの設定
+	// ------------------------------------
+	proc Ｂ１梯子部屋ふなむし設定 {
+		#if d:DEBUG_PRINT
+			print 'w20a4_funamsi_set'
+		#endif
+
+		chara エマ虫 かさかさ \
+			-group 5 \
+			-atrap all_funa03 \
+			-trap fu003
+	}
+
+	// 各種カメラの設定
+	// ------------------------------------
+	proc Ｂ１梯子部屋カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w20a4_camera_set'
+		#endif
+
+		// 階段
+		// Ｂ１梯子部屋上
+		trap ca401 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ昇順 $4 49250 50875 49521 53232
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+				eval( $i:補完ＬＸ = $i:CS_結果１ );
+
+				if ( $6 > -88000 ) {
+					@CS_スムーズカメラ昇順 $6 -87750 -86500 -87779 -86443
+					eval( $i:補完ＲＺ = $i:CS_結果１ );
+					@CS_スムーズカメラ昇順 $6 -87750 -86500 -88868 -87337
+					eval( $i:補完ＬＺ = $i:CS_結果１ );
+				} else {
+					eval( $i:補完ＲＺ = -87779 );
+					eval( $i:補完ＬＺ = -88868 );
+				}
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \
+					-b $i:補完ＲＸ,1257,-87779 52131,1257,$i:補完ＲＺ \
+					-l $i:補完ＬＸ,-3000,-91000 52131,d:CAM_MAX,$i:補完ＬＺ \
+					-r 795,2048,0 \
+					-f 6500 \
+					-a 200 \
+					-i 3 -1 0 0 \
+					-s $3
+			}
+
+		// Ｂ１梯子部屋下
+		trap ca402 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 メインカメラ \
+					-c 1 \
+					-p 52225,1775,-83851 -t 52225,-2941,-85156 \
+					-r 848,2048,0 -f 4893 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+	}
+
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下仮キャラ用proc
+// -----------------------------------------------------------------------------------
+// 仮キャラ
+// ------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------
+proc デバッグキャラセット {
+	#if d:DEBUG_PRINT
+		print 'debug_chara_set'
+	#endif
+
+	#if d:CHARA_CAMERA
+		chara キャラカメラ 敵兵カメラ \
+			-c d:TARGET_CHARA \
+			-s -920,610,200 \
+			-r -200,1024,0
+	#endif
+
+	#if d:SCREENSHOT
+		chara スクリーンショット shot
+	#endif
+
+	#if d:USB_KEY
+		chara USBキーボード実行 test \
+			-e d:KBD_ESC {
+				mesg プレイヤー d:PLAYER position -5500, -13000, -500
+			} \
+	#endif
+}

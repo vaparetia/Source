@@ -1,0 +1,1490 @@
+/*
+   control.c	
+   キャラクタ移動制御ルーチン
+   
+   1999/07/07 M.Sonoyama
+   $Id: control.c,v 1.1.1.3 2002/11/19 11:41:46 Yoshizawa1 Exp $			      
+   
+   PROJECT OF METAL GEAR SOLID2 ( since 1999 )
+   */
+
+/*-------------------------------------------------------------------
+  
+  ### コントロール構造体リスト初期化 ###
+  void		GM_InitWhereSystem( void )
+  
+  
+  ### コントロール構造体登録 ###
+  int		GM_InitControl( ctrl, name, map )
+  CONTROL		*ctrl ;	コントロール構造体のポインタ
+  int		name ;  登録名
+  int		map ;   マップ
+  
+  
+  ### 移動処理 ###
+  void		GM_ActControl( ctrl )
+  CONTROL		*ctrl ; コントロール構造体のポインタ
+  
+  
+  ### コントロール構造体をリストから削除 ###
+  void		GM_FreeControl( ctrl )
+  CONTROL		*ctrl ; コントロール構造体のポインタ
+  
+  
+  ### 当たりチェック用パラメータ設定 ###
+  void		GM_ConfigControlHazard( ctrl, height, r_sphere, s_sphere )
+  CONTROL		*ctrl ;		コントロール構造体のポインタ
+  int		height ;	地面からの高さ
+  int		r_sphere ;	壁反発半径
+  int		s_sphere ;	壁検出半径
+  
+  ----------------------------------------------------------------------------*/
+
+#ifdef PSX2
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+
+#include <eekernel.h>
+#include <eeregs.h>
+#include <libgraph.h>
+#include <libdma.h>
+#include <libdev.h>
+#include <sifdev.h>
+#include <libvu0.h>
+#endif
+
+#include	"gameheader.h"
+
+#define		MAX_WHERES	(128*3)
+
+#ifdef DEBUG
+
+#endif
+
+#ifdef DEBUG_MODE
+int		GM_ControlDebug = 0 ;
+#endif
+
+/*----------------------------------------------------------------*/
+
+/*
+   公開位置情報リスト
+   */
+int		GM_N_WhereList ;
+CONTROL	*GM_WhereList[ MAX_WHERES ] ;
+static	CONTROL	DummyPlayer ;
+
+/*----------------------------------------------------------------*/
+
+
+/*
+   マップ変更メッセージ
+   */
+#define	MAPTO		C_MAP
+#define	MOVETO		C_MOVE
+
+/*
+   プレイヤーのキャラ名
+   */
+#define	PLAYER_NAME	(10163495) /* GV_StrCode( "ライデン" ) */
+
+/*
+   デフォルトの障害物処理パラメータ
+   */
+#define	DEFAULT_HEIGHT	(850)
+#define	DEFAULT_SPHERE	(450)
+
+/*----------------------------------------------------------------*/
+
+static	inline	int	MaxInt( a, b )
+int		a, b ;
+{
+    return ( a > b ) ? a : b ;
+}
+
+static	inline	int	MinInt( a, b )
+int		a, b ;
+{
+    return ( a < b ) ? a : b ;
+}
+
+/*
+   公開位置情報に登録する
+   */
+static	int	QueueWhere( where )
+CONTROL		*where ;
+{
+    int		num ;
+
+    ASSERT( where != NULL ) ;
+    if ( where->name == PLAYER_NAME ) {
+		GM_WhereList[ 0 ] = where ;
+    } else {
+		
+		
+#ifdef DEBUG_MODE
+		{
+		    CONTROL		**list ;
+		    int			i, n ;
+			list = GM_WhereList ;
+			n = GM_N_WhereList ;
+			for ( i = n ; i > 0 ; -- i ) {
+				ASSERT( *list != where) ;
+				list ++ ;
+		    }
+		}
+
+#endif		
+		
+		num = GM_N_WhereList ;
+		if ( num >= MAX_WHERES ) {
+			printf( "warning : control list over %x\n", where->name ) ;
+			return -1 ;
+		}
+		GM_WhereList[ num ] = where ;
+		GM_N_WhereList = num + 1 ;
+    }
+    return 0 ;
+}
+
+/*
+   公開位置情報から削除する
+   */
+static	void	DequeueWhere( where )
+CONTROL		*where ;
+{
+    CONTROL		**list ;
+    int			i, n ;
+
+    ASSERT( where != NULL ) ;
+    list = GM_WhereList ;
+    n = GM_N_WhereList ;
+    for ( i = n ; i > 0 ; -- i ) {
+		if ( *list == where ) goto found ;
+		list ++ ;
+    }
+    WARNING( "dequeued invalid where %x\n", where ) ;
+    return ;
+	found :
+    if ( list != GM_WhereList ) {
+		n -- ;
+		*list = GM_WhereList[ n ] ;
+		GM_N_WhereList = n ;
+    } else {
+		GM_WhereList[ 0 ] = &DummyPlayer;
+    }
+}
+
+/*
+   公開位置を検索
+   */
+CONTROL	*GM_SearchWhere( name )
+u_int	name;
+{
+    CONTROL		**list ;
+    int			i, n ;
+
+    list = GM_WhereList ;
+    n = GM_N_WhereList ;
+    for ( i = n ; i > 0 ; -- i ) {
+		if ( (*list)->name == name ) return *list;
+		list ++ ;
+    }
+    return NULL;
+}
+
+//名前のキャラが存在してるかのみチェック
+int	GM_OnlyCheckControl( void )
+{
+	int name ;
+	CONTROL	*ctrl ;
+
+	if ( GCL_NextStr() == NULL ) return -1 ;
+	name = GCL_GetNextInt() ;
+	ctrl = GM_SearchWhere( name ) ;
+	if(ctrl == NULL) return -1 ;
+	return 1 ;
+}
+int	GM_GetPosForGCL( void )
+{
+	GCL_VAR_REF ref; //配列への参照データ
+	int name ;
+	CONTROL	*ctrl ;
+
+	if ( GCL_NextStr() == NULL ) return -1 ;
+	name = GCL_GetNextInt() ;
+
+//printf(" get enemy pos [%d]\n",name ) ;
+	ctrl = GM_SearchWhere( name ) ;
+
+	if ( GCL_NextStr() == NULL ) return -1 ;
+	GCL_GetNextVarRef( &ref ); // 参照データの取得
+	GCL_SetVarRef( &ref, 0, (int)ctrl->mov.vx );
+
+	if ( GCL_NextStr() == NULL ) return -1 ;
+	GCL_GetNextVarRef( &ref ); // 参照データの取得
+	GCL_SetVarRef( &ref, 0, (int)ctrl->mov.vy );
+
+	if ( GCL_NextStr() == NULL ) return -1 ;
+	GCL_GetNextVarRef( &ref ); // 参照データの取得
+	GCL_SetVarRef( &ref, 0, (int)ctrl->mov.vz );
+
+	return 1 ;
+}
+
+int	GM_GetDirForGCL( void )
+{
+	GCL_VAR_REF ref; //配列への参照データ
+	int name ;
+	CONTROL	*ctrl ;
+
+	if ( GCL_NextStr() == NULL ) return -1 ;
+	name = GCL_GetNextInt() ;
+
+//printf(" get enemy pos [%d]\n",name ) ;
+	ctrl = GM_SearchWhere( name ) ;
+
+	if ( GCL_NextStr() == NULL ) return -1 ;
+	GCL_GetNextVarRef( &ref ); // 参照データの取得
+	GCL_SetVarRef( &ref, 0, (int)ctrl->rot.vy );
+
+	return 1 ;
+}
+
+/* 倒れている状態を計算 １ならあお向け０ならうつぶせ*/
+int	GM_GetFallTypeForGCL( void )
+{
+	GCL_VAR_REF ref; //配列への参照データ
+	int name, fall_type ;
+	CONTROL	*ctrl ;
+	FMATRIX	mat, *w ;
+	static FVECTOR Front = { 0.0, 0.0, 100.0 } ;
+
+	if ( GCL_NextStr() == NULL ) return -1 ;
+	name = GCL_GetNextInt() ;
+
+//printf(" get enemy pos [%d]\n",name ) ;
+	ctrl = GM_SearchWhere( name ) ;
+
+	if ( ctrl->object == NULL ) {
+		printf("WARNING!! GM_GetFallTypeForGCL NO BODY!!!!!! \n");
+		return -1 ;
+	}
+
+	w = &ctrl->object->objs->objs[0].world ;
+	DG_SetPos( w ) ;
+	DG_MovePos( &Front ) ;
+	DG_GetPos( &mat ) ;
+
+	fall_type = ( mat.m[3][1] > w->m[3][1] ) ? 1 : 0 ;
+
+	if ( GCL_NextStr() == NULL ) return -1 ;
+	GCL_GetNextVarRef( &ref ); // 参照データの取得
+	GCL_SetVarRef( &ref, 0, (int)fall_type );
+
+	return 1 ;
+}
+
+/*----------------------------------------------------------------*/
+
+/*
+   メッセージをチェック
+   */
+static	inline	void	CheckMessage( CONTROL *ctrl )
+{
+    int		n_msg, name ;
+
+    /*
+       name == 0 ならば、何もしない
+	   */
+    if ( ( name = ctrl->name ) == 0 ) return ;
+    ctrl->n_msg = n_msg = GV_ReceiveMessage( name, &( ctrl->msg ) ) ;
+}
+
+/*----------------------------------------------------------------------*/
+
+/* マップ移動をチェック */
+int GM_CheckChangeGroup( CONTROL *ctrl, FVECTOR *pmov )
+{
+    HZX_GROUP_ID hzx_id;
+	FVECTOR		 mov ;
+
+    hzx_id = ctrl->hzx_id;
+
+	if ( ctrl->addr_mov == NULL ) {
+		DG_COPY_VEC( &mov, &ctrl->mov ) ;
+		mov.vy = ctrl->hzx_base + 25.0F ;
+	} else {
+		DG_COPY_VEC( &mov, ctrl->addr_mov ) ;
+	}
+
+    ctrl->link_zone = HZX_CheckChangeGroup( &hzx_id, &mov, ctrl->link_zone, &ctrl->addr ) ;
+    if( ctrl->hzx_id != hzx_id ){
+		/* 切替えが検出された */
+		GM_ChangeControlMapFromHzxId( ctrl, hzx_id ) ;
+		return 1 ;
+    }
+	if ( GM_CheckMapChangeTrap( ctrl, pmov ) ) {
+		/* 切替えが検出された */
+		return 1 ;
+	}
+	/* ゾーン外にいるときは、オンラインマップ変更チェック */
+	{
+		u_char		z1, z2 ;
+
+		z1 = ctrl->addr & 0xff ;
+		z2 = ( ctrl->addr & 0xff00 ) >> 8 ;
+		if ( z1 != z2 ) {
+			ctrl->link_zone = HZX_CheckChangeGroupMapLink( &hzx_id, pmov, &ctrl->mov, 
+														   ctrl->link_zone, &ctrl->addr ) ;
+			if ( ctrl->hzx_id != hzx_id ) {
+				GM_ChangeControlMapFromHzxId( ctrl, hzx_id ) ;
+				return 1 ;
+			}
+		}
+	}
+    return 0 ;
+}
+
+/*----------------------------------------------------------------*/
+
+/*
+   移動直線上の障害物をチェック
+   */
+static	inline	void	CheckOnlineHazard( CONTROL *ctrl )
+{
+    FVECTOR		to ;
+    float 		len1, len2 ;
+	int			which ;
+
+	ctrl->attribute &= ~( CTRL_ATR_ONLINE_SEG | CTRL_ATR_ONLINE_FLR ) ;
+    _sceVu0AddVector( &to, &( ctrl->mov ), &( ctrl->step ) ) ;
+    if ( ( ctrl->skip_flag & CTRL_HZX_SEG_HORIZON_CHECK ) ) {
+		if ( ( DG_FABS( ctrl->step.vy ) < ctrl->height / 2.0F ) ) {
+			to.vy = ctrl->mov.vy ;
+		} else {
+			//printf( "horizon online -- large step.vy %f\n", ctrl->step.vy ) ;
+		}
+	}
+    if ( HZX_OnlineHazardCheck( ctrl->hzx_id, &( ctrl->mov ), &to, ctrl->hzx_check_type, 
+							   ctrl->seg_flag, ctrl->flr_flag ) ) {
+		ctrl->n_touches = 1 ;
+		which = HZX_GetOnlineHazardType() ;
+		if ( which == HZX_ONLINE_TYPE_SEGMENT ) ctrl->attribute |= CTRL_ATR_ONLINE_SEG ;
+		else									ctrl->attribute |= CTRL_ATR_ONLINE_FLR ;
+		if ( ctrl->level[ 0 ] != NULL ) {
+			HZX_GetOnlineHazard( ctrl->level[ 0 ], ctrl->flr_atrs ) ;
+			//HZX_ViewHazard( ctrl->level[ 0 ] ) ;
+		}
+		HZX_GetOnlineVector( ctrl->vecs ) ;
+		len1 = GV_VecLen3F( ctrl->vecs ) ;
+		len2 = len1 - ( float )( ctrl->r_sphere / 2 ) ;
+#ifdef DEBUG_MODE
+		if ( !GM_CheckGameStatus( STATE_DEMO ) && len1 < 0.010F ) {
+			printf( "on hazard : %.2f %.2f %.2f\n", 
+				   ctrl->mov.vx, ctrl->mov.vy, ctrl->mov.vz ) ;
+			GV_ERROR( GV_ERROR_JUST_ON_WALL ) ;
+		} 
+#endif
+		if ( len2 < 0.0F ) {
+			len2 = - len2 ;
+			if ( DG_FABS( ctrl->step.vx ) < 0.010F &&
+				 DG_FABS( ctrl->step.vy ) < 0.010F &&
+				 DG_FABS( ctrl->step.vz ) < 0.010F ) {
+				/* 動かない。（でいいのか？） */
+				DG_COPY_VEC( &to, &DG_ZeroVector ) ;
+			} else {
+				GV_LenVec3F( &ctrl->step, &to, len1, len2 ) ;
+				_sceVu0SubVector( &to, &DG_ZeroVector, &to ) ;
+			}
+		} else {
+			GV_LenVec3F( ctrl->vecs, &to, len1, len2 ) ;
+		}
+		ctrl->step = to ;
+    }
+}
+
+/* 近接壁との間に床があったらはじく */
+static	int		CheckNearOnline( CONTROL *ctrl, HZX_HZD *segs, FVECTOR *near_vecs, 
+								 int *atrs, signed char *is_edges, int n_touches )
+{
+	FVECTOR			to, near ;
+	int				i, n ;
+				
+	n = n_touches ;
+	for ( i = 0; i < n; i ++ ) {
+		DG_COPY_VEC( &near, near_vecs + i ) ;	
+		near.vy = 0.0F ;
+		_sceVu0AddVector( &to, &ctrl->mov, &near ) ;
+		
+		//ViewFromTo( &ctrl->mov, &to, 232, 32, 32 ) ;
+
+		if ( HZX_OnlineHazardCheck( ctrl->hzx_id, &ctrl->mov, &to,
+								   HZX_CHK_FLOOR, 0, ctrl->flr_flag ) ) {	
+#if 0
+			{	
+				HZX_HZD		flr ;
+
+				HZX_GetOnlineHazard( &flr, NULL ) ;	
+				HZX_ViewFloor( &flr, flr.p4.h ) ;
+			}
+#endif
+			n_touches -- ;
+			if ( i == 0 && n == 2 ) {
+				segs[ 0 ] = segs[ 1 ] ;
+				near_vecs[ 0 ] = near_vecs[ 1 ] ;
+				atrs[ 0 ] = atrs[ 1 ] ;
+				is_edges[ 0 ] = is_edges[ 1 ] ;
+			}
+			//printf( "<%d> n_touches %d\n", GV_Time, n_touches ) ;
+		}
+	}
+	return n_touches ;
+}
+
+/*
+   近接障害物をチェック２
+*/
+static	int		CheckNearHazard2( FVECTOR *react1, CONTROL *ctrl )
+{
+    FVECTOR		react = { 0.0F, 0.0F, 0.0F } ;
+	FVECTOR		vecs[ 2 ], pos1 ;
+	HZX_HZD		segs[ 2 ] ;
+	signed char	is_edge[ 2 ] ;
+	float		tmp, len ;
+    int			n_touches, atrs[ 2 ] ;
+    long		retry_flag;
+
+	DG_COPY_VEC( &pos1, &ctrl->mov ) ;
+	tmp = ctrl->mov.vy ;
+//	ctrl->mov.vy = ctrl->hzx_base + ctrl->col_width ;
+	ctrl->mov.vy = ctrl->hzx_base + ctrl->hzx_height2 ;
+
+	if ( HZX_OnlineHazardCheck( ctrl->hzx_id, &pos1, &ctrl->mov, HZX_CHK_FLOOR,
+							    0, ctrl->flr_flag ) ) {
+		HZX_GetOnlinePoint( &ctrl->mov ) ;
+		ctrl->mov.vy += 1.0F ;
+	}
+
+    retry_flag = 0;
+NearCheckAgain2 :
+    /* 近接障害物処理 */
+    n_touches = HZX_NearHazardCheck( ctrl->hzx_id, &( ctrl->mov ), ctrl->s_sphere, 
+									ctrl->hzx_check_type, ctrl->seg_flag, 
+									ctrl->r_sphere ) ;
+    if ( n_touches > 0 ) {
+		HZX_GetNearVector( vecs ) ;
+		HZX_GetIsEdge( is_edge ) ;
+		HZX_GetNearHazard( segs, atrs ) ;
+		n_touches = GM_HzxCheckConflict( n_touches, &ctrl->mov, segs, vecs, is_edge ) ;
+		if ( ctrl->attribute & CTRL_ATR_NEARONLINE ) {
+			//printf( "<%d>nearcheck2\n", GV_Time ) ;
+			n_touches = CheckNearOnline( ctrl, segs, vecs, atrs, is_edge, n_touches ) ;
+		}
+		GM_GetHazardReaction( &react, n_touches, vecs, ctrl->r_sphere ) ;
+#ifdef DEBUG
+		if ( ( DG_FABS( vecs[ 0 ].vx ) < 0.010F ) &&
+			 ( DG_FABS( vecs[ 0 ].vz ) < 0.010F ) ) {
+			/* 壁上 */
+			if ( retry_flag == 0 ) {
+				/* ステップを少し戻して再チェック */	
+				react.vx = ctrl->step.vx ;
+				react.vy = 0.0F ;
+				react.vz = ctrl->step.vz ;
+				GV_LenVec3F( &react, &react, 0.0F, 8.0F ) ;
+				_sceVu0SubVector( &ctrl->mov, &ctrl->mov, &react ) ;
+				retry_flag = 1 ;	
+#ifdef DEBUG_MODE
+				if ( !GM_CheckGameStatus( STATE_DEMO ) ) {
+					printf( "warning: near check - on hazard. try again\n" ) ;
+					GV_ERROR( GV_ERROR_JUST_ON_WALL ) ;
+				}
+#endif
+				goto NearCheckAgain2 ;
+			} else {
+#ifdef DEBUG_MODE
+				if ( !GM_CheckGameStatus( STATE_DEMO ) ) {
+					printf( "fatal!!! : near check - on hazard.\n" ) ;
+					GV_ERROR( GV_ERROR_JUST_ON_WALL ) ;
+					if ( GV_PadData[ 0 ].status & PAD_L1 ) HZX_ViewHazard( &segs[ 0 ] ) ;
+				}
+#endif
+				return 0 ;
+			}
+		}
+#endif		
+#ifdef DEBUG
+		/* 吹っ飛びの回避 */
+		{
+			float	len, rs ;
+
+			rs = ( float )ctrl->r_sphere ;
+			react.vy = 0.0F ;
+			len = GV_VecLen3F( &react ) ;
+//			if ( len > ctrl->r_sphere ) {
+	        if ( ( ( DG_FABS( react.vx ) - rs * 2.0F ) > 0.0F ) ||
+				 ( ( DG_FABS( react.vz ) - rs * 2.0F ) > 0.0F ) ) {
+#ifdef DEBUG_MODE
+				if ( !GM_CheckGameStatus( STATE_DEMO ) ) {
+					printf( "warning : react vector is too large. auto adjust\n" ) ;
+					GV_ERROR( GV_ERROR_NARROW_POS ) ;
+					GM_ViewNarrowInfo( n_touches, &ctrl->mov, segs ) ;
+				}
+#endif	
+				/* r_sphere * 2 までにとどめる */
+				GV_LenVec3F( &react, &react, len, ( float )ctrl->r_sphere * 2.0F ) ;
+			}
+		}
+#endif
+    }
+	len = GV_VecLen3F( &react ) ;
+	if ( len > GV_VecLen3F( react1 ) ) {
+		//printf( "<%d> nearcheck2 touches %d\n", GV_Time, n_touches ) ;
+		ctrl->n_touches = n_touches ;
+		react1->vx = react.vx ;
+		react1->vz = react.vz ;
+		HZX_GetNearVector( ctrl->vecs ) ;
+		HZX_GetIsEdge( ctrl->is_edge ) ;
+		if ( ctrl->segs[ 0 ] != NULL ) {
+			HZX_GetNearHazard( ctrl->segs[ 0 ], ctrl->atrs ) ;		
+		}
+	}
+	ctrl->mov.vy = tmp ;
+	return n_touches ;
+}
+
+/*
+   近接障害物をチェック
+*/
+static	inline	void	CheckNearHazard( CONTROL *ctrl )
+{
+    FVECTOR		react = { 0.0F, 0.0F, 0.0F } ;
+    int			n_touches ;
+	//    int			interp ;
+    long		retry_flag;
+
+    retry_flag = 0;
+NearCheckAgain :
+    /* 近接障害物処理 */
+    n_touches = HZX_NearHazardCheck( ctrl->hzx_id, &( ctrl->mov ), ctrl->s_sphere, 
+									ctrl->hzx_check_type, ctrl->seg_flag, 
+									ctrl->r_sphere ) ;
+    if ( n_touches > 0 ) {
+		HZX_GetNearVector( ctrl->vecs ) ;
+		HZX_GetIsEdge( ctrl->is_edge ) ;
+		if ( ctrl->segs[ 0 ] != NULL ) {
+			HZX_GetNearHazard( ctrl->segs[ 0 ], ctrl->atrs ) ;
+			n_touches = GM_HzxCheckConflict( n_touches, &ctrl->mov, ctrl->segs[ 0 ], ctrl->vecs,
+											 ctrl->is_edge ) ;
+			if ( ctrl->attribute & CTRL_ATR_NEARONLINE ) {
+				n_touches = CheckNearOnline( ctrl, ctrl->segs[ 0 ], ctrl->vecs, 
+											 ctrl->atrs, ctrl->is_edge, n_touches ) ;
+			}
+		}
+		ctrl->n_touches = n_touches ;
+#ifdef DEBUG
+		if ( ( DG_FABS( ctrl->vecs[ 0 ].vx ) < 0.010F ) &&
+			 ( DG_FABS( ctrl->vecs[ 0 ].vz ) < 0.010F ) ) {
+			/* 壁上 */
+			if ( retry_flag == 0 ) {
+				/* ステップを少し戻して再チェック */	
+				react.vx = ctrl->step.vx ;
+				react.vy = 0.0F ;
+				react.vz = ctrl->step.vz ;
+				GV_LenVec3F( &react, &react, 0.0F, 8.0F ) ;
+				_sceVu0SubVector( &ctrl->mov, &ctrl->mov, &react ) ;
+				retry_flag = 1 ;	
+#ifdef DEBUG_MODE
+				if ( !GM_CheckGameStatus( STATE_DEMO ) ) {
+					printf( "warning: near check - on hazard. try again\n" ) ;
+					GV_ERROR( GV_ERROR_JUST_ON_WALL ) ;
+				}
+#endif
+				goto NearCheckAgain ;
+			} else {
+#ifdef DEBUG_MODE
+				if ( !GM_CheckGameStatus( STATE_DEMO ) ) {
+					printf( "fatal!!! : near check - on hazard.\n" ) ;
+					GV_ERROR( GV_ERROR_JUST_ON_WALL ) ;
+					if ( GV_PadData[ 0 ].status & PAD_L1 ) HZX_ViewHazard( ctrl->segs[ 0 ] ) ;
+				}
+#endif
+				return ;
+			}
+		}
+#endif		
+//		HZX_GetReactVector( &react ) ;
+		GM_GetHazardReaction( &react, n_touches, ctrl->vecs, ctrl->r_sphere ) ;
+
+#ifdef DEBUG
+		/* 吹っ飛びの回避 */
+		{
+			float	len, rs ;
+
+			rs = ( float )ctrl->r_sphere ;
+			react.vy = 0.0F ;
+			len = GV_VecLen3F( &react ) ;
+	        if ( ( ( DG_FABS( react.vx ) - rs * 2.0F ) > 0.0F ) ||
+				 ( ( DG_FABS( react.vz ) - rs * 2.0F ) > 0.0F ) ) {
+//			if ( len > ctrl->r_sphere ) {
+#ifdef DEBUG_MODE
+				printf( "[%d]warning : react vector is too large. auto adjust\n", GV_Time ) ;
+				GV_ERROR( GV_ERROR_NARROW_POS ) ;
+				GM_ViewNarrowInfo( n_touches, &ctrl->mov, ctrl->segs[ 0 ] ) ;
+//				DumpVec( &ctrl->mov ) ;	
+				DumpVec( &ctrl->vecs[ 0 ] ) ;
+				if ( n_touches == 2 ) DumpVec( &ctrl->vecs[ 1 ] ) ;
+				DumpVec( &react ) ;
+				printf( "%d\n", ctrl->r_sphere ) ;
+//				DumpSegment( ctrl->segs[ 0 ] ) ;
+//				if ( n_touches == 2 ) DumpSegment( ctrl->segs[ 1 ] ) ;
+#endif
+				/* r_sphere * 2 までにとどめる */
+				GV_LenVec3F( &react, &react, len, ( float )ctrl->r_sphere * 2.0F ) ;
+			}
+		}
+#endif
+    }
+	/* 2点ニアチェック */
+	if ( ctrl->skip_flag & CTRL_NEAR_CHECK2 ) {
+		CheckNearHazard2( &react, ctrl ) ;
+		ctrl->skip_flag &= ~CTRL_NEAR_CHECK2 ;
+	}
+	ctrl->mov.vx += react.vx ;
+	ctrl->mov.vz += react.vz ;
+}
+
+/*
+   レベル障害物をチェック
+   */
+static	inline	void	CheckLevelHazard( CONTROL *ctrl )
+{
+    float		levels[ 2 ] ;
+    float		y, height, limit, diff, hzx_height ;
+	float		prev_floor ;
+    int			flag, again, pre_level_found ;
+	//    int			atrs[ 2 ] ;
+
+	again = 0 ;
+	pre_level_found = ctrl->level_found ;
+    /*
+       0 : 床高さ	
+       1 : 天井高さ
+	   */
+    ctrl->grounded = 0 ;
+    ctrl->level_found = 0 ;
+    /*
+       垂直移動処理
+	   */
+	if ( DG_FABS( ctrl->hzx_height - HZX_HEIGHT_NO_USE ) < 0.1F ) {
+		height = diff = 0.0F ;
+		y = ctrl->mov.vy + ctrl->step.vy ;
+		hzx_height = ctrl->height ;
+    } else {
+		hzx_height = ctrl->hzx_height ;
+		height = hzx_height + ctrl->hzx_base ;
+		y = height + ctrl->step.vy ;
+		ctrl->mov.vy = height ;
+		diff = ctrl->height - hzx_height ; 
+    }
+
+	prev_floor = ctrl->levels[ 0 ] ;
+level_check_again :
+    flag = HZX_LevelHazardCheck( ctrl->hzx_id, &( ctrl->mov ),
+								ctrl->hzx_check_type, ctrl->flr_flag ) ;
+    if ( flag != 0 ) {
+		HZX_GetLevelHeight( levels ) ; 
+		if ( ctrl->level[ 0 ] != NULL ) {
+			HZX_GetLevelHazard( ctrl->level[ 0 ], ctrl->flr_atrs ) ;
+		}
+    }
+	if ( !( 1 & flag ) ) levels[ 0 ] = GM_WORLD_LIMIT_BOTTOM ;
+	if ( !( 2 & flag ) ) levels[ 1 ] = GM_WORLD_LIMIT_UPPER ;
+
+	/* 保険機構 */
+	/* 前フレームと激しく違うときは、１ずらした位置と比較 */
+	if ( !GM_CheckGameStatus( STATE_DEMO ) && 
+		again == 0 && ( pre_level_found & 1 ) && 
+		( !( flag & 1 ) || ( ( ( flag & 1 ) && DG_FABS( prev_floor - levels[ 0 ] ) > 2000.0F ) ) ) ) {
+		FVECTOR		p1, p2 ;
+		int			flag1, flag2 ;
+		int			xz ;
+		float		levels1[ 2 ], levels2[ 2 ] ;
+
+		//printf( "level check again\n" ) ;
+		xz = 0 ;
+level_check_again_again :
+	    if ( xz == 0 ) {
+			DG_COPY_VEC( &p1, &ctrl->mov ) ; p1.vx += 1.0F ;
+			DG_COPY_VEC( &p2, &ctrl->mov ) ; p2.vx -= 1.0F ;
+		} else {
+			DG_COPY_VEC( &p1, &ctrl->mov ) ; p1.vz += 1.0F ;
+			DG_COPY_VEC( &p2, &ctrl->mov ) ; p2.vz -= 1.0F ;
+		}
+		
+		flag1 = HZX_LevelHazardCheck( ctrl->hzx_id, &p1,
+									 ctrl->hzx_check_type, ctrl->flr_flag ) & 1 ;
+		if ( flag1 != 0 ) {
+			HZX_GetLevelHeight( levels1 ) ; 
+		} else {
+			levels1[ 0 ] = GM_WORLD_LIMIT_BOTTOM ;
+		}
+		flag2 = HZX_LevelHazardCheck( ctrl->hzx_id, &p2,
+									 ctrl->hzx_check_type, ctrl->flr_flag ) & 1 ;
+		if ( flag2 != 0 ) {
+			HZX_GetLevelHeight( levels2 ) ; 
+		} else {
+			levels2[ 0 ] = GM_WORLD_LIMIT_BOTTOM ;
+		}
+
+		//printf( "-%d- %f %f %f\n", xz, levels[ 0 ], levels1[ 0 ], levels2[ 0 ] ) ;
+		if ( DG_FABS( levels1[ 0 ] - levels2[ 0 ] ) < 10.0F &&
+			 levels1[ 0 ] - levels[ 0 ] > 100.0F ) {
+			//printf( "control levelcheck again %d\n", ctrl->name ) ;
+			//printf( "%f %f %f\n", ctrl->mov.vx, ctrl->mov.vy, ctrl->mov.vz ) ;
+			DG_COPY_VEC( &ctrl->mov, &p1 ) ;
+			if ( xz == 0 ) again = 1 ;
+			else		   again = 2 ;
+			goto level_check_again ;
+		}
+		if ( xz == 0 ) {
+			xz = 1 ;
+			goto level_check_again_again ;
+		}
+	}
+	if ( again ) {
+		if ( again == 1 ) ctrl->mov.vx -= 1.0F ;
+		else			  ctrl->mov.vz -= 1.0F ;
+	}
+
+    ctrl->level_found = flag ;
+
+    /*
+       床処理
+	   */
+    limit = hzx_height ;
+    if ( 1 & flag ) {
+		limit += levels[ 0 ] ;
+		if ( y < limit ) {
+			y = limit ;
+			ctrl->grounded = 1 ;
+			goto set_heightx ;
+		}
+    }
+    /*
+       天井処理
+	   */
+    if ( 2 & flag ) {
+		limit = levels[ 1 ] - hzx_height ;
+		if ( y > limit ) {
+			y = limit ;
+			ctrl->grounded = 2 ;
+		}
+    }
+set_heightx :
+    ctrl->levels[ 0 ] = levels[ 0 ] ;
+    ctrl->levels[ 1 ] = levels[ 1 ] ;
+    ctrl->mov.vy = y + diff ;
+}
+
+/*----------------------------------------------------------------*/
+
+#ifdef DEBUG_MODE
+void		GM_DumpControlList( void )
+{
+    CONTROL	**ctrls, *ctrl ;
+    int		i ;
+
+	return ;	/* 切ってあります */
+
+    printf( "---- DumpControlList ----\n" ) ;
+    ctrls = GM_WhereList ;
+    for ( i = 0; i < GM_N_WhereList; i ++ ) {
+		ctrl = *( ctrls ++ ) ;
+		if ( ctrl->count == 0 ) continue ;
+		printf( "< %x > : ", ctrl->name ) ;
+		printf( "%f\n", ( float )ctrl->runtime / ( float )ctrl->count ) ;
+		ctrl->count = ctrl->runtime = 0 ;
+    }
+    printf( "---- DumpControlList End ----\n" ) ;
+}
+#endif
+
+void		GM_InitWhereSystem( void )
+{
+	/*
+	   リスト先頭は必ずプレイヤーなので
+	   ダミーの構造体を登録しておく
+	   */
+	GM_WhereList[ 0 ] = &DummyPlayer ;
+	GM_N_WhereList = 1 ;
+}
+
+int		GM_InitControlEx( ctrl, name, map, atr )
+CONTROL		*ctrl ;
+u_int		name ;
+int			map ;
+int			atr ;
+{
+    if ( map == 0 ) map = GM_CurrentMap ;
+#ifdef DEBUG_MODE
+	if ( name > 128 && map == 0x7fffffff ) {
+		printf( "init control error : [%x] invalid map %x\n", name, map ) ;
+		ASSERT( 0 ) ;
+	}
+#endif
+
+    GV_ZeroMemory( ctrl, sizeof( CONTROL_NOEVT ) ) ;
+    GM_ChangeControlMapFromMapId( ctrl, map ) ;
+
+    ctrl->name = name ;
+
+    ctrl->height = DEFAULT_HEIGHT ;
+    ctrl->hzx_height = HZX_HEIGHT_NO_USE ;
+    ctrl->r_sphere = ctrl->s_sphere = DEFAULT_SPHERE ;
+    ctrl->seg_flag = 0 ;
+    ctrl->flr_flag = HZX_FLOOR_IK ;
+    /* デフォルトでは、トラップ、メッセージ、マップ変更なし、
+       アドレスチェックなし */
+    ctrl->skip_flag = CTRL_SKIP_TRAP | CTRL_SKIP_MESSAGE | 
+		CTRL_SKIP_CHANGE_MAP | CTRL_SKIP_GET_ADDRESS ;
+    ctrl->hzx_check_type = HZX_CHK_ALL ;
+    ctrl->addr = 0xffffffff ;
+    ctrl->addr_mov = NULL ;
+    /* 床・天井初期値 */
+    ctrl->levels[ 0 ] = GM_WORLD_LIMIT_BOTTOM ;
+    ctrl->levels[ 1 ] = GM_WORLD_LIMIT_UPPER ;
+    /* 床壁格納領域確保 */
+	if ( !( atr & CTRL_ATR_NOCHK_HZX ) ) {
+		GM_SEGMENTS	*segs ;
+
+		segs = GV_Malloc( sizeof( GM_SEGMENTS ) ) ;
+		if ( segs == NULL ) return -1 ;
+		ctrl->segs[ 0 ] = &segs->segments[ 0 ] ;
+		ctrl->segs[ 1 ] = &segs->segments[ 1 ] ;
+		ctrl->level[ 0 ] = &segs->floors[ 0 ] ;
+		ctrl->level[ 1 ] = &segs->floors[ 1 ] ;
+    } else {
+		ctrl->segs[ 0 ] = NULL ;
+		ctrl->segs[ 1 ] = NULL ;
+		ctrl->level[ 0 ] = NULL ;
+		ctrl->level[ 1 ] = NULL ;
+		ctrl->skip_flag |= CTRL_SKIP_HZX ;
+	}
+	ctrl->attribute = atr ;
+    ctrl->root_offset = NULL ;
+    ctrl->object = NULL ;
+	ctrl->motion_num = -1 ;
+
+    /*
+       キャラ名として128以下が指定されていると
+       公開位置情報に登録しない
+	*/
+//    if ( name != 0 ) {
+	if ( name > 128 ) {
+		if ( QueueWhere( ctrl ) < 0 ) return -1 ;
+    }
+
+    return 0 ;
+}
+
+/*------------------------------------------------------------------*/
+
+static	void	ResetHeightMotion( CONTROL *ctrl )
+{
+	MOTION_CONTROL	*m_ctrl ;
+	OBJECT			*body ;
+	float			height ;
+
+	body = ctrl->object ;
+	m_ctrl = body->m_ctrl ;
+
+	/* 高さ調整 */
+	height = m_ctrl->mt3_ctrl[ 0 ].move->step.vw ;
+	m_ctrl->height = height ;
+	m_ctrl->old_height = height ;
+	body->height = height ;
+	ctrl->height = height ;
+
+	ctrl->hzx_base = ctrl->mov.vy - height ;
+
+	/* ルート位置調整 */
+	height = m_ctrl->mt3_ctrl[ 0 ].root->step.vw ;
+	m_ctrl->root_height = height ;
+	m_ctrl->root_old_height = height ;
+
+	/* step.vyは0に */
+	ctrl->step.vy = 0.0F ;
+}
+
+/*------------------------------------------------------------------*/
+
+void		GM_ActControl( ctrl )
+CONTROL		*ctrl ;
+{
+    int			interp, flag ;
+	float		tmp = 0.0F ;
+    int			hzx_check_again ;
+    FVECTOR		step_buf = DG_ZeroVector ;
+	FVECTOR		pmov ;
+	//    int			r_sphere_buf, s_sphere_buf ;
+#ifdef DEBUG_MODE
+    int			intime, outtime ;
+#endif
+
+#ifdef DEBUG_MODE
+    intime = GET_HSYNC_TIMER() ;
+#endif
+
+#ifdef PSX2	/// ?本体が見つからない
+if(0){	/* 円あたり跳ね返り実験 */
+extern	void	GM_SphereBounce( CONTROL *ctrl ) ;
+
+GM_SphereBounce( ctrl ) ;
+}
+#endif ///
+    /*
+       メッセージ／イベントを処理する
+	   */
+    GM_CurrentMap = ctrl->map ;
+
+    hzx_check_again = 0 ;
+    flag = ctrl->skip_flag ;
+	DG_COPY_VEC( &pmov, &ctrl->mov ) ;
+	/* モーション変更時高さ調節機能 */
+	if ( ( flag & CTRL_RESET_HEIGHT ) &&
+		 ( ctrl->motion_num >= 0 && 
+		   ctrl->motion_num != ctrl->object->m_ctrl->mt3_ctrl[ 0 ].motion_num ) ) {
+		ResetHeightMotion( ctrl ) ;
+		ctrl->motion_num = -1 ;
+		ctrl->skip_flag &= ~CTRL_RESET_HEIGHT ;
+	}
+
+hazard_check_again :
+    /* 壁チェック */
+    if ( !( flag & CTRL_SKIP_SEG_CHECK ) ) {
+		ctrl->n_touches = 0 ;
+		if ( DG_FABS( ctrl->hzx_height - HZX_HEIGHT_NO_USE ) > 0.1F ) {
+			tmp = ctrl->mov.vy ;
+			ctrl->mov.vy = ctrl->hzx_height + ctrl->hzx_base ;
+			/* 有効桁数落ち防止の為、強引に整数化する */
+			ctrl->mov.vy = ( float )( ( int )ctrl->mov.vy ) ;
+		} else {
+			tmp = ctrl->mov.vy ;
+			ctrl->mov.vy = ( float )( ( int )ctrl->mov.vy ) ;
+		}
+		if ( !( flag & CTRL_SKIP_ONLINE_CHECK ) ) CheckOnlineHazard( ctrl ) ;
+		/* 直方体チェック */
+#if 0
+		if ( ctrl->skip_flag & CTRL_COLLIDE_CHECK ) { 
+			HZX_DetCollide( ctrl, ctrl->col_width, ctrl->col_length ) ;
+			r_sphere_buf = ctrl->r_sphere ;
+			s_sphere_buf = ctrl->s_sphere ;
+			ctrl->r_sphere = MinInt( ( int )ctrl->col_width, ( int )ctrl->col_length ) ;
+			ctrl->s_sphere = MaxInt( ( int )ctrl->col_width, ( int )ctrl->col_length ) ;
+		}
+#endif
+		ctrl->mov.vx += ctrl->step.vx ;
+		ctrl->mov.vz += ctrl->step.vz ;
+		if ( !( flag & CTRL_SKIP_NEAR_CHECK ) ) CheckNearHazard( ctrl ) ;
+#if 0
+		if ( ctrl->skip_flag & CTRL_COLLIDE_CHECK ) { 
+			ctrl->r_sphere = r_sphere_buf ;
+			ctrl->s_sphere = s_sphere_buf ;
+		}
+#endif
+		/* hzx_heightなしでも整数化するようにした */
+		//if ( DG_FABS( ctrl->hzx_height - HZX_HEIGHT_NO_USE ) > 0.1F ) {
+			ctrl->mov.vy = tmp ;
+		//} 
+    } else {
+		ctrl->n_touches = 0 ;
+		ctrl->mov.vx += ctrl->step.vx ;
+		ctrl->mov.vz += ctrl->step.vz ;
+    }
+    /* 床チェック */
+    if ( !( flag & CTRL_SKIP_FLR_CHECK ) ) {
+		if ( flag & CTRL_RESET_HZX_BASE ) {
+			ctrl->hzx_base = ctrl->mov.vy - ctrl->height ;
+			ctrl->skip_flag &= ~CTRL_RESET_HZX_BASE ;
+		}
+		CheckLevelHazard( ctrl ) ;
+    } else {
+		ctrl->mov.vy += ctrl->step.vy ;	    
+    }
+    ctrl->hzx_base = ctrl->mov.vy - ctrl->height ;
+
+    /* アドレス変更チェック */
+    if ( !( flag & CTRL_SKIP_GET_ADDRESS ) ) {
+		FVECTOR		mov ;
+
+		if ( ctrl->addr_mov == NULL ) {
+			/* +25.0f は誤差吸収 */
+			mov = ctrl->mov ; mov.vy = ctrl->hzx_base + 25.0F ;
+		} else {
+			mov = *( ctrl->addr_mov ) ;
+		}
+		ctrl->addr = HZX_GetAddress( ctrl->hzx_id, &mov, ctrl->addr ) ;
+#ifdef _XBOX
+		GM_CurrentAddr = ctrl->addr;
+#endif
+    }
+    /* マップ変更チェック */
+    if ( !( flag & CTRL_SKIP_CHANGE_MAP ) ) {
+		if ( GM_CheckChangeGroup( ctrl, &pmov ) ) {
+#ifdef DEBUG_MODE
+			if ( hzx_check_again ) printf( "same frame map change\n" ) ;
+#endif
+			/* ステップ値を０クリアして
+			   もう一回ハザードチェック */
+			GM_SetCurrentMap( ctrl->map ) ;
+			step_buf = ctrl->step ;
+			ctrl->step = DG_ZeroVector ;
+			DG_COPY_VEC( &pmov, &ctrl->mov ) ;
+			hzx_check_again = 1 ;
+			goto hazard_check_again ;
+		}
+    }
+    /* ステップ値を戻す */
+    if ( hzx_check_again ) ctrl->step = step_buf ;
+
+    /* 向き更新 */
+    if ( ( interp = ctrl->interp ) == 0 ) {
+#ifdef PAL
+#if 0
+		if ( ( GV_PadDataDirect[ 1 ].status & PAD_A ) &&
+			 ( GV_PadDataDirect[ 1 ].status & PAD_B ) ) {
+			GV_NearExp8PVPAL( &( ctrl->rot ), &( ctrl->turn ), 3 ) ;
+		} else {
+			GV_NearExp8PV( &( ctrl->rot ), &( ctrl->turn ), 3 ) ;
+		}
+#else
+		GV_NearExp8PVPAL( &( ctrl->rot ), &( ctrl->turn ), 3 ) ;
+#endif
+#else
+		GV_NearExp8PV( &( ctrl->rot ), &( ctrl->turn ), 3 ) ;
+#endif
+    } else {
+		GV_NearTimePV2( &( ctrl->rot ), 
+					  &( ctrl->turn ), interp, 3 ) ;
+		ctrl->interp = interp - 1 ;
+    }
+
+    /* トラップチェック */
+    if( !( flag & CTRL_SKIP_TRAP ) ){
+		FVECTOR		mov, *buf ;
+		int			trap_check_again, oldmap ;
+		/*
+		   トラップに侵入／離脱した場合、イベントを発生
+		   */
+		/* ctrl->movでチェックしない（モーションルートを使用する）
+		   リンクゾーン中は無視 */
+		oldmap = ctrl->map ;
+		trap_check_again = 0 ;
+recheck_trap :
+		if ( ctrl->root_offset != NULL && ctrl->link_zone == NULL ) {
+			buf = ctrl->evt.mov ;
+			_sceVu0AddVector( &mov, &ctrl->mov, ctrl->root_offset ) ;
+			ctrl->evt.mov = &mov ;
+			HZX_EnterTrap( ctrl->hzx_id, &( ctrl->evt ) ) ;
+			ctrl->evt.mov = buf ;
+		} else {
+			HZX_EnterTrap( ctrl->hzx_id, &( ctrl->evt ) ) ;
+		}
+		if ( trap_check_again == 0 && oldmap != ctrl->map ) {
+			/* トラップ処理中にマップが変更された */
+			trap_check_again = 1 ;
+			goto recheck_trap ;
+		}
+    }
+
+    /* メッセージチェック */
+    if ( !( flag & CTRL_SKIP_MESSAGE ) ) {
+		CheckMessage( ctrl ) ;
+    }
+    /* 定数回転マトリクスをセット */
+    DG_SetPos2( &( ctrl->mov ), &( ctrl->rot ) ) ;
+#ifdef DEBUG_MODE
+	/* ワールドリミットチェック */
+	if ( ctrl->mov.vy > GM_WORLD_LIMIT_UPPER * 2.0F  ||
+		 ctrl->mov.vy < GM_WORLD_LIMIT_BOTTOM * 2.0F ) {
+		GV_ERROR( GV_ERROR_WORLD_BOTTOM ) ;
+	}
+
+#endif
+#ifdef DEBUG_MODE
+    outtime = GET_HSYNC_TIMER() ;
+    ctrl->runtime += DIFF_HSYNC_TIMER( outtime, intime ) ;
+    ctrl->count ++ ;
+#endif
+}
+
+/*----------------------------------------------------------------*/
+
+void		GM_FreeControl( ctrl )
+CONTROL		*ctrl ;
+{
+	if ( ctrl->name > 128 ) DequeueWhere( ctrl ) ;
+	if ( ctrl->segs[ 0 ] != NULL ) GM_ConfigControlNoSegmentArea( ctrl ) ;
+}
+
+/*----------------------------------------------------------------*/
+
+/* オブジェクト構造体へのポインタを接続 */
+void		GM_ConfigControlObject( ctrl, object ) 
+CONTROL		*ctrl ;
+OBJECT		*object ;
+{
+    ctrl->object = object ;
+}
+
+/* 当たりチェックしないからハザード格納領域は
+   いらない */
+void		GM_ConfigControlNoSegmentArea( ctrl )
+CONTROL		*ctrl ;
+{
+    GV_Free( ctrl->segs[ 0 ] ) ;
+    ctrl->segs[ 0 ] = NULL ;
+    ctrl->segs[ 1 ] = NULL ;
+    ctrl->level[ 0 ] = NULL ;
+    ctrl->level[ 1 ] = NULL ;
+}
+
+/* 位置からマップＩＤを設定 */
+void	GM_ConfigControlMapID( ctrl )
+CONTROL		*ctrl ;
+{
+    int		z ;
+
+    ctrl->hzx_id = HZX_GetHzxIDbyZone( 0, &ctrl->mov, &z ) ;
+
+    ctrl->addr = HZX_AddressNo( GV_GetNo( ctrl->hzx_id ), z, z ) ;
+    GM_ChangeControlMapFromHzxId( ctrl, ctrl->hzx_id ) ;
+    GM_SetCurrentMap( ctrl->map ) ;
+}
+
+/* 初期位置設定 */
+void		GM_ConfigControlPosition( ctrl, pos, rot )
+CONTROL		*ctrl ;
+FVECTOR		*pos ;
+SVECTOR		*rot ;
+{
+    ctrl->mov = *pos ;
+    ctrl->rot = *rot ;
+    ctrl->turn = *rot ;
+    GM_ConfigControlMapID( ctrl ) ;
+}
+
+/* 当たり判定パラメータ設定 */
+void		GM_ConfigControlHazard( ctrl, height, r_sphere, s_sphere )
+CONTROL		*ctrl ;
+int		height ;
+int		r_sphere ;
+int		s_sphere ;
+{
+    ctrl->height = (float)height ;
+    ctrl->r_sphere = r_sphere ;
+    ctrl->s_sphere = s_sphere ;
+}
+
+/* 当たり判定高さおよび初期床高さ設定 */
+void		GM_ConfigControlHzxHeight(
+		CONTROL		*ctrl ,
+		float		height, float base )
+{
+    ctrl->hzx_height = height ;
+    ctrl->hzx_base = base ;
+}
+
+/* 当たりフラグを設定 */
+void		GM_ConfigControlHzxCheckFlag( ctrl, segflag, flrflag )
+CONTROL		*ctrl ;
+int			segflag, flrflag ;
+{
+	ctrl->seg_flag = segflag ;
+	ctrl->flr_flag = flrflag ;
+}
+
+/* マップ変更チェックする */
+void	GM_ConfigControlMapCheck( CONTROL *ctrl )
+{
+    ctrl->skip_flag &= ~( CTRL_SKIP_CHANGE_MAP | CTRL_SKIP_GET_ADDRESS ) ;
+}
+
+/* ゾーン変更チェックする */
+void	GM_ConfigControlAddressCheck( CONTROL *ctrl )
+{
+    ctrl->skip_flag &= ~CTRL_SKIP_GET_ADDRESS ;
+}
+
+/* トラップチェックする */
+void	GM_ConfigControlTrapCheck( CONTROL *ctrl )
+{
+    if ( ctrl->name == 0 ) return ;
+    ctrl->skip_flag &= ~CTRL_SKIP_TRAP;
+    HZX_SetEvent( &( ctrl->evt ), ctrl->name, &ctrl->mov, &ctrl->rot ) ;
+}
+
+/* メッセージをチェックする */
+void	GM_ConfigControlMessageCheck( CONTROL *ctrl )
+{
+    if ( ctrl->name == 0 ) return ;
+    ctrl->skip_flag &= ~CTRL_SKIP_MESSAGE ;
+}
+
+/* カメラトラップをチェックする */
+void	GM_ConfigControlCameraTrapCheck( CONTROL *ctrl ) 
+{
+    ctrl->evt.flag &= ~HZX_EVT_FLAG_NO_CAMERA ;
+}
+
+/* アトリビュートの設定 */
+void	GM_ConfigControlAttribute( CONTROL *ctrl, int atr )
+{
+	ctrl->attribute = atr ;
+}
+
+/* 直方体チェックパラメータをセット */
+void	GM_ConfigControlSetCollide( CONTROL *ctrl, float width, float length ) 
+{
+#if 0
+    ctrl->skip_flag |= CTRL_COLLIDE_CHECK ;
+    ctrl->col_width = width ;
+    ctrl->col_length = length ;
+#endif
+	/* 廃止 */
+}
+
+/* 直方体チェック終了 */
+void	GM_ConfigControlResetCollide( CONTROL *ctrl )
+{
+    ctrl->skip_flag &= ~CTRL_COLLIDE_CHECK ;
+}
+
+/* ニア2点チェック設定 */
+void	GM_ConfigControlNearCheck2( CONTROL *ctrl, float height )
+{
+	ctrl->skip_flag |= CTRL_NEAR_CHECK2 ;
+//	ctrl->col_width = height ;
+	ctrl->hzx_height2 = height ;
+}
+
+/* コントロールのポジションを強制移動する */
+void	GM_ResetControlPosition( ctrl, vec )
+CONTROL		*ctrl ;
+FVECTOR		*vec ;
+{
+    ctrl->mov = *vec ;
+	if ( DG_FABS( ctrl->hzx_height - HZX_HEIGHT_NO_USE ) > 0.10F ) {
+		ctrl->hzx_base = vec->vy - ctrl->height ;
+		/* 床チェックする */
+		if ( !( ctrl->skip_flag & CTRL_SKIP_FLR_CHECK ) ) {
+			FVECTOR		mov ;
+			int			flag ;
+
+			mov.vx = ctrl->mov.vx ;
+			mov.vz = ctrl->mov.vz ;
+			mov.vy = ctrl->hzx_base + ctrl->hzx_height ;
+			flag = HZX_LevelHazardCheck( ctrl->hzx_id, 
+										 &mov, ctrl->hzx_check_type, 
+										 ctrl->flr_flag ) ;
+			if ( flag != 0 ) {
+				HZX_GetLevelHeight( ctrl->levels ) ;
+				HZX_GetLevelHazard( ctrl->level[ 0 ], ctrl->flr_atrs ) ;
+			} 
+			if ( !( flag & 1 ) ) ctrl->levels[ 0 ] = GM_WORLD_LIMIT_BOTTOM ;
+			if ( !( flag & 2 ) ) ctrl->levels[ 1 ] = GM_WORLD_LIMIT_UPPER ;
+			ctrl->level_found = flag ;
+		}
+    }
+}
+
+/* コントロールのポジションとグループとゾーンアドレスを強制移動する */
+/* アドレスはhzx_idの中から探す。hzx_id == 0 のときは、
+   移動先座標がどのグループに属するかを調べて、その中から
+   探す */
+void	GM_ResetControlPositionAndGroup( ctrl, vec, hzx_id )
+CONTROL		*ctrl ;
+FVECTOR		*vec ;
+int			hzx_id ;
+{
+    extern void	HZX_Pos2Zone( FVECTOR *, int *, int * ) ;
+    int g, z ;
+
+    z = -1 ;
+    if ( hzx_id == 0 ) {
+		HZX_Pos2Zone( vec, &g, &z );
+		hzx_id = GM_GetBit( g ) ;
+    }
+    GM_ChangeControlMapFromHzxId( ctrl, hzx_id );
+    ctrl->addr = HZX_GetAddress( hzx_id, vec, z ) ;
+    GM_ResetControlPosition( ctrl, vec ) ;
+}
+
+/* トラップ進入チェック */
+/* 返り値はビットフラグ（入っていたら１） */
+int		GM_CheckInsideTrap( ctrl, traps, n, mode )
+CONTROL		*ctrl ;
+u_int		*traps ;	/* チェックしたいトラップ列 */
+int		n ;		/* チェックしたいトラップの数 */
+int		mode ;		/* 0/1 : ナンバーチェックなし/あり */ 
+{
+    u_int	*inside, res, trap, trap2, i ;
+    int		n_inside, mask ;
+
+    ASSERT( 0 < n && n < 32 ) ;
+    if ( mode == 0 ) mask = 0x00ffffff ;
+    else	     mask = 0xffffffff ;
+    res = 0 ;
+    n_inside = ctrl->evt.n_inside ;
+    inside = ctrl->evt.inside ;
+    while ( -- n_inside >= 0 ) {
+		trap = ( *inside ) & mask ;
+		for ( i = 0; i < (u_int)n; i ++ ) {
+			trap2 = traps[ i ] & mask ;
+			if ( trap == trap2 ) res |= ( 1 << i ) ;
+		}
+		inside ++ ;
+    }    
+    return res ;
+}
+
+/* ワールドリミットチェック */
+int	GM_CtrlWorldLimit( CONTROL *ctrl )
+{
+	if ( ctrl->mov.vy <= GM_WORLD_LIMIT_BOTTOM ||
+		 ctrl->mov.vy >= GM_WORLD_LIMIT_UPPER ) return 1 ;
+	return 0 ;
+}
+
+/* モーション切り替え時に高さを設定しなおす */
+void		GM_ControlResetHeightMotion( CONTROL *ctrl )
+{
+	ASSERT( ctrl->object != NULL && ctrl->object->m_ctrl != NULL ) ;
+	ctrl->skip_flag |= CTRL_RESET_HEIGHT ;
+	ctrl->motion_num = ctrl->object->m_ctrl->mt3_ctrl[ 0 ].motion_num ;
+}
+
+/*----------------------------------------------------------------*/
+
+/* マップチェンジ */
+int	GM_ComMapChange( void )
+{
+	CONTROL		*ctrl ;
+	int			name, mapname, map, oldmap ;
+
+	GCL_GetOption( 'n' ) ;
+	name = GCL_GetNextInt() ;
+	ctrl = GM_SearchWhere( name ) ;
+	ASSERT( ctrl != NULL ) ;
+	GCL_GetOption( 'm' ) ;
+	mapname = GCL_GetNextInt() ;
+	map = GM_GetMapID( mapname ) ;
+	oldmap = ctrl->map ;
+	GM_ChangeControlMapFromMapId( ctrl, map ) ;
+	ctrl->addr = HZX_GetAddress( ctrl->hzx_id, &ctrl->mov, -1 ) ;
+	return 1 ;
+}
+
+/*----------------------------------------------------------------*/
+
+#if 0
+/* 前作のなごり */
+
+void		GM_ConfigControlVector( ctrl, mov, rot )
+CONTROL		*ctrl ;
+SVECTOR		*mov ;
+SVECTOR		*rot ;
+{
+	if ( mov != NULL ) ctrl->mov = *mov ;
+	if ( rot != NULL ) ctrl->rot = *rot ;
+}
+
+void		GM_ConfigControlMatrix( ctrl, world )
+CONTROL		*ctrl ;
+MATRIX		*world ;
+{
+	GV_ConvertVec3( (VECTOR *)( world->t ), &( ctrl->mov ) ) ;
+	DG_MatrixRotYXZ( world, &( ctrl->rot ) ) ;
+	ctrl->turn = ctrl->rot ;
+}
+
+void		GM_ConfigControlString( ctrl, mov, rot )
+CONTROL		*ctrl ;
+char		*mov ;
+char		*rot ;
+{
+	if ( mov != NULL ) Gcl_StrToSV( mov, (short *)&( ctrl->mov ) ) ;
+	if ( rot != NULL ) Gcl_StrToSV( rot, (short *)&( ctrl->rot ) ) ;
+	ctrl->turn = ctrl->rot ;
+}
+
+void		GM_ConfigControlAttribute( ctrl, atr )
+CONTROL		*ctrl ;
+int		atr ;
+{
+	ctrl->radar_atr = atr ;
+}
+
+void		GM_ConfigControlInterp( ctrl, interp )
+CONTROL		*ctrl ;
+int		interp ;
+{
+	ctrl->interp = interp ;
+}
+
+/*----------------------------------------------------------------*/
+
+int		GM_CheckControlTouches( ctrl, range )
+CONTROL		*ctrl ;
+int		range ;
+{
+	int		n_touches ;
+
+	n_touches = ctrl->n_touches ;
+	if ( n_touches == 0 ) return 0 ;
+	if ( n_touches == 2 ) {
+		if ( ctrl->segs[ 1 ]->p1.h < 0
+			|| GV_VecLen3( ctrl->vecs + 1 ) <= range ) return 2 ;
+	}
+	if ( ctrl->segs[ 0 ]->p1.h < 0
+		|| GV_VecLen3( ctrl->vecs ) <= range ) return 1 ;
+	return 0 ;
+}
+
+/*----------------------------------------------------------------*/
+
+void		GM_ConfigControlRadarparam( ctrl, dir, dis, range, r )
+CONTROL		*ctrl ;
+u_short	dir ;
+u_short	dis ;
+u_short	range ;
+u_short	r ;
+{
+	RADAR_SIGHT_PARAM *r_param;
+	
+	r_param = (RADAR_SIGHT_PARAM *) ( ctrl->radar_param ) ;
+	r_param->dir = dir ;
+	r_param->dis = dis ;
+	r_param->range = range ;
+	r_param->r = r ;
+}
+
+GV_MSG *GM_CheckMessage( void *work, long name, long msgcode )
+{
+	GV_MSG *msg;
+	long n_msg;
+
+	n_msg = GV_ReceiveMessage( name, &msg );
+	while( -- n_msg >= 0 ){
+		if( msg->message[ 0 ] == msgcode ){
+			return msg;
+		}
+		msg++;
+	}
+	return NULL;
+}
+#endif
+

@@ -1,0 +1,234 @@
+/*
+	webdemo.gcl
+	    ＷＥＢサイトデモ専用ステージ
+
+	2001/08/05 H.Yoshiike
+	$Id: webdemo.gcl,v 1.7 2001/09/25 13:31:24 usr03682 Exp $
+
+
+*/
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+
+
+#include "stdch.h"
+#include "sload.h"
+#include "sound.h"
+#include "enevoice.h"
+#include "item_info.h"
+#include "commdef.h"
+#include "p_force_cdc.ch"
+
+#if d:DEBUG_PRINT
+// デバッグ用にタンカー編からのフラグか着ているかどうかチェックする
+//eval( $f:w00a_タンカー３Ｆ正面で死体捨てた = 1 );
+//eval( $f:w00a_タンカー３Ｆ右舷正面で死体捨てた = 1 );
+//eval( $f:w00a_タンカー３Ｆ左舷正面で死体捨てた = 1 );
+//eval( $f:w00a_タンカー３Ｆ右舷で死体捨てた = 1 );
+//eval( $f:w00a_タンカー３Ｆ左舷横で死体捨てた = 1 );
+//eval( $f:w00a_タンカー右舷で死体捨てた = 1 );
+//eval( $f:w00a_タンカー左舷で死体捨てた = 1 );
+	print 'tanker_flag_checkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk!!'
+	print '$f:w00a_タンカー右舷で死体捨てた='$f:w00a_タンカー右舷で死体捨てた
+	print '$f:w00a_タンカー左舷で死体捨てた='$f:w00a_タンカー左舷で死体捨てた
+	print '$f:w00a_タンカー３Ｆ左舷横で死体捨てた='$f:w00a_タンカー３Ｆ左舷横で死体捨てた
+	print '$f:w00a_タンカー３Ｆ左舷正面で死体捨てた='$f:w00a_タンカー３Ｆ左舷正面で死体捨てた
+	print '$f:w00a_タンカー３Ｆ右舷で死体捨てた='$f:w00a_タンカー３Ｆ右舷で死体捨てた
+	print '$f:w00a_タンカー３Ｆ正面で死体捨てた='$f:w00a_タンカー３Ｆ正面で死体捨てた
+	print '$f:w00a_タンカー３Ｆ右舷正面で死体捨てた='$f:w00a_タンカー３Ｆ右舷正面で死体捨てた
+#endif
+
+// ここはマップがいらないので直接起動
+//--------------------------------------------------
+// シネマスクリーンをセット
+@シナリオデモキャラセット	// stdproc.hで定義
+mesg シネマスクリーン シネマ フェードアウト 1
+// 再生画面番号用フラグを初期化
+eval( $w:ローカル変数Ｗ１ = 0 );
+// ムービーを再生か中断かを見るフラグ
+eval( $w:ローカル変数Ｗ２ = 0 );
+// フェードインしてムービー再生
+@タンカー編整理ムービーデモ再生
+chara フェードインアウト フェードイン \
+	-i 0,0,0 128 \
+	-c 0,0,0 0 \
+	-t d:FADEIN_TIME
+//	-p タンカー編整理ムービーデモ再生
+
+
+
+
+// タンカー編整理ムービー用プロック
+//--------------------------------------------------
+	// 通常状態の終了プロックと開始プロック
+	//-------------------------------------
+	proc ムービー終了処理 {
+		#if d:DEBUG_PRINT 
+			print 'webdemo_end'
+			print $w:ローカル変数Ｗ１
+		#endif
+
+		eval( $w:ローカル変数Ｗ１ = $w:ローカル変数Ｗ１ + 1 );
+		// ムービーの終了状態を保存
+		eval( $w:ローカル変数Ｗ２ = $1 );
+
+		if ( $w:ローカル変数Ｗ１ < 3 ) {
+			chara フェードインアウト フェードアウト \
+				-c 0,0,0 128 \
+				-t d:FADEOUT_TIME \
+				-p ムービー開始処理
+
+		} else {
+			// ＷＥＢデモ終了ムービーへ
+			chara フェードインアウト フェードアウト \
+				-c 0,0,0 128 \
+				-t d:FADEOUT_TIME \
+				-p mv_init_wmovie_0
+
+			command セットサウンドコード -c d:SNG_FOUTS_S
+		}
+	}
+
+	proc ムービー開始処理 {
+		#if d:DEBUG_PRINT 
+			print 'webdemo_start'
+			print $w:ローカル変数Ｗ１
+		#endif
+
+		if ( $w:ローカル変数Ｗ１ == 1 ) {
+			mesg WEBサイト タンカー編回想ページ１ web_kill
+			chara delay デモディレイ \
+				-time 1 \
+				-exec {
+					@タンカー編回想ページ２開始
+					chara フェードインアウト フェードイン \
+						-i 0,0,0 128 \
+						-c 0,0,0 0 \
+						-t d:FADEIN_TIME
+//						-p タンカー編回想ページ２開始
+					}
+
+		} else if ( $w:ローカル変数Ｗ１ == 2 ) {
+			mesg WEBサイト タンカー編回想ページ２ web_kill
+			chara delay デモディレイ \
+				-time 1 \
+				-exec {
+					@タンカー編回想ページ３開始
+					chara フェードインアウト フェードイン \
+						-i 0,0,0 128 \
+						-c 0,0,0 0 \
+						-t d:FADEIN_TIME
+//						-p タンカー編回想ページ３開始
+				}
+
+		}
+	}
+
+	// キャンセル時の処理プロック
+	//-------------------------------------
+	proc 回想デモキャンセル {
+		#if d:DEBUG_PRINT 
+			print 'event_cancel'
+		#endif
+
+		chara フェードインアウト フェードアウト \
+			-c 0,0,0 128 \
+			-t d:FADEOUT_TIME \
+			-p 回想デモキャンセル後処理
+
+	}
+
+	proc 回想デモキャンセル後処理 {
+		#if d:DEBUG_PRINT 
+			print 'event_cancel_endproc'
+		#endif
+
+		command StreamStop $i:STREAM_ID
+		eval( $w:p_story = d:ST:P050_03_M02タンカー編整理３ムービーデモ２開始 );
+		command セットサウンドコード -c d:SNG_FOUTS_S
+		@mv_init_wmovie_0
+	}
+
+
+
+	// 各ムービー再生プロック
+	//-------------------------------------
+	proc タンカー編整理ムービーデモ再生 {
+		#if d:DEBUG_PRINT 
+			print 'tanker_moviedemo_set'
+		#endif
+
+		if ( $w:p_story == d:ST:P050_01_R01タンカー編整理１無線機デモ１終了 ) {
+			command パッド操作 -release
+			mesg シネマスクリーン シネマ フェードアウト 0
+			command メニュー設定 -menu off -gage off -radar off -subwin off -radio off -pause off
+
+			chara delay デモディレイ \
+				-time 1 \
+				-exec {
+					chara WEBサイト タンカー編回想ページ１ \
+							-mode 0 \
+							-tri web_site \
+							-tex web_ray_alp_ovl \
+							-c 回想デモキャンセル
+					eval( $i:STREAM_ID = `%Stream t:vc105031 -p ムービー終了処理` );
+				}
+		}
+	}
+
+	proc タンカー編回想ページ２開始 {
+		if (  $w:ローカル変数Ｗ２ == 0 ) {
+		// 正常終了なら次のページへ行く
+			// 死体捨てた人は写真を入れ替える（おきにくい順）
+			if ( $f:w00a_タンカー３Ｆ正面で死体捨てた == 1 ) {
+				eval( $s:webdemo_ファイル名 = web_fall3_alp_ovl );
+			} else if ( $f:w00a_タンカー３Ｆ右舷正面で死体捨てた == 1 ) {
+				eval( $s:webdemo_ファイル名 = web_fall4_alp_ovl );
+			} else if ( $f:w00a_タンカー３Ｆ左舷正面で死体捨てた == 1 ) {
+				eval( $s:webdemo_ファイル名 = web_fall1_alp_ovl );
+			} else if ( $f:w00a_タンカー３Ｆ右舷で死体捨てた == 1 ) {
+				eval( $s:webdemo_ファイル名 = web_fall2alp_ovl );
+			} else if ( $f:w00a_タンカー３Ｆ左舷横で死体捨てた == 1 ) {
+				eval( $s:webdemo_ファイル名 = web_fall0_alp_ovl );
+			} else if ( $f:w00a_タンカー右舷で死体捨てた == 1 ) {
+				eval( $s:webdemo_ファイル名 = web_syouko1_alp_ovl );
+			} else if ( $f:w00a_タンカー左舷で死体捨てた == 1 ) {
+				eval( $s:webdemo_ファイル名 = web_syouko0_alp_ovl );
+			} else {
+				eval( $s:webdemo_ファイル名 = web_tank0_alp_ovl );
+			}
+
+			chara delay デモディレイ \
+				-time 1 \
+				-exec {
+					chara WEBサイト タンカー編回想ページ２ \
+							-mode 2 \
+							-tri web_site \
+							-tex $s:webdemo_ファイル名 \
+							-c 回想デモキャンセル
+					eval( $i:STREAM_ID = `%Stream t:vc105032 -p ムービー終了処理` );
+				}
+		}
+	}
+
+	proc タンカー編回想ページ３開始 {
+		if ( $w:ローカル変数Ｗ２ == 0 ) {
+		// 正常終了なら次のページへ行く
+			eval( $w:p_story = d:ST:P050_03_M02タンカー編整理３ムービーデモ２開始 );
+
+			chara delay デモディレイ \
+				-time 1 \
+				-exec {
+					chara WEBサイト タンカー編回想ページ３ \
+							-mode 1 \
+							-tri web_site \
+							-tex web_olg_alp_ovl \
+							-c 回想デモキャンセル
+					if ( $w:タンカー編クリア回数 > 0 ) {
+						eval( $i:STREAM_ID = `%Stream t:vc105034 -p ムービー終了処理` );
+					} else {
+						eval( $i:STREAM_ID = `%Stream t:vc105033 -p ムービー終了処理` );
+					}
+				}
+		}
+	}

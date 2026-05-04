@@ -1,0 +1,81 @@
+\documentstyle{jarticle}
+\begin{document}
+
+\title{音声分析に用いる周波数単位の相互変換}
+\author{吉良 理人}
+\maketitle
+
+\section{周波数の単位と定数}
+
+音声分析にはフーリエ変換を必要とし、このフーリエ変換には
+周波数の単位として角速度が用いられる。
+
+角速度単位を用いるためには、角速度 $2 \pi$ にあたる時間を取り決めねば
+ならず、プログラムの実装上はフーリエ変換処理として FFT が用いられるため、
+この $2 \pi$ に相当するフレーム数および角速度の分解能を
+取り決めておかねばならない。
+
+これらの分析上の条件となる定数の表記と、それらを用いた周波数単位の相互変換
+公式を、以下に示す。
+
+\subsection{定数}
+
+分析条件として用いられる定数の表記には以下のものがある。
+
+\begin{description}
+
+
+\item[標本化分解能 $S$]  音声波形信号の、一秒あたりの分解能を示す。つまり、サンプリング周波数と等価である。
+
+\item[FFT分解能 $N$]   FFT を用いて波形をフーリエ変換する際の、変換単位フレーム数であり、周期 $2\pi$ に相当するフーリエ変換後の周波数成分分解能でもある。
+
+\end{description}
+
+\subsection{変数}
+
+変換対象となる周波数単位には、以下のものがある。
+
+\begin{description}
+
+\item[周波数  $f$] 単位 [Hz] で表される周波数
+\item[FFT周波数目盛 $n$] FFT 結果の周波数目盛で表される周波数
+\item[角速度 $\Omega$] 単位時間内の周期を角速度で表したもの。
+
+\end{description}
+
+
+\subsection{公式}
+
+$f$ 、$\Omega$ 、および $n$ の間には、以下の関係がある。
+
+\begin{description}
+
+\item[角速度とFFT周波数目盛の関係]
+
+\[ \Omega = \frac{2 \pi n}{N} \]
+\[ n = \frac{\Omega N}{2 \pi} \]
+
+
+\item[FFT周波数目盛と周波数の関係]
+
+\[ f = \frac{nS}{N} \]
+\[ n = \frac{fN}{S} \]
+
+\item[角速度と周波数の関係]
+
+\[ f = \frac{\Omega S}{2\pi} \]
+\[ \Omega = \frac{2\pi f}{S} \]
+\end{description}
+
+
+\section{直線周波数目盛と、メル周波数目盛の相互変換}
+
+\[	\tilde{\Omega} = \Omega + 2
+	 \tan^{-1} \frac{\alpha \sin \Omega}{1 - \alpha \cos \Omega}	\]
+
+	
+\[	\Omega = \tilde{\Omega} - 2
+	 \tan^{-1} \frac{\alpha \sin \tilde{\Omega}}
+			{1 + \alpha \cos \tilde{\Omega}}	\]
+
+\end{document}

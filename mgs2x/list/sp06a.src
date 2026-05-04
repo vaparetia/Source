@@ -1,0 +1,152 @@
+//
+//	sp06a.src
+//	敵兵狙撃
+//	written by S.Kaneyoshi 2002.02.14
+//
+//	$Id$
+
+#define WN_SP06A
+
+block .use r_vr_r
+block .nocache
+block .cache
+
+// 敵兵関連define
+// 敵兵タイプ
+#define ENE_VR_GOL
+#define ENE_NO_FINGER
+#define ENE_VR_NO_ATTACKER
+
+//#define ENE_ATTACKER	// 攻撃兵
+//#define ENE_SHIELD		// 盾兵
+//#define ENE_SHOT		// ショットガン兵
+//#define ENE_HIGH_TECH	// 人質イベント後はハイテク兵
+
+// 特殊兵のモーション設定 ハイテク ショット 盾 ロッカー トイレ
+//#define ENE_MAR '-DDEL_TNG=DUMMY -DDEL_WALKMAN=DUMMY'
+#define	ENE_MAR '-DDEL_SHOTGUN=DUMMY -DDEL_TNG=DUMMY -DDEL_SHIELD=DUMMY -DDEL_WALKMAN=DUMMY -DDEL_HIGH=DUMMY -DDEL_LOCKER=DUMMY -DDEL_TOILET=DUMMY'
+
+// 各ステージ共通要素
+#include	"vr_def.h"		// defineファイル 厳密にはc_effect.hの前でよい
+#include	"p_common.h"
+#include	"common.h"
+#include 	"vrstage.h"
+
+
+#ifdef EFFECT_CUSTUM		// 個々のsrcで設定
+
+	//#define	E_GLASS_DANKON			// グラス系弾痕
+	#define	E_KOGETUKI				// 壁への焦げ付き
+	//#define	E_FOOTSTAMP				// 足跡
+	#define	E_ENEMY					// 敵兵系
+	#define	E_ENEMY_LIGHT			// 敵兵ライト、スティンガー、ニキータ、剣の火花、しょんべん兵
+	#define	E_SLING					// スリング
+	//#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+	//#define	E_MANHATTAN_LIGHT		// マンハッタンライト
+	//#define	E_C4BOMB				// Ｃ４爆弾、赤外線センサー
+	//#define	E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷 解体Ｃ４
+	//#define	E_CROSS_FADE_LIGHT		// クロスフェード（甲板のライトで使用）
+	//#define	E_CHARA_DENTOU			// chara 懐中電灯、フォーチュン戦
+	//#define	E_WATER					// 水関係
+	//#define	E_CHARA_HAMON			// chara 波紋
+	//#define	E_BROKEN_OBJECT			// 壊れ物
+	//#define	E_BROKEN_PAPEROBJECT	// 壊れ物紙
+	//#define	E_BROKEN_PLATE			// 壊れ物皿
+	//#define	E_HIMATU				// 水飛沫
+	//#define	E_CHARA_MADOAME			// chara 窓雨
+	//#define	E_STEAM					// 粉 & 水蒸気
+	//#define	E_POWDER				// 小麦粉
+	//#define	E_SKY_NORMAL			// 空
+	//#define	E_LINEAR_GUN			// リニアガン
+	//#define	E_TENKYUU				// 天球ドーム
+	//#define	E_SUN					// 太陽
+	//#define	E_DOOR_LUMP				// ドアランプ
+	//#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+	//#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+	//#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+	//#define	BONBORI					// ぼんぼり
+	//#define	NODE_LAMP				// ノードディスプレイランプ
+
+#include	"c_effect.h"
+
+// キャラクタ
+#include	"ene_plant.h"
+// メリル
+include		mrl_sp06a.h
+// エマ
+include		emma_sp06a.h
+
+// VR用追加エフェクト
+#include	"vr_effect.h"
+
+// 強制モーション
+mtn			rai_sp06a.mls
+mtn			sna_sp06a.mls
+
+// ワールド
+
+option makexti6 -l 1024 -f PAL8		// Xbox用劣化無しテクスチャ採用
+	pack_all	sp06a.tri \
+		world/vr_variety/sp06a/sp06a.dar \
+		world/vr_variety/sp06a/sp06a_line.dar \
+		world/vr_variety/sp06a/sp06a_tonbo.dar \
+		world/vr_variety/sp06a/sp06a_building.dar \
+		world/vr_variety/sp06a/sp06a_building_line.dar \
+		world/vr_variety/sp06a/sp06a_building_tonbo.dar
+option makexti6
+
+	world/vr_variety/sp06a	sp06a.kms
+	world/vr_variety/sp06a	sp06a_line.kms
+	world/vr_variety/sp06a	sp06a_tonbo.kms
+	world/vr_variety/sp06a	sp06a_building.kms
+	world/vr_variety/sp06a	sp06a_building_line.kms
+	world/vr_variety/sp06a	sp06a_building_tonbo.kms
+
+// マルチテクスチャモデル
+
+// それ以外のモデル
+
+	pack_all	zzz_obj.tri \
+		world/vr_variety/sp06a/currie.dar \
+		world/vr_variety/sp06a/rarmen.dar \
+		world/vr_variety/sp06a/cardboard.dar
+
+	world/vr_variety/sp06a	currie.kms
+	world/vr_variety/sp06a	rarmen.kms
+	world/vr_variety/sp06a	cardboard.kms				// ダンボール
+
+
+hazard		sp06a.hzx
+cvd			world/vr_variety/sp06a/sp06a.cv2 v
+rol			world/vr_variety/sp06a/sp06a.rol
+
+cvd			world/vr_variety/sp06a/sp06a_building.cv2 v
+rol			world/vr_variety/sp06a/sp06a_building.rol
+
+rol			world/vr_variety/sp06a/sp06a_poster1.rol
+rol			world/vr_variety/sp06a/sp06a_poster2.rol
+rol			world/vr_variety/sp06a/sp06a_poster3.rol
+rol			world/vr_variety/sp06a/sp06a_poster4.rol
+rol			world/vr_variety/sp06a/sp06a_poster5.rol
+
+// オブジェクト
+
+// 消火器
+
+// アイテム
+#define	TGL			//	サーマルゴーグル
+
+#include "a_item.h"
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+// 敵兵固有モーション
+mtn gbs_sp06a.mls
+
+// リネーム
+rename 		gbs_sp06a.mar gbsstage.mar
+
+// テスト
+//debug		kaneyoshi/w01a_ldr02.kms
+

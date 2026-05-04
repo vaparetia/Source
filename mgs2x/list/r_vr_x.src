@@ -1,0 +1,37 @@
+//
+//	r_vr_x.src
+//	ＶＲストリーキングライデン常駐データセット（仮）	No.2
+//
+//	2001/06/20	T.Ohtani
+//	$Id: r_vr_x.src,v 1.1 2002/06/24 06:12:29 usr13731 Exp $
+
+block .nocache
+
+block 		.resident
+
+include		keepfont.h
+
+// 装備メニューアイコン
+include		menuicon.h
+
+// ライデン
+//	裸ライデン
+include	raiden_n.h
+
+// 武器
+include		wp_plant.h
+
+// 振動
+include		res_vib.h
+
+// ゲームオーバー
+l2d			2D/vr_game_over/vr_geme_over.l2d
+
+block .cache
+//binary		font.row
+// pack_allに'-s'と付けることでパレット変更エフェクトの影響を受けなくなる
+pack_all	'-s' menu.tri effect/font/font_alp_ovl.bmp effect/font/debug_font_alp_ovl.bmp effect/font/font_mini_alp_ovl.bmp effect/sys_icon/cd_err_alp_ovl.bmp
+
+binary		vram0.raw
+
+

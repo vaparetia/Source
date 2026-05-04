@@ -1,0 +1,24 @@
+//
+//	memcard.src	
+//	$Id: memcard.src,v 1.2 2001/03/29 06:32:50 usr01363 Exp $
+//
+
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+include		common.h
+
+// ワールド
+pack_all	stage_def.tri debug/okajima/stage_def
+goods		null/null.kms
+
+// ハザード
+hazard		preview.hzx -i preview.scn
+
+// ライト
+lt2		default.lt2
+
+rename		default.lt2	stage.lt2
+rename		default.kms	stage.kms
+rename		preview.hzx	stage.hzx

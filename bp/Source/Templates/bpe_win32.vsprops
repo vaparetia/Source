@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="BPE Win32"
+	InheritedPropertySheets=".\bpe_common.vsprops"
+	>
+	<Tool
+		Name="VCBscMakeTool"
+		OutputFile="$(OutDir)/$(ProjectName).bsc"
+	/>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalOptions="/MP"
+		EnableFiberSafeOptimizations="true"
+		AdditionalIncludeDirectories="&quot;$(BPE_ROOT)/Source/ExtLibraries/Devil-SDK-1.6.7/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/DXSDK/Include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/CG/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/Edge/Branch/host-common/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/Edge/Branch/target/common/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/Edge/Branch/target/common/include/vectormath&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/nvidia-texture-tools/branch/project/vc8/release (no cuda).win32/include&quot;"
+		PreprocessorDefinitions="WIN32;_WINDOWS;_WIN32_WINDOWS=0x501;_WIN32_WINNT=0x501;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_DEPRECATE;BOOST_SIGNALS_SOURCE;BOOST_SIGNALS_DYN_LINK;BOOST_REGEX_SOURCE;BOOST_REGEX_DYN_LINK;ZLIB_INTERNAL"
+		ExceptionHandling="0"
+		RuntimeLibrary="2"
+		EnableEnhancedInstructionSet="2"
+		DebugInformationFormat="3"
+		DisableSpecificWarnings="4251;4275;4793;4065"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		AdditionalDependencies="Wininet.lib Setupapi.lib xinput.lib dinput8.lib dxguid.lib Iphlpapi.lib Ws2_32.lib winmm.lib kernel32.lib user32.lib gdi32.lib winspool.lib comctl32.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib"
+		AdditionalLibraryDirectories="&quot;$(BPE_ROOT)/Source/ExtLibraries/DXSDK/Lib/x86&quot;"
+		GenerateDebugInformation="true"
+		SubSystem="2"
+		ImportLibrary="$(BPE_ROOT)/Bin/$(ProjectName)_$(ConfigurationName).lib"
+		TargetMachine="1"
+	/>
+</VisualStudioPropertySheet>

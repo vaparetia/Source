@@ -1,0 +1,78 @@
+/********************************************************************************/
+/*	Har_main.c								*/
+/*	ハリアメイン *NewHarrier						*/
+/*	2001/01/23 H.Satoyoshi							*/
+/*	$Id: boss.def,v 1.1.1.3 2002/11/19 11:48:19 Yoshizawa1 Exp $		*/
+/********************************************************************************/
+
+/********************************************************************************/
+/*	extern									*/
+/********************************************************************************/
+//	har_target.c
+extern void *NewBodyFire( OBJECT *body, int part );
+
+extern int		PL_GetEludeTrapCode( void );
+extern void *NewHarrierLight( FVECTOR *pos, int color );
+extern void *NewHarrierMissileFire2( FMATRIX *mat, char *flag, int color1, int color2 );
+
+extern void *NewMissileExplosion( FVECTOR* center, float size );
+
+extern void	*GM_NewSpark( FMATRIX*, FVECTOR*, int);
+
+extern void HarCallSpark(FVECTOR *pos ,FVECTOR *force);
+
+extern void *NewHarrierClasterExplosion( FVECTOR *pos, int *flag, int brk_proc );
+
+extern void *NewShakeCamera2( int chanl, int intense, int time, FVECTOR *pos );
+
+
+extern void *NewHarrierWingSmoke( FVECTOR *pos, float *p_width, int *flg );
+extern void *NewCrashDebris( FVECTOR *pos );
+
+extern int DG_QueueComdlObjs( DG_COMDL*);
+extern void *NewAutoSplushVertical_Hold( FVECTOR *pos, float width, float intense, int flag );
+
+extern int DG_GetLightMatrixFix( FVECTOR *, FMATRIX *);
+
+//			****************** エフェクトの類
+extern void *NewHarrierFlash( FVECTOR * );
+extern void *NewTestWaterPillar( FVECTOR *, float  );
+extern int mode_list[];
+
+
+extern void *NewHarrierVernierSmoke( FVECTOR*, char* );
+
+extern void *NewWaterWindSplush( FMATRIX *world, float inf_height, float max_width, int *flag );
+extern void *NewHarrierVulcanFire( FVECTOR *pos, FVECTOR *vec, char *flag );
+
+//			****************** びっくり
+extern void  *NewControl_Headmark2( FMATRIX *, int *, TARGET *, CONTROL * );
+
+/* 汎用火花エフェクト */
+extern void *NewSpark2( int n_packets, FMATRIX *matrix,
+			float min_speed, float speed_wide, float gravity,
+			SVECTOR *rot,SVECTOR *rot_wide,
+			FVECTOR *color, float length, int count ) ;
+
+extern void *NewHarrierClasterUnitSmoke( FVECTOR *);
+extern void *NewHarrierClasterSmoke( FVECTOR *, FVECTOR *);
+
+extern void *NewHarrierFlare( FVECTOR *pos, float size, int life );
+
+
+//			****************** har_flare.c
+extern void NewSpark( FMATRIX * ) ;
+
+//***************kunibe effect
+extern void NewHarrierMisileExplosionE3( FVECTOR *, FVECTOR *, FVECTOR *);
+
+extern void *NewRunningSmoke( FVECTOR* , FVECTOR* , FVECTOR* );
+extern void *NewExplosionSmoke( FVECTOR* );
+extern void *NewHarrierMissileFire( FVECTOR *pos, FVECTOR *vec, char *flag, int color1, int color2 );
+extern void *NewHarrierPodSmoke( FVECTOR *, FVECTOR *, FMATRIX *);
+extern void *NewHarrierVernier( FVECTOR *pos, FVECTOR *vec, char *flag, int color1, int color2 );
+
+extern void *NewRisingSmoke2( FVECTOR*, float, char *);
+extern TARGET *PL_LockonTarget;
+extern void *NewLandingSmoke( FVECTOR* , float );
+

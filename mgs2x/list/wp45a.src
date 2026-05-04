@@ -1,0 +1,61 @@
+//
+//	wp45a.src
+//	武器訓練ミッション五面
+//	written by S.Kaneyoshi 2002.02.14
+//
+//	$Id$
+
+#define WN_WP45A
+
+block .use r_vr_r
+block .nocache
+block .cache
+
+// 的モデル呼び分け用
+#define		VR_TGT_CUBE		1
+#define		VR_TGT_SQUARE	1
+#define		VR_TGT_TRIANGLE	1
+#define		VR_TGT_OCTA		1
+#define		VR_TGT_STRAW	1
+#define		VR_TGT_HEXA		1
+#define		VR_TGT_WALL		1
+
+// 各ステージ共通要素
+#include	"vr_def.h"		// defineファイル 厳密にはc_effect.hの前でよい
+#include	"p_common.h"
+#include	"common.h"
+#include 	"vrstage.h"		// 現在的データはここ
+#include	"c_effect.h"
+
+// VR用追加エフェクト
+#include	"vr_effect.h"
+
+// 強制モーション
+mtn			rai_wp45a.mls
+mtn			sna_wp45a.mls
+
+// ワールド
+option makexti6 -l 1024 -f PAL8		// Xbox用劣化無しテクスチャ採用
+	pack_all	ws45a.tri \
+				world/vr_weapon/ws45a
+option makexti6
+
+world		vr_weapon/ws45a
+hazard		ws45a.hzx
+rol			world/vr_weapon/ws45a/ws45a.rol
+cvd			world/vr_weapon/ws45a/ws45a.cv2 v
+
+// マルチテクスチャモデル
+// それ以外のモデル
+
+// オブジェクト
+
+// 消火器
+
+// アイテム
+itembox
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+// リネーム

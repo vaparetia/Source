@@ -1,0 +1,112 @@
+//
+//	init.gcl
+//	$Id: init.gcl,v 1.133 2002/10/09 04:03:38 usr01475 Exp $
+
+#include	"equip.h"
+#include	"varinit.h"
+#include	"sload.h"
+                                                                                            
+#ifdef d:FIX_MODE
+#define DEBUGFLAG 0
+#else
+#define DEBUGFLAG 1
+#endif
+
+chara MGSシステム初期化 init -debug d:DEBUGFLAG
+command VRAM初期化
+
+@スタート時初期設定
+@タイトル用初期設定
+
+
+#ifdef d:AREA_JAPAN
+eval( $w:言語 = d:LANG_JAPANESE );	// 初期設定
+$i:ネームエントリー結果国 = 83;
+#endif
+#ifdef d:AREA_US
+eval( $w:言語 = d:LANG_ENGLISH );
+$i:ネームエントリー結果国 = 183 - 1;
+#endif
+#ifdef d:AREA_EU
+// 内蔵の言語設定で変える？
+eval( $w:言語 = d:LANG_ENGLISH );
+$i:ネームエントリー結果国 = 183 - 1;
+
+#endif
+
+command 字幕言語設定
+
+eval( $w:コンフィグ設定 = $w:コンフィグ設定 | d:CONFIG_RADAR_OFF_INTRUDE );
+
+#if d:MGS2_VRTRIAL
+// 日本語版 Makingに附属の体験版
+command プロダクトコード設定 'BISLPM-65184'
+#elifdef AREA_JAPAN
+command プロダクトコード設定 'BISLPM-67002'
+#elifdef AREA_US
+command プロダクトコード設定 'BISLPM-67002'	// 仮
+#else
+command プロダクトコード設定 'BISLPM-67002'	// 仮
+#endif
+
+
+
+
+
+
+
+
+
+//command ＰＳ２から言語設定を取り出す
+//command 字幕言語設定
+
+
+$f:スケート戻り値 = `command getconfig`;
+
+// プラットフォーム・仕向地を GM_Configuration2 に書き込む
+enum PLATFORM {
+	PS2 = 0,
+	XBOX
+};
+enum REGION {
+	JAPAN = 0,	// 日
+	US,			// 米
+	EU,			// 欧
+};
+#ifdef d:PSX2
+$$i:platform = d:PLATFORM:PS2;
+#else
+$$i:platform = d:PLATFORM:XBOX;
+#endif
+
+#ifdef d:AREA_JAPAN
+$$i:region = d:REGION:JAPAN;
+#elifdef d:AREA_US
+$$i:region = d:REGION:US;
+#else
+$$i:region = d:REGION:EU;
+#endif
+
+$i:コンフィグ設定２	= (($$i:platform << 10) | ( $$i:region << 12 ));
+
+
+#ifdef d:DESIGN_PREVIEW
+
+load 'preview' -r 'r_tnk0'
+
+#else
+
+#ifdef d:FIX_MODE
+load  'n_title' -r 'r_title'
+#else
+#if d:MGS2_VRTRIAL
+load  'mkselct' -r 'r_title'
+#else
+load  'select' -r 'r_title'
+#endif	//MGS2_VRTRIAL
+#endif
+#endif
+
+// サウンドは常駐ステージで読み込むようにした
+// chara サウンドマネージャー ＳＤマネ -p 0
+

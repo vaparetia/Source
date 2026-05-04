@@ -1,0 +1,94 @@
+// vr_select.src
+// £Ö£Ò¥»¥ì¥¯¥È
+// 2002/07/12 S.Yamashita
+// $Id: mselect.src,v 1.7 2002/10/02 07:44:09 usr03692 Exp $
+
+block .nocache
+block .cache
+
+#ifdef MGS2_XBOX
+	/* XBOX */
+	#ifdef MGS2_AREA_EU
+		/* ²¤ */
+		l2d		2D/vr_missions/missions_character_select.l2d \
+				2D/vr_missions/missions_raiden.l2d \
+				2D/vr_missions/missions_raiden_ninja.l2d \
+				2D/vr_missions/missions_x_raiden.l2d \
+				2D/vr_missions/missions_snake_def.l2d \
+				2D/vr_missions/missions_pliskin.l2d \
+				2D/vr_missions/missions_snake_txd.l2d \
+				2D/vr_missions/missions_snake_old.l2d \
+				2D/vr_missions/fpv_controls_eng.l2d \
+				2D/vr_missions/fpv_controls_frn.l2d \
+				2D/vr_missions/fpv_controls_grm.l2d \
+				2D/vr_missions/fpv_controls_itl.l2d \
+				2D/vr_missions/fpv_controls_spn.l2d \
+				2D/vr_missions/vr_clear_code.l2d
+	#else
+		/* ÊÆ */
+		l2d		2D/vr_missions/missions_character_select.l2d \
+				2D/vr_missions/missions_raiden.l2d \
+				2D/vr_missions/missions_raiden_ninja.l2d \
+				2D/vr_missions/missions_x_raiden.l2d \
+				2D/vr_missions/missions_snake_def.l2d \
+				2D/vr_missions/missions_pliskin.l2d \
+				2D/vr_missions/missions_snake_txd.l2d \
+				2D/vr_missions/missions_snake_old.l2d \
+				2D/vr_missions/fpv_controls.l2d \
+				2D/vr_missions/vr_clear_code.l2d
+	#endif
+#else
+	/* PS2 */
+	#ifdef MGS2_AREA_EU
+		/* ²¤ */
+		l2d		2D/vr_missions/missions_character_select.l2d \
+				2D/vr_missions/missions_raiden_ps2.l2d \
+				2D/vr_missions/missions_raiden_ninja_ps2.l2d \
+				2D/vr_missions/missions_x_raiden_ps2.l2d \
+				2D/vr_missions/missions_snake_def_ps2.l2d \
+				2D/vr_missions/missions_pliskin_ps2.l2d \
+				2D/vr_missions/missions_snake_txd_ps2.l2d \
+				2D/vr_missions/missions_snake_old_ps2.l2d \
+				2D/vr_missions/fpv_controls_eng.l2d \
+				2D/vr_missions/fpv_controls_frn.l2d \
+				2D/vr_missions/fpv_controls_grm.l2d \
+				2D/vr_missions/fpv_controls_itl.l2d \
+				2D/vr_missions/fpv_controls_spn.l2d \
+				2D/vr_missions/vr_clear_code_ps2.l2d
+	#elif defined(MGS2_AREA_JAPAN)
+		/* Æü */
+		l2d		2D/vr_missions/missions_character_select.l2d \
+				2D/vr_missions/missions_raiden_ps2.l2d \
+				2D/vr_missions/missions_raiden_ninja_ps2.l2d \
+				2D/vr_missions/missions_x_raiden_ps2.l2d \
+				2D/vr_missions/missions_snake_def_ps2.l2d \
+				2D/vr_missions/missions_pliskin_ps2.l2d \
+				2D/vr_missions/missions_snake_txd_ps2.l2d \
+				2D/vr_missions/missions_snake_old_ps2.l2d \
+				2D/vr_missions/fpv_controls_jpn_ps2.l2d \
+				2D/vr_missions/vr_clear_code_ps2.l2d
+	#else
+		/* ÊÆ */
+		l2d		2D/vr_missions/missions_character_select.l2d \
+				2D/vr_missions/missions_raiden_ps2.l2d \
+				2D/vr_missions/missions_raiden_ninja_ps2.l2d \
+				2D/vr_missions/missions_x_raiden_ps2.l2d \
+				2D/vr_missions/missions_snake_def_ps2.l2d \
+				2D/vr_missions/missions_pliskin_ps2.l2d \
+				2D/vr_missions/missions_snake_txd_ps2.l2d \
+				2D/vr_missions/missions_snake_old_ps2.l2d \
+				2D/vr_missions/fpv_controls.l2d \
+				2D/vr_missions/vr_clear_code_ps2.l2d
+	#endif
+#endif
+
+// ¥»¡¼¥ÖÍÑ
+#ifdef MGS2_XBOX_1
+l2d		2D/node/save_load_sub/save_load.l2d
+#else
+l2d		2D/node/save_load/save_load.l2d
+#endif
+l2d		2D/clear_code/clear_code.l2d
+//icon	icon/vrticon.cnf
+icon	icon/sub_vricon.cnf
+

@@ -1,0 +1,94 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+	@fn			extern "C" void edgePostGauss1x7F
+									(
+										const vec_char16* __restrict pOutputScanline,
+										const vec_char16* __restrict pInputScanline,
+										const u16 count,
+										const vec_float4 weights
+									)
+	
+	@param		pOutputScanline		pointer to result
+	@param		pInputScanline		pointer to input scanline
+	@param		count				scanline size
+	@param		weights				gauss weights
+		
+**/
+//--------------------------------------------------------------------------------------------------
+
+.include "edgepost_helpers.inc"
+
+
+
+///////////////////////////////////////////////////////////////////
+// single channel float vertical gauss blur
+.cfunc void edgePostGauss1x7F( qword pOutput, qword pInput, qword stride, qword count, qword weights )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	
+	.reg		u1, u2, u3, d1, d2, d3
+	mpyi		u3, stride, -3
+	mpyi		u2, stride, -2
+	mpyi		u1, stride, -1
+	mpyi		d1, stride, 1
+	mpyi		d2, stride, 2
+	mpyi		d3, stride, 3
+	
+	// gauss constants	
+	.reg		w0, w1, w2, w3
+	shufb		w0, weights, weights, kEdgePostReplicateX
+	shufb		w1, weights, weights, kEdgePostReplicateY
+	shufb		w2, weights, weights, kEdgePostReplicateZ
+	shufb		w3, weights, weights, kEdgePostReplicateW
+	
+/*
+	ilf32		k0, 0.3125f * 2.f
+	ilf32		k1, 0.234375f * 2.f
+	ilf32		k2, 0.09375f * 2.f
+	ilf32		k3, 0.015625f * 2.f
+*/
+	
+loop:
+	ai			count, count, -4
+	ai			pOutput, pOutput, 0x10
+
+	// Load pixels
+	.reg		s0, s1, s2, s3, s4, s5, s6
+	lqx			s0, pInput, u3
+	lqx			s1, pInput, u2
+	lqx			s2, pInput, u1
+	lqd			s3, 0x00(pInput)
+	lqx			s4, pInput, d1
+	lqx			s5, pInput, d2
+	lqx			s6, pInput, d3
+	ai			pInput, pInput, 0x10
+
+	// Blur
+	.reg		result
+	fm			result, s0, w3
+	fma			result, s1, w2, result
+	fma			result, s2, w1, result
+	fma			result, s3, w0, result
+	fma			result, s4, w1, result
+	fma			result, s5, w2, result
+	fma			result, s6, w3, result
+	
+	.reg		m
+	fcgt		m, result, kEdgePostFloatOne
+	selb		result, result, kEdgePostFloatOne, m
+	
+	// Store	
+	stqd		result, -0x10( pOutput )
+	brnz		count, loop
+.endfunc
+
+

@@ -1,0 +1,91 @@
+//
+//	sp21a.src	
+//	バラエティ 主観モードステージ
+//	written by H.Yoshiike 2002.Apr
+//
+//	$Id$
+
+#define WN_SP21A
+
+// モデル用
+// 敵兵関連define
+// 敵兵タイプ
+// 敵兵タイプ
+//#define ENE_VR_GOL		// ＶＲ敵兵
+//#define ENE_ATTACKER	// 攻撃兵
+//#define ENE_SHIELD		// 盾兵
+//#define ENE_SHOT		// ショットガン兵
+//#define ENE_HIGH_TECH	// 人質イベント後はハイテク兵
+// 特殊兵のモーション設定
+//#define ENE_MAR '-DDEL_TNG=DUMMY -DDEL_WALKMAN=DUMMY'
+// エフェクト用
+//#define	E_ENEMY_LIGHT			// 敵兵ライト
+//#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+
+// 的用
+#define VR_TGT_CUBE			1 // キューブ
+#define VR_TGT_SQUARE		1 // 十字
+#define VR_TGT_TRIANGLE		1 // 三角
+//#define VR_TGT_OCTA		1 // 八面体
+//#define VR_TGT_STRAW		1 // 刀用
+//#define VR_TGT_HEXA		1 // スティンガー用的
+//#define VR_TGT_WALL		1 // ＶＲ箱
+
+block .use r_vr_r
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"vr_def.h"
+#include	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+
+// キャラクタ
+//#include	"ene_plant.h"
+
+// ＶＲ的
+#include	"vrstage.h"
+
+//	ＶＲ追加エフェクト
+#include	"vr_effect.h"
+
+// 強制モーション
+mtn			rai_sp21a.mls
+mtn			sna_sp21a.mls
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル 
+//pack_all	sp21a.tri \
+//	world/vr_variety/sp21a
+pack_all	ws02a.tri \
+	world/vr_weapon/ws02a
+
+//world		vr_variety/sp21a
+world		vr_weapon/ws02a
+hazard		sp21a.hzx
+//rol			world/vr_variety/sp21a/sp21a.rol
+rol			world/vr_weapon/ws02a/ws02a.rol
+//cvd			world/vr_variety/sp21a/sp21a.cv2 v
+
+
+// オブジェクト
+//pack_all	object.tri \
+//			meca/svc_plant \
+//			meca/gun_camera \
+//			world/test/vr_test/vr2_pitfall_a0.dar
+
+//meca		svc_plant
+//meca		gun_camera
+//world		test/vr_test/vr2_pitfall_a0.kms
+
+
+// アイテム
+itembox
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム

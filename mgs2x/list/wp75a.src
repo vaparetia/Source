@@ -1,0 +1,60 @@
+//
+//	wp75a.src
+//	武器訓練ブレード３面４面共通
+//	written by S.Mukaide 2002.Apr
+//
+//	$Id:
+
+block .use r_vr_r
+block .nocache
+block .cache
+
+#define WN_WP75A
+
+// ＶＲ的関連define
+#define VR_TGT_STRAW	1	// 刀用
+// ＶＲ的
+#include	"vrstage.h"
+// ＶＲエフェクト関連define
+#include	"vr_def.h"
+
+// 各ステージ共通要素
+#include	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+//	ＶＲ追加エフェクト
+#include	"vr_effect.h"
+
+// 強制モーション
+mtn			rai_wp75a.mls
+mtn			sna_wp75a.mls
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+option makexti6 -l 1024 -f PAL8		//	ＸＢＯＸ用劣化無しテクスチャ用
+pack_all	ws73a.tri \
+	world/vr_weapon/ws73a
+option makexti6						//	ＸＢＯＸ用劣化無しテクスチャ用
+
+world		vr_weapon/ws73a
+hazard		ws73a.hzx
+
+rol			world/vr_weapon/ws73a/ws73a.rol
+
+
+// オブジェクト
+
+// 消火器
+
+// アイテム
+itembox
+
+// 刀セット一式
+#include	"blade.h"
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム

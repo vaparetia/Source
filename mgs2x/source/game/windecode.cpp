@@ -1,0 +1,2563 @@
+/*
+	Windows Stream Driver
+
+	I Picture Only Stream,
+	I Picture Only Memory Stream,
+	MPEG Stream
+
+	2002/05/20 M.Kobayashi
+	$Id: windecode.cpp,v 1.19 2003/01/09 17:11:40 takaki Exp $
+*/
+#include	"mgs_type.h"
+#undef long
+#include	"xbox2win.h"
+#include	<dshow.h>
+#include	<d3d8types.h>
+#include	"libgv.h"
+//#include	"libgv.cnf"
+//#include	"libfs.h"
+//#include	"libdg.h"
+//#include	"stream.h"
+#include	"mts.h"
+#include 	"streams.h"
+#include	<TCHAR.h>
+#include	<stdio.h>
+#include	<stdarg.h>
+#include	"g_define.h"
+
+#include "wincriemu.h"
+#include "windecode.h"
+
+#include	"sd_ee.h"
+
+#include "dxerr8.h"
+
+#include <initguid.h>
+#define	SAMPLE_ENT		(8)
+typedef struct {
+	struct _mwply_if *vtbl;
+	char		*buffer;
+	int			buf_size;
+	MWS_PLY_CPRM_SFD	cprm;
+	int			init_flag;
+	SJ			sj;
+	int			img_set_pos;
+	int			img_get_pos;
+	char		sj_work[48];
+	int			frame_cnt;
+	int			dec_cnt;
+	IMediaSample *current_sample;
+	IMediaSample *render_sample;
+	REFERENCE_TIME	start_time;
+	HANDLE		thread_handle;
+	HANDLE		send_sema;
+	HANDLE		recive_sema;
+	int 		thread_id;
+	int			send_cmd;
+	int			run_cmd;
+	int			run_state;
+	
+	
+	IMediaSample *sample_tbl[SAMPLE_ENT];
+	int			sample_set_cnt;
+	int			sample_get_cnt;
+} MW_PLY_OBJ2;
+static int End_Code = FALSE;
+
+static BOOL DoRenderSampled = FALSE ;	// 既にDoRenderSampleされたフラグ(広域変数なのは許して下さい)
+
+enum {
+	 DEC_COMMAND_WAIT
+	,DEC_COMMAND_SEND
+	,DEC_COMMAND_DEC
+	,DEC_COMMAND_RELEASE
+	,DEC_STATE_EXECUTING
+	,DEC_STATE_IDLE
+};
+
+//-----------------------------------------------------------------------------
+// CTextureRenderer Class Declarations
+//-----------------------------------------------------------------------------
+class CTextureRenderer : public CBaseVideoRenderer
+{
+public:
+	CTextureRenderer(LPUNKNOWN pUnk,HRESULT *phr,MW_PLY_OBJ2 *lpMpo);
+	~CTextureRenderer();
+
+public:
+	HRESULT CheckMediaType(const CMediaType *pmt );	 // Format acceptable?
+	HRESULT SetMediaType(const CMediaType *pmt );	   // Video format notification
+	HRESULT DoRenderSample(IMediaSample *pMediaSample); // New video sample
+	
+	LONG m_lVidWidth;	// Video width
+	LONG m_lVidHeight;	// Video Height
+	LONG m_lVidPitch;	// Video Pitch
+	PBYTE m_bBuffer;	// Video Pitch
+};
+
+
+
+
+
+//------------------------------------------------------------------------------
+// File: Source.h
+//
+// Desc: DirectShow base classes - defines classes to simplify creation of
+//       ActiveX source filters that support continuous generation of data.
+//       No support is provided for IMediaControl or IMediaPosition.
+//
+// Copyright (c) 1992-2001 Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------------------------
+
+class CMGS2StreamPin;  // The class that will handle each pin
+class CMGS2StreamFilter : public CBaseFilter {
+public:
+
+    CMGS2StreamFilter(TCHAR *pName, LPUNKNOWN lpunk, CLSID clsid, HRESULT *phr);
+    CMGS2StreamFilter(TCHAR *pName, LPUNKNOWN lpunk, CLSID clsid);
+#ifdef UNICODE
+    CMGS2StreamFilter(CHAR *pName, LPUNKNOWN lpunk, CLSID clsid, HRESULT *phr);
+    CMGS2StreamFilter(CHAR *pName, LPUNKNOWN lpunk, CLSID clsid);
+#endif
+    ~CMGS2StreamFilter();
+
+    int       GetPinCount(void);
+    CBasePin *GetPin(int n);
+
+    // -- Utilities --
+
+    CCritSec*   pStateLock(void) { return &m_cStateLock; }  // provide our critical section
+
+    HRESULT     AddPin(CMGS2StreamPin *);
+    HRESULT     RemovePin(CMGS2StreamPin *);
+
+    STDMETHODIMP FindPin(
+        LPCWSTR Id,
+        IPin ** ppPin
+    );
+
+    int FindPinNumber(IPin *iPin);
+    
+protected:
+
+    int             m_iPins;       // The number of pins on this filter. Updated by CMGS2StreamPin
+                       // constructors & destructors.
+    CMGS2StreamPin **m_paStreams;   // the pins on this filter.
+
+    CCritSec m_cStateLock;  // Lock this to serialize function accesses to the filter state
+
+};
+
+
+//
+// CMGS2StreamPin
+//
+// Use this class to manage a stream of data that comes from a
+// pin.
+// Uses a worker thread to put data on the pin.
+class CMGS2StreamPin : public CBaseOutputPin {
+public:
+
+    CMGS2StreamPin(TCHAR *pObjectName,
+                  HRESULT *phr,
+                  CMGS2StreamFilter *pms,
+                  LPCWSTR pName,
+                  CMediaType	* pmt);
+    virtual ~CMGS2StreamPin(void);  // virtual destructor ensures derived class destructors are called too.
+
+protected:
+
+    CMGS2StreamFilter *m_pFilter; // The parent of this stream
+
+	HRESULT CMGS2StreamPin::DecideBufferSize(IMemAllocator *pAlloc,ALLOCATOR_PROPERTIES *pProperties);
+public:
+    // thread commands
+    int WinstrmSendChank(MW_PLY_OBJ2	*src,int size,int seq_end);
+    int WinstrmSendChankIPic(REFERENCE_TIME start_time,BYTE *src,int size,int seq_end);
+    int WinstrmResendChank(MW_PLY_OBJ2	*src,int size,int seq_end);
+
+protected:
+    // override these if you want to add thread commands
+    // *
+    // * AM_MEDIA_TYPE support
+    // *
+
+    // If you support more than one media type then override these 2 functions
+    virtual HRESULT CheckMediaType(const CMediaType *pMediaType);
+    virtual HRESULT GetMediaType(int iPosition, CMediaType *pMediaType);  // List pos. 0-n
+
+    // If you support only one type then override this fn.
+    // This will only be called by the default implementations
+    // of CheckMediaType and GetMediaType(int, CMediaType*)
+    // You must override this fn. or the above 2!
+    virtual HRESULT GetMediaType(CMediaType *pMediaType) ;
+
+    STDMETHODIMP QueryId(
+        LPWSTR * Id
+    );
+	CMediaType	m_mt;
+};
+
+
+
+
+/*---------------------------------------------------------------------------
+|
+|		メディアサンプルバッファ空きチェック
+|
+|	Parameters
+|
+|	Returns
+|
+*----------------------------------------------------------------------------*/
+static int media_sample_space_check(MW_PLY_OBJ2 *mp2)
+{
+	int		sample_tmp;
+	
+	sample_tmp = (mp2->sample_set_cnt)+ 1;
+	if(sample_tmp >= SAMPLE_ENT){
+		sample_tmp = 0;
+	}
+	if(sample_tmp == mp2->sample_get_cnt){
+		return(-1);
+	}
+	return(sample_tmp);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//-----------------------------------------------------------------------------
+// Msg: Display an error message box if needed
+//-----------------------------------------------------------------------------
+void Msg(TCHAR *szFormat, ...)
+{
+	TCHAR szBuffer[512];
+
+	va_list pArgs;
+	va_start(pArgs, szFormat);
+	_vstprintf(szBuffer, szFormat, pArgs);
+	va_end(pArgs);
+
+	MessageBox(NULL, szBuffer, TEXT("DirectShow Texture3D Sample"), 
+			   MB_OK | MB_ICONERROR);
+}
+
+/*---------------------------------------------------------------------------
+|
+|		WindowsのMpegの初期化
+|
+|	Parameters
+|
+|	Returns
+|
+*----------------------------------------------------------------------------*/
+typedef struct {
+	IBaseFilter		*pFTR;		   // Texture Renderer Filter
+	IPin		   	*pFTRPin[2];	  // Texture Renderer Input Pin
+}FILTERSET;
+typedef struct {
+	const wchar_t *	pFTR;		   // Texture Renderer Filter
+	const wchar_t *	pFTRPin[2];	  // Texture Renderer Input Pin
+}FILTERNAMESET;
+
+static FILTERNAMESET	splitflt={
+	 L"MPEG Video Decoder"
+	 ,{L"Input"
+	 ,L"Output"}
+};
+typedef struct {
+	CMGS2StreamFilter		*pSrcFTR;
+	CMGS2StreamPin	*pSrcFTRInPin;
+	FILTERSET	DecFTR;	
+	class CTextureRenderer	*pRndrFTR;		  // DShow Texture renderer
+	IPin		   	*pRndrFTRInPin;	  // Texture Renderer Input Pin
+	IGraphBuilder*  pGB;		  // GraphBuilder
+	IMediaControl*  pMC;		  // Media Control
+	IMediaEvent*	pME;		  // Media Event
+	int 			WindowsMpegInitFlag;
+	IPin			*pSrcFTRGetPin ;
+}WINMPEGWORK;
+
+static WINMPEGWORK WindowsMpegWork = {
+	 NULL
+	,NULL
+	,{NULL
+	 ,NULL
+	 ,NULL}
+	,NULL
+	,NULL
+	,NULL
+	,NULL
+	,NULL
+	,FALSE
+};
+// {3AEF17C4-F9E4-48c7-97BF-679FCAF7EF38}
+DEFINE_GUID(CLSID_MGS2Source, 
+0x3aef17c4, 0xf9e4, 0x48c7, 0x97, 0xbf, 0x67, 0x9f, 0xca, 0xf7, 0xef, 0x38);
+
+/*---------------------------------------------------------------------------
+|
+|		コマンド
+|
+|	Parameters
+|
+|	Returns
+|
+*----------------------------------------------------------------------------*/
+static int wait_command( MW_PLY_OBJ2 *w )
+{
+	WaitForSingleObject( w->send_sema, INFINITE );
+	w->run_cmd = w->send_cmd;
+
+	return w->run_cmd;
+}
+
+/* ---------------------------------------------------------------------- */
+/*
+	スレッド
+*/
+
+static int WINAPI dec_thread( void *param )
+{
+	MW_PLY_OBJ2 *w = (MW_PLY_OBJ2 *)param;
+	int status;
+
+	status = DEC_COMMAND_WAIT;
+	for( ;; ){
+		switch( status ){
+		  case DEC_COMMAND_WAIT:
+			w->run_state = DEC_STATE_IDLE ;
+			status = wait_command( w );
+			w->run_state = DEC_STATE_EXECUTING;
+			break;
+
+		  case DEC_COMMAND_SEND:
+
+
+			if( (w->sample_get_cnt) != (w->sample_set_cnt) ){
+				if( (w->sample_get_cnt) != (w->sample_set_cnt) ){
+					w->sample_get_cnt++;
+					if(w->sample_get_cnt >= SAMPLE_ENT){
+						w->sample_get_cnt = 0;
+					}
+				}
+			}
+			if( w->sample_tbl[w->sample_get_cnt] ){
+				WindowsMpegWork.pSrcFTRInPin->   Deliver(w->sample_tbl[w->sample_get_cnt]);
+				w->sample_tbl[w->sample_get_cnt]->Release();
+				w->sample_tbl[w->sample_get_cnt] = NULL;
+			}else{
+				status = DEC_COMMAND_WAIT;
+				
+			}
+			break;
+
+		  case DEC_COMMAND_RELEASE:
+			return(0);
+			break;
+
+		  default:
+			status = DEC_COMMAND_WAIT;
+			break;
+		}
+//		w->common.exec_com = status;
+	}
+	return(0);
+}
+
+
+#define	THREAD_MODE	1
+
+
+//-----------------------------------------------------------------------------
+// デコードスレッド初期化
+//-----------------------------------------------------------------------------
+static void init_dec_thread(MW_PLY_OBJ2 *mpo2)
+{
+	// コマンド取得セマフォ作成
+#if THREAD_MODE
+	mpo2->send_sema = CreateSemaphore( NULL, 0, 1, NULL );
+
+	mpo2->recive_sema = CreateSemaphore( NULL, 0, 1, NULL );
+
+	// ファイル読み込みスレッド起動
+
+	mpo2->thread_handle = CreateThread( NULL, 0x20000
+									, ( LPTHREAD_START_ROUTINE )dec_thread
+									, mpo2
+									, CREATE_SUSPENDED
+									, (unsigned long *)&mpo2->thread_id );
+//@	SetThreadPriority( work.thread_handle, THREAD_PRIORITY_ABOVE_NORMAL ) ;
+	ResumeThread(mpo2->thread_handle);
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// デコードスレッド初期化
+//-----------------------------------------------------------------------------
+static void clear_dec_thread(MW_PLY_OBJ2 *mpo2)
+{
+	if(mpo2->thread_handle){
+		CloseHandle(mpo2->thread_handle);
+		mpo2->thread_handle = NULL;
+	}
+	if(mpo2->send_sema){
+		CloseHandle(mpo2->send_sema);
+		mpo2->send_sema = NULL;
+	}
+	if(mpo2->recive_sema){
+		CloseHandle(mpo2->recive_sema);
+		mpo2->recive_sema = NULL;
+	}
+
+
+}
+//-----------------------------------------------------------------------------
+// コマンド設定
+//-----------------------------------------------------------------------------
+static void send_dec_thread(MW_PLY_OBJ2 *mpo2,int command)
+{
+	while(1){
+		if(mpo2->run_state== DEC_STATE_IDLE){
+			mpo2->send_cmd = command;
+			ReleaseSemaphore( mpo2->send_sema, 1, NULL );
+			break;
+		}else{
+			ReleaseSemaphore( mpo2->recive_sema, 1, NULL );
+			Sleep(1);
+		}
+	}
+}
+//-----------------------------------------------------------------------------
+// コマンド設定
+//-----------------------------------------------------------------------------
+static void wait_dec_thread(MW_PLY_OBJ2 *mpo2)
+{
+	while(1){
+		if(mpo2->run_state== DEC_STATE_IDLE){
+			break;
+		}else{
+			ReleaseSemaphore( mpo2->recive_sema, 1, NULL );
+			Sleep(1);
+		}
+	}
+}
+//-----------------------------------------------------------------------------
+// SyncInc
+//-----------------------------------------------------------------------------
+static void SyncInc_dec_thread(MW_PLY_OBJ2 *mpo2)
+{
+	if(mpo2->recive_sema){
+		ReleaseSemaphore( mpo2->recive_sema, 1, NULL );
+	}
+}
+
+
+//-----------------------------------------------------------------------------
+// Define GUID for Texture Renderer
+// {71771540-2017-11cf-AE26-0020AFD79767}
+//-----------------------------------------------------------------------------
+struct __declspec(uuid("{71771540-2017-11cf-ae26-0020afd79767}")) CLSID_TextureRenderer;
+
+
+void WindowsMpegInit(void)
+{
+	int	j;
+	IFilterMapper2 *pMapper = NULL;
+	IEnumMoniker *pEnum = NULL;
+	HRESULT hr = S_OK;
+	
+	if(WindowsMpegWork.WindowsMpegInitFlag){
+		return;
+	}
+ZeroMemory(&WindowsMpegWork, sizeof(WindowsMpegWork)) ;
+	//-------------------------------------------------
+	//	フィルタグラフ作成
+	
+	if (FAILED(hr = CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER,IID_IGraphBuilder,(void**)&WindowsMpegWork.pGB))){
+		Msg(TEXT("CoCreateInstance Create Error %s  hr=0x%x"), DXGetErrorString8(hr), hr);
+	}
+	
+	//-------------------------------------------------
+	//	MPEG１デコーダを取得
+	CoCreateInstance(CLSID_FilterMapper2, 
+		NULL, CLSCTX_INPROC, IID_IFilterMapper2, 
+		(void **) &pMapper);
+		
+	GUID arrayInTypes[4];
+	arrayInTypes[0] = MEDIATYPE_Video;
+	arrayInTypes[1] = MEDIASUBTYPE_MPEG1Packet;
+	arrayInTypes[2] = MEDIATYPE_Stream;
+	arrayInTypes[3] = MEDIASUBTYPE_MPEG1Video;
+	
+	hr = pMapper->EnumMatchingFilters(
+		&pEnum,
+		0,				  // 予約済み
+		TRUE,			   // 完全一致を使用?
+		MERIT_DO_NOT_USE+1, // 最小のメリット
+		TRUE,			   // 1 つ以上の入力ピン?
+		2,				  // 入力のメジャー タイプ/サブタイプの対の数
+		arrayInTypes,	   // 入力のメジャー タイプ/サブタイプの対の配列
+		NULL,			   // 入力メディア
+		NULL,			   // 入力ピンのカテゴリ
+		FALSE,			  // レンダラでなければならないか?
+		TRUE,			   // 1 つ以上の出力ピン?
+		0,				  // 出力のメジャー タイプ/サブタイプの対の数
+		NULL,			   // 出力のメジャー タイプ/サブタイプの対の配列 
+		NULL,			   // 出力メディア
+		NULL);			  // 出力ピンのカテゴリ
+
+// 前の例のように、pEnum を使って列挙する。
+	if(	FAILED(hr) ) {
+		return;
+	}
+
+	IMoniker *pMoniker;
+	ULONG cFetched;
+	while(pEnum->Next(1, &pMoniker, &cFetched) == S_OK)
+	{
+		char szName[256];
+		IPropertyBag *pPropBag;
+		pMoniker->BindToStorage(0, 0, IID_IPropertyBag, (void **)&pPropBag);
+
+		VARIANT varName;
+		varName.vt = VT_BSTR;
+		pPropBag->Read(L"FriendlyName", &varName, 0);
+		
+		WideCharToMultiByte(CP_ACP, 0, varName.bstrVal, 
+							-1, szName, 256, 0, 0);
+		{
+			char	str[256];
+			sprintf(str,"使用フィルタ = %s\n",szName); 
+			OutputDebugString(str);
+		}
+
+		{
+			if(splitflt.pFTR== NULL){
+				continue;
+			}
+				
+			if(!wcscmp(varName.bstrVal, splitflt.pFTR )){
+				VARIANT			varClsid;
+
+				varClsid.vt	=	VT_BSTR;
+				hr = pPropBag->Read(L"CLSID", &varClsid, 0);
+
+				if(SUCCEEDED(hr)){
+					CLSID clsidFilter;
+
+					// Add filter name and filename to listbox
+					if(CLSIDFromString(varClsid.bstrVal, &clsidFilter) == S_OK){
+						CoCreateInstance(clsidFilter, NULL, CLSCTX_INPROC, IID_IBaseFilter, (void **) &WindowsMpegWork.DecFTR.pFTR);
+						
+						{
+							IEnumPins *pEnumP;
+							IPin	 *pipin;
+							PIN_INFO pInfo;
+							WindowsMpegWork.DecFTR.pFTR->EnumPins(&pEnumP);
+
+							while(pEnumP->Next(1, &pipin, NULL) == S_OK){
+								pipin->QueryPinInfo(&pInfo);
+								
+							   	WideCharToMultiByte(CP_ACP, 0, pInfo.achName, 
+									-1, szName, 256, 0, 0);
+								{
+									char	str[256];
+									sprintf(str,"使用Pin = %s\n",szName); 
+									OutputDebugString(str);
+								}
+								for(j=0; j < 2 ; j++){
+									if(!wcscmp(pInfo.achName, splitflt.pFTRPin[j])){
+										WindowsMpegWork.DecFTR.pFTRPin[j] = pipin;
+										pipin->AddRef();
+										break;
+									}
+								}
+								pInfo.pFilter->Release() ;
+								pipin->Release();
+							}
+							pEnumP->Release();
+						}
+					}
+					SysFreeString(varClsid.bstrVal);
+				}
+			}
+		}
+		
+
+		// この名前を使って何かを行う。
+
+		SysFreeString(varName.bstrVal);
+		pPropBag->Release();
+		pMoniker->Release();
+	}
+	pEnum->Release();
+	pMapper->Release();
+
+	//-------------------------------------------------
+	//	入力フィルターを作成
+	
+	{
+		CMediaType mt;
+		MPEG1VIDEOINFO	*pmvi;
+
+		mt.majortype = MEDIATYPE_Video;
+	    mt.subtype = MEDIASUBTYPE_MPEG1Payload;
+		mt.SetFormatType(&FORMAT_MPEGVideo);
+
+		pmvi = (MPEG1VIDEOINFO*)mt.AllocFormatBuffer(172/*sizeof(MPEG1VIDEOINFO) */);
+			
+		
+		//-------------------------------------------------
+		//	出来ればストリームの先頭から取得して欲しいな
+		//-------------------------------------------------
+
+		static const char tbl[] = {
+			 0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x02 ,0x00 ,0x00 ,0x40 ,0x01 ,0x00 ,0x00
+			,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00
+			,(const char)0x8A ,(const char)0x91 ,0x1D ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x63 ,0x17 ,0x05 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00
+			,0x28 ,0x00 ,0x00 ,0x00 ,0x00 ,0x02 ,0x00 ,0x00 ,0x40 ,0x01 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00
+			,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,(const char)0xCA ,0x08 ,0x00 ,0x00 ,(const char)0xD0 ,0x07 ,0x00 ,0x00
+			,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x10 ,0x00 ,0x00 ,0x4C ,0x00 ,0x00 ,0x00
+			,0x00 ,0x00 ,0x01 ,(const char)0xB3 ,0x20 ,0x01 ,0x40 ,(const char)0xC4 ,(const char)0xFF ,(const char)0xFF ,(const char)0xE3 ,(const char)0x81 ,0x10 ,0x11 ,0x11 ,0x12
+			,0x12 ,0x12 ,0x13 ,0x13 ,0x13 ,0x13 ,0x14 ,0x14 ,0x14 ,0x14 ,0x14 ,0x15 ,0x15 ,0x15 ,0x15 ,0x15
+			,0x15 ,0x16 ,0x16 ,0x16 ,0x16 ,0x16 ,0x16 ,0x16 ,0x17 ,0x17 ,0x17 ,0x17 ,0x17 ,0x17 ,0x17 ,0x17
+			,0x18 ,0x18 ,0x18 ,0x19 ,0x18 ,0x18 ,0x18 ,0x19 ,0x1A ,0x1A ,0x1A ,0x1A ,0x19 ,0x1B ,0x1B ,0x1B
+			,0x1B ,0x1B ,0x1C ,0x1C ,0x1C ,0x1C ,0x1E ,0x1E ,0x1E ,0x1F ,0x1F ,0x21 
+		};
+		memcpy(pmvi,tbl,172);
+
+		WindowsMpegWork.pSrcFTR 		= new CMGS2StreamFilter(NAME("MPEG"),NULL, CLSID_MGS2Source);
+		WindowsMpegWork.pSrcFTRInPin	= new CMGS2StreamPin(NAME("MPEG"),&hr,WindowsMpegWork.pSrcFTR,L"Video",&mt);
+	    if (FAILED(hr) || WindowsMpegWork.pSrcFTR == NULL) {
+	        printf("Could not create filter HRESULT 0x%8.8X\n", hr);
+	    }
+	    WindowsMpegWork.pSrcFTR->AddRef();
+	    WindowsMpegWork.pSrcFTRInPin->AddRef();
+
+	}
+	
+	//-------------------------------------------------
+	//	テクスチャーレンダーフィルタ作成
+	
+	WindowsMpegWork.pRndrFTR = new CTextureRenderer(NULL, &hr,NULL);
+	
+	if (FAILED(hr))									  
+	{
+		Msg(TEXT("Could not create texture renderer object!  hr=0x%x"), hr);
+	}
+	WindowsMpegWork.pRndrFTR->AddRef();
+
+	//-------------------------------------------------
+	//	フィルター接続
+
+	//-------------------------------------------------
+	//	ソースフィルタ接続
+    hr = WindowsMpegWork.pGB->AddFilter(WindowsMpegWork.pSrcFTR, L"SourceFilter");
+    if (FAILED(hr)) {
+		Msg(TEXT("Could not add Source filter to graph!  hr=0x%x"), hr);
+	}
+
+	//-------------------------------------------------
+	//	デコーダフィルタ接続
+	
+	if (FAILED(hr = WindowsMpegWork.pGB->AddFilter(WindowsMpegWork.DecFTR.pFTR, L"Decoder")))
+	{
+		Msg(TEXT("Could not add Decoder renderer filter to graph!  hr=0x%x"), hr);
+	}
+	
+	//-------------------------------------------------
+	//	レンダーフィルタ接続
+	
+	if (FAILED(hr = WindowsMpegWork.pGB->AddFilter(WindowsMpegWork.pRndrFTR, L"TEXTURERENDERER")))
+	{
+		Msg(TEXT("Could not add renderer filter to graph!  hr=0x%x"), hr);
+	}
+    if (FAILED(hr = WindowsMpegWork.pRndrFTR->FindPin(L"In", &WindowsMpegWork.pRndrFTRInPin))){
+	}
+	
+	//-------------------------------------------------
+	//	ピン接続
+	
+	WindowsMpegWork.pSrcFTRGetPin = WindowsMpegWork.pSrcFTR->GetPin(0) ;
+	if (FAILED(hr = WindowsMpegWork.pGB->ConnectDirect(WindowsMpegWork.pSrcFTRGetPin,WindowsMpegWork.DecFTR.pFTRPin[0],NULL))){
+	};
+
+	if (FAILED(hr = WindowsMpegWork.pGB->ConnectDirect(WindowsMpegWork.DecFTR.pFTRPin[1], WindowsMpegWork.pRndrFTRInPin    ,NULL   ))){
+	};
+	
+	// Get the graph's media control, event & position interfaces
+	WindowsMpegWork.pGB->QueryInterface(IID_IMediaControl,(void **)&WindowsMpegWork.pMC);
+	WindowsMpegWork.pGB->QueryInterface(IID_IMediaEvent,(void **)&WindowsMpegWork.pME);
+
+	//-------------------------------------------------
+	//	チェック	
+	if(WindowsMpegWork.DecFTR.pFTR!=NULL
+	 &&WindowsMpegWork.DecFTR.pFTRPin[0]!=NULL
+	 &&WindowsMpegWork.DecFTR.pFTRPin[1]!=NULL){
+		WindowsMpegWork.WindowsMpegInitFlag= TRUE;
+	}else{
+		if(WindowsMpegWork.DecFTR.pFTR		){WindowsMpegWork.DecFTR.pFTR->Release();		WindowsMpegWork.DecFTR.pFTR=NULL;}
+		if(WindowsMpegWork.DecFTR.pFTRPin[0]){WindowsMpegWork.DecFTR.pFTRPin[0]->Release();	WindowsMpegWork.DecFTR.pFTRPin[0]=NULL;}
+		if(WindowsMpegWork.DecFTR.pFTRPin[1]){WindowsMpegWork.DecFTR.pFTRPin[1]->Release();	WindowsMpegWork.DecFTR.pFTRPin[1]=NULL;}
+	}
+}
+
+static	void	RCTRelease(void);
+void WindowsMpegRelease(void)
+{
+	HRESULT	hr ;
+
+	if(WindowsMpegWork.WindowsMpegInitFlag == NULL){
+		return;
+	}
+	if(WindowsMpegWork.pGB){
+		if(WindowsMpegWork.pMC){
+		    OAFilterState pfs;
+			do{
+				hr = WindowsMpegWork.pMC->Stop();
+				if( FAILED(hr) ){ dbgErrMessPuts("", hr) ; }
+				
+				 hr = WindowsMpegWork.pMC->GetState(1000,&pfs);
+			}while(!FAILED(hr) && pfs != State_Stopped);
+		}
+		RCTRelease();
+
+		if(WindowsMpegWork.pME){
+			hr = WindowsMpegWork.pME->Release();
+			if( FAILED(hr) ){ dbgErrMessPuts("", hr) ; }
+			WindowsMpegWork.pME = NULL;
+		}
+
+
+		if( WindowsMpegWork.pSrcFTRInPin ){
+			hr = WindowsMpegWork.pGB->Disconnect( WindowsMpegWork.pSrcFTRInPin );
+			if( FAILED(hr) ){ dbgErrMessPuts("", hr) ; }
+		}
+		if(WindowsMpegWork.pSrcFTRGetPin){
+			hr = WindowsMpegWork.pGB->Disconnect(WindowsMpegWork.pSrcFTRGetPin);
+			if( FAILED(hr) ){ dbgErrMessPuts("", hr) ; }
+		}
+		if(WindowsMpegWork.DecFTR.pFTRPin[0]){
+			hr = WindowsMpegWork.pGB->Disconnect(WindowsMpegWork.DecFTR.pFTRPin[0]);
+			if( FAILED(hr) ){ dbgErrMessPuts("", hr) ; }
+		}
+		if(WindowsMpegWork.DecFTR.pFTRPin[1]){
+			hr = WindowsMpegWork.pGB->Disconnect(WindowsMpegWork.DecFTR.pFTRPin[1]);
+			if( FAILED(hr) ){ dbgErrMessPuts("", hr) ; }
+		}
+		if(WindowsMpegWork.pRndrFTRInPin){
+			hr = WindowsMpegWork.pGB->Disconnect(WindowsMpegWork.pRndrFTRInPin);
+			if( FAILED(hr) ){ dbgErrMessPuts("", hr) ; }
+		}
+
+
+
+		if(WindowsMpegWork.pRndrFTR			){
+			hr = WindowsMpegWork.pGB->RemoveFilter(WindowsMpegWork.pRndrFTR);
+			if( FAILED(hr) ){ dbgErrMessPuts("", hr) ; }
+		}
+		
+		if(WindowsMpegWork.DecFTR.pFTR		){
+			hr = WindowsMpegWork.pGB->RemoveFilter(WindowsMpegWork.DecFTR.pFTR);
+			if( FAILED(hr) ){ dbgErrMessPuts("", hr) ; }
+		}
+
+		if(WindowsMpegWork.pSrcFTR			){
+			hr = WindowsMpegWork.pGB->RemoveFilter(WindowsMpegWork.pSrcFTR);
+			if( FAILED(hr) ){ dbgErrMessPuts("", hr) ; }
+		}
+
+		if(WindowsMpegWork.pMC){
+			hr = WindowsMpegWork.pMC->Release();
+			if( FAILED(hr) ){ dbgErrMessPuts("", hr) ; }
+			WindowsMpegWork.pMC = NULL;
+		}
+
+	};
+
+	if(WindowsMpegWork.pSrcFTR			){
+//		delete WindowsMpegWork.pSrcFTR;
+//		do{
+			hr = WindowsMpegWork.pSrcFTR->Release();
+			
+//		}while(!FAILED(hr) && hr);
+		
+		WindowsMpegWork.pSrcFTR=NULL;
+	}
+	if(WindowsMpegWork.pSrcFTRInPin		){
+//		delete WindowsMpegWork.pSrcFTRInPin;		
+//		do{
+			hr = WindowsMpegWork.pSrcFTRInPin->Release();		
+			
+//		}while(!FAILED(hr) && hr);
+		WindowsMpegWork.pSrcFTRInPin=NULL;
+	}
+	
+
+	if(WindowsMpegWork.DecFTR.pFTRPin[0]){
+		hr = WindowsMpegWork.DecFTR.pFTRPin[0]->Release();
+		if( FAILED(hr) ){ dbgErrMessPuts("", hr) ; }
+		WindowsMpegWork.DecFTR.pFTRPin[0]=NULL;
+	}
+	if(WindowsMpegWork.DecFTR.pFTRPin[1]){
+		hr = WindowsMpegWork.DecFTR.pFTRPin[1]->Release();
+		if( FAILED(hr) ){ dbgErrMessPuts("", hr) ; }
+		WindowsMpegWork.DecFTR.pFTRPin[1]=NULL;
+	}
+	if(WindowsMpegWork.DecFTR.pFTR		){
+		hr = WindowsMpegWork.DecFTR.pFTR->Release();
+		if( FAILED(hr) ){ dbgErrMessPuts("", hr) ; }
+		WindowsMpegWork.DecFTR.pFTR=NULL;
+	}
+	if(WindowsMpegWork.pRndrFTRInPin	){
+		hr = WindowsMpegWork.pRndrFTRInPin->Release();
+		if( FAILED(hr) ){ dbgErrMessPuts("", hr) ; }
+		WindowsMpegWork.pRndrFTRInPin=NULL;
+	}
+
+
+	if(WindowsMpegWork.pRndrFTR			){
+//@		delete WindowsMpegWork.pRndrFTR ;			
+//		do{
+			hr = WindowsMpegWork.pRndrFTR->Release();
+			
+//		}while(!FAILED(hr) && hr);
+		
+		WindowsMpegWork.pRndrFTR=NULL;
+	}
+
+	if(WindowsMpegWork.pGB){
+//		do{
+			hr = WindowsMpegWork.pGB->Release();
+//		}while(!FAILED(hr) && hr);
+		if( FAILED(hr) ){ dbgErrMessPuts("", hr) ; }
+		WindowsMpegWork.pGB=NULL;
+	}
+	WindowsMpegWork.WindowsMpegInitFlag= FALSE;
+}
+
+//----------------------------------------------------------------------------------
+
+
+
+
+
+/*---------------------------------------------------------------------------
+|
+|		MPEGストリームデータのコード取得
+|
+|	Parameters
+|
+|	Returns
+|
+*----------------------------------------------------------------------------*/
+typedef	int	( *SEARCH_CALLBACK )( LPBYTE lpsrc, DWORD size ,DWORD	pos, void *work) ;
+int  SearchChankCode(LPBYTE lpsrc, DWORD size ,SEARCH_CALLBACK func, void *work)
+{
+    int		rc;
+	
+	DWORD	bsize = 0x7f1e,top;
+	DWORD	seq_end = 0;
+	
+	bsize = 0;
+
+	for(top = 0 ; top < size ;){
+		if(lpsrc[top] != 0x00){
+			top++;
+		}else if(lpsrc[top + 1 ] != 0x00){
+			top+=2;
+		}else{
+			switch(lpsrc[top +  2]){
+			case	0x00:
+				top+=1;
+				break;
+			
+			case	0x01:
+				rc = (*func)( lpsrc,size,top,work );
+				if(rc){
+					return(TRUE);
+				}
+				top+=3;
+				break;
+
+			default:
+				top+=2;
+				break;
+			}
+		}
+	}
+	return(FALSE);
+
+
+}
+
+/*---------------------------------------------------------------------------
+|
+|		MPEGストリームデータのチャンク取得
+|
+|	Parameters
+|
+|	Returns
+|
+*----------------------------------------------------------------------------*/
+static int  SearchChankFrame(LPBYTE lpsrc, DWORD size ,DWORD	*pseq_end)
+{
+    
+	DWORD	bsize = 0x7f1e,top;
+	DWORD	seq_end = 0;
+	
+	bsize = 0;
+
+	for(top = 0 ; top < size ;){
+		if(lpsrc[top] != 0x00){
+			top++;
+		}else if(lpsrc[top + 1 ] != 0x00){
+			top+=2;
+		}else{
+			switch(lpsrc[top +  2]){
+			case	0x00:
+				top+=1;
+				break;
+			
+			case	0x01:
+				if(lpsrc[top +  3] == 0xb8){
+					char	str[256];
+
+					seq_end = ((((lpsrc[top +  4] >> 0) & 0x03) << 4)+((lpsrc[top +  5] >> 4) & 0x0f)) * 60 * 30
+							+ ((((lpsrc[top +  5] >> 0) & 0x7)<<3) + (( lpsrc[top +  6] >> 5) & 0x7 )) * 30
+							+ ((((lpsrc[top +  6] >> 0) & 0x1f)<<1) +(( lpsrc[top +  7] >> 7) & 0x1 ));
+					
+					sprintf(str,"dff %d tch %d tcm %d mb %d tcs %d tcp %d\n"
+								,lpsrc[top +  4] >> 7
+								,(lpsrc[top +  4] >> 2) & 0x1f
+								,(((lpsrc[top +  4] >> 0) & 0x03) << 4)+((lpsrc[top +  5] >> 4) & 0x0f)
+								,(lpsrc[top +  5] >> 3) & 0x1
+								,(((lpsrc[top +  5] >> 0) & 0x7)<<3) + (( lpsrc[top +  6] >> 5) & 0x7 )
+								,(((lpsrc[top +  6] >> 0) & 0x1f)<<1) +(( lpsrc[top +  7] >> 7) & 0x1 ));
+					OutputDebugString(str);
+					
+					*pseq_end = seq_end;
+				}else if(lpsrc[top +  3] == 0x00){
+					bsize = top;
+					if(bsize > 0x100){
+						goto skip;
+					}
+				}else if(lpsrc[top +  3] == 0xb7){
+					bsize = top;
+					if(bsize > 0x0){
+						goto skip;
+					}else{
+						return(-1);
+					}
+				}
+				top+=3;
+				break;
+
+			default:
+				top+=2;
+				break;
+			}
+		}
+	}
+	bsize = size;
+skip:
+
+	return(bsize);
+
+
+}
+/*---------------------------------------------------------------------------
+|
+|		MPEGストリームデータのチャンク取得
+|
+|	Parameters
+|
+|	Returns
+|
+*----------------------------------------------------------------------------*/
+static int  SearchChankTime(LPBYTE lpsrc, DWORD size)
+{
+
+	DWORD	bsize = 0x7f1e,top;
+	DWORD	seq_end = -1;
+	
+	bsize = 0;
+
+	for(top = 0 ; top < size ;){
+		if(lpsrc[top] != 0x00){
+			top++;
+		}else if(lpsrc[top + 1 ] != 0x00){
+			top+=2;
+		}else{
+			switch(lpsrc[top +  2]){
+			case	0x00:
+				top+=1;
+				break;
+			
+			case	0x01:
+
+				if(lpsrc[top +  3] == 0xb8){
+					char	str[256];
+
+					seq_end = ((((lpsrc[top +  4] >> 0) & 0x03) << 4)+((lpsrc[top +  5] >> 4) & 0x0f)) * 60 * 30
+							+ ((((lpsrc[top +  5] >> 0) & 0x7)<<3) + (( lpsrc[top +  6] >> 5) & 0x7 )) * 30
+							+ ((((lpsrc[top +  6] >> 0) & 0x1f)<<1) +(( lpsrc[top +  7] >> 7) & 0x1 ));
+					
+					sprintf(str,"dff %d tch %d tcm %d mb %d tcs %d tcp %d\n"
+								,lpsrc[top +  4] >> 7
+								,(lpsrc[top +  4] >> 2) & 0x1f
+								,(((lpsrc[top +  4] >> 0) & 0x03) << 4)+((lpsrc[top +  5] >> 4) & 0x0f)
+								,(lpsrc[top +  5] >> 3) & 0x1
+								,(((lpsrc[top +  5] >> 0) & 0x7)<<3) + (( lpsrc[top +  6] >> 5) & 0x7 )
+								,(((lpsrc[top +  6] >> 0) & 0x1f)<<1) +(( lpsrc[top +  7] >> 7) & 0x1 ));
+					OutputDebugString(str);
+					
+				}
+				if(lpsrc[top +  3] == 0xb7){
+				
+					End_Code = TRUE;
+				}
+
+				top+=3;
+				break;
+
+			default:
+				top+=2;
+				break;
+			}
+		}
+	}
+	bsize = size;
+
+	return(seq_end);
+
+
+}
+
+//-----------------------------------------------------------------------------
+// Global Constants
+//-----------------------------------------------------------------------------
+//#define SOURCE_FILE	 TEXT("d:\\trans\\test2.mpv")
+//#define SOURCE_FILE	 TEXT("d:\\trans\\test4.avi")
+//#define SOURCE_FILE	 TEXT("d:\\trans\\log2.dat")
+#define SOURCE_FILE	 TEXT("d:\\trans\\p049_09_m05.m1v")
+// An application can advertise the existence of its filter graph
+// by registering the graph with a global Running Object Table (ROT).
+// The GraphEdit application can detect and remotely view the running
+// filter graph, allowing you to 'spy' on the graph with GraphEdit.
+//
+// To enable registration in this sample, define REGISTER_FILTERGRAPH.
+//
+#define REGISTER_FILTERGRAPH
+
+//-----------------------------------------------------------------------------
+// Global DirectShow pointers
+//-----------------------------------------------------------------------------
+
+
+D3DFORMAT			   g_TextureFormat; // Texture format
+
+struct SemaParam	rendwait ;
+static 	MW_PLY_OBJ2 *m_lpMpo;
+
+//-----------------------------------------------------------------------------
+// InitDShowTextureRenderer : Create DirectShow filter graph and run the graph
+//-----------------------------------------------------------------------------
+static HRESULT MpegDecInit(MW_PLY_OBJ2	*lpmpo,int mode)
+{
+	HRESULT hr = S_OK;
+
+	m_lpMpo = lpmpo;
+	
+	
+	if(mode == 0){
+		init_dec_thread(lpmpo);
+	}
+
+	//-------------------------------------------------
+	//	描画同期用のセマフォ作成
+	
+	ZeroMemory( &rendwait, sizeof(rendwait) );
+	rendwait.initCount = 1;
+	rendwait.maxCount = 1;
+
+
+
+	lpmpo-> init_flag = FALSE;
+	End_Code = FALSE;
+
+
+	return(0);
+}
+//-----------------------------------------------------------------------------
+// InitDShowTextureRenderer : Create DirectShow filter graph and run the graph
+//-----------------------------------------------------------------------------
+#if TRUE
+static	void	RCTInit(void) ;
+#endif
+static HRESULT MpegDecFirstRend(MW_PLY_OBJ2	*lpmpo)
+{
+	HRESULT hr = S_OK;
+	
+#if TRUE 
+	RCTInit() ;
+#endif
+
+	if(!WindowsMpegWork.WindowsMpegInitFlag){
+		return(hr);
+	}
+
+	if (FAILED(hr = WindowsMpegWork.pMC->Run()))
+	{
+		Msg(TEXT("Could not run the DirectShow graph44!  hr=0x%x"), hr);
+		return hr;
+	}
+
+	return S_OK;
+}
+
+static INT MpegDecDrawFrame(MW_PLY_OBJ2	*lpmpo,int tick,int size)
+{
+	int		rc = 0;
+	static 	LONGLONG nn = 1,nn2 = 1,nn3 ;
+		
+	nn2=nn+0;
+	
+
+	if(size >= 1){
+		WindowsMpegWork.pSrcFTRInPin->   WinstrmSendChank(lpmpo,size,lpmpo->frame_cnt);
+		if( lpmpo->dec_cnt > lpmpo->frame_cnt ){
+			lpmpo->frame_cnt++;
+		}
+	}
+	printf("dec:rend %d:%d:%d\n", lpmpo->frame_cnt,lpmpo->dec_cnt * 12 ,tick);
+	return(FALSE);
+
+
+}
+
+
+//-----------------------------------------------------------------------------
+// CheckMovieStatus: If the movie has ended, rewind to beginning
+//-----------------------------------------------------------------------------
+int CheckMovieEnd(MW_PLY_OBJ2	*lpmpo)
+{
+	LONG lEventCode;
+	LONG lParam1;
+	LONG lParam2;
+	HRESULT hr;
+	int		rc=FALSE;
+	
+
+	// Check for completion events
+	hr = WindowsMpegWork.pME->GetEvent(&lEventCode, (LONG_PTR *) &lParam1, (LONG_PTR *) &lParam2, 0);
+	if (SUCCEEDED(hr))
+	{
+		if (EC_COMPLETE == lEventCode) 
+		{
+			rc = TRUE;
+		}
+
+		// Free any memory associated with this event
+		hr = WindowsMpegWork.pME->FreeEventParams(lEventCode, lParam1, lParam2);
+	}
+	return(End_Code);
+}
+
+
+//-----------------------------------------------------------------------------
+// CleanupDShow
+//-----------------------------------------------------------------------------
+void MpegDecRelease(MW_PLY_OBJ2	*lpmpo)
+{
+	// Shut down the graph
+	if (!(!WindowsMpegWork.pMC)) {
+		WindowsMpegWork.pMC->Stop();
+	}
+	RCTRelease();
+	
+	send_dec_thread(lpmpo,DEC_COMMAND_RELEASE);
+	Sleep(1);
+	clear_dec_thread(lpmpo);
+
+}
+
+//-----------------------------------------------------------------------------
+// CTextureRenderer constructor
+//-----------------------------------------------------------------------------
+CTextureRenderer::CTextureRenderer( LPUNKNOWN pUnk, HRESULT *phr ,MW_PLY_OBJ2 *lpMpo)
+								   : CBaseVideoRenderer(__uuidof(CLSID_TextureRenderer), 
+								   NAME("Texture Renderer"), pUnk, phr)
+{
+	// Store and AddRef the texture for our use.
+	*phr = S_OK;
+}
+
+
+//-----------------------------------------------------------------------------
+// CTextureRenderer destructor
+//-----------------------------------------------------------------------------
+CTextureRenderer::~CTextureRenderer()
+{
+	// Do nothing
+}
+
+
+//-----------------------------------------------------------------------------
+// CheckMediaType: This method forces the graph to give us an R8G8B8 video
+// type, making our copy to texture memory trivial.
+//-----------------------------------------------------------------------------
+HRESULT CTextureRenderer::CheckMediaType(const CMediaType *pmt)
+{
+	HRESULT   hr = E_FAIL;
+	VIDEOINFO *pvi;
+	
+	// Reject the connection if this is not a video type
+	if( *pmt->FormatType() != FORMAT_VideoInfo ) {
+		return E_INVALIDARG;
+	}
+	
+	// Only accept RGB24
+	pvi = (VIDEOINFO *)pmt->Format();
+	if(IsEqualGUID( *pmt->Type(),	MEDIATYPE_Video)  &&
+	   IsEqualGUID( *pmt->Subtype(), MEDIASUBTYPE_RGB24))
+	{
+		hr = S_OK;
+	}
+	
+	return hr;
+}
+
+
+//-----------------------------------------------------------------------------
+// SetMediaType: Graph connection has been made. 
+//-----------------------------------------------------------------------------
+HRESULT CTextureRenderer::SetMediaType(const CMediaType *pmt)
+{
+	// Retrive the size of this media type
+	VIDEOINFO *pviBmp;					  // Bitmap info header
+	pviBmp = (VIDEOINFO *)pmt->Format();
+	m_lVidWidth  = pviBmp->bmiHeader.biWidth;
+	m_lVidHeight = abs(pviBmp->bmiHeader.biHeight);
+	m_lVidPitch = (m_lVidWidth * 3 + 3) & ~(3); // We are forcing RGB24
+	return S_OK;
+}
+
+
+//-----------------------------------------------------------------------------
+// DoRenderSample: A sample has been delivered. Copy it to the texture.
+//-----------------------------------------------------------------------------
+HRESULT CTextureRenderer::DoRenderSample( IMediaSample * pSample )
+{
+	BYTE	*pBmpBuffer, *pTxtBuffer;	 // Bitmap buffer, texture buffer
+	LONG	lTxtPitch;				// Pitch of bitmap, texture
+	int		top;
+	int		pos_tmp;
+
+	{
+	   	REFERENCE_TIME TimeStart2;
+	    REFERENCE_TIME TimeEnd2;
+		REFERENCE_TIME	cur_time ;
+		HRESULT			hr ;
+		char	str[256];
+		
+
+		TimeStart2 = 0;
+		TimeEnd2 = 0;
+		hr=pSample->GetTime(&TimeStart2,&TimeEnd2);
+
+		TimeStart2 = (TimeStart2 * 4)/3;
+		TimeEnd2 = (TimeEnd2 * 4)/ 3;
+		
+		while(1){
+			cur_time = (((REFERENCE_TIME)(sd_status()[4]) * 3 )/ 2) ;
+			cur_time *= 10000000/300 ;
+			cur_time += 333333 * 30;
+			
+			if(hr== VFW_E_SAMPLE_TIME_NOT_SET || TimeStart2 < cur_time){
+				break;
+			}
+			Sleep(1);
+		}
+#ifdef DEBUG_MODE
+		if(hr== VFW_E_SAMPLE_TIME_NOT_SET){
+			sprintf(str,"?+?+ < +++ | +++ > %s\n",(LPCTSTR) CDisp(cur_time));
+			OutputDebugString(str);
+		}else{
+			sprintf(str,"?+?+ < %s | %s > %s\n",(LPCTSTR) CDisp(TimeStart2),(LPCTSTR) CDisp(TimeEnd2),(LPCTSTR) CDisp(cur_time));
+			OutputDebugString(str);
+		}
+#endif
+	}
+
+/*	{
+		char	str[256];
+		IReferenceClock	*rclk;
+	    REFERENCE_TIME Time = 0;
+
+		WindowsMpegWork.pSrcFTR->GetSyncSource(&rclk);
+		rclk->GetTime(&Time);
+		rclk -> Release();
+		sprintf(str,"SyncTIme%s\n",(LPCTSTR) CDisp(Time));
+		OutputDebugString(str);
+	}
+*/
+	if(m_lpMpo->thread_handle){
+//		WaitForSingleObject( m_lpMpo->recive_sema, 33 );
+//@		WaitForSingleObject( m_lpMpo->recive_sema, 33 );
+//		Sleep(22);
+//		WaitForSingleObject( m_lpMpo->recive_sema, 33 );
+//		Sleep(33);
+	}
+	
+	// Get the video bitmap buffer
+	pSample->GetPointer( &pBmpBuffer );
+	pos_tmp = (m_lpMpo->img_set_pos)+ 1;
+	if(pos_tmp >= m_lpMpo->cprm.nfrm_pool_wk){
+		pos_tmp = 0;
+	}
+	if(pos_tmp == (m_lpMpo->img_get_pos)){
+		m_lpMpo->img_get_pos++;
+		if((m_lpMpo->img_get_pos) >= m_lpMpo->cprm.nfrm_pool_wk){
+			m_lpMpo->img_get_pos = 0;
+		}
+	}
+	top = m_lpMpo->cprm.max_width * m_lpMpo->cprm.max_height * pos_tmp * 4;
+
+	m_lpMpo->dec_cnt++;
+	// 
+	pTxtBuffer = (BYTE*)&m_lpMpo->cprm.work[top];
+	lTxtPitch = m_lpMpo->cprm.max_width*4;
+	
+	pTxtBuffer += lTxtPitch*m_lpMpo->cprm.max_height;
+	
+	// Copy the bits	
+	// OPTIMIZATION OPPORTUNITY: Use a video and texture
+	// format that allows a simpler copy than this one.
+	{
+		for(int y = 0; y < m_lpMpo->cprm.max_height; y++ ) {
+			BYTE *pBmpBufferOld = pBmpBuffer;
+			BYTE *pTxtBufferOld;
+			pTxtBuffer -= lTxtPitch;
+			pTxtBufferOld = pTxtBuffer;   
+			for (int x = 0; x < m_lpMpo->cprm.max_width; x++) {
+				pTxtBuffer[0] = pBmpBuffer[0];
+				pTxtBuffer[1] = pBmpBuffer[1];
+				pTxtBuffer[2] = pBmpBuffer[2];
+				pTxtBuffer[3] = 0xff;
+				pTxtBuffer += 4;
+				pBmpBuffer += 3;
+			}
+			pBmpBuffer = pBmpBufferOld + m_lVidPitch;
+			pTxtBuffer = pTxtBufferOld;
+		}
+	}
+	DoRenderSampled = TRUE ;
+	
+	m_lpMpo->img_set_pos = pos_tmp;
+	
+	return S_OK;
+}
+
+
+
+
+
+
+
+//
+// CMGS2StreamFilter::Constructor
+//
+// Initialise the pin count for the filter. The user will create the pins in
+// the derived class.
+CMGS2StreamFilter::CMGS2StreamFilter(TCHAR *pName, LPUNKNOWN lpunk, CLSID clsid)
+    : CBaseFilter(pName, lpunk, &m_cStateLock, clsid),
+      m_iPins(0),
+      m_paStreams(NULL) {
+}
+
+CMGS2StreamFilter::CMGS2StreamFilter(TCHAR *pName, LPUNKNOWN lpunk, CLSID clsid, HRESULT *phr)
+    : CBaseFilter(pName, lpunk, &m_cStateLock, clsid),
+      m_iPins(0),
+      m_paStreams(NULL) {
+    UNREFERENCED_PARAMETER(phr);
+}
+
+#ifdef UNICODE
+CMGS2StreamFilter::CMGS2StreamFilter(CHAR *pName, LPUNKNOWN lpunk, CLSID clsid)
+    : CBaseFilter(pName, lpunk, &m_cStateLock, clsid),
+      m_iPins(0),
+      m_paStreams(NULL) {
+}
+
+CMGS2StreamFilter::CMGS2StreamFilter(CHAR *pName, LPUNKNOWN lpunk, CLSID clsid, HRESULT *phr)
+    : CBaseFilter(pName, lpunk, &m_cStateLock, clsid),
+      m_iPins(0),
+      m_paStreams(NULL) {
+    UNREFERENCED_PARAMETER(phr);
+}
+#endif
+
+//
+// CMGS2StreamFilter::Destructor
+//
+CMGS2StreamFilter::~CMGS2StreamFilter() {
+    /*  Free our pins and pin array */
+    while(m_iPins != 0) {
+        // deleting the pins causes them to be removed from the array...
+        delete m_paStreams[m_iPins - 1];
+    }
+
+    ASSERT(m_paStreams == NULL);
+}
+
+
+//
+//  Add a new pin
+//
+HRESULT CMGS2StreamFilter::AddPin(CMGS2StreamPin *pStream) {
+    CAutoLock lock(&m_cStateLock);
+
+    /*  Allocate space for this pin and the old ones */
+    CMGS2StreamPin **paStreams = new CMGS2StreamPin *[m_iPins + 1];
+    if(paStreams == NULL) {
+        return E_OUTOFMEMORY;
+    }
+    if(m_paStreams != NULL) {
+        CopyMemory((PVOID)paStreams, (PVOID)m_paStreams,
+            m_iPins * sizeof(m_paStreams[0]));
+        paStreams[m_iPins] = pStream;
+        delete [] m_paStreams;
+    }
+    m_paStreams = paStreams;
+    m_paStreams[m_iPins] = pStream;
+    m_iPins++;
+    return S_OK;
+}
+
+//
+//  Remove a pin - pStream is NOT deleted
+//
+HRESULT CMGS2StreamFilter::RemovePin(CMGS2StreamPin *pStream) {
+    int i;
+    for(i = 0; i < m_iPins; i++) {
+        if(m_paStreams[i] == pStream) {
+            if(m_iPins == 1) {
+                delete [] m_paStreams;
+                m_paStreams = NULL;
+            }
+            else {
+                /*  no need to reallocate */
+                while(++i < m_iPins)
+                    m_paStreams[i - 1] = m_paStreams[i];
+            }
+            m_iPins--;
+            return S_OK;
+        }
+    }
+    return S_FALSE;
+}
+
+//
+// FindPin
+//
+// Set *ppPin to the IPin* that has the id Id.
+// or to NULL if the Id cannot be matched.
+STDMETHODIMP CMGS2StreamFilter::FindPin(LPCWSTR Id, IPin **ppPin) {
+    CheckPointer(ppPin,E_POINTER);
+    ValidateReadWritePtr(ppPin,sizeof(IPin *));
+    // The -1 undoes the +1 in QueryId and ensures that totally invalid
+    // strings (for which WstrToInt delivers 0) give a deliver a NULL pin.
+    int i = WstrToInt(Id) -1;
+    *ppPin = GetPin(i);
+    if(*ppPin!=NULL) {
+        (*ppPin)->AddRef();
+        return NOERROR;
+    }
+    else {
+        return VFW_E_NOT_FOUND;
+    }
+}
+
+//
+// FindPinNumber
+//
+// return the number of the pin with this IPin* or -1 if none
+int CMGS2StreamFilter::FindPinNumber(IPin *iPin) {
+    int i;
+    for(i=0; i<m_iPins; ++i) {
+        if((IPin *)(m_paStreams[i])==iPin) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+//
+// GetPinCount
+//
+// Returns the number of pins this filter has
+int CMGS2StreamFilter::GetPinCount(void) {
+
+    CAutoLock lock(&m_cStateLock);
+    return m_iPins;
+}
+
+
+//
+// GetPin
+//
+// Return a non-addref'd pointer to pin n
+// needed by CBaseFilter
+CBasePin *CMGS2StreamFilter::GetPin(int n) {
+
+    CAutoLock lock(&m_cStateLock);
+
+    // n must be in the range 0..m_iPins-1
+    // if m_iPins>n  && n>=0 it follows that m_iPins>0
+    // which is what used to be checked (i.e. checking that we have a pin)
+    if((n >= 0) && (n < m_iPins)) {
+
+        ASSERT(m_paStreams[n]);
+        return m_paStreams[n];
+    }
+    return NULL;
+}
+
+
+//
+
+
+// *
+// * --- CMGS2StreamPin ----
+// *
+
+//
+// Set Id to point to a CoTaskMemAlloc'd
+STDMETHODIMP CMGS2StreamPin::QueryId(LPWSTR *Id) {
+    CheckPointer(Id,E_POINTER);
+    ValidateReadWritePtr(Id,sizeof(LPWSTR));
+
+    // We give the pins id's which are 1,2,...
+    // FindPinNumber returns -1 for an invalid pin
+    int i = 1+ m_pFilter->FindPinNumber(this);
+    if(i<1) return VFW_E_NOT_FOUND;
+    *Id = (LPWSTR)CoTaskMemAlloc(8);
+    if(*Id==NULL) {
+        return E_OUTOFMEMORY;
+    }
+    IntToWstr(i, *Id);
+    return NOERROR;
+}
+
+
+
+
+
+
+
+
+//
+// CMGS2StreamPin::Constructor
+//
+// increments the number of pins present on the filter
+CMGS2StreamPin::CMGS2StreamPin(
+    TCHAR *pObjectName,
+    HRESULT *phr,
+    CMGS2StreamFilter *ps,
+    LPCWSTR pPinName,
+    CMediaType	* pmt)
+    : CBaseOutputPin(pObjectName, ps, ps->pStateLock(), phr, pPinName),
+      m_pFilter(ps) {
+
+    *phr = m_pFilter->AddPin(this);
+    m_mt = *pmt;
+}
+//
+// CMGS2StreamPin::Destructor
+//
+// Decrements the number of pins on this filter
+CMGS2StreamPin::~CMGS2StreamPin(void) {
+
+    if( m_pFilter ){
+		m_pFilter->RemovePin(this);
+	}
+}
+
+
+//
+// CheckMediaType
+//
+// Do we support this type? Provides the default support for 1 type.
+HRESULT CMGS2StreamPin::CheckMediaType(const CMediaType *pmt) {
+
+    CAutoLock lock(m_pFilter->pStateLock());
+
+    CMediaType mt;
+    GetMediaType(&mt);
+
+//    if(mt == *pmt) {
+//        return NOERROR;
+//    }
+
+
+    // Reject the connection if this is not a video type
+//@    if( *pmt->FormatType() != FORMAT_MPEGVideo ) {
+//@        return E_INVALIDARG;
+//@    }
+    
+    // Only accept RGB24
+//@    pvi = (VIDEOINFO *)pmt->Format();
+    if(IsEqualGUID( *pmt->Type(),    MEDIATYPE_Video)  &&
+       IsEqualGUID( *pmt->Subtype(), MEDIASUBTYPE_MPEG1Payload))
+    {
+	    return S_OK;
+    }
+
+    return E_FAIL;
+}
+
+
+//
+// GetMediaType/3
+//
+// By default we support only one type
+// iPosition indexes are 0-n
+HRESULT CMGS2StreamPin::GetMediaType(int iPosition, CMediaType *pMediaType) {
+
+    CAutoLock lock(m_pFilter->pStateLock());
+
+    if(iPosition<0) {
+        return E_INVALIDARG;
+    }
+    if(iPosition>0) {
+        return VFW_S_NO_MORE_ITEMS;
+    }
+    
+    return GetMediaType(pMediaType);
+}
+
+HRESULT CMGS2StreamPin::GetMediaType(CMediaType *pMediaType) {
+	*pMediaType = m_mt;
+//	pMediaType->majortype = MEDIATYPE_Video;
+//	pMediaType->subtype = MEDIASUBTYPE_MPEG1Packet;
+//	pMediaType->formattype = FORMAT_MPEGVideo ;
+     
+	    return S_OK;
+//	return E_UNEXPECTED;
+//@    return NOERROR;
+}
+
+
+
+/*---------------------------------------------------------------------------
+|
+|		サンプルコピーとフレームのレンダリング
+|
+|	Parameters
+|
+|	Returns
+|
+*----------------------------------------------------------------------------*/
+int CMGS2StreamPin::WinstrmSendChank(MW_PLY_OBJ2	*src,int size,int seq_end)
+{
+    CAutoLock cAutoLock(m_pFilter->pStateLock());
+    static REFERENCE_TIME TimeStart = 0;
+   	REFERENCE_TIME TimeStart2;
+    REFERENCE_TIME TimeEnd2;
+    static 	first_flag = TRUE;
+	int		w_size,w_size2;
+	int		buf_size;
+	BYTE	*pBuf;
+	BYTE	*pBuf2;
+	IMediaSample *pSample;
+	HRESULT hr;
+	int		sample_tmp;
+	
+//@	wait_dec_thread(src);
+	
+	
+    while(1) {
+		hr = GetDeliveryBuffer(&pSample,NULL,NULL,0);
+		if(FAILED(hr)) {
+			Sleep(1);
+			continue;   // go round again. Perhaps the error will go away
+			// or the allocator is decommited & we will be asked to
+			// exit soon.
+		}else{
+			break;
+		}
+	}
+	
+	
+	while( (sample_tmp = media_sample_space_check(m_lpMpo)) == -1 ){
+		Sleep(1);
+	}
+	m_lpMpo->sample_tbl[sample_tmp] = pSample;
+	m_lpMpo->sample_set_cnt = sample_tmp;
+
+#ifdef DEBUG_MODE
+	{
+		char	str[256];
+		sprintf(str,"sample_cnt (g %d : s %d)\n",m_lpMpo->sample_get_cnt,m_lpMpo->sample_set_cnt);
+		OutputDebugString(str);
+	}
+#endif
+
+#ifdef DEBUG_MODE
+	{
+		char	str[256];
+		IReferenceClock	*rclk;
+	    REFERENCE_TIME Time = 0;
+
+		WindowsMpegWork.pSrcFTR->GetSyncSource(&rclk);
+		rclk->GetTime(&Time);
+		rclk -> Release();
+		sprintf(str,"SyncTIme%s\n",(LPCTSTR) CDisp(Time));
+		OutputDebugString(str);
+	}
+#endif	
+	//-------------------------------------------------
+	//	ソース フィルタは、取得した空のメディア サンプルにデータを挿入する。挿入の方法は、ソースの種類によって完全に異なる。 
+	
+	hr = pSample->GetPointer(&pBuf);
+	
+	buf_size = pSample->GetSize();
+	
+	w_size = (size < buf_size)?size:buf_size;
+	w_size2 = w_size;
+	
+	if(src){
+		pBuf2 = pBuf;
+		SJCK	ck;
+		MW_PLY_OBJ2	*lpmpo = (MW_PLY_OBJ2	*)src;
+		do {
+			SJ_Lock(lpmpo->sj);
+			SJ_GetChunk( lpmpo->sj, SJ_LIN_DATA, w_size2, &ck );
+			memcpy( pBuf2,ck.data,  ck.len );
+			SJ_PutChunk( lpmpo->sj, SJ_LIN_FREE, &ck );
+			SJ_Unlock(lpmpo->sj);
+			w_size2 -= ck.len;
+			pBuf2 += ck.len;
+		} while ( w_size2 > 0 );
+	}
+	
+	if(first_flag){
+		first_flag = FALSE;
+		pSample->SetSyncPoint(FALSE);
+		pSample->SetDiscontinuity(FALSE);
+		pSample->SetPreroll(TRUE);
+
+	}else{
+		pSample->SetSyncPoint(TRUE);
+		pSample->SetDiscontinuity(TRUE);
+		pSample->SetPreroll(FALSE);
+	}
+//	pSample->SetPreroll(FALSE);
+	
+	if(pBuf[3] < 3){
+		pSample->SetPreroll(FALSE);
+		pSample->SetSyncPoint(FALSE);
+	}else{
+		if(pBuf[3] == 0xb3){
+			pSample->SetPreroll(TRUE);
+		}else{
+			pSample->SetPreroll(FALSE);
+		}
+		pSample->SetSyncPoint(TRUE);
+	}
+//
+//	TimeStart2	= (seq_end * 33333/2) ;
+//	TimeEnd2	= ((seq_end+3333 * 33333/2) ;
+	TimeStart2	= (TimeStart ) ;
+	TimeEnd2	= (TimeStart + 333333 * 11);
+	TimeStart = TimeEnd2;
+//	TimeStart2	= TimeStart;
+//	TimeEnd2	= TimeStart + size;
+//	TimeStart2	= TimeStart;
+//	TimeEnd2	= TimeStart + size;
+//	TimeStart += size;
+
+
+//	TimeStart2  = 16666 * seq_end / 5;
+//	TimeEnd2 	= 16666 * (seq_end + 10) / 5;
+	if(TimeStart2>TimeEnd2){
+		TimeStart2	= 0;
+	}else if(TimeStart2 < 0){
+		TimeStart2 = 0;
+	}
+		
+	
+
+	pSample->SetTime(&TimeStart2,&TimeEnd2);
+//@	pSample->SetTime(NULL,NULL);
+	pSample->SetDiscontinuity(TRUE);
+	pSample->SetPreroll(TRUE);
+	pSample->SetSyncPoint(TRUE);
+
+	{
+		char	str[256];
+		sprintf(str,"****%s****%s****%d\n",(LPCTSTR) CDisp(TimeStart2),(LPCTSTR) CDisp(TimeEnd2),seq_end);
+		OutputDebugString(str);
+	}
+	
+	hr = pSample->SetActualDataLength(w_size);
+
+	if(hr == S_OK) {
+#if THREAD_MODE
+		if(src->run_state== DEC_STATE_IDLE){
+			send_dec_thread(src,DEC_COMMAND_SEND);
+		}
+#else		
+	    hr = Deliver(pSample);
+#endif
+		// downstream filter returns S_FALSE if it wants us to
+		// stop or an error if it's reporting an error.
+//	    if(hr != S_OK) {
+//			char	str[256];
+//		    sprintf(str,"Deliver() returned!  %s hr=0x%x\n", DXGetErrorString8(hr),hr);
+//			OutputDebugString(str);
+//		    return buf_size;
+//		}
+
+	}else if(hr == S_FALSE) {
+				// derived class wants us to stop pushing data
+		pSample->Release();
+		src->current_sample = NULL;
+		DeliverEndOfStream();
+		return buf_size;
+	}else {
+		// derived class encountered an error
+		pSample->Release();
+		src->current_sample = NULL;
+		DbgLog((LOG_ERROR, 1, TEXT("Error %08lX from FillBuffer!!!"), hr));
+		DeliverEndOfStream();
+		m_pFilter->NotifyEvent(EC_ERRORABORT, hr, 0);
+		return 0;
+	}
+	return(1);
+
+}
+/*---------------------------------------------------------------------------
+|
+|		サンプルコピーとフレームのレンダリング
+|
+|	Parameters
+|
+|	Returns
+|
+*----------------------------------------------------------------------------*/
+int CMGS2StreamPin::WinstrmSendChankIPic(REFERENCE_TIME start_time,BYTE *src,int size,int code)
+{
+    CAutoLock cAutoLock(m_pFilter->pStateLock());
+	IReferenceClock	*rclk;
+    REFERENCE_TIME TimeStart = 0;
+   	REFERENCE_TIME TimeStart2;
+    REFERENCE_TIME TimeEnd2;
+    static 	first_flag = TRUE;
+	int		w_size,w_size2;
+	int		buf_size;
+	BYTE	*pBuf;
+	IMediaSample *pSample;
+	HRESULT hr;
+	long	time_init;
+	
+	
+    while(1) {
+		hr = GetDeliveryBuffer(&pSample,NULL,NULL,0);
+		if(FAILED(hr)) {
+			Sleep(1);
+			continue;   // go round again. Perhaps the error will go away
+			// or the allocator is decommited & we will be asked to
+			// exit soon.
+		}else{
+			break;
+		}
+	}
+	
+	//-------------------------------------------------
+	//	ソース フィルタは、取得した空のメディア サンプルにデータを挿入する。挿入の方法は、ソースの種類によって完全に異なる。 
+	
+	hr = pSample->GetPointer(&pBuf);
+	
+	buf_size = pSample->GetSize();
+	
+	w_size = (size < buf_size)?size:buf_size;
+	w_size2 = w_size;
+	
+	memcpy( pBuf,src,  size );
+	
+	time_init = 0;
+
+
+	pSample->SetPreroll(FALSE);
+	pSample->SetSyncPoint(TRUE);
+	pSample->SetDiscontinuity(FALSE);
+	switch(code){
+	case	0x01b7:
+		pSample->SetDiscontinuity(TRUE);
+		break;
+
+	case	0x01b8:
+
+		pSample->SetDiscontinuity(FALSE);
+		time_init	= ((((src[4] >> 0) & 0x03) << 4)+((src[5] >> 4) & 0x0f)) * 60 * 30
+					+ ((((src[5] >> 0) & 0x7)<<3) + (( src[6] >> 5) & 0x7 )) * 30
+					+ ((((src[6] >> 0) & 0x1f)<<1) +(( src[7] >> 7) & 0x1 ));
+					
+		
+//		TimeStart2 = (time_init * 90000) ;
+//		TimeEnd2	= TimeStart2 + 90000;
+		TimeStart2 = (time_init * 333333) ;
+		TimeEnd2	= TimeStart2 + 333334;
+//		TimeStart2 = (0) ;
+//		TimeEnd2	= TimeStart2 + 0x07ffffff;
+
+		break;
+
+	default:
+		TimeStart2	= 0;
+		TimeEnd2	= 90000;
+		break;
+
+	
+	}
+
+	WindowsMpegWork.pSrcFTR->GetSyncSource(&rclk);
+	rclk->GetTime(&TimeStart);
+	rclk -> Release();
+	
+#ifdef DEBUG_MODE
+	{
+		char	str[256];
+		sprintf(str,"SyncTIme%s\n",(LPCTSTR) CDisp(TimeStart));
+		OutputDebugString(str);
+	}
+#endif	
+	
+	TimeStart2 =  TimeStart - start_time;
+	TimeEnd2	= TimeStart2 + 333334;
+
+	
+	pSample->SetTime(&TimeStart2,&TimeEnd2);
+
+#ifdef DEBUG_MODE
+	{
+		char	str[256];
+		sprintf(str,"!!!!%s!!!!%s!!!!%08x(%d)\n",(LPCTSTR) CDisp(TimeStart2),(LPCTSTR) CDisp(TimeEnd2),code,time_init);
+		OutputDebugString(str);
+	}
+#endif	
+	hr = pSample->SetActualDataLength(w_size);
+
+	if( hr == S_OK ) {
+	    hr = Deliver(pSample);
+		pSample->Release();
+
+		// downstream filter returns S_FALSE if it wants us to
+		// stop or an error if it's reporting an error.
+	    if(hr != S_OK) {
+			char	str[256];
+		    sprintf(str,"Deliver() returned!  %s hr=0x%x\n", DXGetErrorString8(hr),hr);
+			OutputDebugString(str);
+		    return buf_size;
+		}
+
+	}else if(hr == S_FALSE) {
+				// derived class wants us to stop pushing data
+		pSample->Release();
+//		src->current_sample = NULL;
+		DeliverEndOfStream();
+		return buf_size;
+	}else {
+		// derived class encountered an error
+		pSample->Release();
+//		src->current_sample = NULL;
+		DbgLog((LOG_ERROR, 1, TEXT("Error %08lX from FillBuffer!!!"), hr));
+		DeliverEndOfStream();
+		m_pFilter->NotifyEvent(EC_ERRORABORT, hr, 0);
+		return 0;
+	}
+	return(1);
+
+}
+/*---------------------------------------------------------------------------
+|
+|		サンプルコピーとフレームのレンダリング
+|
+|	Parameters
+|
+|	Returns
+|
+*----------------------------------------------------------------------------*/
+int WinstrmSendIPic(MWPLY mwply ,MWS_PLY_FRM *frm,BYTE *src,int size,int code)
+{
+	int	top; 
+	MW_PLY_OBJ2		*mp2;
+	mp2 = (MW_PLY_OBJ2*)mwply;
+	
+	
+	int	rc;
+	if(mp2 -> init_flag){
+	}else{
+		IReferenceClock	*rclk;
+		mp2 -> init_flag = TRUE;
+		MpegDecFirstRend(mp2);
+
+		WindowsMpegWork.pSrcFTR->GetSyncSource(&rclk);
+		rclk->GetTime(&mp2 -> start_time);
+		
+#ifdef DEBUG_MODE
+		{
+			char	str[256];
+			sprintf(str,"SyncTime%s\n",(LPCTSTR) CDisp(mp2 -> start_time));
+			OutputDebugString(str);
+		}
+#endif	
+		rclk->Release();
+	}
+
+	rc = WindowsMpegWork.pSrcFTRInPin->WinstrmSendChankIPic(mp2->start_time,src, size, code);
+	printf("dec:rend %d:%d:%04x\n", mp2->frame_cnt,mp2->dec_cnt ,code);
+	
+	if( (mp2->img_get_pos)!=(mp2->img_set_pos) ){
+		mp2->img_get_pos++;
+		if(mp2->img_get_pos >= mp2->cprm.nfrm_pool_wk){
+			mp2->img_get_pos = 0;
+		}
+	}
+	top = mp2->cprm.max_width * mp2->cprm.max_height * (mp2->img_get_pos) * 4;
+
+#if FALSE
+	frm->bufadr = (BYTE*)&mp2->cprm.work[top];
+#else
+	if( DoRenderSampled )
+	{
+		frm->bufadr = (BYTE*)&mp2->cprm.work[top];
+		DoRenderSampled = FALSE ;
+	}
+#endif
+	return(rc);
+
+}
+/*---------------------------------------------------------------------------
+|
+|		サンプルコピー済みのフレームをレンダリング
+|
+|	Parameters
+|
+|	Returns
+|
+*----------------------------------------------------------------------------*/
+
+int CMGS2StreamPin::WinstrmResendChank(MW_PLY_OBJ2	*src,int size,int seq_end)
+{
+    CAutoLock cAutoLock(m_pFilter->pStateLock());
+    static REFERENCE_TIME TimeStart = 0;
+   	REFERENCE_TIME TimeStart2;
+    REFERENCE_TIME TimeEnd2;
+    static 	first_flag = TRUE;
+	IMediaSample *pSample;
+	HRESULT hr;
+
+	if(src->current_sample==NULL){
+		return(FALSE);
+	}
+
+	pSample = src->current_sample;
+
+	//-------------------------------------------------
+	//	ソース フィルタは、取得した空のメディア サンプルにデータを挿入する。挿入の方法は、ソースの種類によって完全に異なる。 
+	
+	TimeStart2	= (seq_end * 33333/2 - 16666/2) ;
+	TimeEnd2	= (seq_end * 33333/2 + 16666/2) ;
+//	TimeStart2  = 16666 * seq_end / 5;
+//	TimeEnd2 	= 16666 * (seq_end + 10) / 5;
+	if(TimeStart2>TimeEnd2){
+		TimeStart2	= 0;
+	}else if(TimeStart2 < 0){
+		TimeStart2 = 0;
+	}
+	
+	pSample->SetTime(&TimeStart2,&TimeEnd2);
+	{
+		char	str[256];
+		sprintf(str,"++++%s++++%s++++%d\n",(LPCTSTR) CDisp(TimeStart2),(LPCTSTR) CDisp(TimeEnd2),seq_end);
+		OutputDebugString(str);
+	}
+
+    TimeStart=seq_end*33333 + 1;
+	
+
+   hr = Deliver(pSample);
+
+	// downstream filter returns S_FALSE if it wants us to
+	// stop or an error if it's reporting an error.
+    if(hr != S_OK) {
+		char	str[256];
+	    sprintf(str,"Deliver() returned!  %s hr=0x%x\n", DXGetErrorString8(hr),hr);
+		OutputDebugString(str);
+	    return FALSE;
+	}
+	return(TRUE);
+}
+//
+// DecideBufferSize
+//
+// This will always be called after the format has been sucessfully
+// negotiated. So we have a look at m_mt to see what size image we agreed.
+// Then we can ask for buffers of the correct size to contain them.
+//
+HRESULT CMGS2StreamPin::DecideBufferSize(IMemAllocator *pAlloc,ALLOCATOR_PROPERTIES *pProperties)
+{
+    CAutoLock cAutoLock(m_pFilter->pStateLock());
+    ASSERT(pAlloc);
+    ASSERT(pProperties);
+    HRESULT hr = NOERROR;
+
+    MPEG1VIDEOINFO *pvi = (MPEG1VIDEOINFO *) m_mt.Format();
+    pProperties->cBuffers = SAMPLE_ENT;
+    pProperties->cbBuffer = 0x40000;
+    pProperties->cbAlign = 1;
+    pProperties->cbPrefix = 0;
+
+
+
+
+    ASSERT(pProperties->cbBuffer);
+
+	// Ask the allocator to reserve us some sample memory, NOTE the function
+	// can succeed (that is return NOERROR) but still not have allocated the
+	// memory that we requested, so we must check we got whatever we wanted
+
+    ALLOCATOR_PROPERTIES Actual;
+    hr = pAlloc->SetProperties(pProperties,&Actual);
+    if (FAILED(hr)) {
+		char	str[256];
+	    sprintf(str,"SetProperties Error !  %s hr=0x%x", DXGetErrorString8(hr),hr);
+		OutputDebugString(str);
+	    Msg(str);
+	    return hr;
+	}
+
+	// Is this allocator unsuitable
+
+    if (Actual.cbBuffer < pProperties->cbBuffer) {
+	    return E_FAIL;
+	}
+
+	// Make sure that we have only 1 buffer (we erase the ball in the
+	// old buffer to save having to zero a 200k+ buffer every time
+	// we draw a frame)
+
+//@    ASSERT( Actual.cBuffers == 2 );
+    return NOERROR;
+
+} // DecideBufferSize
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+static SJ	current_sj;
+int 	ADXM_ExecMain(void)
+{
+/*	int			size = 0x20000;
+	SJCK	ck;
+	
+	if( SJ_GetNumData( current_sj, SJ_LIN_DATA ) < size ) {
+	} else {
+		do {
+			SJ_GetChunk( current_sj, SJ_LIN_DATA, size, &ck );
+			SJ_PutChunk( current_sj, SJ_LIN_FREE, &ck );
+			size -= ck.len;
+		} while ( size > 0 );
+		// データをフリー
+	}
+*/
+	return(0);
+}
+
+void 	mwPlyInitYcc420plnToArgb8888(void){};		// Initialize convert table
+int 	mwPlyCalcWorkCprmSfd(MWS_PLY_CPRM_SFD *cprm)
+{
+	return(cprm->max_width * cprm->max_height * cprm->nfrm_pool_wk * 4);
+};
+
+
+/*---------------------------------------------------------------------------
+|
+|		MPEGの入力バッファ作成
+|
+|	Parameters
+|
+|	Returns
+|
+*----------------------------------------------------------------------------*/
+MWPLY 	mwPlyCreateSofdec(MWS_PLY_CPRM_SFD *cprm,int mode)
+{
+	MW_PLY_OBJ2		*mp2;
+	mp2 = (MW_PLY_OBJ2*)GV_Malloc( sizeof(MW_PLY_OBJ2));
+	memset(mp2,0,sizeof(MW_PLY_OBJ2));
+	mp2->buf_size =  cprm->max_bps / 2;
+	mp2->buffer = (char*)malloc( mp2->buf_size);
+	memcpy(&mp2->cprm,cprm,sizeof(*cprm));
+
+
+	MpegDecInit(mp2,mode);
+
+	DoRenderSampled = FALSE ;
+
+	return((MWPLY)mp2);
+};
+/*---------------------------------------------------------------------------
+|
+|		MPEGの入力バッファ作成
+|
+|	Parameters
+|
+|	Returns
+|
+*----------------------------------------------------------------------------*/
+void mwPlyDestroy( MWPLY mwply)
+{
+	
+	int 	i; 
+	MW_PLY_OBJ2		*mp2;
+	mp2 = (MW_PLY_OBJ2*)mwply;
+	MpegDecRelease(mp2);
+	if(mp2->current_sample){
+		mp2->current_sample->Release();
+	}
+	if(mp2->render_sample){
+		mp2->render_sample->Release();
+	}
+	for(i =0 ; i < SAMPLE_ENT ; i++){
+		if(mp2->sample_tbl[i]){
+			mp2->sample_tbl[i]->Release();
+			mp2->sample_tbl[i] = NULL;
+		}
+	}
+
+	SJ_Destroy(mp2->sj);
+
+	free( mp2->buffer);
+	
+	GV_Free( mp2);
+
+};
+/*---------------------------------------------------------------------------
+|
+|		MPEGの入力バッファ作成
+|
+|	Parameters
+|
+|	Returns
+|
+*----------------------------------------------------------------------------*/
+SJ mwPlyGetInputSj(MWPLY mwply)
+{
+	SJ	sj;
+	SJCK	ck;
+	MW_PLY_OBJ2	*mp2;
+	static char tmp[16*3];
+	int		i;
+	
+	mp2 = (MW_PLY_OBJ2	*)mwply;
+	sj = SJUNI_Create(SJUNI_MODE_JOIN, mp2->sj_work,48);
+	
+	ck.data = mp2->buffer;
+	ck.len  = mp2->buf_size;
+	SJ_PutChunk( sj, SJ_LIN_FREE, &ck );
+	
+	mp2->img_set_pos	= 0;
+	mp2->img_get_pos	= 0;
+	mp2->frame_cnt		= 0;
+	mp2->dec_cnt		= 0;
+//	mp2->thread_handle	= NULL;
+//	mp2->send_sema	= NULL;
+//	mp2->recive_sema	= NULL;
+//	mp2->thread_id		= 0;
+	mp2->send_cmd		= 0;
+	mp2->run_cmd		= 0;
+	mp2->run_state = DEC_STATE_IDLE;
+	mp2->current_sample = NULL;
+	mp2->render_sample = NULL;
+	
+	for(i =0 ; i < SAMPLE_ENT ; i++){
+		mp2->sample_tbl[i] = NULL;
+	}
+	mp2->sample_get_cnt=0;
+	mp2->sample_set_cnt=0;
+	mp2->sj = current_sj = sj;
+#ifdef DEBUG_MODE
+			printf("SJ Addr %x , %x\n",mp2->buffer,tmp );
+#endif
+
+	return(sj);
+}
+#if TRUE
+static ULONG	rct_ref_cntr = 1;
+typedef class	IReferenceClockTest_ :public IReferenceClock
+{
+	private:
+		ULONG			ref_cntr ;
+		REFERENCE_TIME	pre_time ;
+
+    public:
+		HRESULT	STDMETHODCALLTYPE	QueryInterface(
+            /* [in] */ REFIID riid,
+            /* [iid_is][out] */ void **ppvObject)
+		{
+			/* (注)適当なので後で直す事 */
+			return(S_OK) ;
+		};
+        
+        ULONG STDMETHODCALLTYPE	AddRef( void )
+		{
+			/* (注)適当なので後で直す事 */
+//			ref_cntr++ ;
+//			return(ref_cntr) ;
+			rct_ref_cntr++;
+			return(rct_ref_cntr) ;
+		};
+        ULONG STDMETHODCALLTYPE	Release( void )
+		{
+			/* (注)適当なので後で直す事 */
+//			if( ref_cntr ){ ref_cntr-- ; }
+//			return(ref_cntr) ;
+			if( rct_ref_cntr ){ rct_ref_cntr-- ; }
+			return(rct_ref_cntr) ;
+		};
+
+        HRESULT STDMETHODCALLTYPE GetTime( 
+            /* [out] */ REFERENCE_TIME *pTime)
+		{
+#if FALSE
+			REFERENCE_TIME	cur_time ;
+			HRESULT			hr ;
+
+			cur_time = (((REFERENCE_TIME)(sd_status()[4]) * 3 ) / 2) ;
+			cur_time *= 100000/300 ;
+
+			printf("Called :GetTime():%s\n",(LPCTSTR) CDisp( cur_time)) ;
+
+			if( cur_time == pre_time )
+			{
+				hr = S_FALSE ;	// 前回の値と同じ
+			}
+			else
+			{
+				hr = S_OK ;
+				pre_time = cur_time ;
+			}
+
+			*pTime = cur_time  + 0x00003297A;
+			return( hr ) ;
+#else
+			*pTime = 0 ;
+			return( S_FALSE ) ;
+#endif
+		};
+        
+        HRESULT STDMETHODCALLTYPE AdviseTime( 
+            /* [in] */ REFERENCE_TIME baseTime,
+            /* [in] */ REFERENCE_TIME streamTime,
+            /* [in] */ HANDLE hEvent,
+            /* [out] */ LPDWORD pdwAdviseCookie)
+		{
+#if FALSE
+			REFERENCE_TIME	cur_time ;
+
+			cur_time = (((REFERENCE_TIME)(sd_status()[4]) * 3 ) / 2) ;
+			cur_time *= 100000/300 ;
+			while( cur_time < (streamTime) )
+			{
+				cur_time = (((REFERENCE_TIME)(sd_status()[4]) * 3 ) / 2) ;
+				cur_time *= 100000/300 ;
+			}
+#endif
+			SetEvent(hEvent) ;
+			return(S_OK) ;
+
+			
+		};
+        
+        HRESULT STDMETHODCALLTYPE AdvisePeriodic( 
+            /* [in] */ REFERENCE_TIME startTime,
+            /* [in] */ REFERENCE_TIME periodTime,
+            /* [in] */ HANDLE hSemaphore,
+            /* [out] */ LPDWORD pdwAdviseCookie)
+		{
+			printf("Called :AdvisePeriodic(%ld, %ld)\n", startTime, periodTime) ;
+			return(S_OK) ;
+		};
+        
+        HRESULT STDMETHODCALLTYPE Unadvise( 
+            /* [in] */ DWORD_PTR dwAdviseCookie)
+		{
+			printf("Called :Unadvise()\n") ;
+			return(S_OK) ;
+		};
+} IReferenceClockTest ;
+
+IReferenceClockTest	_pRCTest ;
+BOOL				_pRCTest_set = FALSE ;
+
+static	void	RCTInit(void)
+{
+	IMediaFilter	*pMF ;
+	if( !_pRCTest_set )
+	{
+		WindowsMpegWork.pGB->QueryInterface(IID_IMediaFilter,(void **)&pMF);
+		pMF->SetSyncSource(&_pRCTest) ;
+		_pRCTest_set = TRUE ;
+		pMF->Release();
+	}
+	
+}
+static	void	RCTRelease(void)
+{
+	IMediaFilter	*pMF ;
+	if( _pRCTest_set )
+	{
+		printf("RCT Release\n");
+		WindowsMpegWork.pGB->QueryInterface(IID_IMediaFilter,(void **)&pMF);
+		pMF->SetSyncSource(NULL) ;
+		_pRCTest_set = FALSE ;
+		pMF->Release();
+	}
+	
+}
+#endif
+/*---------------------------------------------------------------------------
+|
+|		カレントフレーム取得
+|
+|	Parameters
+|
+|	Returns
+|
+*----------------------------------------------------------------------------*/
+int 	mwPlyGetCurFrm(MWPLY mwply, MWS_PLY_FRM *frm,int tick,int send_size)
+{
+	MW_PLY_OBJ2 *mp2 = (MW_PLY_OBJ2*)mwply;
+	int		top;
+	int rc = FALSE;
+	if(mp2->render_sample){
+		mp2->render_sample->Release();
+		mp2->render_sample =NULL;
+	}
+	if(media_sample_space_check(mp2) >= 0){ 
+		if(mp2 -> init_flag){
+			MpegDecDrawFrame(mp2,tick,send_size);
+		}else{
+			mp2 -> init_flag = TRUE;
+			MpegDecFirstRend(mp2);
+			MpegDecDrawFrame(mp2,tick,send_size);
+		}
+		rc = TRUE;
+	}
+//	
+//	if(mp2->dec_cnt * 12 <tick)
+	{
+		static a = 0;
+		if((a++)&1)	{
+//@		SyncInc_dec_thread(mp2);
+
+			top = mp2->cprm.max_width * mp2->cprm.max_height * (mp2->img_get_pos) * 4;
+#if FALSE
+			frm->bufadr = (BYTE*)&mp2->cprm.work[top];
+#else
+			if( DoRenderSampled )
+			{
+				frm->bufadr = (BYTE*)&mp2->cprm.work[top];
+				DoRenderSampled = FALSE ;
+			}
+#endif
+			if( (mp2->img_get_pos)!=(mp2->img_set_pos) ){
+				mp2->img_get_pos++;
+				if(mp2->img_get_pos >= mp2->cprm.nfrm_pool_wk){
+					mp2->img_get_pos = 0;
+				}
+			}
+	 	}
+	}	
+	SyncInc_dec_thread(mp2);
+	return(rc);
+
+};
+
+int mwPlyGetStat( MWPLY mwply )
+{
+	MW_PLY_OBJ2 *mp2 = (MW_PLY_OBJ2*)mwply;
+	
+	if(mp2->run_state== DEC_STATE_IDLE
+	 &&mp2->sample_get_cnt  == mp2->sample_set_cnt	){
+		return(MWE_PLY_STAT_PLAYEND);
+	}else{
+		return(MWE_PLY_STAT_PLAYING);
+
+	}
+}
+
+
+void 	mwPlyFinishSfdFx(void){
+};
+
+void 	mwPlyRelCurFrm(MWPLY mwply)
+{
+	MW_PLY_OBJ2 *mp2 = (MW_PLY_OBJ2*)mwply;
+
+};
+void 	mwPlyInitSfdFx(MWS_PLY_INIT_SFD *iprm){};
+
+
+
+
+
+

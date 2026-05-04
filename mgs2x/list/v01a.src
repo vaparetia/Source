@@ -1,0 +1,58 @@
+//
+//	v01a.src	
+//	ＶＲスニーキングミッション１面
+//	written by H.Yoshiike 2002.Feb
+//
+//	$Id$
+
+#define WN_V01A
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 敵兵関連define
+// 敵兵タイプ
+#define ENE_P_GOL		// w22aは都市迷彩攻撃兵
+#define ENE_ATTACKER	// 攻撃兵
+#define ENE_SHIELD		// 盾兵
+#define ENE_SHOT		// ショットガン兵
+#define ENE_HIGH_TECH	// 人質イベント後はハイテク兵
+
+// 特殊兵のモーション設定
+#define ENE_MAR '-DDEL_TNG=DUMMY -DDEL_WALKMAN=DUMMY'
+
+// 各ステージ共通要素
+#include	"p_common.h"
+#include	"common.h"
+include		c_effect.h
+
+// キャラクタ
+#include	"ene_plant.h"
+
+// 強制モーション
+mtn			rai_v01a.mls
+mtn			sna_v01a.mls			// ゴル兵肩回しモーション
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル 
+pack_all	v01a.tri \
+	world/v01a
+
+world		v01a
+lt2			w22a.lt2
+hazard		v01a.hzx
+
+// オブジェクト
+
+// 消火器
+
+// アイテム
+itembox
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム

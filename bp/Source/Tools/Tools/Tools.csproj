@@ -1,0 +1,293 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.50727</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{DBE26B3B-3FA8-4D4E-9836-BA48951EF091}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Tools</RootNamespace>
+    <AssemblyName>Tools</AssemblyName>
+    <SccProjectName>
+    </SccProjectName>
+    <SccLocalPath>
+    </SccLocalPath>
+    <SccAuxPath>
+    </SccAuxPath>
+    <SccProvider>
+    </SccProvider>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <OldToolsVersion>2.0</OldToolsVersion>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\..\Bin\Tools\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x86</PlatformTarget>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\..\bin\tools\release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="p4api, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\Bin\Tools\p4api.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AssetSystem\AssetPlatforms.cs" />
+    <Compile Include="AssetSystem\AssetSystemException.cs" />
+    <Compile Include="AssetSystem\AssetTypes.cs" />
+    <Compile Include="AssetSystem\Helper.cs" />
+    <Compile Include="AssetSystem\Manager.cs" />
+    <Compile Include="Common\BinaryReaderBigEndian.cs" />
+    <Compile Include="Common\BinaryWriterBigEndian.cs" />
+    <Compile Include="Common\ColorF.cs" />
+    <Compile Include="Common\CRC32.cs" />
+    <Compile Include="Common\FastLookupList.cs" />
+    <Compile Include="Common\FileUtils.cs" />
+    <Compile Include="Common\HashUtils.cs" />
+    <Compile Include="Common\JobObject.cs" />
+    <Compile Include="Common\MergeText.cs" />
+    <Compile Include="Common\Misc.cs" />
+    <Compile Include="Common\MRU.cs" />
+    <Compile Include="Common\Perforce.cs" />
+    <Compile Include="Common\PerforceHelper.cs" />
+    <Compile Include="Common\PropertyComparer.cs" />
+    <Compile Include="Common\SortableBindingList.cs" />
+    <Compile Include="Common\StripCarriageReturnEncoding.cs" />
+    <Compile Include="Common\Timer.cs" />
+    <Compile Include="Common\WindowPosition.cs" />
+    <Compile Include="Common\WindowsNative.cs" />
+    <Compile Include="Common\WorkspaceHelper.cs" />
+    <Compile Include="Common\XmlNodeHelpers.cs" />
+    <Compile Include="Controls\EventView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\EventView.designer.cs">
+      <DependentUpon>EventView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\InfoBar.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Controls\InfoBar.Designer.cs">
+      <DependentUpon>InfoBar.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\Misc.cs" />
+    <Compile Include="Controls\ToolStripEx.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Controls\TreeListView.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Controls\MultiSelectTreeView.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Editors\AnimationEventEditor\AnimationEventData.cs" />
+    <Compile Include="Editors\AnimationEventEditor\AnimationEventEditor.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Editors\AnimationEventEditor\AnimationEventEditor.Designer.cs">
+      <DependentUpon>AnimationEventEditor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GameEngine\RGCHelpers.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Property\Data.cs" />
+    <Compile Include="Property\MergeFromAssets.cs" />
+    <Compile Include="Property\MergeLayout.cs" />
+    <Compile Include="Property\MergePropertiesV2.cs" />
+    <Compile Include="Property\UI\ConnectionEditorGUI.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Property\UI\ConnectionEditorGUI.Designer.cs">
+      <DependentUpon>ConnectionEditorGUI.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Property\UI\Controls\ComponentGroupLayout.cs" />
+    <Compile Include="Property\UI\Controls\PropertyAsset.cs" />
+    <Compile Include="Property\UI\Controls\PropertyColor.cs" />
+    <Compile Include="Property\UI\Controls\PropertyEnum.cs" />
+    <Compile Include="Property\UI\Controls\PropertyEvaluator.cs" />
+    <Compile Include="Property\UI\Controls\PropertyFloat.cs" />
+    <Compile Include="Property\UI\Controls\EvaluatorLayout.cs" />
+    <Compile Include="Property\UI\Controls\Helper.cs" />
+    <Compile Include="Property\UI\Controls\Layouts.cs" />
+    <Compile Include="Property\UI\Controls\PropertyBool.cs" />
+    <Compile Include="Property\UI\Controls\PropertyControl.cs" />
+    <Compile Include="Property\UI\Controls\PropertyInt.cs" />
+    <Compile Include="Property\UI\Controls\PropertyString.cs" />
+    <Compile Include="Property\UI\Controls\SubControls.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Property\UI\Help\HelpPanel.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Property\UI\Help\HelpPanel.Designer.cs">
+      <DependentUpon>HelpPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Property\UI\PropertyEditorGUI.cs" />
+    <Compile Include="Property\UI\PropertyEditorSupport.cs">
+    </Compile>
+    <Compile Include="Property\UI\Help\PropertyHelpSystem.cs" />
+    <Compile Include="Property\UI\PropertyPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Property\UI\PropertyPanel.Designer.cs">
+      <DependentUpon>PropertyPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="WorkQueue\IResourcePool.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Property\CodeGen\CodeGenHelpers.cs" />
+    <Compile Include="Property\CodeGen\componentClassCodeGen.cs" />
+    <Compile Include="Property\CodeGen\ComponentCodeGen.cs" />
+    <Compile Include="Property\CodeGen\ComponentGroupClassCodeGen.cs" />
+    <Compile Include="Property\CodeGen\ComponentGroupCodeGen.cs" />
+    <Compile Include="Property\CodeGen\EvaluatorCodeGen.cs" />
+    <Compile Include="Property\CodeGen\MOCodeGen.cs" />
+    <Compile Include="Property\CodeGen\POCodeGen.cs" />
+    <Compile Include="Property\CookProperties.cs" />
+    <Compile Include="Property\FileBasedPropertyObjectEnumerator.cs" />
+    <Compile Include="Property\GameDataSenderConnection.cs" />
+    <Compile Include="Property\GroupProperties.cs" />
+    <Compile Include="Property\Helpers.cs" />
+    <Compile Include="Property\IPropertyDataSource.cs" />
+    <Compile Include="Property\MergeProperties.cs" />
+    <Compile Include="Property\UI\CustomEditors.cs" />
+    <Compile Include="Property\UI\DataEditor.cs" />
+    <Compile Include="Property\UI\GUIHelpers.cs" />
+    <Compile Include="Property\UI\ModalPropertyDlg.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Property\UI\ModalPropertyDlg.Designer.cs">
+      <DependentUpon>ModalPropertyDlg.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Property\UI\ValueSelect\ValueSelectForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Property\UI\ValueSelect\ValueSelectForm.Designer.cs">
+      <DependentUpon>ValueSelectForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Property\UI\ValueSelect\ValueSelectFormFloat.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Property\UI\ValueSelect\ValueSelectFormInt.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="WorkQueue\WorkItem.cs" />
+    <Compile Include="WorkQueue\WorkQueue.cs" />
+    <Compile Include="WorkQueue\WorkThreadPool.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Controls\EventView.resx">
+      <DependentUpon>EventView.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <SubType>Designer</SubType>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Property\UI\ConnectionEditorGUI.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ConnectionEditorGUI.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Property\UI\ModalPropertyDlg.resx">
+      <DependentUpon>ModalPropertyDlg.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Property\UI\ValueSelect\ValueSelectForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ValueSelectForm.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Controls\InfoBar.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>InfoBar.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Editors\AnimationEventEditor\AnimationEventEditor.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>AnimationEventEditor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Property\Schema\SourceXML.xsd">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Property\UI\PropertyPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>PropertyPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <None Include="Property\Schema\SourceXML.xsx">
+      <DependentUpon>SourceXML.xsd</DependentUpon>
+    </None>
+    <None Include="Resources\DownArrow.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\TreePlus.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\TreeMinus.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\ContextButton_Hot.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\ContextButton_Normal.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Property\UI\Help\HelpPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>HelpPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\ColorButton_Background.png" />
+    <Content Include="Resources\AddComponent.bmp" />
+    <Content Include="Resources\CollapseComponents.bmp" />
+    <Content Include="Resources\ColorEditor_ColorBoxCursor.png" />
+    <Content Include="Resources\ColorEditor_HueGradient.png" />
+    <Content Include="Resources\ContextButton_NormalAlt.png" />
+    <Content Include="Resources\ContextButton_NormalAlt2.png" />
+    <None Include="Resources\Help.bmp" />
+    <Content Include="Resources\LayoutBar_Collapsed.png" />
+    <Content Include="Resources\LayoutBar_Expanded.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\ExtLibraries\DockPanel\branch\Src\WinFormsUI\WinFormsUI.csproj">
+      <Project>{C75532C4-765B-418E-B09B-46D36B2ABDB1}</Project>
+      <Name>WinFormsUI</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+  </PropertyGroup>
+</Project>

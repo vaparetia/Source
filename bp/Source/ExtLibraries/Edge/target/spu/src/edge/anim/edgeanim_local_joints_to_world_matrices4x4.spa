@@ -1,0 +1,427 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2010 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+.macro SHUFFLE_PACK3(A,B,C,D,X,Y,Z)
+	.localreg tmpA, tmpB, tmpC, tmpD
+	shufb	tmpA, A, B, shufAaBb
+	shufb	tmpB, A, B, shufCcDd
+	shufb	tmpC, C, D, shufBbAa
+	shufb	tmpD, C, D, shufDdCc
+	selb	X, tmpA, tmpC, selABcd
+	shufb	Y, tmpA, tmpC, shufCDab
+	selb	Z, tmpB, tmpD, selABcd
+.endmacro
+
+.macro SHUFFLE_PACK4(A,B,C,D,X,Y,Z,W)
+	.localreg tmpA, tmpB, tmpC, tmpD
+	shufb	tmpA, A, B, shufAaBb
+	shufb	tmpB, A, B, shufCcDd
+	shufb	tmpC, C, D, shufBbAa
+	shufb	tmpD, C, D, shufDdCc
+	selb	X, tmpA, tmpC, selABcd
+	shufb	Y, tmpA, tmpC, shufCDab
+	selb	Z, tmpB, tmpD, selABcd
+	shufb	W, tmpB, tmpD, shufCDab
+.endmacro
+
+.cfunc void edgeAnimLocalJointsToWorldMatrices4x4(void* outputMatrices,
+										   const EdgeAnimJointTransform* inputJoints,
+										   const EdgeAnimJointTransform* rootJoint,
+										   const unsigned short* jointLinkage, 
+										   unsigned int count)
+
+    //----------------------------------------------------------------------------------------------
+    // Early out
+    //----------------------------------------------------------------------------------------------    
+
+	brz		count, NoLoop
+
+    //----------------------------------------------------------------------------------------------
+    // Constants
+    //----------------------------------------------------------------------------------------------    
+    
+	// Constants
+	.reg	kZero, kHalf, kOne
+	ilhu	kZero, 0x00000000@h
+	ilhu	kHalf, 0x3F000000@h
+	ilhu	kOne,  0x3f800000@h
+
+	// Shuffle masks
+	.reg	shufAAAA, shufBBBB, shufCCCC, shufDDDD, shufAaBb, shufBbAa, shufCcDd, shufCDab, shufDdCc
+	il128	shufAAAA, "AAAA"
+	il128	shufBBBB, "BBBB"
+	il128	shufCCCC, "CCCC"
+	il128	shufDDDD, "DDDD"
+	il128	shufAaBb, "AaBb"
+	il128	shufBbAa, "BbAa"
+	il128	shufCcDd, "CcDd"
+	il128	shufCDab, "CDab"
+	il128	shufDdCc, "DdCc"
+	
+	// Select masks
+	.reg	selABcd
+	fsmbi	selABcd, 0x00FF
+    
+    // Misc masks.
+    .reg	negParent, idxMask
+    ila		negParent, 0x00003FFF
+    ila		idxMask, 0x00007FFF
+
+    // Aliasing
+    .memgroup		mat0, mat1, mat2, mat3
+    
+    //----------------------------------------------------------------------------------------------
+    // Setup 
+    //----------------------------------------------------------------------------------------------    
+
+	shufb	outputMatrices, outputMatrices, outputMatrices, shufAAAA
+	shufb	rootJoint, rootJoint, rootJoint, shufAAAA
+
+    .reg	inputBaseR, inputBaseT, inputBaseS 
+    ai		inputBaseR, inputJoints, 0x00
+    ai		inputBaseT, inputJoints, 0x10
+    ai		inputBaseS, inputJoints, 0x20
+
+    .reg	outputBaseX, outputBaseY, outputBaseZ, outputBaseW
+    ai		outputBaseX, outputMatrices, 0x00
+    ai		outputBaseY, outputMatrices, 0x10
+    ai		outputBaseZ, outputMatrices, 0x20
+    ai		outputBaseW, outputMatrices, 0x30
+
+	//----------------------------------------------------------------------------------------------
+    // Compute Root Matrix
+    //----------------------------------------------------------------------------------------------    
+    .reg	rr, rrx, rry, rrz, rrw
+    .reg	rt, rtx, rty, rtz
+    .reg	rs, rsx, rsy, rsz, rsx2, rsy2, rsz2
+
+	lqd		rr, 0x00(rootJoint)
+    lqd		rt, 0x10(rootJoint)
+    lqd		rs, 0x20(rootJoint)
+    shufb	rrx, rr, rr, shufAAAA
+    shufb	rry, rr, rr, shufBBBB
+    shufb	rrz, rr, rr, shufCCCC
+    shufb	rrw, rr, rr, shufDDDD
+    shufb	rtx, rt, rt, shufAAAA
+    shufb	rty, rt, rt, shufBBBB
+    shufb	rtz, rt, rt, shufCCCC
+    shufb	rsx, rs, rs, shufAAAA
+    shufb	rsy, rs, rs, shufBBBB
+    shufb	rsz, rs, rs, shufCCCC
+    fa		rsx2, rsx, rsx
+    fa		rsy2, rsy, rsy
+    fa		rsz2, rsz, rsz
+    
+   	.reg	root_m00, root_m10, root_m20
+	.reg	root_m01, root_m11, root_m21
+	.reg	root_m02, root_m12, root_m22
+	.reg	root_mrxx, root_mryy, root_rxy, root_rxz, root_ryz 
+	
+	fnms	root_mrxx, rrx, rrx, kHalf
+	fnms	root_mryy, rry, rry, kHalf
+	fm		root_rxy, rrx, rry
+	fm		root_rxz, rrx, rrz
+	fm		root_ryz, rry, rrz
+	fnms	root_m00, rrz, rrz, root_mryy
+	fma		root_m01, rrw, rrz, root_rxy
+	fnms	root_m02, rrw, rry, root_rxz
+	fnms	root_m10, rrw, rrz, root_rxy
+	fnms	root_m11, rrz, rrz, root_mrxx
+	fma		root_m12, rrw, rrx, root_ryz
+	fma		root_m20, rrw, rry, root_rxz
+	fnms	root_m21, rrw, rrx, root_ryz
+	fnms	root_m22, rry, rry, root_mrxx
+	fm		root_m00, root_m00, rsx2
+	fm		root_m01, root_m01, rsx2
+	fm		root_m02, root_m02, rsx2
+	fm		root_m10, root_m10, rsy2
+	fm		root_m11, root_m11, rsy2
+	fm		root_m12, root_m12, rsy2
+	fm		root_m20, root_m20, rsz2
+	fm		root_m21, root_m21, rsz2
+	fm		root_m22, root_m22, rsz2
+
+	//----------------------------------------------------------------------------------------------
+    // Loop
+    //----------------------------------------------------------------------------------------------    
+	
+	.reg	count4, countTmp
+	ai		countTmp, count, 3
+	rotmi	count4, countTmp, -2	
+
+Loop:     
+		
+	ai		count4, count4, -1
+	     
+    .reg	indices
+    lqd		indices, 0x0(jointLinkage)
+    ai		jointLinkage, jointLinkage, 0x10
+    
+    // Joint offsets
+    .reg	jointIdx, jointIdxS5, jointIdxS4, jointInOfs, jointOutOfs
+    rotmi	jointIdx, indices, -16
+    shli	jointIdxS5, jointIdx, 5
+    shli	jointIdxS4, jointIdx, 4
+	a		jointInOfs, jointIdxS5, jointIdxS4
+	shli	jointOutOfs, jointIdx, 6
+
+	.reg	jointInOfs0, jointInOfs1, jointInOfs2, jointInOfs3	
+	shlqbyi	jointInOfs0, jointInOfs, 0
+	shlqbyi	jointInOfs1, jointInOfs, 4
+	shlqbyi	jointInOfs2, jointInOfs, 8
+	shlqbyi	jointInOfs3, jointInOfs, 12 
+
+ 	.reg	jointOutOfs0, jointOutOfs1, jointOutOfs2, jointOutOfs3	
+	shlqbyi	jointOutOfs0, jointOutOfs, 0
+	shlqbyi	jointOutOfs1, jointOutOfs, 4
+	shlqbyi	jointOutOfs2, jointOutOfs, 8
+	shlqbyi	jointOutOfs3, jointOutOfs, 12 
+
+    // Parent indices (if use root - set to 0 - will be ignored anyhow)
+	.reg	parentIdx, parentIdxS5, parentIdxS4, parentUseRoot, parentJointOfs, parentMatOfs
+	and		parentIdx, indices, idxMask
+    clgt	parentUseRoot, parentIdx, negParent
+    shli	parentIdxS5, parentIdx, 5
+    shli	parentIdxS4, parentIdx, 4
+    a		parentJointOfs, parentIdxS5, parentIdxS4
+    selb	parentJointOfs, parentJointOfs, kZero, parentUseRoot
+    shli	parentMatOfs, parentIdx, 6
+    selb	parentMatOfs, parentMatOfs, kZero, parentUseRoot
+
+   	.reg	parentJointOfs0, parentJointOfs1, parentJointOfs2, parentJointOfs3	
+	shlqbyi	parentJointOfs0, parentJointOfs, 0
+	shlqbyi	parentJointOfs1, parentJointOfs, 4
+	shlqbyi	parentJointOfs2, parentJointOfs, 8
+	shlqbyi	parentJointOfs3, parentJointOfs, 12 
+
+ 	.reg	parentMatOfs0, parentMatOfs1, parentMatOfs2, parentMatOfs3	
+	shlqbyi	parentMatOfs0, parentMatOfs, 0
+	shlqbyi	parentMatOfs1, parentMatOfs, 4
+	shlqbyi	parentMatOfs2, parentMatOfs, 8
+	shlqbyi	parentMatOfs3, parentMatOfs, 12 
+
+	// Local Joint Transform Components (lqx)
+	.reg	lr0, lr1, lr2, lr3, lt0, lt1, lt2, lt3, ls0, ls1, ls2, ls3	       
+    lqx 	lr0, inputBaseR, jointInOfs0
+    lqx 	lr1, inputBaseR, jointInOfs1
+    lqx 	lr2, inputBaseR, jointInOfs2
+    lqx 	lr3, inputBaseR, jointInOfs3
+    lqx 	lt0, inputBaseT, jointInOfs0
+    lqx 	lt1, inputBaseT, jointInOfs1
+    lqx 	lt2, inputBaseT, jointInOfs2
+    lqx 	lt3, inputBaseT, jointInOfs3
+    lqx 	ls0, inputBaseS, jointInOfs0
+    lqx 	ls1, inputBaseS, jointInOfs1
+    lqx 	ls2, inputBaseS, jointInOfs2
+    lqx 	ls3, inputBaseS, jointInOfs3
+
+    // Local Parent Scale (lqx)
+	.reg	lps0, lps1, lps2, lps3    
+    lqx 	lps0, inputBaseS, parentJointOfs0
+    lqx 	lps1, inputBaseS, parentJointOfs1
+    lqx 	lps2, inputBaseS, parentJointOfs2
+    lqx 	lps3, inputBaseS, parentJointOfs3
+
+	// Swizzle Joint Transform Components
+	.reg	lrx, lry, lrz, lrw
+	SHUFFLE_PACK4( lr0, lr1, lr2, lr3, lrx, lry, lrz, lrw )
+
+	.reg	ltx, lty, ltz
+	SHUFFLE_PACK3( lt0, lt1, lt2, lt3, ltx, lty, ltz )
+
+	.reg	lsx, lsy, lsz, lsx2, lsy2, lsz2
+	SHUFFLE_PACK3( ls0, ls1, ls2, ls3, lsx, lsy, lsz )
+	fa		lsx2, lsx, lsx
+	fa		lsy2, lsy, lsy
+	fa		lsz2, lsz, lsz
+
+	.reg	lpsx, lpsy, lpsz
+	SHUFFLE_PACK3( lps0, lps1, lps2, lps3, lpsx, lpsy, lpsz )
+	selb	lpsx, lpsx, rsx, parentUseRoot
+	selb	lpsy, lpsy, rsy, parentUseRoot
+	selb	lpsz, lpsz, rsz, parentUseRoot
+
+	// Invert Parent Scale
+    .reg	lpisx, lpisy, lpisz
+    frest	lpisx, lpsx
+    frest	lpisy, lpsy
+    frest	lpisz, lpsz
+    fi		lpisx, lpsx, lpisx
+    fi		lpisy, lpsy, lpisy
+    fi		lpisz, lpsz, lpisz
+
+    // Parent Scale Compensation
+    .reg	compensateBit, compensateMask
+    shli	compensateBit, indices, 16
+    rotmai	compensateMask, compensateBit, -31
+
+    .reg	lscx, lscy, lscz
+    selb	lscx, kOne, lpisx, compensateMask
+    selb	lscy, kOne, lpisy, compensateMask
+    selb	lscz, kOne, lpisz, compensateMask
+    
+    // Compute World Matrix - Start with Parent World Matrix
+	.reg	world0Row0, world1Row0, world2Row0, world3Row0
+	.reg	world0Row1, world1Row1, world2Row1, world3Row1
+	.reg	world0Row2, world1Row2, world2Row2, world3Row2
+	.reg	world0Row3, world1Row3, world2Row3, world3Row3
+	lqx 	[mat0] world0Row0, outputBaseX, parentMatOfs0
+	lqx 	[mat0] world1Row0, outputBaseX, parentMatOfs1
+	lqx 	[mat0] world2Row0, outputBaseX, parentMatOfs2
+	lqx 	[mat0] world3Row0, outputBaseX, parentMatOfs3
+	lqx 	[mat1] world0Row1, outputBaseY, parentMatOfs0
+	lqx 	[mat1] world1Row1, outputBaseY, parentMatOfs1
+	lqx 	[mat1] world2Row1, outputBaseY, parentMatOfs2
+	lqx 	[mat1] world3Row1, outputBaseY, parentMatOfs3
+	lqx 	[mat2] world0Row2, outputBaseZ, parentMatOfs0
+	lqx 	[mat2] world1Row2, outputBaseZ, parentMatOfs1
+	lqx 	[mat2] world2Row2, outputBaseZ, parentMatOfs2
+	lqx 	[mat2] world3Row2, outputBaseZ, parentMatOfs3
+	lqx 	[mat3] world0Row3, outputBaseW, parentMatOfs0
+	lqx 	[mat3] world1Row3, outputBaseW, parentMatOfs1
+	lqx 	[mat3] world2Row3, outputBaseW, parentMatOfs2
+	lqx 	[mat3] world3Row3, outputBaseW, parentMatOfs3
+
+	// Swizzle World Matrices
+	.reg	world_m00, world_m01, world_m02, world_tx
+	.reg	world_m10, world_m11, world_m12, world_ty
+	.reg	world_m20, world_m21, world_m22, world_tz
+	SHUFFLE_PACK3( world0Row0, world1Row0, world2Row0, world3Row0, world_m00, world_m01, world_m02 )
+	SHUFFLE_PACK3( world0Row1, world1Row1, world2Row1, world3Row1, world_m10, world_m11, world_m12 )
+	SHUFFLE_PACK3( world0Row2, world1Row2, world2Row2, world3Row2, world_m20, world_m21, world_m22 )
+	SHUFFLE_PACK3( world0Row3, world1Row3, world2Row3, world3Row3, world_tx,  world_ty,  world_tz  )
+
+	// Parent or Root?
+	selb	world_m00, world_m00, root_m00, parentUseRoot
+	selb	world_m01, world_m01, root_m01, parentUseRoot
+	selb	world_m02, world_m02, root_m02, parentUseRoot
+	selb	world_m10, world_m10, root_m10, parentUseRoot
+	selb	world_m11, world_m11, root_m11, parentUseRoot
+	selb	world_m12, world_m12, root_m12, parentUseRoot
+	selb	world_m20, world_m20, root_m20, parentUseRoot
+	selb	world_m21, world_m21, root_m21, parentUseRoot
+	selb	world_m22, world_m22, root_m22, parentUseRoot
+	selb	world_tx,  world_tx,  rtx,      parentUseRoot
+	selb	world_ty,  world_ty,  rty,      parentUseRoot
+	selb	world_tz,  world_tz,  rtz,      parentUseRoot
+
+	// Apply localTranslate
+	fma		world_tx, ltx, world_m00, world_tx
+	fma		world_tx, lty, world_m10, world_tx
+	fma		world_tx, ltz, world_m20, world_tx
+	fma		world_ty, ltx, world_m01, world_ty
+	fma		world_ty, lty, world_m11, world_ty
+	fma		world_ty, ltz, world_m21, world_ty
+	fma		world_tz, ltx, world_m02, world_tz
+	fma		world_tz, lty, world_m12, world_tz
+	fma		world_tz, ltz, world_m22, world_tz
+
+	// Apply localCompensateScale
+	fm		world_m00, world_m00, lscx
+	fm		world_m01, world_m01, lscx
+	fm		world_m02, world_m02, lscx
+	fm		world_m10, world_m10, lscy
+	fm		world_m11, world_m11, lscy
+	fm		world_m12, world_m12, lscy
+	fm		world_m20, world_m20, lscz
+	fm		world_m21, world_m21, lscz
+	fm		world_m22, world_m22, lscz
+
+	// Determine localRotationScale
+	.reg	lcrs_m00, lcrs_m01, lcrs_m02
+	.reg	lcrs_m10, lcrs_m11, lcrs_m12
+	.reg	lcrs_m20, lcrs_m21, lcrs_m22
+	.reg	lcrs_mrxx, lcrs_mryy, lcrs_rxy, lcrs_rxz, lcrs_ryz
+	
+	fnms	lcrs_mrxx, lrx, lrx, kHalf
+	fnms	lcrs_mryy, lry, lry, kHalf
+	fm		lcrs_rxy, lrx, lry
+	fm		lcrs_rxz, lrx, lrz
+	fm		lcrs_ryz, lry, lrz
+	fnms	lcrs_m00, lrz, lrz, lcrs_mryy
+	fma		lcrs_m01, lrw, lrz, lcrs_rxy
+	fnms	lcrs_m02, lrw, lry, lcrs_rxz
+	fnms	lcrs_m10, lrw, lrz, lcrs_rxy
+	fnms	lcrs_m11, lrz, lrz, lcrs_mrxx
+	fma		lcrs_m12, lrw, lrx, lcrs_ryz
+	fma		lcrs_m20, lrw, lry, lcrs_rxz
+	fnms	lcrs_m21, lrw, lrx, lcrs_ryz
+	fnms	lcrs_m22, lry, lry, lcrs_mrxx
+		   
+	fm		lcrs_m00, lcrs_m00, lsx2
+	fm		lcrs_m01, lcrs_m01, lsx2
+	fm		lcrs_m02, lcrs_m02, lsx2
+	fm		lcrs_m10, lcrs_m10, lsy2
+	fm		lcrs_m11, lcrs_m11, lsy2
+	fm		lcrs_m12, lcrs_m12, lsy2
+	fm		lcrs_m20, lcrs_m20, lsz2
+	fm		lcrs_m21, lcrs_m21, lsz2
+	fm		lcrs_m22, lcrs_m22, lsz2	
+	
+	// Apply localRotationScale
+	.reg	world_m00_t, world_m10_t, world_m20_t
+	.reg	world_m01_t, world_m11_t, world_m21_t
+	.reg	world_m02_t, world_m12_t, world_m22_t
+
+	fm		world_m00_t, lcrs_m00, world_m00
+	fma		world_m00_t, lcrs_m01, world_m10, world_m00_t
+	fma		world_m00_t, lcrs_m02, world_m20, world_m00_t
+	fm		world_m01_t, lcrs_m00, world_m01
+	fma		world_m01_t, lcrs_m01, world_m11, world_m01_t
+	fma		world_m01_t, lcrs_m02, world_m21, world_m01_t
+	fm		world_m02_t, lcrs_m00, world_m02
+	fma		world_m02_t, lcrs_m01, world_m12, world_m02_t
+	fma		world_m02_t, lcrs_m02, world_m22, world_m02_t	
+
+	fm		world_m10_t, lcrs_m10, world_m00
+	fma		world_m10_t, lcrs_m11, world_m10, world_m10_t
+	fma		world_m10_t, lcrs_m12, world_m20, world_m10_t
+	fm		world_m11_t, lcrs_m10, world_m01
+	fma		world_m11_t, lcrs_m11, world_m11, world_m11_t
+	fma		world_m11_t, lcrs_m12, world_m21, world_m11_t
+	fm		world_m12_t, lcrs_m10, world_m02
+	fma		world_m12_t, lcrs_m11, world_m12, world_m12_t
+	fma		world_m12_t, lcrs_m12, world_m22, world_m12_t	
+
+	fm		world_m20_t, lcrs_m20, world_m00
+	fma		world_m20_t, lcrs_m21, world_m10, world_m20_t
+	fma		world_m20_t, lcrs_m22, world_m20, world_m20_t
+	fm		world_m21_t, lcrs_m20, world_m01
+	fma		world_m21_t, lcrs_m21, world_m11, world_m21_t
+	fma		world_m21_t, lcrs_m22, world_m21, world_m21_t
+	fm		world_m22_t, lcrs_m20, world_m02
+	fma		world_m22_t, lcrs_m21, world_m12, world_m22_t
+	fma		world_m22_t, lcrs_m22, world_m22, world_m22_t	
+	
+	// Deswizzle Matrices
+	SHUFFLE_PACK4( world_m00_t, world_m01_t, world_m02_t, kZero, world0Row0, world1Row0, world2Row0, world3Row0 )
+	SHUFFLE_PACK4( world_m10_t, world_m11_t, world_m12_t, kZero, world0Row1, world1Row1, world2Row1, world3Row1 )
+	SHUFFLE_PACK4( world_m20_t, world_m21_t, world_m22_t, kZero, world0Row2, world1Row2, world2Row2, world3Row2 )
+	SHUFFLE_PACK4( world_tx,    world_ty,    world_tz,    kOne,  world0Row3, world1Row3, world2Row3, world3Row3 )
+
+	// Output
+	stqx	[mat0] world0Row0, outputBaseX, jointOutOfs0
+	stqx	[mat0] world1Row0, outputBaseX, jointOutOfs1
+	stqx	[mat0] world2Row0, outputBaseX, jointOutOfs2
+	stqx	[mat0] world3Row0, outputBaseX, jointOutOfs3
+	stqx	[mat1] world0Row1, outputBaseY, jointOutOfs0
+	stqx	[mat1] world1Row1, outputBaseY, jointOutOfs1
+	stqx	[mat1] world2Row1, outputBaseY, jointOutOfs2
+	stqx	[mat1] world3Row1, outputBaseY, jointOutOfs3
+	stqx	[mat2] world0Row2, outputBaseZ, jointOutOfs0
+	stqx	[mat2] world1Row2, outputBaseZ, jointOutOfs1
+	stqx	[mat2] world2Row2, outputBaseZ, jointOutOfs2
+	stqx	[mat2] world3Row2, outputBaseZ, jointOutOfs3
+	stqx	[mat3] world0Row3, outputBaseW, jointOutOfs0
+	stqx	[mat3] world1Row3, outputBaseW, jointOutOfs1
+	stqx	[mat3] world2Row3, outputBaseW, jointOutOfs2
+	stqx	[mat3] world3Row3, outputBaseW, jointOutOfs3
+
+    brnz	count4, Loop
+
+NoLoop:
+
+.endfunc

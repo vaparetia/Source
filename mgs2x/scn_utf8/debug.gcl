@@ -1,0 +1,164 @@
+/*
+	debug.gcl
+	    デバッグ＆プレゼン用
+
+	2001/03/27 H.Yoshiike
+	$Id: debug.gcl,v 1.2 2001/03/28 09:00:06 usr02774 Exp $
+*/
+
+#define PLAYER		スネーク
+
+#include	"stdch.h"
+#include	"sload.h"
+#include	"equip.h"
+#include	"varinit.h"
+
+//@体験版初期設定 d:LEVEL_NORMAL
+
+// マップ
+chara マップ デバッグ -k usp 100000, 100000 100000 -h debug -l debug
+
+
+// マップ設定
+command マップ設定 デバッグ -s {
+	@プレイヤーデバッグ用初期設定
+	@常駐キャラ設定
+	@プレイヤーセット
+	@キャラクタ専用ライトセット
+	@カメラセット
+	@デバッグメイン
+}
+
+command マップ表示 -show デバッグ
+
+
+// プレイヤー
+// ------------------------------------
+proc プレイヤーセット {
+	chara プレイヤー スネーク \
+			-m sna_def \
+			-a snake \
+//			-p $i:プレイヤー初期Ｘ位置 $i:プレイヤー初期Ｙ位置 $i:プレイヤー初期Ｚ位置 \
+//			-d 0,$i:プレイヤー初期方向,0 \
+			-p 0 0 0 \ // 起動時のぞき込みをするための値。
+			-d 0,0,0 \ // 起動時のぞき込みをするための値。
+			-l 2800 \
+			-s 0 \
+			-i 0
+
+	//バンダナ
+	chara ロープモデル３ バンダナ１ \
+		-n sna_bdn1 \
+		-d 1 \
+		-y スネーク \
+		-z 12 \
+		-x 0,60,-90 \
+		-m 12 \
+		-p 250 \
+		-k 350 \
+		-o 110 \
+		-f 1
+
+	chara ロープモデル３ バンダナ２ \
+		-n sna_bdn2 \
+		-d 1 \
+		-y スネーク \
+		-z 12 \
+		-x 0,50,-90 \
+		-m 20 \
+		-p 250 \
+		-k 350 \
+		-o 110 \
+		-f 1
+
+	// はりつき時のみＬＯＤを使用する
+	chara ＬＯＤ制御 プレイヤーＬＯＤ \
+		-name d:PLAYER \
+		-type 0 \
+		-model sna_def_sh \
+		-value d:TRP_STATE_BEHINDCAMERA_ENABLE
+}
+
+proc キャラクタ専用ライトセット{
+	chara 環境光 環境光 \
+		 -c 60,60,60
+
+	chara 平行光 平行光 \
+		 -c 100,100,80 \
+		 -d 959,2048,0
+
+	chara フォグ フォグ \
+		 -c 40,35,20 \
+		 -n 0 \
+		 -f 250000
+}
+
+// カメラ設定
+// ------------------------------------
+proc カメラセット {
+	chara カメラ ステージカメラ	-c 0 -l 3 -p 0
+
+		chara カメラ設定 ステージカメラ \
+			-c 0 \	
+			-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-r 250,2048,0 \
+			-f 6500 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s 1
+}
+
+
+proc デバッグメイン {
+	// 動作モードセレクト処理
+	chara select mode_select -s {
+		'patch' 実験１
+		'low poly multi-tex' 実験２
+		'high poly multi-tex' 実験３
+		'high poly multi-weight multi-tex' 実験４
+		'high poly single-tex' 実験５
+		'high poly single-tex pre-shade' 実験６
+	}
+}
+
+proc 実験１ {
+	chara プラント海面 seaseasea \
+		-tex oil oil_alp_ovl_mod0222 sky_evening_add_alp_ovl_mod1120 \
+		-pos 0,-2000,0 
+}
+proc 実験２ {
+	chara モデル表示パフォーマンステスト test \
+		-n 7 7 \
+		-d 1500 1500 \
+		-m sna_def 0 \
+		-f 0
+}
+proc 実験３ {
+	chara モデル表示パフォーマンステスト test \
+		-n 5 5 \
+		-d 1500 1500 \
+		-m sna_def_sh 0 \
+		-f 0
+}
+proc 実験４ {
+	chara モデル表示パフォーマンステスト test \
+		-n 3 3 \
+		-d 1500 1500 \
+		-m sna_def_mh 1 \
+		-f 0
+}
+proc 実験５ {
+	chara モデル表示パフォーマンステスト test \
+		-n 5 5 \
+		-d 1500 1500 \
+		-m sna_def_sh 0 \
+		-f 1
+}
+proc 実験６ {
+	chara モデル表示パフォーマンステスト test \
+		-n 5 5 \
+		-d 1500 1500 \
+		-m sna_def_sh 0 \
+		-f 3
+}

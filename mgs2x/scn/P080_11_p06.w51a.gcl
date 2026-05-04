@@ -1,0 +1,347 @@
+/*
+	P055_01_p01.w31c.gcl
+	    シェル２中央棟Ｂ１（Ｂ１生物反応槽）ヴァンプ戦以降デモ用ヘッダ
+
+	2001/07/27 H.Yoshiike
+	$Id: P080_11_p06.w51a.gcl,v 1.18 2001/10/02 11:39:18 usr03635 Exp $                      
+
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+#define		DEMO_STAGE		1		// デモステージかどうかで起動するキャラを切り分ける
+
+// 各種スイッチ用define
+// ------------------------------------
+// フォグ
+#define		FOG				1
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+	#define		NO_POLYDEMO		0		// ポリデモなしフラグ
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+	#define		NO_POLYDEMO		0		// ポリデモなしフラグ
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME			w51a
+#define		KMS_NAME0			w51a0
+#define		KMS_NAME1			w51a1
+#define		KMS_NAME2			w51a2_scale10
+#define		LT2_NAME			w51a
+
+// キャラクター関係
+#define		PLAYER		ライデン	// モーションができるまで名前はスネーク
+
+#if d:MGS2_DEMO
+		#define DEMO_MIRACLE_FORTUNE 0
+						// 0 : p080_11_p06のデモ
+						// 1 : p080_13_p07のデモ
+#endif
+// include
+// ------------------------------------
+#include "commdef.h"		// infキャラ名define
+#include "stdch.h"
+#include "sload.h"
+#include "sound.h"
+#include "w51a_common.h"
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+
+// マップ設定
+// ------------------------------------
+chara マップ アーセナルギア上 -k d:KMS_NAME0 -k d:KMS_NAME1 -h d:HZX_NAME,0 -l d:LT2_NAME
+
+
+command マップ設定 アーセナルギア上 -set {
+
+#if d:MGS2_DEMO
+	// デモ環境デバッグ用
+chara デモアクトデバッグ demodebug  -i t:p080_11_p06 -d 'p080_11_p06' -l   \
+					-p 月表示 月非表示 \
+					   影上げて 影下げて 走れスネーク影 ＲＡＹ影オフ
+
+		/* デモ班環境では無条件でオフ、って関係ないか？じつは */
+		eval($w:武器弾数Ｒ[d:武器:ブレード] = 0);
+
+	if (d:DEMO_MIRACLE_FORTUNE == 0) {
+		eval($s:d_num = p080_11_p06)
+	}else{
+		eval($s:d_num = p080_13_p07)
+	}
+
+
+#else
+		@ポリデモ再生
+
+#endif
+
+	@常駐キャラ設定			// stdch.hで定義
+	@デモ開始時シネマスクリーンセット	// demo_stdproc.hで定義
+	// ステージ、オブジェクト関連(ゲームとポリデモ共通)
+	// ------------------------------------
+
+	//@夜空 0 -36000 0		// stdproc.hで定義
+	//@巨大海面セット
+	@ローカル海面
+	if($s:d_num == p080_11_p06) {
+		@空セットP080_11_P06
+	}else{
+		@空セットP080_13_P07
+	}
+
+	@アーセナル胴体設置
+	#if d:FOG
+		@フォグ設定				
+	#endif
+
+	@リアル影セット
+	if($s:d_num == p080_11_p06) {
+		@ＲＡＹ影セット
+	}
+
+	// キャラ水しぶきハリアー用
+//	if($s:d_num == p080_13_p07) {
+		command 水位設定 -lv -40000
+//	}
+}
+
+
+// 全てのセットが終わったところでフェードイン
+command マップ表示 -show アーセナルギア上
+
+
+// ポリデモ処理
+// ------------------------------------
+	proc ポリデモ再生 {
+		#if d:DEBUG_PRINT
+			print 'polydemo_start!!  p_story ='
+			print $w:p_story
+		#endif
+
+		chara デモキャンセルチェック デモキャンセル \
+			-p ポリデモキャンセル
+
+		if($w:p_story == d:ST:P080_11_P06ＡＧ浮上１１ポリゴンデモ６開始) {
+			/* フォーチュン死亡　リキッドまた出てくる */
+
+			// デモ特有の変数代入
+			eval( $s:d_num = p080_11_p06 );
+
+			@デモモデル差し替え処理
+			chara demo デモ再生 \
+				-i t:p080_11_p06 \
+//				-i t:data_dummy_raiden \
+				-p 月表示 月非表示 \
+				   影上げて 影下げて 走れスネーク影 ＲＡＹ影オフ \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next ポリデモ終了		// ポリデモ終了後ムービーへ
+
+		} else if($w:p_story == d:ST:P080_13_P07ＡＧ浮上１３ポリゴンデモ７開始) {
+			/* アーセナル暴走　都市破壊シーン（前半） */
+
+			// デモ特有の変数代入
+			eval( $s:d_num = p080_13_p07 );
+
+			@デモモデル差し替え処理
+			chara demo デモ再生 \
+				-i t:p080_13_p07 \
+//				-i t:data_dummy_raiden \
+				-p ダミープロック \
+				   影上げて 影下げて 走れスネーク影 ＲＡＹ影オフ \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next ポリデモ終了
+
+		// デモの時以外は、以下を通過する。
+		}
+	}
+
+	// 終了proc
+	// ------------------------------------
+	proc ポリデモ終了 {
+		#if d:DEBUG_PRINT
+			print 'polydemo_end!!  d_num = '
+			print $s:d_num
+		#endif
+
+		@デモ終了時シネマスクリーンオフ
+		mesg デモキャンセルチェック デモキャンセル kill
+
+		if ( $s:d_num == p080_11_p06 ) {
+			eval( $w:p_story = d:ST:P080_11_P06ＡＧ浮上１１ポリゴンデモ６終了 );
+			eval( $w:p_story = d:ST:P080_12_M05ＡＧ浮上１２ムービーデモ５開始 );
+			chara delay ディレイ -time 1 -exec{ @mv_init_wmovie_0 }
+
+		} else if ( $s:d_num == p080_13_p07 ) {
+			eval( $w:p_story = d:ST:P080_13_P07ＡＧ浮上１３ポリゴンデモ７終了 );
+			eval( $w:p_story = d:ST:P080_13_P08ＡＧ浮上１３ｂポリゴンデモ７ｂ開始 );
+			chara delay ディレイ -time 1 -exec{ @mv_P080_13_P07_1 }
+
+		}
+
+	}
+
+//柴田追加
+	proc 空セットP080_11_P06 {
+		chara 汎用空 空_w60a_sky_wall \
+			-c 12 18 22 \
+			-pos 0 -25000 0 \ 
+			-f 0 \
+			-t 4 \
+				sky_n1_alp 78 83 83 0 \
+				sky_n2_alp 74 77 77 0 \
+				0 0 0 0 0 \
+				sky_n4_alp 74 76 76 0 \
+			-m 4 \
+				w51a_sky_wall1  10  13  15 0 0 \
+				w51a_sky_wall2 100 100 100 0 0 \
+				w51a_sky_wall3 100 100 100 0 0 \
+				w51a_sky_wall4 128 128 128 0 0
+
+		chara 太陽 ソルP080_11_P06 \
+			-p 0 -25000 0 \ 		//中心の位置
+			-f (-1667-512) (-2032*2) -4252 \	//平行光源の-pと同じ値
+			-a 2 \   //alpha
+			-w (512*32) \
+			-h (512*32) \
+			-t sky_sun_n_alp \
+			-g 0
+		@月非表示
+	}
+
+	proc 空セットP080_13_P07 {
+		chara 汎用空 空_w60a_sky_wall \
+			-c 12 18 22 \
+			-pos 0 -25000 0 \ 
+			-f 0 \
+			-t 4 \
+				sky_n1_alp 78 83 83 0 \
+				sky_n2_alp 74 77 77 0 \
+				0 0 0 0 0 \
+				sky_n4_alp 74 76 76 0 \
+			-m 4 \
+				w51a_sky_wall1  10  13  15 0 0 \
+				w51a_sky_wall2 100 100 100 0 0 \
+				w51a_sky_wall3 100 100 100 0 0 \
+				w51a_sky_wall4 128 128 128 0 0
+
+		chara 太陽 ソルP080_13_P07 \
+			-p 0 -25000 0 \ 		//中心の位置
+			-f (-1667-512) (-2032*2 -1024) -4252 \	//平行光源の-pと同じ値
+			-a 2 \   //alpha
+			-w (512*32) \
+			-h (512*32) \
+			-t sky_sun_n_alp \
+			-g 0
+	}
+
+proc 月表示 {
+	mesg 太陽 ソルP080_11_P06 表示
+}
+proc 月非表示 {
+	mesg 太陽 ソルP080_11_P06 非表示
+}
+
+//柴田追加
+proc ローカル海面 {
+	chara 巨大海面 seaseasea \
+		-mipmap 3 50000 0 \
+		-size (400000*2/3) 500000 \
+		-light_enable \
+		-tex w51a_sea \
+		w51a_sea_256_alp_ovl \
+		w51a_sea_128_alp_ovl \
+		w51a_sea_64_alp_ovl \
+		w51a_sea_32_alp_ovl \
+		-pos 0,-35000,0 
+}
+
+proc リアル影セット {
+	chara 影投影モデル アーセナル頭の影もでる \
+		-m w51a0k \
+		-p 0 0 0
+
+	chara 影投影モデル アーセナル胴前半の影もでる \
+		-m w51a1k \
+		-p 0 0 0
+
+	chara 影投影モデル アーセナル頭の低位置影もでる \
+		-m w51a0k \
+		-p 0 -25 0
+
+//	chara 影投影モデル アーセナル胴前半の低位置影もでる \
+//		-m w51a1k \
+//		-p 0 -25 0
+
+	chara 影管理 影かんり \
+		-t 0 \
+		-p -3800 -3000 -1300
+}
+
+proc 影上げて {
+	mesg 影管理 影かんり demo_add "rai_def ライデン" アーセナル頭の影もでる	// ライデン
+	mesg 影管理 影かんり demo_add "sna_def スネーク" アーセナル頭の影もでる	// スネーク
+	mesg 影管理 影かんり demo_add sol_snakearm_mh_mt アーセナル頭の影もでる	// 蛇手
+	mesg 影管理 影かんり demo_add demo_kwt_uni_mount アーセナル頭の影もでる	// ソリダス共和刀
+	mesg 影管理 影かんり demo_add demo_mst_uni_mount アーセナル頭の影もでる	// ソリダス民主刀
+	mesg 影管理 影かんり demo_add "demo_lnr"         アーセナル頭の影もでる	// リニアガン
+
+	if ($s:d_num == p080_13_p07) {
+		mesg 影管理 影かんり demo_add "sol_def_mh ソリダス" アーセナル頭の影もでる	// ソリダス
+		mesg 影管理 影かんり demo_add for_last_addhand_mh_mt アーセナル頭の影もでる	// フォーチュン死体
+	} else {
+		mesg 影管理 影かんり demo_add "sol_def ソリダス" アーセナル頭の影もでる					// ソリダス
+		mesg 影管理 影かんり demo_add "for_addhand フォーチュン" アーセナル頭の影もでる			// フォーチュン
+		mesg 影管理 影かんり demo_add "for_last_addhand_mh_mt ﾌｫｰﾁｭﾝ女神" アーセナル頭の影もでる	// フォーチュン女神
+		mesg 影管理 影かんり demo_add "rev_plant_addhand_demo ｵｾﾛｯﾄ" アーセナル頭の影もでる		// オセロット
+	}
+}
+proc 影下げて {
+	mesg 影管理 影かんり demo_add "rai_def ライデン" アーセナル頭の低位置影もでる	// ライデン
+	mesg 影管理 影かんり demo_add "sna_def スネーク" アーセナル頭の低位置影もでる	// スネーク
+	mesg 影管理 影かんり demo_add sol_snakearm_mh_mt アーセナル頭の低位置影もでる	// 蛇手
+	mesg 影管理 影かんり demo_add demo_kwt_uni_mount アーセナル頭の低位置影もでる	// ソリダス共和刀
+	mesg 影管理 影かんり demo_add demo_mst_uni_mount アーセナル頭の低位置影もでる	// ソリダス民主刀
+	mesg 影管理 影かんり demo_add "demo_lnr"         アーセナル頭の低位置影もでる	// リニアガン
+
+	if ($s:d_num == p080_13_p07) {
+		mesg 影管理 影かんり demo_add "sol_def_mh ソリダス" アーセナル頭の低位置影もでる	// ソリダス
+		mesg 影管理 影かんり demo_add for_last_addhand_mh_mt アーセナル頭の低位置影もでる	// フォーチュン死体
+	} else {
+		mesg 影管理 影かんり demo_add "sol_def ソリダス" アーセナル頭の低位置影もでる					// ソリダス
+		mesg 影管理 影かんり demo_add "for_addhand フォーチュン" アーセナル頭の低位置影もでる			// フォーチュン
+		mesg 影管理 影かんり demo_add "for_last_addhand_mh_mt ﾌｫｰﾁｭﾝ女神" アーセナル頭の低位置影もでる	// フォーチュン女神
+		mesg 影管理 影かんり demo_add "rev_plant_addhand_demo ｵｾﾛｯﾄ" アーセナル頭の低位置影もでる		// オセロット
+	}
+}
+proc 走れスネーク影 {
+	mesg 影管理 影かんり demo_add "sna_def スネーク" アーセナル胴前半の影もでる	// スネーク
+}
+
+proc ＲＡＹ影セット {
+	chara プットオブジェ ＲＡＹ影 \
+		-m w51a_ray_shadow \
+		-r 0 0 0 \
+		-p 0 0 0 \
+		-s 100 100 100 \
+		-l w51a
+}
+proc ＲＡＹ影オフ {
+	mesg プットオブジェ ＲＡＹ影 off
+}
+
+

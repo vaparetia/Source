@@ -1,0 +1,96 @@
+/*
+	mkselect.gcl
+	    メイキング用セレクト
+	2002/05/30 Y.Korekado
+	$Id: mkselct.gcl,v 1.10 2002/06/18 13:00:26 usr01749 Exp $
+*/
+
+#include "varinit.h"
+#include "mksload.h"
+
+if ( $w:プログラム結果 == 9999 ) {
+	/* デバッグリセットからSELECTにきた */
+	eval ( $w:プログラム結果 = 0 )
+	eval ( $b:res_mode = d:RES_SELECT )
+
+	command 変数初期化
+	eval($w:ゲーム設定 = d:LEVEL_NORMAL)
+	@タンカー編ストーリーフラグ初期化
+	@プラント編ストーリーフラグ初期化
+	@グローバル変数初期化 $w:ゲーム設定
+	@プレイヤー初期設定 $w:ゲーム設定 スネーク
+	@プレイヤー初期設定 $w:ゲーム設定 ライデン
+}
+
+eval( $b:ＶＲ体験版ステージ番号 = 0 ) ;
+chara select name -s {
+//		'trtitle'	mv_init_trtitle_0
+	'trmenu0'	mv_trmenu_0
+	'trmenu1'	mv_trmenu_1
+
+	'tr01a(vs03a)'	load_vs03a
+	'tr03a(wp01a)'	load_wp01a
+	'tr02a(vs08a)'	load_vs08a
+	'tr04a(wp73a)'	load_wp73a
+	'tr05a(sp06a)'	load_sp06a
+
+	'config_itemfull'		config_fullitem_p
+	'morning'				set_morning
+	'evening'				set_evening
+	'night'					set_night
+};
+
+proc set_lang_english {
+	eval( $w:言語 = d:LANG_ENGLISH );
+	command 字幕言語設定
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc set_lang_french {
+	eval( $w:言語 = d:LANG_FRENCH );
+	command 字幕言語設定
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc set_lang_german {
+	eval( $w:言語 = d:LANG_GERMANY );
+	command 字幕言語設定
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc set_lang_italian {
+	eval( $w:言語 = d:LANG_ITALY );
+	command 字幕言語設定
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc set_lang_spanish {
+	eval( $w:言語 = d:LANG_SPANISH );
+	command 字幕言語設定
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc movie_end_proc {
+	restart ;
+}
+

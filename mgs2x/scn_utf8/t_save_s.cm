@@ -1,0 +1,2138 @@
+/* 
+	タンカー編・セーブ会話
+	2001/04/09 S.Hirano
+	$Id: t_save_s.cm,v 1.6 2001/12/06 04:52:01 usr03005 Exp $                      
+*/
+
+//●ＳＡＶＥメニューが出る前 d//e
+//・普通 h//e
+resource TO_ＳＡＶＥ前普通１__s{
+オタコン_000: {
+&~?Snake, quieres guardar?
+}
+//	<<<ENGLISH>>>
+//	Do you want to save, Snake?
+
+/*＃｛記録、セーブ｝＃するかい、スネーク？*/
+}//d
+
+resource TO_ＳＡＶＥ前普通２__s{
+オタコン_000: {
+&~?Quieres guardar ya?
+}
+//	<<<ENGLISH>>>
+//	Time to save?
+
+/*＃｛記録、セーブ｝＃だね？*/
+}//d
+
+resource TO_ＳＡＶＥ前普通３__s {
+オタコン_000: {
+Oh, necesitas guardar. Espera un
+segundo.
+}
+//	<<<ENGLISH>>>
+//	Oh, you need to save. Just a second.
+
+/*ああ、＃｛記録、セーブ｝＃だね？すぐ準備する。*/
+}//d
+
+resource TO_ＳＡＶＥ前普通４__s {
+オタコン_000: {
+Oh, Snake, &~?quieres guardar?
+}
+//	<<<ENGLISH(2)>>>
+//	Oh, Snake, you want to save?
+
+/*スネーク、＃｛記録、セーブ｝＃したいのかい？*/
+}//d
+
+
+//・緊迫状態 h//e
+resource TO_ＳＡＶＥ前緊迫１__s {
+オタコン_000: {
+&~?Necesitas guardar, verdad Snake?
+}
+//	<<<ENGLISH(2)>>>
+//	Need to save, right, Snake?
+
+/*＃｛記録、セーブ｝＃だね、スネーク？*/
+}//d
+
+resource TO_ＳＡＶＥ前緊迫２__s {
+オタコン_000: {
+&~?Est&'as bien Snake? Estoy listo para
+guardar cuando sea.
+}
+//	<<<ENGLISH>>>
+//	You all right, Snake?
+//	I'm ready to save whenever you are.
+
+/*大丈夫かい、スネーク？
+＃｛記録、セーブ｝＃の準備なら出来てるよ？
+*/
+}//d
+
+resource TO_ＳＡＶＥ前緊迫３__s {
+オタコン_000: {
+&~!Snake! &~!Gracias a Dios! Puedo
+guardarlo si lo necesitas.
+}
+//	<<<ENGLISH>>>
+//	Snake! Thank God!
+//	I can do a quick save if you need.
+
+/*スネーク！無事かい？
+＃｛記録、セーブ｝＃ならすぐ出来るよ
+*/
+}//d
+
+resource TO_ＳＡＶＥ前緊迫４__s {
+オタコン_000: {
+&~!Snake! &~?Necesitas guardar?
+}
+//	<<<ENGLISH>>>
+//	Snake! Do you need to save?
+
+/*スネーク！＃｛記録、セーブ｝＃かい？*/
+}//d
+
+
+
+
+//記録するメニューを選ばなかった場合  h//e
+//普通 //e
+resource TO_未セーブ終了普通１__s {
+//ns
+オタコン_000: {
+De acuerdo, hasta luego Snake.
+}
+//	<<<ENGLISH>>>
+//	OK, see you, Snake.
+
+/*じゃあね、スネーク。*/
+}//d
+
+resource TO_未セーブ終了普通２__s {
+//ns
+オタコン_000: {
+Aguanta.
+}
+//	<<<ENGLISH(2)>>>
+//	Hang in there.
+
+/*がんばってくれよ*/
+}//d
+
+resource TO_未セーブ終了普通３__s {
+//ns
+オタコン_000: {
+Oh, &~?no vas a guardar? Bien, de acuerdo,
+d&'imelo cuando lo necesites.
+}
+//	<<<ENGLISH>>>
+//	Oh, you're not going to save?
+//	Well, okay, just let me know
+//	when you need to.
+
+/*なんだ、＃｛記録、セーブ｝＃しないのかい？
+ま、いいや。＃｛記録、セーブ｝＃したくなったら、
+また連絡してくれ。
+*/
+}//d
+
+resource TO_未セーブ終了普通４__s {
+//ns
+オタコン_000: {
+De acuerdo Snake. Evita los problemas.
+}
+//	<<<ENGLISH>>>
+//	OK, Snake. Stay out of trouble.
+
+/*ＯＫ。スネーク、気をつけて。*/
+}//d
+
+resource TO_未セーブ終了普通５__s {
+//ns
+オタコン_000: {
+Snake, esta frecuencia es para guardar.
+&~?Te acuerdas?
+}
+//	<<<ENGLISH>>>
+//	Look, Snake, this frequency is
+//	for saving only. Remember?
+
+/*スネーク、これは＃｛記録、セーブ｝＃専用の
+回線なんだけど……。
+*/
+}//d
+
+
+//・緊迫 //e
+resource TO_未セーブ終了緊迫１__s {
+//ns
+オタコン_000: {
+&~!Aguanta Snake!
+}
+//	<<<ENGLISH>>>
+//	Hang in there, Snake!
+
+/*頑張ってくれよ、スネーク！*/
+}//d
+
+resource TO_未セーブ終了緊迫２__s {
+//ns
+オタコン_000: {
+Cuando necesites guardar d&'imelo, &~?vale?
+&~!No dejes que te pillen!
+}
+//	<<<ENGLISH>>>
+//	Let me know as soon as you
+//	need to save, okay? Don't let
+//	them get you!
+
+/*＃｛記録、セーブ｝＃が必要になったらすぐ
+連絡してくれ。負けるなよ！
+*/
+}//d
+
+resource TO_未セーブ終了緊迫３__s {
+//ns
+オタコン_000: {
+&~!No te des por vencido!
+}
+//	<<<ENGLISH(2)>>>
+//	Don't give up!
+
+/*あきらめないでくれよ！*/
+}//d
+
+resource TO_未セーブ終了緊迫４__s {
+//ns
+オタコン_000: {
+&~!Snake! &~!Tienes que seguir vivo!
+}
+//	<<<ENGLISH>>>
+//	Snake!
+//	You've got to stay alive!
+
+/*勝つんだ、スネーク！*/
+}//d
+
+
+//・汎用無言 //e
+resource TO_無言__s {
+//ns
+オタコン_000: {
+...
+}
+//	<<<ENGLISH(2)>>>
+//	...
+
+/*……。*/
+}//d
+
+
+//●ＳＡＶＥ失敗  h//e
+//・メモリーカードがない h //e
+resource TO_ＳＡＶＥ失敗メモリーカードない__s {
+//ns
+オタコン_000: {
+&~!Eh!, no hay una MEMORY CARD (PS2)
+en la ranura para MEMORY CARD.
+}
+//	<<<ENGLISH>>>
+//	Hey, there's no MEMORY CARD
+//	(PlayStation&@R2) in the MEMORY
+//	CARD slot.
+
+/*あ、＃｛ＭＥＭＯＲＹ、メモリー｝＃ ＃｛ＣＡＲＤ、カード｝＃差込口に
+＃｛"PlaySation2"、ピーエスツー｝＃専用メモリーカードが
+ささってないよ。
+*/
+
+オタコン_001: {
+No se puede guardar a menos
+que tengas una MEMORY CARD (PS2)
+preparada.
+}
+//	<<<ENGLISH>>>
+//	Saving can't be done unless you have
+//	a MEMORY CARD (PlayStation&@R2)
+//	ready.
+
+/*＃｛記録、セーブ｝＃するには＃｛"PlaySation2"、ピーエスツー｝＃専用
+メモリーカードが必要なんだ。
+*/
+
+オタコン_002: {
+Necesitas introducir la MEMORY CARD
+(PS2) en la ranura para MEMORY CARD.
+}
+//	<<<ENGLISH>>>
+//	You need to set the MEMORY CARD
+//	(PlayStation&@R2) in the MEMORY CARD
+//	slot.
+
+/*＃｛ＭＥＭＯＲＹ、メモリー｝＃ ＃｛ＣＡＲＤ、カード｝＃差込口に
+＃｛"PlaySation2"、ピーエスツー｝＃専用メモリーカードを
+セットしてくれ。
+*/
+}//d
+
+
+//・空き領域がない h //e
+resource TO_ＳＡＶＥ失敗空領域ない__s {
+//ns
+オタコン_000: {
+Oh no. Snake, no hay espacio suficiente
+en la MEMORY CARD (PS2) para guardar
+el juego.
+}
+//	<<<ENGLISH>>>
+//	Oh no. Snake, there wasn't enough
+//	space left on the MEMORY CARD
+//	(PlayStation&@R2) to save the game.
+
+/*うーん。スネーク、＃｛"PlaySation2"、ピーエスツー｝＃専用
+メモリーカードに空き領域がなくて
+＃｛記録、セーブ｝＃出来なかったよ。
+*/
+
+}//d
+
+
+//・フォーマットしようとしない  h //e
+resource TO_ＳＡＶＥ失敗フォーマットしようとしない__s {
+//ns
+オタコン_000: {
+Lo siento pero - no puedes guardar si no
+Formateas, ya lo sabes.
+}
+//	<<<ENGLISH>>>
+//	'Scuse me but -- you can't save
+//	unless you format, you know.
+
+/*あのー、フォーマットしないと＃｛記録、セーブ｝＃は
+出来ないんだけど、わかってる？
+*/
+
+}//d
+
+
+//・その他エラー  h //e
+resource TO_ＳＡＶＥ失敗その他エラー__s {
+//ns
+オタコン_000: {
+Lo siento mucho, Snake. Hubo un error y
+no pude guardar.
+}
+//	<<<ENGLISH>>>
+//	I'm really sorry, Snake.
+//	There was an error and
+//	I couldn't save.
+
+/*スネーク、ごめん。エラーが起きて
+＃｛記録、セーブ｝＃できなかった。
+*/
+
+}//d
+
+
+//●ＳＡＶＥ失敗緊迫  h//e
+//・メモリーカードがない緊迫 h //e
+resource TO_ＳＡＶＥ失敗メモリーカードない緊迫__s {
+//ns
+オタコン_000: {
+&~!No hay una MEMORY CARD (PS2)
+en la ranura para MEMORY CARD!
+}
+//	<<<ENGLISH(2)>>>
+//	There's no MEMORY CARD
+//	(PlayStation&@R2) in the MEMORY
+//	CARD slot!
+
+/*あ、＃｛ＭＥＭＯＲＹ、メモリー｝＃ ＃｛ＣＡＲＤ、カード｝＃差込口に
+＃｛"PlaySation2"、ピーエスツー｝＃専用メモリーカードが
+ささってない！
+*/
+
+オタコン_001: {
+&~!No puedo guardar a menos que
+tengas una MEMORY CARD (PS2)
+preparada!
+}
+//	<<<ENGLISH>>>
+//	I can't save unless you have a
+//	MEMORY CARD (PlayStation&@R2)
+//	ready!
+
+/*＃｛記録、セーブ｝＃するには＃｛"PlaySation2"、ピーエスツー｝＃専用
+メモリーカードが必要なんだ！
+*/
+
+オタコン_002: {
+&~!Introduce la MEMORY CARD
+(PS2) en la ranura para
+MEMORY CARD ahora!
+}
+//	<<<ENGLISH(2)>>>
+//	Set the MEMORY CARD
+//	(PlayStation&@R2) in the
+//	MEMORY CARD slot now!
+
+/*＃｛ＭＥＭＯＲＹ、メモリー｝＃ ＃｛ＣＡＲＤ、カード｝＃差込口に
+＃｛"PlaySation2"、ピーエスツー｝＃専用メモリーカードを
+セットしてくれ！
+*/
+}//d
+
+
+//・空き領域がない緊迫 h //e
+resource TO_ＳＡＶＥ失敗空領域ない緊迫__s {
+//ns
+オタコン_000: {
+Oh no. Snake, no hay espacio
+suficiente en la MEMORY CARD (PS2)
+para guardar el juego.
+}
+//	<<<ENGLISH>>>
+//	Snake, there wasn't enough
+//	space left on the MEMORY CARD
+//	(PlayStation&@R2)!
+//<ページ数変更>
+オタコン_000_1: {
+&~!No he podido guardar el juego!
+}
+//	<<<ENGLISH>>>
+//	I couldn't save the game!
+
+/*うーん。スネーク、＃｛"PlaySation2"、ピーエスツー｝＃専用
+メモリーカードに空き領域がなくて
+＃｛記録、セーブ｝＃出来なかった！
+*/
+
+}//d
+
+
+//・フォーマットしようとしない緊迫  h //e
+resource TO_ＳＡＶＥ失敗フォーマットしようとしない緊迫__s {
+//ns
+オタコン_000: {
+&~!Mira, no hay forma de guardar a menos
+que fomatees la MEMORY CARD (PS2)!
+}
+//	<<<ENGLISH>>>
+//	Look, there's no way to save
+//	unless you format the MEMORY
+//	CARD (PlayStation&@R2)!
+
+/*フォーマットしないと＃｛記録、セーブ｝＃は
+出来ないんだ！
+*/
+
+}//d
+
+
+//・その他エラー  h //e
+resource TO_ＳＡＶＥ失敗その他エラー緊迫__s {
+//ns
+オタコン_000: {
+&~!Snake, ha habido un error y no he podido
+guardar!
+}
+//	<<<ENGLISH>>>
+//	Snake, there was an error
+//	and I couldn't save!
+
+/*スネーク、エラーが起きて＃｛記録、セーブ｝＃
+できなかった。
+*/
+
+}//d
+
+
+//ＳＡＶＥ後会話 偽コトワザ  h//e
+//・初めてのＳＡＶＥ後 h //e
+resource TO_ＳＡＶＥ後初めて__s {
+//ns
+オタコン_000: {
+Snake, conoces el refr&'an  'Uno para todos,
+todos para uno'. 
+}
+//	<<<ENGLISH>>>
+//	Snake, you of course know the
+//	saying "One for all, all for one."
+
+/*スネーク、『＃｛匹夫、ヒキオの＃｛勇、ゆう｝＃、一人に
+敵するものなり』ってコトワザが
+あるんだけど……。
+*/
+
+スネーク_001: {
+&~?Y a qu&'e viene eso ahora?
+}
+//	<<<ENGLISH>>>
+//	What is this, all of a sudden?
+
+/*どうしたんだ、突然？*/
+
+オタコン_002: {
+Bueno, pens&'e que necesitarias ayuda,
+y vine preparado.
+}
+//	<<<ENGLISH>>>
+//	Oh, I figured you'd need a lot of
+//	motivation, so I came prepared.
+
+/*いや、なんとなく寂しいだろうと
+思って、準備してきたんだよ。
+*/
+
+オタコン_003: {
+Es de los 'Tres Mosqueteros' - del libro,
+por supuesto.
+}
+//	<<<ENGLISH>>>
+//	It's from 'The Three Musketeers'
+//	-- the book, not the candy bar.
+
+/*ヒキオってのは中国の英雄だ。多分。
+*/
+
+オタコン_004: {
+En cualquier caso, quiero decir que es muy
+peligroso luchar t&'u solo contra todos. Eso
+creo yo, al menos
+}
+//	<<<ENGLISH>>>
+//	Anyway, it means that if you go
+//	up against everyone by yourself,
+//	they'll gang up on you too. I think. 
+
+/*ま、どんなに強くっても一度に
+相手出来るのは一人がせいぜいって
+ことだね。
+*/
+/*要するに大勢を一度に敵に回しちゃ
+勝ち目がないって意味だ
+*/
+
+オタコン_005: {
+Y puesto que est&'as solo en este buque,
+necesitas tom&'artelo en serio y evitar
+enfrentamientos innecesarios.
+}
+//	<<<ENGLISH>>>
+//	Since you're on your own on that
+//	ship, you need to take this to heart
+//	and avoid confrontations.
+
+/*スネークは一人で潜入してるんだから、
+多数の敵をまともに相手しちゃダメだ。
+見つからないようにね。
+*/
+
+//<ページ数変更>
+/* 包含
+オタコン_006: {
+スネークは一人で潜入してるんだから、
+多数の敵をまともに相手しちゃダメだ。
+見つからないようにね。
+}
+*/
+
+オタコン_007: {
+&~?Qu&'e te parece?
+&~?Como en los viejos tiempos, eh?
+}
+//	<<<ENGLISH>>>
+//	How was that? Just
+//	like the old days, huh?
+
+/*っと、こんな感じ。
+どうだい、懐かしいだろう？
+*/
+
+スネーク_008: {
+Me recordaste a Mei Ling, pero... &~?est&'as
+seguro?
+}
+//	<<<ENGLISH>>>
+//	Almost reminds me of Mei Ling,
+//	but... You sure you got it right?
+
+/*懐かしいことは懐かしいが……。
+何か違わないか？
+*/
+
+オタコン_009: {
+&~!Por supuesto! Y te ense&~nar&'e muchas
+m&'as cosas, cuenta con ello.
+}
+//	<<<ENGLISH>>>
+//	Of course! And I'll teach you
+//	a lot more of these, you can
+//	count on it.
+
+/*そんなことはないよ！これからも色々な
+コトワザを教えてあげるからね。
+*/
+
+スネーク_010: {
+&~!Bien...!
+}
+//	<<<ENGLISH>>>
+//	Great...
+
+/*うぅむ……。*/
+
+}//d
+
+
+//・ＳＡＶＥ後会話 h //e
+resource TO_ＳＡＶＥ後序盤１__s {
+//ns
+オタコン_000: {
+Bien...
+Hay un refr&'an que dice
+}
+//	<<<ENGLISH>>>
+//	Okay...
+//	There's a saying that goes＃－
+//<ページ数変更>
+オタコン_000_1: {
+"La muerte nos hace a todos
+iguales."
+}
+//	<<<ENGLISH>>>
+//	"Even a bird on high dies
+//	a glutton's death, as do
+//	the fish of The Deeps."
+
+/*ええと『＃｛高飛、こうひ｝＃の＃｛鳥、とり｝＃も＃｛美食、びしょく｝＃に死す。
+＃｛深泉、しんせん｝＃の＃｛魚、うお｝＃も＃｛芳餌、ほうじ｝＃に死す』って
+コトワザ知ってるかい？。
+*/
+
+オタコン_001: {
+Y la moraleja es - ehm...,
+no seas tan avaricioso.
+}
+//	<<<ENGLISH>>>
+//	The lesson is -- er,
+//	don't be greedy.
+
+/*意味は……欲をかき過ぎるなって
+ことだ。
+*/
+
+オタコン_002: {
+A todos nos llega nuestra hora
+}
+//	<<<ENGLISH>>>
+//	The fish that belonged to a
+//	family called the Deeps died
+//	from overfeeding,
+//<ページ数変更>
+オタコン_002_1: {
+y no podemos hacer nada para evitarlo.
+}
+//	<<<ENGLISH>>>
+//	and so did a bird that got high on
+//	something -- probably fermented
+//	fruit.
+
+/*高飛という所に住んでいた鳥は
+食べ過ぎて死んじゃったし、深泉地方の
+魚も食べ過ぎて死んだ、と。
+*/
+
+スネーク_003: {
+... pues vale, si t&'u lo dices.
+}
+//	<<<ENGLISH>>>
+//	...okay. If you say so.
+
+/*……そうなのか？*/
+
+オタコン_004: {
+Cr&'eeme, Snake. &~!No te arriesgues s&'olo por
+ser avaricioso,
+}
+//	<<<ENGLISH>>>
+//	I do, Snake. Don't take unnecessary
+//	risks just because you're greedy
+//	for more Items.
+//<ページ数変更>
+オタコン_004_1: {
+la avaricia rompe el saco!
+}
+//	<<<ENGLISH>>>
+//	Remember the Deep family's fish.
+
+/*そうさ。スネークもアイテムを取ろうと
+欲張ってケガしちゃダメだよ。
+*/
+
+スネーク_005: {
+...
+}
+//	<<<ENGLISH(2)>>>
+//	...
+
+/*……。*/
+}//d
+
+
+resource TO_ＳＡＶＥ後序盤２__s {
+//ns
+オタコン_000: {
+Hay otro proverbio chino que dice as&'i:
+}
+//	<<<ENGLISH>>>
+//	Another Chinese proverb:
+//<ページ数変更>
+オタコン_000_1: {
+'Los seguidores de Dios prosperan, los que
+le desaf&'ian mueren', &~?lo hab&'ias o&'ido
+antes?
+}
+//	<<<ENGLISH>>>
+//	"Those who look to the Heavens
+//	prosper, those who defy it are no
+//	more." Do you know this one?
+
+/*中国には『天に＃｛順、したが｝＃う者は＃「存、そん｝＃し、天に
+逆らう者は亡ぶ』っていうコトワザが
+あるんだ。知ってる？
+*/
+
+オタコン_001: {
+Quiere decir que...
+}
+//	<<<ENGLISH>>>
+//	The meaning here is
+//	-- hold on a sec --
+//<ページ数変更>
+オタコン_001_1: {
+s&'olo lograr&'as sobrevivir si formas parte del
+orden natural de las cosas.
+}
+//	<<<ENGLISH>>>
+//	that you can only survive as
+//	long as you're a part of the
+//	natural order of things.
+
+/*意味は、うーんと……自然の道理に
+従っている者は存在出来るけど、逆らう
+者は滅亡してしまう、ってことだ。
+*/
+
+オタコン_002: {
+&~?Te acuerdas los jeans que vend&'ian ya
+rotos?
+}
+//	<<<ENGLISH>>>
+//	You remember pre-ripped jeans?
+
+/*テンっていうのはイタチ科の動物だ。
+イタチによく似てるけど少し大型で、
+足が短い。
+*/
+
+オタコン_003: {
+Los fabricantes creyeron porque a la gente
+le encantaban rotos y desgastados,
+}
+//	<<<ENGLISH>>>
+//	Manufacturers thought that
+//	just because people loved
+//	old, broken-in jeans,
+
+/*とても素早くて木登りもうまいんだ。
+主に小型の哺乳類や小鳥なんかを
+食べる。
+*/
+
+オタコン_004: {
+querr&'ian comprarlos nuevos que
+pareciesen viejos.
+}
+//	<<<ENGLISH>>>
+//	they would want to buy new
+//	jeans that looked old. So they
+//	purposefully --
+
+/*毛皮はとても珍重されていて……。
+*/
+
+スネーク_005: {
+Pero, &~?qu&'e tienen que ver los jeans
+con esto?
+}
+//	<<<ENGLISH>>>
+//	What do jeans have to do
+//	with nature and order?
+
+/*テンと自然の道理に関係があるのか？
+*/
+
+オタコン_006: {
+La mezclilla deber&'ia desgastarse de forma
+natural, &~?verdad?
+}
+//	<<<ENGLISH>>>
+//	Denim should fray and rip on
+//	its own, naturally. Right?
+//<ページ数変更>
+オタコン_006_1: {
+Los dise&~nadores intentaron hacerlo
+artificial, y... nadie los compr&'o...
+}
+//	<<<ENGLISH>>>
+//	Some designers tried to go against
+//	that, and  -- no one bought them!
+//<ページ数変更>
+オタコン_006_2: {
+&~!Los beneficios de ese a&~no fiscal es
+prueba de lo que intento decirte!
+}
+//	<<<ENGLISH>>>
+//	The earnings report from that
+//	fiscal year is enough of a proof!
+
+/*うーん。それだけテンは恐れ
+敬われてたってことだ。
+*/
+
+スネーク_007: {
+&~?Beneficios...?
+}
+//	<<<ENGLISH>>>
+//	Earnings...?
+
+/*テンが、か……？*/
+
+/* 英語はここまで
+オタコン_008: {
+そうだよ。多分。
+}
+スネーク_009: {
+……。
+}
+*/
+
+}//d
+
+
+resource TO_ＳＡＶＥ後序盤３__s {
+//ns
+オタコン_000: {
+&~?Qu&'e significa 'Ganado con mucho
+esfuerzo, perdido en un segundo'?
+}
+//	<<<ENGLISH>>>
+//	Hey, Snake, what's "Hardest
+//	won, most easily lost"?
+
+/*いいかい、スネーク。中国では
+『得難くして失い＃｛易、やす｝＃き者は、時なり』
+って言うことがあるんだ。
+*/
+
+オタコン_001: {
+Pues que ha llegado el momento, &~?lo
+coges? &~!Estos proverbios chinos son
+simplemente incre&'ibles!
+}
+//	<<<ENGLISH>>>
+//	It's time, get it? Amazing
+//	how relevant these Chinese
+//	proverbs still are!
+//<ページ数変更>
+オタコン_001_1: {
+No pierdas el tiempo.
+}
+//	<<<ENGLISH>>>
+//	Once the moment's
+//	gone, it's gone.
+
+/*意味は……時間は大切にってことだ。
+*/
+
+オタコン_002: {
+Excepto en el horario de verano, por
+supuesto.
+}
+//	<<<ENGLISH>>>
+//	Except for daylight savings
+//	time, of course.
+//<ページ数変更>
+オタコン_002_1: {
+Esa hora extra que tienes para hacer lo
+que quieras cada oto&~no... &~!Qu&'e bien!.
+}
+//	<<<ENGLISH>>>
+//	That extra hour to do anything
+//	you like with every autumn...
+//	gotta love it.
+
+/*トキは学名ニッポニア・ニッポン。
+絶滅の危機に瀕してる日本の
+天然記念物だよ。
+*/
+
+オタコン_003: {
+Ademas, pierdes una hora cada primavera,
+as&'i que imagino que los proverbios dicen la
+verdad.
+}
+//	<<<ENGLISH>>>
+//	Then again, you lose an hour every
+//	spring, so I guess the proverbs are
+//	right.
+//<ページ数変更>
+オタコン_003_1: {
+&~!Ay, estos chinos piensan en todo!
+}
+//	<<<ENGLISH>>>
+//	Wow, they thought of everything.
+
+/*全長は約７５センチ。トキ色を帯びた
+白色の羽をしてて、顔も脚も赤い。
+でも繁殖期には羽の色が濃い灰色に……。
+*/
+
+スネーク_004: {
+&~?Quieres decir que ya ten&'ian horario de
+verano entonces? 
+}
+//	<<<ENGLISH>>>
+//	Did they even have daylight
+//	savings back then? 
+
+/*なぜ日本のトキが中国のコトワザに
+出てくるんだ？
+*/
+
+オタコン_005: {
+&~!Por supuesto que no! Aunque sab&'ian
+c&'omo ahorrar energ&'ia. Nosotros somos los
+que necesitamos leyes para hacerlo.
+}
+//	<<<ENGLISH>>>
+//	Of course not! They knew how
+//	to save time. We're the ones
+//	that need to be tricked into it.
+
+/*自然の貴さに国境はないよ！
+*/
+
+スネーク_006: {
+Pero dijiste que...
+}
+//	<<<ENGLISH>>>
+//	But you said --
+
+/*いや、それはそうかもしれないが……。*/
+
+オタコン_007: {
+El momento se esfuma y no se repite
+nunca m&'as, Snake. No lo malgastemos con
+preguntas in&'utiles.
+}
+//	<<<ENGLISH>>>
+//	The moment never returns,
+//	Snake. Let's not waste it on
+//	idle questions.
+
+/*失われた自然は決して戻らないから
+大切にしようってことだよ。多分。
+*/
+
+スネーク_008: {
+Bien...
+}
+//	<<<ENGLISH(2)>>>
+//	Okay...?
+
+/*……？*/
+}//d
+
+
+resource TO_ＳＡＶＥ後序盤４__s {
+//ns
+オタコン_000: {
+Los chinos dicen que:
+}
+//	<<<ENGLISH>>>
+//	The Chinese have a saying:
+//<ページ数変更>
+オタコン_000_1: {
+'Quien est&'a perdido no duda
+de su sendero y quien est&'a
+ahog&'andose no duda de
+las aguas profundas'
+}
+//	<<<ENGLISH>>>
+//	"Those who are lost never question
+//	a path, and a drowning man doubts
+//	not the shallows."
+
+/*中国では『迷う者は＃｛路、みち｝＃を問わず、
+溺るる者は＃｛遂、あさせ｝＃を問わず』って言うんだ。
+*/
+
+オタコン_001: {
+Significa que has de usar la ayuda de los
+dem&'as. De lo contrario, podr&'ias tener
+problemas.
+}
+//	<<<ENGLISH>>>
+//	And it means -- means that you need
+//	to make use of other people's help.
+//	Otherwise, you could be in trouble.
+
+/*意味は……ええと、他人に意見を
+求めないと失敗するってことだ。
+*/
+
+オタコン_002: {
+Si est&'as perdido, no sabes siquiera si el
+sendero por el que has pasado es el
+correcto, y uhm...
+}
+//	<<<ENGLISH>>>
+//	If you're lost, you don't even know
+//	whether a road you come across is
+//	a right one, and, uh,
+//<ページ数変更>
+オタコン_002_1: {
+&~?qu&'e diferencia hay entre aguas poco
+profundas y muy profundas si ya te has
+ahogado..., no?
+}
+//	<<<ENGLISH>>>
+//	what's the difference between
+//	shallow and deep if you've already
+//	drowned... right?
+
+/*道に迷っちゃう人はどんな道でも
+迷うし、溺れちゃう人はどんな浅瀬でも
+溺れちゃうから……。
+*/
+
+オタコン_003: {
+En cualquier caso, la cuesti&'on es que
+nunca debes rechazar la ayuda de los
+dem&'as. As&'i que utiliza bien el Codec." 
+}
+//	<<<ENGLISH>>>
+//	Anyway, the point is that help is
+//	always a good thing to accept.
+//	So make good use of the Codec.
+
+/*まあ人の助けを借りるべきだってこと
+じゃないかな、多分。無線は有効に
+使ってくれよ。
+*/
+
+スネーク_004: {
+Oye - esto no se parece a lo que Mei Ling
+sol&'ia decir.
+}
+//	<<<ENGLISH>>>
+//	Look -- this stuff seems nothing
+//	like what Mei Ling used to talk
+//	about.
+
+/*なあ、メイ・リンから聞いたこととは
+違うような気がするんだが……。
+*/
+
+オタコン_005: {
+Pero, &~?qu&'e dices? &~!Ella lo hizo de
+maravilla!
+}
+//	<<<ENGLISH>>>
+//	Hey, she couldn't do
+//	better herself!
+
+/*そんなことないよ！
+*/
+
+スネーク_006: {
+...
+}
+//	<<<ENGLISH(2)>>>
+//	...
+
+/*……。*/
+}//d
+
+
+resource TO_ＳＡＶＥ後序盤５__s {
+//ns
+オタコン_000: {
+Los conocidos convienen, los amigos
+discuten.
+}
+//	<<<ENGLISH>>>
+//	'Los conocidos convienen, los amigos discuten.'
+
+//"Acquaintances agree.
+//Friends argue."
+
+/*『泣いて馬食を切る』
+*/
+
+オタコン_001: {
+&'Este es muy sencillo,
+}
+//	<<<ENGLISH>>>
+//	That's a straightforward one.
+//<ページ数変更>
+オタコン_001_1: {
+cuanto m&'as amigo seas de alguien, m&'as
+abiertamente podr&'as discrepar con &'el.
+}
+//	<<<ENGLISH>>>
+//	The better friends you are,
+//	the more openly you can
+//	disagree with each other.
+
+/*意味はええと、仲の良い相手でも
+規律のためには処分しなきゃいけない
+ってことだ。
+*/
+
+オタコン_002: {
+As&'i que dime lo que piensas, si no est&'as
+de acuerdo con lo que estoy diciendo.
+&~!Discutamos, pues!
+}
+//	<<<ENGLISH>>>
+//	So feel free to present a
+//	counterpoint if you don't agree
+//	with what I'm saying. Argue away!
+
+/*だから……まあ、きっと馬の肉を食べる
+のは禁止になってたんだろうね。
+*/
+
+スネーク_003: {
+Bien. De acuerdo.
+}
+//	<<<ENGLISH>>>
+//	Sure. All right.
+
+/*馬の肉が？*/
+
+オタコン_004: {
+... No es un comienzo prometedor. Vale,
+olvida lo que he dicho - simplemente sigue
+mi consejo.
+}
+//	<<<ENGLISH>>>
+//	...Not a promising start. OK,
+//	forget what I said -- just go
+//	along with my advice.
+
+/*そうさ。いくら友達でも作戦は作戦だ。
+スネークも僕の指示は守ってくれよ。
+*/
+}//d
+
+
+resource TO_ＳＡＶＥ後序盤６__s {
+//ns
+オタコン_000: {
+&~?Conoces el dicho 'Curadas las heridas,
+se olvida el dolor'?
+}
+//	<<<ENGLISH(2)>>>
+//	Do you know the saying
+//	"One forgets the hurt once
+//	the wound has healed"?
+
+/*『傷口が癒えると痛みを忘れる』
+ってコトワザ知ってるかい？
+*/
+
+オタコン_001: {
+Que por supuesto significa... ehm...
+}
+//	<<<ENGLISH>>>
+//	And that of course means
+//	-- uh --
+//<ページ数変更>
+オタコン_001_1: {
+&~?d&'onde he puesto ese papel… ?
+}
+//	<<<ENGLISH>>>
+//	where'd I put that
+//	piece of paper --
+
+/*意味は……ええと……あれ？
+メモがどっかに……。
+*/
+
+スネーク_002: {
+&~?Qu&'e has dicho?
+}
+//	<<<ENGLISH>>>
+//	Did you say something?
+
+/*何か言ったか？*/
+
+オタコン_003: {
+No, nada. As&'i que... olvidar el dolor
+cuando las heridas se han curado
+significa... ehm...
+}
+//	<<<ENGLISH>>>
+//	No, nothing. So, uh, forgetting
+//	the pain when the wound's healed
+//	means... Um --
+
+/*いや、なんでもない。傷は治れば
+もう痛くない、と、いうことは……。
+うーん。
+*/
+
+オタコン_004: {
+&~!Que debes reponerte y pronto! S&'i, eso
+es, aprovisi&'onate de raciones y de vendas.
+}
+//	<<<ENGLISH>>>
+//	That you have to get better fast!
+//	Yeah, that's it. So stock up on
+//	those rations and bandages.
+
+/*ケガは早く治そうって意味だろうね。
+レーションや止血剤は大切に
+してくれよ。
+*/
+
+スネーク_005: {
+&~?Es eso lo que quiere decir?
+}
+//	<<<ENGLISH>>>
+//	Is that really all it means?
+
+/*本当にそんな意味なのか？*/
+
+オタコン_006: {
+Eh, yo soy el experto aqu&'i, &~?no?
+}
+//	<<<ENGLISH>>>
+//	Hey, I'm the expert here.
+
+/*もちろんさ！*/
+}//d
+
+
+resource TO_ＳＡＶＥ後序盤７__s {
+//ns
+オタコン_000: {
+Snake, &~?has o&'ido &'este alguna vez? 'El
+hombre es un lobo con piel de cordero'.
+}
+//	<<<ENGLISH>>>
+//	Snake, have you heard this one?
+//	"Evil is human nature, and his
+//	entire being, falseness."
+
+/*スネーク、聞いたことあるかい？
+『人の＃｛性、せい｝＃は悪、その全なるものは偽なり』
+*/
+
+オタコン_001: {
+El concepto del llamado Pecado Original.
+}
+//	<<<ENGLISH>>>
+//	The concept of so-called
+//	Original Sin.
+//<ページ数変更>
+オタコン_001_1: {
+La idea de que el ser es malo por
+naturaleza y, no puede evitar hacer cosas
+malas...
+}
+//	<<<ENGLISH>>>
+//	The idea that you're born bad, so
+//	you can't help doing bad things...
+
+/*いわゆる性悪説だね。人間の本性は
+悪だから悪いことしても仕方ないって
+言う……。
+*/
+
+スネーク_002: {
+Un momento. &~!Yo pensaba que el Pecado
+Original era que ten&'ias que trabajar m&'as
+}
+//	<<<ENGLISH>>>
+//	Hold on. I thought the idea of
+//	Original Sin was that you had
+//	to work even harder
+//<ページ数変更>
+スネーク_002_1: {
+para ser bueno puesto que hab&'ias nacido
+en Pecado!
+}
+//	<<<ENGLISH>>>
+//	at being good because
+//	you were born evil!
+
+/*待て。性悪説というのは、人間の本性は
+悪だからこそ学問や礼儀を修めなければ
+いけないという考え方じゃなかったか？
+*/
+
+オタコン_003: {
+Esto... oh s&'i, eso tambi&'en. Muy bien,
+Snake.
+}
+//	<<<ENGLISH>>>
+//	Er -- oh yeah, that too.
+//	Very good, Snake.
+
+/*え？ま、まあ、そうとも言うね。
+*/
+
+スネーク_004: {
+...
+}
+//	<<<ENGLISH(2)>>>
+//	...
+
+/*……。*/
+}//d
+
+
+resource TO_ＳＡＶＥ後序盤８__s {
+//ns
+オタコン_000: {
+&~?Conoces la leyenda de Aquiles y Par&'is?
+}
+//	<<<ENGLISH>>>
+//	You know the story about
+//	Achilles and Paris?
+
+/*『＃｛好死、こうし｝＃は＃｛悪活、あっかつ｝＃に＃｛如、し｝＃かず』ってコトワザ聞いたことあるかい？
+*/
+
+オタコン_001: {
+La moraleja aqu&'i es... &~?algo relacionado
+con su tal&'on?
+}
+//	<<<ENGLISH>>>
+//	The moral here is -- er --
+//	something about his heel?
+
+/*意味は……うーん……。
+*/
+
+オタコン_002: {
+En cualquier caso, incluso al gran y casi
+inmortal h&'eroe Aquiles se lo cargaron en
+Par&'is.
+}
+//	<<<ENGLISH>>>
+//	Anyway, even the great and
+//	virtually immortal hero Achilles
+//	was finally done in by Paris.
+//<ページ数変更>
+オタコン_002_1: {
+&~!Qu&'e ciudad tan peligrosa ...!
+}
+//	<<<ENGLISH>>>
+//	Talk about a dangerous city.
+
+/*あの偉大な孔子もアッカツには
+及ばない。つまり上には上がいる
+ってことだ。
+*/
+
+オタコン_003: {
+As&'i que no te conf&'ies. Las cosas pueden
+cambiar de la noche a la ma&~nana y ...
+}
+//	<<<ENGLISH>>>
+//	So don't get complacent.
+//	The mission can turn around
+//	and get you.
+
+/*ゲームに馴れても過信しちゃ
+いけないよ。いいね。
+*/
+
+スネーク_004: {
+&~?Paris no era una persona?
+}
+//	<<<ENGLISH>>>
+//	Wasn't Paris a person?
+
+/*……アッカツとは誰だ？*/
+
+オタコン_005: {
+&~?C&'omo?
+}
+//	<<<ENGLISH(2)>>>
+//	What?
+
+/*なんだって！？*/
+
+スネーク_006: {
+Paris. Pensaba que era un… 
+}
+//	<<<ENGLISH>>>
+//	Paris. I thought he was a --
+
+/*アッカツとは……？*/
+
+オタコン_007: {
+Snake, hay un momento y un lugar para
+teor&'ias de conspiraci&'on.
+}
+//	<<<ENGLISH>>>
+//	Snake, there's a time and place
+//	for conspiracy theories.
+//<ページ数変更>
+オタコン_007_1: {
+Por favor, ahora estoy intentando
+concentrarme.
+}
+//	<<<ENGLISH>>>
+//	Please, I'm trying to
+//	concentrate here.
+
+/*スネーク……。つまんないこと
+聞かないでくれよ。興ざめだ。全く！
+*/
+
+スネーク_008: {
+&~?Qu&'e? &~!Ah, lo siento!
+}
+//	<<<ENGLISH>>>
+//	Huh? Ah, sorry...?
+
+/*え？ああ……？……すまない……？？*/
+}//d
+
+
+resource TO_ＳＡＶＥ後中盤１__s {
+//ns
+オタコン_000: {
+&~?Conoces el refr&'an 'quien anda cien leguas
+no piensa que lleva la mitad
+}
+//	<<<ENGLISH(2)>>>
+//	Do you know the saying
+//	"Those who walk a hundred
+//	leagues think not that＃－
+//<ページ数変更>
+オタコン_000_1: {
+del camino hasta que llega a la
+nonag&'esima legua'?
+}
+//	<<<ENGLISH>>>
+//	their journey is half ended
+//	until the ninetieth league"?
+
+/*『百里を行く者は＃｛九十、きゅうじゅう｝＃を＃｛半、なか｝＃ばとす』
+っていうコトワザ知ってるかい？
+*/
+
+オタコン_001: {
+Eso significa... 
+}
+//	<<<ENGLISH(2)>>>
+//	That means...
+//	-- what does it mean --
+
+/*意味は……なんだろうな……。*/
+
+オタコン_002: {
+De acuerdo. Significa que si est&'as
+planeando ir tan lejos,
+}
+//	<<<ENGLISH>>>
+//	OK. It means that if you're
+//	planning to walk that far,
+//<ページ数変更>
+オタコン_002_1: {
+m&'as te vale saber c&'omo hacer ejercicios
+aritm&'eticos simples. &~!Estudia! &~!No dejes la
+escuela!
+}
+//	<<<ENGLISH>>>
+//	you'd better damn well know
+//	how to do simple arithmetic.
+//	Study! Stay in school!
+
+/*うん。百里も行こうというのに数が
+勘定出来ないだと困るからちゃんと勉強
+しといた方がいいってことだ。多分。
+*/
+
+スネーク_003: {
+Esto cada vez desvar&'ia m&'as.
+}
+//	<<<ENGLISH>>>
+//	This seems to be getting
+//	more and more random.
+
+/*だんだんいい加減になっていく気が
+するんだが。
+*/
+
+オタコン_004: {
+No es cada vez m&'as profundo. Conf&'ia en
+m&'i.
+}
+//	<<<ENGLISH>>>
+//	Correction -- it's becoming
+//	more deep. Trust me.
+
+/*何言ってんだい。そんなこと
+あるわけないじゃないか。
+*/
+}//d
+
+
+resource TO_ＳＡＶＥ後中盤２__s {
+//ns
+オタコン_000: {
+Vale. 'Rana en pozo desconoce oc&'eano.'
+}
+//	<<<ENGLISH(2)>>>
+//	OK -- "A frog in a well knows
+//	not of the great ocean."
+
+/*えーと……『＃｛好漢、こうかん｝＃は＃｛当年、とうねん｝＃の＃｛勇、ゆう｝＃を語らず』
+*/
+
+オタコン_001: {
+Eh, &'este no me gusta.
+}
+//	<<<ENGLISH>>>
+//	Hey, I don't like this one at all.
+//<ページ数変更>
+オタコン_001_1: {
+&~?Dejar a una rana en un pozo? &~!Qu&'e
+horror, es cruel!
+}
+//	<<<ENGLISH>>>
+//	Trapping a little frog in a well?
+//	That sucks, that's really cruel.
+
+/*これはいけないね。人として絶対に
+しちゃいけない最悪の犯罪だ。
+*/
+
+オタコン_002: {
+Por supuesto que no la vas a dejar en el
+mar azul,
+}
+//	<<<ENGLISH>>>
+//	Of course it's not going to
+//	see the big blue sea＃－
+//<ページ数変更>
+オタコン_002_1: {
+pobrecita, la falta de luz solar la matar&'ia.
+}
+//	<<<ENGLISH>>>
+//	the lack of sunlight alone
+//	will kill it pretty quick.
+
+/*刑罰も当然、殺人や放火と同じくらい
+重くなってる。
+*/
+
+オタコン_003: {
+Seguro, encerrar a alguien es un buen
+modo de asegurarse que no ven lo que t&'u
+no quieres que vean.
+}
+//	<<<ENGLISH>>>
+//	Sure, locking someone up is a good
+//	way to make sure they don't see
+//	what you don't want them to.
+//<ページ数変更>
+オタコン_003_1: {
+Pero &'este es un proverbio horrible y no me
+gusta para nada. &~!Pobre ranita... !
+}
+//	<<<ENGLISH>>>
+//	But this is a terrible saying,
+//	and I don't like it at all. Poor
+//	little froggy...!
+
+/*それを誇る奴なんて最低のクズだって
+ことさ、全く！でも、なんでこんな
+コトワザがあるんだろう……？
+*/
+
+スネーク_004: {
+... Sinceramente pienso que lo has
+entendido mal.
+}
+//	<<<ENGLISH>>>
+//	...I really think you've
+//	got this one wrong.
+
+/*……お前、勘違いしてないか？
+*/
+}//d
+
+
+resource TO_ＳＡＶＥ後中盤３__s {
+//ns
+オタコン_000: {
+Los chinos tienen un proverbio que dice:
+'Los estudiantes valoran el conocimiento,
+no las acciones'.
+}
+//	<<<ENGLISH>>>
+//	The Chinese have a proverb
+//	that goes "Scholars hold in
+//	esteem knowledge, not acts."
+
+/*中国では『学者はこれ之を知るをとうと貴び、
+これ之を行うをとうと貴ばず』って言うことも
+あるんだ。
+*/
+
+オタコン_001: {
+Comprendes, simplemente se dedican a
+pensar en vez de actuar. Lo que no les
+hace demasiado &'utiles.
+}
+//	<<<ENGLISH>>>
+//	See, they just sit around thinking,
+//	instead of actually doing something.
+//	Which doesn't make them too useful.
+//<ページ数変更>
+オタコン_001_1: {
+&~!Actuar es lo que importa! Creo yo.
+}
+//	<<<ENGLISH>>>
+//	Action is what matters! I think.
+
+/*学者は知識ばかりを求めて行動しない
+からダメだってことで……
+……まあ、事をなすには行動が大事ってことだよ。多分。
+*/
+
+スネーク_002: {
+Mira, Mei Ling dec&'ia que... 
+}
+//	<<<ENGLISH>>>
+//	Look, what I heard from
+//	Mei Ling was that --
+
+/*やはりメイ・リンから聞いた時とは
+違うと思うんだが……。
+*/
+
+オタコン_003: {
+Snake, &~?te has dado cuenta que
+hablas mucho de ella?
+}
+//	<<<ENGLISH>>>
+//	Snake, have you noticed that
+//	you bring her up a lot?
+
+/*なんだい、スネーク、そんなに
+メイ・リンのことが気になるのかい？
+*/
+
+スネーク_004: {
+&~?Eh? No es lo que t&'u... 
+}
+//	<<<ENGLISH>>>
+//	Huh? That isn't the --
+
+/*いや、そういうことではなくて……。*/
+
+オタコン_005: {
+He aqu&'i una vez m&'as. &~?Qu&'e voy a hacer
+contigo?
+}
+//	<<<ENGLISH>>>
+//	Here we go again.
+//	What am I going to
+//	do with you?
+
+/*また、また。
+ホント、困ったもんだよ、君には。
+*/
+
+スネーク_006: {
+Como dec&'ia... 
+}
+//	<<<ENGLISH>>>
+//	Like I was saying --
+
+/*だから……。*/
+
+オタコン_007: {
+T&'u y tu hiperactivo l&'ibido. Menos mal que,
+por lo menos, uno de nosotros tiene la
+cabeza en su sitio.
+}
+//	<<<ENGLISH>>>
+//	You and your hyperactive libido.
+//	It's a good thing one of us can
+//	keep all the details straight.
+
+/*やれやれ。オイタもいい加減に
+しとかないと、また大変なことに
+なるよ？
+*/
+
+スネーク_008: {
+...
+}
+//	<<<ENGLISH>>>
+//	...
+
+/*……。*/
+}//d
+
+
+resource TO_ＳＡＶＥ後中盤４__s {
+//ns
+オタコン_000: {
+&'Este es mi proverbio chino favorito: 'M&'as
+vale ser cabeza de rat&'on que cola de le&'on'.
+}
+//	<<<ENGLISH>>>
+//	This is my favorite Chinese saying:
+//	"Better to be first among roosters
+//	than last among bulls."
+
+/*『＃｛鶏口、けいこう｝＃となるも＃｛牛後、ぎゅうご｝＃となるなかれ』って
+中国のコトワザ、知ってるかい？
+*/
+
+オタコン_001: {
+El significado est&'a claro,
+}
+//	<<<ENGLISH>>>
+//	Of course, the meaning's clear:
+//<ページ数変更>
+オタコン_001_1: {
+me parece a m&'i: si has de elegir entre un
+rat&'on y un le&'on, elige el rat&'on.
+}
+//	<<<ENGLISH>>>
+//	If you have to choose between
+//	being a chicken or a cow, pick
+//	the chicken.
+//<ページ数変更>
+オタコン_001_2: {
+A los leones los raptan los alien&'igenas y
+cada vez hay m&'as mutilaciones,
+}
+//	<<<ENGLISH>>>
+//	Cows are always being messed with
+//	by aliens -- cattle mutilations are
+//	up, you know.
+
+/*牛よりも＃｛鶏、にわとり｝＃になる方がいい。牛は
+宇宙人に血を抜かれたりするからね。
+*/
+
+オタコン_002: {
+ya sabes &~?por qu&'e buscar problemas, digo
+yo?
+}
+//	<<<ENGLISH>>>
+//	Why go looking for trouble, right?
+
+/*余計な厄介事はしょい込むなってことだ。*/
+
+オタコン_003: {
+Si un enemigo se percata de ti, tendr&'as
+m&'as problemas que un le&'on en un OVNI.
+&~!Al&'ejate de ellos!
+}
+//	<<<ENGLISH>>>
+//	If an enemy spots you, you'll be in
+//	more trouble than a cow on a UFO.
+//	You stay out of their sight!
+
+/*敵に発見されたら厄介なことになる。
+絶対、見つからないようにしてくれよ。
+*/
+
+スネーク_004: {
+&~?Por qu&'e estar&'an los alien&'igenas en un
+viejo proverbio chino?
+}
+//	<<<ENGLISH>>>
+//	Why would aliens be in
+//	an old Chinese proverb?
+
+/*宇宙人が昔の中国に行ったとは
+思えないんだが……？
+*/
+
+オタコン_005: {
+Todo el mundo sabe que nos visitan desde
+hace miles de a&~nos.
+}
+//	<<<ENGLISH>>>
+//	Everyone knows they've been
+//	visiting us for thousands of
+//	years.
+
+/*宇宙人は国になんかこだわらないよ！
+*/
+
+スネーク_006: {
+... no lo sab&'ia.
+}
+//	<<<ENGLISH>>>
+//	...news to me.
+
+
+/*……？*/
+}//d
+
+
+//・メイ・リン登場 h //e
+resource TO_ＳＡＶＥ後メイ・リン登場__s {
+//ns
+オタコン_000: {
+&~?conoces el proverbio chino: 'Cuanto m&'as
+atento est&'es evitar&'as "eh"'?
+}
+//	<<<ENGLISH>>>
+//	Snake, do you know
+//	the Chinese proverb
+//	"Care avoids err"?
+
+/*スネーク、『＃｛小心、しょうしん｝＃に＃｛大過、たいか｝＃なし』って
+中国のコトワザ知ってるかい？
+*/
+
+オタコン_001: {
+'Sabes que "eh" que viene del Kung que
+significa 'qu&'e'?
+}
+//	<<<ENGLISH>>>
+//	"Err" is thought to be a
+//	！Kung word meaning "what."
+
+
+/*『タイカ』はイヌイットの言葉で
+『あれ』って意味だ。
+*/
+
+オタコン_002: {
+Seg&'un algunos ling&~uistas &'esta es la raz&'on
+por la que casi todas las lenguas del
+mundo expresan
+}
+//	<<<ENGLISH>>>
+//	There are some linguists who
+//	think that this accounts for an
+//	almost universal utterance＃－
+//<ページ数変更>
+オタコン_002_1: {
+la incertidumbre diciendo algo as&'i como:
+"&~?eh?". En definitiva, un vestigio...
+}
+//	<<<ENGLISH>>>
+//	of the syllable "er" when people
+//	are at a loss for words. A kind
+//	of vestigial --
+
+/*『あれはなんだ？』って聞く時は
+『キスーリ タイカ？』って言うよね。
+つまり……。
+*/
+
+メイ・リン_003: {
+&~!Eh!
+}
+//	<<<ENGLISH>>>
+//	Hey!
+
+/*ちょっと！*/
+
+オタコン_004: {
+&~!Ah!
+}
+//	<<<ENGLISH(2)>>>
+//	Ack!
+
+/*わぁ！*/
+
+メイ・リン_005: {
+&~!Qu&'e estupidez! &~?Qu&'e has hecho con esa
+lista de consejos que te hice?
+}
+//	<<<ENGLISH>>>
+//	What a crock! What did you
+//	do with that little cheat sheet
+//	I made you!
+
+/*デタラメばっかり言って！
+私が作ってあげたメモはどうしたの？
+*/
+
+オタコン_006: {
+Ehm...
+}
+//	<<<ENGLISH(2)>>>
+//	Er --
+
+/*いや……。*/
+
+メイ・リン_007: {
+Ah, aqu&'i est&'a...  &~!Eh!
+}
+//	<<<ENGLISH(2)>>>
+//	Oh, there it is -- Hey!
+
+/*あ、そんなとこに……ええっ！？*/
+
+オタコン_008: {
+Ehm, verdaderamente es un...
+}
+//	<<<ENGLISH>>>
+//	Er, that's really a...
+
+/*あの、それは……。*/
+
+メイ・リン_009: {
+&~?C&'omo has podido hacerlo? &~!Sabes lo
+ocupada que estoy y t&'u...!
+}
+//	<<<ENGLISH>>>
+//	How could you do that!
+//	You know how busy I am
+//	and you -- !!
+
+/*ヒドイ！！どうしてそんなこと
+出来るのよ！？もう、サイテー！！！
+*/
+
+オタコン_010: {
+No es lo que crees...
+}
+//	<<<ENGLISH>>>
+//	It's not what you think...
+
+/*いや違うんだ……。*/
+
+メイ・リン_011: {
+&~?Ah no? Entonces, &~?qu&'e es?
+}
+//	<<<ENGLISH>>>
+//	Oh, so what am I thinking?
+
+/*何がどう違うってのよ！！*/
+
+スネーク_012: {
+&~?Qu&'e pasa?
+}
+//	<<<ENGLISH>>>
+//	What's going on over there?
+
+/*どうしたんだ？*/
+
+メイ・リン_013: {
+Ah hola, Snake. &~?Sabes que Otacon ha
+estado...?
+}
+//	<<<ENGLISH>>>
+//	Oh, hi, Snake.
+//	Do you know that
+//	Otacon's been --
+
+/*聞いてよ、スネーク！
+オタコンったら……。
+*/
+
+オタコン_014: {
+Ehm, Mei Ling, estamos en medio de una
+misi&'on, as&'i que si no te importa...
+podr&'iamos, ya sabes...
+}
+//	<<<ENGLISH>>>
+//	Er, Mei Ling, we're in the middle
+//	of a mission and everything!
+//	So can we, you know...
+
+/*メイ・リン！
+ほら、あの、今作戦中だしさ、ね。
+*/
+
+メイ・リン_015: {
+...
+}
+//	<<<ENGLISH(2)>>>
+//	...
+
+/*……。*/
+
+オタコン_016: {
+...
+}
+//	<<<ENGLISH>>>
+//	...
+
+/*……。*/
+
+メイ・リン_017: {
+Vale, de acuerdo.
+}
+//	<<<ENGLISH>>>
+//	Fine. Sure.
+
+/*……わかった。*/
+
+メイ・リン_018: {
+Y Snake, el significado de 'Cuanto m&'as
+atento est&'es evitar&'as el "&~?eh?"'
+}
+//	<<<ENGLISH>>>
+//	And Snake, the real meaning
+//	of "Care avoids err"
+//<ページ数変更>
+メイ・リン_018_1: {
+es que si eres prudente, puedes evitar
+cometer errores.
+}
+//	<<<ENGLISH>>>
+//	is that if you're cautious,
+//	you can avoid making
+//	serious mistakes.
+
+/*いい、スネーク、『小心に大過なし』の
+本当の意味は、慎重にやれば大きな
+間違いをすることはないって意味よ。
+*/
+
+メイ・リン_019: {
+Incluso si te has acostumbrado a la
+misi&'on, ten cuidado con lo que haces.
+&~!Buena suerte!
+}
+//	<<<ENGLISH>>>
+//	Even if you've gotten used
+//	to the mission, watch what
+//	you do. Good luck!
+
+/*ゲームに馴れてきても、慎重さは
+忘れないでってこと。がんばってね！
+*/
+
+オタコン_020: {
+&~!S&'i, Snake! &~!Buena suerte!
+}
+//	<<<ENGLISH>>>
+//	Yeah, Snake! Good luck!
+
+/*うん、がんばって！*/
+
+メイ・リン_021: {
+&~!Oye, que a&'un no he terminado!
+}
+//	<<<ENGLISH>>>
+//	You, I'm not done with.
+
+/*さ、オタコン……。*/
+
+オタコン_022: {
+Ah...
+}
+//	<<<ENGLISH(2)>>>
+//	Ack...
+
+/*う！*/
+
+メイ・リン_023: {
+Sigamos, &~?vale?
+}
+//	<<<ENGLISH>>>
+//	Let's discuss this, shall we?
+
+/*話し合いましょうか。みっちりと。*/
+
+オタコン_024: {
+...
+}
+//	<<<ENGLISH>>>
+//	Err...
+
+
+/*……。*/
+
+}//d
+
+resource TO_ＳＡＶＥ後メイ・リン登場後__s {
+//ns
+スネーク_000: {
+&~?Qu&'e le ha pasado a Mei Ling?
+}
+//	<<<ENGLISH>>>
+//	What happened to Mei Ling?
+
+/*メイ・リンはどうした？*/
+
+オタコン_001: {
+Je, je. Se ha vuelto loca y se ha
+desconectado.
+}
+//	<<<ENGLISH>>>
+//	Hee. She got mad
+//	and went offline.
+
+/*あはは。怒って回線切られちゃった。*/
+
+スネーク_002: {
+&~?Qu&'e has hecho?
+}
+//	<<<ENGLISH>>>
+//	What did you do?
+
+/*お前、一体何をしたんだ？*/
+
+オタコン_003: {
+&~!Nada! &~?No tenemos que volver a la
+misi&'on? Hay mucho que hacer y el tiempo
+apremia... 
+}
+//	<<<ENGLISH(2)>>>
+//	Nothing! Now don't we need
+//	to get back to the mission?
+//	So much to do, so little time...
+
+/*いや、何もしてないよ！
+そんなことより作戦だ。ね？
+*/
+
+スネーク_004: {
+...
+}
+//	<<<ENGLISH>>>
+//	...
+
+/*……。*/
+}//d
+
+
+resource TO_体験版ここでＳＡＶＥできますす__s {
+スネーク_000: {
+In the production version, 
+SAVE can be made here.
+}
+}//d

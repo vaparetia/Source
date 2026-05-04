@@ -1,0 +1,107 @@
+/*
+	album_name.txt
+	albam_nameの仕組み
+
+	2001/10/24	S.Kobayashi
+	$Id: album_name.txt,v 1.1.1.3 2002/11/19 11:50:04 Yoshizawa1 Exp $
+
+*/
+0 説明
+	アルバムモード（EDIT画面）に表示されている写真の名前を変更する。
+	キャンセルされた場合は元の名前に戻す。
+
+1 処理手順
+	初期化 各種変数の初期化
+		   バッファに元のデータをコピー
+		↓
+	アニメーション再生が終るまでまつ
+		↓
+	通常状態を表示
+		↓
+	決定ボタンを押す or OKを選ぶ →→→→→→→→→→→  キャンセルをする
+		↓														↓
+		↓														↓
+		↓														↓
+	メモリーカードにデータを保存						 元の情報に戻す
+		↓														↓
+		↓←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+		↓
+	終了
+
+
+2 関数説明
+	void *NewAlbamName( char *name_data , u_long *flag , int port , Photo_List *photo_list , int handle , void *jpn_font , int resource )
+		本体
+
+	static int GetResources( Work *work )
+		初期化関数
+
+	static void StringCleate( Work *pWork )
+		文字列生成関数
+	
+	static SPR_OBJ **SetSpriteY( Work *pWork )
+		スプライトのY座標を設定する関数
+
+	static void StringDisp( Work *pWork )
+		文字列表示関数
+
+	static void OverWrite( Work *pWork )
+		メモリーカード保存情報設定関数
+
+	static void AnimetionAct( Work *pWork )
+		レイアウト２D用アニメーション関数
+
+	static void Die( Work *work )
+		終了処理関数
+
+	static void Act( Work *pWork )
+		通常実行関数
+
+	static void NormalAct( Work *pWork )
+		通常状態実行関数
+
+	static void OverWriteEnd( Work *pWork )
+		メモリーカード上書き終了管理関数
+
+	static int SK_MCManGetResult( Work *pWork ) // 最低でも30frame
+		メモリーカード状態チェック関数
+
+	static void OverWriteFontControl( Work *pWork ) // over write menu control
+		Yes / No を管理する関数
+
+	static inline void OverWriteDotUpdate( Work *pWork )
+		未使用
+
+	static void EscapeAct( Work *pWork )
+		終了時メイン関数
+
+	static void PadAct( Work *pWork )
+		 パッドコントロール管理
+
+	static void PadControlOverWrite( Work *pWork )
+		メモリーカードセーブフェーズ用パッドコントロール関数
+
+	static void MarubatsuHideShow( Work *pWork , char mode )
+		 説明文管理
+
+	static void HilightFade( Work *pWork )
+		ハイライトエフェクト管理関数
+
+	static inline void OverWriteColorRe( Work *pWork )
+		 Yes / No 部分の色を戻す関数
+
+	static void PadControlNormal( Work *pWork )
+		通常実行時フェーズ用パッドコントロール関数
+
+	static inline void OverWriteIn( Work *pWork )
+		上書き時メッセージ作成関数
+
+	static void NoneName( Work *pWork )
+		名前チェック関数
+
+	static void Update( Work *pWork ) // update
+		ハイライトエフェクト更新関数
+
+	static int SprInit( Work *pWork )
+		L2dに含まれる素材更新関数
+

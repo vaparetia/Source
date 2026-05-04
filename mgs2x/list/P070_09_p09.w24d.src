@@ -1,0 +1,247 @@
+//
+//	P070_09_p09.w24d.src
+//	AG起動デモ用・P070_09_p09 専用ステージ
+//	written by S.Kaneyoshi 2001/02/02
+//	$Id: P070_09_p09.w24d.src,v 1.22 2002/09/11 12:12:31 usr03682 Exp $
+
+// 常駐データ
+block .use r_plt0
+
+block .nocache
+block .cache
+
+// 不要エフェクト切り分け定義
+#define EFFECT_CUSTUM
+
+//#define	E_GLASS_DANKON			// グラス系弾痕
+//#define	E_KOGETUKI				// 壁への焦げ付き
+//#define	E_FOOTSTAMP				// 足跡
+//#define	E_ENEMY					// 敵兵系
+//#define	E_ENEMY_LIGHT			// 敵兵ライト
+//#define	E_SLING					// スリング
+//#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+//#define	E_MANHATTAN_LIGHT		// マンハッタンライト
+//#define	E_C4BOMB				// Ｃ４爆弾、赤外線センサー
+//#define	E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷
+//#define	E_CROSS_FADE_LIGHT		// クロスフェード（甲板のライトで使用）
+//#define	E_CHARA_DENTOU			// chara 懐中電灯、フォーチュン戦
+//#define	E_WATER					// 水関係
+//#define	E_CHARA_HAMON			// chara 波紋
+//#define	E_BROKEN_OBJECT			// 壊れ物
+//#define	E_BROKEN_PAPEROBJECT	// 壊れ物紙
+//#define	E_BROKEN_PLATE			// 壊れ物皿
+//#define	E_HIMATU				// 水飛沫
+//#define	E_CHARA_MADOAME			// chara 窓雨
+//#define	E_STEAM					// 粉 & 水蒸気
+//#define	E_POWDER				// 小麦粉
+//#define	E_SKY_NORMAL			// 空
+//#define	E_LINEAR_GUN			// リニアガン
+//#define	E_TENKYUU				// 天球ドーム
+//#define	E_SUN					// 太陽
+//#define	E_DOOR_LUMP				// ドアランプ
+#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、
+								// ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+//#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+//#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+#define	ENV						// 天球
+//#define MORNING_SKY
+//#define DAY_SKY
+#define EVENING_SKY
+
+// 各ステージ共通要素
+include		common.h
+include		c_effect.h
+
+// キャラ
+// ライデン
+//human		rai_def/rai_def_mh_mt.evm
+// スネーク
+//human		iro_def/iro_def_mh_mt.evm
+// オタコン
+human	otc_def/otc_blood_mh_mt.evm
+human	otc_def/otc_glasses_mt.kms
+human	otc_def/otc_hair_mh.evm
+human	otc_def/otc_dummy.kms
+
+// エマ（あとで負傷エマに？）
+//human		ema_def
+
+// ワールド
+
+//	海とオイルフェンス
+include		d_surface.h
+
+// 電算室(w24d)
+// コンテを見る限り、一部で良いはず。あとで不要モデル削除。
+//pack_all	w24d_etc.tri \
+//		world/elevator \
+//		world/door/w02a_l_dr.dar \
+//		human/par_def/bird_cage.dar
+//world		elevator
+//world		door/w24d_dr01.kms
+//human		par_def/bird_cage.kms
+
+// w24dモデル
+option makexti6 -l 1024 -f PAL8
+pack_all	w24d1_0.tri \
+		world/w24d/w24d1/w24d1_a.dar \
+		world/w24d/w24d1/w24d1_a.dar
+
+pack_all	w24d1_1.tri \
+		world/w24d/w24d1/w24d1r.dar
+
+pack_all	w24d2_0.tri \
+		world/w24d/w24d2/w24d2.dar \
+		world/w24d/w24d2/w24d2_pos.dar
+
+pack_all	w24d2_1.tri \
+		world/w24d/w24d2/w24d2_tes_sita_v01.dar \
+		world/w24d/w24d2/w24d2r.dar
+
+pack_all	w24d0.tri \
+		world/w24d/w24d0/w24d0.dar \
+		world/w24d/w24d0/w24d0r.dar
+option makexti6
+
+world		w24d/w24d1/w24d1_a.kms
+world		w24d/w24d1/w24d1_b.kms
+world		w24d/w24d1/w24d1r.kms
+world		w24d/w24d2/w24d2.kms
+world		w24d/w24d2/w24d2_pos.kms
+world		w24d/w24d2/w24d2_tes_sita_v01.kms
+//world		w24d/w24d2/w24d2_wall.kms
+world		w24d/w24d2/w24d2r.kms
+
+world		w24d/w24d0/w24d0.kms
+world		w24d/w24d0/w24d0r.kms
+
+// w24aモデル
+option makexti6 -l 1024 -f PAL8
+pack_all	w24a.tri \
+		world/w24a/w24a0/w24a0.dar \
+		world/w24a/w24a0/w24a0r.dar
+option makexti6
+
+world		w24a/w24a0/w24a0.kms
+world		w24a/w24a0/w24a0r.kms
+
+
+lt2			w24a.lt2
+lt2			w24d.lt2
+hazard		d00a3.hzx
+
+// メカ
+pack_all	z_arsenal_gear_silhouette.tri \
+		meca/arsenal_gear/amg_silhouette.dar
+meca	arsenal_gear/amg_silhouette.kms
+
+// カサッカ
+meca	kacatka_plant/kck_plant_p080_mt.kms
+meca	kacatka_plant/kck_plant_mrot.kms
+meca	kacatka_plant/kck_plant_trot.kms
+meca	kacatka_cockpit/kck_ckpt.kms
+
+// アーセナル（10分の1サイズ)
+meca	arsenal_gear/amg_def.kms
+
+// キャラステージ(壊れビッグシェル)
+pack_all	w10c_chinbotsu_0.tri \
+		world/w10c_chinbotsu/w10c_21a_sink.dar \
+		world/w10c_chinbotsu/w10c_23a_sink.dar \
+		world/w10c_chinbotsu/w10c_24a_sink.dar \
+		world/w10c_chinbotsu/w10c_22a_sink.dar \
+		world/w10c_chinbotsu/w10c_20b_sink.dar \
+		world/w10c_chinbotsu/w10c_20a_sink.dar \
+		world/w10c_chinbotsu/w10c_12a_sink.dar
+
+//		world/w10c_chinbotsu/w10c_crane_sink.dar
+
+
+world	w10c_chinbotsu/w10c_20b_sink.kms
+world	w10c_chinbotsu/w10c_20a_sink.kms
+world	w10c_chinbotsu/w10c_21a_sink.kms
+world	w10c_chinbotsu/w10c_22a_sink.kms
+world	w10c_chinbotsu/w10c_23a_sink.kms
+world	w10c_chinbotsu/w10c_24a_sink.kms
+world	w10c_chinbotsu/w10c_crane_sink.kms
+world	w10c_chinbotsu/w10c_12a_sink.kms
+world	w10c/w10c_19a.kms
+world	w10c/w10c_32c.kms
+
+// 海面(BITMAP)
+pack_all	sea.tri \
+		effect/sea_mipmap/w10c_oil_sea_256_alp_ovl.bmp \
+		effect/sea_mipmap/w10c_oil_sea_128_alp_ovl.bmp \
+		effect/sea_mipmap/w10c_oil_sea_64_alp_ovl.bmp \
+		effect/sea_mipmap/w10c_oil_sea_32_alp_ovl.bmp
+
+// 海面(MIPMAP)
+#ifndef MGS2_XBOX_1
+//debug	takabe/mipmap_tri/w10a_sea.tri 古いやつ。
+//mipmap w10a/w10a_sea.tri //本番用
+mipmap w10c/w10c_oil_sea.tri
+//mipmap plant_sea/plant_sea_m.tri
+//mipmap plant_sea/plant_sea_d.tri
+//mipmap plant_sea/plant_sea_n.tri
+#else
+pack_mip w10c_oil_sea.tri \
+	effect/sea_mipmap/w10c_oil_sea_256_alp_ovl.bmp \
+	effect/sea_mipmap/w10c_oil_sea_128_alp_ovl.bmp \
+	effect/sea_mipmap/w10c_oil_sea_64_alp_ovl.bmp \
+	effect/sea_mipmap/w10c_oil_sea_32_alp_ovl.bmp 
+#endif
+
+// ぼんぼり
+pack_trnall	hirano.tri \
+	effect/bonbori/rcm_l_msk.bmp \
+	effect/bonbori/rcm_l_alp.bmp \
+	effect/bonbori/svc_bonbori_r.bmp \
+	effect/bonbori/svc_bonbori_y.bmp \
+	effect/bonbori/w_bonbori.bmp
+
+// 空用
+//world		w10a/w10a_sky
+
+pack_all	sky.tri \
+	world/common_sky/p_br_sky_wall1.dar \
+	world/common_sky/p_br_sky_wall4.dar
+
+world	common_sky/p_br_sky_wall1.kms
+world	common_sky/p_br_sky_wall4.kms
+
+pack_trnall trn.tri \
+		effect/plant_sky/sky_n1_alp.bmp \
+		effect/plant_sky/sky_n2_alp.bmp \
+		effect/plant_sky/sky_n4_alp.bmp \
+		effect/splash/splash05_alp.bmp
+		
+
+// オブジェクト(鎖&ワイヤー)
+goods	demo_chain/demo_chain_cilet.kms
+goods	demo_chain/demo_chain_long.kms
+goods	demo_wire/demo_wire.kms
+goods	demo_huge_chain/demo_huge_chain.kms
+
+// デバッグ用
+
+// カメラ前水滴エフェクトに必要
+debug	shibata/awa_model/awa_model2.kms
+cvd	debug/shibata/awa_model/awa_model2.cv2 vn
+
+// リネーム
+texrename	w10c_24a_sink.kms	w10c_cntw04.bmp	w10c_cntw04aaaa.bmp
+
+// 破片
+item	c_box/cbx_a_frg1_cm.kms
+goods	demo_w04b_upwall/demo_w04b_pipe.kms/* mgdemo added ----from here (Fri Aug 24 16:44:39 2001) ---- */
+/* mgdemo added ----from here (Tue Aug 28 22:11:46 2001) ---- */
+vib	demo/P070_09_p09_splash_02.vib
+vib	demo/P070_09_p09_quake_03.vib
+vib	demo/P070_09_p09_stream_01.vib
+vib	demo/P070_09_p09_splash_01.vib
+vib	demo/P070_09_p09_destruction_02.vib
+vib	demo/P070_09_p09_destruction_01.vib
+vib	demo/P070_09_p09_quake_02.vib
+vib	demo/P070_09_p09_quake_01.vib
+vib	demo/P070_09_p09_chain_01.vib
+/* mgdemo added ----upto here ---- */

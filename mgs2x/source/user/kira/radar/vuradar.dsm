@@ -1,0 +1,32 @@
+;
+; radar.dsm
+;	レーダー用セグメント描画ルーチン/DMA用データ
+;
+;	1999/09/18	K.Uehara
+;	$Id: vuradar.dsm,v 1.1.1.3 2002/11/19 11:43:57 Yoshizawa1 Exp $
+;
+
+	.global Vu1DrawRadarMPGTag
+	.global Vu1DrawRadarFunc
+
+Vu1DrawRadarFunc:
+	.word ( Vu1RadarDrawStart / 8 )		; 最初の1回
+	.word ( Vu1RadarDrawNext / 8 )		; 次から
+	.word ( Vu1RadarDynamicDrawStart / 8 )		; 最初の1回
+	.word ( Vu1RadarDynamicDrawNext / 8 )		; 次から
+	.word ( Vu1PosDrawStart / 8 )		; プレイヤ/敵兵
+
+	.data
+	.DmaPackVif 1
+
+Vu1DrawRadarMPGTag:
+	DMAref *, _draw_radar		; データ転送用タグ
+
+	.DmaData _draw_radar
+	MPG 0, *
+	.vu
+	.include "vuradar.vu1"	; プログラム本体
+	.EndMPG
+	.EndDmaData
+
+

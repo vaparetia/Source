@@ -1,0 +1,301 @@
+//
+//	P070_01_p01.w24d.src
+//	AG起動デモ用デモ専用ステージ
+//	written by S.Kaneyoshi 2001/02/02
+//	$Id: P070_01_p01.w24d.src,v 1.40 2002/09/11 12:12:15 usr03682 Exp $
+
+// 常駐データ
+block .use r_plt0
+
+block .nocache
+block .cache
+
+// 汎用空用テクスチャのためのデファイン（c_effect.h の前で）
+//#define MORNING_SKY
+//#define DAY_SKY
+#define EVENING_SKY
+//#define NIGHT_SKY_DEMO
+#define W32A_EVENING_SKY
+
+// 不要エフェクト切り分け定義
+#define EFFECT_CUSTUM
+
+//#define	E_GLASS_DANKON			// グラス系弾痕
+//#define	E_KOGETUKI				// 壁への焦げ付き
+#define	E_FOOTSTAMP				// 足跡
+//#define	E_ENEMY					// 敵兵系
+//#define	E_ENEMY_LIGHT			// 敵兵ライト
+//#define	E_SLING					// スリング
+//#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+//#define	E_MANHATTAN_LIGHT		// マンハッタンライト
+//#define	E_C4BOMB				// Ｃ４爆弾、赤外線センサー
+//#define	E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷
+//#define	E_CROSS_FADE_LIGHT		// クロスフェード（甲板のライトで使用）
+//#define	E_CHARA_DENTOU			// chara 懐中電灯、フォーチュン戦
+#define	E_WATER					// 水関係
+//#define	E_CHARA_HAMON			// chara 波紋
+//#define	E_BROKEN_OBJECT			// 壊れ物
+//#define	E_BROKEN_PAPEROBJECT	// 壊れ物紙
+//#define	E_BROKEN_PLATE			// 壊れ物皿
+#define	E_HIMATU				// 水飛沫
+//#define	E_CHARA_MADOAME			// chara 窓雨
+#define	E_STEAM					// 粉 & 水蒸気
+#define	E_POWDER				// 小麦粉
+//#define	E_SKY_NORMAL			// 空
+//#define	E_LINEAR_GUN			// リニアガン
+#define	E_TENKYUU				// 天球ドーム
+#define	E_SUN					// 太陽
+#define	E_DOOR_LUMP				// ドアランプ
+#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、
+								// ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+//#define	ENV						// 天球
+
+// 各ステージ共通要素
+//include		common.h
+#include		"c_effect.h"
+
+// キャラ
+
+// スネーク
+//human		iro_def/iro_def_mh_mt.evm
+
+pack_all demo_iro_def.tri \
+	human/iro_def/iro_takeoff_mh_mt.dar \
+	human/iro_def/iro_takeoff_addhand_mh_mt.dar
+
+human		iro_def/iro_takeoff_mh_mt.evm
+human		iro_def/iro_takeoff_addhand_mh_mt.evm
+
+human		iro_def/iro_def_sh_mt.kms // 映り込み、影モデル
+
+// オタコン（オタコン関係でこれだけのモデルが有ります。参 ランタイム掲示板＞リストファイル一覧＞キャラクター）
+pack_all demo_otc_def.tri \
+	human/otc_def/otc_def_mh_mt.dar \
+	human/otc_def/otc_jaket_suso_mh.dar \
+	human/otc_def/otc_def_addhand_mh_mt.dar \
+	human/otc_def/otc_blood_mh_mt.dar \
+	human/otc_def/otc_blood_addhand_mh_mt.dar \
+	human/otc_def/otc_blood_jaket_suso_mh.dar \
+	human/otc_def/otc_tear_mh_mt.dar \
+	human/otc_def/otc_glasses_mt.dar \
+	human/otc_def/otc_dummy.dar \
+	goods/demo_otc_glasses/otc_glasses_clothes_mt.dar
+
+human	otc_def/otc_def_mh_mt.evm
+human	otc_def/otc_jaket_suso_mh.evm
+human	otc_def/otc_def_addhand_mh_mt.evm
+
+human	otc_def/otc_blood_mh_mt.evm
+human	otc_def/otc_blood_addhand_mh_mt.evm // 追加水谷0918 日本版以降反映
+human	otc_def/otc_blood_jaket_suso_mh.evm
+
+human	otc_def/otc_tear_mh_mt.evm
+human	otc_def/otc_hair_mh.evm
+human	otc_def/otc_glasses_mt.kms
+human	otc_def/otc_dummy.kms
+human	otc_def/otc_def_sh_mt.kms // 映り込み、影モデル
+goods	demo_otc_glasses/otc_glasses_clothes_mt.kms
+
+// エマ（負傷エマに差し替え済み）
+//anmtex		ema_ooze_blood.rat effect/ema_ooze_blood
+/*
+エマの滲み血
+ema_ooze_blood00_alp.pic
+〜
+ema_ooze_blood89_alp.pic
+*/
+
+weapon		usp/usp.kms
+
+// ワールド
+/*
+#define		KMS_NAME20			w32a_23a
+#define		KMS_NAME21			w32a_crane
+#define		KMS_NAME22			w32a_other00
+#define		KMS_NAME23			w32a_other01
+#define		KMS_NAME24			w32a_other02
+*/
+// w32b分（夕焼けデモ）
+world		w32a/w32a
+pack_all w32a_other.tri \
+		world/w32a/other/w32a_15a.dar \
+		world/w32a/other/w32a_17a.dar \
+		world/w32a/other/w32a_18a.dar \
+		world/w32a/other/w32a_19a.dar \
+		world/w32a/other/w32a_20a.dar \
+		world/w32a/other/w32a_21a.dar \
+		world/w32a/other/w32a_24a.dar \
+		world/w32a/other/w32a_31a.dar \
+		world/w32a/other/w32a_dg.dar \
+		world/w32a/other/w32a_gl.dar \
+		world/w32a/other/w32a_hi.dar \
+		world/w32a/other/w32a_lk.dar \
+		world/w32a/other/w32a_23a.dar \
+		world/w32a/other/w32a_crane.dar \
+		world/w32a/other/w32a_other00.dar \
+		world/w32a/other/w32a_other01.dar \
+		world/w32a/other/w32a_other02.dar \
+		world/w32a/w32a_demo/w32demo_21a.dar \
+		world/w32a/w32a_demo/w32demo_23a.dar
+
+world		w32a/other/w32a_15a.kms
+world		w32a/other/w32a_17a.kms
+world		w32a/other/w32a_18a.kms
+world		w32a/other/w32a_19a.kms
+world		w32a/other/w32a_20a.kms
+world		w32a/other/w32a_21a.kms
+world		w32a/other/w32a_24a.kms
+world		w32a/other/w32a_31a.kms
+world		w32a/other/w32a_dg.kms
+world		w32a/other/w32a_gl.kms
+world		w32a/other/w32a_hi.kms
+world		w32a/other/w32a_lk.kms
+world		w32a/other/w32a_23a.kms
+world		w32a/other/w32a_crane.kms
+world		w32a/other/w32a_other00.kms
+world		w32a/other/w32a_other01.kms
+world		w32a/other/w32a_other02.kms
+world		w32a/w32a_demo/w32demo_21a.kms
+world		w32a/w32a_demo/w32demo_23a.kms
+
+// リアル影投影モデル
+world		w24d/w24d_kage/w24d0k.kms
+world		w24d/w24d_kage/w24d1k.kms
+world		w24d/w24d_kage/w24d2k.kms
+
+//	海とオイルフェンス
+include		s_surface.h
+include		n_surface.h
+debug takabe/oilfence/oilfence.kms
+
+// 夜空に追加で出すモデル。
+world		common_sky/n_sky_wall1.kms
+world		common_sky/w24d_sky_wall4.kms
+
+// 電算室(w24d)
+option makexti6 -l 1024 -f PAL8
+pack_all	w24d_etc.tri \
+		world/elevator/elv_2 \
+		world/door/w02a_l_dr.dar \
+		human/par_def/bird_cage.dar
+option makexti6
+
+world		elevator/elv_2
+world		door/w24d_dr01.kms
+human		par_def/bird_cage.kms
+
+//world		w24d/w24d1/w24d1.kms
+option makexti6 -l 1024 -f PAL8
+world		w24d/w24d1/w24d1_a.kms
+world		w24d/w24d1/w24d1_b.kms
+option makexti6
+
+world		w24d/w24d1/w24d1r.kms
+world		w24d/w24d2/w24d2.kms
+world		w24d/w24d2/w24d2_wall.kms
+world		w24d/w24d2/w24d2r.kms
+world		w24d/w24d2/w24d2_tes_sita_v01.kms
+
+option makexti6 -l 1024 -f PAL8
+world		w24d/w24d0
+option makexti6
+
+// ウイルス投入モニタ・スポットライト投影モデル
+world		w24d/w24d2/w24d2_moni
+
+lt2			w24d.lt2
+lt2			w32a.lt2
+lt2			w32b.lt2
+hazard		d00a3.hzx
+
+// メカ
+
+// アーセナル部分ディテール
+
+// オブジェクト
+pack_all	object.tri goods/locker/neo_locker_door.dar
+goods		locker/neo_locker_door.kms
+
+// デバッグ用
+
+// ライデン
+human		rai_def/rai_def_mh_mt.evm
+
+// リネーム
+texrename	w32a_24a.kms w10c_cntw04.bmp w10c_cntw04x.bmp
+
+/* mgdemo added ----from here (Tue Jul  3 16:50:12 2001) ---- */
+goods	demo_dummy/demo_dummy.kms
+item	mo_disk/mo_disk.kms
+world	door/dr_free.kms
+
+goods	demo_org_tng_hfb/demo_org_tng_hfb_r_blade_mt.kms
+goods	demo_org_tng_hfb/demo_org_tng_hfb_r_sheath.kms
+
+//オウム
+human	par_def/par_def_mh.evm
+human	par_def/par_hane.kms
+human	par_def/bird_cage.kms
+human	par_def/bird_cage_open.kms
+human	par_def/bird_cage_door.kms
+
+//エマ
+human	ema_def/ema_houtai_addhand_mh_mt.evm
+human	ema_def/ema_glasses_mt.kms
+human	ema_def/ema_glasses_sh_mt.evm
+human	ema_def/ema_hair_mh.evm
+human	ema_def/ema_bounding.kms
+
+//オルガ忍者
+human	org_tng/org_tng_mh_mt.evm
+human	org_tng/org_tng_sld_mt.kms
+//オルガ忍者（フェイスエフェクト）
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_text_R_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_text_L_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_mitsubishi_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_square_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_noiz_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_head_met_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_cover_alp.bmp
+
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Wed Aug  1 20:36:32 2001) ---- */
+weapon	usp/usp_sub.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Aug  3 17:39:32 2001) ---- */
+/* mgdemo added ----from here (Wed Aug 15 16:21:00 2001) ---- */
+vib	demo/P070_09_p08_rai_03.vib
+vib	demo/P070_09_p08_rai_02.vib
+vib	demo/P070_09_p08_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Aug 23 12:46:19 2001) ---- */
+human	ema_def/ema_glas_nullshadow_sh.kms
+/* mgdemo added ----upto here ---- */
+
+/* 夜空のテクスチャ関連 */
+pack_trnall	effect.tri \
+	effect/plant_sky/sky_n1_alp.bmp \
+	effect/plant_sky/sky_n2_alp.bmp \
+	effect/plant_sky/sky_n4_alp.bmp
+
+world	common_sky/e_sky_wall1.kms
+
+// ぼんぼり
+pack_trnall	hirano.tri \
+	effect/bonbori/rcm_l_msk.bmp \
+	effect/bonbori/rcm_l_alp.bmp \
+	effect/bonbori/svc_bonbori_r.bmp \
+	effect/bonbori/svc_bonbori_y.bmp \
+	effect/bonbori/w_bonbori.bmp
+
+// アーセナル
+world/w24d/w24d_lamp	w24d_lamp_alp.bmp
+
+// ムービー再生用ダミーデータ
+pack_all screen_dummy.tri \
+	effect/screen_dummy/dummy.bmp
+/* mgdemo added ----from here (Wed Sep 19 17:47:32 2001) ---- */
+human	iro_def/iro_takeoff_addhand_mh_mt.evm
+/* mgdemo added ----upto here ---- */

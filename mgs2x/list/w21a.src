@@ -1,0 +1,36 @@
+//
+//	w21a.src	
+//
+//	written by H.Yoshiike 2000.Oct
+//
+//	$Id: w21a.src,v 1.21 2002/05/31 11:51:49 usr02774 Exp $
+
+//	ステージ名表記用
+#define		WN_W21A
+
+//	共通データ
+#define		DAY_SKY		//	昼空
+#include	"w21_common.h"
+
+//	ワールド
+
+//	ＡＢ共通
+world		w21_common/other
+world		w21_common/w21_bg
+
+
+//	Ａのみ
+world		w21a
+
+//	ライト
+lt2		w21a.lt2
+
+//	海
+option makexti6 -l 256
+pack_all	oil.tri \
+		effect/plant_sea/d_oil_sea_alp_ovl_mod0222.bmp \
+		effect/plant_sea/d_oil_ref_add_alp_ovl_mod1120.bmp
+option makexti6
+
+//	リネーム
+texrename w21_24a.kms w10c_cntw04.bmp w10c_cntw04aaaa.bmp

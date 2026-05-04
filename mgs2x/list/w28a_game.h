@@ -1,0 +1,67 @@
+//
+//	w28a_game.h
+//
+//	written by Y.Matsuhana 2000.Nov
+//
+//	$Id: w28a_game.h,v 1.9 2002/09/25 09:36:38 usr03682 Exp $
+
+#define WN_W28A
+
+// 汎用空用テクスチャのためのデファイン（c_effect.h の前で）
+#define EVENING_SKY
+
+// 敵兵関連define
+// 敵兵タイプ
+#define ENE_P_GOL		// w28aは都市迷彩攻撃兵
+#define ENE_ATTACKER	
+#define ENE_HIGH_TECH	// 
+#define ENE_SHIELD		
+#define ENE_SHOT		
+#define ENE_SHADOW		
+
+#define ENE_MAR '-DDEL_TNG=DUMMY -DDEL_WALKMAN=DUMMY'
+
+// 各ステージ共通要素
+#include	"common.h"
+#include	"c_effect.h"
+#include	"p_common.h"
+
+// キャラクタ
+#include	"ene_plant.h"
+
+// 強制モーション
+mtn		rai_w28a.mls
+mtn		rai_hatch.mls
+
+//水密ドア用モーション
+mtn		rai_wt_hatch.mls		// 水密ドア開閉モーション(2002.06.04 ライデン用にモーションが更新されたため修正)
+mtn		hatch_door_sna.mls
+mtn		hatch_handle_sna.mls
+
+//エマ
+#include	"emma.h"
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+option makexti6 -l 1024 -f PAL8
+world		w28a/w28a/w28a.kms
+option makexti6
+
+world		w28a/w28a/w28a_roof.kms
+world		w28a/other/w28a_dummy.kms
+world		w28a/other/w28a_outside.kms
+world		w28a/other/w28a_kage.kms
+world		door/w28a_dr00.kms
+world		door/w28a_sdr_r.kms door/w28_sdr_handle.kms
+option makexti6 -l 1024 -f PAL8
+world		door/w28_hatch.kms
+option makexti6
+lt2		w28a.lt2
+hazard		w28a.hzx
+
+// アイテム
+itembox
+goods		fly/fly_cm.kms
+
+// リネーム

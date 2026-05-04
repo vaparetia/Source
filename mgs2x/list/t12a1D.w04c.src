@@ -1,0 +1,328 @@
+//
+//	t12a1D.w04c.src	
+//
+//	written by Y.Matsuhana 1999.Dec
+//
+//	$Id: t12a1D.w04c.src,v 1.58 2001/09/21 04:15:52 usr04496 Exp $
+
+
+block .use r_tnk0
+block .nocache
+block .cache
+
+
+// 各ステージ共通要素
+include		common.h
+include		c_effect.h
+
+// ワールド
+goods		null
+meca		ray_w04c1/ray_w04c1.kms
+meca		ray_w04c1/ray_canopy_w04c1_mt.kms
+pack_all	w04c.tri \
+			world/w04c_drk/w04c1_drk.dar \
+			world/w04c_drk/w04c1_lit.dar \
+			world/w04c/w04c2.dar \
+			world/door/w04_dr.dar \
+			world/w02a/w02a1/w02a_chain.dar
+//			world/w04c/w04c1.dar \
+world		w04c_drk/w04c1_drk.kms
+world		w04c_drk/w04c1_lit.kms
+world		w04c/w04c2.kms
+world		door/w04_dr.kms
+world		w02a/w02a1/w02a_chain.kms
+//world		w04c/w04c1.kms
+
+// ムービー投影用モデル
+world		w04b/w04b1_k1.kms
+world		w04b/w04b1_k2.kms
+
+// ライト
+lt2		t12a1D.lt2
+
+// ハザード
+hazard	d00a4.hzx
+
+// カートリッジ（GCLでstdch.hをインクルードしている場合必要）
+//pack_all	weapon_cm.tri \
+//		weapon/usp/usp_emb.dar \
+//		weapon/fms/fms_emb.dar \
+//		goods/demo_m4_grn_usm/demo_m4_grn_emb.dar
+//weapon	usp/usp_emb.kms
+//weapon	fms/fms_emb.kms
+
+// これは残し（常駐に行っていないので）
+goods	demo_m4_grn_usm/demo_m4_grn_emb.kms
+
+
+// デバッグ・臨時用（爆発サンプル）
+item		shield/shl_frg1.kms
+item        c_box/cbx_a_frg1_cm.kms
+weapon      chaff_grenade/cgr_frg1_cm.kms
+
+//水面用パック
+//pack_all	water_sur.tri \
+//			debug/matsuhana/dbg_water/water_add_bld080_ovl.bmp
+
+//第二船倉とアップ用壁
+// および壊れ前の右プロジェクタ
+pack_all demo_w04b_upwall.tri \
+					world/w04b_break/w04b1_brk.dar \
+					world/w04b_break/w04b_demo_screen_normal.dar
+//					goods/demo_w04b_upwall/demo_w04b_pipe.dar \
+//					goods/demo_w04b_upwall/demo_w04b_screw.dar \
+//					goods/demo_w04b_upwall/demo_w04b_bar.dar \
+//					goods/demo_w04b_upwall/demo_w04b_wall.dar
+world	w04b_break/w04b1_brk.kms
+world	w04b_break/w04b_demo_screen_normal.kms
+//goods	demo_w04b_upwall/demo_w04b_pipe.kms
+//goods	demo_w04b_upwall/demo_w04b_screw.kms
+//goods	demo_w04b_upwall/demo_w04b_bar.kms
+//goods	demo_w04b_upwall/demo_w04b_wall.kms
+
+//デモダミー
+goods	demo_dummy/demo_dummy.kms
+
+//爆破エフェクト
+pack_all trn.tri effect/bonbori/rcm_l_msk.bmp \
+                 effect/bakuha/bombpowder7_msk.bmp \
+                 effect/bakuha/bombgas2_alp.bmp \
+				 effect/smoke/smoke_lp1_alp.bmp \
+				 effect/smoke/smoke_lp2_alp.bmp \
+				 effect/smoke/smoke_lp3_alp.bmp
+
+// スネーク
+human	sna_def/sna_def_mh.evm
+
+//スネークの武器
+//pack_all	wpn.tri \
+//			weapon/usp/usp_sub.dar \
+//			weapon/usp/usp_amo.dar \
+//			weapon/m92_sna/m92_sna_sub.dar
+//weapon	usp/usp_sub.kms
+//weapon	usp/usp_amo.kms
+//weapon	m92_sna/m92_sna_sub.kms
+
+//ゴルルコ兵
+pack_all	gba_gbs.tri \
+			human/gbs_def/gbs_def.dar \
+			human/gba_def/gba_def_mt.dar	//ゴルルコ重装備兵
+human	gbs_def/gbs_def.kms
+human	gba_def/gba_def_mt.kms			//ゴルルコ重装備兵
+
+//セルゲイ
+/*pack_all	crg.tri \
+			human/crg_def/crg_def_mh_mt.dar \
+			human/crg_def/crg_def_sh_mt.dar
+human	crg_def/crg_def_mh_mt.evm
+*/
+//human	crg_def/crg_wet_mh_mt.evm         //濡れセルゲイ
+//human	crg_def/crg_def_sh_mt.kms
+//goods	demo_goods/demo_crg_makrov.kms	//マカロフ
+
+//オセロット
+pack_all	ocelot.tri \
+			human/rev_coat/rev_coat.dar \
+			human/rev_def/rev_def_mh_mt.dar \
+			human/rev_def/rev_def_addhand_mh_mt.dar
+human	rev_coat/rev_coat.evm
+human	rev_def/rev_def_mh_mt.evm
+human	rev_def/rev_def_addhand_mh_mt.evm
+
+pack_all	ocelot_parts.tri \
+			human/rev_coat/rev_parts_coat.dar \
+			goods/demo_goods/rev_dtdv.dar \
+			weapon/saa/saa.dar \
+			human/rev_coat/rev_coat_bounding.dar \
+			human/rev_coat/rev_hair_fix.dar \
+			human/rev_coat/rev_parts_coat.dar
+//human	rev_coat/rev_parts_coat.kms
+goods	demo_goods/rev_dtdv.kms			//起爆装置
+weapon	saa/saa.kms						//シングルアクションアーミー
+human	rev_coat/rev_coat_bounding.kms
+human	rev_coat/rev_hair_fix.kms
+cloth	human/rev_coat/rev_parts_coat.rwv
+
+
+
+
+//スコット
+human	sco_scott/sco_def.evm
+//スコット（指付き）
+human	sco_scott/sco_def_addhand_mh_mt.evm
+
+//セルゲイ＋ゴルルコ兵の装備＋海兵隊武器
+pack_all	crg_gbs_eqp.tri \
+			human/crg_def/crg_hlst.dar \
+			human/crg_def/crg_skn.dar \
+			human/crg_def/crg_waist_parts00.dar \
+			human/crg_def/crg_waist_parts01.dar \
+			human/gbs_def/gbs_hlst.dar \
+//			human/gbs_def/gbs_knif.dar \
+			human/gbs_def/gbs_mag.dar \
+			human/gbs_def/gbs_bp.dar \
+			item/radio/rad.dar \
+			goods/flashlight/tnr_frashlight.dar \
+			weapon/aks/aks_sp.dar \
+			item/gbs_nv_goggle/gbs_nvg2.dar \
+			human/gbs_def/gbs_sling.dar \
+			item/gbs_nv_goggle/gbs_nvg1.dar \
+			human/gbs_def/gbs_kanagu.dar \
+			weapon/aks/aks_amo.dar \
+			goods/demo_goods/demo_crg_makrov.dar \	//マカロフ
+			goods/demo_makarov_crg/demo_makarov_crg.dar \
+			weapon/m4/m4a_nm.dar \
+			weapon/m92/m92.dar \
+			weapon/m4/m4a_shld.dar \
+			goods/field_camera/field_camera_base.dar \
+			goods/field_camera/field_camera_head.dar \
+			human/sco_scott/sco_hat.dar
+
+//			weapon/ssk/ssk_mt.dar \
+
+human	crg_def/crg_hlst.kms
+human	crg_def/crg_skn.kms
+human	crg_def/crg_waist_parts00.kms
+human	crg_def/crg_waist_parts01.kms
+human	gbs_def/gbs_hlst.kms
+//human	gbs_def/gbs_knif.kms
+human	gbs_def/gbs_mag.kms
+human	gbs_def/gbs_bp.kms
+item	radio/rad.kms
+weapon	ssk/ssk_mt.kms
+weapon	ssk/ssk_inv_mt.kms
+goods	flashlight/tnr_frashlight.kms
+weapon	aks/aks_sp.kms
+item	gbs_nv_goggle/gbs_nvg2.kms
+human	gbs_def/gbs_sling.kms
+item	gbs_nv_goggle/gbs_nvg1.kms
+human	gbs_def/gbs_kanagu.kms
+weapon	aks/aks_amo.kms 
+goods	demo_goods/demo_crg_makrov.kms	//マカロフ
+goods	demo_makarov_crg/demo_makarov_crg.kms  //マカロフハイポリ
+weapon	m4/m4a_nm.kms
+weapon	m92/m92.kms
+weapon	m4/m4a_shld.kms 
+goods	field_camera/field_camera_base.kms
+goods	field_camera/field_camera_head.kms
+human	sco_scott/sco_hat.kms
+
+/*
+//海兵隊武器
+weapon	m4/m4a_nm.kms
+weapon	m92/m92.kms
+weapon	m4/m4a_shld.kms 
+*/
+
+/*
+//カメラ＋スコット帽子
+pack_all	field_camera.tri \
+			goods/field_camera/field_camera_base.dar \
+			goods/field_camera/field_camera_head.dar \
+			human/sco_scott/sco_hat.dar
+goods	field_camera/field_camera_base.kms
+goods	field_camera/field_camera_head.kms
+human	sco_scott/sco_hat.kms
+*/
+
+/*レイ・キャノピー
+pack_all	ray_canopy_mt.tri \
+			meca/ray_w04c1/raycp_canopy2_t12a1d_mt.dar \
+			meca/ray_w04c1/raycp_canopy1_t12a1d_mt.dar
+meca	ray_w04c1/raycp_canopy2_t12a1d_mt.kms
+meca	ray_w04c1/raycp_canopy1_t12a1d_mt.kms
+meca	ray_w04c1/raycp_t12a1d.kms
+*/
+
+
+
+
+
+//セルゲイ指付き
+human	crg_def/crg_def_addhand_mh_mt.evm
+//コート飛ぶ
+anm	rev_cort_fly/rev_cort_fly01.xsi -N -S 10
+anm	rev_cort_fly/rev_cort_fly02.xsi -N -S 10
+//コート穴開き
+anm	rev_cort_hit/rev_cort_hit1_0.xsi -N -S 10
+anm	rev_cort_hit/rev_cort_hit1_1.xsi -N -S 10
+anm	rev_cort_hit/rev_cort_hit1_2.xsi -N -S 10
+anm	rev_cort_hit/rev_cort_hit1_3.xsi -N -S 10
+anm	rev_cort_hit/rev_cort_hit1_4.xsi -N -S 10
+anm	rev_cort_hit/rev_cort_hit1_5.xsi -N -S 10
+anm	rev_cort_hit/rev_cort_hit1_6.xsi -N -S 10
+
+
+
+
+// 変身後オセロット
+/*pack_all	rev_liq.tri \
+			human/rev_liq/rev_hair_liq_mh.dar \
+			human/rev_liq/rev_liq_boundhing.dar
+human	rev_liq/rev_hair_liq_mh.evm
+human	rev_liq/rev_liq_boundhing.kms
+
+//human	rev_liq/rev_liq_addhand_mh_mt.evm
+
+//オセロット（指間接付き）＋変身後オセロットの本体
+pack_all ocelots.tri \
+		human/rev_def/rev_def_addhand_mh_mt.dar \
+		human/rev_liq/rev_liq_addhand_mh_mt.dar
+human	rev_def/rev_def_addhand_mh_mt.evm
+human	rev_liq/rev_liq_addhand_mh_mt.evm
+*/
+
+//コート
+//cloth	human/rev_coat/rev_parts_coat.kms
+
+//海兵隊着せ替え
+arkms	w04a_us_def_2.kls
+rename  w04a_us_def_2.kms w04a_us_def.kms
+
+// リネーム
+rename		ssk_mt.kms ssk.kms
+
+//海兵隊（黒人）
+//human	us_parts/us_def_5.kms
+
+//海兵隊装備
+human	us_parts/obj_cap.kms 
+//human	us_parts/obj_grass.kms 
+human	us_parts/obj_helmet_def_s.kms
+human	us_parts/obj_headphone_def.kms
+human	us_parts/obj_glass.kms
+human	us_parts/us_def_5_s.kms
+//起爆装置エフェクト
+pack_trnall trn.tri effect/bonbori/rcm_l_alp.bmp
+//オセロット影
+human	rev_def/rev_def_shadow.kms
+//ロープアニメ
+anm	gbs_lopesim/t12_gbs001.xsi -N -S 1
+anm	gbs_lopesim/t12_gbs002.xsi -N -S 1
+//ロープモデル
+goods	demo_lope/demo_lope02.evm
+
+//カメラのライト
+goods	field_camera/field_camera_light.kms
+
+// オセロット静止画
+pack_all ocelot_2D.tri \
+		menu/pict_demo/t12a1D_oce01_alp_ovl.bmp \
+		menu/pict_demo/t12a1D_oce02_alp_ovl.bmp \
+		menu/pict_demo/t12a1D_oce03_alp_ovl.bmp
+//リネーム
+rename		m92_sna_sub.kms m92_sub.kms
+
+//血セルゲイ
+human	crg_def/crg_blood_mh_mt.evm
+//ＶＴＲ主観エフェクト
+l2d		2D/sight/vtr/vtr.l2d
+
+//振動データ
+// データ数が多すぎてロード時に落ちるステージが出たので、一時的にカット。010729（平野）
+// 振動ファイルは一つにまとまるようになったので組み込み。010803
+vib		demo
+
+// 船倉ムービー再生用ダミーデータ
+pack_all screen_dummy.tri \
+	effect/screen_dummy/dummy.bmp

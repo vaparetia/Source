@@ -1,0 +1,48 @@
+//
+//	w24e.src
+//
+//	written by S.Nojiri 2001.Mar
+//
+//	$Id: w24e.src,v 1.9 2001/09/26 08:10:55 usr01717 Exp $
+
+
+#include	"w24ce_common.h"
+
+
+pack_all	w24e_sol.tri human/sol_def/sol_def_sh_mt.dar
+
+//pack_all	w24e_org.tri human/org_plant/org_plant_sh_mt.dar human/rev_plant/rev_plant_sh_mt.dar goods/demo_makarov_crg/demo_makarov_crg.dar  weapon/saa/saa_lefthand.dar
+
+pack_all	w24e_org.tri human/org_plant/org_plant_sh_mt.dar human/rev_plant/rev_plant_sh_mt.dar
+
+
+// ソリダス
+human		sol_def/sol_def_sh_mt.kms
+human		sol_def/sol_def_mant_mh_mt.evm
+human		sol_def/sol_bounding.kms		//マントアタリのバウンディング
+
+// オルガ
+human		org_plant/org_plant_sh_mt.kms
+//human		org_plant/org_plant_hair_mh.evm			//髪の毛のモデル
+//human		org_plant/org_plant_dummy.kms			//当たり判定モデル
+goods		demo_makarov_org/demo_makarov_org.kms
+
+
+// オセロット
+#if 0
+	human		rev_plant/rev_plant_hos_mh_mt.evm
+	human		rev_coat/rev_hair_fix.kms
+	human		rev_coat/rev_coat_bounding.kms	//髪の毛あたりバウンディング
+#else
+	human		rev_plant/rev_plant_sh_mt.kms
+#endif
+
+weapon		saa/saa_lefthand.kms
+
+
+//ソリダスモーション
+//mtn		sol.mls
+//mtn		w24e_puppets.mls
+mtn		w24e_orga.mls
+mtn		w24e_rev.mls
+mtn		w24e_sol.mls

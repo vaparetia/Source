@@ -1,0 +1,13 @@
+struct PixelInput_Generic
+{
+   half4 projPos        : POSITION;
+   half2 texUV          : TEXCOORD0;
+};
+
+PixelInput_Generic main( float4 aPosition, float2 uv )
+{
+   PixelInput_Generic output = (PixelInput_Generic) 0;
+   output.projPos = aPosition;
+   output.texUV = uv;
+   return output;
+}

@@ -1,0 +1,181 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+
+	void edgePostArgb8ToFloats( void* output, void* input, uint32_t count );
+	
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+.include "edgepost_helpers.inc"
+
+.cfunc void edgePostArgb8ToFloats( qword output, qword input, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	
+	
+	// We do this backwards. So we can convert in place
+	.reg		backoutput, backinput
+	mpyui		backoutput, count, 16
+	mpyui		backinput, count, 4
+	a			backoutput, backoutput, output
+	a			backinput, backinput, input
+
+
+loop:
+	ai			backoutput, backoutput, -0x40
+	ai			backinput, backinput, -0x10
+	ai			count, count, -4
+	
+	// Load pixels
+	.reg		s0
+	lqd			s0, 0x00( backinput )
+
+	// Unpack
+	.reg		p0, p1, p2, p3
+	EDGEPOST_UNPACK_PIXELS8( p0, p1, p2, p3, s0 )
+	
+	// Convert to float
+	EDGEPOST_U8_TO_FLOAT( p0, p0)
+	EDGEPOST_U8_TO_FLOAT( p1, p1)
+	EDGEPOST_U8_TO_FLOAT( p2, p2)
+	EDGEPOST_U8_TO_FLOAT( p3, p3)
+	
+	// Store
+	stqd		p0, 0x00( backoutput )
+	stqd		p1, 0x10( backoutput )
+	stqd		p2, 0x20( backoutput )
+	stqd		p3, 0x30( backoutput )
+	brnz		count, loop
+.endfunc
+
+.cfunc void edgePostFloatsToArgb8( qword output, qword input, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	
+	
+loop:
+	ai			output, output, 0x10
+	ai			input, input, 0x40
+	ai			count, count, -4
+	
+	// Load pixels
+	.reg		s0, s1, s2, s3, p
+	lqd			s0, -0x40( input )
+	lqd			s1, -0x30( input )
+	lqd			s2, -0x20( input )
+	lqd			s3, -0x10( input )
+
+	// convert to uint
+	EDGEPOST_FLOAT_TO_U8( s0, s0 )
+	EDGEPOST_FLOAT_TO_U8( s1, s1 )
+	EDGEPOST_FLOAT_TO_U8( s2, s2 )
+	EDGEPOST_FLOAT_TO_U8( s3, s3 )
+	EDGEPOST_CLAMP_PIXEL8( s0 )
+	EDGEPOST_CLAMP_PIXEL8( s1 )
+	EDGEPOST_CLAMP_PIXEL8( s2 )
+	EDGEPOST_CLAMP_PIXEL8( s3 )
+	EDGEPOST_PACK_PIXELS8( p, s0, s1, s2, s3)
+	
+	// Store
+	stqd		p, -0x10( output )
+	brnz		count, loop
+.endfunc
+
+
+
+// 0:5:11 -> floats
+.cfunc void edgePostFX16ToFloats( qword output, qword input, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	
+	
+	// We do this backwards. So we can convert in place
+	.reg		backoutput, backinput
+	mpyui		backoutput, count, 16
+	mpyui		backinput, count, 8
+	a			backoutput, backoutput, output
+	a			backinput, backinput, input
+
+
+loop:
+	ai			backoutput, backoutput, -0x40
+	ai			backinput, backinput, -0x20
+	ai			count, count, -4
+	
+	// Load pixels
+	.reg		s0, s1
+	lqd			s0, 0x00( backinput )
+	lqd			s1, 0x10( backinput )
+
+	// Unpack
+	.reg		p0, p1, p2, p3
+	EDGEPOST_UNPACK_PIXELS16( p0, p1, s0)
+	EDGEPOST_UNPACK_PIXELS16( p2, p3, s1)
+	
+	// Convert to float
+	cuflt		p0, p0, 11
+	cuflt		p1, p1, 11
+	cuflt		p2, p2, 11
+	cuflt		p3, p3, 11
+	
+	// Store
+	stqd		p0, 0x00( backoutput )
+	stqd		p1, 0x10( backoutput )
+	stqd		p2, 0x20( backoutput )
+	stqd		p3, 0x30( backoutput )
+	brnz		count, loop
+.endfunc
+
+// 0:5:11 -> argb
+.cfunc void edgePostFX16ToArgb8( qword output, qword input, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	
+loop:
+	ai			output, output, 0x10
+	ai			input, input, 0x20
+	ai			count, count, -4
+	
+	// Load pixels
+	.reg		s0, s1
+	lqd			s0, -0x20( input )
+	lqd			s1, -0x10( input )
+
+	// Unpack
+	.reg		p0, p1, p2, p3
+	EDGEPOST_UNPACK_PIXELS16( p0, p1, s0)
+	EDGEPOST_UNPACK_PIXELS16( p2, p3, s1)
+	
+	// Convert to float
+	cuflt		p0, p0, 11
+	cuflt		p1, p1, 11
+	cuflt		p2, p2, 11
+	cuflt		p3, p3, 11
+	
+	// Clamp
+	EDGEPOST_CLAMP_FLOAT( p0 )
+	EDGEPOST_CLAMP_FLOAT( p1 )
+	EDGEPOST_CLAMP_FLOAT( p2 )
+	EDGEPOST_CLAMP_FLOAT( p3 )
+	
+	// Convert to unsigned
+	EDGEPOST_FLOAT_TO_U8( p0, p0)
+	EDGEPOST_FLOAT_TO_U8( p1, p1)
+	EDGEPOST_FLOAT_TO_U8( p2, p2)
+	EDGEPOST_FLOAT_TO_U8( p3, p3)
+	
+	// Pack pixels
+	.reg		r
+	EDGEPOST_PACK_PIXELS8( r, p0, p1, p2, p3 )
+	
+	// Store
+	stqd		r, -0x10( output )
+	brnz		count, loop
+.endfunc

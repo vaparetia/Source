@@ -1,0 +1,122 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+	// output = input0 + ( input1 * multiplier )
+	void edgePostAddSat8( void* output, void* input0, void* input1, vec_uint4 multiplier, uint32_t count );
+	
+	// output = input0 + input1
+	void edgePostAddSat16( void* output, void* input0, void* input1, uint32_t count );
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+.include "edgepost_helpers.inc"
+
+
+.macro EDGEPOST_ADDSAT( r, p0, p1, constant )
+	// constant would need to be incremented by one for this to work.
+	// as "constant" is really constant over the entire kernel, this is done in edgePostAddSat8
+	mpyu		r, p1, constant
+	rotmai		r, r, -8
+	a			r, r, p0
+	EDGEPOST_CLAMP_PIXEL8( r )
+.endmacro
+
+.cfunc void edgePostAddSat8( qword output, qword input0, qword input1, qword constant, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	
+	// EDGEPOST_ADDSAT needs constant to be in the range [0x01,0x100] but it comes in as [0x00,0xFF]
+	ai			constant, constant, 1
+	
+loop:
+	ai			output, output, 0x10
+	ai			input0, input0, 0x10
+	ai			input1, input1, 0x10
+	ai			count, count, -4
+	
+	// Load pixels
+	.reg		s0, s1
+	lqd			s0, -0x10( input0 )
+	lqd			s1, -0x10( input1 )
+	
+	// Unpack
+	.reg		p00, p01, p02, p03
+	.reg		p10, p11, p12, p13
+	EDGEPOST_UNPACK_PIXELS8( p00, p01, p02, p03, s0 )
+	EDGEPOST_UNPACK_PIXELS8( p10, p11, p12, p13, s1 )
+	
+	.reg		r0, r1, r2, r3
+	EDGEPOST_ADDSAT( r0, p00, p10, constant )
+	EDGEPOST_ADDSAT( r1, p01, p11, constant )
+	EDGEPOST_ADDSAT( r2, p02, p12, constant )
+	EDGEPOST_ADDSAT( r3, p03, p13, constant )
+	
+	.reg		r
+	EDGEPOST_PACK_PIXELS8( r, r0, r1, r2, r3)
+	
+	stqd		r, -0x10( output )
+	brnz		count, loop
+.endfunc
+
+.cfunc void edgePostAddSatFX16( qword output, qword input0, qword input1, qword constant, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+
+	// EDGEPOST_ADDSAT needs constant to be in the range [0x01,0x100] but it comes in as [0x00,0xFF]
+	ai			constant, constant, 1
+	
+loop:
+	ai			output, output, 0x20
+	ai			input0, input0, 0x20
+	ai			input1, input1, 0x20
+	ai			count, count, -4
+	
+	// Load pixels
+	.reg		s0, s1, s2, s3
+	lqd			s0, -0x20( input0 )
+	lqd			s1, -0x10( input0 )
+	lqd			s2, -0x20( input1 )
+	lqd			s3, -0x10( input1 )
+	
+	// Unpack
+	.reg		p00, p01, p02, p03
+	.reg		p10, p11, p12, p13
+	EDGEPOST_UNPACK_PIXELS16( p00, p01, s0 )
+	EDGEPOST_UNPACK_PIXELS16( p02, p03, s1 )
+	EDGEPOST_UNPACK_PIXELS16( p10, p11, s2 )
+	EDGEPOST_UNPACK_PIXELS16( p12, p13, s3 )
+	
+	.reg		r0, r1, r2, r3
+	mpyu		p10, p10, constant
+	mpyu		p11, p11, constant
+	mpyu		p12, p12, constant
+	mpyu		p13, p13, constant
+	rotmai		p10, p10, -11
+	rotmai		p11, p11, -11
+	rotmai		p12, p12, -11
+	rotmai		p13, p13, -11
+	a			r0, p00, p10
+	a			r1, p01, p11
+	a			r2, p02, p12
+	a			r3, p03, p13
+	EDGEPOST_CLAMP_PIXEL16( r0 )
+	EDGEPOST_CLAMP_PIXEL16( r1 )
+	EDGEPOST_CLAMP_PIXEL16( r2 )
+	EDGEPOST_CLAMP_PIXEL16( r3 )
+	
+	.reg		o0, o1
+	EDGEPOST_PACK_PIXELS16( o0, r0, r1 )
+	EDGEPOST_PACK_PIXELS16( o1, r2, r3 )
+	
+	stqd		o0, -0x20( output )
+	stqd		o1, -0x10( output )
+	brnz		count, loop
+.endfunc

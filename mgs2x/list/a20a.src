@@ -1,0 +1,128 @@
+//
+//	w20a.src
+//
+//	written by H.Yoshiike 2000.Oct
+//
+//	$Id:
+
+#define WN_W20A
+
+block .use r_vr_s
+block .nocache
+block .cache
+
+// 敵兵関連define
+// 敵兵タイプ
+#define ENE_P_GOL		// 都市迷彩ゴルルコ警備兵
+#define ENE_ATTACKER	// 攻撃兵
+#define ENE_SHIELD		// 盾兵
+#define ENE_SHOT		// ショットガン兵
+#define ENE_HIGH_TECH	// ハイテク兵は人質イベント後
+#define ENE_WALK_MAN	// ウォークマンは狙撃イベント後
+
+// 特殊兵のモーション設定
+#define ENE_MAR '-DDEL_TNG=DUMMY -DDEL_LOCKER=DUMMY -DDEL_TOILET=DUMMY'
+
+// 各ステージ共通要素
+#include	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+// オルタナティブミッション用追加エフェクト
+#include	"alt_effect.h"
+
+// 特殊ゲームオーバーPICT
+#include	"goverpic.h"
+
+// キャラクタ
+#include	"ene_plant.h"
+
+// 強制モーション
+mtn		rai_a20a.mls
+mtn		sna_a20a.mls
+mtn		rai_wt_hatch.mls		// 水密ドア開閉モーション
+mtn		sna_hatch.mls			// 水密ドア開閉モーション
+mtn		hatch_door_sna.mls 		// 水密ドア扉開閉モーション
+mtn		hatch_handle_sna.mls	// 水密ドアハンドル回転モーション
+mtn		hatch_w20a.mls			// ハッチモーション
+mtn		gps_w20a.mls			// ゴル兵肩回しモーション
+
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+
+pack_trnall	beltbelt.tri \
+	world/w20a/obj/w20a_bel_b02.bmp
+
+pack_all	w20a0.tri \
+	world/w20a/w20a0 \
+	world/w20a/load/w20a_19a.dar \
+	world/w20a/load/w20a_21a.dar \
+	world/door/w20a_dr00.dar \
+	world/door/w20a_dr01.dar \
+	world/door/w20a_dr01x.dar
+
+pack_all	w20a1.tri \
+	world/w20a/w20a1 \
+	world/w20a/load/w20a_20b.dar \
+	world/door/w20a_dr02.dar
+
+pack_all	w20a23.tri \
+		world/w20a/w20a2 \
+		world/w20a/w20a3
+
+pack_all	w20a4.tri \
+		world/w20a/w20a4 \
+		world/door/dr_free.dar \
+		world/door/dr_lv5_02.dar \
+		world/door/w20a_dr03.dar \
+		world/door/w20a_dr03x.dar \
+		world/door/w28a_sdr_r.dar \
+		world/door/w28_sdr_handle.dar \
+		world/door/w28_hatch.dar
+
+world		w20a/w20a0
+world		w20a/w20a1
+world		w20a/w20a2
+world		w20a/w20a3
+world		w20a/w20a4
+world		w20a/obj
+world		w20a/load
+
+world		door/dr_lv5_02.kms
+world		door/w20a_dr00.kms
+world		door/w20a_dr01.kms
+world		door/w20a_dr02.kms
+world		door/w20a_dr03.kms
+world		door/w28a_sdr_r.kms
+world		door/w28_sdr_handle.kms
+world		door/w28_hatch.kms
+world		door/w20a_dr01x.kms
+world		door/w20a_dr03x.kms
+world		door/dr_free.kms
+
+lt2			w20a.lt2
+hazard		a20a.hzx
+
+// オブジェクト
+pack_all	object.tri \
+			meca/svc_plant goods/c4_kaitai_a \
+			effect/ray_effect/ray_eye_bonbori_alp.bmp
+
+meca		svc_plant
+goods		c4_kaitai_a
+
+// ダンボールコモデル
+item		c_box/cbx_a_frg1_cm.kms
+
+// アイテム
+itembox
+
+
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム
+rename		gps_w20a.mar	gbsstage.mar

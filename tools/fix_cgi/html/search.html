@@ -1,0 +1,95 @@
+Content-type: text/html;charset=EUC-JP
+
+
+<!-焼肉定食 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-焼肉定食 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-焼肉定食 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-焼肉定食 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-焼肉定食 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-焼肉定食 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-焼肉定食 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-焼肉定食 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-焼肉定食 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-焼肉定食 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-焼肉定食 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-焼肉定食 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-焼肉定食 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-焼肉定食 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-田中麗奈 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-田中麗奈 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-田中麗奈 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-田中麗奈 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-田中麗奈 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-田中麗奈 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-田中麗奈 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-田中麗奈 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-田中麗奈 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-田中麗奈 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-田中麗奈 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+<!-田中麗奈 焼肉定食 焼肉定食 焼肉定食 焼肉定食->
+
+
+<BODY BGCOLOR="gray" TEXT="white" LINK="#66EEFF" VLINK="#FF66EE" ALINK="#EEFF66" BACKGROUND="/runtime/images/bg.gif">
+<hr>
+<P><CENTER><H1><B>RUNTIME内のファイル検索</B></H1></CENTER></P>
+<hr>
+
+<FONT COLOR=yellow><H2>
+_tag_comment
+</H2></FONT>
+
+<P>
+<FORM ACTION="/cgi-bin/search.cgi" METHOD="post">
+<font size=4 color=pink>検索条件</font><BR>
+<font size=3>
+<TABLE>
+<TR><TD><FONT COLOR=yellow>名前        </FONT></TD>
+    <TD><SELECT NAME=keyword>
+_tag_include::html/member/.html
+    </SELECT></TD></TR>
+<TR><TD><FONT COLOR=yellow>更新ジャンル</FONT></TD>
+    <TD><SELECT NAME="keyword">
+_tag_include::html/type/search
+        </SELECT></TD></TR>
+<!--
+<TR><TD><FONT COLOR=yellow>更新理由</FONT></TD>
+    <TD><SELECT NAME="keyword">
+_tag_include::html/reason/search
+        </SELECT></TD></TR>
+-->
+<TR><TD><FONT COLOR=yellow>FIXに未更新</FONT></TD>
+    <TD><INPUT TYPE=checkbox NAME="flag" VALUE="FIX"></TD></TR>
+</TABLE>
+
+<P>
+
+<TABLE>
+        <TR><TD><FONT COLOR=yellow>キーワード</FONT></TD></TR>
+	<TR><TD><INPUT TYPE="text" SIZE=50 NAME="keyword" VALUE=""></TD></TR>
+</TABLE>
+
+<TABLE>
+<TR><TD>'|'区切り </TD><TD>OR検索           </TD></TR>
+<TR><TD>'+'区切り </TD><TD>AND検索(絞り込み)</TD></TR>
+<TR><TD>'-'区切り </TD><TD>NOT検索(除外)    </TD></TR>
+<TR><TD>入力例    </TD><TD>world |human -w00a +mdl (world かhumanを含む中で mdlを含み w00a を含まないもの) </TD></TR>
+</TABLE>
+
+<P>
+
+<TABLE>
+<TR><TD><INPUT TYPE="submit" VALUE="検索"><INPUT TYPE="reset"  VALUE="中止"></TD></TR>
+</TABLE>
+
+</font>
+<P>
+
+<font size=2>
+必要と思われる条件を以下のフォームに入力し、検索ボタンを押して下さい。<BR>
+一部で一致すれば検索にヒットします。<BR>
+なお、検索対象は、ファイル名、コメントについてです。
+</font>
+
+<INPUT TYPE=HIDDEN NAME=success VALUE=1>
+</FORM>
+</BODY>

@@ -1,0 +1,239 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+
+	void edgePostIlr( void* output, void* input, uint32_t count );
+	
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+.include "edgepost_helpers.inc"
+.include "edgepost_luv_helpers.inc"
+
+.macro CLAMP( x, a, b )
+	.localreg		m0, m1
+	cgt				m0, x, b
+	cgt				m1, a, x
+	selb			x, x, b, m0
+	selb			x, x, a, m1
+.endmacro
+
+.macro EXPAND_ARGB8( p0, p1, p2, p3 )
+	shufb			p0, p0, p0, kEdgePostUnpack0
+	shufb			p1, p1, p1, kEdgePostUnpack0
+	shufb			p2, p2, p2, kEdgePostUnpack0
+	shufb			p3, p3, p3, kEdgePostUnpack0
+	EDGEPOST_U8_TO_FLOAT( p0, p0)
+	EDGEPOST_U8_TO_FLOAT( p1, p1)
+	EDGEPOST_U8_TO_FLOAT( p2, p2)
+	EDGEPOST_U8_TO_FLOAT( p3, p3)
+.endmacro
+
+.macro EXPAND_FX16( p0, p1, p2, p3 )
+	shufb			p0, p0, p0, kExpand16
+	shufb			p1, p1, p1, kExpand16
+	shufb			p2, p2, p2, kExpand16
+	shufb			p3, p3, p3, kExpand16
+	cuflt			p0, p0, 11
+	cuflt			p1, p1, 11
+	cuflt			p2, p2, 11
+	cuflt			p3, p3, 11
+.endmacro
+
+.macro STORE_ARGB8( output, p0, p1, p2, p3 )
+	.localreg		r
+	EDGEPOST_CLAMP_FLOAT( p0 )
+	EDGEPOST_CLAMP_FLOAT( p1 )
+	EDGEPOST_CLAMP_FLOAT( p2 )
+	EDGEPOST_CLAMP_FLOAT( p3 )
+	EDGEPOST_FLOAT_TO_U8( p0, p0 )
+	EDGEPOST_FLOAT_TO_U8( p1, p1 )
+	EDGEPOST_FLOAT_TO_U8( p2, p2 )
+	EDGEPOST_FLOAT_TO_U8( p3, p3 )
+	EDGEPOST_PACK_PIXELS8( r, p0, p1, p2, p3 )
+	stqd			r, -0x10(output)
+.endmacro
+
+.macro STORE_LUV( output, p0, p1, p2, p3 )
+	.localreg		packed
+	EDGEPOST_CONVERT_TO_PACKED_LUV( packed, p0, p1, p2, p3 )
+	stqd			packed, -0x10(output)
+.endmacro
+
+.macro ILR_SAMPLE( x, y, i, p0, p1, p2, p3, pixelSize)
+	
+	.localreg		ix, iy, x_scale, y_scale
+	
+	// calculate integer coordinate
+	lqd				x_scale, ( i * 0x10)( scales )
+	shufb			y_scale, x_scale, x_scale, kEdgePostReplicateY
+	shufb			x_scale, x_scale, x_scale, kEdgePostReplicateX
+	fm				ix, x, x_scale
+	fm				iy, y, y_scale
+	cflts			ix, ix, 0
+	cflts			iy, iy, 0
+	CLAMP( ix, min_x, max_x )
+	CLAMP( iy, min_y, max_y )
+	
+	// assemble delta coordinates address
+	mpyi			ix, ix, pixelSize
+	mpya			ix, iy, y_stride, ix
+	
+	// gather 4 samples
+	.localreg		a1, a2, a3
+	rotqbyi			a1, ix, 4
+	rotqbyi			a2, ix, 8
+	rotqbyi			a3, ix, 12
+	lqx				p0, mid_address, ix
+	rotqby			p0, p0, ix
+	lqx				p1, mid_address, a1
+	rotqby			p1, p1, a1
+	lqx				p2, mid_address, a2
+	rotqby			p2, p2, a2
+	lqx				p3, mid_address, a3
+	rotqby			p3, p3, a3
+.endmacro
+
+.macro ILR_ACCUMULATE( x, y, i, p0, p1, p2, p3, pixelSize, EXPAND_MACRO)
+	
+	// load tint for this sample
+	.localreg		tint
+	lqd				tint, ( i * 0x10)( tints )
+	
+	// sample element
+	.localreg		s0, s1, s2, s3
+	ILR_SAMPLE( x, y, i, s0, s1, s2, s3, pixelSize)
+	
+	// expand to float
+	EXPAND_MACRO( s0, s1, s2, s3 )
+	
+	// accumulate
+	fma				p0, tint, s0, p0
+	fma				p1, tint, s1, p1
+	fma				p2, tint, s2, p2
+	fma				p3, tint, s3, p3
+.endmacro
+
+.macro ILR( output, input, width, height, tints, scales, inputPixelSize, EXPAND_MACRO, outputPixelSize, STORE_MACRO )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+
+	// splat inputs
+	shufb			width, width, width, kEdgePostReplicateX
+	shufb			height, height, height, kEdgePostReplicateX
+	shufb			input, input, input, kEdgePostReplicateX
+
+	//	calculate image center address
+	.reg			mid_address, h
+	andi			h, height, 1
+	ceqi			mid_address, h, 1
+	ai				h, height, 1
+	selb			h, h, height, mid_address
+	mpyi			mid_address, width, inputPixelSize
+	rotmai			mid_address, mid_address, -1
+	mpya			mid_address, h, mid_address, input
+
+	//	calculate coordinate deltas
+	.localreg		dx, dy, idx, idy
+	cuflt			dx, width, 0
+	cuflt			dy, height, 0
+	frest			idx, dx
+	frest			idy, dy
+	fi				dx, dx, idx
+	fi				dy, dy, idy
+	ilf32			idx, 2.f
+	fm				dx, dx, idx
+	fm				dy, dy, idx
+
+	//	setup x, y, iterators
+	.localreg		x, y, k0123
+	il128			k0123, 0x00000000_00000001_00000002_00000003
+	cuflt			k0123, k0123, 0		// LAME !!!
+	ilf32			y, -1.f
+	fma				x, dx, k0123, y
+	
+	// increment steps
+	.localreg		x_increment, y_increment, x_reset
+	ilf32			x_increment, 4.f
+	fm				x_increment, dx, x_increment
+	mov				y_increment, dy
+	ilf32			x_reset, -2.f
+	
+	// setup ranges (min/max)
+	.reg			w_2, h_2, min_x, max_x, min_y, max_y
+	rotmai			w_2, width, -1
+	rotmai			h_2, height, -1
+	ai				max_x, w_2, -1
+	ai				max_y, h_2, -1
+	mpyi			min_x, w_2, -1
+	mpyi			min_y, h_2, -1
+	
+	// input stride is width times pixel size
+	.reg			y_stride
+	mpyi			y_stride, width, inputPixelSize
+	
+	// linearized loop
+	.localreg		count, ix
+	mpy				count, width, height
+	ila				ix, 0
+
+loop:
+	ai				count, count, -4
+	ai				output, output, outputPixelSize * 4
+	
+	.localreg		a0, a1, a2, a3
+	ilf32			a0, .0f
+	ilf32			a1, .0f
+	ilf32			a2, .0f
+	ilf32			a3, .0f
+	
+	// do sampling
+	ILR_ACCUMULATE( x, y, 0, a0, a1, a2, a3, inputPixelSize, EXPAND_MACRO )
+	ILR_ACCUMULATE( x, y, 1, a0, a1, a2, a3, inputPixelSize, EXPAND_MACRO )
+	ILR_ACCUMULATE( x, y, 2, a0, a1, a2, a3, inputPixelSize, EXPAND_MACRO )
+	ILR_ACCUMULATE( x, y, 3, a0, a1, a2, a3, inputPixelSize, EXPAND_MACRO )
+	ILR_ACCUMULATE( x, y, 4, a0, a1, a2, a3, inputPixelSize, EXPAND_MACRO )
+	ILR_ACCUMULATE( x, y, 5, a0, a1, a2, a3, inputPixelSize, EXPAND_MACRO )
+	ILR_ACCUMULATE( x, y, 6, a0, a1, a2, a3, inputPixelSize, EXPAND_MACRO )
+	ILR_ACCUMULATE( x, y, 7, a0, a1, a2, a3, inputPixelSize, EXPAND_MACRO )
+	
+	// output result
+	STORE_MACRO( output, a0, a1, a2, a3 )
+
+	// increment x
+	fa				x, x, x_increment
+
+	// step coordinate iterators
+	.localreg		m, x_1, y_1
+	fa				x_1, x, x_reset
+	fa				y_1, y, y_increment
+	ai				ix, ix, 4
+	ceq				m, ix, width
+	selb			x, x, x_1, m
+	selb			y, y, y_1, m
+	
+	ila				y_1, 0
+	selb			ix, ix, y_1, m
+	
+	brnz			count, loop
+.endmacro
+
+.cfunc void edgePostIlr( qword output, qword input, qword width, qword height, qword tints, qword scales )
+	ILR( output, input, width, height, tints, scales, 4, EXPAND_ARGB8, 4, STORE_ARGB8 )
+.endfunc
+
+.cfunc void edgePostIlr_hdr( qword output, qword input, qword width, qword height, qword tints, qword scales )
+	EDGEPOST_DECLARE_LUV_HELPER_CONSTANTS
+	.reg			kExpand16
+	il128			kExpand16, "0A0B0C0D"
+	ILR( output, input, width, height, tints, scales, 8, EXPAND_FX16, 4, STORE_LUV )
+.endfunc

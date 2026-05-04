@@ -1,0 +1,92 @@
+#
+# サブディレクトリ用makefile
+# BASEDIR, LIBNAME, OBJECTS が設定されている状態で includeされる
+#
+
+ifeq ($(MGS2_XBOX),1)
+ifeq ($(MGS2_WIN),1)
+
+#-- for Windows --#
+ifdef WOBJECTS
+_OBJECTS := $(WOBJECTS) $(WOBJS)
+else
+_OBJECTS := $(XOBJECTS) $(XOBJS)
+endif
+
+ifndef LIBNAME_SSE
+LIBNAME_SSE := $(LIBNAME:.a=_sse.a)
+endif
+
+#-- SSE用Object設定 --#
+ifdef WOBJECTS_SSE
+_OBJECTS_SSE := $(WOBJECTS_SSE) $(WOBJS_SSE)	# SSE対応版
+else
+_OBJECTS_SSE := $(_OBJECTS)
+endif
+
+else
+
+#-- for X-Box --#
+_OBJECTS := $(XOBJECTS) $(XOBJS)
+
+endif
+OBJ_EXT = obj
+else
+
+#-- for PS2 --#
+_OBJECTS := $(OBJECTS) $(OBJS)
+
+OBJ_EXT = o
+endif
+
+#-- Target設定 --#
+ifeq ("$(MGS2_USESSE)","1")
+LIBNAME  = $(LIBNAME_SSE)
+_OBJECTS = $(_OBJECTS_SSE)
+endif
+
+TARGET     = $(foreach A, $(_OBJECTS), $(BASEDIR)/lib/$(LIBNAME)($(A)))
+
+_LISTFILE = ./_objlist
+
+# 共通コマンド
+
+.PHONY : all lib link arc clean
+
+all : $(TARGET) $(TARGET_SSE) arc link
+
+lib : $(TARGET) $(TARGET_SSE) arc
+
+link : 
+	cd $(BASEDIR); make link
+
+clean :
+	-rm -f $(_OBJECTS) $(_OBJECTS_SSE) $(_LISTFILE)
+
+.DEFAULT:
+	cd $(BASEDIR); make $@
+
+# 設定の実体
+
+include $(BASEDIR)/makefile.def
+
+arc : 
+ifneq ($(MGS2_XBOX),1)	# -------------- PS2
+	@if [ -e $(_LISTFILE) ]; then \
+		echo $(AR) $(ARFLAGS) $(BASEDIR)/lib/$(LIBNAME) $(_OBJECTS); \
+		$(AR) $(ARFLAGS) $(BASEDIR)/lib/$(LIBNAME) $(_OBJECTS); \
+		rm -f $(_LISTFILE); \
+	fi
+else					# -------------- XBOX
+	@if [ -e $(_LISTFILE) ]; then \
+		echo $(AR) $(ARFLAGS) $(BASEDIR)/lib/$(LIBNAME) $(_OBJECTS); \
+		($(AR) $(ARFLAGS) $(BASEDIR)/lib/$(LIBNAME) $(_OBJECTS) 2> /dev/null); \
+		rm -f $(_LISTFILE); \
+	fi
+endif
+
+# 依存関係のリスト
+#		rm -f $(BASEDIR)/lib/$(LIBNAME); \
+
+$(TARGET) : $(BASEDIR)/lib/$(LIBNAME)(%.$(OBJ_EXT)) : %.$(OBJ_EXT)
+	@echo $^ >> $(_LISTFILE)

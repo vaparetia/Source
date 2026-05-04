@@ -1,0 +1,35 @@
+proc rp_ＳＡＶＥデフォルトセット:05 {
+	selectmenu  2 -m  { 
+		[ＳＡＶＥ联买昏__s:セ〖ブする] 
+		[ＳＡＶＥ联买昏__s:セ〖ブしない] 
+	}
+	eval($w:rfp_ＳＡＶＥ联买昏手り猛 = $status)
+	print 'ぐあだららじょぶ$w:rfp_ＳＡＶＥ联买昏手り猛:' $w:rfp_ＳＡＶＥ联买昏手り猛
+}
+
+proc rt_ＳＡＶＥデフォルトセット:05 {
+	#ifdef d:EU_TRIAL
+	selectmenu  1 -m  { 
+		[ＳＡＶＥ联买昏__s:セ〖ブしない] 
+	}
+	eval($w:rft_ＳＡＶＥ联买昏手り猛 = 1)
+	#else
+print 'ほげほほほ'
+	selectmenu  2 -m  { 
+		[ＳＡＶＥ联买昏__s:セ〖ブする] 
+		[ＳＡＶＥ联买昏__s:セ〖ブしない] 
+	}
+	eval($w:rft_ＳＡＶＥ联买昏手り猛 = $status)
+	#endif
+print 'ぷにょあよあああ'
+}
+
+proc rp_ＳＡＶＥさせないセット:05 {
+	selectmenu  2 -m  { 
+		[ＳＡＶＥ联买昏__s:セ〖ブさせない] 
+		[ＳＡＶＥ联买昏__s:セ〖ブしない] 
+	}
+	eval($w:rfp_ＳＡＶＥ联买昏手り猛 = $status)
+	print 'ぐあだららじょぶ$w:rfp_ＳＡＶＥ联买昏手り猛:' $w:rfp_ＳＡＶＥ联买昏手り猛
+}
+

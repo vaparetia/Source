@@ -1,0 +1,11 @@
+#!/bin/csh
+#
+# Check BMP in the DAR
+#
+# T.Morita 
+#  $Id: check_dar_bmp,v 1.2 2001/06/19 02:16:42 usr04098 Exp $
+# 
+
+echo $1 | \sed -e 's/\/u\/develop\/mj001data\/fix/Check inside /'
+\dar tv $1 | \grep $2
+echo ''

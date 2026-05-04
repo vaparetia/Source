@@ -1,0 +1,642 @@
+/*
+	a25d.gcl                     
+	    ＫＬ連絡橋
+
+	2002/02/25 H.Yoshiike
+	$Id: a25d.gcl,v 1.11 2002/10/02 08:24:16 usr03682 Exp $                      
+*/
+
+// 各種スイッチ用define
+// ------------------------------------
+// プラント編識別
+#define STAGE_PLANT			1
+#define	STAGE_ALT			1		// オルタナティブミッション切り分け用
+#define STAGE_W25D			1 
+
+// 敵兵、ＮＰＣ状況（薬莢を呼び分けるのに必要）
+#define		ENE_P_GOL		1		// 都市迷彩ゴル兵
+#define		GUN_MECA		1 		// ガンカメ ガンサイファー 
+
+// 入出トラップ
+#define		STAGE_END		1
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA	0		// デバッグキャラ全体(FIX時は0)
+#else
+	#define		DEBUG_CHARA	0		// デバッグキャラ全体
+#endif
+#define		FALLDOWN_RESET	1		// 落下したらリセット
+
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME		a25d
+#define		KMS_NAME0		w25c0
+#define		KMS_NAME1		w25c1
+#define		KMS_NAME2		w25cd_17a
+#define		KMS_NAME3		w25cd_18a
+#define		KMS_NAME4		w25cd_19a
+#define		KMS_NAME5		w25cd_20a
+#define		KMS_NAME6		w25cd_21a
+#define		KMS_NAME7		w25cd_24a
+#define		KMS_NAME8		w25cd_25a
+#define		KMS_NAME9		w25cd_31a
+#define		KMS_NAMEA		w25cd_32a
+#define		KMS_NAMEB		w25cd_32b
+#define		KMS_NAMEC		w25cd_32c
+#define		KMS_NAMED		w25cd_crane
+#define		KMS_NAMEE		w25cd_gh
+#define		KMS_NAMEF		w25cd_i
+#define		KMS_NAMEG		w25cd_ij
+#define		KMS_NAMEH		w25cd_jk
+#define		KMS_NAMEI		w25cd_k
+#define		KMS_NAMEJ		w25cd_l
+#define		KMS_NAMEK		w25cd_other00
+#define		KMS_NAMEL		w25cd_other01
+#define		KMS_NAME_BRIDGE	w25c_plate
+#define		LT2_NAME		w25c
+#define		KMS_NAME_SEA	sea
+
+#define		KMS_ENT_L_0		w25d_28a
+#define		KMS_ENT_C_0		w25cd_31b
+
+#define		DOOR_NAME			w25c_dr00
+#define		DOOR_NAME_LOAD		w25c_dr00
+#define		DOOR_NAME_LV0		w25c_dr00x
+
+#define	BY_HIGH				1
+
+#define		PLAYER		ライデン	// モーションができるまで名前はスネーク
+
+#define ENE_SNEAK_SIGHT_W25		3000
+#define ENE_ALERT_SIGHT_W25		8000
+
+
+// ------------------------------------
+// 敵兵音声
+// ------------------------------------
+resource ghq_area_alert_voice {
+	w25d:
+		$t{
+			// PLAREA0
+			t:vc049009	// 指揮官「了解！敵を殲滅せよ！」
+			-1
+		}
+}
+
+resource ghq_caution_voice {
+	w25d:
+		$t{
+			// PLAREA0
+			t:vc040601,	// 指揮官　　「了解！僧院警戒を強化せよ！」
+			-2,
+			t:vc040614,	// 指揮官　　「ＫＬ連絡橋で異常発生。至急確認へ向かえ」
+			-3,
+			t:vc040613,	// 指揮官　　「ＫＬ連絡橋で異常発生。至急確認へ向かえ」
+			-1
+		}
+}
+
+
+// ローカル変数
+// ドア設定用ステージ内ローカル変数(a_mode.hよりも先に定義する)
+dim $$b:ドアフラグ[ 2 ]
+dim $$s:ドアモデル名[ 2 ]
+
+command	配列セット $$b:ドアフラグ[0] {
+	0,	0
+}
+command	配列セット $$s:ドアモデル名[0] {
+	0,	0
+}
+
+
+
+// モーション関係
+// ------------------------------------
+#include "rai_a25d.mh"
+
+// include
+// ------------------------------------
+#include "stdch.h"
+#include "enevoice.h"
+#include "a_mode.h"			// アナザーミッション設定ファイル
+#include "sload.h"
+#include "beyond.h"
+#include "sound.h"
+#include "item_info.h"
+#include "fall.h"
+#include "sdemo.h"
+#include "a25cd_common.h"
+
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+// アナザー用でマップ設定前に設定する
+// ------------------------------------
+@アナザー用マップ定義前設定
+
+// マップ設定
+// ------------------------------------
+chara マップ タイトロープ２ 	\
+				-k d:KMS_NAME0 \
+				-k d:KMS_NAME1 \
+				-k d:KMS_NAME2 \
+				-k d:KMS_NAME3 \
+				-k d:KMS_NAME4 \
+				-k d:KMS_NAME5 \
+				-k d:KMS_NAME6 \
+				-k d:KMS_NAME7 \
+				-k d:KMS_NAME8 \
+				-k d:KMS_NAME9 \
+				-k d:KMS_NAMEA \
+				-k d:KMS_NAMEB \
+				-k d:KMS_NAMEC \
+				-k d:KMS_NAMED \
+				-k d:KMS_NAMEE \
+				-k d:KMS_NAMEF \
+				-k d:KMS_NAMEG \
+				-k d:KMS_NAMEH \
+				-k d:KMS_NAMEI \
+				-k d:KMS_NAMEJ \
+				-k d:KMS_NAMEK \
+				-k d:KMS_NAMEL \
+				-k d:KMS_NAME_BRIDGE \
+				-h d:HZX_NAME,0 -l d:LT2_NAME
+
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 1
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 2
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 3
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 4
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 5
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 6
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 7
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 8
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 9
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 10
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 11
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 12
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 13
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 14
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 15
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 16
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 17
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 18
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 19
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 20
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 21
+
+command マップ設定 タイトロープ２ -set {
+	@レーダー設定
+	@常駐キャラ設定
+	@ローカル変数初期化
+	@A_プレイヤー設定 sna_a25d rai_a25d
+	@プラグイン設定
+}
+
+// アナザー用でマップ設定後に設定する
+// ------------------------------------
+@アナザー用マップ定義後設定
+
+command マップ設定 タイトロープ２ -set {
+	@弾痕跳弾設定
+	@A_ドア設置
+	@主観禁止壁設定
+	@ロード設定
+	@ゾーン属性変更
+	@フォグ設定
+	@カメラセット
+	@w25cd共通カメラ設定
+	@キャラ用ライト設置		// マップ設定の最後に呼ぶ
+	@w25cd落下死亡処理
+	@w25cd共通エルード設定
+	@空と海面設置
+//	@デバッグキャラセット
+}
+
+
+// 全てのセットが終わったところでフェードイン
+if( $s:登場ポイント == シェル２中央棟１Ｆから ) {
+	print 'シェル２中央棟１Ｆから'
+	// 全てのセットが終わったところでフェードイン
+	@ステージ開始時処理（ステージ名表示） d:LOAD_TYPE:SL_DOOR_TYPE 中央棟へのドア 2100 d:DEFAULT_M_TYPE d:wn_ＫＬ連絡橋
+	@中央棟ロード時カメラ設定
+} else if( $s:登場ポイント == Ｌ脚から ) {
+	print 'Ｌ脚から'
+	// 全てのセットが終わったところでフェードイン
+	@ステージ開始時処理（ステージ名表示） d:LOAD_TYPE:SL_DOOR_TYPE Ｌ脚ドア 2900 d:DEFAULT_M_TYPE d:wn_ＫＬ連絡橋
+	@Ｌ脚ロード時カメラ設定
+} else {
+	print 'GCL ERROR ! Stage Start No Point.'
+}
+
+
+command マップ表示 -show タイトロープ２
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// 全マップ共通
+	// レーダー
+	// ------------------------------------
+	proc レーダー設定 {
+		#if d:DEBUG_PRINT 
+			print 'menu set'
+		#endif
+	}
+
+	// ローカル変数初期化
+	// ------------------------------------
+	proc ローカル変数初期化 {
+		#if d:DEBUG_PRINT 
+			print 'localvar_init'
+		#endif
+		eval( $f:エマゲームオーバーフラグ = 0 );
+	}
+
+	// プラグインプログラム
+	// ------------------------------------
+	proc プラグイン設定 {
+		#if d:DEBUG_PRINT
+			print 'plugin_set'
+		#endif
+
+		command プラグイン自動ジャンプ
+		command プラグイン落下
+	}
+
+	// ドア＆マップ切り替え関係
+	// ------------------------------------
+	proc A_ドア設置 {
+		#if d:DEBUG_PRINT
+			print 'slide_door_set'
+		#endif
+
+		// ドアフラグを元にモデルを設定(※全てのパターンのモデルを用意するのはもったいないので使うところのみ変更していく)
+		// ドアモデル名セット $:配列番号 $:ドア名１(close) $:ドア名２(open) $:ドア名３(enemy) $:ドア名４(lv_close) $:ドア名５(lv_open)
+		// 中央棟へのドア
+		@ドアモデル名セット 0 d:DOOR_NAME_LV0 d:DOOR_NAME_LV0 d:DOOR_NAME_LV0 d:DOOR_NAME_LOAD d:DOOR_NAME_LOAD
+		// Ｌ脚ドア
+		@ドアモデル名セット 1 d:DOOR_NAME_LV0 d:DOOR_NAME_LV0 d:DOOR_NAME_LV0 d:DOOR_NAME d:DOOR_NAME
+
+
+		@ドアランプ設定 中央棟方面ドアランプ 1024 19125,-1500,-234250 0
+		chara ドア 中央棟へのドア \
+			-m $$s:ドアモデル名[0] \
+			-d 0,1024,0 \
+			-p 19125,-1500,-234250 \
+			-slide d:SD_SLIDE_OUTSIDE \
+			-A 中央棟方面ドアランプ \
+			-time d:SD_OPEN_TIME \
+			-exec {
+				if ( $:開閉フラグ == 1 ) {
+					mesg プットオブジェ 中央棟接続マップ on
+				} else {
+					mesg プットオブジェ 中央棟接続マップ off
+				}
+			}
+		trap dr001 ？ \
+			-mask ？ \
+			-exec {
+				if($3==入る){
+					mesg ドア 中央棟へのドア open $2
+				}else{
+					mesg ドア 中央棟へのドア close $2
+				}
+			}
+		@A_ドア開閉追加設定 中央棟へのドア $$b:ドアフラグ[0] 19125,-1500,-234250 1024 d:SD_SLIDE_OUTSIDE
+
+
+		@ドアランプ設定 Ｌ脚方面ドアランプ 0 48000,0,-223625 1
+		chara ドア Ｌ脚ドア \
+			-m $$s:ドアモデル名[1] \
+			-d 0,0,0 \
+			-p 48000,0,-223625 \
+			-slide d:SD_SLIDE_OUTSIDE \
+			-A Ｌ脚方面ドアランプ \
+			-time d:SD_OPEN_TIME \
+			-exec {
+				if ( $:開閉フラグ == 1 ) {
+						mesg プットオブジェ Ｌ脚接続マップ on
+				} else {
+						mesg プットオブジェ Ｌ脚接続マップ off
+				}
+			}
+		trap dr002 ？ \
+			-mask ？ \	
+			-exec {
+					if($3==入る){
+						mesg ドア Ｌ脚ドア open $2
+					}else{
+						mesg ドア Ｌ脚ドア close $2
+					}
+			}
+		@A_ドア開閉追加設定 Ｌ脚ドア $$b:ドアフラグ[1] 48000,0,-223625 0 d:SD_SLIDE_OUTSIDE
+
+
+		chara プットオブジェ Ｌ脚接続マップ -m d:KMS_ENT_L_0 -r 0 0 0 -p 0 0 0 -l d:LT2_NAME -s 100 100 100 -f 0
+		chara プットオブジェ 中央棟接続マップ -m d:KMS_ENT_C_0 -r 0 0 0 -p 0 0 0 -l d:LT2_NAME -s 100 100 100 -f 0
+
+		// K脚ドアはいけないためドア壊れエフェクトを呼びます
+		@壊れドアエフェクト設定 壊れドアエフェクト 2048 52750 0 -256125 1
+	}
+	proc 主観禁止壁設定 {
+		@主観禁止壁 中央棟へのドア壁 19125 -1500 -234250 1024 d:SD_SLIDE_OUTSIDE
+		trap dr001 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if( $3 == 入る ) {
+					mesg 透明壁 中央棟へのドア壁 on
+				} else {
+					mesg 透明壁 中央棟へのドア壁 off
+				}
+			}
+		@主観禁止壁 Ｌ脚ドア壁 48000 0 -223625 0 d:SD_SLIDE_OUTSIDE
+		trap dr002 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if( $3 == 入る ) {
+					mesg 透明壁 Ｌ脚ドア壁 on
+				} else {
+					mesg 透明壁 Ｌ脚ドア壁 off
+				}
+			}
+		// ニキータ防止
+		command ミサイル移動範囲設定 18000 -80000 -259250 68000 80000 -219250
+	}
+
+
+
+	// 入出トラップ
+	// ------------------------------------
+	proc ロードプロック {
+		#if d:DEBUG_PRINT 
+			print 'load_proc'
+		#endif
+
+		if ($s:呼び出しプロック == mv_a25d_a31a_0) {
+			// シェル２中央棟１Ｆへ
+			@mv_a25d_a31a_0
+		} else if ($s:呼び出しプロック == mv_a25d_a28a_0) {
+			// Ｌ脚へ
+			@mv_a25d_a28a_0
+		} else if ($s:呼び出しプロック == load_tales_book) {
+			// 紙芝居へ
+			@load_tales_book
+		}
+	}
+
+	proc ロード設定 {
+		#if d:DEBUG_PRINT 
+			print 'load_set'
+		#endif
+
+		trap ld002 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if( $f:ロードチェックＯＮフラグ == 1 ) {
+					//	テイルズＤのシェル２中央棟到着前はこちらを通る
+					if (($b:ミッション番号 == d:MISSION:スネークテイルズ) && \
+						($b:tales_story_no == d:TALES_NO:D) && \
+						($b:tales_story_d == d:TALES_D:シェル２中央棟到着前)) {
+						@ステージ終了時処理 15750 -7000 -235000 3072 \
+						load_tales_book d:DEFAULT_M_TYPE
+						@中央棟ロード時カメラ設定 ;
+
+					//	それ以外
+					} else {
+						//	テイルズＤはシェル２中央棟の敵はいないのでＢＧＭフェードアウトする
+						if (($b:ミッション番号 == d:MISSION:スネークテイルズ) && \
+							($b:tales_story_no == d:TALES_NO:D)) {
+							command セットサウンドコード -c d:SNG_FOUTS_S
+						}
+							// シェル２中央棟１Ｆへ
+						@ステージ終了時処理（ステージ名表示） 15750 -7000 -235000 3072 \
+							mv_a25d_a31a_0 d:DEFAULT_M_TYPE d:wn_シェル２中央棟１Ｆ空気清浄室
+						@中央棟ロード時カメラ設定 ;
+					}
+				}
+			}
+		trap ld003 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if( $f:ロードチェックＯＮフラグ == 1 ) {
+					// Ｌ脚へ
+					@ステージ終了時処理（ステージ名表示） 48750 0 -220250 0 \
+						mv_a25d_a28a_0 d:DEFAULT_M_TYPE d:wn_Ｌ脚汚水処理場
+					@Ｌ脚ロード時カメラ設定 ;
+				}
+			}
+	}
+
+
+	// 空と海面設置
+	// ------------------------------------
+	proc 空と海面設置 {
+		#if d:DEBUG_PRINT
+			print 'w25c_sea_set'
+		#endif
+
+		chara プラント海面 plant_sea \
+			-single_mode \	// シングルテクスチャモード
+			-tex oil d_oil_sea_alp_ovl_mod0222 d_oil_ref_add_alp_ovl_mod1120 \
+			-pos 52000,-40000,-226000 \
+			-w 1 2 3 \
+			-l 
+		chara 拡張海表示 sea_serface_ex		\
+			-t	d_oil_sea_alp_ovl_mod0222	\
+			-pos	52000,-40000,-226000
+		mesg プラント海面 plant_sea 上下運動計算処理 0
+		chara 水面監視水飛沫 落下水飛沫 \
+			-n d:PLAYER 
+		command 水位設定 -lv -40000
+		@昼空（レンズフレア指定） 52000 -40000 -226000 -1300 -2900 -3850 0
+		@風基本設定
+	}
+
+
+	// フォグ
+	// ------------------------------------
+	/*
+	　　空RGB値　… R58,G47,B38
+	　　フォグ値 … R143,G100,B50
+	　　　　　　　　NEAR… -16000,FAR… 250000
+	*/
+	proc フォグ設定 {
+		#if d:DEBUG_PRINT
+			print 'fog_set'
+		#endif
+
+		/*
+		chara フォグ 霧\
+			-c  143, 100, 50 \
+			-n -16000 \
+			-f 250000 
+		*/
+		
+		@明るさ可変機能 220,237,198 \
+			-25000 250000\
+			ev092 -1750
+	}
+
+	// キャラ用光源(マップの設置が終わってから設定することで、キャラだけに光を当てる)
+	// ------------------------------------
+	proc キャラ用ライト設置 {
+		#if d:DEBUG_PRINT
+			print 'chara_light_set'
+		#endif
+
+		chara 環境光 環境光源 \
+			 -c 59,61,38
+
+		chara 平行光 平行光源 \
+			 -c 166,167,147 \
+			 -p -2500 -3500 -2500
+	}
+
+
+	// ステージカメラ設定 
+	// ------------------------------------
+	proc カメラセット {
+		#if d:DEBUG_PRINT
+			print 'stage_camera_set'
+		#endif
+
+		chara カメラ ステージカメラ		-c 0 -l 3 -p 0 
+		chara カメラ 通路カメラ			-c 0 -l 2 -p 50
+		chara カメラ 小部屋カメラ		-c 0 -l 2 -p 40
+		chara カメラ ロードカメラ		-c 0 -l 2 -p 30
+		chara カメラ ビヨンドカメラ		-c 0 -l 2 -p 20
+		chara カメラ モーションカメラ		-c 0 -l 2 -p 10
+		chara カメラ カットインカメラ		-c 0 -l 2 -p 5 
+		chara カメラ エマ死にカメラ		-c 0 -l 0 -p 10 
+
+		// デフォルトカメラ
+		chara カメラ設定 ステージカメラ \
+			-c 0 \	
+			-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-r 750,2048,0 \
+			-f 6500 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s 1
+	}
+
+	// ------------------------------------
+	// ビヨンド設定
+	// ------------------------------------
+	/* ビヨンドは共通設定へ */
+
+// 各マップ別設定
+// ------------------------------------
+// タイトロープ１
+	// 強制モーション用トラップ
+	// ------------------------------------
+	// ジャンプ設定
+	// ------------------------------------
+	proc タイトロープ１ジャンプ設定 {
+		#if d:DEBUG_PRINT
+			print 'w25c_jump_set'
+		#endif
+		trap ky001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				@ジャンプ発動 ky001 1000 100
+			}
+		trap ky002 d:PLAYER \
+			-mask 入る \
+			-exec {
+				@ジャンプ発動 ky002 1000 100
+			}
+	}
+
+
+// ------------------------------------
+// サブスタンス用追加プロック
+// ------------------------------------
+proc ゾーン属性変更 {
+	#if d:DEBUG_PRINT
+		print 'zone_change'
+	#endif
+	
+	command アンセットゾーンフラグ 1 52000 0 -236000 ;	// 通過できるようになりました
+}
+
+
+
+
+
+
+
+
+
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下仮キャラ用proc
+// -----------------------------------------------------------------------------------
+// 仮キャラ
+// ------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------
+proc デバッグキャラセット {
+	#if d:DEBUG_PRINT
+		print 'debug_chara_set'
+	#endif
+
+	#if d:SCREENSHOT
+		chara スクリーンショット shot
+	#endif
+	#if d:USB_KEY
+		chara USBキーボード実行 test \
+			-e d:KBD_ESC {	
+				mesg プレイヤー d:PLAYER position -5500, -13000, -500
+			} \
+	#endif
+}

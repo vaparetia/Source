@@ -1,0 +1,120 @@
+/*
+	1stRead.txt
+	メタル２プログラムをする人は
+	最初に読んで下さい。
+	
+	2001/03/12	M.Sonoyama
+	$Id: 1stRead.txt,v 1.1.1.3 2002/11/19 11:41:41 Yoshizawa1 Exp $
+*/
+
+	■環境設定方法
+		１）次のディレクトリをマウントする。
+			
+			nagato:/exports/mj001b 
+		    nagato:/exports/mj001data 
+
+		２）以下にパスを通す。
+
+			/usr/local/sce/ee/gcc/bin 
+	        /usr/local/sce/iop/gcc/bin 
+	        /usr/local/sce/bin
+			/u/develop/mj001b/tools/bin/linux
+
+		３）環境変数を設定する。
+
+			setenv CVSROOT /u/develop/mj001b/cvsroot	//ＭＧＳ２開発ＣＶＳのルート
+		    setenv CVSEDITOR mule 			//ＣＶＳでコメントを書くエディター
+		    setenv DSNETM psjw002 			//自分のＴ１００００
+												(ホントにpsjw002と書くと、
+													園山のマシンになってしまいます。）
+
+		４）ＰＳ２ライブラリをローカルにコピー
+
+            cd /usr/local/develop/
+		    tar zxvf /u/develop/mj001b/develop/scelib/ver213hdd.tar.gz //その時点での最新
+		    cd /usr/local
+			rm sce
+			ln -s /usr/local/develop/ver213hdd/sce sce				   //その時点での最新
+
+		５）Ｔ１００００のアップデート
+
+			※必ず左下のディップスイッチがTOOL側になっていることを確認してください。
+
+			dsflash /u/develop/mj001b/develop/scelib/ver213hdd/t10000-rel2132hdd.bin //その時点での最新
+			を実行。
+
+		   	dsresetが正常に動けば完了です。
+
+		６）ＭＧＳ２開発環境の構築
+
+			cd	/usr/local/develop
+			cvs checkout mgs2
+
+	■開発の流れ
+
+		１）ステージ構築
+				mgs2/list 以下で、				make all
+				特定のステージだけのときは		make 'ステージ名'
+				デモ							make demo
+				音声							make vox sound
+				モーションヘッダ作成			make mh
+
+				詳細は、mgs2/list/readme.txt
+
+		２）シナリオＭＡＫＥ
+				mgs2/scn 以下で、				make
+				特定のステージだけのときは		setenv MGS2STAGE 'ステージ名' の後、make
+				リンクするプログラムを決定する	make stage	（mgs2/source からでも可能）
+				
+				mgs2/source から				make scn 
+
+		３）プログラムコンパイル
+				mgs2/source 以下で
+				全部							make
+				あるディレクトリ以下			make 'ディレクトリ名'
+				リンクのみ						make link
+
+		４）実行
+				mgs2/source, mgs2/scn から		make run
+
+	■現在用意されているドキュメント
+			
+			control.txt				：	コントロールシステム			（園山）
+			convicon.txt			：	アイコンコンバータ				（狩野）
+			cvs4mgs.txt				：	MGS2開発でのcvsのマニュアル		（植原）
+			dataflow.txt			：  データの流れ					（園山）
+			effect_list.txt			：	エフェクトリスト				（岡嶋）
+			effect_list_big.txt		：	たぶん田中秀幸のもの			（？）
+			font.txt				：	ＭＧＳ２でのフォントの扱いについて	（植原）
+			km3_fmt.txt				：  中間出力モデル「KM3」フォーマットについて	（高部）
+			libhzx.txt				：	libhzxのドキュメント			（園山）
+			map_system.txt			：	マップシステム					（園山）
+			mdl_fmt.txt mdl_fmt2.txt：	モデルフォーマット				（高部）
+			memcard_checker.txt		：	メモリカードユーティリティ		（狩野）
+			mgs2_actor.txt			：	アクターシステム				（植原）
+			mgs2_anime.txt			：  アニメスクリプト				（岡嶋）
+			mgs2_libdg_1.txt		：  ＭＧＳ２用ＬＩＢＤＧアウトライン説明	（高部）
+			mgs2_light.txt			：	ライト							（高部）
+			mgs2_prim.txt			：	プリミティブシステム			（高部）
+			motion_build.txt		：	音声認識から口パクモーション生成までの流れ	（吉良）
+			mtxvec.txt				：	Ｖｕ０使用のベクトルユーティリティ	（狩野）
+			preview_env.txt			：	プレビュー環境の構成				（狩野）
+			preview_maintainance	：	プレビュー環境のメンテナンス		（狩野）
+			readme.txt				：	プログラム開発方針。これの次に読んでください。（植原）
+			stagedat.txt			：  ステージファイルの構造				（植原）
+			style.txt				：	Ｃ言語表記について。植原さんの経験に
+										基づくＣ言語開発の方針。			（植原）
+			subd.txt				：	３次元計算テクニック				（狩野さん？）
+			target.txt				：	ターゲットシステム					（園山）
+			tex_fmt.txt				：	テクスチャフォーマット				（高部）
+			userlist.txt			：	ユーザーリスト。まだの人は登録しましょう（植原）
+			vu1draw.txt				：  ＶＵ１によるモデル表示について		（高部）
+			vuinst.txt				：  ＶＵインストラクションセット		（植原）
+			
+	■その他
+		
+		１）メタル２開発者限定ホームページトップ
+
+			http://london.konami/
+
+		

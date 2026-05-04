@@ -1,0 +1,157 @@
+//
+//	w01d.src
+//
+//	written by S.Hirano 1999.Oct
+//
+//	$Id: a01d.src,v 1.11 2002/08/06 06:05:17 usr04249 Exp $
+
+#define WN_W01D
+
+// 常駐データ
+block .use r_vr_s
+
+// 各ステージ共通要素
+block .nocache
+block .cache
+
+
+#include	"t_common.h"
+#include	"common.h"
+// オルタナティブミッション用追加エフェクト
+#include	"alt_effect.h"
+
+
+//エフェクト関係
+#define	EFFECT_CUSTUM
+
+#define	E_GLASS_DANKON			// グラス系弾痕
+#define	E_KOGETUKI				// 壁への焦げ付き
+#define	E_ENEMY					// 敵兵系
+#define	E_SLING					// スリング
+#define	E_ENEMY_LIGHT			// 敵兵ライト
+#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+#define	E_C4BOMB				// Ｃ４爆弾、赤外線センサー
+#define	E_BROKEN_OBJECT			// 壊れ物
+#define	E_BROKEN_PAPEROBJECT	// 壊れ物紙
+#define	E_BROKEN_PLATE			// 壊れ物皿
+#define	E_CHARA_MADOAME			// chara 窓雨
+#define	E_STEAM					// 粉 & 水蒸気
+#define	E_POWDER				// 小麦粉
+#define	E_TENKYUU				// 天球ドーム
+#define	E_DOOR_LUMP				// ドアランプ
+#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+#define E_WATER_MINE			// 解体Ｃ４で必要？
+#define E_SKY_NORMAL			// 刀ライデンで敵兵を切ったときに必要？
+
+#include		"c_effect.h"
+//include		wp_tank.h
+
+// 階段魔人の弾道のライン
+//pack_trnall trans00.tri effect/plasma/plasma_msk.bmp
+
+pack_all w01d_comdl_cm.tri world/w01d/dining/pumpBroS.dar goods/bottle/btl_piece.dar goods/bottle/eki_R.dar goods/bottle/eki_S.dar
+
+// 小物を分けて記述
+pack_all w01d_effect.tri world/door/w01d_dr00.dar world/door/w01d_dr01.dar world/door/w01d_dr02.dar goods/hako effect/crash/pump01_alp.bmp effect/crash/pump02_alp.bmp goods/bottle goods/dbg_box/pataHakoKuro.dar world/w01d/dining
+//world/w00/light13.pic world/w00/light07.pic world/w00/w00_fog.dar world/w00/w00_fog2.dar effect/rain/rain01_msk.pic
+
+world	door/w01d_dr00.kms
+world	door/w01d_dr01.kms
+world	door/w01d_dr02.kms
+goods	hako
+goods	bottle
+goods	dbg_box/pataHakoKuro.kms
+world	w01d/dining
+
+// 階段部分オブジェの切り替え
+pack_all aaa_stair_kirikae.tri \
+	world/w01d/w01d1/w01d1_obj00.dar \
+	world/w01d/w01d1/w01d1_obj01.dar \
+	world/w01d/w01d1/w01d1_obj02.dar \
+	world/w01d/w01d1/w01d1_obj03.dar \
+	world/w01d/w01d1/w01d1_inside.dar
+
+world	w01d/w01d1/w01d1_obj00.kms
+world	w01d/w01d1/w01d1_obj01.kms
+world	w01d/w01d1/w01d1_obj02.kms
+world	w01d/w01d1/w01d1_obj03.kms
+
+// ワールド
+// w01dだけで全部やると、テクスチャオーバーなので、分けて記述。
+world		w01d/w01d0
+world		w01d/w01d1
+world		w01d/w01d2
+world		w01d/w01d0DeadBody.kms
+
+world		w01d
+
+lt2		w01d.lt2
+
+hazard		a01d.hzx
+
+
+// 強制モーション
+mtn		sna_w01d.mls
+mtn		rai_w01d.mls
+
+//敵兵ステージアクション
+mtn		gbs_w01d.mls
+rename	gbs_w01d.mar	gbsstage.mar
+
+
+// 窓雨
+debug		mizutani/rain
+
+//赤外線トラップ
+weapon		cfr/cfr_trp.kms
+meca		ir_sensor/irs_diode_cm.kms
+
+// 体験版用
+pack_all trial.tri meca/ir_sensor/irs.dar meca/sv_camera
+meca	ir_sensor
+meca	sv_camera
+
+// デバッグ用（00.05.22より使用開始）
+// 以下を戻すときは、world/w01d/w01d0 の中身を、runtimeからfixへ復活させること。
+// 消火器のモデル
+debug	okajima/hose_test/hose_cone.kms
+debug	okajima/hose_test/hose_new2.kms
+cvd		debug/okajima/hose_test/hose_new2.cvd vn
+//debug	w01d0_kitc_door/w01d0_kitc_doorR.kms
+//debug	w01d0_kitc_door/w01d0_kitc_doorL.kms
+debug	murakami/twin_dr00.kms
+
+// シンキストダンボール
+debug	murakami/w01d2_cbx_a.kms
+
+// キャラクタ
+include		ene_tank.h
+
+// 撮影用マルチウエイトキャラモデル
+//human	sna_def/sna_mmt.evm
+
+// ビデオ撮影用スネーク顔表情
+//rmt		sna_rmt
+
+// リネーム
+rename		aks_sp.cv2	aks_sp_1.cv2
+
+//ヌルモデル
+goods	null/null.kms
+
+// 追加アイテム
+	//#define COLD
+	//#define AK_AM
+	//#define M4_AM
+	
+	#include "a_item.h"
+
+// 解体Ｃ４セット 最後に描画させるためにＴＲＩ名にＺをつける
+pack_all	z_object.tri \
+			goods/c4_kaitai_a \
+			goods/c4_kaitai_b
+
+goods		c4_kaitai_a
+goods		c4_kaitai_b
+

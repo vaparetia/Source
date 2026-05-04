@@ -1,0 +1,255 @@
+//
+//	new_title.src
+//	written by S.Kaneyoshi	2001/06/03
+//	$Id: n_title.src,v 1.75 2002/10/24 04:46:16 usr04761 Exp $
+
+block .nocache
+block .cache
+// binary		keepfont.row
+
+l2d 2D/node/node_encuete/node_enc.l2d
+
+#if defined (MGS2_AREA_EU)
+l2d		2D/node/title_logo_sub_2003/title_logo.l2d 2D/node/title_logo_sub_2003/title_face.l2d
+#elif !defined (MGS2_XBOX_1) && defined (MGS2_AREA_US)
+l2d		2D/node/title_logo_sub_2003/title_logo.l2d 2D/node/title_logo_sub_2003/title_face.l2d
+#else
+l2d		2D/node/title_logo_sub/title_logo.l2d 2D/node/title_logo_sub/title_face.l2d
+#endif
+
+#ifdef MGS2_XBOX_1
+l2d		2D/node/save_load_sub/save_load.l2d
+#else
+l2d		2D/node/save_load/save_load.l2d
+#endif
+
+#ifdef MGS2_XBOX_1
+// koba4
+l2d     2D/node/dogtag_x/dogtag.l2d
+l2d  '-trad'   2D/node/album_sub/album.l2d
+#else
+// koba4
+l2d     2D/node/dogtag/dogtag.l2d
+l2d  '-trad'   2D/node/album/album.l2d
+#endif
+l2d     2D/node/blk_bg.l2d
+l2d 	2D/node/album/dot_and_font.l2d
+l2d     2D/node/node_name/node_name.l2d
+l2d     2D/moses/prestmenu.l2d
+#ifdef MGS2_XBOX_1
+l2d     2D/moses_x/moses_close.l2d
+l2d     2D/moses_x/moses_c1.l2d
+l2d     2D/moses_x/moses_a.l2d
+l2d     2D/moses_x/moses_b.l2d
+l2d     2D/moses_x/moses_c.l2d
+l2d     2D/moses_x/moses_a1.l2d
+l2d     2D/moses_x/moses_b1.l2d
+l2d     2D/moses_x/moses_c1.l2d
+l2d		2D/node/title_menu_sub_x/title_menu.l2d
+#else
+l2d     2D/moses/moses_close.l2d
+l2d     2D/moses/moses_c1.l2d
+l2d     2D/moses/moses_a.l2d
+l2d     2D/moses/moses_b.l2d
+l2d     2D/moses/moses_c.l2d
+l2d     2D/moses/moses_a1.l2d
+l2d     2D/moses/moses_b1.l2d
+l2d     2D/moses/moses_c1.l2d
+l2d		2D/node/title_menu_sub/title_menu.l2d
+#endif
+// l2d		2D/node/save_load/save_load.l2d
+
+l2d	'-trad'	2D/node/node_frame/node_frame.l2d
+l2d		2D/node/scrn/scrn.l2d
+#ifdef MGS2_XBOX
+l2d		2D/node/color_x/color.l2d
+l2d		2D/node/node_menu_sub_x/node_menu.l2d
+#else
+l2d		2D/node/color/color.l2d
+l2d		2D/node/node_menu_sub/node_menu.l2d
+l2d		2D/node/5_1ch/5_1ch.l2d
+#endif
+l2d		2D/node/special/special.l2d
+l2d		2D/start_warning/start_warning.l2d
+
+//l2d		2D/clear_code/clear_code.l2d	// SnakeTales VR ロード用
+
+
+// 2001/9/20
+// ボスラッシュ選択画面の追加
+//ボスラッシュ用（園山追加）
+#ifdef MGS2_XBOX
+l2d	'-trad'	2D/boss_rush_x/boss_menu.l2d 2D/boss_rush_x/boss_rush.l2d
+#else
+l2d	'-trad'	2D/boss_rush/boss_menu.l2d 2D/boss_rush/boss_rush.l2d
+#endif
+
+// サブスタンスはＰＡＬ準拠
+/* オタコン等追加 PS2国内版以降 */
+#ifdef MGS2_XBOX
+l2d	'-trad'	2D/casting_sub_x/casting.l2d
+#else
+l2d	'-trad'	2D/casting_sub/casting.l2d
+#endif
+
+
+// NY マップ
+// 背景ログ
+// グリッド
+// ベンゼン君
+l2d	2D/node/node_bg/ny_map/ny_map.l2d 2D/node/node_bg/ny_map/ny_map_bg.l2d
+l2d 2D/node/node_bg/log/log.l2d
+l2d 2D/node/node_bg/scroll/scroll.l2d
+// l2d 2D/node/node_bg/chm/chm1.l2d 2D/node/node_bg/chm/chm2.l2d 2D/node/node_bg/chm/chm3.l2d
+l2d 2D/node/node_bg/fog1.l2d 2D/node/node_bg/fog2.l2d 2D/node/node_bg/fog3.l2d \
+    2D/node/node_bg/plant_map.l2d 2D/node/node_bg/ray_wall.l2d \
+    2D/node/node_bg/chm1.l2d 2D/node/node_bg/chm2.l2d 2D/node/node_bg/chm3.l2d \
+	2D/node/node_bg/roop_wall.l2d 2D/node/node_bg/genzi.l2d
+l2d 2D/node/node_bg/grd/grd.l2d
+
+
+#ifdef MGS2_VMODE_PAL
+	#define TITLE_TRIAL_TEX	2D/moses/pkg1_pal_alp_ovl.bmp \
+							2D/moses/pkg2_pal_alp_ovl.bmp
+#else
+	#define TITLE_TRIAL_TEX	2D/moses/pkg1_eng_alp_ovl.bmp \
+							2D/moses/pkg2_eng_alp_ovl.bmp
+#endif
+#ifdef MGS2_AREA_JAPAN
+	/* コナミロゴＲなし */
+	#define LOGO_ETC menu/title_trial/logo_konami.bmp
+#else
+	/* コナミロゴＲ付き */
+	#define LOGO_ETC menu/title_trial/logo_konami_r.bmp
+#endif
+
+//タイトルに必要なテクスチャー
+#if 0   //こっちは要らなくなるの？
+
+	#ifdef MGS2_LANG_ENGLISH
+		#ifdef MGS2_VMODE_PAL
+			// パル版 伊と西もパックしてしまう
+			pack_all	logo.tri	menu/title_trial/menu_fnt_alp_ovl.bmp \
+						2D/credit/kcej_logo_alp_ovl.bmp \
+						TITLE_TRIAL_TEX
+
+			pack_all	fiction_e.tri	2D/fiction/fiction_e_alp_ovl.bmp
+			pack_all	fiction_it.tri	2D/fiction/fiction_it_alp_ovl.bmp
+			pack_all	fiction_fr.tri	2D/fiction/fiction_fr_alp_ovl.bmp
+			pack_all	fiction_es.tri	2D/fiction/fiction_es_alp_ovl.bmp
+			pack_all	fiction_de.tri	2D/fiction/fiction_de_alp_ovl.bmp
+		#else
+			// 英語版
+			pack_all	logo.tri	menu/title_trial/menu_fnt_alp_ovl.bmp \
+						2D/credit/kcej_logo_alp_ovl.bmp \
+						TITLE_TRIAL_TEX \
+						FICTION_TEX
+		#endif
+	#else
+		// 日本語版
+		pack_all	logo.tri	menu/title_trial/menu_fnt_alp_ovl.bmp \
+					2D/credit/kcej_logo_alp_ovl.bmp \
+					TITLE_TRIAL_TEX \
+					FICTION_TEX
+	#endif
+
+#else   // サブスタンス用
+
+	pack_all	logo.tri	menu/title_trial/menu_fnt_alp_ovl.bmp \
+				2D/credit/kcej_logo_alp_ovl.bmp \
+				TITLE_TRIAL_TEX \
+				LOGO_ETC
+
+#ifdef MGS2_AREA_US 	/* 米国版 */
+	pack_all	fiction_e.tri	2D/fiction/fiction_e_alp_ovl.bmp
+#endif
+#ifdef MGS2_AREA_JAPAN 	/* 日本版 */
+	pack_all	fiction_e.tri	2D/fiction/fiction_e_alp_ovl.bmp
+	pack_all	fiction_j.tri	2D/fiction/fiction_j_alp_ovl.bmp
+#endif
+#ifdef MGS2_AREA_EU 	/* 欧州版 */
+	pack_all	fiction_e.tri	2D/fiction/fiction_e_alp_ovl.bmp
+	pack_all	fiction_it.tri	2D/fiction/fiction_it_alp_ovl.bmp
+	pack_all	fiction_fr.tri	2D/fiction/fiction_fr_alp_ovl.bmp
+	pack_all	fiction_es.tri	2D/fiction/fiction_es_alp_ovl.bmp
+	pack_all	fiction_de.tri	2D/fiction/fiction_de_alp_ovl.bmp
+#endif
+
+#endif
+
+
+#ifdef MGS2_AREA_JAPAN
+/* ＣＥＳＡ表示は日本版のみ */
+pack_all	caution.tri	2D/logo/sce_cesa_attention.bmp
+#endif
+
+// ベーシックアクション頭
+#ifdef MGS2_AREA_EU /* 欧州版 */
+pack_all 	aaa_sp_menu.tri \
+			menu/omoshiro_mov/bg_alp_ovl.bmp \
+			menu/omoshiro_mov/class1_alp_ovl.bmp \
+			menu/omoshiro_mov/class2_alp_ovl.bmp \
+			menu/omoshiro_mov/class3_alp_ovl.bmp \
+			menu/omoshiro_mov/curs_alp_ovl.bmp \
+			menu/omoshiro_mov/exit_alp_ovl.bmp \
+			menu/omoshiro_mov/list1_alp_ovl.bmp \
+			menu/omoshiro_mov/list2_alp_ovl.bmp \
+			menu/omoshiro_mov/list3_alp_ovl.bmp \
+			menu/omoshiro_mov/sp_alp_ovl.bmp \
+			menu/omoshiro_mov/tag1_alp_ovl.bmp \
+			menu/omoshiro_mov/tag2_alp_ovl.bmp \
+			menu/omoshiro_mov/tag3_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/tag1_fr_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/tag2_fr_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/tag3_fr_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/class1_fr_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/class2_fr_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/class3_fr_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/tag1_de_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/tag2_de_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/tag3_de_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/class1_de_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/class2_de_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/class3_de_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/tag1_it_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/tag2_it_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/tag3_it_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/class1_it_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/class2_it_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/class3_it_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/tag1_es_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/tag2_es_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/tag3_es_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/class1_es_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/class2_es_alp_ovl.bmp \
+			menu/omoshiro_mov/pal/class3_es_alp_ovl.bmp
+#else /* 米国ｏｒ日本版 */
+pack_all 	aaa_sp_menu.tri \
+			menu/omoshiro_mov/bg_alp_ovl.bmp \
+			menu/omoshiro_mov/class1_alp_ovl.bmp \
+			menu/omoshiro_mov/class2_alp_ovl.bmp \
+			menu/omoshiro_mov/class3_alp_ovl.bmp \
+			menu/omoshiro_mov/curs_alp_ovl.bmp \
+			menu/omoshiro_mov/exit_alp_ovl.bmp \
+			menu/omoshiro_mov/list1_alp_ovl.bmp \
+			menu/omoshiro_mov/list2_alp_ovl.bmp \
+			menu/omoshiro_mov/list3_alp_ovl.bmp \
+			menu/omoshiro_mov/sp_alp_ovl.bmp \
+			menu/omoshiro_mov/tag1_alp_ovl.bmp \
+			menu/omoshiro_mov/tag2_alp_ovl.bmp \
+			menu/omoshiro_mov/tag3_alp_ovl.bmp 
+#endif
+
+#ifdef MGS2_XBOX
+/* キーコントロール */
+#ifdef MGS2_AREA_EU
+l2d 2D/option_controls/option_controls_eng.l2d \
+	2D/option_controls/option_controls_frn.l2d \
+	2D/option_controls/option_controls_grm.l2d \
+	2D/option_controls/option_controls_itl.l2d \
+	2D/option_controls/option_controls_spn.l2d
+#else
+l2d  2D/option_controls/option_controls.l2d
+#endif
+#endif
+

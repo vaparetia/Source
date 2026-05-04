@@ -1,0 +1,64 @@
+Content-type: text/html;charset=EUC-JP
+
+<HTML>
+<BODY BGCOLOR=gray TEXT=white LINK=pink VLINK=pink ALINK=purple BACKGROUND=/runtime.xbox/images/bg.gif>
+<hr>
+<H1><CENTER><B>更新の詳細</B></CENTER></H1>
+<hr>
+
+<FORM ACTION=/cgi-bin/_tag_version/post.cgi METHOD=post>
+<INPUT TYPE=hidden NAME=from      VALUE=_tag_pfrom     >
+<INPUT TYPE=hidden NAME=locate    VALUE=_tag_plocate   >
+<INPUT TYPE=hidden NAME=style     VALUE=_tag_pstyle    >
+<INPUT TYPE=hidden NAME=files     VALUE=_tag_pfiles    >
+<INPUT TYPE=hidden NAME=reason    VALUE=_tag_preason   >
+<INPUT TYPE=hidden NAME=type      VALUE=_tag_ptype     >
+<INPUT TYPE=hidden NAME=destinate VALUE=_tag_pdestinate>
+<INPUT TYPE=hidden NAME=strcode   VALUE=_tag_pstrcode  >
+<INPUT TYPE=hidden NAME=file      VALUE=_tag_file      >
+<INPUT TYPE=hidden NAME=bbs       VALUE=_tag_bbs       >
+
+
+_tag_ghs
+
+<TABLE>
+<TR><TD COLSPAN=3>Runtime更新
+    <INPUT TYPE=submit NAME=method VALUE="変更">
+    <INPUT TYPE=submit NAME=method VALUE="再更新"></TD></TR>
+<TR><TD></TD><TD>差出人            </TD>
+    <TD><FONT COLOR=yellow> _tag_pfrom   </FONT></TD>
+    <TD ROWSPAN=5><IMG SRC=/runtime.xbox/images/icon_pool/_tag_image.gif></TD></TR>
+<TR><TD></TD><TD>受取人            </TD>
+    <TD><SELECT NAME=to>
+_tag_include::html/member/_tag_pto.html
+    <OPTION></OPTION>
+    <OPTION>[end]</OPTION>
+    </SELECT><INPUT TYPE=text NAME=to SIZE=10 VALUE=_tag_pto></TD></TR>
+<TR><TD></TD><TD>更新ジャンル      </TD>
+    <TD><FONT COLOR=yellow> _tag_ptype   </FONT></TD></TR>
+<TR><TD></TD><TD>更新ジャンル      </TD>
+    <TD><FONT COLOR=yellow> _tag_preason </FONT></TD></TR>
+<TR><TD></TD><TD>更新ホスト        </TD>
+    <TD><FONT COLOR=yellow> _tag_phost   </FONT></TD></TR>
+<TR><TD></TD><TD>更新日時          </TD>
+    <TD><FONT COLOR=yellow> _tag_pdate   </FONT></TD></TR>
+<TR><TD></TD><TD>StrCode(24bit)    </TD>
+    <TD><FONT COLOR=yellow> _tag_pstrcode</FONT></TD></TR>
+<TR><TD></TD><TD>移す元ディレクトリ</TD>
+    <TD><FONT COLOR=yellow> _tag_plocate </FONT></TD></TR>
+<TR><TD></TD><TD>移す元ファイル    </TD>
+    <TD><FONT COLOR=yellow> _tag_pfiles  </FONT></TD></TR>
+<TR><TD></TD><TD>転送先            </TD>
+    <TD><FONT COLOR=yellow> runtime.xbox/_tag_pdestinate </font></TD></TR>
+
+_tag_include::html/comment/_tag_pstyle.html
+
+<TR><TD></TD><TD ALIGN=top>コメント</TD>
+    <TD COLSPAN=2><TEXTAREA NAME=comment COLS=50 ROWS=6>_tag_pcomment</TEXTAREA></TD></TR>
+</TABLE>
+
+<INPUT TYPE=HIDDEN NAME=success VALUE=1>
+</FORM>
+
+</BODY>
+</HTML>

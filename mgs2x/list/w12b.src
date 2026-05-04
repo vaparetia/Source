@@ -1,0 +1,133 @@
+// w12b.src
+// Ａ脚・１Ｆポンプ室
+// 2001/02/23 S.Yamashita
+// $Id: w12b.src,v 1.48 2002/09/11 11:59:41 usr03682 Exp $
+
+
+
+// ステージ名
+#define		WN_W12B
+
+// 敵兵タイプ
+#define		ENE_P_GOL
+#define		ENE_ATTACKER
+#define		ENE_HIGH_TECH
+#define		ENE_SHADOW 1
+
+// 特殊兵
+
+// 特殊兵のモーション設定
+#define		ENE_MAR '-DDEL_SHOTGUN=DUMMY -DDEL_TNG=DUMMY -DDEL_SHIELD=DUMMY -DDEL_WALKMAN=DUMMY'
+
+
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"common.h"
+#include	"c_effect.h"
+#include	"goverpic.h"
+//include		wp_plant.h
+
+
+
+// キャラクタ
+#include	"ene_plant.h"
+
+
+
+// 強制モーション
+mtn			rai_w12b.mls
+mtn			sna_locker.mls		// ロッカー開閉モーション
+mtn			locker.mls			// ロッカー扉開閉モーション
+
+
+
+
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+
+pack_all	object.tri \
+				world/door/w12b_dr00.dar \
+				world/door/w12b_dr01.dar \
+				world/door/dr_lv1_00.dar
+
+world		door/w12b_dr00.kms	// 屋上へのドア(左右共用)
+world		door/w12b_dr01.kms	// 連絡橋へのドア(左右共用)
+world		door/dr_lv1_00.kms	// カードドア
+
+pack_all	w12b0_2.tri \
+				world/w12b/w12b0/w12b0_12a0.dar \
+				world/w12b/w12b0/w12b0_12a1.dar \
+				world/w12b/w12b0/w12b0_13a.dar \
+				world/w12b/w12b0/w12b0_23a.dar
+
+option makexti6 -l 1024 -f PAL8
+world		w12b/w12b0
+world		w12b/w12b1
+option makexti6
+
+lt2			w12b.lt2
+hazard		w12b.hzx
+
+
+
+
+
+// オブジェクト
+// 小さいサイズのテクスチャはまとめておく
+
+// 壊れモニター・壊れコンピュータ
+pack_trnall	monitor.tri \
+				world/w12b/w12b_obj/w12b0_moni0.bmp \
+				world/w12b/w12b_obj/w12b0_moni1.bmp \
+				world/w12b/w12b_obj/w12b0_moni2.bmp \
+				world/w12b/w12b_obj/w12b0_moni3.bmp \
+				world/w12b/w12b_obj/w12b0_moni_brk0.bmp \
+				world/w12b/w12b_obj/w12b0_moni_brk1.bmp \
+				world/w12b/w12b_obj/w12b0_moni_brk2.bmp \
+				world/w12b/w12b_obj/w12b0_moni_brk3.bmp
+pack_trnall	button.tri \
+				effect/button/button_alp.bmp
+
+// 電灯虫
+pack_all	obj_cm.tri \
+				goods/fly/fly_cm.dar
+
+goods		fly/fly_cm.kms
+
+// 解体Ｃ４・ロッカー・監視カメラ
+pack_all	object2.tri \
+				goods/c4_kaitai_a/c4_kaitai_a1.dar \
+				goods/c4_kaitai_a/c4_kaitai_a1_frost_cm.dar \
+				goods/locker/neo_locker_door.dar \
+				meca/svc_plant/svc_plant.dar \
+				meca/svc_plant/svc_plant_brk1.dar
+
+goods		c4_kaitai_a
+goods		locker/neo_locker_door.kms
+meca		svc_plant
+
+// アイテム
+itembox
+
+
+
+
+
+// パッドデモ
+#ifdef MGS2_VMODE_PAL
+rpd			w12b_paddemo_pal.rpd
+#else
+rpd			w12b_paddemo.rpd
+#endif
+
+
+
+
+
+// リネーム

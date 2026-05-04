@@ -1,0 +1,344 @@
+//----------------------------------------------------------------------------
+//BP - added stdafx.h to get precompiled MGS_SysCommon.h in Windows
+#include "stdafx.h"
+//BP
+//----------------------------------------------------------------------------
+/*
+	achuu_parts.o
+	くしゃみ飛沫（実部）
+	2000/03/31 S.Okajima
+	$Id: achuu_parts.c,v 1.1.1.3 2002/11/19 11:46:57 Yoshizawa1 Exp $
+*/
+
+#ifdef PSX2
+#include <sys/types.h>
+#endif
+#ifdef PSX2
+#include <eekernel.h>
+#endif
+#ifdef PSX2
+#include <eeregs.h>
+#endif
+#ifdef PSX2
+#include <libgraph.h>
+#endif
+#ifdef PSX2
+#include <libdma.h>
+#endif
+#ifdef PSX2
+#include <libdev.h>
+#endif
+#ifdef PSX2
+#include <math.h>
+#endif
+#ifdef PSX2
+#include <stdio.h>
+#endif
+#ifdef PSX2
+#include <stdlib.h>
+#endif
+#ifdef PSX2
+#include <sifdev.h>
+#endif
+#ifdef PSX2
+#include <libvu0.h>
+#endif
+#include <libutl.h>
+
+#include	"gameheader.h"
+#include	"libmt.h"
+#ifdef PSX2
+#include	"utl_dma.h"
+#endif
+#include	"../etc/ok_util.h"
+
+
+/*----------------------------------------------------------------*/
+
+#define	SCR_LENGTH		( 0x4000 )
+
+#define	N_VERTS		(16)
+#define	N_POLYS		(N_VERTS/4)
+#define	N_PRIMS		(1)
+
+#define	BASE_RGB		(24)
+#define	MAX_ALPHA		(64)
+
+#define	LIFE_TIME		(16)
+
+#define	SCALE			(80.0f)
+#define	WIDTH			(10.0f)
+#define	UPPER			(10.0f)
+
+#define	SCR_POS			(SCRPAD_ADDR)
+#define	SCR_VEC			(SCRPAD_ADDR + 0x1000)
+#define	SCR_UVS			(SCRPAD_ADDR + 0x2000)
+
+#define	ACHUU_GRAVITY	(-0.5f)
+
+typedef	struct	{
+	GV_ACT_EX		actor ;
+
+	DG_PRIM2	*prim ;
+	FMATRIX		*world;
+	int			life;
+	FVECTOR		pos[N_VERTS] ;
+	FVECTOR		vec[N_VERTS] ;
+
+} Work ;
+
+/* 座標計算データを初期化する */
+static	void	InitVectors( Work *work )
+{
+	int	i;
+	float	len;
+	float	upper;
+	SVECTOR	rot;
+	FVECTOR	*center;
+	FVECTOR	*pos;
+	FVECTOR	*vec;
+	FVECTOR	fvcalc[4];
+	FVECTOR	fvtemp;
+
+	fvtemp.vx = 0.0f;
+	fvtemp.vy = 0.0f;
+	fvtemp.vz = 1.0f;
+	DG_SetPos( work->world );
+	DG_RotVector( &fvtemp, &fvtemp, 1 );
+	OK_DirVecXY( &DG_ZeroVector, &fvtemp, &rot );
+
+	center = (FVECTOR *)work->world->m[3];
+
+	pos = work->pos;
+	vec = work->vec;
+	for( i=0; i<N_POLYS; i++ ){
+		DG_COPY_VEC( pos, center );	pos++;
+		DG_COPY_VEC( pos, center );	pos++;
+		DG_COPY_VEC( pos, center );	pos++;
+		DG_COPY_VEC( pos, center );	pos++;
+
+		len   = SCALE * (rnd()*0.9f + 0.1f);
+		upper = UPPER *  rnd();
+		fvcalc[0].vx=0.0f;
+		fvcalc[0].vy=upper;
+		fvcalc[0].vz=len;
+
+		fvcalc[1].vx= WIDTH;
+		fvcalc[1].vy=upper*0.5f;
+		fvcalc[1].vz=len*0.75f;
+
+		fvcalc[2].vx=-WIDTH;
+		fvcalc[2].vy=upper*0.5f;
+		fvcalc[2].vz=len*0.75f;
+
+		fvcalc[3].vx=0.0f;
+		fvcalc[3].vy=upper*0.0625f;
+		fvcalc[3].vz=len*0.50f;
+
+		rot.vz = irnd()%4096;
+		DG_SetPos2( &DG_ZeroVector, &rot );
+		DG_RotVector( fvcalc, vec, 4 );
+//printf("%f %f %f \n",vec->vx,vec->vy,vec->vz);
+		vec+=4;
+	}
+
+}
+
+
+/* ポリゴンの座標データを更新する */
+static	void	UpdateVectors( Work *work )
+{
+	int	j;
+	FVECTOR	*pos;
+	FVECTOR	*vec;
+	DG_PRIM2_UVRGB	*uvrgb ;
+	u_char	col;
+	int	clock;
+
+
+	DG_SwitchBuffPrim2( work->prim );
+	clock = work->prim->buffer_clock;
+
+	col=(u_char)( work->life * MAX_ALPHA/LIFE_TIME );
+	OK_Mem_Scr( SCR_POS, work->pos,                sizeof(FVECTOR),        N_PRIMS * N_VERTS);
+	OK_Mem_Scr( SCR_VEC, work->vec,                sizeof(FVECTOR),        N_PRIMS * N_VERTS);
+	OK_Mem_Scr( SCR_UVS, work->prim->uvrgb[clock], sizeof(DG_PRIM2_UVRGB), N_PRIMS * N_VERTS);
+	pos   = SCR_POS;
+	vec   = SCR_VEC;
+	uvrgb = SCR_UVS;
+	for( j=0; j<N_POLYS; j++ ){
+		/* α */
+		uvrgb->a = col;	uvrgb++;
+		uvrgb->a = col;	uvrgb++;
+		uvrgb->a = col;	uvrgb++;
+		uvrgb->a = col;	uvrgb++;
+		/* 座標更新 */
+		pos->vx += vec->vx;
+		pos->vy += vec->vy;
+		pos->vz += vec->vz;
+		vec->vy += ACHUU_GRAVITY;
+		pos++;
+		vec++;
+		pos->vx += vec->vx;
+		pos->vy += vec->vy;
+		pos->vz += vec->vz;
+		vec->vy += ACHUU_GRAVITY;
+		pos++;
+		vec++;
+		pos->vx += vec->vx;
+		pos->vy += vec->vy;
+		pos->vz += vec->vz;
+		vec->vy += ACHUU_GRAVITY;
+		pos++;
+		vec++;
+		pos->vx += vec->vx;
+		pos->vy += vec->vy;
+		pos->vz += vec->vz;
+		vec->vy += ACHUU_GRAVITY;
+		pos++;
+		vec++;
+	}
+	OK_Scr_Mem( work->pos,                SCR_POS, sizeof(FVECTOR),        N_PRIMS * N_VERTS);
+	OK_Scr_Mem( work->vec,                SCR_VEC, sizeof(FVECTOR),        N_PRIMS * N_VERTS);
+	OK_Scr_Mem( work->prim->pos[clock],   SCR_POS, sizeof(FVECTOR),        N_PRIMS * N_VERTS);
+	OK_Scr_Mem( work->prim->uvrgb[clock], SCR_UVS, sizeof(DG_PRIM2_UVRGB), N_PRIMS * N_VERTS);
+
+}
+
+/*----------------------------------------------------------------*/
+
+static	void	Act( Work *work )
+{
+	if( work->life > 0 ){
+		UpdateVectors( work ) ;
+		work->life--;
+	}else{
+		GV_DestroyActor( work ) ;
+	}
+}
+
+static void Die( Work *work )
+{
+	work->prim = OK_FreePrim2( work->prim );
+}
+
+/*----------------------------------------------------------------*/
+static int InitPacket2( Work *work, DG_PRIM2 *prim, DG_TEX *tex )
+{
+	FVECTOR			*pos ;
+	DG_PRIM2_UVRGB	*uvrgb ;
+	int		i, k ;
+
+	DG_ConfigPrim2Tex( prim, tex );
+//	prim->prim_env.alpha.data = SCE_GS_SET_ALPHA( 0, 2, 0, 1, 0x00 ) ;
+	DG_SetPrim2Alpha( prim, SCE_GS_SET_ALPHA( 0, 2, 0, 1, 0x00 ) );
+//	DG_SetPrim2Alpha( prim, SCE_GS_SET_ALPHA( 0, 1, 0, 1, 0x00 ) );
+
+	pos   = SCR_POS ;
+	uvrgb = SCR_UVS ;
+	for ( i = 0 ; i < N_PRIMS ; i++ ){
+		for ( k = 0 ; k < N_POLYS ; k++ ){
+			DG_COPY_VEC( pos, &DG_ZeroVector );	pos++;
+			DG_COPY_VEC( pos, &DG_ZeroVector );	pos++;
+			DG_COPY_VEC( pos, &DG_ZeroVector );	pos++;
+			DG_COPY_VEC( pos, &DG_ZeroVector );	pos++;
+
+			uvrgb->u = FTOI12( 0.0F * tex->u_scale + tex->u_offset ) ;
+			uvrgb->v = FTOI12( 0.0F * tex->v_scale + tex->v_offset ) ;
+			uvrgb->q = 4096 ;
+			uvrgb->f = 0x8fff ;
+			uvrgb->r = BASE_RGB ;
+			uvrgb->g = BASE_RGB ;
+			uvrgb->b = BASE_RGB ;
+			uvrgb->a = MAX_ALPHA ;
+			uvrgb++;
+
+			uvrgb->u = FTOI12( 1.0F * tex->u_scale + tex->u_offset ) ;
+			uvrgb->v = FTOI12( 0.0F * tex->v_scale + tex->v_offset ) ;
+			uvrgb->q = 4096 ;
+			uvrgb->f = 0x8fff ;
+			uvrgb->r = BASE_RGB ;
+			uvrgb->g = BASE_RGB ;
+			uvrgb->b = BASE_RGB ;
+			uvrgb->a = MAX_ALPHA ;
+			uvrgb++;
+
+			uvrgb->u = FTOI12( 0.0F * tex->u_scale + tex->u_offset ) ;
+			uvrgb->v = FTOI12( 1.0F * tex->v_scale + tex->v_offset ) ;
+			uvrgb->q = 4096 ;
+			uvrgb->f = 0x0fff ;
+			uvrgb->r = BASE_RGB ;
+			uvrgb->g = BASE_RGB ;
+			uvrgb->b = BASE_RGB ;
+			uvrgb->a = MAX_ALPHA ;
+			uvrgb++;
+
+			uvrgb->u = FTOI12( 1.0F * tex->u_scale + tex->u_offset ) ;
+			uvrgb->v = FTOI12( 1.0F * tex->v_scale + tex->v_offset ) ;
+			uvrgb->q = 4096 ;
+			uvrgb->f = 0x0fff ;
+			uvrgb->r = BASE_RGB ;
+			uvrgb->g = BASE_RGB ;
+			uvrgb->b = BASE_RGB ;
+			uvrgb->a = MAX_ALPHA ;
+			uvrgb++;
+		}
+	}
+
+	OK_Scr_Mem( prim->pos[ 0 ],   SCR_POS, sizeof(FVECTOR),        N_PRIMS * N_VERTS);
+	OK_Scr_Mem( prim->pos[ 1 ],   SCR_POS, sizeof(FVECTOR),        N_PRIMS * N_VERTS);
+	OK_Scr_Mem( prim->uvrgb[ 0 ], SCR_UVS, sizeof(DG_PRIM2_UVRGB), N_PRIMS * N_VERTS);
+	OK_Scr_Mem( prim->uvrgb[ 1 ], SCR_UVS, sizeof(DG_PRIM2_UVRGB), N_PRIMS * N_VERTS);
+
+	return 1;
+}
+
+static int GetResources( Work *work, FMATRIX *world, int mode )
+{
+	DG_PRIM2		*prim ;
+	DG_TEX		*tex ;
+
+	if( world==NULL ) return -1;
+	work->world = world;
+	switch( mode ){
+	  case 0:
+		work->life = LIFE_TIME;
+		break;
+	  case 1:
+		work->life = LIFE_TIME/2;
+		break;
+	}
+
+//	tex = DG_GetTexture( 6684577 /*"splash05_alp"*/ );
+//	tex = DG_GetTexture( 13872561 /*"blood_1e_msk"*/ );
+	tex = DG_GetTexture( 4587425 /*"splash03_alp"*/ );
+
+
+	prim = work->prim = GM_MakePrim2( DG_PRIM2_POLY|DG_PRIM2_SHADE|DG_PRIM2_TEX|DG_PRIM2_ALPHA, N_PRIMS, N_VERTS );
+	if(prim==NULL){
+		printf("null prim\n");
+		return -1;
+	}
+	InitPacket2( work, prim, tex );
+
+	InitVectors( work );
+	DG_VisiblePrim2( work->prim ) ;
+
+	return 0 ;
+}
+
+void *New_ACHUU_Parts( FMATRIX *world, int mode )
+{
+	Work		*work ;
+
+	work = (Work *)GV_NewEffect( GV_ACTOR_USER, sizeof( Work ) ) ;
+	if ( work != NULL ) {
+		GV_SetActor( &( work->actor ), Act, Die ) ;
+		GV_ActorEX( &work->actor )
+		if ( GetResources( work, world, mode ) < 0 ) {
+			GV_DestroyActor( work ) ;
+			return NULL ;
+		}
+	}
+	return (void *)work ;
+}

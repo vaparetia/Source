@@ -1,0 +1,64 @@
+#
+#  IOP module ilb makefile
+#
+
+OBJECTS = usbkbd.o
+
+ifeq ($(wildcard PathDefs),)
+PathDefs:
+	iop-path-setup > PathDefs || (rm -f PathDefs ; exit 1)
+	$(MAKE) all
+else
+include PathDefs
+endif
+
+#----------- defines --------------
+
+TARGET   = usbkbd.irx
+OBJDIR = obj_iop
+OBJS  = $(addprefix $(OBJDIR)/, $(OBJECTS))
+TABLE    = usbkbd.tbl
+ENTRYOBJ = $(OBJDIR)/entry.o
+
+ENTRYPOINT = usbkbd_start
+#ILB_FILE   = usbkbd.ilb
+
+CFLAGS   = -O2 -Wall -D IOP -G0 -I $(IOP_INCDIR)
+ASFLAGS  = 
+LDFLAGS  = -s
+#LDFLAGS  = 
+LOADLIBES= -ilb=../jsifman/jsifman.ilb -ilb=usbd.ilb
+
+#----------- rules --------------
+
+%.irx: $(OBJDIR)/%.o
+	$(LINK.o) $^ $(LOADLIBES) $(LDLIBS) -o $@
+
+$(OBJDIR)/%.o : %.c
+	$(CC) $(CFLAGS) -c $< -o $(OBJDIR)/$*.o
+
+#----------- customize section --------------
+
+all: $(TARGET) $(ILB_FILE) copy
+
+clean:
+	-rm -f *.o *.irx *.ilb *.map $(OBJDIR)/*.o
+
+copy:
+	cp $(TARGET) $(IOP_IRXDIR)
+
+# 常駐ライブラリのコンパイル ===============================================
+
+$(TARGET) : $(OBJS) $(TABLE)
+#	  ライブラリエントリテーブルの作成
+	$(ILBGEN) $(TABLE) -e __tmp.s
+	$(AS) -o $(ENTRYOBJ) __tmp.s
+	-rm -f __tmp.s
+#	$(ILBGEN) $(TABLE) -e - | $(AS) -o $(ENTRYOBJ)
+#	   常駐ライブラリの本体のコンパイルとエントリテーブルとのリンク
+# 	   -e オプションで初期化エントリを指定してください
+	$(LINK.o) $(LDFLAGS) -e $(ENTRYPOINT) $(OBJS) $(ENTRYOBJ) $(LOADLIBES) $(LDLIBS) -o $@
+
+# ライブラリを利用するプログラムのリンク時に必要な mylib.ilb ファイルの作成
+#$(ILB_FILE): $(TABLE)
+#	$(ILBGEN) $(TABLE) -d $(ILB_FILE)

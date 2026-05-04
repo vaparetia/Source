@@ -1,0 +1,49 @@
+// node.src
+//
+// 2001/06/28  Y.Kira
+//
+// $Id: node.src,v 1.16 2002/10/01 07:38:44 usr04761 Exp $
+
+//
+// いろいろやりたいのは解るけど、l2d がこんなに増えるとちょっと考えてしまう。
+//
+
+block .face
+
+// NY マップ
+l2d	2D/node/node_bg/ny_map/ny_map.l2d 2D/node/node_bg/ny_map/ny_map_bg.l2d
+
+// 背景ログ
+l2d	2D/node/node_bg/log/log.l2d
+
+// グリッド
+l2d	2D/node/node_bg/scroll/scroll.l2d
+
+// ベンゼン君
+// l2d	2D/node/node_bg/chm/chm1.l2d 2D/node/node_bg/chm/chm2.l2d 2D/node/node_bg/chm/chm3.l2d
+
+// 枠レイアウト
+l2d	'-trad'	2D/node/node_frame/node_frame.l2d
+
+// フォグ、プラントマップ
+// l2d 2D/node/node_bg/fog1.l2d 2D/node/node_bg/fog2.l2d 2D/node/node_bg/fog3.l2d 2D/node/node_bg/plant_map.l2d
+l2d 2D/node/node_bg/fog1.l2d 2D/node/node_bg/fog2.l2d 2D/node/node_bg/fog3.l2d \
+    2D/node/node_bg/plant_map.l2d 2D/node/node_bg/ray_wall.l2d \
+    2D/node/node_bg/chm1.l2d 2D/node/node_bg/chm2.l2d 2D/node/node_bg/chm3.l2d \
+	2D/node/node_bg/roop_wall.l2d 2D/node/node_bg/genzi.l2d
+
+
+// シネマスコープ
+l2d 2D/node/node_bg/grd/grd.l2d
+
+
+// メニュー本体
+#ifdef MGS2_XBOX
+l2d     2D/node/node_menu_sub_x2/node_menu.l2d
+#else
+l2d     2D/node/node_menu_sub2/node_menu.l2d
+#endif
+
+// ネームエントリ用レイアウト
+l2d	2D/node/node_name/node_name.l2d
+

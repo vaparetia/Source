@@ -1,0 +1,908 @@
+/*
+    effect.txt                                             
+    Metal Gear Solid 2 - SONS OF LIBERTY-                
+    エフェクト仕様ログ                                   
+    2001/10/25 Masafumi Okuta                            
+    $Id: effect.txt,v 1.1.1.3 2002/11/19 11:48:11 Yoshizawa1 Exp $                                                 
+*/
+
+エフェクト用のソースコード群
+
+kmdanna.c 
+    かもめの糞（上空から落ちるまでのエフェクトを担当する）
+    床につくもしくはキャラクタに当たると床糞エフェクトorカメラ糞エフェクト
+    (主観や画面内の判定あり)を生成してキャラ自身は破棄される
+
+        InScreen( FVECTOR *pos );
+            画面内に指定された位置がはいるかどうか判定する
+
+        KMMDannaCallBack( TARGET* off,    // 攻撃側
+                          TARGET* def,    // 防御側
+                          void*   work);   // かもめ糞ワーク
+            糞に付随した攻撃ターゲット(相手側は当たったことにならないTHROUGH属性)が
+            防御ターゲットに当たった時に呼び出されるコールバック関数
+        
+        CheckTarget( Work* work );
+            キャラとの当たりを判定する為の攻撃ターゲットを設定
+
+        UpdatePacket( DG_PRIM2*	prim,        // プリミティブワーク
+                      FVECTOR* 	pvecCenter,  // 中心
+                      FVECTOR*  pvecVertTop, // 頂点データ先頭
+                      SVECTOR*  psvecRot,    // 回転データ
+                      float     size);       // サイズ
+            プリミティブ更新
+
+        Act( Work* work );
+            動作関数
+
+        Die( Work* work );
+            破棄関数
+        
+        InitPacket( DG_PRIM2* prim,        // プリミティブワーク
+                    DG_TEX*   tex,         // テクスチャワーク
+                    long64    tagAlpha,    // αタグ
+                    int	      nRGBA,       // 色
+                    FVECTOR*  pvecCenter,  // 中心位置
+                    FVECTOR*  pvecVertTop, // 頂点データ先頭
+                    SVECTOR*  psvecRot,    // 回転データ
+                    int       nRaise,      // Z優先
+                    float     size,        // サイズ
+                    float     speed );     // 回転量        
+            プリミティブパケット初期化
+
+        GetResources( Work*    work,          // ワーク
+                      FVECTOR* pvecInitPos ); // 発生位置
+            初期化関数
+
+        NewKamomeDanna( FVECTOR* pvecInitPos )	// 発生位置
+            かもめの糞呼出関数
+
+kmdnnfloor.c 
+    床につくかもめの糞
+    NewKamomeDannaで生成された糞キャラが床に落ちた時に生成されるエフェクト。
+    床の傾き、サイズに合わせて糞エフェクトをつける。
+    (床のハザードサイズに合わせる処理はX値,Z値比較で適当にしているので斜めははみでます)
+
+        CalcDirVecXY( FVECTOR *from,   // 始点
+                      FVECTOR *to,     // 終点
+                      SVECTOR *rot );  // 回転データ
+            fromからtoへ向くベクトルのX,Y回転データを取得
+
+        CalcFloorRotate( Work*    work,
+                         HZX_FLR* floor,    // 床ハザードデータ
+                         FVECTOR* pvecMove, // 移動方向
+                         SVECTOR* pvecRot); // 回転データ
+            ポリゴンの方向をフロアの法線から取得
+
+        UpdatePacket( DG_PRIM2* prim,       // プリミティブワーク
+                      FVECTOR*  pvecCenter, // 中心
+                      FVECTOR*  pvecMove,   // ポリゴンの方向
+                      FVECTOR*  pvecBound,  // バウンダリ
+                      SVECTOR*  psvecRot,   // 回転データ
+                      float     size,       // サイズ
+                      int       nAlpha);    // アルファ値
+            本体プリミティブワーク
+        
+        UpdatePacket2( DG_PRIM2* prim,       // プリミティブワーク
+                       FVECTOR*  pvecCenter, // 中心
+                       FVECTOR*  pvecMove,   // ポリゴンの方向
+                       FVECTOR*  pvecBound,  // バウンダリ
+                       SVECTOR*  psvecRot,   // 回転データ
+                       float     size,       // サイズ
+                       int       nAlpha);    // アルファ値
+            飛抹プリミティブワーク 
+        
+        UpdateAlpha( DG_PRIM2*   prim,       // プリミティブワーク
+                     int         nAlpha);    // アルファ値 
+            アルファ値更新
+                
+        Act( Work* work );
+            動作関数
+
+        Die( Work* work );
+            破棄関数
+        
+        InitPacket( DG_PRIM2* prim,         // プリミティブワーク
+                    DG_TEX*   tex,          // テクスチャワーク
+                    long64    tagAlpha,     // αタグ
+                    int       nRGBA,        // 色
+                    FVECTOR*  pvecCenter,   // 中心
+                    FVECTOR*  pvecVertTop,  // 頂点データの先頭
+                    SVECTOR*  psvecRot,     // 回転データ
+                    int       nRaise,       // Z優先
+                    float     size,         // サイズ
+                    float     speed );      // 回転量        
+            本体プリミティブワーク初期化
+        
+        InitPacket2( DG_PRIM2* prim,        // プリミティブワーク
+                     DG_TEX*   tex,         // テクスチャワーク
+                     long64    tagAlpha,    // αタグ
+                     int       nRGBA,       // 色
+                     FVECTOR*  pvecCenter,  // 中心
+                     FVECTOR*  pvecVertTop, // 頂点データの先頭
+                     SVECTOR*  psvecRot,    // 回転データ
+                     int       nRaise,      // Z優先
+                     float     size,        // サイズ
+                     float     speed );     // 回転量        
+            飛抹プリミティブワーク初期化
+        
+        GetResources( Work*     work,           // ワーク
+                      FVECTOR*  pvecInitPos,    // 発生位置
+                      FVECTOR*  pvecBoundary);  // 床平面        
+            初期化関数
+
+        NewKamomeDannaFloor( FVECTOR* pvecInitPos,   // 発生位置
+                             FVECTOR* pvecBoundary); // 床平面
+            床糞エフェクト呼出
+
+kmdnncam.c 
+    カメラにつくかもめの糞
+    NewKamomeDannaで生成された糞キャラがプレイヤー主観カメラに当たった時に生成されるエフェクト。
+    円形に頂点を配置してカメラの方向に垂れる演出をしている。(やがて固まり動かなくなる)
+    主観をはずすと破棄される
+
+        Act( Work* work );
+            動作関数
+
+        Die( Work* work );
+            破棄関数
+        
+        InitPacket( DG_PRIM2* prim,        // プリミティブワーク
+                    DG_TEX*   tex,         // テクスチャワーク
+                    int       nFlag);      // Z優先
+            プリミティブパケット初期化
+
+        GetResources( Work*    work,          // ワーク
+                      FVECTOR* pvecCenter,    // 発生位置
+                      int      nLife);        // 存在時間
+            初期化関数
+
+        NewKamomeDannaCamera( FVECTOR* pvecCenter, // 中心
+                              int      nLife);     // 表示時間
+            カメラ付着糞エフェクト呼出
+
+kmfeather.c 
+    かもめの羽根
+    かもめが羽ばたいたりダメージを受けた時に出す羽根のエフェクト。
+    co-modelを用いている。重力、浮力、風力の影響を受けながらフワフワ落ちる。
+    床との当たり判定(Y値のみの判断)をおこなって床に沿った動きをする(壁は無視)
+
+        KMF_GetRandom( int* pnSeed, int min, int max);
+            ランダムシード固定型乱数取得( min 〜 max)
+
+        KMF_Rand( int* pnSeed, int a);
+            ランダムシード固定型乱数取得( 0 〜 a)
+
+        KMF_Rnd( int* pnSeed);
+            ランダムシード固定型乱数取得( 0.f 〜 1.f)
+
+        DbgDumpExecTime( int nTime);
+            処理時間表示
+
+        KMF_InsertList( Work* pwork);	
+            リストに追加
+
+        KMF_RemoveList( Work* pwork);	
+            リストから外す
+
+        KMF_GetListNum( void );
+            リスト登録数取得
+
+        FloorToBoundary( HZX_FLR *flr, FVECTOR *fv );
+            フロア情報からバウンド情報を作成
+
+        Act( Work* work );
+            動作関数
+
+        Die( Work* work );
+            破棄関数
+        
+        GetResources( Work*     work,       // ワーク
+                      FVECTOR*  pvecCenter, // 中心
+                      FVECTOR*  pvecForce,  // 力積
+                      int       nNum,       // 羽根数
+                      int       nRandSeed); // ランダムシード
+            初期化関数
+        
+        NewKamomeFeather( FVECTOR* pvecCenter,  // 中心
+                          FVECTOR* pvecForce,   // 力積
+                          int      nNum,        // 羽根数
+                          int      nRandSeed);  // ランダムシード        
+            羽根エフェクト呼出
+
+parfeather.c 
+    オウムの羽根
+    カモメの羽根エフェクトの転用でデモ対応したもの
+      
+powspplit.c 
+    電源パネルの点滅ライト
+    点滅スプライト
+        Act( Work* work );
+            動作関数
+
+        Die( Work* work );
+            破棄関数
+        
+        InitPacket( DG_PRIM2* prim,        // プリミティブワーク
+                    DG_TEX*   tex,         // テクスチャワーク
+                    int       nFlag);      // Z優先
+            プリミティブパケット初期化
+
+        GetResources( DG_PRIM2* prim,       // プリミティブワーク
+                      DG_TEX*   tex,        // テクスチャワーク
+                      long64    tagAlpha,   // αタグ
+                      int       nRGBA,      // 色
+                      FVECTOR*  pvecCenter, // 中心
+                      int       nRaise,     // Z優先
+                      float     fSize );    // サイズ
+            初期化関数
+        
+namedetect.c 
+    ドッグタグ名前表示機能
+    スコープやデジカメを装備している時に△ボタンを押しつづけるとドッグタグを取得した敵兵の名前が表示される機能
+    マネージャに登録していくタイプ。PS2の内蔵時計の日時とドッグタグの誕生日が一致したらHappy Birthdayがでる。
+
+        SetActFunc( Work* work, NDETECT_ACTFUNC actfunc);
+            動作関数設定
+
+        MonthToDay( int year, int month); 
+            年月からその月が何日まであるか取得
+
+        NDETECT_InsertList( Work* pwork);
+            マネージャに追加
+
+        NDETECT_RemoveList( Work* pwork);
+            マネージャから外す
+
+        MergeList( Work* a, Work* b);
+            高さをキーにしてaとbをマージソート
+
+        MergeSortList( Work* x);
+            高さをキーにして全体をマージソート
+
+        ConvBCD2Day( int* pnYear,  // 年が入る
+                     int* pnMonth, // 月が入る
+                     int* pnDay,   // 日が入る
+                     int  nBCDp);  // BCD形式
+            BCD形式(0xYYYYMMDD)の年月日をそれぞれ分ける
+
+        ConvByteBCD2Time( u_char ucByte);
+            byte単位でBCD時間を通常に直す
+
+        UpdateDate( NDetectManager* ndmng);
+            日付更新
+
+        PosToRet(Work *work, OBJECT* pbody);
+            透視変換
+
+        InScreen( FVECTOR* ret);
+            画面内チェック
+
+        GetAlpha( Work* work);
+            パッドの状態からアルファ値を取得
+
+        UpdatePoint( Work* work);
+            位置更新
+
+        ChickBirthDay(Work *work);
+            誕生日チェックをして該当すればメッセージを表示
+
+        PrintScreen(Work *work);
+            名前表示
+
+        NDT_ActFunc( Work *work);
+            指定されたドッグタグワークの動作関数
+            
+        NDT_DieFunc( Work *work);
+            指定されたドッグタグワークの破棄関数
+            
+        Act( NDetectManager* ndmng);
+            マネージャ動作関数
+
+        Die( NDetectManager* ndmng);
+            マネージャ破棄関数
+
+        InitNDetect( Work*   work,        
+                     OBJECT* body,        // ドッグタグ保持者のモデル
+                     OBJECT* bodyLod1,    // ドッグタグ保持者のモデル[LOD 1]
+                     OBJECT* bodyLod2,    // ドッグタグ保持者のモデル[LOD 2]
+                     char*   str,         // 名前
+                     int     tagID,       // ドッグタグ番号
+                     int     nBirthday);  // 誕生日
+            初期化関数
+
+        NewNamePrint( OBJECT*  body, 
+                      char*    str,
+                      int      tagID,
+                      int      nBCD);
+            登録関数
+
+        NewNamePrint4Lod( OBJECT* body,
+                          OBJECT* bodyLod1,
+                          OBJECT* bodyLod2,
+                          char *str,
+                          int tagID,
+                          int nBCD);
+            LOD対応登録関数
+
+        GetResources( NDetectManager* ndmng);
+            マネージャ初期化関数
+
+        NDETECT_Remove( void* pvNDetect);
+            外部から外す為の関数
+
+        NewNamePrintManager( int name, int where);
+            マネージャ生成関数
+
+wormcorpse.c 
+    カメラにつくふなむしの死骸
+    カモメの糞カメラ付着のソースを使って作成
+        
+wdustmng.c 
+    水中ゴミマネージャ
+    waterdust.cの水中ゴミキャラを管理するキャラ
+ 
+        UpdateViewList( WDUST_MNG *work );
+            表示ワークの更新
+            
+        UpdatePlayerDataDummy( WDUST_MNG* work );
+            プレイヤーの関節位置を取得：プレイヤーがいない時のダミー(デモ用)
+            原点が入っている
+
+        UpdatePlayerData( WDUST_MNG* work );
+            プレイヤーの関節位置を取得
+
+        GetPlayerPos( WDUST_MNG* work );
+            プレイヤーの関節位置をVUから取得
+
+        Act( WDUST_MNG *work );
+            動作関数
+
+        Die( WDUST_MNG *work );
+            破棄関数
+
+        GetResources( WDUST_MNG* work, int name, int map );
+            初期化関数
+
+        NewWaterDustManager( int name, int where );
+            水中ゴミマネージャ
+
+waterdust.c 
+    水中ゴミ
+        DbgDumpExecTime( int nTime);
+            処理時間計測
+
+        LoadPlayerNodeData( WATERDUST* work );
+            プレイヤーの関節データをVUにロード
+
+        GetPlayerConvection( WATERDUST* work,        
+                             float*     pfAffectDist, // 影響距離
+                             FVECTOR*   pvecConv,     // 影響ベクトル
+                             FVECTOR*   pvecPos);     // 位置
+            プレイヤーからの影響ベクトルを算出
+
+        Act( WATERDUST *work );
+            動作関数
+
+        Die( WATERDUST *work );
+            破棄関数
+
+        InitPacket( WATERDUST*  work,		
+                    DG_PRIM2*   prim,     // プリミティブワーク
+                    DG_TEX*     tex,      // テクスチャワーク
+                    long64      tagAlpha, // αタグ
+                    int         nRGBA,    // 色
+                    int         nRaise);  // Z優先
+            プリミティブパケット初期化
+
+        GetResources( WATERDUST* work, int name, int map );
+            リソース設定：シナリオ呼出
+        
+        GetResourcesProg( WATERDUST* work,     
+                          int        name,     // 名前ID
+                          int        map,      // マップID
+                          int        nPrimNum, // プリミティブ数
+                          FVECTOR*   pvecPos,  // 位置
+                          FVECTOR*   pvecSize, // サイズ
+                          WDUST_MNG* wdmng,    // 水中ゴミマネージャ
+                          int        nIndex);  // 通し番号
+            リソース設定：プログラム呼出
+
+        NewWaterDust( int name, int where );
+            水中ゴミ呼出：シナリオから
+
+        NewWaterDustProg( int           name,
+                          int           where,    // 名前ID
+                          int           nPrimNum, // プリミティブ数
+                          FVECTOR*      pvecPos,  // 位置
+                          FVECTOR*      pvecSize, // サイズ
+                          WDUST_MNG*    wdmng,    // 水中ゴミマネージャ
+                          int           index);   // 通し番号
+            水中ゴミ呼出：プログラム
+        
+maoparticle.c 
+    汎用パーティクル
+
+        Act( Work* work );
+            動作関数
+
+        Die( Work* work );
+            破棄関数
+
+        InitPacket( DG_PRIM2*   prim,      // プリミティブワーク
+                    DG_TEX*     tex,       // テクスチャタグ
+                    long64      tagAlpha,  // ALPHAタグ
+                    int         nRGBA,     // RGBA値
+                    FVECTOR*    pvecPos,   // 位置データ列へのポインタ
+                    float*      pfSize,    // サイズデータ列へのポインタ
+                    int*        pnRadAng,  // 回転データ列へのポインタ
+                    int         nRaise,    // 優先値
+                    int         nRandSeed, // ランダムシード
+                    int         nPrimNum,  // プリミティブ数
+                    int         nVertNum); // 頂点数
+            プリミティブパケット初期化
+
+        GetResources( Work*      work,       // ワーク
+                      int        nRandSeed,  // ランダムシード
+                      FMATRIX*   pmatOrg,    // 発生座標系
+                      int        nPrimNum,   // 発生数
+                      int        nVertNum,   // 頂点数
+                      int        nLifeMin,   // 生存時間最小
+                      int        nLifeMax,   // 生存時間最大
+                      int        nAng,       // 角度範囲
+                      float      fInitSpd,   // 初期速度
+                      float      fAimSpd,    // 目標速度
+                      float      fGravity,   // 重力
+                      float      fInitSize,  // 初期サイズ
+                      float      fAimSize,   // 目標サイズ
+                      int        texcode,    // テクスチャコード
+                      int        nInitRGBA,  // 初期RGBA
+                      int        nAimRGBA,   // 目標RGBA
+                      float      fRandRate,  // ランダム幅
+                      int        nFlag);     // 拡張フラグ
+            初期化関数
+        
+        NewMAOParticle( int      nRandSeed,   // ランダムシード
+                        FMATRIX* pmatOrg,     // 発生座標系
+                        int      nPrimNum,    // 発生数
+                        int      nVertNum,    // 頂点数
+                        int      nLifeMin,    // 生存時間最小
+                        int      nLifeMax,    // 生存時間最大
+                        int      nAng,        // 角度範囲
+                        float    fInitSpd,    // 初期速度
+                        float    fAimSpd,     // 目標速度
+                        float    fGravity,    // 重力
+                        float    fInitSize,   // 初期サイズ
+                        float    fAimSize,    // 目標サイズ
+                        int      texcode,     // テクスチャコード
+                        int      nInitRGBA,   // 初期RGBA
+                        int      nAimRGBA,    // 目標RGBA
+                        float    fRandRate,   // ランダム幅
+                        int      nFlag);      // 拡張フラグ
+            汎用パーティクル呼出
+
+waterfall.c 
+    パイプから流れ落ちる水
+        CheckMessage( Work* work );
+            メッセージ処理
+
+        ResetPos( Work*                work, 
+                  FVECTOR*             pvecPos,   // 
+                  FVECTOR*             pvecDir,   // 
+                  float*               pfSpeed,   // 
+                  float*               pfSize,    // 
+                  DG_PRIM2_UVRGBWH*    uvrgbwh);  // 
+            水煙初期化
+
+        ResetBodyPos( Work*     work, 
+                      FVECTOR*  pvecPos,     //  
+                      FVECTOR*  pvecDir,     // 
+                      float*    pfSpeed,     // 
+                      float*    pfSize);     // 
+            水流本体初期化
+
+        GetFreeBubble( Work* work);
+            未使用泡ワークインデックス取得
+
+        ActBubble( Work* work);
+            泡動作関数
+        
+        ActRingBody( Work*       work, 
+                     int         nNum,       // 
+                     DG_PRIM2*   prim_add,   // 
+                     DG_PRIM2*   prim_sub,   // 
+                     FVECTOR*    pvecPos,    // 
+                     FVECTOR*    pvecDir,    // 
+                     float*      pfSpeed,    // 
+                     float*      pfSize,     // 
+                     short*      pnDelay,    // 
+                     float       fRad,       // 
+                     float       fHeight);   // 
+            本体動作関数
+
+        Act( Work* work );
+            動作関数
+        
+        Die( Work* work );
+            破棄関数
+        
+        InitPacket( Work*        work,     
+                    DG_PRIM2*    prim,     // プリミティブワーク
+                    DG_TEX*      tex);     // テクスチャタグ
+            水煙プリミティブ初期化
+
+        InitPacketBody( Work*     work,       
+                        DG_PRIM2* prim_add,   // 加算ワーク
+                        DG_PRIM2* prim_sub,   // 減算ワーク
+                        DG_TEX*   tex);       // テクスチャタグ
+            水流本体プリミティブ初期化
+        
+        GetResources( Work*   work,           // ワーク
+                      int     name,           // 名前ID
+                      int     map);           // マップID        
+            初期化関数
+        
+        NewWaterFall( int name, int map );    
+            パイプから落ちる水流生成
+        
+waterbubble.c 
+    水中の泡
+        CheckMessage( Work* work );
+            メッセージチェック
+
+        Act( Work *work );
+            動作関数
+
+        Die( Work *work );
+            破棄関数
+
+        InitPacket( Work*     work, 	 
+                    DG_PRIM2* prim,	
+                    DG_TEX*   tex, 	
+                    int       color);        
+            プリミティブ初期化
+
+        GetResources( Work*    work, 
+                      int      name,
+                      FVECTOR* pvecRefer, 
+                      short*   pnLife, 
+                      int      nReferNum, 
+                      int      col);
+            初期化関数
+
+        NewWaterBubble( int      name,
+                        FVECTOR* pvecRefer, 
+                        short*   pnLife, 
+                        int      nReferNum, 
+                        int      col);
+            泡作成
+
+waterspread.c 
+    水飛抹
+    参照地点でループして生成される水飛抹。
+
+        CheckMessage( Work* work );
+            メッセージチェック
+
+        Act( Work *work );
+            動作関数
+
+        Die( Work *work );
+            破棄関数
+
+        InitPacket( Work*     work, 	 
+                    DG_PRIM2* prim,	
+                    DG_TEX*   tex, 	
+                    int       color);        
+            プリミティブ初期化
+        
+        GetResources( Work*    work,             
+                      int      name,                 // 名前ID
+                      int      nDemoFlag,            // デモフラグ
+                      FMATRIX* pmatOrg,              // 発生位置
+                      int      nPrims,               // プリミティブ数
+                      int      nAddNum,              // 同時発生数
+                      float    fRadMin,              // 半径最小
+                      float    fRadMax,              // 半径最大
+                      int      nLifeMin,             // 生存時間最小
+                      int      nLifeMax,             // 生存時間最大
+                      float    fSizeBase,            // サイズベース
+                      float    fSizeAdd,             // サイズランダム幅
+                      float    fGravity,             // 重力
+                      int      nRGBA,                // 色
+                      float    fSpreadRadBase,       // 移動ベクトルXZ成分:基本        
+                      float    fSpreadRadAdd,        // 移動ベクトルXZ成分:ランダム幅
+                      float    fSpreadHeightBase,    // 移動ベクトルY成分:基本
+                      float    fSpreadHeightAdd);    // 移動ベクトルY成分:ランダム幅
+            初期化関数
+
+        NewWaterSpread( int        name,                 // 名前ID
+                        FMATRIX*   pmatOrg,              // 発生位置
+                        int        nPrims,               // プリミティブ数
+                        int        nAddNum,              // 同時発生数
+                        float      fRadMin,              // 半径最小
+                        float      fRadMax,              // 半径最大
+                        int        nLifeMin,             // 生存時間最小
+                        int        nLifeMax,             // 生存時間最大
+                        float      fSizeBase,            // サイズベース
+                        float      fSizeAdd,             // サイズランダム幅
+                        float      fGravity,             // 重力
+                        int        nRGBA,                // 色
+                        float      fSpreadRadBase,       // 移動ベクトルXZ成分:基本    
+                        float      fSpreadRadAdd,        // 移動ベクトルXZ成分:ランダム幅
+                        float      fSpreadHeightBase,    // 移動ベクトルY成分:基本
+                        float      fSpreadHeightAdd);    // 移動ベクトルY成分:ランダム幅
+            水飛抹生成  
+        
+waterdropmng.c 
+    ポンプ室水滴マネージャ
+    waterdrop.cの水滴を管理するマネージャ。プリミティブワークはマネージャに存在してそれを使って水滴が動作する
+
+        GetPlayerBoundIndex( WATERDROP_MNG* work);
+            プレイヤーの所属するバウンドのインデックスを取得
+
+        Act( WATERDROP_MNG* work );
+            動作関数
+
+        Die( WATERDROP_MNG* work )
+            破棄関数
+
+        InitPacket( WATERDROP_MNG* work,       
+                    DG_PRIM2*      prim,       // プリミティブワーク
+                    DG_TEX*        tex,        // テクスチャワーク
+                    long64         tagAlpha,   // αタグ
+                    u_int          nRGBA,      // 色
+                    int            nRaise);    // 優先
+            プリミティブパケット初期化
+
+        GetResources( WATERDROP_MNG*    work,
+                      int               name,  // 名前ID
+                      int               map);  // マップID
+            初期化関数
+
+        NewWaterDropManager( int name, int map );    
+            水滴マネージャ生成
+        
+waterdrop.c 
+    ポンプ室水滴
+    waterdropmng.cのポンプ室水滴マネージャを用いた水滴。
+    プリミティブはマネージャのものを使用して移動と破棄処理のみ行なう
+        Act( Work *work );
+            動作関数
+
+        Die( Work *work );
+            破棄関数
+
+        GetResources( WATERDROP* work,
+                      FVECTOR*   pvecPos); // 発生位置
+            初期化関数
+
+        NewPipeWaterDrop( WATERDROP_MNG* pWdmng, 
+                          FVECTOR* pvecPos ); // 発生位置
+            パイプ水滴生成
+
+waterlinefall.c 
+    水供給管から流れ落ちる水
+    waterfall.cを流用して風に影響するところやフェードを調整したもの
+        
+waterripple.c 
+    水波紋
+        
+bloodweep.c 
+    滴り血
+        SetActMode( Work* work, BWEEPACTMODE actmode);
+            動作関数設定
+
+        ActDrip( Work* work );
+            動作関数:滴りフェーズ
+
+        ActDrop( Work* work );
+            動作関数:落ちフェーズ
+
+        Act( Work* work );
+            動作関数
+
+        Die( Work* work );
+            破棄関数
+
+        InitPacket( Work*        work,     
+                    DG_PRIM2*    prim,       // 
+                    DG_TEX*      tex,        // 
+                    long64       tagAlpha,   // 
+                    u_int        nRGBA,      // 
+                    int          nRaise);    //
+            滴のプリミティブ初期化
+
+        InitPacketDrip( Work*     work,     
+                        DG_PRIM2* prim,      // 
+                        DG_TEX*   tex,       // 
+                        long64    tagAlpha,  // 
+                        u_int     nRGBA,     // 
+                        int       nRaise);   //
+            滴り部分のプリミティブ初期化
+
+        GetResources( Work*      work,
+                      FMATRIX*   pmatOrg,    // 発生座標系    
+                      int        nLife,      // 生存時間
+                      int        nDripTime,  // 溜り時間
+                      float      fFallSpd,   // 落下速度
+                      float      fDropSize,  // 滴大きさ
+                      float      fDripRad,   // 溜り半径
+                      float      fLentor,    // 粘性
+                      int        nRGBA,      // RGBA値
+                      int        nRandSeed,  // ランダムシード
+                      int        nFlag);     // フラグ
+            初期化設定
+
+        NewBloodWeep( FMATRIX*   pmatOrg,    // 発生座標系
+                      int        nLife,      // 生存時間
+                      int        nDripTime,  // 溜り時間
+                      float      fKillY,     // 着地点
+                      float      fFallSpd,   // 落下速度
+                      float      fDropSize,  // 滴大きさ
+                      float      fDripRad,   // 溜り半径
+                      float      fLentor,    // 粘性
+                      int        nRGBA,      // RGBA値
+                      int        nRandSeed,  // ランダムシード
+                      int        nFlag);     // フラグ
+            滴り血生成
+
+bloodfloor.c 
+    床に溜る血
+    床につくかもめの糞のエフェクトを血に変えたもの
+        
+forttear.c 
+    フォーチュン涙
+    未使用
+    
+ventilatorlit.c 
+    水没ステージ天窓からの光
+        
+hexagonal.c 
+    デモ用に切り出しした亀甲エフェクト
+    kira/effect/floor/floor.c参照
+
+concspread.c 
+    付随水飛抹
+    キャラクタの動いた方向に水滴を出すエフェクト
+        
+charaspread.c 
+    キャラ付随水飛抹
+    キャラクタの手足の動いた方向に水滴を出すエフェクト
+        
+plasmaevade.c 
+    プラズマ回避エフェクト
+    １関節分のプラズマエフェクトを再帰的に生成して枝分かれさせる。
+    ノード単位で動作を管理して流れるように出したり消したりする
+
+        SetActMode( PLASMA_NODE* pplsm,    // ノードワーク
+                    PLSMACTMODE  actmode); // 動作関数
+            ノードの動作関数を設定
+        CheckMessage( Work* work );
+            チェックメッセージ
+        CalcInitNode( FVECTOR* vec, 
+                      int      node_num0, 
+                      int      node_num1, 
+                      int*     pnRandSeed );
+            ノードワーク初期化
+
+        ActDrawOff( PLASMA_NODE* pplsm, int nClock);
+            ノード動作関数：非表示
+
+        ActDrawing( PLASMA_NODE* pplsm, int nClock);
+            ノード動作関数：動作中
+
+        ActDrawEnd( PLASMA_NODE* pplsm, int nClock);
+            ノード動作関数：減衰
+
+        UpdateNode( PLASMA_NODE* pplsm,
+                    int*         pNum,
+                    int          nLevel,
+                    int          nClock,
+                    float        fAlpha);
+            ノードワーク更新
+
+        SendOff( PLASMA_NODE*    pplsm);
+            再帰で非表示にする
+
+        BeginDraw( Work *work );
+            描画開始
+            
+        Act( Work *work );
+            動作関数
+
+        Die( Work *work );
+            破棄関数
+
+        MakePlasmaNode( PLASMA_NODE*      pplsmTop,      // プラズマノードワークの先頭
+                        DG_TEX*           tex,           // テクスチャ情報
+                        Work*             work,          // プラズマ構造体
+                        FVECTOR*          pvecPrev,      // ノードの始点
+                        FVECTOR*          pvecPoint,     // ノードの終点
+                        float*            pfOffsetRad,   // 半径
+                        FVECTOR*          pvecWork1,     // 頂点座標データの先頭:１
+                        FVECTOR*          pvecWork2,     // 頂点座標データの先頭:２
+                        DG_PRIM2_UVRGBWH* puvrgbWork1,   // 頂点UVRGBAデータの先頭:１
+                        DG_PRIM2_UVRGBWH* puvrgbWork2,   // 頂点UVRGBAデータの先頭:２
+                        int*              pnWorkNum,     // 登録数カウント
+                        int               nLevel,        // ノード階層
+                        int               nAng,          // ノードの終点を中心からどの方向にするか決める角度
+                        int               nAddAngMin,    // 次ノードに渡す際にnAngに加算するランダム角度の最小    
+                        int               nAddAngMax,    // 次ノードに渡す際にnAngに加算するランダム角度の最大
+                        float             fSize);        // スプライトのサイズ
+            プラズマノードを作成:(再帰呼出)
+
+        InitPacket( Work*        work,     
+                    DG_PRIM2*    prim,     // プリミティブワーク
+                    DG_TEX*      tex);     // テクスチャワーク
+            プリミティブワーク初期化
+
+        GetResources( Work*    work);    
+            初期化関数
+            
+        NewPlasmaEvade( int        name,          // 名前ID
+                        FMATRIX*   pmatOrg,       // 発生座標系（即時コピー）
+                        FMATRIX*   pmatRepel,     // 弾かれる座標（即時コピー）
+                        int        nStraightNode, // 直線ノード    
+                        int        nBranchNode,   // 分岐ノード    
+                        float      fOneDist,      // 距離 √
+                        float      fOneRad,       // 半径 √
+                        int        nBaseAng,      // 基本方向    
+                        int        nAddAngMin,    // 下限加算方向
+                        int        nAddAngMax,    // 上限加算方向
+                        int        nRandSeed);    // ランダムシード
+            プラズマ回避エフェクト生成
+
+electrofield.c 
+    電磁波バリアエフェクト
+    plasmaevade.c プラズマ回避エフェクトの内側に出すポリゴン板
+
+        UpdatePacket( Work*        work,       // 電磁場ワーク
+                      DG_PRIM2*    prim,       // プリミティブワーク
+                      int          nBaseAng,   // 基本方向
+                      u_int        nRGBA,      // カラー
+                      float        u_scale,    // UV情報:テクスチャデータより
+                      float        v_scale,    // UV情報:テクスチャデータより
+                      float        u_offset,   // UV情報:テクスチャデータより
+                      float        v_offset);  // UV情報:テクスチャデータより
+            プリミティブワーク更新
+
+        Act( Work* work );
+            動作関数
+
+        Die( Work* work );
+            破棄関数
+
+        InitPacket( Work*        work,         // ワーク
+                    DG_PRIM2*    prim,         // プリミティブ
+                    DG_TEX*      tex,          // テクスチャデータ
+                    long64       tagAlpha,     // ALPHAタグ
+                    u_int        nRGBA,        // カラー
+                    int          nRaise);      // 優先順位
+            プリミティブワーク初期化
+
+        GetResources( Work*      work,
+                      FMATRIX*   pmatOrg);     // 発生座標系    
+            初期化関数
+        
+        NewElectroField( FMATRIX* pmatOrg,     // 発生座標系
+                         int      nBaseAng,    // 基本角度    
+                         int      nRandSeed);  // ランダムシード
+            電磁波バリア生成
+
+concripple.c 
+    付随水波紋
+    waterripple.cの生成座標を追従型にしたもの
+    
+oneripple.c 
+    単体水波紋
+    waterripple.cを１波紋生成するタイプにしたもの
+        
+onespread.c 
+    単体水飛沫
+    waterspread.cを１つ生成するタイプにしたもの
+        
+drowbubble.c
+    溺れた時の口からでる泡
+    waterbubble.cのパラメータを特化させたもの
+

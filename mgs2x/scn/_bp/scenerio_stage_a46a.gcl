@@ -1,0 +1,691 @@
+/*
+	a46a.gcl
+	    メタル戦（オルタナティブミッション用）
+
+	2002/06/17 S.Mukaide
+	$Id: a46a.gcl,v 1.6 2002/07/11 08:09:10 usr03379 Exp $                      
+
+	
+*/
+
+//	ステージ用define
+// ------------------------------------
+#define		STAGE_W46A			1
+#define		STAGE_PLANT			1	//	プラント編
+#define		STAGE_ALT			1	//	オルタナティブ系のステージでは全て定義する。ゲームオーバーなどで使用
+#define		ANOTHER				1	//	VR,オルタナティブ双方で定義。a_stdproc.hで定義されているため、stdch.h内では、使用することができない
+
+// 各種スイッチ用define
+// ------------------------------------
+// サウンド
+#define		SOUND			1		// サウンドデータは最初に呼ぶ
+#define		BGM				1		// BGMは敵兵コマンダーの後に呼ぶ
+// キャラクター関係
+#define		RAIDEN			1		// SNAKEとは排他
+#define		SNAKE			0
+#define		ENEMY			0		// コマンダーと警備兵(敵を出すときは必須)
+#define		SUPPORT			0		// サポート兵
+#define		ATTACKER		0		// 攻撃兵
+#define		SHIELD			0		// 盾兵(1) or 通常攻撃兵(0)
+// 監視カメラ関係
+#define		CYPHER			0		// サイファー
+// ドア
+#define		SLIDE_DOOR		0		// スライドドア
+// 入出トラップ
+#define		LOAD_TRAP		0
+#define		STAGE_END		0		// ステージ終了時処理を使用可にする
+// フォグ
+#define		FOG				1
+// エフェクト関係
+#define		EFFECT			0		// エフェクト全般
+#define		BLUR			0		// ブラー
+#define		Z_MANAGER		0		// Ｚフォーカス管理(敵のライト等で仕様)
+#define		BODY_SHADOW		0		// 敵のライトによって出る影
+// 子画面
+#define		SUB_CAMERA		0
+// カメラ関係
+#define		CLEAR_CAMERA	0		// クリアリング専用カメラ(要子画面)
+
+// 天井
+#define		CHARA_CEIL		0		// 天井君
+// 透明壁
+#define		TR_WALL			0		// シナリオ置きの透明壁
+// ライト関係
+#define		SPOT_LIGHT		0		// スポットライト
+// オブジェ関係
+
+// ボス関係
+#define		METAL			1		// メタル
+
+// アイテム
+#define		ITEM			0
+// 強制モーション
+#define		BY_MOTION		1		// ビヨンドモーション
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME			a46a
+#define		KMS_NAME0			w46a
+#define		LT2_NAME			w46a
+
+// キャラクター関係
+#if d:RAIDEN
+	#define		PLAYER		ライデン	// モーションができるまで名前はスネーク
+#else
+	#define		PLAYER		スネーク
+#endif
+
+//	薬莢系
+
+//	ステージ系
+#define			POLYDEMO_LOAD		1
+
+// ローカル変数
+//	$f:w46a_メタル登場フラグ				//	メタルが登場したかどうかのフラグ
+
+//	$i:w46a_メタル戦終了撃墜数				//	メタル戦を終了させるために必要な撃墜数
+//	$f:w46a_スティンガー弾01フラグ			//	アイテム再発生用のフラグ
+//	$f:w46a_スティンガー弾02フラグ			//	アイテム再発生用のフラグ
+//	$f:w46a_スティンガー弾03フラグ			//	アイテム再発生用のフラグ
+//	$f:w46a_スティンガー弾04フラグ			//	アイテム再発生用のフラグ
+//	$f:w46a_スティンガー弾05フラグ			//	アイテム再発生用のフラグ
+//	$f:w46a_スティンガー弾06フラグ			//	アイテム再発生用のフラグ
+
+//	$f:w46a_レーション01フラグ				//	アイテム再発生用のフラグ
+//	$b:w46a_レーションカウント				//	レーションの再発生制限用
+
+//	$i:w46a_メタル戦撃墜数					//	メタル撃墜数
+
+// include
+// ------------------------------------
+#include "stdch.h"
+#include "enevoice.h"
+#include "item_info.h"
+#include "a_mode.h"			// アナザーミッション設定ファイル
+
+#include "sload.h"
+#include "sound.h"
+#include "obl_trap.h"
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+#include "a46a_d_common.h"	//	デモ／ゲーム共通プロック
+
+// アナザー用でマップ設定前に設定する
+// ------------------------------------
+@アナザー用マップ定義前設定
+
+// マップ設定
+// ------------------------------------
+chara マップ メタル戦ステージ	\
+	-k d:KMS_NAME0 \
+	-h d:HZX_NAME,0 \
+	-l d:LT2_NAME
+
+command マップ設定 メタル戦ステージ -set {
+	@常駐キャラ設定
+	@ローカル変数初期化
+	@設定値変更
+	@プラグイン設定
+	@A_プレイヤー設定 sna_a46a rai_a46a
+}
+
+// アナザー用でマップ設定後に設定する
+// ------------------------------------
+@アナザー用マップ定義後設定
+
+command マップ設定 メタル戦ステージ -set {
+	@弾痕跳弾設定
+	@亀甲床設定
+#if d:METAL
+	@メタル戦設定
+#endif
+#if d:FOG
+	@フォグ設定
+#endif
+#if d:EFFECT
+	@エフェクト設定
+#endif
+	@息設定
+	@空設定
+	@雷管理
+	@カメラセット
+#if d:DEBUG_CHARA
+	@デバッグキャラセット
+#endif
+
+	@装備禁止設定
+
+/*
+	if ($f:w41a_ノードフラグ == 1) {
+		@プラント編全体マップ設定  d:アーセナルギア直腸	//	全体マップ表示
+	} else {
+		@ポーズ時ステージ名表示設定 d:wn_アーセナルギア直腸	//	ポーズ時ステージ名表示
+	}
+*/
+	@キャラ用ライト設定		// マップ設定の最後に呼ぶ
+
+}
+
+
+//初期マップの表示
+command マップ表示 -show メタル戦ステージ
+
+// 全てのセットが終わったところでフェードイン
+@メタル戦開始時処理
+
+//###################################################################################
+//									各proc設定
+//###################################################################################
+
+
+
+//###################################################################################
+//									全マップ共通
+//###################################################################################
+
+	proc ローカル変数初期化 {
+		eval ($f:w46a_スティンガー弾01フラグ = d:FALSE)
+		eval ($f:w46a_スティンガー弾02フラグ = d:FALSE)
+		eval ($f:w46a_スティンガー弾03フラグ = d:FALSE)
+		eval ($f:w46a_スティンガー弾04フラグ = d:FALSE)
+		eval ($f:w46a_スティンガー弾05フラグ = d:FALSE)
+		eval ($f:w46a_スティンガー弾06フラグ = d:FALSE)
+		eval ($f:w46a_レーション01フラグ = d:FALSE)
+//		eval ($b:w46a_レーションカウント = 0)
+		eval ($i:w46a_メタル戦撃墜数 = 0)
+
+	}
+
+	proc 設定値変更 {
+		#if d:DEBUG_PRINT 
+			print 'status_set'
+		#endif
+
+		command スティンガー性能 \
+			-life 240 \
+			-s 0,-250 ,0
+
+/*
+		d:LEVEL_VERYEASY
+		eval ($i:w46a_メタル戦終了撃墜数 = 3)
+
+		d:LEVEL_EASY
+		eval ($i:w46a_メタル戦終了撃墜数 = 5)
+
+		d:LEVEL_NORMAL
+		eval ($i:w46a_メタル戦終了撃墜数 = 7)
+
+		d:LEVEL_HARD
+		eval ($i:w46a_メタル戦終了撃墜数 = 10)
+
+		d:d:LEVEL_EXTREME以上
+		eval ($i:w46a_メタル戦終了撃墜数 = 20)
+
+*/
+
+		eval ($i:w46a_メタル戦終了撃墜数 = 7)
+
+	}
+
+	proc プラグイン設定 {
+		#if d:DEBUG_PRINT
+			print 'plugin_set'
+		#endif
+		command プラグインブレード -m rai_blade
+	}
+
+	proc 弾痕跳弾設定 {
+		command 弾痕ノーマル -n 0
+		command 跳弾ノーマル -n 0
+	}
+
+//###################################################################################
+//								武器設定
+//###################################################################################
+
+	proc 刀設定 {
+		eval ( $w:武器最大数Ｒ[ d:武器:ブレード ] = 1 )
+		eval ( $w:武器弾数Ｒ[ d:武器:ブレード ] = 1 )
+	}
+
+
+//###################################################################################
+//								メタル
+//###################################################################################
+
+	proc メタル戦設定 {
+			#if d:DEBUG_PRINT
+			print 'set pdray'
+			#endif
+
+			chara	ＲＡＹサーバー設置 ray_server \
+				-num $i:w46a_メタル戦終了撃墜数 \
+				-proc メタル破壊２
+
+	//		レイ配置
+			chara 量産型ＲＡＹ設置 ray1 \
+				-pos 0,0,-400000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+
+			chara 量産型ＲＡＹ設置 ray2 \
+				-pos 10000,0,-380000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+			chara 量産型ＲＡＹ設置 ray3 \
+				-pos -10000,0,-390000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+
+			chara 量産型ＲＡＹ設置 ray4 \
+				-pos 20000,0,-360000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+			chara 量産型ＲＡＹ設置 ray5 \
+				-pos -20000,0,-370000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+
+			chara 量産型ＲＡＹ設置 ray6 \
+				-pos 30000,0,-340000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+			chara 量産型ＲＡＹ設置 ray7 \
+				-pos -30000,0,-350000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+
+			chara 量産型ＲＡＹ設置 ray8 \
+				-pos 40000,0,-320000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+			chara 量産型ＲＡＹ設置 ray9 \
+				-pos -40000,0,-330000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+
+			chara 量産型ＲＡＹ設置 ray10 \
+				-pos 50000,0,-300000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+			chara 量産型ＲＡＹ設置 ray11 \
+				-pos -50000,0,-310000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+
+			chara 量産型ＲＡＹ設置 ray12 \
+				-pos 60000,0,-280000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+			chara 量産型ＲＡＹ設置 ray13 \
+				-pos -60000,0,-290000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+
+			chara 量産型ＲＡＹ設置 ray14 \
+				-pos 70000,0,-260000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+			chara 量産型ＲＡＹ設置 ray15 \
+				-pos -70000,0,-270000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+
+			chara 量産型ＲＡＹ設置 ray16 \
+				-pos 80000,0,-240000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+			chara 量産型ＲＡＹ設置 ray17 \
+				-pos -80000,0,-250000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+
+			chara 量産型ＲＡＹ設置 ray18 \
+				-pos 90000,0,-220000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+			chara 量産型ＲＡＹ設置 ray19 \
+				-pos -90000,0,-230000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+
+			chara 量産型ＲＡＹ設置 ray20 \
+				-pos 100000,0,-200000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+			chara 量産型ＲＡＹ設置 ray21 \
+				-pos -100000,0,-210000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+
+			chara 量産型ＲＡＹ設置 ray22 \
+				-pos 110000,0,-180000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+			chara 量産型ＲＡＹ設置 ray23 \
+				-pos -110000,0,-190000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+
+			chara 量産型ＲＡＹ設置 ray24 \
+				-pos 120000,0,-160000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+			chara 量産型ＲＡＹ設置 ray25 \
+				-pos -120000,0,-170000 \
+				-dir 0,0,0 \
+				-end_proc メタル破壊 \
+				-resource pdray_def_mt pdray
+
+			#if d:DEBUG_PRINT
+			print 'end pdray'
+			#endif
+			
+
+
+			//	ＢＧＭ鳴らす
+			mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_PLAY_01
+	}
+
+//###################################################################################
+//									 開始時処理
+//###################################################################################
+
+	proc メタル戦開始時処理 {
+		if ($s:登場ポイント == 円形エレベータから) {
+			@ステージ開始時処理	 d:LOAD_TYPE:NO_MOVE_TYPE  -1 -1 -1
+		} else if ($s:登場ポイント == テイルズＥＶＲ制御奪い返し紙芝居後から) {
+			@ステージ開始時処理	 d:LOAD_TYPE:NO_MOVE_TYPE 紙芝居 0 d:DEFAULT_M_TYPE
+		}
+	}
+
+//###################################################################################
+//									 ロード
+//###################################################################################
+
+
+//###################################################################################
+//									 オブジェクト
+//###################################################################################
+
+	proc 空設定 {
+		chara 新空 cloud \
+			-m w00_sky
+	}
+
+//###################################################################################
+//									 エフェクト
+//###################################################################################
+
+	proc エフェクト設定 {
+		#if d:DEBUG_PRINT
+			print 'effect_set'
+		#endif
+
+		#if d:BLUR
+			chara ブラー ブラー
+		#endif
+
+		#if d:Z_MANAGER
+			chara Ｚフォーカス管理 Z_manager
+			mesg Ｚフォーカス管理 Z_manager パラメータ 5000 30
+		#endif
+
+		#if d:BODY_SHADOW
+			chara ＯＦＦ制御 off_man
+			mesg ＯＦＦ制御 off_man ボディシャドウＯＦＦ
+		#endif
+	}
+
+	proc キャラ用ライト設定 {
+		#if d:DEBUG_PRINT
+			print 'chara_light_set'
+		#endif
+		chara 環境光 環境光源 \
+			 -c 63 74 52
+		chara 平行光 平行光源 \
+			 -c 32 123 131 \
+			 -p 3264 1920 -3264
+	}
+
+	proc 亀甲床設定 {
+		chara 亀甲床 亀甲床ちゃん \
+				-prims 1 \
+				-alpha 10 \
+				-vertex 20 \
+				-user 64
+	}
+
+	proc 息設定 {
+		#if d:DEBUG_PRINT
+		print 'PLAYER_BREARH'
+		#endif
+		chara 白息 プレイヤー息 \
+			-name d:PLAYER \
+			-object 12 \
+			-shift 0,-30,130 \
+			-interval 136
+		mesg 白息 プレイヤー息 on
+	}
+
+	proc もやもや管理 {
+		@もやもや設定
+	}
+
+	proc 雷管理 {
+		@雷設定
+	}
+
+
+
+//###################################################################################
+//									 カメラ
+//###################################################################################
+
+	proc カメラセット {
+		#if d:DEBUG_PRINT
+			print 'stage_camera_set'
+		#endif
+
+		chara カメラ ステージカメラ		-c 0 -l 3 -p 0 
+		chara カメラ メインカメラ		-c 0 -l 2 -p 50
+
+		// デフォルトカメラ
+		chara カメラ設定 ステージカメラ \
+			-c 0 \	
+			-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-r 126,2048,0 -f 10000 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s 1
+	}
+
+//###################################################################################
+//									デモ設定
+//###################################################################################
+
+	proc メタル破壊 {
+	}
+
+	proc メタル破壊２ {
+		@メタル戦終了
+	}
+
+	proc メタル戦終了 {
+		//	アイテム収得可能範囲を元に戻す
+		command アイテム収得可能範囲設定 \
+			300 \ // デフォルト  300 (2001.7/3現在)
+			1500 \ // デフォルト 1500 (2001.7/3現在)
+			300   // デフォルト  300 (2001.7/3現在)
+
+		//	ＢＧＭフェードアウト
+		mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_FOUTS_S
+
+		@紙芝居ステージロード d:TALES_E:対ＲＡＹクリア中
+	}
+
+
+
+//###################################################################################
+//									 その他設定
+//###################################################################################
+
+	proc 装備禁止設定 {
+		//	クレイモア／Ｃ４／雑誌は使用不能
+		command	不可装備設定 \
+			-weapon \
+//				d:武器:Ｍ９ \			// 1
+//				d:武器:ＵＳＰ \			// 2
+//				d:武器:ソコム \			// 3
+//				d:武器:ＰＳＧ１ \		// 4
+//				d:武器:ＲＧＢ６ \		// 5
+//				d:武器:ニキータ \		// 6
+//				d:武器:スティンガー \	// 7
+				d:武器:クレイモア \		// 8
+				d:武器:Ｃ４ \			// 9
+//				d:武器:チャフ \			// 10
+//				d:武器:スタン \			// 11
+//				d:武器:マイク \			// 12
+//				d:武器:ブレード,		// 13
+//				d:武器:凍結スプレー \	// 14
+//				d:武器:ＡＫＳ \			// 15
+//				d:武器:マガジン \		// 16
+//				d:武器:グレネード \		// 17
+//				d:武器:Ｍ４ \			// 18
+//				d:武器:ＰＳＧ１−Ｔ \	// 19
+//				d:武器:特殊マイク \		// 20
+				d:武器:雑誌				// 21
+	}
+
+
+
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------
+proc デバッグキャラセット {
+	#if d:DEBUG_PRINT
+		print 'debug_chara_set'
+	#endif
+
+	#if d:CHARA_CAMERA
+		chara キャラカメラ 敵兵カメラ \
+			-c d:TARGET_CHARA \
+			-s -920,610,200 \
+			-r -200,1024,0 
+	#endif
+
+	#if d:SCREENSHOT
+		chara スクリーンショット shot
+	#endif
+
+	#if d:USB_KEY
+		chara USBキーボード実行 test \
+			-e d:KBD_ESC {	
+				mesg プレイヤー d:PLAYER position -5500, -13000, -500
+			} \
+	#endif
+
+	// 実験用ＲＡＹ（2001.2.15 松花追加）
+/*
+	#if d:DEBUG_PRINT
+	print 'Ray1_test'
+	#endif
+	chara プットオブジェ Ray1_test -m ryousan_metal -r 0,0,0 -p       0,0,-30000 -s 100,100,100 -l d:LT2_NAME -f 0x20
+	chara プットオブジェ Ray2_test -m ryousan_metal -r 0,0,0 -p  10000,0,-20000 -s 100,100,100 -l d:LT2_NAME -f 0x20
+	chara プットオブジェ Ray3_test -m ryousan_metal -r 0,0,0 -p -10000,0,-30000 -s 100,100,100 -l d:LT2_NAME -f 0x20
+
+	chara プロック連続実行 Ray1_test_move \
+		-time -1 \
+		-exec {
+			eval( $w:実験ＲＡＹ１角度   = (($w:実験ＲＡＹ１角度   +  5) & 4095) );
+			eval( $w:実験ＲＡＹ１角度２ = (($w:実験ＲＡＹ１角度２ +  8) & 4095) );
+			eval( $i:実験ＲＡＹ１Ｙ軸方向 = (($i:実験ＲＡＹ１Ｙ軸方向 - 2) & 4095) );
+			eval( $i:実験ＲＡＹ１位置Ｘ   = (`command cos $w:実験ＲＡＹ１角度`) * 3 );
+			eval( $i:実験ＲＡＹ１位置Ｙ   = 0 );
+			eval( $i:実験ＲＡＹ１位置Ｚ   = (`command sin $w:実験ＲＡＹ１角度２`) * 3 - 30000 );
+			mesg プットオブジェ Ray1_test turn 0 $i:実験ＲＡＹ１Ｙ軸方向 0
+			mesg プットオブジェ Ray1_test move $i:実験ＲＡＹ１位置Ｘ $i:実験ＲＡＹ１位置Ｙ $i:実験ＲＡＹ１位置Ｚ
+		}
+	chara プロック連続実行 Ray2_test_move \
+		-time -1 \
+		-exec {
+			eval( $w:実験ＲＡＹ２角度   = (($w:実験ＲＡＹ２角度   -  4) & 4095) );
+			eval( $w:実験ＲＡＹ２角度２ = (($w:実験ＲＡＹ２角度２ -  6) & 4095) );
+			eval( $i:実験ＲＡＹ２Ｙ軸方向 = (($i:実験ＲＡＹ２Ｙ軸方向 + 3) & 4095) );
+			eval( $i:実験ＲＡＹ２位置Ｘ   = (`command cos $w:実験ＲＡＹ２角度`) * 4 + 10000);
+			eval( $i:実験ＲＡＹ２位置Ｙ   = 0 );
+			eval( $i:実験ＲＡＹ２位置Ｚ   = (`command sin $w:実験ＲＡＹ２角度２`) * 4 - 30000 );
+			mesg プットオブジェ Ray2_test turn 0 $i:実験ＲＡＹ２Ｙ軸方向 0
+			mesg プットオブジェ Ray2_test move $i:実験ＲＡＹ２位置Ｘ $i:実験ＲＡＹ２位置Ｙ $i:実験ＲＡＹ２位置Ｚ
+		}
+	chara プロック連続実行 Ray3_test_move \
+		-time -1 \
+		-exec {
+			eval( $w:実験ＲＡＹ３角度   = (($w:実験ＲＡＹ３角度   -  6) & 4095) );
+			eval( $w:実験ＲＡＹ３角度２ = (($w:実験ＲＡＹ３角度２ +  8) & 4095) );
+			eval( $i:実験ＲＡＹ３Ｙ軸方向 = (($i:実験ＲＡＹ３Ｙ軸方向 + 1) & 4095) );
+			eval( $i:実験ＲＡＹ３位置Ｘ   = (`command cos $w:実験ＲＡＹ３角度`) * 5 - 10000 );
+			eval( $i:実験ＲＡＹ３位置Ｙ   = 0 );
+			eval( $i:実験ＲＡＹ３位置Ｚ   = (`command sin $w:実験ＲＡＹ３角度２`) * 5 - 30000 );
+			mesg プットオブジェ Ray3_test turn 0 $i:実験ＲＡＹ３Ｙ軸方向 0
+			mesg プットオブジェ Ray3_test move $i:実験ＲＡＹ３位置Ｘ $i:実験ＲＡＹ３位置Ｙ $i:実験ＲＡＹ３位置Ｚ
+		}
+
+	chara プットモーションモデル Ray1_test -p 0,0,-40000 -d 0 -k pdray_def_mt -m w46a_metal \
+	-n 0 
+
+	chara プットモーションモデル Ray2_test -p 70000,0,-32000 -d 3584 -k pdray_def_mt -m w46a_metal \
+	-n 0 
+
+	chara プットモーションモデル Ray3_test -p -70000,0,-32000 -d 512 -k pdray_def_mt -m w46a_metal \
+	-n 0 
+
+	chara プットオブジェ Ray4_test -m ryousan_metal -r 0,2048,0 -p 0,0, 28000 -s 100,100,100 -l d:LT2_NAME -f 0x20
+
+*/
+
+}

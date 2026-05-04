@@ -1,0 +1,262 @@
+/*
+	special.gcl
+	    おもしろムービー
+
+	2000/11/10 H.Yoshiike
+	$Id: special.gcl,v 1.23 2002/01/23 03:54:41 usr04249 Exp $
+
+
+*/
+
+// 各種スイッチ用define
+// ------------------------------------
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+#endif
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME		null
+#define		KMS_NAME		null
+#define		LT2_NAME		null
+
+
+// include
+// ------------------------------------
+#include "stdch.h"
+#include "sload.h"
+#include "sound.h"
+
+//日本語版
+#ifdef d:JAPANESE
+#include "special_j.rsc"
+#endif
+
+//英語版
+#ifdef d:ENGLISH
+#include "special_e.rsc"
+#endif
+
+// マップ設定
+// ------------------------------------
+chara マップ おもしろムービー -k d:KMS_NAME -h d:HZX_NAME,0 -l d:LT2_NAME
+
+
+command マップ設定 おもしろムービー -set {
+
+	chara サウンドマネージャー ＳＤマネ -pak 0
+	command メニュー設定 -p off
+	@おもしろい
+}
+
+command マップ表示 -show おもしろムービー
+
+
+
+proc おもしろい {
+	print 'おもしろい'
+
+	//３２こまで
+#ifdef d:ENGLISH
+	chara 英語版スペシャルメニュー スペメヌ \
+#endif
+#ifdef d:JAPANESE
+	chara スペシャルメニュー スペメヌ \
+#endif
+		-flag 	$i:スペシャルムービーフラグ \
+		-end 	エンドプロック \
+		-data   ムービーその１   [説明:初級１説明]   [題名:初級１]   0 \
+				ムービーその２   [説明:初級２説明]   [題名:初級２]   0 \
+				ムービーその３   [説明:初級３説明]   [題名:初級３]   0 \
+				ムービーその４   [説明:初級４説明]   [題名:初級４]   0 \
+				ムービーその５   [説明:初級５説明]   [題名:初級５]   0 \
+				ムービーその６   [説明:初級６説明]   [題名:初級６]   0 \
+				ムービーその７   [説明:初級７説明]   [題名:初級７]   0 \
+				ムービーその８   [説明:初級８説明]   [題名:初級８]   0 \
+				ムービーその９   [説明:初級９説明]   [題名:初級９]   0 \
+				ムービーその１０ [説明:初級１０説明] [題名:初級１０] 0 \
+				ムービーその１１ [説明:初級１１説明] [題名:初級１１] 0 \
+				ムービーその１２ [説明:初級１２説明] [題名:初級１２] 0 \
+				ムービーその１３ [説明:初級１３説明] [題名:初級１３] 0 \
+				ムービーその１４ [説明:初級１４説明] [題名:初級１４] 0 \
+				ムービーその１５ [説明:初級１５説明] [題名:初級１５] 0 \
+				ムービーその１６ [説明:中級１説明]   [題名:中級１]   0 \
+				ムービーその１７ [説明:中級２説明]   [題名:中級２]   0 \
+				ムービーその１８ [説明:中級３説明]   [題名:中級３]   0 \
+				ムービーその１９ [説明:中級４説明]   [題名:中級４]   0 \
+				ムービーその２０ [説明:中級５説明]   [題名:中級５]   0 \
+				ムービーその２１ [説明:中級６説明]   [題名:中級６]   0 \
+				ムービーその２２ [説明:中級７説明]   [題名:中級７]   0 \
+				ムービーその２３ [説明:中級８説明]   [題名:中級８]   0 \
+				ムービーその２４ [説明:上級１説明]   [題名:上級１]   0 \
+				ムービーその２５ [説明:上級２説明]   [題名:上級２]   0 \
+				ムービーその２６ [説明:上級３説明]   [題名:上級３]   0 \
+				ムービーその２７ [説明:上級４説明]   [題名:上級４]   0 \
+				ムービーその２８ [説明:上級５説明]   [題名:上級５]   0 \
+				ムービーその２９ [説明:上級６説明]   [題名:上級６]   0 \
+				ムービーその３０ [説明:上級７説明]   [題名:上級７]   0 \
+				ムービーその３１ [説明:上級８説明]   [題名:上級８]   0 \
+				ムービーその３２ [説明:上級９説明]   [題名:上級９]   0
+}
+
+proc エンドプロック $:ムービー {
+	eval( $i:スペシャルムービーフラグ = $:ムービー )
+	command メニュー設定 -p on
+	load 'title'
+}
+
+proc 終了メッセージ {
+	command セットサウンドコード -c d:SNG_FOUTS_S		//ＢＧＭフェードアウト
+#ifdef d:ENGLISH
+	mesg 英語版スペシャルメニュー スペメヌ ムービー終了
+#endif
+#ifdef d:JAPANESE
+	mesg スペシャルメニュー スペメヌ ムービー終了
+#endif
+}
+
+proc ムービーその１ {
+	command セットサウンドコード -c d:SNG_PLAY_04		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL1\\MA0001.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその２ {
+	command セットサウンドコード -c d:SNG_PLAY_04		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL1\\MA0002.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその３ {
+	command セットサウンドコード -c d:SNG_PLAY_04		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL1\\MA0003.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその４ {
+	command セットサウンドコード -c d:SNG_PLAY_04		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL1\\MA0004.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその５ {
+	command セットサウンドコード -c d:SNG_PLAY_04		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL1\\MA0005.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその６ {
+	command セットサウンドコード -c d:SNG_PLAY_04		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL1\\MA0006.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその７ {
+	command セットサウンドコード -c d:SNG_PLAY_04		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL1\\MA0007.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその８ {
+	command セットサウンドコード -c d:SNG_PLAY_04		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL1\\MA0008.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその９ {
+	command セットサウンドコード -c d:SNG_PLAY_04		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL1\\MA0009.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその１０ {
+	command セットサウンドコード -c d:SNG_PLAY_04		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL1\\MA0010.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその１１ {
+	command セットサウンドコード -c d:SNG_PLAY_04		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL1\\MA0011.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその１２ {
+	command セットサウンドコード -c d:SNG_PLAY_04		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL1\\MA0012.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその１３ {
+	command セットサウンドコード -c d:SNG_PLAY_04		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL1\\MA0013.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその１４ {
+	command セットサウンドコード -c d:SNG_PLAY_04		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL1\\MA0014.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその１５ {
+	command セットサウンドコード -c d:SNG_PLAY_04		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL1\\MA0015.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+
+
+proc ムービーその１６ {
+	command セットサウンドコード -c d:SNG_PLAY_03		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL2\\MB0001.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその１７ {
+	command セットサウンドコード -c d:SNG_PLAY_03		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL2\\MB0002.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその１８ {
+	command セットサウンドコード -c d:SNG_PLAY_03		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL2\\MB0003.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその１９ {
+	command セットサウンドコード -c d:SNG_PLAY_03		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL2\\MB0004.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその２０ {
+	command セットサウンドコード -c d:SNG_PLAY_03		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL2\\MB0005.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその２１ {
+	command セットサウンドコード -c d:SNG_PLAY_03		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL2\\MB0006.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその２２ {
+	command セットサウンドコード -c d:SNG_PLAY_03		//ＢＧＭ
+	if(!$f:スペシャルムービーその７フラグ){
+		eval($f:スペシャルムービーその７フラグ = 1)
+		chara PSS再生 pss -name '\\LEVEL2\\MB0007.PSS;1' -top 246 57 -proc 終了メッセージ
+
+	}else{
+		eval($f:スペシャルムービーその７フラグ = 0)
+		chara PSS再生 pss -name '\\LEVEL2\\MB0007A.PSS;1' -top 246 57 -proc 終了メッセージ
+
+	}
+}
+proc ムービーその２３ {
+	command セットサウンドコード -c d:SNG_PLAY_03		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL2\\MB0008.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+
+
+proc ムービーその２４ {
+	command セットサウンドコード -c d:SNG_PLAY_02		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL3\\MC0001.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその２５ {
+	command セットサウンドコード -c d:SNG_PLAY_02		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL3\\MC0002.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその２６ {
+	command セットサウンドコード -c d:SNG_PLAY_02		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL3\\MC0003.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその２７ {
+	command セットサウンドコード -c d:SNG_PLAY_02		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL3\\MC0004.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその２８ {
+	command セットサウンドコード -c d:SNG_PLAY_02		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL3\\MC0005.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその２９ {
+	command セットサウンドコード -c d:SNG_PLAY_02		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL3\\MC0006.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその３０ {
+	command セットサウンドコード -c d:SNG_PLAY_02		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL3\\MC0007.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその３１ {
+	command セットサウンドコード -c d:SNG_PLAY_02		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL3\\MC0008.PSS;1' -top 246 57 -proc 終了メッセージ
+}
+proc ムービーその３２ {
+	command セットサウンドコード -c d:SNG_PLAY_02		//ＢＧＭ
+	chara PSS再生 pss -name '\\LEVEL3\\MC0009.PSS;1' -top 246 57 -proc 終了メッセージ
+}

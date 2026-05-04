@@ -1,0 +1,104 @@
+//
+//	t11a1D.w04c.src	
+//
+//	written by Y.Matsuhana 1999.Dec
+//
+//	$Id: t11a1D.w04c.src,v 1.18 2001/08/03 07:14:19 usr03635 Exp $
+
+
+block .use r_tnk0
+block .nocache
+block .cache
+
+
+// 各ステージ共通要素
+include		common.h
+include		c_effect.h
+
+// ワールド
+goods		null/null.kms
+meca		ray_w04c1/ray_w04c1.kms
+meca		ray_w04c1/ray_canopy_w04c1_mt.kms
+world		w04c/w04c1.kms
+world		w04c/w04c2.kms
+world		door/w04_dr.kms
+world		w02a/w02a1/w02a_chain.kms
+
+// デモ影用モデル
+world		w04c/w04c_demo/w04c1_demo_k1.kms
+
+// レイのコックピット
+meca		ray_cockpit/ray_cockpit.kms
+
+//cvd			ray_w04c1/ray_w04c1.cv2
+//cvd			ray_w04c1/ray_canopy_w04c1_mt.cv2
+
+
+lt2		w04c_demo.lt2
+hazard	d00a3.hzx
+
+// カートリッジ（GCLでstdch.hをインクルードしている場合必要）
+//pack_all	weapon_cm.tri \
+//	weapon/usp/usp_emb.dar \
+//	weapon/fms/fms_emb.dar
+//weapon	usp/usp_emb.kms
+//weapon	fms/fms_emb.kms
+
+// 足影
+//goods		shadow/foot_shadow_cm.kms
+
+// デモステージ用実験
+// スネーク
+human		sna_def/sna_def_mh.evm
+
+//デモダミー
+goods		demo_dummy/demo_dummy.kms
+//無線機（起爆装置の代わり）
+human		org_def/org_radio_forhand.kms
+
+//海兵隊
+include marine.h
+
+//スコット
+include		scot.h
+
+//カメラ
+pack_all	field_camera.tri \
+			goods/field_camera/field_camera_base.dar \
+			goods/field_camera/field_camera_head.dar
+goods	field_camera/field_camera_base.kms
+goods	field_camera/field_camera_head.kms
+
+//スコット
+human	sco_scott/sco_hat.kms
+human	sco_scott/sco_def.evm
+
+//スネークの武器
+//pack_all	wpn.tri \
+//			weapon/usp/usp_sub.dar \
+//			weapon/usp/usp_amo.dar \
+//			weapon/m92_sna/m92_sna_sub.dar
+//weapon	usp/usp_sub.kms
+//weapon	usp/usp_amo.kms
+//weapon	m92_sna/m92_sna_sub.kms
+
+//振動データ
+// データ数が多すぎてロード時に落ちるステージが出たので、一時的にカット。010729（平野）
+// 振動ファイルは一つにまとまるようになったので組み込み。010803
+vib		demo
+
+/* mgdemo added ----from here (Thu Jan 18 21:56:17 2001) ---- */
+meca	ray_w04c1/raycp_canopy2_t12a1d_mt.kms
+meca	ray_w04c1/raycp_canopy1_t12a1d_mt.kms
+meca	ray_w04c1/raycp_t12a1d.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Jan 25 13:52:32 2001) ---- */
+//arkms	w04a_us_def.kls
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Wed Feb 21 16:20:15 2001) ---- */
+human	us_parts/obj_cap.kms
+weapon	m92/m92.kms
+/* mgdemo added ----upto here ---- */
+
+//常駐部でも同じリネームをしているか？
+//rename		m92_sna_sub.kms m92_sub.kms

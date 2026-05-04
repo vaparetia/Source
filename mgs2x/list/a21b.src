@@ -1,0 +1,43 @@
+//
+//	a21b.src（アナザーミッション用）
+//
+//	written by H.Yoshiike 2000.Oct
+//
+//	$Id: a21b.src,v 1.3 2002/07/18 08:20:57 usr03379 Exp $
+
+//	ステージ名表記用
+#define		WN_W21B
+// アナザーミッション明示
+#define		WN_ANOTHER
+
+//	共通データ
+//#define		EVENING_SKY		//	夕空
+#define		W21B_EVENING_SKY		//	夕空
+
+#include	"a21_common.h"
+
+//	ワールド
+
+//	ＡＢ共通
+world		w21_common/other
+world		w21_common/w21_bg
+
+//	Ｂのみ
+world		w21b
+
+//	ライト
+lt2		w21b.lt2
+
+//	海
+option makexti6 -l 256
+pack_all	oil.tri \
+		effect/plant_sea/e_oil_sea_alp_ovl_mod0222.bmp \
+		effect/plant_sea/e_oil_ref_add_alp_ovl_mod1120.bmp
+option makexti6
+
+pack_trnall	effect.tri \
+		effect/plant_sea/e_oil_sea_alp_ovl_mod0222.bmp \
+		effect/plant_sea/entyou_oil_sea.bmp
+
+//	リネーム
+texrename w21_24a.kms w10c_cntw04.bmp w10c_cntw04aaaa.bmp

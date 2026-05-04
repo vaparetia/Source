@@ -1,0 +1,55 @@
+//
+//	sp02a.src	
+//	バラエティ アスレチックステージ
+//	written by H.Yoshiike 2002.Mar
+//
+//	$Id$
+
+#define WN_SP02A
+
+// 的用
+#define VR_TGT_MINE 1 // ＶＲ機雷
+
+block .use r_vr_r
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"vr_def.h"
+#include	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+
+// 強制モーション
+mtn			rai_sp02a.mls
+mtn			sna_sp02a.mls
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル 
+option makexti6 -l 1024 -f PAL8
+pack_all	sp02a.tri \
+	world/vr_variety/sp02a
+option makexti6
+
+world		vr_variety/sp02a
+rol			world/vr_variety/sp02a/sp02a0.rol
+rol			world/vr_variety/sp02a/sp02a1.rol
+hazard		sp02a.hzx
+
+// ＶＲ的
+#include	"vrstage.h"
+
+// オブジェクト
+
+//	ＶＲ追加エフェクト
+#include	"vr_effect.h"
+
+// アイテム
+itembox
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム

@@ -1,0 +1,212 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+	@fn			extern "C" void edgePostDof_Vsc( qword output, qword input, qword count )
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+//.setswp ims 0
+//.setswp sms 0
+
+
+.include "edgepost_helpers.inc"
+
+
+.macro EDGEPOST_DOF_SAMPLE( INDEX_REG )
+
+	// load tap offset ( could be done once outside loop if enough regs )
+	.localreg	tapOffset, dx, dy
+	mpyi		tapOffset, INDEX_REG, 0x10
+	lqx			tapOffset, tapOffset, tapOffsetTable
+	shufb		dx, tapOffset, tapOffset, kEdgePostReplicateX
+	shufb		dy, tapOffset, tapOffset, kEdgePostReplicateY
+	fm			dx, dx, centerFuzziness
+	fm			dy, dy, centerFuzziness
+	
+	// convert to int
+	cflts		dx, dx, 0
+	cflts		dy, dy, 0
+	
+	// calculate combined offset
+	mpya		dx, dx, kSixteenI, kPixelOffsets
+	mpya		dx, dy, stride, dx
+	
+	// gather 4 samples
+	.localreg 	s0, s1, s2, s3
+	rotqbyi		s1, dx, 4
+	rotqbyi		s2, dx, 8
+	rotqbyi		s3, dx, 12
+	lqx			s0, dx, input
+	lqx			s1, s1, input
+	lqx			s2, s2, input
+	lqx			s3, s3, input
+	
+	// simdify samples fuzziness information
+	.localreg	sampleFuzziness, sampleDepth
+	shufb		sampleFuzziness, s0, s1, kFuzShuf0
+	shufb		sampleDepth, s2, s3, kFuzShuf1
+	shufb		sampleFuzziness, sampleFuzziness, sampleDepth, kFuzShuf2
+	andi		sampleDepth, sampleFuzziness, 0xff
+	rotmi		sampleFuzziness, sampleFuzziness, -16
+	cuflt		sampleFuzziness, sampleFuzziness, 16
+	
+	// compare center depth with sample depth	
+	.localreg	sampleFuzzinessLeak
+	clgt		sampleDepth, centerDepth, sampleDepth
+	fm			sampleFuzzinessLeak, sampleFuzziness, centerLeakFactor
+	selb		sampleFuzziness, sampleFuzziness, sampleFuzzinessLeak, sampleDepth
+	
+	// accumulate fuzziness
+	fa			fuzzinessAccumulator, fuzzinessAccumulator, sampleFuzziness
+	
+	// splat fuzziness and weight sample
+	.localreg 	sd0, sd1, sd2, sd3
+	shufb		sd0, sampleFuzziness, sampleFuzziness, kEdgePostReplicateX
+	shufb		sd1, sampleFuzziness, sampleFuzziness, kEdgePostReplicateY
+	shufb		sd2, sampleFuzziness, sampleFuzziness, kEdgePostReplicateZ
+	shufb		sd3, sampleFuzziness, sampleFuzziness, kEdgePostReplicateW
+	
+	// accumulate + weight
+	fma			c0, s0, sd0, c0
+	fma			c1, s1, sd1, c1
+	fma			c2, s2, sd2, c2
+	fma			c3, s3, sd3, c3
+	
+.endmacro
+
+///	Input is floating point argb, a is fuzziness
+.macro EDGEPOST_DOF( OUTPIXELSIZE )
+	
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+
+	.reg		kSixteenI, kPixelOffsets
+	ila			kSixteenI, 16
+	il128		kPixelOffsets, 0x00000000_00000010_00000020_00000030
+	
+	.reg		kShuf0, kShuf1, kShuf2, kShuf3
+	il128		kShuf0, "aBCD"
+	il128		kShuf1, "bBCD"
+	il128		kShuf2, "cBCD"
+	il128		kShuf3, "dBCD"
+	
+	// splat inputs
+	shufb		stride, stride, stride, kEdgePostReplicateX
+	
+	.reg		kFuzShuf0, kFuzShuf1, kFuzShuf2
+	il128		kFuzShuf0, "Aa00"
+	il128		kFuzShuf1, "00Aa"
+	il128		kFuzShuf2, "ABcd"
+	
+	// dof loop	
+loop:
+	ai			output, output, OUTPIXELSIZE
+	ai			count, count, -4
+	
+	// load four pixels
+	.reg		c0, c1, c2, c3
+	lqd			c0, 0x00( input )
+	lqd			c1, 0x10( input )
+	lqd			c2, 0x20( input )
+	lqd			c3, 0x30( input )
+	
+	// unpack center fuzziness
+	.reg		centerFuzziness, centerDepth, centerLeakFactor
+	
+	shufb		centerFuzziness, c0, c1, kFuzShuf0
+	shufb		centerDepth, c2, c3, kFuzShuf1
+	shufb		centerFuzziness, centerFuzziness, centerDepth, kFuzShuf2
+	andi		centerDepth, centerFuzziness, 0xff
+	rotmi		centerLeakFactor, centerFuzziness, -8
+	andi		centerLeakFactor, centerLeakFactor, 0xff
+	cuflt		centerLeakFactor, centerLeakFactor, 8
+	rotmi		centerFuzziness, centerFuzziness, -16
+	cuflt		centerFuzziness, centerFuzziness, 16
+	
+	// initialize fuzziness accumulator
+	.reg		fuzzinessAccumulator
+	ilf32		fuzzinessAccumulator, 1.f
+	
+	// compare center fuzziness to 0
+	.reg		fuzcmp
+	fcgt		fuzcmp, centerFuzziness, kEdgePostFloatZero
+	gb			fuzcmp, fuzcmp
+	brz			fuzcmp, skip_loop
+	
+	// loop over samples ( this loop is software pipelined )
+	.reg		sampleCounter
+	ori			sampleCounter, numSamples, 0
+sample_loop:
+	ai			sampleCounter, sampleCounter, -1
+	EDGEPOST_DOF_SAMPLE( sampleCounter )
+	brnz		sampleCounter, sample_loop
+	
+	// code jump here when fuzziness of center sample == 0
+skip_loop:	
+	
+	// advance input
+	ai			input, input, 0x40
+	
+	// normalize result
+	.reg		t0, t1, t2, t3
+	frest		t0, fuzzinessAccumulator
+	fi			fuzzinessAccumulator, fuzzinessAccumulator, t0
+	shufb		t0, fuzzinessAccumulator, fuzzinessAccumulator, kEdgePostReplicateX
+	shufb		t1, fuzzinessAccumulator, fuzzinessAccumulator, kEdgePostReplicateY
+	shufb		t2, fuzzinessAccumulator, fuzzinessAccumulator, kEdgePostReplicateZ
+	shufb		t3, fuzzinessAccumulator, fuzzinessAccumulator, kEdgePostReplicateW
+	fm			c0, c0, t0
+	fm			c1, c1, t1
+	fm			c2, c2, t2
+	fm			c3, c3, t3
+	
+	// insert center alpha into the result
+	shufb		c0, c0, centerFuzziness, kShuf0
+	shufb		c1, c1, centerFuzziness, kShuf1
+	shufb		c2, c2, centerFuzziness, kShuf2
+	shufb		c3, c3, centerFuzziness, kShuf3
+.endmacro
+
+//	output argb8
+.cfunc void edgePostDofVsc( qword output, qword input, qword stride, qword count, qword tapOffsetTable, qword numSamples )
+	EDGEPOST_DOF( 0x10)
+	
+	// convert to integer
+	EDGEPOST_FLOAT_TO_U8( c0, c0)
+	EDGEPOST_FLOAT_TO_U8( c1, c1)
+	EDGEPOST_FLOAT_TO_U8( c2, c2)
+	EDGEPOST_FLOAT_TO_U8( c3, c3)
+	
+	// pack and store
+	.reg		out_color
+	EDGEPOST_PACK_PIXELS8( out_color, c0, c1, c2, c3)
+	stqd		out_color, -0x10( output )
+	brnz		count, loop
+.endfunc
+
+.cfunc void edgePostDofVsc_FX16( qword output, qword input, qword stride, qword count, qword tapOffsetTable, qword numSamples )
+	EDGEPOST_DOF( 0x20 )
+	
+	// convert to fixed 0:5:11
+	cfltu		c0, c0, 11
+	cfltu		c1, c1, 11
+	cfltu		c2, c2, 11
+	cfltu		c3, c3, 11
+	
+	// pack and store
+	.reg		out_color0, out_color1
+	EDGEPOST_PACK_PIXELS16( out_color0, c0, c1)
+	EDGEPOST_PACK_PIXELS16( out_color1, c2, c3)
+	stqd		out_color0, -0x20( output )
+	stqd		out_color1, -0x10( output )
+	brnz		count, loop
+.endfunc

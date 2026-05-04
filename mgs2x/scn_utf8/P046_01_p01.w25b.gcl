@@ -1,0 +1,344 @@
+/*
+	P046_01_p01.w25b.gcl
+	    タイトロープ（１）デモステージ
+	    ハリアークリア後
+
+	2000/11/30 Y.Matsuhana         
+	$Id: P046_01_p01.w25b.gcl,v 1.35 2001/10/22 06:30:54 usr00725 Exp $                      
+
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+#define		DEMO_STAGE		1		// デモステージかどうかで起動するキャラを切り分ける
+
+// 各種スイッチ用define
+// ------------------------------------
+#define		KMS_NAME_SEA	sea
+#define		KMS_IRS		irs		// 赤外線センサー
+#define		KMS_IRS_BOX	irs_box		// 赤外線センサー制御箱
+#define		LT2_NAME	w25a
+#define		HZX_NAME	d00a3
+
+// 各種設定用define
+// ------------------------------------
+
+// include
+// ------------------------------------
+#include "5sec_bfr_demo.h"
+#include "demo_vardef.h"
+#include "demo_stdch.h"
+#include "demo_stdch2.h"
+#include "stdproc.h"
+#include "story.h"
+#include "sload.h"
+#include "sea_surface.h"
+#include "p_force_cdc.ch"
+#if d:PLANT_DEMO_ALL_SKIP
+	#define		DEMO_SKIP_ENABLE 1
+#else
+	#define		DEMO_SKIP_ENABLE 0
+#endif
+
+// 共通オブジェクトの設置
+// -----------------------
+#include "w25a_common.h"
+
+// 欧州版では下記をコメントして、p_force_cdcへ移動
+// chara サウンドマネージャー ＳＤマネ -pak -1
+
+// マップ設定
+// ------------------------------------
+chara マップ タイトロープ -h d:HZX_NAME -l d:LT2_NAME
+command マップ設定 タイトロープ -set {
+	//	デモ環境かゲーム環境かで起動を読み分ける。
+	// ------------------------------------
+	#if d:MGS2_DEMO
+chara デモアクトデバッグ demodebug  -i t:p046_01_p01 -d 'p046_01_p01' -l   \
+			-p w25a_w25bステージ切替 水中ゆらぎ
+	#else
+		// 実際の再生
+		//-----------------------------------------------------------
+		// 実際のデモ再生の方も、ストーリーフラグで変える
+		if($f:rfp_P046_02_R01_ハリアー戦勝利２無線デモ１＿２後から始めます){
+
+			@rt_P046_02_R01ハリアー戦勝利２無線デモ１＿２終了
+
+		}else if( $w:p_story == d:ST:P046_01_P01ハリアー戦勝利１ポリゴンデモ１開始) {
+			print '$w:p_story = ST:P046_01_P01ハリアー戦勝利１ポリゴンデモ１開始'
+			/* ハリアー戦勝利後 */
+			// デモ特有の変数代入
+			eval($s:d_num = P046_01_p01)
+			proc デモ再生_P046_01_p01 {
+				@デモモデル差し替え処理
+				chara demo デモ再生 \
+					//-i t:data_dummy_raiden \
+					-i t:p046_01_p01 \
+					-p w25a_w25bステージ切替 水中ゆらぎ \
+					-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+					-next P046_01_p01終了
+			}
+			@デモ再生_P046_01_p01
+		} else if( $w:p_story >= d:ST:P046_01_P01ハリアー戦勝利１ポリゴンデモ１終了 && \
+						$w:p_story < d:ST:P046_02_R01ハリアー戦勝利２無線デモ１開始) {
+			eval( $w:p_story = d:ST:P046_02_R01ハリアー戦勝利２無線デモ１開始 )
+			print '$w:p_story = ST:P046_02_R01ハリアー戦勝利２無線デモ１開始'
+			// デモ特有の変数代入
+			eval($s:d_num = P046_02_r01)
+			@rt_P046_02_R01ハリアー戦勝利２無線デモ１
+			// 上記の終了プロック中に、つづく rt_P046_02_R01ハリアー戦勝利２無線デモ１＿２
+			// を呼び出している。
+		}
+	#endif
+	// 以下、諸々セット
+	//-----------------------------------------------------------
+	@常駐キャラ設定						// stdch.hで定義
+	chara デモキャンセルチェック デモキャンセル -p demo_cancel
+	@w25a_ステージモデルセット
+	@w25b_ステージモデルセット
+	@w25ab共通_ステージモデルセット
+	@ドア設置
+	@海面設置
+	@拡張海面設定
+	@空設置
+	@フォグ設定
+	@エフェクト設定
+	@水中ゆらぎ
+
+	@リアル影セット
+
+	// 無線ではシネマスクリーン起動しない
+	if($s:d_num != P046_02_r01){
+		@シネマスクリーンセット
+	}
+
+}
+
+// ====================================
+// 初期マップ表示
+// ====================================
+command マップ表示 -show タイトロープ
+
+
+// 各proc設定
+//-----------------------------------------------------------
+// デモデモ再生関連のプロック
+//-----------------------------------------------------------
+proc demo_cancel {
+	command StreamStopAll
+}
+
+proc P046_01_p01終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+	print '$w:p_story = d:ST:P046_01_P01ハリアー戦勝利１ポリゴンデモ１終了'
+	eval($w:p_story = d:ST:P046_01_P01ハリアー戦勝利１ポリゴンデモ１終了)
+	chara delay ディレイ -time 1 -exec{ restart }
+}
+
+// 全マップ共通
+// ポリデモ
+// ------------------------------------
+
+// ドア＆マップ切り替え関係
+// ------------------------------------
+// ゲームステージとの共通化のためにw25a_common.h へ移設
+
+// シネマスクリーン
+// ------------------------------------
+proc シネマスクリーンセット  {
+	chara シネマスクリーン シネマ \
+		-top d:CINEMA_BELT_UPPER \
+		-bottom d:CINEMA_BELT_LOWER \
+		-ftime 60	//デフォルト値（ゼロは駄目）
+	mesg シネマスクリーン シネマ フェードアウト 1
+}
+
+// 海面設置
+// ------------------------------------
+proc 海面設置 {
+	@プラント海面セット 昼 w25a 1
+}
+
+// 空設置
+// ------------------------------------
+proc 空設置 {
+	@プラントステージでの汎用空セット ハリアー昼 w25a
+
+	chara 太陽 ソル \
+		-p 0 -40000 -150000 \    //中心の位置
+		-f -2700 -3100 -2700     //平行光源の-pと同じ値
+}
+
+// フォグ
+// ------------------------------------
+proc フォグ設定 {
+	@プラントステージでのフォグセット 昼 0
+//	chara フォグ 霧\
+//		-c 220, 237, 198 \
+//		-n -25000 \
+//		-f 300000
+}
+
+// エフェクト関係
+// -----------------------------------
+proc エフェクト設定 {
+	chara Ｚフォーカス管理 Z_manager
+	chara ＯＦＦ制御 off_man
+	mesg ＯＦＦ制御 off_man ボディシャドウＯＦＦ
+}
+
+// ステージモデルセット
+// ------------------------------------
+proc w25a_ステージモデルセット {
+	chara プットオブジェ w25a0       -m w25a0        -p 0,0,0 -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25a0_obj01 -m w25a0_obj01  -p 0,0,0 -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25a1       -m w25a1        -p 0,0,0 -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25a1_obj01 -m w25a1_obj01  -p 0,0,0 -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25a_brk00b -m w25a_brk00b  -p 0,0,0 -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25a_brk01b -m w25a_brk01b  -p 0,0,0 -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25a_brk02b -m w25a_brk02b  -p 0,0,0 -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25a_gl     -m w25a_gl      -p 0,0,0 -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25a_g      -m w25a_g       -p 0,0,0 -l d:LT2_NAME -r 0,0,0 
+}
+proc w25b_ステージモデルセット {
+	chara プットオブジェ w25b_step00	-m w25b_step00 -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25b0		-m w25b0       -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25b1		-m w25b1       -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25b_g		-m w25b_g      -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25b0_wall		-m w25b0_wall  -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+
+	chara プットオブジェ w25demo_14a		-m w25demo_14a		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25demo_16a		-m w25demo_16a		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25demo_18a		-m w25demo_18a		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25demo_20a		-m w25demo_20a		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25demo_21a		-m w25demo_21a		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25demo_24a		-m w25demo_24a		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25demo_31a		-m w25demo_31a		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25demo_h		-m w25demo_h		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25demo_hi		-m w25demo_hi		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25demo_i		-m w25demo_i		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25demo_ij		-m w25demo_ij		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25demo_kl		-m w25demo_kl		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25demo_l		-m w25demo_l		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25demo_g		-m w25demo_g		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+
+	mesg  プットオブジェ w25b_step00	off
+	mesg  プットオブジェ w25b0		off
+	mesg  プットオブジェ w25b1		off
+	mesg  プットオブジェ w25b_g		off
+	mesg  プットオブジェ w25b0_wall		off
+
+	mesg  プットオブジェ w25demo_14a	off
+	mesg  プットオブジェ w25demo_16a	off
+	mesg  プットオブジェ w25demo_18a		off
+	mesg  プットオブジェ w25demo_20a		off
+	mesg  プットオブジェ w25demo_21a		off
+	mesg  プットオブジェ w25demo_24a		off
+	mesg  プットオブジェ w25demo_31a	off
+	mesg  プットオブジェ w25demo_h		off
+	mesg  プットオブジェ w25demo_hi		off
+	mesg  プットオブジェ w25demo_i		off
+	mesg  プットオブジェ w25demo_ij		off
+	mesg  プットオブジェ w25demo_kl		off
+	mesg  プットオブジェ w25demo_l		off
+	mesg  プットオブジェ w25demo_g		off
+}
+proc w25ab共通_ステージモデルセット {
+	chara プットオブジェ w25ab_14a		-m w25ab_14a		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25ab_17a		-m w25ab_17a		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25ab_18a		-m w25ab_18a		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25ab_19a		-m w25ab_19a		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25ab_20a		-m w25ab_20a		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25ab_21a		-m w25ab_21a		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25ab_24a		-m w25ab_24a		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25ab_31a		-m w25ab_31a		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25ab_32a		-m w25ab_32a		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25ab_32b		-m w25ab_32b		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25ab_32c		-m w25ab_32c		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25ab_crane	-m w25ab_crane		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25ab_gh		-m w25ab_gh		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25ab_i1		-m w25ab_i1		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25ab_i2		-m w25ab_i2		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25ab_kl		-m w25ab_kl		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+//	chara プットオブジェ w25ab_l		-m w25ab_l		-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25ab_other00	-m w25ab_other00	-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25ab_other01	-m w25ab_other01	-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ w25ab_other02	-m w25ab_other02	-p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+}
+
+// ステージ切り替えプロック
+// --------------------------------------
+proc w25a_w25bステージ切替 {
+	@w25a_ステージ削除
+	@w25b_ステージオン
+}
+
+proc w25a_ステージ削除 {
+	mesg プットオブジェ w25a0       kill
+	mesg プットオブジェ w25a0_obj01 kill
+	mesg プットオブジェ w25a1       kill
+	mesg プットオブジェ w25a1_obj01 kill
+	mesg プットオブジェ w25a_brk00b kill
+	mesg プットオブジェ w25a_brk01b kill
+	mesg プットオブジェ w25a_brk02b kill
+	mesg プットオブジェ w25a_gl     kill
+	mesg プットオブジェ w25a_g      kill
+}
+
+proc w25b_ステージオン {
+	mesg  プットオブジェ w25b_step00	on
+	mesg  プットオブジェ w25b0		on
+	mesg  プットオブジェ w25b1		on
+	mesg  プットオブジェ w25b_g		on
+	mesg  プットオブジェ w25b0_wall		on
+
+	mesg  プットオブジェ w25demo_14a	on
+	mesg  プットオブジェ w25demo_16a	on
+	mesg  プットオブジェ w25demo_18a		on
+	mesg  プットオブジェ w25demo_20a		on
+	mesg  プットオブジェ w25demo_21a		on
+	mesg  プットオブジェ w25demo_24a		on
+	mesg  プットオブジェ w25demo_31a	on
+	mesg  プットオブジェ w25demo_h		on
+	mesg  プットオブジェ w25demo_hi		on
+	mesg  プットオブジェ w25demo_i		on
+	mesg  プットオブジェ w25demo_ij		on
+	mesg  プットオブジェ w25demo_kl		on
+	mesg  プットオブジェ w25demo_l		on
+	mesg  プットオブジェ w25demo_g		on
+}
+
+// その他プロック
+// --------------------------------------
+proc 水中ゆらぎ {
+	chara 水中カメラ ゆらぎマン \
+		-col 90 128 130 \ // RGB
+		-warp 1 // ゆらぎの大きさ
+	command 水位設定 -lv -40000
+}
+
+// [追加] 2001/08/30 Uehara Masatoshi
+proc リアル影セット {
+	chara 影投影モデル 影もでる \
+		-m w25demo_sdw01 \
+		-p -1 1 -1
+
+	chara 影管理 影かんり \
+		-t 0 \
+		-p -200 -1000 -400
+//		-p -100 -300 -200
+
+	mesg 影管理 影かんり add vmp_coat_mh_demo02 影もでる	// ヴァンプ
+}
+
+proc 拡張海面設定 {
+    chara 拡張海表示 sea_serface_ex		\
+	-t	entyou_oil_sea			\
+	-pos	0,-40000,-150000		\
+	-color  145 185 120			\
+	-lines  5
+}
+

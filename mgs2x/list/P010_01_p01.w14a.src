@@ -1,0 +1,223 @@
+// P010_01_p01.w14a.src
+// Ｂ脚・変電室デモ用ステージ
+// 2001/02/20 S.Yamashita
+// $Id: P010_01_p01.w14a.src,v 1.48 2002/08/30 08:00:35 usr03682 Exp $
+
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+include		common.h
+include		c_effect.h
+
+// キャラクタ
+// ライデン
+human		rai_def/rai_def_mh_mt.evm
+// シールズ
+human		sel_def
+// ワールド
+option makexti6 -l 1024 -f PAL8
+world		w14a/w14a0
+option makexti6
+world		w14a/w14a1
+world		w14a/w14a2
+world		w14a/other
+
+
+// マルチテクスチャモデル
+// それ以外のモデル
+pack_all	w14a_etc.tri \
+		world/door/w14a_dr00.dar \
+		world/door/w14a_dr01.dar \
+		world/door/dr_free.dar
+world	door/w14a_dr00.kms
+world	door/w14a_dr01.kms
+world	door/dr_free.kms
+
+lt2			w14a.lt2
+//hazard		d00a3.hzx
+hazard		dp14a.hzx
+
+// オブジェクト
+
+// カートリッジ（GCLでstdch.hをインクルードしている場合必要）
+/*pack_all	weapon_cm.tri \
+		weapon/usp/usp_emb.dar \
+		weapon/fms/fms_emb.dar
+weapon	usp/usp_emb.kms
+weapon	fms/fms_emb.kms
+*/
+
+// デバッグ用
+pack_trnall blood.tri \
+		effect/blood/chi05_msk.bmp \
+		effect/blood/chi05_alp.bmp
+/*
+effect/blood/chi01_msk.bmp
+effect/weapon_effect/muzzlefrash_01_alp.bmp
+effect/weapon_effect/socom_f_msk.bmp
+*/
+// リネーム
+
+//スネーク
+human	sna_def/sna_def.kms
+//シールズ死体
+pack_all sels_dead.tri \
+		human/sel_dead/sel_dead_ac.dar \
+		human/sel_dead/sel_dead_acm4.dar \
+		human/sel_dead/sel_dead_b.dar
+human	sel_dead/sel_dead_ac.kms
+human	sel_dead/sel_dead_acm4.kms
+human		sel_dead/sel_dead_b.kms
+//Ｍ４
+weapon	m4/m4a_nm.kms
+//ヴァンプ髪の毛・マルチテクスチャ
+option makexti6 -l 512 -f PAL8
+human	vmp_coat/vmp_hair_coat_mh_mt.evm
+option makexti6
+//ヴァンプバウンディング・シングルテクスチャ
+human	vmp_coat/vmp_coat_bounding.kms
+//ヴァンプコート・シングルテクスチャ
+human	vmp_coat/vmp_parts_coat_mh.evm
+// 胸の傷
+pack_all zzz_chest_scar.tri human/vmp_coat/vmp_kizu_mh.dar
+// それ以外のヴァンプ（マルチテクスチャ）
+human		vmp_coat
+
+// コバ�つ媛� マズルフラッシュ用
+pack_trnall koba4.tri \
+		effect/blood/chi01_msk.bmp \
+        effect/weapon_effect/socom_f_msk.bmp \
+		effect/weapon_effect/muzzlefrash_01_alp.bmp
+//イロコイ・バリエーション
+pack_all iro_var.tri \
+		human/iro_def/iro_def_mh_mt.dar \
+		human/iro_def/iro_skull_mh_mt.dar \
+		human/iro_def/iro_bandage_mh_mt.dar \
+		human/iro_def/iro_blood_mh_mt.dar
+human	iro_def/iro_def_mh_mt.evm
+human	iro_def/iro_skull_mh_mt.evm
+human	iro_def/iro_bandage_mh_mt.evm
+human	iro_def/iro_blood_mh_mt.evm
+
+// テロップ
+#ifdef MGS2_LANG_ENGLISH
+// 英語
+pack_all	staff.tri \
+		2D/demo_telop/eng/sr05j_alp_ovl.bmp \
+		2D/demo_telop/eng/sr02j_alp_ovl.bmp
+#else
+// 日本語
+pack_all	staff.tri \
+		2D/demo_telop/jpn/sr05j_alp_ovl.bmp \
+		2D/demo_telop/jpn/sr02j_alp_ovl.bmp
+#endif
+
+//ヴァンプナイフ
+pack_all vmp_knif_mt.tri \
+		weapon/vamp_knife/vkf_big_mt.dar \
+		weapon/vamp_knife/vkf_big_inv_mt.dar
+weapon	vamp_knife/vkf_big_mt.kms
+weapon	vamp_knife/vkf_big_inv_mt.kms
+
+weapon	vamp_knife/vkf_small_cm.kms
+
+pack_all vmp_vkpb_mh.tri \
+		human/vmp_def/vmp_parts_vkpb_mh.dar \
+		human/vmp_def/vmp_parts_vkpa_mh.dar
+human	vmp_def/vmp_parts_vkpb_mh.evm
+human	vmp_def/vmp_parts_vkpa_mh.evm
+
+// 細々したのをまとめる。
+pack_all misc_obj.tri \
+		meca/sv_camera \
+		debug/hirano/sdw14a_flr.dar \
+		debug/hirano/sdw14a_hzd_r.dar \
+		weapon/m4_rai/m4a_rai_sub.dar \
+		weapon/scm/scm_sub2.dar \
+		weapon/usp/usp_sub.dar \
+		weapon/m92_rai/m92_rai_sub.dar \
+		goods/demo_m4_sel/demo_m4_sel.dar \
+		world/door/w14a_dr01.dar \
+		human/iro_def/iro_skull_phones.dar \
+		weapon/m4/m4a_amo.dar \
+		weapon/m4_rai/m4a_rai_amo.dar \
+		human/hnm_hunamushi/hnm_def.dar \
+		goods/ciga/ciga.dar \
+		goods/demo_cigarrette_iro/demo_cigarette_case_iro.dar \
+		item/shaver/shaver.dar
+
+// misc_obj.tri の各モデル
+// 監視カメラ
+meca		sv_camera
+// リアル影出し用
+debug		hirano/sdw14a_flr.kms
+debug		hirano/sdw14a_hzd_r.kms
+//ライデン武器
+weapon	m4_rai/m4a_rai_sub.kms
+weapon	scm/scm_sub2.kms
+weapon	usp/usp_sub.kms
+weapon	m92_rai/m92_rai_sub.kms
+//Ｍ４ハイポリ
+goods	demo_m4_sel/demo_m4_sel.kms
+//ドア
+world	door/w14a_dr01.kms
+//ヘッドフォン
+human	iro_def/iro_skull_phones.kms
+//Ｍ４マガジン
+weapon	m4/m4a_amo.kms
+weapon	m4_rai/m4a_rai_amo.kms
+//フナムシ
+human	hnm_hunamushi/hnm_def.kms
+//ライデン頬の傷
+human	rai_def/rai_kizu_face_mh.evm
+
+//振動データ（全デモ必須）
+// データ数が多すぎてロード時に落ちるステージが出たので、一時的にカット。010729（平野）
+// 振動ファイルは一つにまとまるようになったので組み込み。010803
+vib		demo
+
+//デモダミー（全デモ必須）
+goods	demo_dummy/demo_dummy.kms
+
+// ロッカー扉開閉モーション（変電扉開けっ放しのために必要）
+mtn			locker.mls
+
+//プリスキン（ヘッドフォン無し）
+human	iro_def/iro_takeoff_mh_mt.evm
+//プリスキン腕の傷
+pack_all zzz_iro_ude_kizu.tri \
+		human/iro_def/iro_armblood_mh.dar
+human	iro_def/iro_armblood_mh.evm
+
+pack_all demo_goods.tri \
+		goods/ciga/ciga.dar \
+		goods/demo_cigarrette_iro/demo_cigarette_case_iro.dar \
+		item/shaver/shaver.dar \
+		item/radio/rad.dar \
+		debug/okajima/hose_test/hose_cone.dar \
+		debug/okajima/hose_test/hose_new2.dar
+//タバコ（後に火が付いてないのと入れ替え）
+goods	ciga/ciga.kms
+//タバコの箱
+goods	demo_cigarrette_iro/demo_cigarette_case_iro.kms
+//ヒゲソリ
+item	shaver/shaver.kms
+//無線機
+item	radio/rad.kms
+//タバコ
+goods	demo_cigarrette_iro/demo_cigarette_iro.kms
+//Ｍ４マガジンハイポリ
+goods	demo_m4_sna/demo_m4_amo_sna.kms
+// 消火器のホース
+debug	okajima/hose_test/hose_cone.kms
+debug	okajima/hose_test/hose_new2.kms
+cvd  		debug/okajima/hose_test/hose_new2.cvd vn
+//プリスキン指付き------------------------------------------- 追加小林0924
+human	iro_def/iro_bandage_addhand_mh_mt.evm
+
+pack_all zzz_iro_mw.tri \
+	human/iro_def/iro_glass_black_mh_mt.dar 
+human		iro_def/iro_glass_black_mh_mt.evm

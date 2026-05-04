@@ -1,0 +1,211 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2007 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+.cfunc void _edgeAnimEvaluateRConst(vec_float4* output, 
+									const vec_uint4* constRData, 
+									uint32_t count, 
+									const uint16_t* constRTable, 
+									const vec_uchar16* shufTable)
+									
+
+	.reg	count8, shuf0A0B0C0D, shuf0E0F0G0H, shuf0A0D0G0b, shuf0E0H0c0f, shufBCEFHacd, shufFGabdegh
+	.reg	shufAaBb, shufBbAa, shufCcDd, shufDdCc, shufCDab, selABcd
+	.reg	fOne, quatScale, quatBias, _7FFF, fHalf
+	.reg	qw0, qw1, qw2, a0i, a4i, bc0i, bc4i, b0i, b4i, c0i, c4i, a0, a4, b0, b4, c0, c4, d0, d4
+	.reg	d0sqr0, d0sqr1, d0sqr2, d0inv, d4sqr0, d4sqr1, d4sqr2, d4inv
+	.reg	s0, s1, s2, s3, s4, s5, s6, s7
+	.reg	idx0, idx1, idx2, idx3, idx4, idx5, idx6, idx7
+	.reg	shuf0, shuf1, shuf2, shuf3, shuf4, shuf5, shuf6, shuf7
+	.reg	q0s, q1s, q2s, q3s, q4s, q5s, q6s, q7s
+	.reg	q0, q1, q2, q3, q4, q5, q6, q7
+	.reg	outOfs, outOfs0, outOfs1, outOfs2, outOfs3, outOfs4, outOfs5, outOfs6, outOfs7
+	.reg	tmp0, tmp1, tmp2, tmp3, tmp4, tmp5
+	
+	//----------------------------------------------------------------------------------------------
+	// Early out
+	//----------------------------------------------------------------------------------------------    
+		
+	brz		count, NoLoop
+
+    //----------------------------------------------------------------------------------------------
+    // Init code
+    //----------------------------------------------------------------------------------------------        
+            
+	il128	shuf0A0B0C0D, "0A0B0C0D"
+	il128	shuf0E0F0G0H, "0E0F0G0H"
+	il128	shuf0A0D0G0b, "0A0D0G0b"
+	il128	shuf0E0H0c0f, "0E0H0c0f"
+	il128	shufBCEFHacd, "BCEFHacd"
+	il128	shufFGabdegh, "FGabdegh"
+	il128	shufAaBb, "AaBb"
+	il128	shufBbAa, "BbAa"
+	il128	shufCcDd, "CcDd"
+	il128	shufDdCc, "DdCc"
+	il128	shufCDab, "CDab"
+	fsmbi	selABcd, 0x0ff
+    ilhu    fOne, 0x3f800000@h								//  1.0
+	ilhu	fHalf,  0x3F000000@h							//	0.5f
+    ilhu    quatScale, 0x3FB504F3@h							//  1.4142135624
+    iohl    quatScale, 0x3FB504F3@l							//  1.4142135624
+    ilhu    quatBias, 0xbf000000@h							// -0.5
+    fm		quatBias, quatBias, quatScale
+	ila		_7FFF, 0x7fff
+    ai		count8, count, 7
+    rotmi	count8, count8, -3
+
+    //----------------------------------------------------------------------------------------------
+    // Loop
+    //----------------------------------------------------------------------------------------------        
+	
+Loop:
+    ai      count8, count8, -1
+    
+    lqd		qw0, 0x00(constRData)
+    lqd		qw1, 0x10(constRData)
+    lqd		qw2, 0x20(constRData)
+
+	shufb	a0i, qw0, qw1, shuf0A0D0G0b
+	shufb	a4i, qw1, qw2, shuf0E0H0c0f
+	shufb	bc0i, qw0, qw1, shufBCEFHacd
+	shufb	bc4i, qw1, qw2, shufFGabdegh
+
+	rotmi	tmp0, bc0i, -17
+	rotmi	tmp1, bc4i, -17
+	rotmi	tmp2, bc0i, -2
+	rotmi	tmp3, bc4i, -2
+	and		b0i, tmp0, _7FFF  
+	and		b4i, tmp1, _7FFF
+	and		c0i, tmp2, _7FFF
+	and		c4i, tmp3, _7FFF
+	
+	cuflt	tmp0, a0i, 15
+	cuflt	tmp1, a4i, 15
+	cuflt	tmp2, b0i, 15
+	cuflt	tmp3, b4i, 15
+	cuflt	tmp4, c0i, 15
+	cuflt	tmp5, c4i, 15
+	fma		a0, tmp0, quatScale, quatBias
+	fma		a4, tmp1, quatScale, quatBias
+	fma		b0, tmp2, quatScale, quatBias
+	fma		b4, tmp3, quatScale, quatBias
+	fma		c0, tmp4, quatScale, quatBias
+	fma		c4, tmp5, quatScale, quatBias
+	
+    // d = sqrt(1 - a^2 - b^2 - c^2)
+	fnms	d0sqr0, a0, a0, fOne
+	fnms	d0sqr1, b0, b0, d0sqr0
+	fnms	d0sqr2, c0, c0, d0sqr1
+	frsqest	tmp0, d0sqr2
+	fi		tmp1, d0sqr2, tmp0
+	fm		tmp2, d0sqr2, tmp1
+	fm		tmp3, tmp1, fHalf
+	fnms	tmp4, tmp2, tmp1, fOne
+	fma		d0inv, tmp3, tmp4, tmp1
+	fm		d0, d0inv, d0sqr2
+
+	fnms	d4sqr0, a4, a4, fOne
+	fnms	d4sqr1, b4, b4, d4sqr0
+	fnms	d4sqr2, c4, c4, d4sqr1
+	frsqest	tmp0, d4sqr2
+	fi		tmp1, d4sqr2, tmp0
+	fm		tmp2, d4sqr2, tmp1
+	fm		tmp3, tmp1, fHalf
+	fnms	tmp4, tmp2, tmp1, fOne
+	fma		d4inv, tmp3, tmp4, tmp1
+	fm		d4, d4inv, d4sqr2
+	
+	// Deswizzle
+    shufb	s0, a0, b0, shufAaBb
+    shufb	s1, a0, b0, shufCcDd
+    shufb	s2, c0, d0, shufBbAa
+    shufb	s3, c0, d0, shufDdCc
+    selb	q0s, s0, s2, selABcd
+    shufb	q1s, s0, s2, shufCDab
+    selb	q2s, s1, s3, selABcd
+    shufb	q3s, s1, s3, shufCDab
+
+    shufb	s4, a4, b4, shufAaBb
+    shufb	s5, a4, b4, shufCcDd
+    shufb	s6, c4, d4, shufBbAa
+    shufb	s7, c4, d4, shufDdCc
+    selb	q4s, s4, s6, selABcd
+    shufb	q5s, s4, s6, shufCDab
+    selb	q6s, s5, s7, selABcd
+    shufb	q7s, s5, s7, shufCDab
+        
+    // Now shuffle components to insert the derived value.
+	andi	idx0, bc0i, 3
+	andi	idx4, bc4i, 3
+	shli	idx0, idx0, 4
+	shli	idx4, idx4, 4
+	
+    shlqbyi	idx1, idx0, 4
+    shlqbyi idx2, idx0, 8
+    shlqbyi	idx3, idx0, 12
+    shlqbyi	idx5, idx4, 4
+    shlqbyi idx6, idx4, 8
+    shlqbyi	idx7, idx4, 12
+    
+    lqx		shuf0, shufTable, idx0
+    lqx		shuf1, shufTable, idx1
+    lqx		shuf2, shufTable, idx2
+    lqx		shuf3, shufTable, idx3
+    lqx		shuf4, shufTable, idx4
+    lqx		shuf5, shufTable, idx5
+    lqx		shuf6, shufTable, idx6
+    lqx		shuf7, shufTable, idx7
+
+    shufb	q0, q0s, q0s, shuf0
+    shufb	q1, q1s, q1s, shuf1
+    shufb	q2, q2s, q2s, shuf2
+    shufb	q3, q3s, q3s, shuf3
+    shufb	q4, q4s, q4s, shuf4
+    shufb	q5, q5s, q5s, shuf5
+    shufb	q6, q6s, q6s, shuf6
+    shufb	q7, q7s, q7s, shuf7
+	
+    // Store
+    lqd		outOfs, 0x00(constRTable)
+    shufb	outOfs0, outOfs, outOfs, shuf0A0B0C0D
+    shufb	outOfs4, outOfs, outOfs, shuf0E0F0G0H
+    
+    shli	tmp0, outOfs0, 4
+    shli	outOfs0, outOfs0, 5
+    a		outOfs0, outOfs0, tmp0
+
+    shli	tmp0, outOfs4, 4
+    shli	outOfs4, outOfs4, 5
+    a		outOfs4, outOfs4, tmp0
+    
+    shlqbyi	outOfs1, outOfs0, 4
+    shlqbyi	outOfs2, outOfs0, 8
+    shlqbyi	outOfs3, outOfs0, 12
+    shlqbyi	outOfs5, outOfs4, 4
+    shlqbyi	outOfs6, outOfs4, 8
+    shlqbyi	outOfs7, outOfs4, 12
+    
+    stqx	q0, output, outOfs0
+    stqx	q1, output, outOfs1
+    stqx	q2, output, outOfs2
+    stqx	q3, output, outOfs3
+    stqx	q4, output, outOfs4
+    stqx	q5, output, outOfs5
+    stqx	q6, output, outOfs6
+    stqx	q7, output, outOfs7
+    
+	ai		constRTable, constRTable, 0x10
+	ai		constRData, constRData, 0x30
+ 		
+    //----------------------------------------------------------------------------------------------        
+    // Loop
+    //----------------------------------------------------------------------------------------------
+
+    brnz    count8, Loop
+NoLoop:
+    
+              
+.endfunc
+	        

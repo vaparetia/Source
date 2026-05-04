@@ -1,0 +1,37 @@
+#!/usr/bin/perl
+#
+# DataPacking PreProcessor
+#
+# 2000/07/28 r2.0  T.Morita 
+# $Id: prepro,v 5.0 2002/03/11 01:50:28 usr04098 Exp $
+#
+
+# 引数がなければ ヘルプ表示
+die "Usage: prepro file \n" if ( $#ARGV == -1 ) ;
+
+# オプションの取得
+for  ( $i=0 ; $i<$#ARGV+1 ; $i++ )
+{
+    $cpp_flg =1            , next if ( $ARGV[$i] eq "-cpp"   ) ;
+    $c_flg   =1            , next if ( $ARGV[$i] eq "-c" ) ;
+    $src_file = $ARGV[$i] ;
+}
+
+if ( $src_file )
+{
+    open( SRC, "$src_file" ) or die "Cannot open $file\n" ;
+    foreach( <SRC> )
+    {
+	next if ( $flag && ! /\*\// ) ;
+	s/\/\*.*\*\/// ;
+	$flag = 0, s/^.*\*\/// if ( /\*\// ) ;
+	s/\/\/.*$// ;
+	s/\\.*$/\\/ ;
+	$flag = 1, s/\/\*.*$// if ( /\/\*/ ) ;
+
+	print if ( ! /^[ \t]*\n/ ) ;
+    }
+    close( SRC ) ;
+}
+
+exit( 0 ) ;

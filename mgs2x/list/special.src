@@ -1,0 +1,31 @@
+//
+//	special.src
+//	$Id: special.src,v 1.5 2001/03/29 06:40:02 usr04249 Exp $
+//
+
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+include		common.h
+
+// ワールド
+goods	null
+
+// ハザード
+hazard	null.hzx
+
+// ライト
+lt2		null.lt2
+
+
+//おもしろ
+#ifdef MGS2_LANG_ENGLISH
+pack_all sp_menu.tri menu/omoshiro_mov_eng
+#else
+pack_all sp_menu.tri menu/omoshiro_mov
+#endif
+
+// リネーム
+
+

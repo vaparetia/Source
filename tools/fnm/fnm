@@ -1,0 +1,59 @@
+#!/usr/bin/perl
+
+die "Usage: fnm address [stage name]\nIf stage name is omitted, test stage will be choosed.\nAnd the address must be Hex number.\n" if ( $#ARGV == -1 ) ;
+$home = "./stage/" ;
+$home = $ENV{'MGS_ROOT'}."/source/stage/" if ( $ENV{'MGS_ROOT'} ) ;
+$file = "mgs2.elf"      if ( $#ARGV == 0 ) ;
+$file = $home.$ARGV[1].".elf" if ( $#ARGV == 1 ) ;
+$file =~ s/.elf.elf/.elf/ ;
+
+$address = "0x".$ARGV[0] ;
+$address =~ s/0x0x/0x/ ;
+$address =~ s/://g ;
+$address = hex( $address ) ;
+
+open( NAMELIST, "ee-nm -n $file |" ) or die "Cannot find EFL-file($!)\n" ;
+printf( "Examing $file to search.\n" ) ;
+while( <NAMELIST> )
+{
+	if ( $address < hex($_))
+	{
+		printf( "In 0x%x => ".$name, $cur_address ) ;
+		last ;
+	} 
+	$cur_address = hex($_) ; 
+	$name = $_ ;
+	$name =~ s/[0-9a-f ]+// ;
+	if ( $address == hex($_))
+	{
+		printf( "In 0x%x => ".$name, $cur_address ) ;
+		last ;
+	} 
+}
+close( NAMELIST ) ;
+$command = sprintf( "ee-addr2line 0x%x -e $file |", $address ) ;
+open( NAMELIST, $command ) or die "Cannot find EFL-file($!)\n" ;
+while( <NAMELIST> )
+{
+	if ( $_ =~ ":0" )
+	{
+	    $command = sprintf( "ee-addr2line 0x%x -e $home/../mgs2.elf |", $address ) ;
+	    open( ADDR, $command ) or die "Cannot find EFL-file($!)\n" ;
+	    while( <ADDR> )
+	    {
+		printf( "Whoops!! I couldn't find the place of the error!! Sorry!!\n" )
+		    if ( $_ =~ ":0" ) ;
+		printf( "Maybe the program has stopped at here\n".$_ )
+		    if ( $_ !~ ":0" ) ;
+	    }
+	    close( ADDR ) ;
+	}
+	else
+	{
+	    printf( "Maybe the program has stopped at here\n".$_ ) ;
+	}
+}
+close( NAMELIST ) ;
+
+
+

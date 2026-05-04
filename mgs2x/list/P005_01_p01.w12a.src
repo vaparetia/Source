@@ -1,0 +1,150 @@
+//
+//	P005_01_p01.w12a.src
+//
+//	written by H.Yoshiike 2000.Aug
+//
+//	$Id: P005_01_p01.w12a.src,v 1.20 2002/06/20 07:18:59 usr02774 Exp $
+
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 汎用空用テクスチャのためのデファイン（c_effect.h の前で）
+#define MORNING_SKY
+//#define DAY_SKY
+//#define EVENING_SKY
+//#define NIGHT_SKY_DEMO
+
+// 各ステージ共通要素
+include		common.h
+#include	"c_effect.h"
+
+// キャラクタ 
+
+// かもめ
+include kamome.h
+
+// ワールド
+// w12a関連。連絡橋ほか。
+pack_all w12_etc.tri \
+		world/w12_common/w12_bg/w12a_12a.dar \
+		world/w12_common/w12_bg/w12a_13a.dar \
+		world/w12_common/w12_bg/w12a_15a.dar \
+		world/w12_common/w12_bg/w12a_20a.dar \
+		world/w12_common/w12_bg/w12a_21a.dar \
+		world/w12_common/w12_bg/w12a_23a.dar \
+		world/w12_common/w12_bg/w12a_24a.dar \
+		world/w12_common/w12_bg/w12a_15b.dar \
+		world/w12_common/w12_bg/w12a_15c.dar \
+		world/w12_common/w12_bg/w12a_crane.dar \
+		world/w12_common/w12_bg/w12a_elvwall.dar \
+		world/elevator/w11_elv_append/w11_elv_append.dar
+// world/w12_common/w12_bg にある。
+world	w12_common/w12_bg/w12a_12a.kms		// Ａ脚壁面
+world	w12_common/w12_bg/w12a_13a.kms		// ＡＢ連絡橋
+world	w12_common/w12_bg/w12a_15a.kms		// ＢＣ連絡橋
+world	w12_common/w12_bg/w12a_20a.kms		// Ｅ脚
+world	w12_common/w12_bg/w12a_21a.kms		// ＥＦ連絡橋
+world	w12_common/w12_bg/w12a_23a.kms		// ＦＡ連絡橋
+world	w12_common/w12_bg/w12a_24a.kms		// 中央棟
+world	w12_common/w12_bg/w12a_15b.kms		// ＢＣ連絡橋
+world	w12_common/w12_bg/w12a_15c.kms		// ＢＣ連絡橋
+world	w12_common/w12_bg/w12a_crane.kms		// クレーン
+world	w12_common/w12_bg/w12a_elvwall.kms	// エレベーター壁
+// world/elevator/w11_elv_append/w11_elv_append.mdl offset>yに-42000.0
+world	elevator/w11_elv_append/w11_elv_append.kms	// デモ専用エレベーター壁
+// world/door/にある。
+world	door/w12a_dr00.kms		// 扉
+
+// フェンスのモデル
+world	w12_common/fence
+
+// w12a 本体。
+pack_all z_w12_main.tri \
+		world/w12a/w12a/w12a_elvsk00.dar \
+		world/w12a/w12a/w12a_elvsk01.dar \
+		world/w12a/w12a/w12a_objdr00.dar \
+		world/door/w12a_dr00.dar
+
+// world/w12a/w12a にある。
+world	w12a/w12a/w12a_elvsk00.kms		// 朝バージョン。エレベーターの柵が上がる前の影
+world	w12a/w12a/w12a_elvsk01.kms		// 朝バージョン。エレベーターの柵
+world	w12a/w12a/w12a_objdr00.kms		// 朝バージョン。閉まっている網扉
+world	w12a/w12a/w12a.kms				// Ａ脚
+world	w12a/w12a/w12a_sdw00.kms		// 影投影モデル
+
+lt2			w12a.lt2
+
+// プラント全景（P005_04_P03時）用ライト
+lt2			w10a.lt2
+hazard		d00a3.hzx
+//hazard		w12a.hzx
+
+// オイルフェンスと海面
+include m_surface.h
+
+// テロップ
+#ifdef MGS2_LANG_ENGLISH
+// 英語
+pack_all telop.tri 2D/demo_telop/eng/sr01j_alp_ovl.bmp
+
+#else
+// 日本語
+pack_all telop.tri 2D/demo_telop/jpn/sr01j_alp_ovl.bmp
+
+#endif
+
+// オブジェ関係
+
+// デバッグ用
+
+// リネーム
+
+goods	demo_dummy/demo_dummy.kms
+world	elevator/elv_1/elv_1.kms
+
+//後に以下のライデンのＴＲＩをまとめて下さい。
+pack_all raidens_mh_mt.tri \
+		human/rai_def/rai_def_mh_mt.dar \
+		human/rai_diver/rai_diver_mh_mt.dar
+
+human	rai_def/rai_def_mh_mt.evm
+human	rai_diver/rai_diver_mh_mt.evm
+
+// 髪の毛は狩野さんプログラムなので、mh_mtだけどまとめない。
+human	rai_diver/rai_hair_diver_mh_mt.evm
+human	rai_diver/rai_divermask_mt.kms
+human	rai_diver/rai_diver_bounding.kms
+
+
+// リネーム
+texrename w12a_24a.kms w10c_cntw04.bmp w10c_cntw04x.bmp
+
+// ビッグシェル全景（P005_04_p03）
+world		w10c
+// 海面(MIPMAP)
+#ifndef MGS2_XBOX_1
+debug	takabe/mipmap_tri/w10a_sea.tri
+#else
+pack_mip w10a_sea.tri \
+	effect/sea_mipmap/w10a_sea03_256_alp_ovl.bmp \
+	effect/sea_mipmap/w10a_sea03_128_alp_ovl.bmp \
+	effect/sea_mipmap/w10a_sea03_64_alp_ovl.bmp \
+	effect/sea_mipmap/w10a_sea03_32_alp_ovl.bmp 
+#endif
+// 空用テクスチャ
+pack_all skies.tri \
+		effect/plant_sky/sky_n1_alp.bmp \
+		effect/plant_sky/sky_n2_alp.bmp \
+		effect/plant_sky/sky_n3_alp.bmp \
+		effect/plant_sky/sky_n4_alp.bmp
+// モデル
+world	common_sky/n_sky_wall1.kms
+
+
+// テックスリネーム
+texrename w10c_12a.kms w12a_w03.bmp w12a_w03_x.bmp
+/* mgdemo added ----from here (Wed Aug 22 07:18:13 2001) ---- */
+vib	demo/P005_01_p01_ele_01.vib
+/* mgdemo added ----upto here ---- */

@@ -1,0 +1,154 @@
+//
+//	t14a1D.w04c.src
+//
+//	written by Y.Matsuhana 1999.Dec
+//
+//	$Id: t14a1D.w04c.src,v 1.16 2002/06/05 01:41:51 usr04249 Exp $
+
+
+//block .use r_tnk0
+block .nocache
+block .cache
+
+
+// 各ステージ共通要素
+include		common.h
+include		c_effect.h
+
+// ワールド
+goods		null
+world		w04a
+world		w04b/w04b1.kms
+world		w04b/w04b2.kms
+world		w04b/w04b3.kms
+world		w04b
+world		w04c
+meca		ray_w04c1/ray_w04c1.kms
+meca		ray_w04c1/ray_canopy_w04c1_mt.kms
+world		w02a/w02a1/w02a_chain.kms
+world		door/w04_dr.kms 
+
+// ライト
+lt2		t12a4D.lt2
+
+// ハザード
+hazard	d00a3.hzx
+
+// カートリッジ（GCLでstdch.hをインクルードしている場合必要）
+//pack_all	weapon_cm.tri \
+//		weapon/usp/usp_emb.dar \
+//		weapon/fms/fms_emb.dar
+//weapon	usp/usp_emb.kms
+//weapon	fms/fms_emb.kms
+
+//デモダミー
+goods	demo_dummy/demo_dummy.kms
+
+// スネーク
+human	sna_def/sna_def_mh.evm
+
+//スネークの武器
+//pack_all	wpn.tri \
+//			weapon/usp/usp_sub.dar \
+//			weapon/usp/usp_amo.dar \
+//			weapon/m92_sna/m92_sna_sub.dar
+//weapon	usp/usp_sub.kms
+//weapon	usp/usp_amo.kms
+//weapon	m92_sna/m92_sna_sub.kms
+
+//スコット
+//human	sco_scott/sco_hat.kms
+human	sco_scott/sco_def.evm
+
+//海兵隊武器
+pack_all	crg_gbs_eqp.tri \
+			weapon/m4/m4a_nm.dar \
+			weapon/m92/m92.dar \
+			weapon/m4/m4a_shld.dar \
+			goods/field_camera/field_camera_base.dar \
+			goods/field_camera/field_camera_head.dar \
+			goods/field_camera/field_camera_all.dar \
+			human/sco_scott/sco_hat.dar
+
+weapon	m4/m4a_nm.kms
+weapon	m92/m92.kms
+weapon	m4/m4a_shld.kms 
+goods	field_camera/field_camera_base.kms
+goods	field_camera/field_camera_head.kms
+goods	field_camera/field_camera_all.kms
+human	sco_scott/sco_hat.kms
+
+//レイ・キャノピー
+pack_all	ray_canopy_mt.tri \
+			meca/ray_w04c1/raycp_canopy2_t12a1d_mt.dar \
+			meca/ray_w04c1/raycp_canopy1_t12a1d_mt.dar
+meca	ray_w04c1/raycp_canopy2_t12a1d_mt.kms
+meca	ray_w04c1/raycp_canopy1_t12a1d_mt.kms
+meca	ray_w04c1/raycp_t12a1d.kms
+
+
+//海兵隊着せ替え
+arkms	w04a_us_def_2.kls
+rename  w04a_us_def_2.kms w04a_us_def.kms
+
+// リネーム
+rename		ssk_mt.kms ssk.kms
+
+//海兵隊（黒人）
+human	us_parts/us_def_5.kms
+
+//海兵隊装備
+human	us_parts/obj_cap.kms 
+//human	us_parts/obj_grass.kms 
+human	us_parts/obj_helmet_def_s.kms
+human	us_parts/obj_headphone_def.kms
+human	us_parts/obj_glass.kms
+human	us_parts/us_def_5_s.kms
+human	us_parts/us_def_1.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Feb 23 16:12:08 2001) ---- */
+human	us_parts/us_low_5.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Mar  5 15:58:50 2001) ---- */
+goods	field_camera/field_camera_all.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Mar  9 13:38:30 2001) ---- */
+human	gbs_def/gbs_def.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Mar 12 14:23:16 2001) ---- */
+/* mgdemo added ----from here (Mon Mar 12 14:27:51 2001) ---- */
+// 振動はdemoフォルダすべてを取り込むので個別取り込みは必要ない。
+// mgdemoが加えたと思われるので、コメントアウト。解除の予定はなし。010803
+vib	demo/t12a4D_bang.vib
+/* mgdemo added ----upto here ---- */
+
+// 常駐部でも同じリネームしているか？
+//rename		m92_sna_sub.kms m92_sub.kms
+/* mgdemo added ----from here (Fri Apr  6 14:18:10 2001) ---- */
+/* mgdemo added ----from here (Fri Apr  6 14:55:02 2001) ---- */
+human	org_tng/org_tng_sh_mt.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Apr  6 15:26:34 2001) ---- */
+/* mgdemo added ----from here (Fri Apr  6 15:32:07 2001) ---- */
+/* mgdemo added ----from here (Fri Apr  6 15:34:26 2001) ---- */
+/* mgdemo added ----from here (Fri Apr  6 15:41:48 2001) ---- */
+human	org_tng/org_tng_mh_mt.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Apr  6 15:48:58 2001) ---- */
+human	org_tng/orn_sld.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Wed Apr 25 15:37:16 2001) ---- */
+vib	demo/t14a1D_us_push.vib
+/* mgdemo added ----upto here ---- */
+
+//振動データ
+vib		demo
+/* mgdemo added ----from here (Wed Aug 22 17:41:46 2001) ---- */
+human	sna_def/sna_def.kms
+human	sna_def/sna_bdn2.kms
+human	sna_def/sna_bdn1.kms
+human	sna_def/sna_mag1.kms
+human	sna_def/sna_mag2.kms
+human	sna_def/sna_mag3.kms
+human	sna_def/sna_mag4.kms
+/* mgdemo added ----upto here ---- */

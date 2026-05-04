@@ -1,0 +1,5956 @@
+/*
+	a04b.gcl
+	    船倉
+
+	1999/12/09 Y.Matsuhana
+	$Id: a04b.gcl,v 1.5 2002/07/25 10:38:02 usr01475 Exp $
+
+
+*/
+
+// デバッグ関係
+#ifdef d:FIX_MODE
+	#define MY_DEBUG	0
+	#define ASSERT		0
+#else
+	#define MY_DEBUG	1
+	#define ASSERT		1
+#endif
+
+#define STAGE_TANKER		1		// モード共通 プロック切り分け用
+#define STAGE_W04B			1		// ステージ名 共通プロック切り分け用
+#define STAGE_ALT			1		// オールタナティブステージ切り分け用
+
+// 薬莢
+#define ENE_T_GOL				1	// タンカー編ゴル兵
+#define	ENE_SHOT				1	// ショットガン兵
+#define	ENE_SHIELD 				1	// 盾兵
+
+
+#define	PLAYER		スネーク
+#define	RADAR		0
+#define SCREENSHOT	0
+#define KEYBOARD	0
+#define SOUND_FG	1
+#define SEALS_1_FG	1
+#define ENE_T_GOL	1	// タンカー編ゴル兵薬莢
+#define MULTI_MODEL	0		/* E3ビデオ用特別仕様(2000.4.8) */
+#define PITHOLE		1
+#define LD_FADEOUT	1
+#define PAN_CAMERA	1
+#define STAGE_END	1
+#define ピット自動脱出	1
+#define ピットで自動ホフク	0
+#define debug_timer	0
+#define movie		1
+#define CTDOWN_TIMER	1
+#define	デバッグ演説スタート	0
+#define	SUB_CAMERA		1
+#define IN_RAIL_HZD	1				//エルード位置補正
+#define	AUTO_JUMP	1
+#define	GHOST		1
+#define	SNEEZE		1
+#define	プロジェクタ暗さ度合い	80
+#define 船倉最下部天井バウンド		-9560
+
+
+
+/****************************************************************************************/
+// 音声リソースのセット
+/****************************************************************************************/
+
+
+/****************************************************************************************/
+//	Include (enumの後に設定)
+/****************************************************************************************/
+
+#include "sna_w04.mh"	//強制モーションリスト
+#include "stdch.h"
+#include "enevoice.h"
+#include "a_mode.h"
+#include "sload.h"
+#include "item_info.h"
+//#include "ene_item.h"
+
+#include "beyond.h"
+#include "jump.h"
+
+#include "w04.h"
+
+#if d:MY_DEBUG
+	#include "usbkbd.h"
+#endif
+
+
+
+
+
+/***************************************************************************************/
+// マップ宣言
+/***************************************************************************************/
+	// アナザー用プロック マップ設定前に設定する
+	@アナザー用マップ定義前設定					// a_mode.h
+
+chara マップ 船倉２ -k w04b1 0 0 0 -h w04b 0 -l w04b
+chara マップ 通路１ -k w04b2 0 0 0 -h w04b 1 -l w04b
+chara マップ 通路２ -k w04b3 0 0 0 -h w04b 2 -l w04b
+
+chara マップ接合 船倉接合１ 通路１ 船倉２
+chara マップ接合 船倉接合２ 船倉２ 通路２
+
+	command マップ設定 船倉２ 通路１ 通路２ -set {
+		@ローカル変数初期化
+		@常駐キャラ設定							// stdch.h
+		@A_プレイヤー設定 sna_w04 rai_w04		// a_stdproc.h
+	}
+
+	// アナザー用プロック マップ設定後に設定する
+	@アナザー用マップ定義後設定					// a_mode.h
+
+command マップ設定 船倉２ 通路１ 通路２ -set {
+	/* サウンドマネージャー＞敵兵コマンダー＞ＢＧＭマネージャー
+	   の順番は、遵守すること */
+		//@サウンドマネージャー設定
+		@レーダーアタリ設定
+		//@常駐キャラ設定
+		@エフェクト設定
+		//@プレイヤー設定
+		@はしご設定
+		@カメラ設定
+		@ぼかしセット
+		@マップ接続
+		@演説音声小さめに	//w04.hの中
+#if d:debug_timer
+		@船倉タイマー演算
+#endif
+#if d:CTDOWN_TIMER
+		@船倉タイマー起動
+#endif
+
+}
+
+command マップ設定 通路１ 船倉２ -set {
+		@ドア設置／通路１−船倉２
+}
+command マップ設定 船倉２ 通路２ -set {
+		@ドア設置／船倉２−通路２
+}
+
+command マップ設定 船倉２ -set {
+		@船倉２カメラ設定
+		@船倉２ビヨンド設定
+	#if d:AUTO_JUMP
+		@船倉１ｍジャンプ設定
+	#endif
+		@船倉２箱設置
+
+		@第一第二船倉キャラクタ専用ライトセット		//w04.hにある
+
+		#if d:SEALS_1_FG
+			@船倉２海兵隊セット
+			@船倉物音カメラ		//w04.hの中
+		#endif
+		@船倉ライター落とし兵イベント
+		#if d:SUB_CAMERA
+		@子画面設定
+		#endif
+		@プロジェクタライト設定
+		@手動プロジェクタチェンジ
+
+		@船倉２透明壁設定
+		#if d:PITHOLE
+			@船倉２西側地下はしご設定
+			@船倉２東側地下はしご設定
+		#endif
+		@演説ドッキリ系スタート条件チェック
+		#if d:GHOST
+			@心霊写真設定
+		#endif
+		#if d:SNEEZE
+			@船倉くしゃみ設定		//w04.hにある
+		#endif
+
+}
+command マップ設定 通路１ -set {
+		@船倉２カメラ設定	//ロード場所変更のため
+//		@通路１カメラ設定
+}
+command マップ設定 通路２ -set {
+		@通路２カメラ設定
+		@主観禁止壁設定
+}
+
+command マップ設定 船倉２ 通路１ 通路２ -set {
+		@船倉２演説ボリューム制御
+		@サウンド設定
+		//@タンカーデジカメ写真判定		//dcam_tanker.hの中にあります。
+		//@タンカー編全体マップ設定 d:第二船倉マップ
+		@ポーズ時ステージ名表示設定 d:wn_第二船倉
+		#if d:MY_DEBUG
+			@デバッグ設定
+		#endif
+}
+
+
+//初期マップの表示
+command マップ表示 	-add 船倉２
+
+	eval( $f:船倉２西側地下ピットふた開いた = 0 )
+	eval( $f:船倉２東側地下ピットふた開いた = 0 )
+	eval($w:船倉物音カメラフレーム数 = 0)
+	eval($f:船倉ステージ移動直後 = 1)
+	eval($s:ドッキリ系スタート = 不可)
+	eval($b:船倉プロジェクタ手動チェンジ回数 = 0)
+	eval($f:w04b_今暗い = 0)
+	eval($b:船倉デジカメ撮影つぶやき中 = 0)
+	eval($w:船倉演説イベント中 = 0)
+	eval($f:ローカルフラグ１ = 0)			//ダークゾーン出し入れ用
+	eval($f:ゲームオーバー処理終了呼ばれた = 0)
+	eval($b:船倉デジカメ撮影つぶやき中 = 0)
+
+if($f:第二船倉プロジェクタチェンジデモカメラ中){
+	print 'すぐロードに入ったのでフラグ「$f:第二船倉プロジェクタチェンジデモカメラ中」を寝かせる！！！！'
+	eval($f:第二船倉プロジェクタチェンジデモカメラ中 = 0)
+	eval($f:第二船倉プロジェクタチェンジ見た = 1)
+	command varsave $f:第二船倉プロジェクタチェンジ見た
+}
+
+
+
+
+//w04cから来たときは通路に現れるため、通路を表示させる
+if($i:プレイヤー初期Ｚ位置 < -20000){
+	mesg マップ接合 船倉接合２ on
+}
+
+
+
+@第２船倉ロード進入時処理
+
+
+
+
+
+
+	proc ローカル変数初期化 {
+	}
+
+
+	proc レーダーアタリ設定 {
+
+		#if d:RADAR
+			chara レーダー レーダー
+
+			if($f:レーダーフラグ){
+				mesg レーダー レーダー on
+			} else {
+				mesg レーダー レーダー off
+			}
+
+		#endif
+
+
+
+	}
+
+
+//###################################################################################
+//									エフェクト設定
+//###################################################################################
+
+	// エフェクト設定
+	// ------------------------------------
+	proc エフェクト設定 {
+		print 'エフェクト設定'
+
+
+
+
+#if 1
+		print 'フォグフォグ君！！'
+
+		chara フォグ fog \
+			 -c 0 10 15 \
+			 -n -5000 \
+			 -f 50000
+#else
+		chara フォグ fog \
+			 -c 0 0 1 \
+			 -n 0 \
+			 -f 50000
+#endif
+
+
+
+		chara シネマスクリーン シネマ \
+			-top d:CINEMA_BELT_UPPER \
+			-bottom d:CINEMA_BELT_LOWER \
+			-ftime 30
+
+
+
+	// 跳弾番号設定
+	// ------------------------------------
+		command 跳弾ノーマル -n 0
+		command 跳弾ノーマル -n 1
+		command 跳弾ノーマル -n 2
+		command 跳弾ノーマル -n 3
+		command 跳弾ノーマル -n 4
+		command 弾痕ノーマル -n 0
+		command 弾痕ノーマル -n 1
+		command 弾痕ノーマル -n 2
+		command 弾痕ノーマル -n 3
+		command 弾痕ノーマル -n 4
+
+
+
+
+
+//レーダーアタリ処理
+		print 'レーダーアタリ追加'
+		command foreach -argc 1 -repeat 3 \
+			-data { \
+				{0},{1},{2} \
+			} \
+			-exec {
+				command 追加ＨＺＸグループ登録 \
+					-hzx_id $1 \
+					-add_id 9
+			}
+
+
+		trap ev010 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if($3 == 入る){
+					command 追加ＨＺＸグループ登録 \
+						-hzx_id 0 \
+						-add_id 8
+				}else{
+					command 追加ＨＺＸグループ削除 \
+						-hzx_id 0 \
+						-add_id 8
+				}
+			}
+
+
+	}
+
+
+
+
+
+
+
+
+
+
+//###################################################################################
+//									サウンド設定
+//###################################################################################
+
+
+	proc サウンドマネージャー設定 {
+#if d:SOUND_FG
+		print 'サウンドマネージャー設定'
+		chara サウンドマネージャー ＳＤマネ -pak 0
+#endif
+	}
+
+
+	proc サウンド設定 {
+		#if d:SOUND_FG
+
+		print 'サウンド設定'
+
+		//ここはゲームオーバーデモのために特殊
+#if 1
+		command セットサウンドコード -c d:SNG_PLAY_05
+#else
+		chara ＢＧＭマネージャー ＢＧＭマネ
+#endif
+
+#if 1
+		@サウンド効果音設定
+#else
+
+		//スネーク
+		// 左足音
+		command 壁床効果音設定 -id 0 -type 0 \
+			-se		d:SD_P_FOOTL01 \
+			-data	d:se_code:SD_P_FOOT_01L,d:NOISE_ZERO \
+					d:se_code:SD_P_FOOT_02L,d:NOISE_ZERO \
+					d:se_code:SD_P_FOOT_03L,d:NOISE_ZERO \
+					d:se_code:SD_P_FOOT_04L,d:NOISE_ZERO \
+					d:se_code:SD_P_FOOT_02L,d:NOISE_S \
+					d:se_code:SD_P_FOOT_01L,d:NOISE_ZERO \
+					d:se_code:SD_P_FOOT_01L,d:NOISE_ZERO \
+					d:se_code:SD_P_FOOT_01L,d:NOISE_ZERO
+
+		// 右足音
+		command 壁床効果音設定 -id 0 -type 0 \
+			-se 	d:SD_P_FOOTR01 \
+			-data	d:se_code:SD_P_FOOT_01R,d:NOISE_ZERO \
+					d:se_code:SD_P_FOOT_02R,d:NOISE_ZERO \
+					d:se_code:SD_P_FOOT_03R,d:NOISE_ZERO \
+					d:se_code:SD_P_FOOT_04R,d:NOISE_ZERO \
+					d:se_code:SD_P_FOOT_02R,d:NOISE_S \
+					d:se_code:SD_P_FOOT_01R,d:NOISE_ZERO \
+					d:se_code:SD_P_FOOT_01R,d:NOISE_ZERO \
+					d:se_code:SD_P_FOOT_01R,d:NOISE_ZERO
+
+			// ホフク左
+			command 壁床効果音設定 \
+				-id 0 \
+				-type 0 \
+				-se		d:SD_P_HOFUKU05 \
+				-data	d:SD_P_HOFUKU05,d:NOISE_ZERO \
+						d:SD_P_HOFUKU05,d:NOISE_ZERO \
+						d:SD_P_HOFUKU05,d:NOISE_ZERO \
+						d:SD_P_HOFUKU05,d:NOISE_ZERO \
+						d:SD_P_HOFUKU05,d:NOISE_ZERO \
+						d:se_code:SD_P_INTLUDE1,d:NOISE_ZERO \
+						d:SD_P_HOFUKU05,d:NOISE_ZERO \
+						d:SD_P_HOFUKU05,d:NOISE_ZERO
+
+
+			// ホフク右
+			command 壁床効果音設定 \
+				-id 0 \
+				-type 0 \
+				-se		d:SD_P_HOFUKU06 \
+				-data	d:SD_P_HOFUKU06,d:NOISE_ZERO \
+						d:SD_P_HOFUKU06,d:NOISE_ZERO \
+						d:SD_P_HOFUKU06,d:NOISE_ZERO \
+						d:SD_P_HOFUKU06,d:NOISE_ZERO \
+						d:SD_P_HOFUKU06,d:NOISE_ZERO \
+						d:se_code:SD_P_INTLUDE2,d:NOISE_ZERO \
+						d:SD_P_HOFUKU06,d:NOISE_ZERO \
+						d:SD_P_HOFUKU06,d:NOISE_ZERO
+
+
+		// 壁叩き -dataオプションは必ず８セット書くこと
+		command 壁床効果音設定 \
+			-id		0 \
+			-type	1 \
+			-se		d:SD_P_WALL02 \
+			-data	d:se_code:SD_A_WALLM01,d:NOISE_ZERO \ // 通常
+					d:se_code:SD_A_WALLM02,d:NOISE_ZERO \ // 鉄筋
+					d:se_code:SD_A_WALLM03,d:NOISE_ZERO \ // 鉄板
+					d:se_code:SD_A_WALLM04,d:NOISE_S \	  // 木
+					d:se_code:SD_A_WALLM05,d:NOISE_ZERO \ // ダンボール
+					d:se_code:SD_A_WALLM01,d:NOISE_ZERO \
+					d:se_code:SD_A_WALLM01,d:NOISE_ZERO \
+					d:se_code:SD_A_WALLM01,d:NOISE_ZERO
+
+		// 床跳弾音
+		command 壁床効果音設定 \
+			-id 0 \
+			-type 0 \
+			-se d:SD_W_RICOCH02 \
+			-data	d:se_code:SD_A_RICOCH01,d:NOISE_ZERO \ // 跳弾１−１ 通常
+					d:se_code:SD_A_RICOCH02,d:NOISE_ZERO \ // 跳弾２−１ 鉄筋
+					d:se_code:SD_A_RICOCH03,d:NOISE_ZERO \ // 跳弾３−１ 鉄板
+					d:se_code:SD_A_RICOCH04,d:NOISE_S \	   // 跳弾４−１ 木
+					d:se_code:SD_A_RICOCH05,d:NOISE_ZERO \ // 跳弾５−１ ダンボール
+					d:se_code:SD_A_RICOCH02,d:NOISE_ZERO \
+					d:se_code:SD_A_RICOCH02,d:NOISE_ZERO \
+					d:se_code:SD_A_RICOCH02,d:NOISE_ZERO	// 必ず８セット書くこと
+
+		// 壁跳弾音
+		command 壁床効果音設定 \
+			-id 0 \
+			-type 1 \
+			-se d:SD_W_RICOCH02 \
+			-data	d:se_code:SD_A_RICOCH01,d:NOISE_ZERO \ // 跳弾１−１ 通常
+					d:se_code:SD_A_RICOCH02,d:NOISE_ZERO \ // 跳弾２−１ 鉄筋
+					d:se_code:SD_A_RICOCH03,d:NOISE_ZERO \ // 跳弾３−１ 鉄板
+					d:se_code:SD_A_RICOCH04,d:NOISE_S \	   // 跳弾４−１ 木
+					d:se_code:SD_A_RICOCH05,d:NOISE_ZERO \ // 跳弾５−１ ダンボール
+					d:se_code:SD_A_RICOCH02,d:NOISE_ZERO \
+					d:se_code:SD_A_RICOCH02,d:NOISE_ZERO \
+					d:se_code:SD_A_RICOCH02,d:NOISE_ZERO	// 必ず８セット書くこと
+
+
+
+
+
+
+
+
+		// 警備兵１足音
+		command 壁床効果音設定 -id 1 -type 0 -se d:SD_P_FOOTL01 \ // -dataオプションは必ず８セット書くこと
+			-data	d:se_code:SD_E_EFOOT_1L1,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_2L1,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_3L1,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_4L1,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO
+
+		command 壁床効果音設定 -id 1 -type 0 -se d:SD_P_FOOTR01 \ // -dataオプションは必ず８セット書くこと
+			-data	d:se_code:SD_E_EFOOT_1R1,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_2R1,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_3R1,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_4R1,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO
+
+		// 警備兵２足音
+		command 壁床効果音設定 -id 2 -type 0 -se d:SD_P_FOOTL01 \ // -dataオプションは必ず８セット書くこと
+			-data	d:se_code:SD_E_EFOOT_1L2,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_2L2,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_3L2,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_4L2,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO
+
+		command 壁床効果音設定 -id 2 -type 0 -se d:SD_P_FOOTR01 \ // -dataオプションは必ず８セット書くこと
+			-data	d:se_code:SD_E_EFOOT_1R2,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_2R2,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_3R2,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_4R2,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO
+
+		// 警備兵３足音
+		command 壁床効果音設定 -id 3 -type 0 -se d:SD_P_FOOTL01 \ // -dataオプションは必ず８セット書くこと
+			-data	d:se_code:SD_E_EFOOT_1L3,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_2L3,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_3L3,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_4L3,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO
+
+		command 壁床効果音設定 -id 3 -type 0 -se d:SD_P_FOOTR01 \ // -dataオプションは必ず８セット書くこと
+			-data	d:se_code:SD_E_EFOOT_1R3,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_2R3,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_3R3,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_4R3,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO
+
+		// 警備兵４足音
+		command 壁床効果音設定 -id 4 -type 0 -se d:SD_P_FOOTL01 \ // -dataオプションは必ず８セット書くこと
+			-data	d:se_code:SD_E_EFOOT_1L4,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_2L4,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_3L4,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_4L4,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO
+
+		command 壁床効果音設定 -id 4 -type 0 -se d:SD_P_FOOTR01 \ // -dataオプションは必ず８セット書くこと
+			-data	d:se_code:SD_E_EFOOT_1R4,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_2R4,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_3R4,d:NOISE_ZERO \
+					d:se_code:SD_E_EFOOT_4R4,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO \
+					330,d:NOISE_ZERO
+#endif
+
+
+
+		#endif
+	}
+
+
+
+
+
+
+
+//###################################################################################
+//									プレイヤー設定
+//###################################################################################
+
+	proc プレイヤー設定 {
+			print 'プレイヤー設定'
+
+			if( $s:登場ポイント == ダクト ){
+				eval( $b:プレイヤー初期状態 = 2 )
+
+			}else{
+				eval( $b:プレイヤー初期状態 = 0 )
+
+			}
+
+
+			print '$s:登場ポイント'$s:登場ポイント
+
+			chara プレイヤー d:PLAYER \
+//				-p 3000,-17900,-8000 \//地下
+//				-p 10800,-18000,-3000 \//地下ピット
+				-p $i:プレイヤー初期Ｘ位置,$i:プレイヤー初期Ｙ位置,$i:プレイヤー初期Ｚ位置 \
+				-d 0,$i:プレイヤー初期方向,0 \
+				-s $b:プレイヤー初期状態 \
+				-i 0 \
+				-m sna_def -a snake -o sna_w04
+
+
+				//バンダナ
+				chara ロープモデル３ バンダナ１ \
+					-n sna_bdn1 \
+					-d 1 \
+					-y d:PLAYER \
+					-z 12 \
+					-x 0,60,-90 \
+					-m 12 \
+					-p 250 \
+					-k 350 \
+					-o 110 \
+					-f 1
+
+				chara ロープモデル３ バンダナ２ \
+					-n sna_bdn2 \
+					-d 1 \
+					-y d:PLAYER \
+					-z 12 \
+					-x 0,50,-90 \
+					-m 22 \
+					-p 250 \
+					-k 350 \
+					-o 110 \
+					-f 1
+
+		#if d:MULTI_MODEL
+			chara マルチウェイトキャラ マルチ \
+				-name d:PLAYER \
+				-model sna_mmt
+
+			chara 臨時顔アニメキャラ アニメキャラ \
+				-chara	d:PLAYER
+		#endif
+
+			//@プレイヤーＬＯＤ設定 d:P_STATE_TYPE d:TRP_STATE_BEHIND
+			@プレイヤーＬＯＤ設定 d:C_DISTANCE_TYPE 6000
+
+	}
+
+	proc はしご設定 {
+		//はしごモード追加
+		command プラグインはしご
+		command はしご設定 \
+			-b 	d:モーションリスト:non_ladder_idle_loop,\
+				d:モーションリスト:non_ladder_idle_loop_l,\
+				d:モーションリスト:non_ladder_up_loop,\
+				d:モーションリスト:non_ladder_down_loop
+	}
+
+
+
+
+
+
+//###################################################################################
+//									プロジェクタ設定
+//###################################################################################
+
+	//プロジェクタ光設定
+	// ------------------------------------
+
+	proc プロジェクタライト設定 {
+		print 'プロジェクタライト設定'
+
+		if($i:プレイヤー初期Ｘ位置 > 0){
+			eval($f:第二船倉プロジェクタ方向 = 0)		//0は右、1は左
+			eval($w:第二船倉右プロジェクタステータス = 0x0001)
+			eval($w:第二船倉左プロジェクタステータス = 0x0003)
+		}else{
+			eval($f:第二船倉プロジェクタ方向 = 1)		//0は右、1は左
+			eval($w:第二船倉右プロジェクタステータス = 0x0003)
+			eval($w:第二船倉左プロジェクタステータス = 0x0001)
+		}
+
+
+		//プロジェクタ右
+		chara スポットライト投影モデル プロジェクタライト右 \
+			-m w04b1_k1 \
+			-p 0,0,0
+
+
+		chara 静止スポットライト設置 プロジェクタライト右 \
+			-pos 630,-15600,-1300 \
+			-dir -150,1930,0 \
+			-range 30000 \
+			-angle 14 \
+			-color 255,255,255 \
+			-option $w:第二船倉右プロジェクタステータス
+
+		chara プロジェクタライト プロジェクタライト右 \
+			-p 630,-15600,-1300 \
+			-d 4000,-10000,-22000
+
+
+		//プロジェクタ左
+		chara スポットライト投影モデル プロジェクタライト左 \
+			-m w04b1_k2 \
+			-p 0,0,0
+
+
+		chara 静止スポットライト設置 プロジェクタライト左 \
+			-pos -630,-15600,-1300 \
+			-dir -154,2192,0 \
+			-range 30000 \
+			-angle 16 \
+			-color 255,255,255 \
+			-option $w:第二船倉左プロジェクタステータス
+
+
+
+		chara プロジェクタライト プロジェクタライト左 \
+			-p -630,-15600,-1300 \
+			-d -4000,-10000,-22000
+
+
+
+		if($f:第二船倉プロジェクタ方向 == 0){
+			print 'プロジェクタ右がＯＮです。'
+			mesg プロジェクタライト プロジェクタライト左 オフ
+			mesg 船倉兵 SEALS_1 プロジェクタ２止まれ
+			mesg 船倉兵 SEALS_1 スクリーン１
+
+		}else{	//左の場合
+			print 'プロジェクタ左がＯＮです。'
+			mesg プロジェクタライト プロジェクタライト右 オフ
+			mesg 船倉兵 SEALS_1 プロジェクタ１止まれ
+			mesg 船倉兵 SEALS_1 スクリーン２
+
+		}
+
+
+		chara スポットライト投影モデル 椎名まおプロジェクタ \
+			-m w04b1_k1 \
+			-p 0,0,0
+
+		chara プロジェクタライト 椎名まおプロジェクタ右 \
+			-p 630,-15600,-1300 \
+			-d 4000,-10000,-22000
+
+		chara プロジェクタライト 椎名まおプロジェクタ左 \
+			-p -630,-15600,-1300 \
+			-d -4000,-10000,-22000
+
+		mesg プロジェクタライト 椎名まおプロジェクタ右 オフ
+		mesg プロジェクタライト 椎名まおプロジェクタ左 オフ
+
+		chara 静止スポットライト設置 椎名まおプロジェクタ \
+			-pos 0,-15600,-1300 \
+			-dir -154,2048,0 \
+			-range 32000 \
+			-angle 24 \
+			-color 200,200,200 \
+			-option 0x0003
+
+
+
+
+		//影判定用
+		command 影投影ハザード \
+			-name 船倉２ \
+			-group 7
+
+
+
+
+#if d:movie
+		chara スポットライト背景イメージ指定 テストムービー
+#endif
+
+
+
+
+
+		@プロジェクタ自動チェンジ設定
+
+
+
+
+		//右舷前部でのみつかり防止対策(一番右前の)
+		//スクリーンは左、ev006にいる状態で60*40フレームを超えたらチェンジ許可
+		trap ev006 d:PLAYER \
+			-mask ＊ \
+			-exec{
+
+				if($3 == いる && $f:第二船倉プロジェクタ方向 == 1 && $f:見つかり防止スクリーンチェンジ許可した == 0){
+					if(!$f:見つかり防止スクリーンチェンジ許可した){
+						print '右舷スクリーンの側なので船倉演説イベント中'
+						eval($w:船倉演説イベント中 = $w:船倉演説イベント中 + 1)
+						chara delay 見つかり防止ディレイ \
+							-time (60 * 30) \
+							-exec{
+								if($f:見つかり防止スクリーンチェンジ許可した){
+									eval($w:船倉演説イベント中 = $w:船倉演説イベント中 - 1)
+									eval($f:見つかり防止スクリーンチェンジ許可した = 0)
+								}
+							}
+					}
+					eval($f:見つかり防止スクリーンチェンジ許可した = 1)
+
+
+				}else if($3 == 出る){
+					mesg delay 見つかり防止ディレイ kill
+					if($f:見つかり防止スクリーンチェンジ許可した){
+						eval($w:船倉演説イベント中 = $w:船倉演説イベント中 - 1)
+						eval($f:見つかり防止スクリーンチェンジ許可した = 0)
+					}
+
+				}
+
+			}
+
+
+
+
+		eval($f:w04b_今床下イントルード中 = 0)
+
+		//イントルードではプロジェクタの明暗影響受けないように
+		trap ev008 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if($3 == 入る){
+					chara フェードインアウト フェードイン \
+						-i 0 0 0 d:プロジェクタ暗さ度合い \		//設定するとこのＲＧＢαから始まる
+						-c 0 0 0 0 \		//目標のＲＧＢα
+						-t 1
+
+					eval($f:w04b_今床下イントルード中 = 1)
+
+				}else{
+					eval($f:w04b_今床下イントルード中 = 0)
+
+					if($f:w04b_今暗い){
+						chara フェードインアウト フェードアウト \
+							-c 0 0 0 d:プロジェクタ暗さ度合い \		//目標のＲＧＢα
+							-t 1
+					}
+
+				}
+
+			}
+
+
+
+
+	}
+
+
+
+	proc プロジェクタ自動チェンジ設定 {
+
+//プロジェクタ左右切り替え処理
+
+		chara delay ディレイ -time 1 -exec{
+			if($w:船倉演説イベント中 > 0){
+				print '$w:船倉演説イベント中 ='$w:船倉演説イベント中
+			}
+			return 1
+		}
+
+		@プロジェクタ自動チェンジ
+
+
+		//船倉中央に行こうとすると発生
+		trap ev011 d:PLAYER \
+			-mask 入る \
+			-exec{
+				if(`%ゲームオーバーチェック` == 0 && !$f:第二船倉プロジェクタチェンジ見た && !$f:第二船倉プロジェクタチェンジデモカメラ中 && $w:船倉物音カメラフレーム数 == 0){
+					@第二船倉プロジェクタチェンジデモカメラ
+				}
+			}
+
+	}
+
+
+	proc プロジェクタ自動チェンジ {
+		chara delay プロジェクタディレイ -time (60 * 5) -exec{
+
+			if($w:船倉演説イベント中 <= 0 && `%ゲームオーバーチェック` == 0){
+				print '$w:船倉演説イベント中 ='$w:船倉演説イベント中
+				print 'プロジェクタチェンジ開始しまーす。'
+
+				if(!$f:第二船倉プロジェクタチェンジ見た && $i:プレイヤー初期Ｙ位置 < -15000){
+					if(!$f:第二船倉プロジェクタチェンジデモカメラ中 && !$f:ローカルフラグ１){	//$f:ローカルフラグ１は、物音反応のために使用しています。
+						@第二船倉プロジェクタチェンジデモカメラ
+					}
+				}else{
+					@第二船倉プロジェクタチェンジ
+
+				}
+
+				return (60 * (20 + `%rand 11`))
+
+			}else{
+
+				print 'プロジェクタチェンジできませ−ン。'
+				return 120
+
+			}
+
+		}
+	}
+
+
+
+
+
+
+	proc 第二船倉プロジェクタチェンジ{
+
+		eval($s:ドッキリ系スタート = 不可)		//首体操・ドッキリ禁止
+
+		chara delay プロジェクタディレイ -time 60 -exec{
+
+			if($f:第二船倉プロジェクタ方向 == 0){
+				@第二船倉プロジェクタ左にチェンジ 0
+
+			}else{
+				@第二船倉プロジェクタ右にチェンジ 0
+
+			}
+		}
+
+	}
+
+
+
+
+
+
+	proc 第二船倉プロジェクタ左にチェンジ $:チェンジスピード {
+
+		if(`%ゲームオーバーチェック` == 0){
+			print 'プロジェクタ左にチェンジ'
+
+			mesg 船倉兵 SEALS_1 プロジェクタ１止まれ
+
+			mesg 静止スポットライト設置 プロジェクタライト右 off
+			mesg プロジェクタライト プロジェクタライト右 オフ
+
+			if($:チェンジスピード == 0){
+
+				@部屋暗くする処理
+
+				chara delay プロジェクタディレイ \
+					-time (60 * 3) \
+					-exec{
+						if(`%ゲームオーバーチェック` == 0){
+							eval($f:第二船倉プロジェクタ方向 = 1)
+
+							mesg 船倉兵 SEALS_1 プロジェクタ２動け
+							mesg 静止スポットライト設置 プロジェクタライト左 fadein 300
+							mesg プロジェクタライト プロジェクタライト左 ゆっくりオン
+
+							@部屋明るくする処理
+
+							if($f:第二船倉プロジェクタチェンジデモカメラ中){
+								eval($w:第二船倉兵遅れタイム = 15)
+							}else{
+								eval($w:第二船倉兵遅れタイム = 60 * 2)
+							}
+
+							chara delay プロジェクタディレイ \
+								-time $w:第二船倉兵遅れタイム \
+								-exec{
+									if(`%ゲームオーバーチェック` == 0){
+										mesg 船倉兵 SEALS_1 スクリーン２
+									}
+								}
+						}
+
+					}
+
+
+			}else{
+				eval($f:第二船倉プロジェクタ方向 = 1)
+
+				mesg 静止スポットライト設置 プロジェクタライト左 on
+				mesg プロジェクタライト プロジェクタライト左 オン
+
+				mesg 船倉兵 SEALS_1 プロジェクタ２動け
+				mesg 船倉兵 SEALS_1 スクリーン２
+
+				@部屋明るくする処理
+
+			}
+
+		}
+
+
+	}
+
+
+
+
+	proc 第二船倉プロジェクタ右にチェンジ $:チェンジスピード {
+
+		if(`%ゲームオーバーチェック` == 0){
+			print 'プロジェクタ右にチェンジ'
+
+			mesg 船倉兵 SEALS_1 プロジェクタ２止まれ
+
+			mesg 静止スポットライト設置 プロジェクタライト左 off
+			mesg プロジェクタライト プロジェクタライト左 オフ
+
+
+			if($:チェンジスピード == 0){
+
+				@部屋暗くする処理
+
+				chara delay プロジェクタディレイ \
+					-time (60 * 3) \
+					-exec{
+
+						if(`%ゲームオーバーチェック` == 0){
+							eval($f:第二船倉プロジェクタ方向 = 0)
+
+							mesg 船倉兵 SEALS_1 プロジェクタ１動け
+							mesg 静止スポットライト設置 プロジェクタライト右 fadein 300
+							mesg プロジェクタライト プロジェクタライト右 ゆっくりオン
+
+							@部屋明るくする処理
+
+							if($f:第二船倉プロジェクタチェンジデモカメラ中){
+								eval($w:第二船倉兵遅れタイム = 15)
+							}else{
+								eval($w:第二船倉兵遅れタイム = 60 * 2)
+							}
+
+							chara delay プロジェクタディレイ \
+								-time $w:第二船倉兵遅れタイム \
+								-exec{
+									if(`%ゲームオーバーチェック` == 0){
+										mesg 船倉兵 SEALS_1 スクリーン１
+									}
+								}
+						}
+				}
+
+
+			}else{
+				eval($f:第二船倉プロジェクタ方向 = 0)
+
+				mesg 静止スポットライト設置 プロジェクタライト右 on
+				mesg プロジェクタライト プロジェクタライト右 オン
+
+				mesg 船倉兵 SEALS_1 プロジェクタ１動け
+				mesg 船倉兵 SEALS_1 スクリーン１
+
+
+				@部屋明るくする処理
+
+			}
+		}
+	}
+
+
+
+	proc 部屋暗くする処理 {
+		eval($f:w04b_今暗い = 1)
+		if($i:カメラＺ位置 > -24000 && !$f:w04b_今床下イントルード中 && (`%ゲームオーバーチェック` == 0) && ($f:ロードチェックＯＮフラグ == 1)){
+			chara フェードインアウト フェードアウト \
+				-c 0 0 0 d:プロジェクタ暗さ度合い \		//目標のＲＧＢα
+				-s 143 \			//プライオリティ
+				-t 30
+		}
+	}
+
+
+	proc 部屋明るくする処理 {
+		eval($f:w04b_今暗い = 0)
+		if($i:カメラＺ位置 > -24000 && !$f:w04b_今床下イントルード中 && (`%ゲームオーバーチェック` == 0) && ($f:ロードチェックＯＮフラグ == 1)){
+			chara フェードインアウト フェードイン \
+				-i 0 0 0 d:プロジェクタ暗さ度合い \		//設定するとこのＲＧＢαから始まる
+				-c 0 0 0 0 \		//目標のＲＧＢα
+				-s 143 \			//プライオリティ
+				-t 30
+		}
+	}
+
+
+
+
+
+
+//###################################################################################
+//						プロジェクタチェンジデモカメラ
+//###################################################################################
+
+
+	proc ゲームステータスチェック {
+
+		command ゲットゲームステータス \
+			$i:ゲームステータス
+
+		if($i:ゲームステータス & 0x00000001){
+			// 発見〜危険モードの間
+			return 1
+		}else{
+			return 0
+		}
+	}
+
+
+	proc 第二船倉プロジェクタチェンジデモカメラ {
+
+		eval($f:第二船倉プロジェクタチェンジデモカメラ中 = 1)
+
+
+		command セットタイマーステータス -s d:TMR_WAIT
+
+#if 1
+		command シナリオデモ開始
+		command 無線設定 -reset
+		command メニュー設定 -menu off -gage off -radar off -subwin off
+		command パッド操作 -release
+		command プレイヤー無敵セット
+		//mesg コマンダー 敵兵セット 視界オフ
+		mesg コマンダー 敵兵セット 聴力オフ
+		@特殊装備解除
+		mesg シネマスクリーン シネマ フェードアウト 0
+#else
+		@シナリオデモ開始処理
+#endif
+
+		if($i:プレイヤー位置Ｘ > -1500 && $i:プレイヤー位置Ｘ < 1500){
+			if( $i:プレイヤー位置Ｘ < 0){
+				mesg プレイヤー d:PLAYER position2 0 -1500
+			}else{
+				mesg プレイヤー d:PLAYER position2 0 1500
+			}
+		}
+
+
+		chara デモキャンセルチェック デモキャンセル \
+			-p プロジェクタチェンジデモカメラキャンセル処理
+
+		chara delay チェンジデモカメラディレイ -time 1 -exec{
+			if((`%ゲームオーバーチェック` == 0) && (`@ゲームステータスチェック` == 0)){		// 発見〜危険モードの間
+				return 1
+			}else{
+				@プロジェクタチェンジデモカメラキャンセル処理
+				return 0
+			}
+		}
+
+		chara カメラ設定 パンカメラ \
+			-c 1 \
+			-p 312,-12469,-8761 \
+			-t 344,-13385,-6871 \
+			-a 200 \
+			-i 0 0 0 0 \
+			-s 1
+
+		chara カメラ設定 パンカメラ \
+			-c 1 \
+			-p 352,-13619,-6384 \
+			-t 384,-14531,-4494 \
+			-a 200 \
+			-z d:CAMERA_INTERP_CAMERA \ //補完カメラフラグを指定。
+			-interp_time 119 \ 			//補完時間を指定
+			-s 1
+
+
+		chara delay チェンジデモカメラディレイ２ -time (120 + 60) -exec{
+			@第二船倉プロジェクタチェンジ
+		}
+
+		chara delay チェンジデモカメラディレイ２ -time 580 -exec{
+			eval($f:第二船倉プロジェクタチェンジデモカメラ中 = 0)
+			eval($f:第二船倉プロジェクタチェンジ見た = 1)
+			command varsave $f:第二船倉プロジェクタチェンジ見た
+		}
+
+		chara delay チェンジデモカメラディレイ -time 120 -exec{
+
+			chara カメラ設定 パンカメラ \
+				-c 1 \
+				-p -1031,-15672,751 \
+				-t -576,-15775,-1292 \
+				-a 170 \
+				-i 0 0 0 0 \
+				-s 1
+
+			chara カメラ設定 パンカメラ \
+				-c 1 \
+				-p 1003,-14755,1678 \
+				-t 741,-14659,-381 \
+				-a 170 \
+				-z d:CAMERA_INTERP_CAMERA \ //補完カメラフラグを指定。
+				-interp_time 219 \ 			//補完時間を指定
+				-s 1
+
+
+			chara delay チェンジデモカメラディレイ -time 220 -exec{
+				chara カメラ設定 パンカメラ \
+					-c 1 \
+					-p -268,-15679,-7128 \
+					-t -352,-14337,-13987 \
+					-a 170 \
+					-i 0 0 0 0 \
+					-s 1
+
+				chara カメラ設定 パンカメラ \
+					-c 1 \
+					-p 500,-15679,-7128 \
+					-t -352,-14337,-13987 \
+					-a 170 \
+					-z d:CAMERA_INTERP_CAMERA \ //補完カメラフラグを指定。
+					-interp_time 239 \ 			//補完時間を指定
+					-s 1
+			}
+
+
+			chara delay チェンジデモカメラディレイ \
+				-time 461 \
+				-exec{
+					@プロジェクタチェンジデモカメラ終了処理
+				}
+
+		}
+
+
+
+
+	}
+
+
+
+	proc プロジェクタチェンジデモカメラキャンセル処理 {
+
+		@プロジェクタチェンジデモカメラ終了処理
+
+		mesg delay チェンジデモカメラディレイ kill
+
+
+	}
+
+
+
+	proc プロジェクタチェンジデモカメラ終了処理 {
+
+		@シナリオデモ終了処理
+
+		chara delay キャンセルディレイ -time 2 -exec {
+			chara カメラ設定 パンカメラ \
+				-s -1
+		}
+
+		mesg デモキャンセルチェック デモキャンセル kill
+
+		mesg タイマー タイマー 開始
+
+
+
+	}
+
+
+
+//###################################################################################
+//								子画面設定
+//###################################################################################
+
+	proc 子画面設定 {
+		chara サブ画面 子画面 \
+			-w (512-d:SUB_MARGIN-d:SUB_WIDTH),d:SUB_MARGIN (512-d:SUB_MARGIN),(d:SUB_HEIGHT+d:SUB_MARGIN)
+	}
+
+
+
+//###################################################################################
+//							手動プロジェクタチェンジ
+//###################################################################################
+
+
+
+	proc 手動プロジェクタチェンジ {
+		print '手動プロジェクタチェンジ'
+
+//左舷側から
+		trap ev002 d:PLAYER \
+			-mask 入る \
+			-state d:TRP_STATE_STAND \
+			-dir 1024,256 \
+			-button d:ACTION_BUTTON \
+ 			-exec{
+
+				if(!$f:w04b_椎名まおムービー中){
+					command パッド操作 -release
+					command プレイヤー無敵セット
+					mesg コマンダー 敵兵セット 視界オフ
+
+					@プロジェクタチェンジアクション左
+
+					chara delay 手動プロジェクタチェンジディレイ \
+						-time 50 \
+						-exec {
+							@第二船倉プロジェクタ手動チェンジ
+						}
+
+					// モーションが長いので途中で終了
+					chara delay 手動プロジェクタチェンジディレイ \
+						-time 120 \
+						-exec {
+							if(`%ゲームオーバーチェック` == 0 && !$f:w04b_椎名まおムービー中){
+								command 強制モーションキャンセル
+								command パッド操作 -cancel
+								command プレイヤー無敵解除
+								mesg コマンダー 敵兵セット 視界オン
+							}
+						}
+				}
+
+			}
+
+
+
+
+
+
+//右舷側から
+		trap ev003 d:PLAYER \
+			-mask 入る \
+			-state d:TRP_STATE_STAND \
+			-dir 3072,256 \
+			-button d:ACTION_BUTTON \
+ 			-exec{
+
+				if(!$f:w04b_椎名まおムービー中){
+
+					command パッド操作 -release
+					command プレイヤー無敵セット
+					mesg コマンダー 敵兵セット 視界オフ
+
+					@プロジェクタチェンジアクション右
+
+					chara delay 手動プロジェクタチェンジディレイ \
+						-time 50 \
+						-exec {
+							@第二船倉プロジェクタ手動チェンジ
+						}
+
+					// モーションが長いので途中で終了
+					chara delay 手動プロジェクタチェンジディレイ -time 120 -exec {
+						if(`%ゲームオーバーチェック` == 0 && !$f:w04b_椎名まおムービー中){
+							command 強制モーションキャンセル
+							command パッド操作 -cancel
+							command プレイヤー無敵解除
+							mesg コマンダー 敵兵セット 視界オン
+						}
+					}
+				}
+
+			}
+
+
+
+
+
+
+		trap ev004 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_FORCE \
+			-dir 1024,256 3072,256 \	//方向指定
+			-exec{
+
+				if($3 == 入る){
+					print 'プロジェクタチェンジ中なので$w:船倉演説イベント中'
+					eval($f:第二船倉プロジェクタチェンジ見た = 1)
+					eval($w:船倉演説イベント中 = $w:船倉演説イベント中 + 1)
+				}else{
+					eval($w:船倉演説イベント中 = $w:船倉演説イベント中 - 1)
+				}
+
+				if(!$f:w04b_椎名まおムービー中){
+					if($3 == 入る){
+						chara カメラ設定 ビヨンドカメラ \
+							-c 1 \
+							-p 0,-15207,3556 \
+							-t 0,-15106,-371 \
+							-a 200 \
+							-i 0 0 0 0 \
+							-s 1
+					}else if($3 == 出る){
+						chara カメラ設定 ビヨンドカメラ \
+							-s -1
+					}
+				}
+
+			}
+
+
+
+	}
+
+
+
+	proc プロジェクタチェンジアクション左 {
+		mesg プレイヤー d:PLAYER motion \
+			d:モーションリスト:sna_non_zap_w04a_w04b \
+			1024 \
+			1024 \
+			0 \
+			(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_NO_WEAPON) \
+			-1300 -500
+	}
+
+
+	proc プロジェクタチェンジアクション右 {
+		mesg プレイヤー d:PLAYER motion \
+			d:モーションリスト:sna_non_zap_w04a_w04b \
+			3072 \
+			3072 \
+			0 \
+			(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_NO_WEAPON) \
+			1400 -500
+	}
+
+
+	proc 第二船倉プロジェクタ手動チェンジ {
+
+		if($b:船倉プロジェクタ手動チェンジ回数 < 100){
+			eval($b:船倉プロジェクタ手動チェンジ回数 = $b:船倉プロジェクタ手動チェンジ回数 + 1)
+		}
+
+		if(!$f:第二船倉プロジェクタチェンジ見た){
+			eval($f:第二船倉プロジェクタチェンジ見た = 1)
+			command varsave $f:第二船倉プロジェクタチェンジ見た
+		}
+
+		mesg delay プロジェクタディレイ kill
+
+		if($b:船倉プロジェクタ手動チェンジ回数 == 7 && !$f:椎名まおムービー見た){
+			eval($f:椎名まおムービー見た = 1)
+			command varsave $f:椎名まおムービー見た
+			command StreamStopAll
+
+			chara delay ディレイ -time 1 -exec{
+				if(`%StreamIsPlay` == 0){
+					if(`%ゲームオーバーチェック` == 0){
+						//command ゲームオーバー処理開始 -exec {
+							@椎名まおムービースタート
+						//}
+					}
+					return 0
+				}else{
+					return 1
+				}
+			}
+
+		}else{
+			if($b:船倉プロジェクタ手動チェンジ回数 == 7){
+				mesg 船倉兵 船倉兵:a1 ルート変更 3 0
+			}
+
+			//チェンジタイマーをリセットして呼びなおし
+			chara delay ディレイ -time 2 -exec{
+				chara delay プロジェクタディレイ -time (60*20) -proc プロジェクタ自動チェンジ
+			}
+
+			if($f:第二船倉プロジェクタ方向 == 0){
+				@第二船倉プロジェクタ左にチェンジ 1
+			}else{
+				@第二船倉プロジェクタ右にチェンジ 1
+			}
+
+		}
+
+
+
+	}
+
+
+
+
+
+
+
+	proc 椎名まおムービースタート {
+
+		eval($w:船倉演説イベント中 = 100)
+		eval($f:w04b_椎名まおムービー中 = 1)
+
+		@シナリオデモ開始処理
+
+		eval( $w:武器 = d:武器:素手 )
+
+
+		mesg 透明壁 プロジェクタ透明壁 off
+
+		mesg delay プロジェクタディレイ kill
+
+
+		command セットタイマーステータス -s d:TMR_WAIT
+
+		mesg タイマー タイマー 表示切り替え 0
+
+		mesg 船倉兵 SEALS_1 スクリーン１
+
+		mesg プロジェクタライト プロジェクタライト右 オフ
+		mesg プロジェクタライト プロジェクタライト左 オフ
+
+		mesg 静止スポットライト設置 プロジェクタライト右 off
+		mesg 静止スポットライト設置 プロジェクタライト左 off
+
+		mesg プロジェクタライト 椎名まおプロジェクタ右 オン
+		mesg 静止スポットライト設置 椎名まおプロジェクタ on
+
+
+		chara delay 椎名まおディレイ -time 2 -exec{
+			eval( $i:STREAM_MOVIE_ID = `%Stream t:vc070200 -action 椎名まおムービーチェンジ -p 椎名まおムービー終了 -c 1 -ipu` );
+
+			%StreamSetPan $i:STREAM_MOVIE_ID -v 0x20
+				// ストリームにパンとボリュームを設定する。
+				// pan 0(左)-0x20(中)-0x3F(右), vol 0-0x3F
+
+		}
+
+
+		chara カメラ設定 ビヨンドカメラ \
+			-c 1 \
+			-p 0,-15207,3556 \
+			-t 0,-15106,-371 \
+			-a 200 \
+			-i 0 0 0 0 \
+			-s 1
+
+
+	}
+
+
+	proc 椎名まおムービーチェンジ $:ストリームＩＤ $:話者名 $:アクションコード {
+
+		//まお左登場
+		if($:アクションコード == 10){
+			print '最初のチェンジ'
+			if($i:プレイヤー位置Ｘ > 0){
+				@プロジェクタチェンジアクション右
+			}else{
+				@プロジェクタチェンジアクション左
+			}
+
+
+			chara delay ディレイ -time 60 -exec{
+				chara スポットライト投影モデル 椎名まおプロジェクタ \
+					-m w04b1_k2 \
+					-p 0,0,0
+
+				mesg プロジェクタライト 椎名まおプロジェクタ左 オン
+
+				mesg 船倉兵 SEALS_1 スクリーン２
+			}
+
+		//まお右登場
+		}else if($:アクションコード == 20){
+			if($i:プレイヤー位置Ｘ > 0){
+				@プロジェクタチェンジアクション右
+			}else{
+				@プロジェクタチェンジアクション左
+			}
+
+/*
+			chara delay ディレイ -time 30 -exec{
+				chara カメラ設定 ビヨンドカメラ \
+					-c 1 \
+					-p 889,-15703,-4295 \
+					-t 754,-14739,-8093 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s 1
+			}
+*/
+
+			chara delay ディレイ -time 60 -exec{
+				mesg 船倉兵 SEALS_1 スクリーン１
+			}
+
+		//まお左登場
+		}else if($:アクションコード == 30){
+			if($i:プレイヤー位置Ｘ > 0){
+				@プロジェクタチェンジアクション右
+			}else{
+				@プロジェクタチェンジアクション左
+			}
+
+			chara カメラ設定 ビヨンドカメラ \
+				-c 1 \
+				-p 0,-15207,3556 \
+				-t 0,-15106,-371 \
+				-a 200 \
+				-i 0 0 0 0 \
+				-s 1
+
+			chara delay ディレイ -time 60 -exec{
+				mesg 船倉兵 SEALS_1 スクリーン２
+			}
+
+		//まお右登場
+		}else if($:アクションコード == 40){
+			if($i:プレイヤー位置Ｘ > 0){
+				@プロジェクタチェンジアクション右
+			}else{
+				@プロジェクタチェンジアクション左
+			}
+
+			chara delay ディレイ -time 60 -exec{
+				mesg 船倉兵 SEALS_1 スクリーン１
+			}
+
+		//まお左登場
+		}else if($:アクションコード == 50){
+			if($i:プレイヤー位置Ｘ > 0){
+				@プロジェクタチェンジアクション右
+			}else{
+				@プロジェクタチェンジアクション左
+			}
+
+			chara delay ディレイ -time 60 -exec{
+				mesg 船倉兵 SEALS_1 スクリーン２
+			}
+
+		//まお両側登場
+		}else if($:アクションコード == 60){
+			if($i:プレイヤー位置Ｘ > 0){
+				@プロジェクタチェンジアクション右
+			}else{
+				@プロジェクタチェンジアクション左
+			}
+
+			eval($f:w04b_椎名うろうろ方向 = 0)
+
+			chara delay ディレイ -time 60 -exec{
+				if($f:w04b_椎名うろうろ方向 == 0){
+					mesg 船倉兵 SEALS_1 スクリーン１
+					eval($f:w04b_椎名うろうろ方向 = 1)
+				}else{
+					mesg 船倉兵 SEALS_1 スクリーン２
+					eval($f:w04b_椎名うろうろ方向 = 0)
+				}
+
+				return (60 + `%rand 30`)
+			}
+
+
+		//スコット両側登場
+		}else if($:アクションコード == 70){
+			if($i:プレイヤー位置Ｘ > 0){
+				@プロジェクタチェンジアクション右
+			}else{
+				@プロジェクタチェンジアクション左
+			}
+
+			mesg delay ディレイ kill
+
+			chara delay 船倉兵ビックリディレイ -time 90 -exec{
+#ifdef JAPANESE
+				mesg コマンダー 敵兵セット 視界オフ
+				mesg コマンダー 敵兵セット 聴力オフ
+#endif
+				mesg 船倉兵 SEALS_1 後に銃を向けろ
+				chara delay ディレイ -time 60 -exec{
+					@椎名まおムービー終了
+				}
+			}
+
+		}
+
+
+	}
+
+
+
+	proc 椎名まおムービー終了 {
+		command ゲームオーバー処理開始 -exec {
+			command ゲームオーバー処理終了
+		}
+	}
+
+
+
+
+
+
+//###################################################################################
+//									地下はしご設定
+//###################################################################################
+
+/*
+地下ハッチ移動量
+フタ開け
+	922,24,941
+またぎ移動
+	945,16,932
+
+*/
+
+	proc 船倉２西側地下はしご設定{
+		print '西側地下はしご設定'
+
+//西側
+		chara プットモーションモデル 西側ハッチ \
+			-pos -11500,-17000,-3000 \	//$v:配置座標
+			-dir 0 \					//$i:方向
+			-kms hatch \				//$s:KMSモデル名
+			-mar hatch_w04 \			//$s:モーションファイル名
+			-number 0 \					//$i:基本モーション番号 ...
+			-status	0x0e 				//$w:ステータス
+//			-status	0x02 0x04 0x08		//$w:ステータス
+
+				/*ステータスフラグ設定は以下のとおり
+					(0x01) モーションの水平移動量を無視
+					(0x02) 重力処理無し
+					(0x04) 壁アタリ判定無し
+					(0x08) メッセージ受信までモーション停止
+				*/
+
+
+
+
+//跳弾アタリ追加
+		command 追加ＨＺＸグループ登録 \
+			-hzx_id 0 \
+			-add_id 3
+
+
+
+	//地下はしご西・上部用設定
+		//----------------------
+
+
+		//北側から
+		trap la302h_left d:PLAYER -mask 入る -button d:ACTION_BUTTON -dir 2048,256 \
+			-state d:TRP_STATE_STAND \
+			-exec {
+
+				mesg 透明壁 地下ピット西側 on
+
+				@南側から西地下ピットに下りる
+
+			}
+
+
+
+		//東側から
+		trap la302h_front d:PLAYER -mask 入る -button d:ACTION_BUTTON -dir 3072,256 \
+			-state d:TRP_STATE_STAND \
+			-exec {
+
+				if( $f:船倉２西側地下ピットふた開いた == 0 ){
+					//フタを開けて南側に移動
+					mesg プレイヤー d:PLAYER motion \
+						d:モーションリスト:sna_non_ladder_hatch_open_c2l \
+						3072 \
+						-1 \
+						0 \
+						(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_NO_WEAPON) \
+						-10078 -2990 -15970	//x,z,yの順
+
+					mesg プットモーションモデル 西側ハッチ 終了判定 3
+					eval( $f:船倉２西側地下ピットふた開いた = 1 )
+					@西側ハッチオープン跳弾アタリ変更
+
+				}else{
+
+					//南側に移動
+					mesg プレイヤー d:PLAYER motion \
+						d:モーションリスト:sna_non_ladder_hatch_c2l \
+						3072 \
+						-1 \
+						0 \
+						(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_NO_WEAPON) \
+						-10055 -2982 -15970	//x,z,yの順
+
+				}
+
+				mesg 透明壁 地下ピット西側 on
+
+				@南側から西地下ピットに下りる
+
+			}
+
+
+
+
+
+		//はしご中カメラ
+		trap la302_force d:PLAYER -mask ？ -state d:TRP_STATE_FORCE \
+			-exec {
+
+				chara カメラ設定 ビヨンドカメラ \
+					-c 1 \
+					-p -10888,-14175,-2175 \
+					-t -11119,-15769,-2794 \
+					-a 200 \
+					-i 0 2 0 0 \
+					-s $3
+
+				if($3 == 入る){
+					print '地下ピットハシゴ中なので$w:船倉演説イベント中'
+					eval($w:船倉演説イベント中 = $w:船倉演説イベント中 + 1)
+				}else{
+					eval($w:船倉演説イベント中 = $w:船倉演説イベント中 - 1)
+				}
+
+			}
+
+		//はしご影消去
+		trap la302_force d:PLAYER -mask いる \
+			-state d:TRP_STATE_LADDER,d:TRP_STATE_FORCE \
+			-exec {
+				mesg プレイヤー d:PLAYER shadow 0
+			}
+		trap la302_force d:PLAYER -mask いる \
+			-state d:TRP_STATE_STAND \
+			-exec {
+				mesg プレイヤー d:PLAYER shadow 1
+			}
+
+
+	//地下はしご西・下部用設定
+		//----------------------
+
+#if d:ピット自動脱出	//w04.hで定義
+		//下から自動脱出
+		trap la302l d:PLAYER \
+			-mask いる \
+			-exec{
+
+				if( $4 < -10600 && !$f:船倉２西側地下ピットふた開いた){
+
+					eval( $f:船倉２西側地下ピットふた開いた = 1 )
+					@西側ハッチオープン跳弾アタリ変更
+
+					mesg 透明壁 地下ピット西側 on
+
+					//フタ開けて
+					mesg プレイヤー d:PLAYER motion \
+						d:モーションリスト:sna_non_ladder_open2hatch_l \
+						3072 \
+						-1 \
+						0 \
+						(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_USE_NOW_HEIGHT | d:FA_NO_WEAPON) \
+						-10850 -3000 -18000	//x,z,yの順
+
+					mesg プットモーションモデル 西側ハッチ 終了判定 5
+
+				}
+
+			}
+#endif
+
+		trap la302l d:PLAYER -mask 入る -button d:ACTION_BUTTON -dir 3072,256 \
+			-state d:TRP_STATE_STAND \
+			-exec {
+
+				mesg 透明壁 地下ピット西側 on
+
+
+				if( $f:船倉２西側地下ピットふた開いた == 0 ){
+
+					//フタ開けて
+					mesg プレイヤー d:PLAYER motion \
+						d:モーションリスト:sna_non_ladder_open2hatch_l \
+						3072 \
+						-1 \
+						0 \
+						(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_USE_NOW_HEIGHT | d:FA_NO_WEAPON) \
+						-10850 -3000 -18000	//x,z,yの順
+
+					mesg プットモーションモデル 西側ハッチ 終了判定 5
+					eval( $f:船倉２西側地下ピットふた開いた = 1 )
+					@西側ハッチオープン跳弾アタリ変更
+
+				}else{
+
+					//昇って
+					mesg プレイヤー d:PLAYER motion \
+						d:モーションリスト:non_ladder_up_c_start \
+						3072 \
+						-1 \
+						0 \
+						(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_NO_WEAPON) \
+						-10850 -3000 -18470	//x,z,yの順
+
+					//上に到着
+					mesg プレイヤー d:PLAYER motion \
+						d:モーションリスト:sna_non_ladder_up2hatch_l \
+						-1 \
+						-1 \
+						0 \
+						(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_USE_NOW_HEIGHT | d:FA_NO_WEAPON)
+
+				}
+
+			}
+
+	}
+
+
+
+
+	proc 南側から西地下ピットに下りる{
+//		mesg プレイヤー d:PLAYER position \
+//			-11000 -15970 -2050
+
+		if( $f:船倉２西側地下ピットふた開いた == 0 ){
+
+
+			//フタ開けて
+			mesg プレイヤー d:PLAYER motion \
+				d:モーションリスト:sna_non_ladder_hatch_open_l \
+				2048 \
+				-1 \
+				0 \
+				(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_NO_WEAPON) \
+				-11000 -2050 -15970	//x,z,yの順
+
+			//ふた開け連動
+			mesg プットモーションモデル 西側ハッチ 終了判定 1
+			eval( $f:船倉２西側地下ピットふた開いた = 1 )
+			@西側ハッチオープン跳弾アタリ変更
+
+		}
+
+		//降りて
+		mesg プレイヤー d:PLAYER motion \
+			d:モーションリスト:sna_non_ladder_hatch2down_l \
+			2048 \
+			-1 \
+			0 \
+			(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_NO_WEAPON) \
+			-11000 -2050 -15970	//x,z,yの順
+
+		//着地
+		mesg プレイヤー d:PLAYER motion \
+			d:モーションリスト:non_ladder_down_c_end \
+			-1 \
+			-1 \
+			0 \
+			(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_USE_NOW_HEIGHT | d:FA_NO_WEAPON)
+
+#if d:ピットで自動ホフク
+		mesg プレイヤー d:PLAYER stance \
+			0 \
+			-1 \
+			1024 \
+			(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_USE_NOW_HEIGHT | d:FA_NO_WEAPON)
+
+
+		mesg プレイヤー d:PLAYER stance \
+			2 \
+			-1 \
+			1024 \
+			(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_USE_NOW_HEIGHT | d:FA_NO_WEAPON)
+#endif
+
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	proc 船倉２東側地下はしご設定{
+		print '東側地下はしご設定'
+
+
+//東側
+		chara プットモーションモデル 東側ハッチ \
+			-pos 11500,-17000,-3000 \	//$v:配置座標
+			-dir 2048 \					//$i:方向
+			-kms hatch \				//$s:KMSモデル名
+			-mar hatch_w04 \			//$s:モーションファイル名
+			-number 1 \					//$i:基本モーション番号 ...
+			-status	0x0e 				//$w:ステータス
+//			-status	0x02 0x04 0x08		//$w:ステータス
+
+				/*ステータスフラグ設定は以下のとおり
+					(0x01) モーションの水平移動量を無視
+					(0x02) 重力処理無し
+					(0x04) 壁アタリ判定無し
+					(0x08) メッセージ受信までモーション停止
+				*/
+
+
+
+
+
+//跳弾アタリ追加
+		command 追加ＨＺＸグループ登録 \
+			-hzx_id 0 \
+			-add_id 5
+
+
+
+
+
+	//地下はしご東・上部用設定
+		//----------------------
+
+
+		//南側から
+		trap la303h_right d:PLAYER -mask 入る -button d:ACTION_BUTTON -dir 2048,256 \
+			-state d:TRP_STATE_STAND \
+			-exec {
+
+				mesg 透明壁 地下ピット東側 on
+
+				@南側から東地下ピットに下りる
+
+			}
+
+
+
+		//西側から
+		trap la303h_front d:PLAYER -mask 入る -button d:ACTION_BUTTON -dir 1024,256 \
+			-state d:TRP_STATE_STAND \
+			-exec {
+
+				if( $f:船倉２東側地下ピットふた開いた == 0 ){
+					//フタを開けて南側に移動
+					mesg プレイヤー d:PLAYER motion \
+						d:モーションリスト:sna_non_ladder_hatch_open_c2r \
+						1024 \
+						-1 \
+						0 \
+						(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_NO_WEAPON) \
+						10048 -2990 -15970	//x,z,yの順
+//						10000 -3000 -16000	//x,z,yの順
+
+					mesg プットモーションモデル 東側ハッチ 終了判定 2
+					eval( $f:船倉２東側地下ピットふた開いた = 1 )
+					@東側ハッチオープン跳弾アタリ変更
+
+				}else{
+
+					//南側に移動
+					mesg プレイヤー d:PLAYER motion \
+						d:モーションリスト:sna_non_ladder_hatch_c2r \
+						1024 \
+						-1 \
+						0 \
+						(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_NO_WEAPON) \
+						10025 -2982 -15970	//x,z,yの順
+//						10000 -3000 -16000	//x,z,yの順
+
+				}
+
+				mesg 透明壁 地下ピット東側 on
+
+				@南側から東地下ピットに下りる
+
+			}
+
+
+
+
+
+
+		//はしご中カメラ
+		trap la303_force d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_FORCE \
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 1 \
+					-p 10888,-14175,-2175 \
+					-t 11119,-15769,-2794 \
+					-a 200 \
+					-i 0 2 0 0 \
+					-s $3
+
+				if($3 == 入る){
+					print 'ハシゴ中なので$w:船倉演説イベント中 = 1'
+					eval($w:船倉演説イベント中 = $w:船倉演説イベント中 + 1)
+				}else{
+					print '$w:船倉演説イベント中 = 0'
+					eval($w:船倉演説イベント中 = $w:船倉演説イベント中 - 1)
+				}
+
+			}
+
+		//はしご影消去
+		trap la303_force d:PLAYER -mask いる \
+			-state d:TRP_STATE_LADDER,d:TRP_STATE_FORCE \
+			-exec {
+				mesg プレイヤー d:PLAYER shadow 0
+			}
+		trap la303_force d:PLAYER -mask いる \
+			-state d:TRP_STATE_STAND \
+			-exec {
+				mesg プレイヤー d:PLAYER shadow 1
+			}
+
+
+	//地下はしご東・下部用設定
+		//----------------------
+
+
+#if d:ピット自動脱出
+		//下から自動脱出
+		trap la303l d:PLAYER \
+			-mask いる \
+			-exec{
+
+				if( $4 > 10600 && !$f:船倉２東側地下ピットふた開いた){
+
+					eval( $f:船倉２東側地下ピットふた開いた = 1 )
+					@東側ハッチオープン跳弾アタリ変更
+
+					mesg 透明壁 地下ピット東側 on
+
+					//フタ開けて
+					mesg プレイヤー d:PLAYER motion \
+						d:モーションリスト:sna_non_ladder_open2hatch_r \
+						1024 \
+						-1 \
+						0 \
+						(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_USE_NOW_HEIGHT | d:FA_NO_WEAPON) \
+						10850 -3000 -18000	//x,z,yの順
+
+					mesg プットモーションモデル 東側ハッチ 終了判定 4
+
+				}
+
+			}
+#endif
+
+
+		trap la303l d:PLAYER -mask 入る -button d:ACTION_BUTTON -dir 1024,256 \
+			-state d:TRP_STATE_STAND \
+			-exec {
+
+				mesg 透明壁 地下ピット東側 on
+
+				if( $f:船倉２東側地下ピットふた開いた == 0 ){
+
+					//フタ開けて
+					mesg プレイヤー d:PLAYER motion \
+						d:モーションリスト:sna_non_ladder_open2hatch_r \
+						1024 \
+						-1 \
+						0 \
+						(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_USE_NOW_HEIGHT | d:FA_NO_WEAPON) \
+						10850 -3000 -18000	//x,z,yの順
+
+					mesg プットモーションモデル 東側ハッチ 終了判定 4
+					eval( $f:船倉２東側地下ピットふた開いた = 1 )
+					@東側ハッチオープン跳弾アタリ変更
+
+				}else{
+
+					mesg プレイヤー d:PLAYER position \
+						10850 -18470 -3000
+
+					//昇って
+					mesg プレイヤー d:PLAYER motion \
+						d:モーションリスト:non_ladder_up_c_start \
+						1024 \
+						-1 \
+						0 \
+						(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_NO_WEAPON) \
+						10850 -3000 -18470	//x,z,yの順
+
+
+					//上に到着
+					mesg プレイヤー d:PLAYER motion \
+						d:モーションリスト:sna_non_ladder_up2hatch_r \
+						-1 \
+						-1 \
+						0 \
+						(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_USE_NOW_HEIGHT | d:FA_NO_WEAPON)
+
+				}
+
+			}
+
+
+
+
+	}
+
+
+
+
+
+	proc 南側から東地下ピットに下りる{
+//		mesg プレイヤー d:PLAYER position \
+//			11000 -15970 -2050
+
+		if( $f:船倉２東側地下ピットふた開いた == 0 ){
+
+
+			//フタ開けて
+			mesg プレイヤー d:PLAYER motion \
+				d:モーションリスト:sna_non_ladder_hatch_open_r \
+				2048 \
+				-1 \
+				0 \
+				(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_NO_WEAPON) \
+				10970 -2050 -15970	//x,z,yの順
+
+			//ふた開け連動
+			mesg プットモーションモデル 東側ハッチ 終了判定 0
+			eval( $f:船倉２東側地下ピットふた開いた = 1 )
+			@東側ハッチオープン跳弾アタリ変更
+
+		}
+
+		//降りて
+		mesg プレイヤー d:PLAYER motion \
+			d:モーションリスト:sna_non_ladder_hatch2down_r \
+			2048 \
+			-1 \
+			0 \
+			(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_NO_WEAPON) \
+			10970 -2050 -15970 	//x,z,yの順
+
+		//着地
+		mesg プレイヤー d:PLAYER motion \
+			d:モーションリスト:non_ladder_down_c_end \
+			-1 \
+			-1 \
+			0 \
+			(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_USE_NOW_HEIGHT | d:FA_NO_WEAPON)
+
+#if d:ピットで自動ホフク
+		mesg プレイヤー d:PLAYER stance \
+			d:FA_END_STAND \
+			-1 \
+			3072 \
+			(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_USE_NOW_HEIGHT | d:FA_NO_WEAPON)
+
+		mesg プレイヤー d:PLAYER stance \
+			d:FA_END_GROUND \
+			-1 \
+			3072 \
+			(d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_USE_NOW_HEIGHT | d:FA_NO_WEAPON)
+#endif
+
+	}
+
+
+
+
+
+
+
+
+//本当は開ききってからアタリ追加しなくちゃいけないけど、ここは危険モードないから大丈夫でしょ。
+	proc 西側ハッチオープン跳弾アタリ変更 {
+
+		command 追加ＨＺＸグループ削除 \
+			-hzx_id 0 \
+			-add_id 3
+
+		command 追加ＨＺＸグループ登録 \
+			-hzx_id 0 \
+			-add_id 4
+
+
+	}
+
+
+
+
+
+	proc 東側ハッチオープン跳弾アタリ変更 {
+
+		command 追加ＨＺＸグループ削除 \
+			-hzx_id 0 \
+			-add_id 5
+
+		command 追加ＨＺＸグループ登録 \
+			-hzx_id 0 \
+			-add_id 6
+
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//###################################################################################
+//									船倉２カメラ設定
+//###################################################################################
+
+	// カメラ設定
+	// ------------------------------------
+	proc カメラ設定 {
+		print 'カメラ設定'
+
+		chara カメラ ステージカメラ	-c 0 -l 3 -p 0
+		chara カメラ サブカメラ１	-c 0 -l 2 -p 50
+		chara カメラ サブカメラ２	-c 0 -l 2 -p 40
+		chara カメラ サブカメラ３	-c 0 -l 2 -p 30
+		chara カメラ サブカメラ４	-c 0 -l 2 -p 25
+		chara カメラ ビヨンドカメラ	-c 0 -l 2 -p 20
+		chara カメラ カットインカメラ -c 0 -l 0 -p 40
+		chara カメラ クリアリングカメラ	-c 1 -l 2 -p 0
+
+		// デフォルトカメラ
+
+#if 1
+		chara カメラ設定 ステージカメラ \
+			-c 0 \
+			-b -11500,-17000,-80750 11500,-9550,-1000 \
+			-l -11500,-17000,-80750 11500,-100,-1100 \
+			-r 640,2048,0 \
+			-f 7000 \
+			-a 200 \
+			-i 1 -1 0 0 \
+			-s 1
+
+#else
+
+		chara カメラ設定 ステージカメラ \
+			-c 0 \
+			-b -6500,-16000,-80750 6500,-9550,3500 \
+			-l -6500,-15900,-80750 6500,-100,-3050 \
+			-r 415,2048,0 \
+			-f 10000 \
+			-a 170 \
+			-i 1 -1 0 0 \
+			-s 1 \
+			-E 0 20 \
+				1000 1000 \
+				50
+
+
+		chara カメラ設定 ステージカメラ \
+			-c 0 \
+			-b -8600,-16000,-80750 8600,-9550,-1000 \
+			-l -8600,-15900,-80750 8600,-100,-1100 \
+			-r 415,2048,0 \
+			-f 7000 \
+			-a 200 \
+			-i 1 -1 0 0 \
+			-s 1 \
+			-E 0 20 \
+				1000 1000 \
+				50
+
+
+#endif
+
+	}
+
+
+
+
+	proc 船倉２カメラ設定 {
+		print '船倉２カメラ設定'
+
+//奥狭い通路（左右）
+		trap ca104 d:PLAYER \
+			-mask ＊ \
+			-exec {
+				chara カメラ設定 サブカメラ２ \
+					-c 1 \
+					-p $4,-10927,-23075 \
+					-t $4,-12115,-23236 \
+					-a 200 \
+					-i 1 -1 0 0 \
+					-s $3
+			}
+
+
+//船倉２中央（立ち）
+		trap ca106 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+
+				chara カメラ設定 サブカメラ２ \
+					-c 0 \
+					-b -4000,-16000,-80750 4000,d:船倉最下部天井バウンド,3500 \
+					-l -4000,-15900,-80750 4000,-100,-2200 \
+					-r 415,2048,0 \
+					-f 7000 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3 \
+					-E 0 40 \
+						1000 1000 \
+						50
+
+			}
+
+/*
+//船倉２手前（左右）
+		trap ca105 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+
+				@CS_スムーズカメラ昇順 $6 -8000 -6000 3500 -500
+				eval($i:補完ＢＺ = $i:CS_結果１)
+
+				@CS_スムーズカメラ昇順 $6 -4500 -2000 7000 10000
+				eval($w:補完距離 = $i:CS_結果１)
+
+				@CS_スムーズカメラ昇順 $6 -4500 -2000 6500 11500
+				eval($i:補完ＢＸ = $i:CS_結果１)
+
+
+				if($3 > 10000 || $3 < -10000){
+					eval($i:補完ＢＹ = -9550)
+
+				}else{
+					eval($i:補完ＢＹ = 0)
+
+				}
+
+
+				chara カメラ設定 サブカメラ２ \
+					-c 0 \
+					-b (-$i:補完ＢＸ),-17000,-80750 $i:補完ＢＸ,$i:補完ＢＹ,$i:補完ＢＺ \
+//					-b (-$i:補完ＢＸ),-17000,-80750 $i:補完ＢＸ,$i:補完ＢＹ,-500 \
+					-l (-$i:補完ＢＸ),-17000,-80750 $i:補完ＢＸ,-100,-2000 \
+					-r 415,2048,0 \
+					-f 10000 \
+//					-f $w:補完距離 \
+					-a 200 \
+					-i 1 -1 0 0 \
+					-s $3 \
+					-E 0 40 \
+						1000 1000 \
+						50
+
+			}
+*/
+
+
+/*
+//船倉１中央（立ち）
+		trap ca100 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+
+				chara カメラ設定 サブカメラ１ \
+					-c 0 \
+					-b -32000,-32000,-32000 32000,-15000,-10 \
+					-l -32000,-32000,-32000 32000,32000,-11 \
+					-r 150,2048,0 \
+					-f 2000 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3 \
+					-E 0 20 \
+						700 700 \
+						50
+
+
+//	-slidE $f:スライドタイプ $w:スライド待ち時間 \
+//	       $i:スライド距離１ $i:スライド距離２ \
+//	       $i:スライドスピード [$i:スライドフラグ]
+
+// スライドカメラ設定方法
+// スライドタイプ：０／１ − 左右タイプ／前後タイプ
+// スライド待ち時間：スライドするまでの待ちフレーム数
+// スライド距離１・２：左右タイプの場合 左右スライド距離
+//		       前後タイプの場合 接近距離、離れた距離
+// スライドスピード：そのまんま
+// スライドフラグ ：
+//		1にしておくと、入った時スライドしていない状態から始まります。
+
+			}
+
+//船倉１中央（ほふく）
+		trap ca100l d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+
+
+	//プロジェクタの前カメラ上昇
+				if($4 > -2000 && $4 < 2000 && $6 > -7000){
+
+					chara カメラ設定 サブカメラ２ \
+						-c 1 \
+						-p $4,-14000,($6 + 1700) \
+						-t $4,-16500,$6 \
+						-a 200 \
+						-i 2 2 0 0 \
+						-s $3
+
+
+				}else{
+
+
+		//手前に近づきすぎたとき、カメラストップ
+					if($6 + 7000 > -500){
+						eval($i:補完ＰＺ = -500)
+
+					}else{
+						eval($i:補完ＰＺ = $6 + 7000)
+
+					}
+
+
+					chara カメラ設定 サブカメラ２ \
+						-c 1 \
+						-p $4,-16000,$i:補完ＰＺ \
+						-t $4,-16500,$6 \
+						-a 200 \
+						-i 2 2 0 0 \
+						-s $3
+
+				}
+
+			}
+
+*/
+
+
+
+//最後尾はりつきカメラ
+		trap ca106 d:PLAYER \
+			-camera \
+			-mask ？ \
+			-dir 2048,256 \
+			-state d:TRP_STATE_BEHINDCAMERA_ENABLE \
+			-exec {
+				if($6 > -1000){
+					chara カメラ設定 サブカメラ３ \
+						-c 0 \
+						-b -9100,-32000,-32000 9100,d:船倉最下部天井バウンド,-500 \
+						-l -9100,-32000,-32000 9100,32000,-501 \
+						-r 955,2048,0 \
+						-f 6800 \
+						-a 200 \
+						-i 0 -1 0 0 \
+						-s $3
+				}
+			}
+
+
+
+
+
+//左右１
+		trap ca101 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+				chara カメラ設定 サブカメラ２ \
+					-c 0 \
+					-b -11500,-32000,-32000 11500,d:船倉最下部天井バウンド,-5200 \
+					-l -11500,-32000,-32000 11500,32000,-5300 \
+					-r 640,2048,0 \
+					-f 7000 \
+					-a 200 \
+					-i 1 -1 0 0 \
+					-s $3 \
+			}
+
+//左右２
+		trap ca102 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+				chara カメラ設定 サブカメラ２ \
+					-c 0 \
+					-b -11500,-32000,-32000 11500,d:船倉最下部天井バウンド,-11700 \
+					-l -11500,-32000,-32000 11500,32000,-12400 \
+					-r 640,2048,0 \
+					-f 7000 \
+					-a 200 \
+					-i 1 -1 0 0 \
+					-s $3
+			}
+
+//左右３
+		trap ca103 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+				chara カメラ設定 サブカメラ２ \
+					-c 0 \
+					-b -11500,-32000,-32000 11500,d:船倉最下部天井バウンド,-18200 \
+					-l -11500,-32000,-32000 11500,32000,-18900 \
+					-r 640,2048,0 \
+					-f 7000 \
+					-a 200 \
+					-i 1 -1 0 0 \
+					-s $3
+			}
+
+
+//地下中央
+		trap ca300 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+					if($6 < -8000){
+
+
+						if($w:ライター１目撃チェック == 20000){	//ライター落としのときのカメラ
+
+							@CS_スムーズカメラ昇順 $6 -15000 -10000 3603 4096
+							eval($i:補完ＲＸ = $i:CS_結果１)
+
+							@CS_スムーズカメラ昇順 $6 -15000 -13000 2110 7000
+							eval($w:補完距離 = $i:CS_結果１)
+
+							@CS_スムーズカメラ昇順 $6 -15000 -10000 250 200
+							eval($w:補完画角 = $i:CS_結果１)
+
+
+							if($4 > 0){
+								@CS_スムーズカメラ昇順 $4 3000 4000 $i:補完ＲＸ 4096
+								eval($i:補完ＲＸ = $i:CS_結果１)
+
+								@CS_スムーズカメラ昇順 $4 3000 4000 $w:補完距離 7000
+								eval($w:補完距離 = $i:CS_結果１)
+
+								@CS_スムーズカメラ昇順 $4 3000 4000 $w:補完画角 200
+								eval($w:補完画角 = $i:CS_結果１)
+
+								eval( $i:補完ＢＸ１ = 2050 )
+								eval( $i:補完ＢＸ２ = 3050 )
+
+							}else{
+
+								@CS_スムーズカメラ昇順 $4 -4000 -3000 4096 $i:補完ＲＸ
+								eval($i:補完ＲＸ = $i:CS_結果１)
+
+								@CS_スムーズカメラ昇順 $4 -4000 -3000 7000 $w:補完距離
+								eval($w:補完距離 = $i:CS_結果１)
+
+								@CS_スムーズカメラ昇順 $4 -4000 -3000 200 $w:補完画角
+								eval($w:補完画角 = $i:CS_結果１)
+
+
+								eval( $i:補完ＢＸ１ = -3050 )
+								eval( $i:補完ＢＸ２ = -2050 )
+							}
+
+							chara カメラ設定 サブカメラ１ \
+								-c 0 \
+								-b $i:補完ＢＸ１,-18900,-80750 $i:補完ＢＸ２,-17250,-6600 \
+								-l -32000,-17500,-80750 32000,32000,0 \
+								-r $i:補完ＲＸ,2048,0 \
+								-f $w:補完距離 \
+								-a $w:補完画角 \
+								-i 1 3 0 0 \
+								-s $3
+
+						}else{
+
+							if($4 > 0){
+								eval( $i:補完ＢＸ１ = 2050 )
+								eval( $i:補完ＢＸ２ = 3050 )
+							}else{
+								eval( $i:補完ＢＸ１ = -3050 )
+								eval( $i:補完ＢＸ２ = -2050 )
+							}
+
+
+							chara カメラ設定 サブカメラ１ \
+								-c 0 \
+								-b $i:補完ＢＸ１,-32000,-80750 $i:補完ＢＸ２,-17250,-5500 \
+								-l -32000,-17500,-80750 32000,32000,0 \
+								-r 640,2048,0 \
+								-f 7000 \
+								-a 200 \
+								-i 2 3 0 0 \
+								-s $3
+
+
+						}
+
+
+					}else{
+
+						chara カメラ設定 サブカメラ１ \
+							-c 1 \
+							-p $4,-17243,-5606 \
+							-t $4,-18458,-7855 \
+							-a 200 \
+							-i 2 -1 0 0 \
+							-s $3
+
+					}
+			}
+
+
+//南側２Ｆ（東西）
+		trap ca200 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+				if( $6 > -501){
+					eval( $i:補完ＴＺ = -501)
+
+				}else{
+					eval( $i:補完ＴＺ = $6)
+
+				}
+
+				chara カメラ設定 サブカメラ１ \
+					-c 1 \
+					-p $4,-5500,-500 \
+					-t $4,$5,$i:補完ＴＺ \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s $3
+			}
+
+
+//北側２Ｆ（東西）
+		@北側２Ｆカメラ
+
+
+
+
+
+
+
+
+//西地下ピット上（ハッチ閉じてるときのみ）
+		trap ca205 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+
+				if( $f:船倉２西側地下ピットふた開いた == 0 ){
+
+					chara カメラ設定 サブカメラ１ \
+						-c 1 \
+						-p -10582,-11683,-296 \
+						-t 10704,-15914,-857 \
+						-a 200 \
+						-i 2 2 0 0 \
+						-s $3
+
+				}
+
+			}
+
+
+//西地下ピット内
+		trap la302l d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+
+				if( $f:船倉２西側地下ピットふた開いた == 0 ){
+
+					chara カメラ設定 サブカメラ１ \
+						-c 1 \
+						-p $4,-17050,-2787 \
+						-t $4,-27317,-4246 \
+						-a 200 \
+						-i 0 2 0 0 \
+						-s $3
+
+				}else{
+
+					chara カメラ設定 サブカメラ１ \
+						-c 1 \
+						-p -11101,-15625,-2529 \
+						-t -10924,-19113,-3532 \
+						-a 200 \
+						-i 2 2 0 0 \
+						-s $3
+
+				}
+
+			}
+
+
+//西地下ピット内はりつき
+		trap la302l d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-dir 3072,256 \
+			-state d:TRP_STATE_BEHINDCAMERA_ENABLE \
+			-exec {
+
+				if( $f:船倉２西側地下ピットふた開いた == 1 ){
+
+					chara カメラ設定 ビヨンドカメラ \
+						-c 1 \
+						-p -11642,-13664,-2920 \
+						-t -10331,-16962,-2943 \
+						-a 200 \
+						-i 2 -1 0 0 \
+						-s $3
+
+				}
+
+			}
+
+		trap la302l d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-dir 0,256 \
+			-state d:TRP_STATE_BEHINDCAMERA_ENABLE \
+			-exec {
+
+				if( $f:船倉２西側地下ピットふた開いた == 1 ){
+
+					chara カメラ設定 ビヨンドカメラ \
+						-c 1 \
+						-p -11485,-12849,-1187 \
+						-t -10468,-15778,-3075 \
+						-a 200 \
+						-i 2 -1 0 0 \
+						-s $3
+
+				}
+
+			}
+
+
+
+//西地下ピット上（ハッチ閉じてるときのみ）
+		trap ca205 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+
+				if( $f:船倉２西側地下ピットふた開いた == 0 ){
+
+					chara カメラ設定 サブカメラ１ \
+						-c 1 \
+						-p -10582,-11683,-296 \
+						-t 10704,-15914,-857 \
+						-a 200 \
+						-i 2 2 0 0 \
+						-s $3
+
+				}
+
+			}
+
+
+//地下ピット東
+		trap la303l d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+
+				if( $f:船倉２東側地下ピットふた開いた == 0 ){
+
+					chara カメラ設定 サブカメラ１ \
+						-c 1 \
+						-p $4,-17050,-2787 \
+						-t $4,-27317,-4246 \
+						-a 200 \
+						-i 0 2 0 0 \
+						-s $3
+
+				}else{
+
+					chara カメラ設定 サブカメラ１ \
+						-c 1 \
+						-p 11101,-15625,-2529 \
+						-t 10924,-19113,-3532 \
+						-a 200 \
+						-i 2 2 0 0 \
+						-s $3
+
+				}
+
+			}
+
+
+//東地下ピット内はりつき
+		trap la303l d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-dir 1024,256 \
+			-state d:TRP_STATE_BEHINDCAMERA_ENABLE \
+			-exec {
+
+				if( $f:船倉２東側地下ピットふた開いた == 1 ){
+
+					chara カメラ設定 ビヨンドカメラ \
+						-c 1 \
+						-p 11642,-13664,-2920 \
+						-t 10331,-16962,-2943 \
+						-a 200 \
+						-i 2 -1 0 0 \
+						-s $3
+
+				}
+
+			}
+
+		trap la303l d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-dir 0,256 \
+			-state d:TRP_STATE_BEHINDCAMERA_ENABLE \
+			-exec {
+
+				if( $f:船倉２東側地下ピットふた開いた == 1 ){
+
+					chara カメラ設定 ビヨンドカメラ \
+						-c 1 \
+						-p 11485,-12849,-1187 \
+						-t 10468,-15778,-3075 \
+						-a 200 \
+						-i 2 -1 0 0 \
+						-s $3
+
+				}
+
+			}
+
+
+
+
+
+
+
+
+
+
+//右舷１Ｆドア付近
+		trap dr200 d:PLAYER \
+			-camera \
+			-mask ？ \
+			-exec {
+
+				chara カメラ設定 サブカメラ３ \
+					-c 1 \
+					-p 7971,-12794,-329 \
+					-t 7971,-14893,-555 \
+					-a 153 \
+					-i 2 2 0 0 \
+					-s $3
+
+
+			}
+
+
+
+
+//左舷１Ｆドア付近
+		trap dr201 d:PLAYER \
+			-camera \
+			-mask ？ \
+			-exec {
+
+				chara カメラ設定 サブカメラ３ \
+					-c 1 \
+					-p -7971,-12794,-329 \
+					-t -7971,-14893,-555 \
+					-a 153 \
+					-i 2 2 0 0 \
+					-s $3
+
+
+			}
+
+
+
+
+//右舷２Ｆドア付近
+		trap dr202 d:PLAYER \
+			-camera \
+			-mask ？ \
+			-exec {
+
+				chara カメラ設定 サブカメラ３ \
+					-c 1 \
+					-p 11576,-6810,3879 \
+					-t 10740,-7832,48 \
+					-a 198 \
+					-i 0 0 0 0 \
+					-s $3
+
+			}
+
+
+
+//左舷２Ｆドア付近
+		trap dr203 d:PLAYER \
+			-camera \
+			-mask ？ \
+			-exec {
+
+				chara カメラ設定 サブカメラ３ \
+					-c 1 \
+					-p -11576,-6810,3879 \
+					-t -10740,-7832,48 \
+					-a 198 \
+					-i 0 0 0 0 \
+					-s $3
+
+
+
+			}
+
+
+
+//左舷スクリーン下はりつき右側
+		trap ca107 d:PLAYER \
+			-camera \
+			-mask ？ \
+			-dir 2048,256 \
+			-state d:TRP_STATE_BEHINDCAMERA_ENABLE \
+			-exec {
+
+				chara カメラ設定 ビヨンドカメラ \
+					-c 1 \
+					-p -5870,-15861,-26264 \
+					-t -4473,-15907,-22486 \
+					-a 200 \
+					-i 1 -1 0 0 \
+					-s $3
+
+			}
+
+
+
+//左舷スクリーン下はりつき左側
+		trap ca108 d:PLAYER \
+			-camera \
+			-mask ？ \
+			-dir 2048,256 \
+			-state d:TRP_STATE_BEHINDCAMERA_ENABLE \
+			-exec {
+
+				chara カメラ設定 ビヨンドカメラ \
+					-c 1 \
+					-p -11613,-13969,-25250 \
+					-t -11184,-14584,-24310 \
+					-a 200 \
+					-i 1 -1 0 0 \
+					-s $3
+
+			}
+
+
+//右舷スクリーン下はりつき左側
+		trap ca109 d:PLAYER \
+			-camera \
+			-mask ？ \
+			-dir 2048,256 \
+			-state d:TRP_STATE_BEHINDCAMERA_ENABLE \
+			-exec {
+
+				chara カメラ設定 ビヨンドカメラ \
+					-c 1 \
+					-p 5870,-15861,-26264 \
+					-t 4473,-15907,-22486 \
+					-a 200 \
+					-i 1 -1 0 0 \
+					-s $3
+
+			}
+
+
+
+//右舷スクリーン下はりつき右側
+		trap ca110 d:PLAYER \
+			-camera \
+			-mask ？ \
+			-dir 2048,256 \
+			-state d:TRP_STATE_BEHINDCAMERA_ENABLE \
+			-exec {
+
+				chara カメラ設定 ビヨンドカメラ \
+					-c 1 \
+					-p 11613,-13969,-25250 \
+					-t 11184,-14584,-24310 \
+					-a 200 \
+					-i 1 -1 0 0 \
+					-s $3
+
+			}
+
+
+
+
+//両サイドカメラ
+		trap ca1000 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+
+
+				if($6 < -14000){
+					@CS_スムーズカメラ昇順 $6 -18000 -14000 6097 7152
+					eval($i:補完ＰＸ１ = $i:CS_結果１)
+
+					@CS_スムーズカメラ昇順 $6 -18000 -14000 -10612 -9968
+					eval($i:補完ＰＹ１ = $i:CS_結果１)
+
+					@CS_スムーズカメラ昇順 $6 -18000 -14000 -11223 -4890
+					eval($i:補完ＰＺ１ = $i:CS_結果１)
+
+
+					@CS_スムーズカメラ昇順 $6 -18000 -14000 6386 6518
+					eval($i:補完ＴＸ１ = $i:CS_結果１)
+
+					@CS_スムーズカメラ昇順 $6 -18000 -14000 -17534 -13695
+					eval($i:補完ＴＹ１ = $i:CS_結果１)
+
+					@CS_スムーズカメラ昇順 $6 -18000 -14000 -20521 -12529
+					eval($i:補完ＴＺ１ = $i:CS_結果１)
+
+
+				}else{
+
+					@CS_スムーズカメラ昇順 $6 -14000 -2000 7152 6938
+					eval($i:補完ＰＸ１ = $i:CS_結果１)
+
+					@CS_スムーズカメラ昇順 $6 -14000 -2000 -9968 -9932
+					eval($i:補完ＰＹ１ = $i:CS_結果１)
+
+					@CS_スムーズカメラ昇順 $6 -14000 -2000 -4890 -565
+					eval($i:補完ＰＺ１ = $i:CS_結果１)
+
+
+					@CS_スムーズカメラ昇順 $6 -14000 -2000 6518 6871
+					eval($i:補完ＴＸ１ = $i:CS_結果１)
+
+					@CS_スムーズカメラ昇順 $6 -14000 -2000 -13695 -19709
+					eval($i:補完ＴＹ１ = $i:CS_結果１)
+
+					@CS_スムーズカメラ昇順 $6 -14000 -2000 -12529 -2183
+					eval($i:補完ＴＺ１ = $i:CS_結果１)
+
+				}
+
+				@CS_スムーズカメラ昇順 $4 -5000 5000 (-$i:補完ＰＸ１) $i:補完ＰＸ１
+				eval($i:補完ＰＸ = $i:CS_結果１)
+
+				@CS_スムーズカメラ昇順 $4 -5000 5000 (-$i:補完ＴＸ１) $i:補完ＴＸ１
+				eval($i:補完ＴＸ = $i:CS_結果１)
+
+
+				//手前両サイド
+				if($6 > -4000 && $4 > 9000){
+
+					@CS_スムーズカメラ昇順 $4 9000 11000 $i:補完ＰＸ 9500
+					eval($i:補完ＰＸ = $i:CS_結果１)
+
+					@CS_スムーズカメラ昇順 $4 9000 11000 $i:補完ＴＸ 9500
+					eval($i:補完ＴＸ = $i:CS_結果１)
+
+				}else if($6 > -4000 && $4 < -9000){
+
+					@CS_スムーズカメラ降順 $4 -9000 -11000 $i:補完ＰＸ -9500
+					eval($i:補完ＰＸ = $i:CS_結果１)
+
+					@CS_スムーズカメラ降順 $4 -9000 -11000 $i:補完ＴＸ -9500
+					eval($i:補完ＴＸ = $i:CS_結果１)
+
+
+				}
+
+
+
+
+				chara カメラ設定 サブカメラ１ \
+					-c 1 \
+					-p $i:補完ＰＸ,$i:補完ＰＹ１,$i:補完ＰＺ１ \
+					-t $i:補完ＴＸ,$i:補完ＴＹ１,$i:補完ＴＺ１ \
+					-a 170 \
+					-i 1 -1 0 0 \
+					-s $3
+
+			}
+
+
+	}
+
+
+
+//###################################################################################
+//									通路１カメラ設定
+//###################################################################################
+
+	proc 通路１カメラ設定 {
+//１Ｆ南東
+
+		trap ca400 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+				if( $6 >= 4001 ){
+					eval($i:補完ＴＺ = 4000)
+
+				}else{
+					eval($i:補完ＴＺ = $6)
+
+				}
+
+				@CS_スムーズカメラ昇順 $i:補完ＴＺ 0 4000 -15000 -14000
+				eval($i:補完ＰＹ = $i:CS_結果１)
+
+
+				chara カメラ設定 サブカメラ１ \
+					-c 1 \
+					-p 8000,$i:補完ＰＹ,4001 \
+					-t 8000,$5,$i:補完ＴＺ \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+
+//１Ｆ南西
+		trap ca401 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+				if( $6 >= 4001 ){
+					eval($i:補完ＴＺ = 4000)
+
+				}else{
+					eval($i:補完ＴＺ = $6)
+
+				}
+
+				@CS_スムーズカメラ昇順 $i:補完ＴＺ 0 4000 -15000 -14000
+				eval($i:補完ＰＹ = $i:CS_結果１)
+
+
+				chara カメラ設定 サブカメラ１ \
+					-c 1 \
+					-p -8000,$i:補完ＰＹ,4001 \
+					-t -8000,$5,$i:補完ＴＺ \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+//２Ｆ南東
+		trap ca402 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+				if( $6 >= 4001 ){
+					eval($i:補完ＴＺ = 4000)
+
+				}else{
+					eval($i:補完ＴＺ = $6)
+
+				}
+
+
+				@CS_スムーズカメラ昇順 $i:補完ＴＺ 0 4000 -6500 -5500
+				eval($i:補完ＰＹ = $i:CS_結果１)
+
+
+				chara カメラ設定 サブカメラ１ \
+					-c 1 \
+					-p 11000,$i:補完ＰＹ,4001 \
+					-t 11000,$5,$i:補完ＴＺ \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+
+			}
+
+//２Ｆ南西
+		trap ca403 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+				if( $6 >= 4001 ){
+					eval($i:補完ＴＺ = 4000)
+
+				}else{
+					eval($i:補完ＴＺ = $6)
+
+				}
+
+				@CS_スムーズカメラ昇順 $i:補完ＴＺ 0 4000 -6500 -5500
+				eval($i:補完ＰＹ = $i:CS_結果１)
+
+
+				chara カメラ設定 サブカメラ１ \
+					-c 1 \
+					-p -11000,$i:補完ＰＹ,4001 \
+					-t -11000,$5,$i:補完ＴＺ \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+
+			}
+
+	}
+
+
+
+
+
+
+
+
+//###################################################################################
+//									通路２カメラ設定
+//###################################################################################
+
+
+	proc 通路２カメラ設定 {
+
+//１Ｆ北東
+		trap ca500 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+
+				if( $6 >= -24500 ){
+					eval($i:補完ＴＺ = -24501)
+
+				}else{
+					eval($i:補完ＴＺ = $6)
+
+				}
+
+
+				@CS_スムーズカメラ昇順 $i:補完ＴＺ -28000 -24501 -15100 -14000
+				eval($i:補完ＰＹ = $i:CS_結果１)
+
+				chara カメラ設定 サブカメラ１ \
+					-c 1 \
+					-p 8000,$i:補完ＰＹ,-24500 \
+					-t 8000,$5,$i:補完ＴＺ \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+
+
+				if($3 == 入る && $f:w04b_今暗い){
+					chara フェードインアウト フェードイン \
+						-i 0 0 0 d:プロジェクタ暗さ度合い \		//設定するとこのＲＧＢαから始まる
+						-c 0 0 0 0 \		//目標のＲＧＢα
+						-t 1
+
+				}else if($3 == 出る && $f:w04b_今暗い){
+					chara フェードインアウト フェードアウト \
+						-c 0 0 0 d:プロジェクタ暗さ度合い \		//目標のＲＧＢα
+						-t 1
+				}
+
+			}
+
+//１Ｆ北西
+		trap ca501 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+				if( $6 >= -24500 ){
+					eval($i:補完ＴＺ = -24501)
+
+				}else{
+					eval($i:補完ＴＺ = $6)
+
+				}
+
+
+				@CS_スムーズカメラ昇順 $i:補完ＴＺ -28500 -24501 -15100 -14000
+				eval($i:補完ＰＹ = $i:CS_結果１)
+
+
+				chara カメラ設定 サブカメラ１ \
+					-c 1 \
+					-p -8000,$i:補完ＰＹ,-24500 \
+					-t -8000,$5,$i:補完ＴＺ \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+
+				if($3 == 入る && $f:w04b_今暗い){
+					chara フェードインアウト フェードイン \
+						-i 0 0 0 d:プロジェクタ暗さ度合い \		//設定するとこのＲＧＢαから始まる
+						-c 0 0 0 0 \		//目標のＲＧＢα
+						-t 1
+
+				}else if($3 == 出る && $f:w04b_今暗い){
+					chara フェードインアウト フェードアウト \
+						-c 0 0 0 d:プロジェクタ暗さ度合い \		//目標のＲＧＢα
+						-t 1
+				}
+
+			}
+
+
+//２Ｆ北東
+		trap ca502 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+
+				print 'げろっぱ'
+
+				if( $6 >= -24500 ){
+					eval($i:補完ＴＺ = -24501)
+
+				}else{
+					eval($i:補完ＴＺ = $6)
+
+				}
+
+
+				@CS_スムーズカメラ昇順 $i:補完ＴＺ -28000 -24501 -6600 -5500
+				eval($i:補完ＰＹ = $i:CS_結果１)
+
+
+				chara カメラ設定 サブカメラ１ \
+					-c 1 \
+					-p 11000,$i:補完ＰＹ,-24500 \
+					-t 11000,$5,$i:補完ＴＺ \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+
+				if($3 == 入る && $f:w04b_今暗い){
+					chara フェードインアウト フェードイン \
+						-i 0 0 0 d:プロジェクタ暗さ度合い \		//設定するとこのＲＧＢαから始まる
+						-c 0 0 0 0 \		//目標のＲＧＢα
+						-t 1
+
+				}else if($3 == 出る && $f:w04b_今暗い){
+					chara フェードインアウト フェードアウト \
+						-c 0 0 0 d:プロジェクタ暗さ度合い \		//目標のＲＧＢα
+						-t 1
+				}
+
+			}
+
+
+
+
+
+
+
+
+
+//２Ｆ北西
+		trap ca503 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+
+				if( $6 >= -24500 ){
+					eval($i:補完ＴＺ = -24501)
+
+				}else{
+					eval($i:補完ＴＺ = $6)
+
+				}
+
+
+				@CS_スムーズカメラ昇順 $i:補完ＴＺ -28000 -24501 -6600 -5500
+				eval($i:補完ＰＹ = $i:CS_結果１)
+
+
+				chara カメラ設定 サブカメラ１ \
+					-c 1 \
+					-p -11000,$i:補完ＰＹ,-24500 \
+					-t -11000,$5,$i:補完ＴＺ \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+
+				if($3 == 入る && $f:w04b_今暗い){
+					chara フェードインアウト フェードイン \
+						-i 0 0 0 d:プロジェクタ暗さ度合い \		//設定するとこのＲＧＢαから始まる
+						-c 0 0 0 0 \		//目標のＲＧＢα
+						-t 1
+
+				}else if($3 == 出る && $f:w04b_今暗い){
+					chara フェードインアウト フェードアウト \
+						-c 0 0 0 d:プロジェクタ暗さ度合い \		//目標のＲＧＢα
+						-t 1
+				}
+
+		}
+
+
+
+
+//北側２Ｆ（東西）
+		@北側２Ｆカメラ
+
+
+
+
+
+	}
+
+
+
+
+
+
+	proc 北側２Ｆカメラ{
+
+		trap ca201 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-exec {
+
+				if( $6 > -18201){
+					eval( $i:補完ＴＺ = -18201)
+
+				}else if( $6 < -24000){
+					eval( $i:補完ＴＺ = -24000)
+
+				}else{
+					eval( $i:補完ＴＺ = $6)
+
+				}
+
+				chara カメラ設定 サブカメラ１ \
+					-c 1 \
+					-p $4,-5600,-18200 \
+					-t $4,$5,$i:補完ＴＺ \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s $3
+
+			}
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+//###################################################################################
+//									海兵隊設定
+//###################################################################################
+
+#define	左舷巡回		1
+#define	右舷巡回		2
+
+
+	proc 船倉２海兵隊 {
+
+
+		if($w:ゲーム設定 <= d:LEVEL_EASY){
+			chara 船倉兵 SEALS_1 -a { \
+			#include "w04b_seals_matrix.h"		//船倉兵の配列（共通）
+			} \
+			#include "w04b_seals_param.h"
+
+		}else if($w:ゲーム設定 == d:LEVEL_NORMAL){
+			chara 船倉兵 SEALS_1 -a { \
+			#include "w04b_seals_matrix.h"		//船倉兵の配列（共通）
+			//船倉兵:a0,{0,0,d:右舷巡回},{0,2048,0 },		18,	100, 2, 0x0024 \
+			船倉兵:a1,{0,0,d:左舷巡回},{0,2048,0 },		18,	100, 2, 0x0024 \
+			} \
+			#include "w04b_seals_param.h"
+			-j	船倉兵:a1 ドッグタグ_敵兵 [dogtag:dummy] \
+					[dogtag:dummy] [dogtag:tnk_w04b_guard_no_01] \
+					[dogtag:tnk_w04b_guard_ha_01] [dogtag:tnk_w04b_guard_vh_01] \
+				船倉兵:9a ドッグタグ_敵兵 [dogtag:dummy] \
+					[dogtag:dummy] [dogtag:tnk_w04b_guard_no_02] \
+					[dogtag:tnk_w04b_guard_ha_02] [dogtag:tnk_w04b_guard_vh_02]
+
+		}else{
+			chara 船倉兵 SEALS_1 -a { \
+			#include "w04b_seals_matrix.h"		//船倉兵の配列（共通）
+			船倉兵:a0,{0,0,d:右舷巡回},{0,2048,0 },		18,	100, 2, 0x0024 \
+			船倉兵:a1,{0,0,d:左舷巡回},{0,2048,0 },		18,	100, 2, 0x0024 \
+
+			} \
+			#include "w04b_seals_param.h"
+			-j	船倉兵:a1 ドッグタグ_敵兵 [dogtag:dummy] \
+					[dogtag:dummy] [dogtag:tnk_w04b_guard_no_01] \
+					[dogtag:tnk_w04b_guard_ha_01] [dogtag:tnk_w04b_guard_vh_01] \
+				船倉兵:a0 ドッグタグ_敵兵 [dogtag:dummy] \
+					[dogtag:dummy] [dogtag:tnk_w04b_guard_no_02] \
+					[dogtag:tnk_w04b_guard_ha_02] [dogtag:tnk_w04b_guard_vh_02]
+
+		}
+
+
+
+
+
+
+
+	}
+
+
+	proc げろっぱ{
+		print 'なんにもねんだよバーカ！！！！'
+	}
+
+
+//チェックの順番としては、ライター発見→最初の一人発見→敵兵発見
+
+//proc 敵兵発見は"w04.h"の中にあります。
+
+
+	proc プロジェクタ１ {
+		if(`%ゲームオーバーチェック` == 0 && $f:ロードチェックＯＮフラグ){
+			print 'プロジェクタに映ってもた'
+
+			mesg プレイヤー d:PLAYER stance \
+				d:FA_END_STAND \
+				-1 \
+				-1 \
+				d:FA_BOX_EXIST
+				//d:FA_NO_INTERP
+
+			chara delay プロジェクタ映った -time 2 -exec{
+
+				command ゲームオーバー処理開始 -load -exec {
+
+					command セットタイマーステータス -s d:TMR_WAIT
+
+					command メニュー設定 \
+						-gage off \
+						-radar off \
+						-subwin off \
+						-radio off \
+						-pause off
+
+
+					command 無線設定 -reset
+
+					command パッド操作 \
+						-release
+
+
+					eval($w:船倉演説イベント中 = 100)
+
+
+					chara カメラ設定 ビヨンドカメラ \
+						-c 1 \
+						-p 124,-15507,-27 \
+						-t 124,-14951,-4373 \
+						-a 200 \
+						-i 2 -1 0 0 \
+						-s 1
+
+					chara delay プロジェクタ映った \
+						-time 120 \
+						-p 船倉敵兵発見ゲームオーバー
+
+				}
+			}
+		}
+	}
+
+	proc プロジェクタ２ {
+		if(`%ゲームオーバーチェック` == 0 && $f:ロードチェックＯＮフラグ){
+			print 'プロジェクタに映ってもた'
+
+			mesg プレイヤー d:PLAYER stance \
+				d:FA_END_STAND \
+				-1 \
+				-1 \
+				d:FA_BOX_EXIST
+				//d:FA_NO_INTERP
+
+			chara delay プロジェクタ映った -time 2 -exec{
+
+				command ゲームオーバー処理開始 -load -exec {
+					print 'プロジェクタに映ってもた'
+
+					command セットタイマーステータス -s d:TMR_WAIT
+
+					command メニュー設定 \
+						-gage off \
+						-radar off \
+						-subwin off \
+						-radio off \
+						-pause off
+
+
+					command 無線設定 -reset
+
+					command パッド操作 \
+						-release
+
+
+					eval($w:船倉演説イベント中 = 100)
+
+
+					chara カメラ設定 ビヨンドカメラ \
+						-c 1 \
+						-p -124,-15507,-27 \
+						-t -124,-14951,-4373 \
+						-a 200 \
+						-i 2 -1 0 0 \
+						-s 1
+
+					chara delay プロジェクタ映った \
+						-time 300 \
+						-p 船倉敵兵発見ゲームオーバー
+
+				}
+			}
+		}
+	}
+
+	proc 船倉２海兵隊セット {
+		print '海兵隊セット'
+
+		chara コマンダー 敵兵セット -w 	船倉２海兵隊 \
+			-z $i:敵標準麻酔持続 \
+			-o $i:敵標準気絶持続 \
+			-s (d:ENE_STAGE_CROWD_PEOPLE | d:ENE_STAGE_NO_WC_GOVER) \
+			-v [ene_tank_voice:01]
+	}
+
+//proc 船倉兵物音反応は"w04.h"の中にあります。
+
+
+//proc ライターのぞき発見は"w04.h"の中にあります。
+
+
+
+
+
+
+//###################################################################################
+//							船倉１ライター落とし兵イベント
+//###################################################################################
+
+	proc 船倉ライター落とし兵イベント {
+		print 'ライター落とし兵イベント'
+
+		//ライター兵影投影
+		chara スポットライト投影モデル ライター兵床下投影 \
+			-m w04b1_k3 \
+			-p 0,0,0
+
+
+		chara 静止スポットライト設置 ライター兵床下投影 \
+			-pos 2500,-11000,-7000 \
+			-dir 1024,0,0 \
+			-range 30000 \
+			-angle 14 \
+			-color 70,70,70 \
+			-option 0x0003
+
+
+		chara プロジェクタライト ライター兵床下投影 \
+			-p 2500,-11000,-7000 \
+			-d 1024,0,0
+
+
+
+		chara 静止スポットライト設置 ライター兵床下投影 \
+			-pos -2500,-11000,-7000 \
+			-dir 1024,0,0 \
+			-range 30000 \
+			-angle 14 \
+			-color 70,70,70 \
+			-option 0x0003
+
+
+		chara プロジェクタライト ライター兵床下投影 \
+			-p -2500,-11000,-7000 \
+			-d 1024,0,0
+
+
+
+		mesg プロジェクタライト ライター兵床下投影 オフ
+
+
+
+
+
+		//ホフクしてると起動
+		trap ev005 d:PLAYER \
+			-mask 入る \
+			-exec {
+
+				if($w:ライター１目撃チェック == 0){
+					eval($w:ライター１目撃チェック = 1)
+
+					if($4 > 0){
+						mesg 船倉兵 SEALS_1 ライターを落とせ 船倉兵:74 2500 -17250 -7000
+					}else{
+						mesg 船倉兵 SEALS_1 ライターを落とせ 船倉兵:71 -2500 -17250 -7000
+					}
+
+				}
+
+			}
+
+
+
+
+//ダクトの中ではプロジェクタのムービーをストップ
+		trap ev007 d:PLAYER \
+			-mask ？ \
+			-exec {
+
+				if($3 == 入る){
+					if($w:ライター１目撃チェック == 0){
+						print 'ライター兵投影オン！！'
+						eval($b:ライター落とし兵影あり中 = 1)
+
+						mesg スポットライト背景イメージ指定 テストムービー テクスチャ許可 0
+						mesg プロジェクタライト ライター兵床下投影 オン
+					}
+				}else{
+					print 'ライター兵投影オフ！！'
+					eval($b:ライター落とし兵影あり中 = 0)
+
+					mesg スポットライト背景イメージ指定 テストムービー テクスチャ許可 1
+					mesg プロジェクタライト ライター兵床下投影 オフ
+
+				}
+
+			}
+
+
+
+
+	}
+
+
+
+	proc ライター落とし兵音声再生 {
+		chara delay ディレイ -time 89 -exec{
+			command メニュー設定 -A off		//通信機禁止
+			eval($i:落としちまった音声コード = `%Stream t:vc045021 -p 落としちまった終了 -c 0` );
+			print '海兵隊員Ｄ「あ、ライターが……あきらめるか……」'
+		}
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//###################################################################################
+//									船倉２箱設置
+//###################################################################################
+
+proc 船倉２箱設置{
+	print '箱設置'
+
+
+//左舷中盤
+	chara プットオブジェ 鉄箱１ -m w04_box3 -r 0 0 0 \
+		-p -8500 -17000 -9750 -l w04b
+
+	chara プットオブジェ 鉄箱１ -m w04_box3 -r 0 (4096-125) 0 \
+		-p -8500 -16000 -9750 -l w04b
+
+
+
+
+	chara プットオブジェ スピーカーボックス -m w04_box -r 0 1024 0 \
+		-s 100,120,100 \
+		-p -9500 -17000 -15500 -l w04b
+
+
+	chara プットオブジェ スピーカー -m w04_box2 -r 0 2048 0 \
+		-p -5000 -17000 -3000 -l w04b
+
+	chara プットオブジェ スピーカー -m w04_box2 -r 0 2048 0 \
+		-p 3000 -17000 -3000 -l w04b
+
+
+//リモコン
+	chara プットオブジェ プロジェクタリモコン -m remocon -r 0 100 0 \
+		-s 200,300,200 \
+		-p -800 -16000 -400 -l w04b
+
+	chara プットオブジェ プロジェクタリモコン -m remocon -r 0 0 0 \
+		-s 200,300,200 \
+		-p 800 -16000 -500 -l w04b
+
+
+}
+
+
+//###################################################################################
+//									ドア設定
+//###################################################################################
+
+	// ドアオブジェクト
+	// ------------------------------------
+	proc ドア設置／通路１−船倉２ {
+		print 'ドア設置／通路１−船倉２'
+
+		mesg マップ接合 船倉接合１ on
+
+		chara ドア 右舷ドア１２ \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p 8750,-17000,50 \
+			-slide 1600 \
+			-between 船倉２ 通路１\
+			-time d:SD_OPEN_TIME
+
+		trap dr200 ？ -mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					mesg ドア 右舷ドア１２ open $2
+				}else{
+					mesg ドア 右舷ドア１２ close $2
+				}
+			}
+
+		chara ドア 右舷ドア１２奥 \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p 7250,-17000,4450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+
+		chara ドア 左舷ドア１２ \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p -7250,-17000,50 \
+			-slide 1600 \
+			-between 船倉２ 通路１\
+			-time d:SD_OPEN_TIME
+
+		trap dr201 ？ -mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					mesg ドア 左舷ドア１２ open $2
+				}else{
+					mesg ドア 左舷ドア１２ close $2
+				}
+			}
+
+		chara ドア 左舷ドア１２奥 \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p -8750,-17000,4450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+
+		chara ドア 右舷上部ドア１２ \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p 11750,-9000,50 \
+			-slide 1600 \
+			-between 船倉２ 通路１\
+			-time d:SD_OPEN_TIME
+
+		trap dr202 ？ -mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					mesg ドア 右舷上部ドア１２ open $2
+				}else{
+					mesg ドア 右舷上部ドア１２ close $2
+				}
+
+
+			}
+
+		chara ドア 右舷上部ドア１２奥 \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p 10250,-9000,4450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+
+		chara ドア 左舷上部ドア１２ \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p -10250,-9000,50 \
+			-slide 1600 \
+			-between 船倉２ 通路１\
+			-time d:SD_OPEN_TIME
+
+
+		trap dr203 ？ -mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					mesg ドア 左舷上部ドア１２ open $2
+				}else{
+					mesg ドア 左舷上部ドア１２ close $2
+				}
+			}
+
+		chara ドア 左舷上部ドア１２奥 \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p -11750,-9000,4450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+
+	}
+
+/*
+//↓マップ接続のため、退避
+
+	proc ドア設置／通路１−船倉２ {
+
+		chara ドア 右舷ドア１２ \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p 8750,-17000,50 \
+			-slide 1600 \
+			-between 船倉２ 通路１\
+			-time d:SD_OPEN_TIME \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 船倉接合１ off
+				} else {
+					mesg マップ接合 船倉接合１ on
+				}
+			}
+
+		trap dr200 ？ -mask ？ \
+			-exec {
+				 if ( $3 == 入る ) {
+					mesg ドア 右舷ドア１２ open $2
+				} else {
+					mesg ドア 右舷ドア１２ close $2
+				}
+			}
+
+		chara ドア 右舷ドア１２奥 \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p 7250,-17000,4450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+
+		trap dr100 ？ -mask ？ \
+			-exec {
+				 if ( $3 == 入る ) {
+					mesg ドア 右舷ドア１２奥 open $2
+				} else {
+					mesg ドア 右舷ドア１２奥 close $2
+				}
+			}
+
+
+		chara ドア 左舷ドア１２ \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p -7250,-17000,50 \
+			-slide 1600 \
+			-between 船倉２ 通路１\
+			-time d:SD_OPEN_TIME \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 船倉接合１ off
+				} else {
+					mesg マップ接合 船倉接合１ on
+				}
+			}
+
+		trap dr201 ？ -mask ？ \
+			-exec {
+
+				if ( $3 == 入る ) {
+					mesg ドア 左舷ドア１２ open $2
+				} else {
+					mesg ドア 左舷ドア１２ close $2
+				}
+
+			}
+
+		chara ドア 左舷ドア１２奥 \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p -8750,-17000,4450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+		trap dr101 ？ -mask ？ \
+			-exec { if ( $3 == 入る ) {
+					mesg ドア 左舷ドア１２奥 open $2
+				} else {
+					mesg ドア 左舷ドア１２奥 close $2
+				}
+			}
+
+		chara ドア 右舷上部ドア１２ \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p 11750,-9000,50 \
+			-slide 1600 \
+			-between 船倉２ 通路１\
+			-time d:SD_OPEN_TIME \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 船倉接合１ off
+				} else {
+					mesg マップ接合 船倉接合１ on
+				}
+			}
+
+		trap dr202 ？ -mask ？ \
+			-exec {
+
+				if ( $3 == 入る ) {
+					mesg ドア 右舷上部ドア１２ open $2
+				} else {
+					mesg ドア 右舷上部ドア１２ close $2
+				}
+
+			}
+
+		chara ドア 右舷上部ドア１２奥 \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p 10250,-9000,4450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+		trap dr102 ？ -mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					mesg ドア 右舷上部ドア１２奥 open $2
+				} else {
+					mesg ドア 右舷上部ドア１２奥 close $2
+				}
+			}
+
+		chara ドア 左舷上部ドア１２ \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p -10250,-9000,50 \
+			-slide 1600 \
+			-between 船倉２ 通路１\
+			-time d:SD_OPEN_TIME \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 船倉接合１ off
+				} else {
+					mesg マップ接合 船倉接合１ on
+				}
+			}
+
+		trap dr203 ？ -mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					mesg ドア 左舷上部ドア１２ open $2
+				} else {
+					mesg ドア 左舷上部ドア１２ close $2
+				}
+
+			}
+
+		chara ドア 左舷上部ドア１２奥 \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p -11750,-9000,4450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+
+		trap dr103 ？ -mask ？ \
+			-exec { if ( $3 == 入る ) {
+					mesg ドア 左舷上部ドア１２奥 open $2
+				} else {
+					mesg ドア 左舷上部ドア１２奥 close $2
+				}
+			}
+
+	}
+
+
+//↑マップ接続変更のため、退避
+
+*/
+
+
+
+
+	proc ドア設置／船倉２−通路２ {
+		print 'ドア設置／船倉２−通路２'
+
+		chara ドア 右舷ドア２２ \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p 7250,-17000,-24050 \
+			-slide 1600 \
+			-between 船倉２ 通路２\
+			-time d:SD_OPEN_TIME \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 船倉接合２ off
+				} else {
+					mesg マップ接合 船倉接合２ on
+				}
+			}
+
+		trap dr204 ？ -mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					mesg ドア 右舷ドア２２ open $2
+				} else {
+					mesg ドア 右舷ドア２２ close $2
+				}
+
+			}
+
+		chara ドア 右舷ドア２２奥 \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p 8750,-17000,-28450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+
+		trap dr300 ？ -mask ？ \
+			-exec { if ( $3 == 入る ) {
+					mesg ドア 右舷ドア２２奥 open $2
+				} else {
+					mesg ドア 右舷ドア２２奥 close $2
+				}
+			}
+
+
+		chara ドア 左舷ドア２２ \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p -8750,-17000,-24050 \
+			-slide 1600 \
+			-between 船倉２ 通路２\
+			-time d:SD_OPEN_TIME \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 船倉接合２ off
+				} else {
+					mesg マップ接合 船倉接合２ on
+				}
+			}
+
+		trap dr205 ？ -mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					mesg ドア 左舷ドア２２ open $2
+				} else {
+					mesg ドア 左舷ドア２２ close $2
+				}
+
+			}
+
+
+		chara ドア 左舷ドア２２奥 \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p -7250,-17000,-28450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+		trap dr301 ？ -mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					mesg ドア 左舷ドア２２奥 open $2
+				} else {
+					mesg ドア 左舷ドア２２奥 close $2
+				}
+			}
+
+
+		chara ドア 右舷上部ドア２２ \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p 10250,-9000,-24050 \
+			-slide 1600 \
+			-between 船倉２ 通路２\
+			-time d:SD_OPEN_TIME \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					//マップ接合がちょっと遅れるため
+					//mesg マップ接合 船倉接合２ off
+				} else {
+					mesg マップ接合 船倉接合２ on
+				}
+			}
+
+		trap dr206 ？ -mask ？ \
+			-exec {
+
+				if ( $3 == 入る ) {
+					mesg ドア 右舷上部ドア２２ open $2
+				} else {
+					mesg ドア 右舷上部ドア２２ close $2
+				}
+
+			}
+
+
+		chara ドア 右舷上部ドア２２奥 \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p 11750,-9000,-28450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+		trap dr302 ？ -mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					mesg ドア 右舷上部ドア２２奥 open $2
+				} else {
+					mesg ドア 右舷上部ドア２２奥 close $2
+				}
+			}
+
+		chara ドア 左舷上部ドア２２ \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p -11750,-9000,-24050 \
+			-slide 1600 \
+			-between 船倉２ 通路２\
+			-time d:SD_OPEN_TIME \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					//マップ接合がちょっと遅れるため
+					//mesg マップ接合 船倉接合２ off
+				} else {
+					mesg マップ接合 船倉接合２ on
+				}
+			}
+
+		trap dr207 ？ -mask ？ \
+			-exec {
+
+				if ( $3 == 入る ) {
+					mesg ドア 左舷上部ドア２２ open $2
+				} else {
+					mesg ドア 左舷上部ドア２２ close $2
+				}
+
+			}
+
+
+		chara ドア 左舷上部ドア２２奥 \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p -10250,-9000,-28450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+		trap dr303 ？ -mask ？ \
+			-exec { if ( $3 == 入る ) {
+					mesg ドア 左舷上部ドア２２奥 open $2
+				} else {
+					mesg ドア 左舷上部ドア２２奥 close $2
+				}
+			}
+
+
+
+	}
+
+
+/*
+		chara ドア 右舷ドア２２ \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p 7250,-17000,-24050 \
+			-slide 1600 \
+			-between 船倉２ 通路２\
+			-time d:SD_OPEN_TIME \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 船倉接合２ off
+				} else {
+					mesg マップ接合 船倉接合２ on
+				}
+			}
+		trap dr204 ？ -mask ？ \
+			-exec { if ( $3 == 入る ) {
+					mesg ドア 右舷ドア２２ open $2
+				} else {
+					mesg ドア 右舷ドア２２ close $2
+				}
+			}
+
+		chara ドア 右舷ドア２２奥 \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p 8750,-17000,-28450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+		trap dr300 ？ -mask ？ \
+			-exec { if ( $3 == 入る ) {
+					mesg ドア 右舷ドア２２奥 open $2
+				} else {
+					mesg ドア 右舷ドア２２奥 close $2
+				}
+			}
+
+
+		chara ドア 左舷ドア２２ \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p -8750,-17000,-24050 \
+			-slide 1600 \
+			-between 船倉２ 通路２\
+			-time d:SD_OPEN_TIME \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 船倉接合２ off
+				} else {
+					mesg マップ接合 船倉接合２ on
+				}
+			}
+
+		trap dr205 ？ -mask ？ \
+			-exec { if ( $3 == 入る ) {
+					mesg ドア 左舷ドア２２ open $2
+				} else {
+					mesg ドア 左舷ドア２２ close $2
+				}
+			}
+
+		chara ドア 左舷ドア２２奥 \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p -7250,-17000,-28450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+		trap dr301 ？ -mask ？ \
+			-exec { if ( $3 == 入る ) {
+					mesg ドア 左舷ドア２２奥 open $2
+				} else {
+					mesg ドア 左舷ドア２２奥 close $2
+				}
+			}
+
+
+		chara ドア 右舷上部ドア２２ \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p 10250,-9000,-24050 \
+			-slide 1600 \
+			-between 船倉２ 通路２\
+			-time d:SD_OPEN_TIME \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 船倉接合２ off
+				} else {
+					mesg マップ接合 船倉接合２ on
+				}
+			}
+
+		trap dr206 ？ -mask ？ \
+			-exec { if ( $3 == 入る ) {
+					mesg ドア 右舷上部ドア２２ open $2
+				} else {
+					mesg ドア 右舷上部ドア２２ close $2
+				}
+			}
+
+
+		chara ドア 右舷上部ドア２２奥 \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p 11750,-9000,-28450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+		trap dr302 ？ -mask ？ \
+			-exec { if ( $3 == 入る ) {
+					mesg ドア 右舷上部ドア２２奥 open $2
+				} else {
+					mesg ドア 右舷上部ドア２２奥 close $2
+				}
+			}
+
+		chara ドア 左舷上部ドア２２ \
+			-m w04_dr \
+			-d 0,0,0 \
+			-p -11750,-9000,-24050 \
+			-slide 1600 \
+			-between 船倉２ 通路２\
+			-time d:SD_OPEN_TIME \
+			-exec {
+				if( $:開閉フラグ == 0 ){
+					mesg マップ接合 船倉接合２ off
+				} else {
+					mesg マップ接合 船倉接合２ on
+				}
+			}
+
+		trap dr207 ？ -mask ？ \
+			-exec { if ( $3 == 入る ) {
+					mesg ドア 左舷上部ドア２２ open $2
+				} else {
+					mesg ドア 左舷上部ドア２２ close $2
+				}
+			}
+
+
+		chara ドア 左舷上部ドア２２奥 \
+			-m w04_dr \
+			-d 0,2048,0 \
+			-p -10250,-9000,-28450 \
+			-slide 1600 \
+			-time d:SD_OPEN_TIME
+
+		trap dr303 ？ -mask ？ \
+			-exec { if ( $3 == 入る ) {
+					mesg ドア 左舷上部ドア２２奥 open $2
+				} else {
+					mesg ドア 左舷上部ドア２２奥 close $2
+				}
+			}
+*/
+
+
+
+
+
+//###################################################################################
+//									主観禁止壁設定
+//###################################################################################
+
+	proc 主観禁止壁設定 {
+
+		print '主観禁止壁設定'
+		print 'subjective_view_wall'
+
+
+		@主観禁止壁 主観禁止壁君 8750,-17000,-28450 2048 d:SD_SLIDE_INSIDE		//stdproc.h
+
+		trap dr300 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if($3==入る){
+					mesg 透明壁 主観禁止壁君 on
+				}else{
+					mesg 透明壁 主観禁止壁君 off
+				}
+			}
+
+
+		@主観禁止壁 主観禁止壁君 -7250 -17000 -28450 2048 d:SD_SLIDE_INSIDE		//stdproc.h
+
+		trap dr301 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if($3==入る){
+					mesg 透明壁 主観禁止壁君 on
+				}else{
+					mesg 透明壁 主観禁止壁君 off
+				}
+			}
+
+
+		@主観禁止壁 主観禁止壁君 11750 -9000 -28450 2048 d:SD_SLIDE_INSIDE		//stdproc.h
+
+		trap dr302 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if($3==入る){
+					mesg 透明壁 主観禁止壁君 on
+				}else{
+					mesg 透明壁 主観禁止壁君 off
+				}
+			}
+
+
+		@主観禁止壁 主観禁止壁君 -10250 -9000 -28450 2048 d:SD_SLIDE_INSIDE		//stdproc.h
+
+		trap dr303 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if($3==入る){
+					mesg 透明壁 主観禁止壁君 on
+				}else{
+					mesg 透明壁 主観禁止壁君 off
+				}
+			}
+
+
+
+	}
+
+
+
+
+
+//###################################################################################
+//									ビヨンド設定
+//###################################################################################
+
+
+
+proc 船倉２ビヨンド設定 {
+	print 'beyond_set'
+	print 'ビヨンド設定'
+
+//エルード東側
+	trap by100 d:PLAYER \
+		-mask いる \
+		-button d:ACTION_BUTTON \		//ビヨンドボタン
+		-state 0,4 \	//立ち状態or張り付き
+		-exec {
+
+			mesg プレイヤー d:PLAYER shadow 0
+
+			@西向きビヨンド発動 by100 10070 $6 -19500 500 \
+				d:BY_FALL_DEAD
+		}
+
+
+
+	//強制モーション中（両端）
+	trap by100 d:PLAYER \
+		-camera \
+		-mask いる \
+		-state 6 \
+		-dir 3072,256 \	//方向指定
+		-exec {
+			if($6 > -7000){
+				chara カメラ設定 ビヨンドカメラ \
+					-c 1 \
+					-p 7463,-5421,-4039 \
+					-t 10764,-9600,-1927 \
+					-a 200 \
+					-i 1 -1 0 0 \
+					-s $3
+
+			}else{
+				chara カメラ設定 ビヨンドカメラ \
+					-c 1 \
+					-p 8567,-5810,-19054 \
+					-t 11562,-10687,-19072 \
+					-a 200 \
+					-i 1 -1 0 0 \
+					-s $3
+
+			}
+
+		}
+
+
+
+
+
+	//ぶら下がり中
+	trap by100 d:PLAYER \
+		-camera \
+		-mask ＊ \
+		-state 5 \
+		-dir 1024 256 \	//方向指定
+		-exec {
+
+
+			if( $6 > -2001 ){
+
+				chara カメラ設定 ビヨンドカメラ \
+					-c 1 \
+					-p 9748,-5727,-478 \
+					-t 9727,-9527,-953 \
+					-a 200 \
+					-i 3 -1 0 0 \
+					-s $3
+
+			}else if( $6 < -18000 ){
+
+				chara カメラ設定 ビヨンドカメラ \
+					-c 1 \
+					-p 9481,-4760,-18359 \
+					-t 9738,-9456,-19009 \
+					-a 200 \
+					-i 3 -1 0 0 \
+					-s $3
+
+			}else{
+
+				if( $6 > -5000 ){
+					eval($i:補完ＰＹ = -5761 )
+
+				}else{
+					eval($i:補完ＰＹ = -1000 )
+
+				}
+
+				eval($i:補完ＰＺ = $6 + 2000 )
+				eval($i:補完ＴＺ = $6 )
+
+				chara カメラ設定 ビヨンドカメラ \
+					-c 1 \
+					-p 9000,$i:補完ＰＹ,$i:補完ＰＺ \
+					-t 9750,-10000,$i:補完ＴＺ \
+					-a 200 \
+					-i 3 -1 0 0 \
+					-s $3
+
+			}
+
+
+		}
+
+/*
+	trap by100 d:PLAYER \
+		-camera \
+		-mask ＊ \
+		-state 5 \
+		-dir 1024 256 \	//方向指定
+		-exec {
+			@CS_スムーズカメラ昇順 $6 -6000 -4000 -470 640
+			eval($i:補完ＲＸ = $i:CS_結果１)
+			@CS_スムーズカメラ昇順 $6 -6000 -4000 1911 2048
+			eval($i:補完ＲＹ = $i:CS_結果１)
+			@CS_スムーズカメラ昇順 $6 -6000 -4000 5000 4000
+			eval($w:補完距離 = $i:CS_結果１)
+
+			chara カメラ設定 ビヨンドカメラ \
+				-c 0 \
+				-b -32000,-32000,-32000 9600,-5617,-250 \
+				-l -32000,-32000,-32000 9600,32000,-350 \
+				-r $i:補完ＲＸ,$i:補完ＲＹ,0 \
+				-f $w:補完距離 \
+				-a 200 \
+				-i 3 -1 0 0 \
+				-s $3
+
+		}
+*/
+
+//東側スクリーン奥
+		trap by102 d:PLAYER \
+			-mask いる \
+			-button d:ACTION_BUTTON \		//ビヨンドボタン
+			-state 0,4 \	//立ち状態or張り付き
+			-exec {
+
+				mesg プレイヤー d:PLAYER shadow 0
+
+				@西向きビヨンド発動 by102 10070 $6 -24000 -20750 \
+					d:BY_FALL_DEAD
+			}
+
+
+
+		//強制モーション中
+		trap by102 d:PLAYER \
+			-camera \
+			-mask いる \
+			-state 6 \
+			-dir 3072,256 \	//方向指定
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 1 \
+					-p 7618,-3183,-21500 \
+					-t 9745,-9500,-21500 \
+					-a 200 \
+					-i 1 -1 0 0 \
+					-s $3
+
+			}
+
+
+
+
+
+		//ぶら下がり中
+		trap by102 d:PLAYER \
+			-camera \
+			-mask ？ \
+			-state 5 \
+			-dir 1024 256 \	//方向指定
+			-exec {
+
+				chara カメラ設定 ビヨンドカメラ \
+					-c 1 \
+					-p 7618,-3183,-21500 \
+					-t 9745,-9500,-21500 \
+					-a 200 \
+					-i 1 -1 0 0 \
+					-s $3
+
+			}
+
+
+//エルード西側
+	trap by101 d:PLAYER \
+		-mask いる \
+		-button d:ACTION_BUTTON \		//ビヨンドボタン
+		-state 0,4 \	//立ち状態or張り付き
+		-exec {
+
+			mesg プレイヤー d:PLAYER shadow 0
+
+			@東向きビヨンド発動 by101 -10120 $6 -19500 500 \
+				d:BY_FALL_DEAD
+		}
+
+
+
+	//強制モーション中（両端）
+	trap by101 d:PLAYER \
+		-camera \
+		-mask いる \
+		-state 6 \
+		-dir 1024,256 \	//方向指定
+		-exec {
+			if($6 > -7000){
+				chara カメラ設定 ビヨンドカメラ \
+					-c 1 \
+					-p -7463,-5421,-4039 \
+					-t -10764,-9600,-1927 \
+					-a 200 \
+					-i 1 -1 0 0 \
+					-s $3
+
+			}else{
+				chara カメラ設定 ビヨンドカメラ \
+					-c 1 \
+					-p -8567,-5810,-19054 \
+					-t -11562,-10687,-19072 \
+					-a 200 \
+					-i 1 -1 0 0 \
+					-s $3
+
+			}
+
+		}
+
+
+
+
+		//ぶら下がり中
+		trap by101 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-state 5 \
+			-dir 3072 256 \	//方向指定
+			-exec {
+
+
+				if( $6 > -2001 ){
+
+					chara カメラ設定 ビヨンドカメラ \
+						-c 1 \
+						-p -9748,-5727,-478 \
+						-t -9727,-9527,-953 \
+						-a 200 \
+						-i 3 -1 0 0 \
+						-s $3
+
+				}else if( $6 < -18000 ){
+
+					chara カメラ設定 ビヨンドカメラ \
+						-c 1 \
+						-p -9481,-4760,-18359 \
+						-t -9738,-9456,-19009 \
+						-a 200 \
+						-i 3 -1 0 0 \
+						-s $3
+
+				}else{
+
+					if( $6 > -5000 ){
+						eval($i:補完ＰＹ = -5761 )
+
+					}else{
+						eval($i:補完ＰＹ = -1000 )
+
+					}
+
+					eval($i:補完ＰＺ = $6 + 2000 )
+					eval($i:補完ＴＺ = $6 )
+
+					chara カメラ設定 ビヨンドカメラ \
+						-c 1 \
+						-p -9000,$i:補完ＰＹ,$i:補完ＰＺ \
+						-t -9750,-10000,$i:補完ＴＺ \
+						-a 200 \
+						-i 3 -1 0 0 \
+						-s $3
+
+				}
+
+
+			}
+
+/*
+	//ぶら下がり中
+	trap by101 d:PLAYER \
+		-camera \
+		-mask ＊ \
+		-state 5 \
+		-dir 3072 256 \	//方向指定
+		-exec {
+			@CS_スムーズカメラ昇順 $6 -6000 -4000 -470 640
+			eval($i:補完ＲＸ = $i:CS_結果１)
+			@CS_スムーズカメラ昇順 $6 -6000 -4000 2200 2048
+			eval($i:補完ＲＹ = $i:CS_結果１)
+			@CS_スムーズカメラ昇順 $6 -6000 -4000 5000 4000
+			eval($w:補完距離 = $i:CS_結果１)
+
+			chara カメラ設定 ビヨンドカメラ \
+				-c 0 \
+				-b -32000,-32000,-32000 9600,-5617,-250 \
+				-l -32000,-32000,-32000 9600,32000,-251 \
+				-r $i:補完ＲＸ,2200,0 \
+				-f $w:補完距離 \
+				-a 200 \
+				-i 3 -1 0 0 \
+				-s $3
+
+		}
+*/
+
+//西側スクリーン奥
+		trap by103 d:PLAYER \
+			-mask いる \
+			-button d:ACTION_BUTTON \		//ビヨンドボタン
+			-state 0,4 \	//立ち状態or張り付き
+			-exec {
+
+				mesg プレイヤー d:PLAYER shadow 0
+
+				@東向きビヨンド発動 by103 -10070 $6 -24000 -20750 \
+					d:BY_FALL_DEAD
+			}
+
+
+
+		//強制モーション中
+		trap by103 d:PLAYER \
+			-camera \
+			-mask いる \
+			-state 6 \
+			-dir 1024,256 \	//方向指定
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 1 \
+					-p -7618,-3183,-21500 \
+					-t -9745,-9500,-21500 \
+					-a 200 \
+					-i 1 -1 0 0 \
+					-s $3
+
+			}
+
+
+
+		//ぶら下がり中
+		trap by103 d:PLAYER \
+			-camera \
+			-mask ？ \
+			-state 5 \
+			-dir 3072 256 \	//方向指定
+			-exec {
+
+				chara カメラ設定 ビヨンドカメラ \
+					-c 1 \
+					-p -7618,-3183,-21500 \
+					-t -9745,-9500,-21500 \
+					-a 200 \
+					-i 1 -1 0 0 \
+					-s $3
+
+			}
+
+
+
+
+		trap ev009 d:PLAYER \
+			-mask 入る \
+			-dir 1024,256 3072,256 \
+			-state d:TRP_STATE_ELUDE_FALL \
+			-exec {
+
+#if 1
+				@空中落下死亡開始		//w04.hの中
+#else
+				if(`%ゲームオーバーチェック` == 0){
+					command ゲームオーバー処理開始 \
+						-exec {
+							command ゲームオーバー処理終了
+						}
+				}
+#endif
+			}
+
+
+
+	}
+
+
+
+
+
+
+//###################################################################################
+//								船倉１ｍジャンプ設定
+//###################################################################################
+
+	proc 船倉１ｍジャンプ設定 {
+		command プラグイン自動ジャンプ
+
+
+		trap ky000 d:PLAYER \
+			-mask 入る \
+			-exec {
+				@ジャンプ発動 ky000 1000 50
+			}
+
+
+	}
+
+
+
+
+//###################################################################################
+//								船倉２演説ボリューム制御
+//###################################################################################
+
+
+	proc 船倉２演説ボリューム制御 {
+
+		trap ev2000 d:PLAYER \
+			-mask いる \
+			-exec {
+				@船倉演説ボリューム制御 2 5000 -9000 -21500 -5000 -9000 -21500
+			}
+
+	}
+
+
+
+
+
+
+
+
+
+//###################################################################################
+//									ぼかし設定
+//###################################################################################
+
+	// ぼかしセット
+	// ------------------------------------
+	proc ぼかしセット {
+		print 'ぼかし設定'
+
+		chara 遠景ぼかし far_deforcus \
+			-plane	4 \
+			-near	4000 \
+			-far	9000
+
+		chara 近景ぼかし near_deforcus \
+			-plane	3 \
+			-near	0 \
+			-far	3000
+
+
+		@船倉敵兵発見ぼかし設定	//発見時カメラ用。w04.hにあります。
+
+
+	}
+
+
+
+
+
+//###################################################################################
+//									透明壁設定
+//###################################################################################
+
+
+	proc 船倉２透明壁設定{
+		print '透明壁設定'
+
+			chara 透明壁 地下ピット西側 \
+				-position -12000 -17000 -2500 2000 \
+					-10500 -17000 -2500 2000 \
+				-attribute (d:HZX_SEG_NO_BULLET|d:HZX_SEG_NO_MISSILE|d:HZX_SEG_NO_C4|d:HZX_SEG_NO_RECOIL|d:HZX_SEG_NO_HARITSUKI|d:HZX_SEG_NO_DISP_RADAR|d:HZX_SEG_NO_BULLETHOLE|d:HZX_SEG_NO_SPRAY|d:HZX_SEG_NO_ENEMY_EYES)
+
+			chara 透明壁 地下ピット西側 \
+				-position -10500 -17000 -4000 2000 \
+					-10500 -17000 -2500 2000 \
+				-attribute (d:HZX_SEG_NO_BULLET|d:HZX_SEG_NO_MISSILE|d:HZX_SEG_NO_C4|d:HZX_SEG_NO_RECOIL|d:HZX_SEG_NO_HARITSUKI|d:HZX_SEG_NO_DISP_RADAR|d:HZX_SEG_NO_BULLETHOLE|d:HZX_SEG_NO_SPRAY|d:HZX_SEG_NO_ENEMY_EYES)
+
+			mesg 透明壁 地下ピット西側 off
+
+
+			chara 透明壁 地下ピット東側 \
+				-position 12000 -17000 -2500 2000 \
+					10500 -17000 -2500 2000 \
+				-attribute (d:HZX_SEG_NO_BULLET|d:HZX_SEG_NO_MISSILE|d:HZX_SEG_NO_C4|d:HZX_SEG_NO_RECOIL|d:HZX_SEG_NO_HARITSUKI|d:HZX_SEG_NO_DISP_RADAR|d:HZX_SEG_NO_BULLETHOLE|d:HZX_SEG_NO_SPRAY|d:HZX_SEG_NO_ENEMY_EYES)
+
+			chara 透明壁 地下ピット東側 \
+				-position 10500 -17000 -4000 2000 \
+					10500 -17000 -2500 2000 \
+				-attribute (d:HZX_SEG_NO_BULLET|d:HZX_SEG_NO_MISSILE|d:HZX_SEG_NO_C4|d:HZX_SEG_NO_RECOIL|d:HZX_SEG_NO_HARITSUKI|d:HZX_SEG_NO_DISP_RADAR|d:HZX_SEG_NO_BULLETHOLE|d:HZX_SEG_NO_SPRAY|d:HZX_SEG_NO_ENEMY_EYES)
+
+
+			mesg 透明壁 地下ピット東側 off
+
+
+
+
+			chara 透明壁 敵兵視界遮蔽 \
+				-position -10250 -17000 -10500 2000 \
+					-7750 -17000 -10500 2000 \
+				-attribute (d:HZX_SEG_NO_BULLET|d:HZX_SEG_NO_MISSILE|d:HZX_SEG_NO_C4|d:HZX_SEG_NO_RECOIL|d:HZX_SEG_NO_PLAYER|d:HZX_SEG_NO_DISP_RADAR|d:HZX_SEG_NO_BULLETHOLE|d:HZX_SEG_NO_SPRAY)
+
+
+
+
+
+
+
+
+			chara 透明壁 プロジェクタ透明壁 \
+				-position 1000 -17000 0 2000 \
+					1000 -17000 -1500 2000 \
+				-attribute (d:HZX_SEG_NO_BULLET|d:HZX_SEG_NO_MISSILE|d:HZX_SEG_NO_C4|d:HZX_SEG_NO_RECOIL|d:HZX_SEG_NO_DISP_RADAR|d:HZX_SEG_NO_BULLETHOLE|d:HZX_SEG_NO_SPRAY)
+
+			chara 透明壁 プロジェクタ透明壁 \
+				-position -1000 -17000 0 2000 \
+					-1000 -17000 -1500 2000 \
+				-attribute (d:HZX_SEG_NO_BULLET|d:HZX_SEG_NO_MISSILE|d:HZX_SEG_NO_C4|d:HZX_SEG_NO_RECOIL|d:HZX_SEG_NO_DISP_RADAR|d:HZX_SEG_NO_BULLETHOLE|d:HZX_SEG_NO_SPRAY)
+
+
+			chara 透明壁 プロジェクタ透明壁 \
+				-position 1000 -17000 -1500 2000 \
+					-1000 -17000 -1500 2000 \
+				-attribute (d:HZX_SEG_NO_BULLET|d:HZX_SEG_NO_MISSILE|d:HZX_SEG_NO_C4|d:HZX_SEG_NO_RECOIL|d:HZX_SEG_NO_DISP_RADAR|d:HZX_SEG_NO_BULLETHOLE|d:HZX_SEG_NO_SPRAY)
+
+
+
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+//###################################################################################
+//							演説ドッキリ系スタート条件チェック
+//###################################################################################
+
+
+proc 演説ドッキリ系スタート条件チェック{
+		print '演説ドッキリ系スタート条件チェック'
+
+
+//左チェック
+		trap ev001_l d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_BEHIND,d:TRP_STATE_INTRUDE \
+			-exec {
+				if($3 == 入る){
+					print '左ドッキリＯＫ'
+					eval($s:ドッキリ系スタート = 左)
+				}else{
+					print 'ドッキリ不可'
+					eval($s:ドッキリ系スタート = 不可)
+				}
+
+			}
+
+
+
+//右チェック
+		trap ev001_r d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_BEHIND,d:TRP_STATE_INTRUDE \
+			-exec {
+				if($3 == 入る){
+					print '右ドッキリＯＫ'
+					eval($s:ドッキリ系スタート = 右)
+				}else{
+					print 'ドッキリ不可'
+					eval($s:ドッキリ系スタート = 不可)
+				}
+
+			}
+
+
+
+
+//後ろチェック
+		trap ev001_r d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_BEHIND \
+			-dir 0,256 \	//方向指定
+			-exec {
+				if($3 == 入る){
+					print '後ろドッキリＯＫ'
+					eval($s:ドッキリ系スタート = 後ろ)
+				}else{
+					print 'ドッキリ不可'
+					eval($s:ドッキリ系スタート = 不可)
+				}
+
+			}
+
+
+
+
+}
+
+
+
+
+//###################################################################################
+//									心霊写真設定
+//###################################################################################
+
+
+
+proc 心霊写真設定 {
+	print 'ghost_photo'
+	print '心霊写真設定'
+
+
+	chara プットオブジェ プロジェクタ心霊写真 \
+		-m w04b1_shinrei \
+		-r 0 0 0 \
+		-p 0 0 0 \
+		-l w04b \
+		-f d:PUT_OBJ_THERMAL
+
+
+	mesg プットオブジェ プロジェクタ心霊写真 off
+
+	eval($f:心霊写真登場中 = 0)
+
+	trap ca1000 d:PLAYER \
+		-mask ＊ \
+		-exec {
+			if($3 == いる && $w:アイテム == d:アイテム:タンカー編カメラ){
+
+				command パッド操作 -mask d:PAD_Y
+
+				command パッドチェック -which 0 -direct -press
+				if($status & d:PAD_Y){
+
+					command パッド操作 -press d:PAD_Y
+
+					if($f:第二船倉プロジェクタ方向 == 0 && !$f:w04b_今暗い && !$f:心霊写真登場中 && `%rand 3` == 0){
+						print '呼ばれて飛び出てジャジャジャジャーン！！！！！'
+						mesg プットオブジェ プロジェクタ心霊写真 on
+						eval($f:心霊写真登場中 = 1)
+
+						chara delay ディレイ -time 1 -exec{
+							mesg プットオブジェ プロジェクタ心霊写真 off
+							chara delay ディレイ -time 1 -exec{
+								eval($f:心霊写真登場中 = 0)
+							}
+						}
+					}
+				}
+
+			}else{
+				command パッド操作 -cancel 2		//マスクのみ解除
+			}
+
+
+		}
+
+
+}
+
+
+
+//###################################################################################
+//									マップ接続設定
+//###################################################################################
+
+
+	proc ロードプロック {
+		print 'ロードプロック設定'
+
+		command セットサウンドコード -c d:SNG_FOUTS_S		//ＢＧＭフェードアウト
+
+	// 第一船倉へ
+		if ($s:呼び出しプロック == mv_a04b_a04a_0) {
+			// 一階 南東
+			@mv_a04b_a04a_0
+		} else if ($s:呼び出しプロック == mv_a04b_a04a_1) {
+			// 一階 南西
+			@mv_a04b_a04a_1
+		} else if ($s:呼び出しプロック == mv_a04b_a04a_2) {
+			// 二階 南東
+			@mv_a04b_a04a_2
+		} else if ($s:呼び出しプロック == mv_a04b_a04a_3) {
+			// 二階 南西
+			@mv_a04b_a04a_3
+	// 第二船倉へ
+		} else if ($s:呼び出しプロック == mv_a04b_a04c_0) {
+			// 一階 北東
+			@mv_a04b_a04c_0
+		} else if ($s:呼び出しプロック == mv_a04b_a04c_1) {
+			// 一階 北西
+			@mv_a04b_a04c_1
+		} else if ($s:呼び出しプロック == mv_a04b_a04c_2) {
+			// 二階 北東
+			@mv_a04b_a04c_2
+		} else if ($s:呼び出しプロック == mv_a04b_a04c_3) {
+			// 二階 北西
+			@mv_a04b_a04c_3
+		} else if ($s:呼び出しプロック == mv_a04b_a04c_4) {
+			// イントルード
+			@mv_a04b_a04c_4
+		/*
+		} else if ($s:呼び出しプロック == mv_w04b_d11t_0) {
+			@mv_w04b_d11t_0
+		} else if ($s:呼び出しプロック == mv_w04b_d11t_1) {
+			@mv_w04b_d11t_1
+		} else if ($s:呼び出しプロック == mv_w04b_d11t_2) {
+			@mv_w04b_d11t_2
+		} else if ($s:呼び出しプロック == mv_w04b_d11t_3) {
+			@mv_w04b_d11t_3
+		} else if ($s:呼び出しプロック == mv_w04b_d11t_4) {
+			@mv_w04b_d11t_4
+		}
+		*/
+		} else {
+			#if d:ASSERT
+				command assert ( d:FALSE ) 'unexpected load point  (a04b)'
+			#endif
+		}
+
+	}
+
+
+
+	proc マップ接続{
+
+//１Ｆ南東
+
+		trap ld100 d:PLAYER -mask 入る \
+			-exec{
+				if(`%ゲームオーバーチェック` == 0 && $f:ロードチェックＯＮフラグ){
+#ifdef d:CTDOWN_TIMER
+					@ロード時船倉タイマー残時間ゲット
+#endif
+					@ロード時ストリームフェードアウト	//w04.hのなか
+
+					preseek 'a04a'
+					@ステージ終了時処理（ステージ名表示） 8000 -17000 2000 0 mv_a04b_a04a_0 d:DEFAULT_M_TYPE d:wn_第一船倉
+				}
+			}
+
+
+//１Ｆ南西
+
+		trap ld101 d:PLAYER -mask 入る\
+			-exec{
+				if(`%ゲームオーバーチェック` == 0 && $f:ロードチェックＯＮフラグ){
+#ifdef d:CTDOWN_TIMER
+					@ロード時船倉タイマー残時間ゲット
+#endif
+					@ロード時ストリームフェードアウト	//w04.hのなか
+
+					preseek 'w04a'
+					@ステージ終了時処理（ステージ名表示） -8000 -17000 2000 0 mv_a04b_a04a_1 d:DEFAULT_M_TYPE d:wn_第一船倉
+				}
+			}
+
+//２Ｆ南東
+
+		trap ld102 d:PLAYER -mask 入る\
+			-exec{
+				if(`%ゲームオーバーチェック` == 0 && $f:ロードチェックＯＮフラグ){
+#ifdef d:CTDOWN_TIMER
+					@ロード時船倉タイマー残時間ゲット
+#endif
+					@ロード時ストリームフェードアウト	//w04.hのなか
+
+					preseek 'w04a'
+					@ステージ終了時処理（ステージ名表示） 11000 -9000 2000 0 mv_a04b_a04a_2 d:DEFAULT_M_TYPE d:wn_第一船倉
+				}
+			}
+
+//２Ｆ南西
+
+		trap ld103 d:PLAYER -mask 入る\
+			-exec{
+				if(`%ゲームオーバーチェック` == 0 && $f:ロードチェックＯＮフラグ){
+#ifdef d:CTDOWN_TIMER
+					@ロード時船倉タイマー残時間ゲット
+#endif
+					@ロード時ストリームフェードアウト	//w04.hのなか
+
+					preseek 'w04a'
+					@ステージ終了時処理（ステージ名表示） -11000 -9000 2000 0 mv_a04b_a04a_3 d:DEFAULT_M_TYPE d:wn_第一船倉
+				}
+			}
+
+
+
+//１Ｆ北東
+
+		trap ld200 d:PLAYER -mask 入る\
+			-exec{
+				if(`%ゲームオーバーチェック` == 0 && $f:ロードチェックＯＮフラグ){
+#ifdef d:CTDOWN_TIMER
+					@ロード時船倉タイマー残時間ゲット
+#endif
+					@ロード時ストリームフェードアウト	//w04.hのなか
+
+					preseek 'w04c'
+					@ステージ終了時処理（ステージ名表示） 8000 -17000 -31000 2048 mv_a04b_a04c_0 d:DEFAULT_M_TYPE d:wn_第三船倉
+
+				}
+			}
+
+//１Ｆ北西
+
+		trap ld201 d:PLAYER -mask 入る\
+			-exec{
+				if(`%ゲームオーバーチェック` == 0 && $f:ロードチェックＯＮフラグ){
+#ifdef d:CTDOWN_TIMER
+					@ロード時船倉タイマー残時間ゲット
+#endif
+					@ロード時ストリームフェードアウト	//w04.hのなか
+
+					preseek 'a04c'
+					@ステージ終了時処理（ステージ名表示） -8000 -17000 -31000 2048 mv_a04b_a04c_1 d:DEFAULT_M_TYPE d:wn_第三船倉
+
+				}
+			}
+
+//２Ｆ北東
+
+		trap ld202 d:PLAYER -mask 入る\
+			-exec{
+				if(`%ゲームオーバーチェック` == 0 && $f:ロードチェックＯＮフラグ){
+#ifdef d:CTDOWN_TIMER
+					@ロード時船倉タイマー残時間ゲット
+#endif
+					@ロード時ストリームフェードアウト	//w04.hのなか
+
+					preseek 'w04c'
+					@ステージ終了時処理（ステージ名表示） 11000 -9000 -31000 2048 mv_a04b_a04c_2 d:DEFAULT_M_TYPE d:wn_第三船倉
+
+				}
+			}
+
+//２Ｆ北西
+
+		trap ld203 d:PLAYER -mask 入る\
+			-exec{
+				if(`%ゲームオーバーチェック` == 0 && $f:ロードチェックＯＮフラグ){
+#ifdef d:CTDOWN_TIMER
+					@ロード時船倉タイマー残時間ゲット
+#endif
+					@ロード時ストリームフェードアウト	//w04.hのなか
+
+					preseek 'w04c'
+					@ステージ終了時処理（ステージ名表示） -11000 -9000 -31000 2048 mv_a04b_a04c_3 d:DEFAULT_M_TYPE d:wn_第三船倉
+
+				}
+			}
+
+
+
+		//地下
+
+		trap ld301 d:PLAYER -mask 入る\
+			-exec{
+
+				if(`%ゲームオーバーチェック` == 0 && $f:ロードチェックＯＮフラグ){
+
+					chara カメラ設定 サブカメラ１ \
+						-c 1 \
+						-p 94,-17180,-44133 \
+						-t -855,-18171,-50969 \
+						-a 200 \
+						-i 2 0 0 0 \
+						-s 1
+
+
+#ifdef d:CTDOWN_TIMER
+					@ロード時船倉タイマー残時間ゲット
+#endif
+
+print 'フェードアウト直前'
+
+					@ロード時ストリームフェードアウト	//w04.hのなか
+
+					if(/*$w:t_story < d:ST_T11a1D船首メタルギア登場ポリゴンデモ開始*/0) {
+						command セットサウンドコード -c d:SNG_FOUTS_S		//ＢＧＭフェードアウト
+						preseek 'd11t'
+						@ステージ終了時処理 0 -17500 -48000 0 mv_w04b_d11t_4 d:M_TYPE:CRAWL_CHANGE d:wn_第三船倉
+					} else {
+						preseek 'w04c'
+						@ステージ終了時処理（ステージ名表示） 0 -17500 -48000 0 mv_a04b_a04c_4 d:M_TYPE:CRAWL_CHANGE d:wn_第三船倉
+					}
+
+				}
+
+			}
+
+/*
+
+		trap ld301 d:PLAYER -mask 入る\
+			-exec{
+				command パッド操作 \
+					-release
+
+				chara カメラ設定 サブカメラ１ \
+					-c 1 \
+					-p 0,-17500,-40000 \
+					-t 0,-17400,-46000 \
+					-a 200 \
+					-i 2 0 0 0 \
+					-s $3
+
+
+				mesg プレイヤー d:PLAYER run \
+					0 -17500 -48000 \
+					3 \
+					2048 \
+					d:FA_NO_WEAPON
+
+				// 旧「フェード」廃止に伴う変更を行ないました（2000.11/6 岡嶋）
+				chara フェードインアウト フェードアウト \
+					-i 0 0 0 0 \		//設定するとこのＲＧＢαから始まる
+					-c 0 0 0 128 \		//目標のＲＧＢα
+					-t 120 \
+					-p mv_w04b_w04c_4
+
+			}
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//第３船倉デモ接続
+
+//１Ｆ北東
+		trap ld1000 d:PLAYER -mask 入る \
+			-exec{
+
+				if(/*$w:t_story < d:ST_T11a1D船首メタルギア登場ポリゴンデモ開始*/0) {
+#ifdef d:CTDOWN_TIMER
+					@ロード時船倉タイマー残時間ゲット
+#endif
+					@ロード時ストリームフェードアウト	//w04.hのなか
+
+print '1F_000'
+#if 1
+					command パッド操作 -release
+
+					chara カメラ設定 ビヨンドカメラ \
+						-c 1 \
+						-p 8273,-14910,-24259 \
+						-t 8049,-16020,-28544 \
+						-a 200 \
+						-i 3 0 0 0 \
+						-s 1
+
+
+					// 強制移動
+					mesg プレイヤー d:PLAYER run \
+						8000 -17000 -28000 \
+						d:M_TYPE:WALK_CHANGE \ // 立ち歩き
+						0 \
+						d:FA_NO_CHECK_TRP
+
+					command セットサウンドコード -c d:SNG_FOUTS_S		//ＢＧＭフェードアウト
+
+					preseek 'd11t'
+					// 黒フェード
+					chara フェードインアウト 黒フェード \
+						-c 0 0 0 255 \		//目標のＲＧＢα
+						-t 120 \		//変化完了までのフレーム数
+						-p mv_w04b_d11t_0 // \
+//						-s 1
+
+
+#else
+					@ステージ終了時処理 8000 -17000 -28000 2048 mv_w04b_d11t_0 d:M_TYPE:WALK_CHANGE d:wn_第三船倉
+#endif
+				}
+
+			}
+
+
+
+//１Ｆ北西
+		trap ld1001 d:PLAYER -mask 入る \
+			-exec{
+
+				if(/*$w:t_story < d:ST_T11a1D船首メタルギア登場ポリゴンデモ開始*/0) {
+#ifdef d:CTDOWN_TIMER
+					@ロード時船倉タイマー残時間ゲット
+#endif
+					@ロード時ストリームフェードアウト	//w04.hのなか
+
+print '1F_002'
+#if 1
+					command パッド操作 -release
+
+					chara カメラ設定 ビヨンドカメラ \
+						-c 1 \
+						-p -8273,-14910,-24259 \
+						-t -8049,-16020,-28544 \
+						-a 200 \
+						-i 3 0 0 0 \
+						-s 1
+
+					// 強制移動
+					mesg プレイヤー d:PLAYER run \
+						-8000 -17000 -28000 \
+						d:M_TYPE:WALK_CHANGE \ // 立ち歩き
+						0 \
+						d:FA_NO_CHECK_TRP
+
+					command セットサウンドコード -c d:SNG_FOUTS_S		//ＢＧＭフェードアウト
+
+					preseek 'd11t'
+					// 黒フェード
+					chara フェードインアウト 黒フェード \
+						-c 0 0 0 255 \		//目標のＲＧＢα
+						-t 120 \		//変化完了までのフレーム数
+						-p mv_w04b_d11t_1 // \
+//						-s 1
+#else
+					@ステージ終了時処理 -8000 -17000 -28000 2048 mv_w04b_d11t_1 d:M_TYPE:WALK_CHANGE d:wn_第三船倉
+#endif
+
+				}
+
+			}
+
+
+
+//２Ｆ北東
+		trap ld1002 d:PLAYER -mask 入る \
+			-exec{
+				if(/*$w:t_story < d:ST_T11a1D船首メタルギア登場ポリゴンデモ開始*/0) {
+#ifdef d:CTDOWN_TIMER
+					@ロード時船倉タイマー残時間ゲット
+#endif
+					@ロード時ストリームフェードアウト	//w04.hのなか
+
+#if 1
+					command パッド操作 -release
+
+					chara カメラ設定 ビヨンドカメラ \
+						-c 1 \
+						-p 11357,-7139,-24426 \
+						-t 10509,-8228,-28663 \
+						-a 200 \
+						-i 3 0 0 0 \
+						-s 1
+
+					// 強制移動
+					mesg プレイヤー d:PLAYER run \
+						11000 -9000 -28000 \
+						d:M_TYPE:WALK_CHANGE \ // 立ち歩き
+						0 \
+						d:FA_NO_CHECK_TRP
+
+					command セットサウンドコード -c d:SNG_FOUTS_S		//ＢＧＭフェードアウト
+
+					preseek 'd11t'
+					// 黒フェード
+					chara フェードインアウト 黒フェード \
+						-c 0 0 0 255 \		//目標のＲＧＢα
+						-t 120 \		//変化完了までのフレーム数
+						-p mv_w04b_d11t_2 // \
+//						-s 1
+#else
+					@ステージ終了時処理 11000 -9000 -28000 2048 mv_w04b_d11t_2 d:M_TYPE:WALK_CHANGE d:wn_第三船倉
+#endif
+				}
+			}
+
+
+
+//２Ｆ北西
+		if(/*$w:t_story < d:ST_T11a1D船首メタルギア登場ポリゴンデモ開始*/0) {
+			trap ld1003 d:PLAYER -mask 入る \
+				-exec{
+#ifdef d:CTDOWN_TIMER
+					@ロード時船倉タイマー残時間ゲット
+#endif
+					@ロード時ストリームフェードアウト	//w04.hのなか
+
+#if 1
+					command パッド操作 -release
+
+					chara カメラ設定 ビヨンドカメラ \
+						-c 1 \
+						-p -11357,-7139,-24426 \
+						-t -10509,-8228,-28663 \
+						-a 200 \
+						-i 3 0 0 0 \
+						-s 1
+
+					// 強制移動
+					mesg プレイヤー d:PLAYER run \
+						-11000 -9000 -28000 \
+						d:M_TYPE:WALK_CHANGE \ // 立ち歩き
+						0 \
+						d:FA_NO_CHECK_TRP
+
+					command セットサウンドコード -c d:SNG_FOUTS_S		//ＢＧＭフェードアウト
+
+					preseek 'd11t'
+					// 黒フェード
+					chara フェードインアウト 黒フェード \
+						-c 0 0 0 255 \		//目標のＲＧＢα
+						-t 120 \		//変化完了までのフレーム数
+						-p mv_w04b_d11t_3 // \
+//						-s 1
+#else
+					@ステージ終了時処理 -11000 -9000 -28000 2048 mv_w04b_d11t_3 d:M_TYPE:WALK_CHANGE d:wn_第三船倉
+#endif
+				}
+			}
+
+
+
+
+
+
+
+
+
+
+
+
+	}
+
+
+
+
+//###################################################################################
+//									ロード時進入設定
+//###################################################################################
+
+	proc 第２船倉ロード進入時処理{
+
+		#if d:デバッグ演説スタート
+			@船倉スコット演説スタート
+		#else
+			@演説実行
+			@演説ストリーム再生チェック
+		#endif
+
+		if( $s:登場ポイント == 北東１Ｆ ){
+
+			@ステージ開始時処理（ステージ名表示） \
+				d:LOAD_TYPE:SL_DOOR_TYPE 右舷ドア２２奥 1600 d:DEFAULT_M_TYPE \
+				d:wn_第二船倉
+
+		}else if( $s:登場ポイント == 北西１Ｆ ){
+
+			@ステージ開始時処理（ステージ名表示） \
+				d:LOAD_TYPE:SL_DOOR_TYPE 左舷ドア２２奥 1600 d:DEFAULT_M_TYPE \
+				d:wn_第二船倉
+
+		}else if( $s:登場ポイント == 北東２Ｆ ){
+
+			@ステージ開始時処理（ステージ名表示） \
+				d:LOAD_TYPE:SL_DOOR_TYPE 右舷上部ドア２２奥 1600 d:DEFAULT_M_TYPE \
+				d:wn_第二船倉
+
+		}else if( $s:登場ポイント == 北西２Ｆ ){
+
+			@ステージ開始時処理（ステージ名表示） \
+				d:LOAD_TYPE:SL_DOOR_TYPE 左舷上部ドア２２奥 1600 d:DEFAULT_M_TYPE \
+				d:wn_第二船倉
+
+
+
+		}else if( $s:登場ポイント == 南東１Ｆ ){
+
+			@ステージ開始時処理（ステージ名表示） \
+				d:LOAD_TYPE:SL_DOOR_TYPE 右舷ドア１２ 1600 d:DEFAULT_M_TYPE \
+				d:wn_第二船倉
+
+		}else if( $s:登場ポイント == 南西１Ｆ ){
+
+			@ステージ開始時処理（ステージ名表示） \
+				d:LOAD_TYPE:SL_DOOR_TYPE 左舷ドア１２ 1600 d:DEFAULT_M_TYPE \
+				d:wn_第二船倉
+
+		}else if( $s:登場ポイント == 南東２Ｆ ){
+
+			@ステージ開始時処理（ステージ名表示） \
+				d:LOAD_TYPE:SL_DOOR_TYPE 右舷上部ドア１２ 1600 d:DEFAULT_M_TYPE \
+				d:wn_第二船倉
+
+		}else if( $s:登場ポイント == 南西２Ｆ ){
+
+			@ステージ開始時処理（ステージ名表示） \
+				d:LOAD_TYPE:SL_DOOR_TYPE 左舷上部ドア１２ 1600 d:DEFAULT_M_TYPE \
+				d:wn_第二船倉
+
+		}else if( $s:登場ポイント == ダクト ){
+
+			@ステージ開始時処理（ステージ名表示） \
+				d:LOAD_TYPE:SL_DOOR_TYPE なし 1000 d:M_TYPE:CRAWL_CHANGE \
+				d:wn_第二船倉
+
+
+		}
+
+	}
+
+
+/****************************************************************************************/
+// デバッグ関連
+/****************************************************************************************/
+
+	proc デバッグ設定 {
+
+		//chara スクリーンショット scrshot
+#ifndef d:FIX_MODE
+		chara USBキーボード実行 keyboard \
+			-e d:KPD_1 {
+							mesg プレイヤー d:PLAYER position 8000 -15427 -1100
+			} \
+			-e d:KPD_2 {
+							mesg プレイヤー d:PLAYER position -8215 -15435 -2783
+			} \
+			-e d:KPD_3 {
+							mesg プレイヤー d:PLAYER position 9348 -15441 -23474
+			} \
+			-e d:KPD_4 {
+							mesg プレイヤー d:PLAYER position -10252 -15420 -23474
+			} \
+			-e d:KPD_5 {
+							// 左２階手前
+							mesg プレイヤー d:PLAYER position -10734 -7421 -3030
+			} \
+			-e d:KPD_6 {
+							// 右２階手前
+							mesg プレイヤー d:PLAYER position 10734 -7421 -3030
+			} \
+			-e d:KPD_7 {
+							// 左２階奥
+							mesg プレイヤー d:PLAYER position -11098,-7415,-22515
+			} \
+			-e d:KPD_8 {
+							// 右２階奥
+							mesg プレイヤー d:PLAYER position 11098,-7415,-22515
+			} \
+			-e d:KPD_9 {
+							// イントルード
+							mesg プレイヤー d:PLAYER position 2961 -17436 -13579
+			} \
+			-e d:KBD_0	{ restart }
+#endif
+	}
+
+
+/*
+-p -11098,-5880,-19229 -t -11098,-7415,-22515 \
+-r 285,2048,0 -f 3627 \
+-a 200 \
+*/

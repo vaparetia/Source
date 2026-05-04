@@ -1,0 +1,56 @@
+//
+//	r_plt3.src
+//	プラント編常駐データセット（仮）	No.0	（ファットマン引きずり用）
+//	
+//	2001/06/14	S.Yamashita
+//	$Id: r_plt3.src,v 1.11 2002/08/09 08:34:00 usr04761 Exp $
+
+block .nocache
+
+block 		.resident
+
+include		keepfont.h
+
+// 装備メニューアイコン
+include		menuicon.h
+
+// ライデン
+include		rai_fat.h
+
+// 武器				
+include		wp_plant.h	
+
+// 振動
+include		res_vib.h
+
+// ゲームオーバー	
+include		gover.h	
+l2d 2D/game_over/game_over.l2d // by koba4
+#ifdef MGS2_XBOX_1
+/* YES/NO確認画面 yano 2002.08.08 */
+l2d 2D/end_game_x/end_game.l2d
+#endif
+
+// 全体マップ		
+include		allmap_plant.h
+
+// 無線画面
+include codec.h
+
+// 写真セーブ
+l2d 2D/photo_save/photo_save.l2d
+
+// ノード画面
+//include node.h
+
+// サングラス
+include		glasses.h
+
+block .cache
+//binary		font.row
+// pack_allに'-s'と付けることでパレット変更エフェクトの影響を受けなくなる
+pack_all	'-s' menu.tri effect/font/font_alp_ovl.bmp effect/font/debug_font_alp_ovl.bmp effect/font/font_mini_alp_ovl.bmp effect/sys_icon/cd_err_alp_ovl.bmp
+
+binary		vram0.raw
+
+

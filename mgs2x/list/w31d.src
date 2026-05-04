@@ -1,0 +1,42 @@
+//
+//	w31d.src
+//	シェル２中央棟１Ｆ-エマ引き連れイベント時
+//
+//	written by H.Yoshiike 2000.Nov
+//
+//	$Id: w31d.src,v 1.7 2001/08/19 13:08:45 usr03682 Exp $
+
+#define WN_W31D
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 敵兵関連define
+// 敵兵タイプ
+#define ENE_P_GOL		// w31aは都市迷彩攻撃兵
+#define ENE_ATTACKER	// 攻撃兵
+#define ENE_SHIELD		// 盾兵
+#define ENE_SHOT		// ショットガン兵
+
+// 特殊兵のモーション設定
+#define ENE_MAR '-DDEL_TNG=DUMMY -DDEL_WALKMAN=DUMMY'
+
+// w31共通要素
+#include	"w31ad_common.h"
+
+// キャラクタ
+// 敵兵
+#include	"ene_plant.h"
+mtn		gps_w31a.mls			// ゴル兵モーション
+
+// エマ
+#include	"emma.h"
+
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム
+rename		gps_w31a.mar	gbsstage.mar

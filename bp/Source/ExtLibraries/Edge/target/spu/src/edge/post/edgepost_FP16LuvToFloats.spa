@@ -1,0 +1,86 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+
+	void edgePostFP16LuvToFloats( void* output, void* input, uint32_t count );
+	void edgePostFP16LuvToFX16( void* output, void* input, uint32_t count );
+	void edgePostFP16LuvToArgb( void* output, void* input, uint32_t count );
+	
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+.include "edgepost_helpers.inc"
+.include "edgepost_math_helpers.inc"
+.include "edgepost_luv_helpers.inc"
+
+.macro EDGEPOST_CONVERTFROMFP16LUV( OUTPIXELSIZE )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	EDGEPOST_DECLARE_MATH_HELPER_CONSTANTS
+	EDGEPOST_DECLARE_LUV_HELPER_CONSTANTS
+	
+	// We do this backwards.
+	.reg		backoutput, backinput, kUnpackLum
+	mpyui		backoutput, count, OUTPIXELSIZE
+	mpyui		backinput, count, 4
+	a			backoutput, backoutput, output
+	a			backinput, backinput, input
+	il128		kUnpackLum, "AD00EH00IL00MP00"
+	
+loop:
+	ai			backoutput, backoutput, -( OUTPIXELSIZE * 4)
+	ai			backinput, backinput, -0x10
+	ai			count, count, -4
+	
+	// Load pixels
+	.reg		s0, rgb0, rgb1, rgb2, rgb3, L, u, v
+	lqd			s0, 0x00( backinput )
+	shufb		u, s0, s0, kEdgePostUnpackReds
+	shufb		v, s0, s0, kEdgePostUnpackGreens
+	shufb		L, s0, s0, kUnpackLum
+	
+	// convert to floats
+	EDGEPOST_U8_TO_FLOAT( u, u)
+	EDGEPOST_U8_TO_FLOAT( v, v)
+	EDGEPOST_FP16_TO_FLOAT( L, L)
+	
+	// convert from Luv to RGB
+	EDGEPOST_CONVERT_FROM_LUV_SIMD( L, u, v, rgb0, rgb1, rgb2, rgb3 )
+.endmacro
+
+.cfunc void edgePostFP16LuvToFloats( qword output, qword input, qword count )
+	EDGEPOST_CONVERTFROMFP16LUV( 16 )
+	
+	stqd		rgb0, 0x00( backoutput )
+	stqd		rgb1, 0x10( backoutput )
+	stqd		rgb2, 0x20( backoutput )
+	stqd		rgb3, 0x30( backoutput )
+	brnz		count, loop
+.endfunc
+
+.cfunc void edgePostFP16LuvToFX16( qword output, qword input, qword count )
+	EDGEPOST_CONVERTFROMFP16LUV( 8 )
+	
+	// convert to fixed 0:5:11
+	cfltu		rgb0, rgb0, 11
+	cfltu		rgb1, rgb1, 11
+	cfltu		rgb2, rgb2, 11
+	cfltu		rgb3, rgb3, 11
+	
+	// pack and store
+	.reg		out_color0, out_color1
+	EDGEPOST_PACK_PIXELS16( out_color0, rgb0, rgb1)
+	EDGEPOST_PACK_PIXELS16( out_color1, rgb2, rgb3)
+	stqd		out_color0, 0x00( backoutput )
+	stqd		out_color1, 0x10( backoutput )
+	brnz		count, loop
+.endfunc

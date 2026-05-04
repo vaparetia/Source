@@ -1,0 +1,32 @@
+﻿/* SCE CONFIDENTIAL
+ * PSP2 Programmer Tool Runtime Library Release 00.995.040
+ * Copyright (C) 2010 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+float2 texsize;
+
+void main(
+	in float2 pos,
+   in float2 uv,
+   in float4 color,
+   out float4 opos : POSITION,
+   out float2 uv0 : TEXCOORD0,
+   out float2 uv1 : TEXCOORD1,
+   out float2 uv2 : TEXCOORD2,
+   out float2 uv3 : TEXCOORD3,
+   out float4 ocol : COLOR0
+	)
+{
+   const float2 ofs1 = { 1/texsize.x, 0.0f };
+   const float2 ofs2 = { 0.0f, 1/texsize.y };
+   const float2 ofs3 = { 1/texsize.x, 1/texsize.y };
+
+   opos = float4(pos, 1.f, 1.f);
+   uv0 = uv;
+   uv1 = uv + ofs1;
+   uv2 = uv + ofs2;
+   uv3 = uv + ofs3;
+   ocol = color;
+	return;
+}

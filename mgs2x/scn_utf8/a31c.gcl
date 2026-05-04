@@ -1,0 +1,1514 @@
+/*
+	a31c.gcl
+		シェル２中央棟Ｂ１ヴァンプ戦(アナザーミッション用)
+
+	2001/04/03 H.Yoshiike
+	$Id: a31c.gcl,v 1.11 2002/07/25 05:52:19 usr03379 Exp $
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+#define		STAGE_ALT		1		// オルタナティブミッション切り分け用
+// ステージ名
+#define		STAGE_W31C		1		// 共通プロック切り分け用
+// 敵兵、ＮＰＣ状況（薬莢を呼び分けるのに必要）
+
+
+// 各種スイッチ用define
+// ------------------------------------
+// 入出トラップ
+#define		STAGE_END		1		// ステージ終了時処理を使用可にする
+// カメラ関係
+#define		START_CAMERA	1		// ステージ開始時のカメラ
+#define		WATER_CAMERA	1		// 水中モード時のカメラをオフにする
+#define		WATER_CAMERA2	1		// 入水カメラ
+// オブジェ関係
+#define		WATER			1		// 水面
+#define		LOCKER			1		// ロッカー
+#define		LOCKER_CLOSE	0		// ロッカー開閉フラグ
+#define		LOCKER_OPEN		1		// ロッカー開閉フラグ
+
+// 水中モード関連
+#define	WATER_MODE			1		// 水中モード基本キャラ設定を使用するのに必要
+#define VAMP_WATER_SURFACE	-7000	// 水面の高さ(ヴァンププール)
+#define WATER_SURFACE		-6550	// 水面の高さ(エマロッカー部屋外)
+#define EMMA_WATER_SURFACE	-7150	// 水面の高さ(エマロッカー部屋内)
+#define	WATER_CAMERA_ZONE	1		// 追従カメラが使用するゾーンのあるグループ番号(必要があれば定義する)
+#define	CAMERA_BUBBLE_NUM	3		// カメラ泡の個数(いらない場合は定義しない)
+#define	CAMERA_DUST_NUM		10		// カメラダストの個数(いらない場合は定義しない)
+// アイテム
+#define		ITEM			1
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+	#define		NO_NEXT_STAGE	0		// ヴァンプ戦終了後処理しない
+#else
+	#define		DEBUG_CHARA		1		// デバッグキャラ全体
+	#define		NO_NEXT_STAGE	0		// ヴァンプ戦終了後処理しない
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME		w31c
+#define		KMS_NAME0		w31c0
+#define		KMS_NAME1		w31c1
+#define		CEIL_NAME0		w31c0r
+#define		CEIL_NAME1		w31c1r
+#define		DOOR_NAME_LV0	dr_free
+#define		DOOR_NAME_LV4	dr_lv4_00
+#define		LT2_NAME		w31c
+
+// キャラクター関係
+#define		PLAYER		ライデン	// モーションができるまで名前はスネーク
+
+// ローカル変数
+
+// アイテム番号（アイテムが多いのでenumで）
+enum I_NO {
+	M9_R01 = 0,
+	RGB6_R01,
+	SOCOM_R01,
+	M4_R01,
+	M4_R02,
+	AKS_R01,
+	PSG1T_R01,
+	RATION_01,
+	RATION_02,
+	RATION_03,
+	C4_01,
+	C4_02,
+	MAG_01,
+	DIAZE_01
+}
+
+
+
+// include
+// ------------------------------------
+#include "rai_w31c.mh"		// 強制モーションリスト
+#include "stdch.h"
+#include "a_mode.h"			// アナザーミッション設定ファイル
+#include "sload.h"
+#include "beyond.h"
+#include "beyond3.h"
+#include "sound.h"
+#include "item_info.h"
+#include "w31c_common.h"
+#include "node_res.h"
+#include "cap_resource.h"
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+// アナザー用でマップ設定前に設定する
+// ------------------------------------
+@アナザー用マップ定義前設定
+
+// マップ設定
+// ------------------------------------
+chara マップ 第２濾過層 -k d:KMS_NAME0 -h d:HZX_NAME,0 -l d:LT2_NAME
+chara マップ 北西エリア -k d:KMS_NAME1 -h d:HZX_NAME,1 -l d:LT2_NAME
+
+chara マップ接合 第２濾過層／北西エリア 第２濾過層 北西エリア
+
+
+command マップ設定 第２濾過層 北西エリア -set {
+	// サウンド、キャラクターのセット
+	// ------------------------------------
+	@常駐キャラ設定
+	@ローカル変数初期化
+	@設定値変更
+	@プラグイン設定
+	@A_プレイヤー設定 sna_w31c rai_w31c
+	@水中モードプレイヤー連動キャラ設定 wa100
+}
+
+// アナザー用でマップ設定後に設定する
+// ------------------------------------
+@アナザー用マップ定義後設定
+
+command マップ設定 第２濾過層 北西エリア -set {
+	@弾痕跳弾設定
+
+	@ドア設置		// w31c_common.hで定義
+
+	// ステージ、オブジェクト関連
+	// ------------------------------------
+	@フォグ設定		// w31c_common.hで定義
+	@カメラセット
+	@シナリオデモキャラセット
+
+	// デバッグ関係
+	// ------------------------------------
+	#if d:DEBUG_CHARA
+		@デバッグキャラセット
+	#endif
+}
+
+command マップ設定 第２濾過層 -set {
+	@ヴァンプセット
+	@ヴァンプ用アタリ追加
+
+	@第２濾過層天井設置				// w31c_common.hで定義
+	@第２濾過層水面設定				// w31c_common.hで定義
+	@第２濾過層スポットライト設定	// w31c_common.hで定義
+
+	@第２濾過層ビヨンド設定
+	@エルード時の体水飛沫設定
+	@第２濾過層カメラ設定
+	@生物反応層落下処理設定
+	@重力アップ処理
+	@主観禁止壁設定
+}
+
+command マップ設定 第２濾過層 北西エリア -set {
+		@水位管理設定			// w31c_common.hで定義
+		@キャラ用ライト設置		// w31c_common.hで定義
+}
+
+// 全てのセットが終わったところでフェードイン
+//初期マップの表示
+command マップ表示 -show 第２濾過層
+
+// 第２濾過層からなので水位はヴァンププール用から
+command 水位設定 -lv d:VAMP_WATER_SURFACE -s d:se_code:SD_A_RICOCH06
+#if d:DEBUG_PRINT
+	print 'water_level'
+	print d:VAMP_WATER_SURFACE
+#endif
+@ロード時フェードイン
+
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// 全マップ共通
+	// ローカル変数初期化
+	// ------------------------------------
+	proc ローカル変数初期化 {
+		#if d:DEBUG_PRINT
+			print 'localvar_init'
+		#endif
+
+		// ボス戦用再セットアイテムの初期化
+		eval($f:w31c_アイテム再セット１ = 0);
+		eval($f:w31c_アイテム再セット２ = 0);
+		eval($f:w31c_アイテム再セット３ = 0);
+		eval($f:w31c_アイテム再セット４ = 0);
+		eval($f:w31c_アイテム再セット５ = 0);
+
+		// エマの音声用
+		eval ( $f:ローカルフラグ１ = 0 );
+		eval ( $f:ローカルフラグ２ = 0 );
+		// シナリオデモのタイム用
+		eval( $w:ローカル変数Ｗ１ = 0 );
+		// エマの手繋ぎ判定用
+		eval( $i:ローカル変数Ｉ１ = 0 );
+		// エマの状態判定用
+		eval( $i:ローカル変数Ｉ２ = 0 );
+
+		// エマがドアを開け閉めしたりしないようにするのに必要
+		eval( $f:エマゲームオーバーフラグ = 0 );
+	}
+
+	// 設定値を変更
+	// ------------------------------------
+	proc 設定値変更 {
+		#if d:DEBUG_PRINT
+			print 'status_set'
+		#endif
+	}
+
+	// ポリデモ
+	// ------------------------------------
+	proc ヴァンプ死亡ポリデモ設定 {
+		#if d:DEBUG_PRINT
+			print 'vamp_dead_demo_set'
+		#endif
+#if 0
+		// とりあえずエンドプロックに入ったらパッド操作を奪う
+		command パッド操作 -release
+
+		// 通常ゲームの設定
+		if ( `command ゲームオーバーチェック` == 0 ) {
+			@シナリオデモ開始処理
+			if($w:アイテム == d:アイテム:ゴル兵制服){
+				preseek 'r_plt5'
+			} else {
+				preseek 'd055p01'
+			}
+			if ( $1 == 0 ) {
+			// ２階で倒されたときのアングル
+				chara カメラ設定 シナリオデモカメラ \
+					-c 1 \
+					-p -10000,-4250,-239000 -t $2,$3,$4 \
+					-a 450 \
+					-i 0 0 0 0 \
+					-s 1
+
+				chara フェードインアウト ホワイトフェード \
+					-c 255 255 255 128 \		//目標のＲＧＢα
+					-t 90 \
+					-p ヴァンプ死亡後ポリデモ発動 \
+					-s 10
+
+				// スローかける
+				chara delay ディレイ -time 1 -exec {
+					chara 速度可変 スローモーション \
+						-l 90 \
+						-t 2
+				}
+
+			} else if ( $1 == 1 ){
+			// １階で倒された
+				chara カメラ設定 シナリオデモカメラ \
+					-c 1 \
+					-p -10000,-4250,-239000 -t $2,$3,$4 \
+					-a 300 \
+					-i 0 0 0 0 \
+					-s 1
+
+				chara フェードインアウト ホワイトフェード \
+					-c 255 255 255 128 \		//目標のＲＧＢα
+					-t 240 \
+					-p ヴァンプ死亡後ポリデモ発動 \
+					-s 10
+
+				// スローかける
+				chara delay ディレイ -time 1 -exec {
+					chara 速度可変 スローモーション \
+						-l 240 \
+						-t 2
+				}
+
+			} else {
+			// 爆発で吹っ飛んだ
+				chara カメラ設定 シナリオデモカメラ \
+					-c 1 \
+					-p -10000,-4250,-239000 -t $2,$3,$4 \
+					-a 250 \
+					-i 0 0 0 0 \
+					-s 1
+
+				chara フェードインアウト ホワイトフェード \
+					-c 255 255 255 128 \		//目標のＲＧＢα
+					-t 29 \
+					-p ヴァンプ死亡後ポリデモ発動 \
+					-s 10
+
+				// スローかける
+				chara delay ディレイ -time 1 -exec {
+					chara 速度可変 スローモーション \
+						-l 29 \
+						-t 3
+				}
+
+			}
+
+			mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_FOUTS_M
+		}
+
+//	プールに落ちるまえに終了する
+#else
+				@ヴァンプ死亡後ポリデモ発動
+#endif
+
+	}
+
+	proc ヴァンプ死亡後ポリデモ発動 {
+		//	テイルズＤのヴァンプ戦前はこちらを通る
+		if (($b:ミッション番号 == d:MISSION:スネークテイルズ) && \
+			($b:tales_story_no == d:TALES_NO:D) && \
+			($b:tales_story_d == d:TALES_D:ヴァンプ戦前)	) {
+
+			//	ヴァンプが気絶しているときは
+			if (`command  ゲットヴァンプステータス` == 0) {
+				eval ($f:テイルズＤヴァンプ気絶フラグ = 1)
+			} else {
+			}
+			@紙芝居ステージロード d:TALES_D:ヴァンプ戦後
+		}
+	}
+
+
+
+	// ノード端末
+	// ------------------------------------
+	proc ノード接続時プロック {
+		#if d:DEBUG_PRINT
+			print 'node_set'
+		#endif
+
+		eval($f:ノードフラグ = $f:w31c_ノードフラグ);
+	}
+
+
+	proc ノード接続後プロック {
+		#if d:DEBUG_PRINT
+			print 'node_event_go'
+		#endif
+
+		eval($f:w31c_ノードフラグ = 1);
+		command メニュー設定 -node_access on
+	}
+
+	// プラグインプログラム
+	// ------------------------------------
+	proc プラグイン設定 {
+		#if d:DEBUG_PRINT
+			print 'plugin_set'
+		#endif
+		command プラグイン落下
+	}
+
+
+	// 入出トラップ
+	// ------------------------------------
+
+	// 子画面設定
+	// ------------------------------------
+	proc 子画面設定 {
+		#if d:DEBUG_PRINT
+			print 'sub_camera_set'
+		#endif
+
+		chara サブ画面 子画面 \
+			-w (512-d:SUB_MARGIN-d:SUB_WIDTH),d:SUB_MARGIN (512-d:SUB_MARGIN),(d:SUB_HEIGHT+d:SUB_MARGIN)
+	}
+
+	// 弾痕跳弾関係の設定
+	// ------------------------------------
+	proc 弾痕跳弾設定 {
+		#if d:DEBUG_PRINT
+			print 'recoil_set'
+		#endif
+
+		command 弾痕ノーマル -n 0	// 通常
+		command 弾痕ノーマル -n 1	// 鉄板
+		command 弾痕ノーマル -n 2	// 階段、通常
+		command 弾痕ノーマル -n 3	// 鉄床、鉄筋
+		command 弾痕ノーマル -n 4	// 水床、通常
+		command 弾痕ノーマル -n 6	// ダンボール
+
+		command 跳弾ノーマル -n 0
+		command 跳弾ノーマル -n 1
+		command 跳弾ノーマル -n 3
+		command 跳弾ノーマル -n 4
+		command 跳弾ＳＥのみ -n 6
+
+		command 弾水飛沫処理
+	}
+
+	// ステージカメラ設定
+	// ------------------------------------
+	proc カメラセット {
+		#if d:DEBUG_PRINT
+			print 'stage_camera_set'
+		#endif
+
+		chara カメラ ステージカメラ		-c 0 -l 3 -p 0
+		chara カメラ メインカメラ		-c 0 -l 2 -p 50
+		chara カメラ サブカメラ			-c 0 -l 2 -p 40
+		chara カメラ モーションカメラ	-c 0 -l 1 -p 20
+		chara カメラ シナリオデモカメラ			-c 0 -l 0 -p 10
+		chara カメラ ゲームオーバーカメラ	-c 0 -l 0 -p 1
+
+		// デフォルトカメラ
+		chara カメラ設定 ステージカメラ \
+			-c 0 \
+			-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-r 250,2048,0 \
+			-f 6500 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s 1
+	}
+
+	// ステージ開始時カメラ
+	// ------------------------------------
+	proc スタートカメラセット {
+		#if d:DEBUG_PRINT
+			print 'start_camera_set'
+		#endif
+
+		if( $s:登場ポイント == sp_w31b_w31c0_0 ) {
+			// 第一濾過室から
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p -8475,-1272,-232861 -t -8475,-4031,-233193 \
+				-r 946,2048,0 -f 2779 \
+				-a 200 \
+				-i 0 2 0 0 \
+				-s 1
+		}
+	}
+
+	proc スタートカメラオフ {
+		#if d:DEBUG_PRINT
+			print 'start_camera_off'
+		#endif
+
+		chara カメラ設定 モーションカメラ -s -1
+	}
+
+	// ステージ終了時カメラ
+	// ------------------------------------
+	proc エンドカメラセット $:エンドポイント {
+		#if d:DEBUG_PRINT
+			print 'end_camera_set'
+		#endif
+
+		if( $:エンドポイント == 第一濾過室 ) {
+			// 第一濾過室へ
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p -8475,-1272,-232861 -t -8475,-4031,-233193 \
+				-r 946,2048,0 -f 2779 \
+				-a 200 \
+				-i 0 2 0 0 \
+				-s 1
+		}
+	}
+
+
+
+// 各マップ別設定
+// ------------------------------------
+// 第２濾過層
+	// ヴァンプ
+	// ------------------------------------
+	proc ヴァンプセット {
+		#if d:DEBUG_PRINT
+			print 'w31c0_vamp_set'
+		#endif
+		chara プロトヴァンプ ヴァンプ君 \
+			-pos	-10018,-7005,-238712 \
+			-vox	t:vc105621 t:vc105621_len \
+					t:vc105622 t:vc105622_len \
+					t:vc105647 t:vc105647_len \
+					t:vc105648 t:vc105648_len \
+					t:vc105649 t:vc105649_len \
+					t:vc105672 t:vc105672_len \
+					t:vc105673 t:vc105673_len \
+					t:vc105674 t:vc105674_len \
+					t:vc105675 t:vc105675_len \
+			-end	ヴァンプ死亡ポリデモ設定
+/*
+・影縛りの術（ナイフ投げ）。ナイフを投げて影縫いをする。
+vc105621 ： ヴァンプ　　「貴様の影を捉えた」
+vc105622 ： ヴァンプ　　「動けまい！」
+・ロックオンボタンが押されていると、バレエステップでかなりの頻度で弾を避けられる。
+vc105647 ： ヴァンプ　　「読める！」  （ 新規追加 ）
+vc105648 ： ヴァンプ　　「それで狙っているつもりか！？」
+vc105649 ： ヴァンプ　　「どうした、当たらないぞ！」
+・挑発
+vc105672 ： ヴァンプ　　「その程度か！」
+vc105673 ： ヴァンプ　　「何処を見ている！」
+vc105674 ： ヴァンプ　　「ハッハッハッハ」
+vc105675 ： ヴァンプ　　「もっと楽しませろ！」
+*/
+		chara ヴァンプ影縛りターゲット 縛ちゃん \
+			-ch_map 第２濾過層 \
+			-group 2 \
+			-proc 影縛りカメラ発動
+
+
+		chara マルチウェイト髪の毛モデル マルチウェイトヴァンプの髪 \
+			-n vmp_hair_naked_mh_mt \
+			-b vmp_naked_bounding \
+			-d 9 \
+			//-m 50 \
+			//-a 500 \
+			//-k 1000 \
+			-y ヴァンプ君 \
+			-z 2 11 12 \
+			-x 0,0,0 \
+			-o 120 \
+			-q 0 \
+			-f 1 \
+			-c 5 { 2 3 7 11 12 } \
+			-v \
+			-w 80
+
+		command プラグイン影縛り
+
+		// 欧州、韓国はＳＥ字幕が入る
+		#ifdef d:EU || d:KOREA
+			#ifdef d:EU
+			// 欧州版では言語選択があるためにこのコマンドを使う(:01とかで定義プロックを変えられる)
+				command 字幕言語設定
+			#endif
+			@ヴァンプＳＥ字幕リソース
+		#endif
+
+	}
+
+	proc ヴァンプ用アタリ追加 {
+		#if d:DEBUG_PRINT
+			print 'w31c0_hzd_add'
+		#endif
+
+		command 追加ＨＺＸグループ登録 -h 0 -a 3
+	}
+
+	proc 影縛りカメラ発動 {
+		#if d:DEBUG_PRINT
+			print 'w31c0_vamp_camera_on'
+		#endif
+
+		if ( $f:w31c_影縛りシナリオデモフラグ == 0 ) {
+			eval( $f:w31c_影縛りシナリオデモフラグ = 1 );
+
+			chara デモキャンセルチェック 影縛りデモキャンセル \
+				-p 影縛りデモキャンセル
+
+			@シナリオデモ開始処理
+
+			if ( $1 > -10000 && $3 > -238750 ) {
+			// 南側右
+				if ( $3 > -234000 ) {
+					@影縛りカメラ設定 -8733 552 -233055 $1 $2 -234000 300
+				} else {
+					@影縛りカメラ設定 -8733 552 -233055 $1 $2 $3 300
+				}
+			} else if ( $1 <= -10000 && $3 > -238750 ) {
+			// 南側左
+				@影縛りカメラ設定 -12166 1423 -233760 $1 $2 $3 325
+			} else if ( $1 > -10000 && $3 >= -238750 ) {
+			// 北側右
+				@影縛りカメラ設定 -6994 1477 -234374 $1 $2 $3 450
+			} else {
+			// 北側左
+				@影縛りカメラ設定 -12248 1282 -235124 $1 $2 $3 450
+			}
+
+			chara delay 影縛りカメラディレイ \
+				-time 118 \
+				-exec {
+					mesg デモキャンセルチェック 影縛りデモキャンセル kill
+				}
+
+			chara delay 影縛りカメラディレイ \
+				-time 120 \
+				-exec {
+					chara カメラ設定 シナリオデモカメラ -s -1
+					@シナリオデモ終了処理
+				}
+		}
+	}
+
+	proc 影縛りカメラ設定 $:カメラＸ $:カメラＹ $:カメラＺ $:注視Ｘ $:注視Ｙ $:注視Ｚ $:最終画角 {
+		chara カメラ設定 シナリオデモカメラ \
+			-c 1 \
+			-p $:カメラＸ $:カメラＹ $:カメラＺ -t $:注視Ｘ $:注視Ｙ $:注視Ｚ \
+			-a 200 \
+//			-z d:CAMERA_LIMITBOUND_EXIST \
+			-i 0 0 0 0 \
+			-s 1
+
+		chara カメラ設定 シナリオデモカメラ \
+			-c 1 \
+			-p $:カメラＸ $:カメラＹ $:カメラＺ -t $:注視Ｘ $:注視Ｙ $:注視Ｚ \
+			-a $:最終画角 \
+			-z ( d:CAMERA_INTERP_CAMERA | d:CAMERA_LIMITBOUND_EXIST ) \ // 補完カメラフラグを指定。
+			-interp_time 20 \ // 補完時間を指定
+			-s 1
+	}
+
+	proc 影縛りデモキャンセル {
+		#if d:DEBUG_PRINT
+			print 'w31c_shdw_demo_cancel'
+		#endif
+
+		mesg delay 影縛りカメラディレイ kill
+		mesg デモキャンセルチェック 影縛りデモキャンセル kill
+		chara カメラ設定 シナリオデモカメラ -s -1
+		@シナリオデモ終了処理
+
+	}
+
+
+
+	// ビヨンド設定
+	// ------------------------------------
+	proc 第２濾過層ビヨンド設定 {
+		#if d:DEBUG_PRINT
+			print 'w31c0_beyond_set'
+		#endif
+
+		// 北側
+		trap by001 d:PLAYER \
+			-mask いる \
+			-key d:PAD_ACTION \		//アクションボタン
+			-state 0,4 \	//立ち状態or張り付き
+			-exec {
+				@北向きビヨンド発動 by001 -243750 $4 -13500 -7750 0x00000002
+			}
+		trap by001 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 681,2488,0 -f 4147 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		trap by001 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 0 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 915,2374,0 -f 11159 \
+					-a 300 \
+					-i 3 2 0 0 \
+					-s $3 \
+					-z d:CAMERA_NO_CUSHION
+			}
+
+		// 南側
+		trap by002 d:PLAYER \
+			-mask いる \
+			-key d:PAD_ACTION \		//アクションボタン
+			-state 0,4 \	//立ち状態or張り付き
+			-exec {
+				@南向きビヨンド発動 by002 -234500 $4 -13500 -9750 0x00000002
+			}
+		trap by002 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 0 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,500,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-234098 \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-234784 \
+					-r 872,2473,0 -f 5877 \
+					-a 310 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		trap by002 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,500,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-233865 \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-235950 \
+					-r 882,2217,0 -f 9979 \
+					-a 300 \
+					-i 3 2 0 0 \
+					-s $3 \
+					-z d:CAMERA_NO_CUSHION
+			}
+
+		// 中央北側
+		trap by003 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					@南向き柵なしビヨンド発動 by003 -241000 $4 -11500 -8500 -6250 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+				}
+			}
+		trap by003 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 0 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 701,2212,0 -f 5065 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		trap by003 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 448,2338,0 -f 8180 \
+					-a 300 \
+					-i 3 2 0 0 \
+					-s $3 \
+					-z d:CAMERA_NO_CUSHION
+			}
+
+		// 中央南側
+		trap by004 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					@北向き柵なしビヨンド発動 by004 -236500 $4 -11500 -8500 -6250 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+				}
+			}
+		trap by004 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-234192 \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-236248 \
+					-r 660,2273,0 -f 4125 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		trap by004 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 0 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 881,2217,0 -f 8983 \
+					-a 300 \
+					-i 3 2 0 0 \
+					-s $3 \
+					-z d:CAMERA_NO_CUSHION
+			}
+	}
+
+	//	生物反応層落下ゲームオーバー処理
+	// ------------------------------------
+	proc 生物反応層落下処理設定 {
+		#if d:DEBUG_PRINT
+			print 'w31c0_gameover'
+		#endif
+
+		// 水飛沫はあらかじめ登録してオフしておく
+		chara 水面監視水飛沫 落下水飛沫 -n d:PLAYER
+		mesg 水面監視水飛沫 落下水飛沫 オフ
+
+		trap de001 d:PLAYER \
+			-mask いる \
+			-exec {
+				// エルード以外でトラップに入ったらゲームオーバー
+				if ( !(`command プレイヤー状態取得` & d:PFLAG_ELUDE) || (`command プレイヤー状態取得` & d:PFLAG_ELUDE_FALL) ) {
+					command 水位設定 -lv -7450 -s d:se_code:SD_A_RICOCH06
+					#if d:DEBUG_PRINT
+						print 'ATTANTION!! water_level -7450------------------------------------!!!!!!!!'
+					#endif
+
+					mesg 水面監視水飛沫 落下水飛沫 オン
+
+					chara カメラ設定 ゲームオーバーカメラ \
+						-c 1 \
+						-p -9262,273,-235445 -t -9779,-8738,-239744 \
+						-r 732,2126,0 -f 9998 \
+						-a 200 \
+						-i 0 0 0 0 \
+						-s 1
+
+					mesg プレイヤー d:PLAYER fall \
+						d:モーションリスト:non_gameover_fall \
+						d:モーションリスト:non_gameover_fall \
+						d:モーションリスト:non_gameover_fall \
+						-10000 \	//	この高さまで落ちたらゲームオーバー終了処理が呼ばれる
+						0x0004 \
+						落下処理開始 \
+						落下処理終了
+				}
+			}
+
+		trap de002 d:PLAYER \
+			-mask いる \
+			-exec {
+				// エルード以外でトラップに入ったらゲームオーバー
+				if ( !(`command プレイヤー状態取得` & d:PFLAG_ELUDE) || (`command プレイヤー状態取得` & d:PFLAG_ELUDE_FALL) ) {
+					command 水位設定 -lv -7450 -s d:se_code:SD_A_RICOCH06
+					#if d:DEBUG_PRINT
+						print 'ATTANTION!! water_level -7450------------------------------------!!!!!!!!'
+					#endif
+
+					mesg 水面監視水飛沫 落下水飛沫 オン
+
+					chara カメラ設定 ゲームオーバーカメラ \
+						-c 0 \
+						-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+						-l d:CAM_MIN,-7000,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+						-r 915,2374,0 -f 11159 \
+						-a 300 \
+						-i 0 0 0 0 \
+						-s 1 \
+						-z d:CAMERA_NO_CUSHION
+
+					mesg プレイヤー d:PLAYER fall \
+						d:モーションリスト:non_gameover_fall \
+						d:モーションリスト:non_gameover_fall \
+						d:モーションリスト:non_gameover_fall \
+						-10000 \	//	この高さまで落ちたらゲームオーバー終了処理が呼ばれる
+						0x0004 \
+						落下処理開始 \
+						落下処理終了
+				}
+			}
+
+		trap de003 d:PLAYER \
+			-mask いる \
+			-exec {
+				// エルード以外でトラップに入ったらゲームオーバー
+				if ( !(`command プレイヤー状態取得` & d:PFLAG_ELUDE) || (`command プレイヤー状態取得` & d:PFLAG_ELUDE_FALL) ) {
+					command 水位設定 -lv -7450 -s d:se_code:SD_A_RICOCH06
+					#if d:DEBUG_PRINT
+						print 'ATTANTION!! water_level -7450------------------------------------!!!!!!!!'
+					#endif
+
+					mesg 水面監視水飛沫 落下水飛沫 オン
+
+					chara カメラ設定 ゲームオーバーカメラ \
+						-c 0 \
+						-b d:CAM_MIN,500,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-233865 \
+						-l d:CAM_MIN,-7000,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-235950 \
+						-r 882,2217,0 -f 9979 \
+						-a 300 \
+						-i 0 0 0 0 \
+						-s 1 \
+						-z d:CAMERA_NO_CUSHION
+
+					mesg プレイヤー d:PLAYER fall \
+						d:モーションリスト:non_gameover_fall \
+						d:モーションリスト:non_gameover_fall \
+						d:モーションリスト:non_gameover_fall \
+						-10000 \	//	この高さまで落ちたらゲームオーバー終了処理が呼ばれる
+						0x0004 \
+						落下処理開始 \
+						落下処理終了
+				}
+			}
+	}
+
+	proc 落下処理開始 {
+		chara delay 水面落下ディレイ \
+			-time 10 \
+			-exec {
+				chara パッド振動 落下振動 -vibfile drop_sea
+				command ＳＥセットモード -s d:se_code:SD_V_RAIOUW01 \
+					-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ -m 1
+			}
+	}
+
+	proc 落下処理終了 {
+		command ゲームオーバー処理終了
+	}
+
+
+	//	重力アップ処理
+	// ------------------------------------
+	proc 重力アップ処理 {
+		#if d:DEBUG_PRINT
+			print 'w31c0_g_up_set'
+		#endif
+
+		trap gu001 d:PLAYER \
+			-mask いる \
+			-exec {
+				//ジャンプ時重力セット
+				command ジャンプ時重力セット -gravity 2
+			}
+	}
+
+
+	// 各種カメラの設定
+	// ------------------------------------
+	proc 第２濾過層カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w31c0_camera_set'
+		#endif
+
+		// 階段エリア全体
+		trap ca001 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -233500 -234500 -233470 -233654
+				eval( $i:補完ＢＺ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -233500 -234500 -234541 -235600
+				eval( $i:補完ＬＺ = $i:CS_結果１ );
+
+				if ( $6 > -234500 ) {
+					@CS_スムーズカメラ降順 $6 -233500 -234500 -8500 -8900
+					eval( $i:補完ＢＸ = $i:CS_結果１ );
+					eval( $i:補完ＬＸ = $i:CS_結果１ );
+					@CS_スムーズカメラ降順 $6 -233500 -234500 -8500 -8100
+					eval( $i:補完ＢＸ２ = $i:CS_結果１ );
+					eval( $i:補完ＬＸ２ = $i:CS_結果１ );
+					@CS_スムーズカメラ降順 $6 -233500 -234500 2662 2662
+					eval( $i:補完ＢＹ = $i:CS_結果１ );
+					@CS_スムーズカメラ降順 $6 -233500 -234500 920 840
+					eval( $i:補完ＲＸ = $i:CS_結果１ );
+				} else {
+					@CS_スムーズカメラ降順 $4 -8500 -14500 -8900 -13000
+					eval( $i:補完ＢＸ = $i:CS_結果１ );
+					eval( $i:補完ＬＸ = $i:CS_結果１ );
+					@CS_スムーズカメラ昇順 $4 -8500 -6875 -8100 -7000
+					eval( $i:補完ＢＸ２ = $i:CS_結果１ );
+					eval( $i:補完ＬＸ２ = $i:CS_結果１ );
+					@CS_スムーズカメラ降順 $6 -234500 -242000 2662 2662
+					eval( $i:補完ＢＹ = $i:CS_結果１ );
+					@CS_スムーズカメラ降順 $6 -234500 -242000 840 440
+					eval( $i:補完ＲＸ = $i:CS_結果１ );
+				}
+
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \
+					-b $i:補完ＢＸ,2662,-233654 $i:補完ＢＸ２,$i:補完ＢＹ,$i:補完ＢＺ \
+					-l $i:補完ＬＸ,-4000,-241500 $i:補完ＬＸ２,d:CAM_MAX,$i:補完ＬＺ \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 8000 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 中央手すり左側
+		trap ca002 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_CAUTION \
+			-camera \
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b -15900,-4520,d:CAM_MIN -15900,-4520,d:CAM_MAX \
+					-l d:CAM_MIN,-4622,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 26,1024,0 \
+					-f 3227 \
+					-a 180 \
+					-i 0 0 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+/*
+		// 中央手すり上側
+		trap ca003 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_CAUTION \
+			-camera \
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,-4341,-245500 d:CAM_MAX,-4341,-245500 \
+					-l d:CAM_MIN,-4412,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 10,0,0 \
+					-f 4667 \
+					-a 180 \
+					-i 2 2 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+*/
+		// 中央手すり右側
+		trap ca003 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_CAUTION \
+			-camera \
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b -4100,-4520,d:CAM_MIN -4100,-4520,d:CAM_MAX \
+					-l d:CAM_MIN,-4622,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 26,3072,0 \
+					-f 3227 \
+					-a 180 \
+					-i 0 0 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+/*
+		// 中央手すり下側
+		trap ca005 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_CAUTION \
+			-camera \
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,-4462,-232694 d:CAM_MAX,-4462,-232694 \
+					-l d:CAM_MIN,-4626,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 10,0,0 \
+					-f 3561 \
+					-a 180 \
+					-i 2 2 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+*/
+		// 北側の手すり張り付きカメラ
+		trap ca004 d:PLAYER \
+			-mask ？ \
+			-dir 0 512 \
+			-state d:TRP_STATE_CAUTION \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,-4000,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 900,2048,0 \
+					-f 5000 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3
+			}
+
+		// 南側の手すり張り付きカメラ
+		trap ca005 d:PLAYER \
+			-mask ？ \
+			-dir 2048 512 \
+			-state d:TRP_STATE_CAUTION \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 0 \
+					-b d:CAM_MIN,1500,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-234069 \
+					-l d:CAM_MIN,-4000,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-235053 \
+					-r 922,2048,0 \
+					-f 6250 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3
+			}
+	}
+
+
+	// 水中処理
+	// ------------------------------------
+//エルード時は体半分なので短め
+#define		CHARA_SPLASH_TIME2		180
+
+	proc エルード時の体水飛沫設定 {
+		#if d:DEBUG_PRINT
+			print 'elude_body_water_set'
+		#endif
+
+		trap by001 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 0 256 \	//方向指定
+			-exec {
+				if ( $3 == 出る ) {
+					if ( $5 >= -6500 ) {
+						chara キャラ付随水飛抹 出水飛沫ライデン \
+							-nconcname d:PLAYER \
+							-addone 32 \
+							-time d:CHARA_SPLASH_TIME2 \
+							-rgbadd 0x40404030 \
+							-gbsub 0x40404030
+						// 足跡トラップもオン
+						command トラップ切り替え -trap puddle -switch 0
+					}
+				} else {
+					mesg キャラ付随水飛抹 出水飛沫ライデン 破棄
+					command トラップ切り替え -trap puddle -switch 1
+				}
+			}
+
+		trap by002 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 2048 256 \	//方向指定
+			-exec {
+				if ( $3 == 出る ) {
+					if ( $5 >= -6500 ) {
+						chara キャラ付随水飛抹 出水飛沫ライデン \
+							-nconcname d:PLAYER \
+							-addone 32 \
+							-time d:CHARA_SPLASH_TIME2 \
+							-rgbadd 0x40404030 \
+							-gbsub 0x40404030
+						// 足跡トラップもオン
+						command トラップ切り替え -trap puddle -switch 0
+					}
+				} else {
+					mesg キャラ付随水飛抹 出水飛沫ライデン 破棄
+					command トラップ切り替え -trap puddle -switch 1
+				}
+			}
+
+		trap by003 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 2048 256 \	//方向指定
+			-exec {
+				if ( $3 == 出る ) {
+					if ( $5 >= -6500 ) {
+						chara キャラ付随水飛抹 出水飛沫ライデン \
+							-nconcname d:PLAYER \
+							-addone 32 \
+							-time d:CHARA_SPLASH_TIME2 \
+							-rgbadd 0x40404030 \
+							-gbsub 0x40404030
+						// 足跡トラップもオン
+						command トラップ切り替え -trap puddle -switch 0
+					}
+				} else {
+					mesg キャラ付随水飛抹 出水飛沫ライデン 破棄
+					command トラップ切り替え -trap puddle -switch 1
+				}
+			}
+
+		trap by004 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 0 256 \	//方向指定
+			-exec {
+				if ( $3 == 出る ) {
+					if ( $5 >= -6500 ) {
+						chara キャラ付随水飛抹 出水飛沫ライデン \
+							-nconcname d:PLAYER \
+							-addone 32 \
+							-time d:CHARA_SPLASH_TIME2 \
+							-rgbadd 0x40404030 \
+							-gbsub 0x40404030
+						// 足跡トラップもオン
+						command トラップ切り替え -trap puddle -switch 0
+					}
+				} else {
+					mesg キャラ付随水飛抹 出水飛沫ライデン 破棄
+					command トラップ切り替え -trap puddle -switch 1
+				}
+			}
+
+	}
+
+	proc 息継ぎポイント設定 {
+		#if d:DEBUG_PRINT
+			print 'w31c1_water_breathpoint_set'
+		#endif
+
+		@息継ぎポイントレーダー設定 br100
+
+		// 息継ぎポイント付近にあるダストとポイントの登録
+		chara 息継ぎポイント管理 息継ぎ管理
+
+		command foreach -argc 2 -repeat 2 \
+			-data { \
+					{ -17500, -251250 } \
+					{ -5000 , -251250 } \
+				} \
+				-exec { \
+					command 息継ぎポイント登録 -position ($1+1000) d:WATER_SURFACE ($2+1000)
+					chara エリアダスト NewDustArea \
+						-p $1 -6500 $2 ($1+2000) -10500 ($2+2000) \
+						-n 4
+				}
+
+	}
+
+#define WATER_ENT_VMP	1
+#define WATER_ENT_EMA	2
+
+		proc 背負いカメラＩＮ {
+		if( $b:入水ポイント == d:WATER_ENT_VMP ) {
+			// ヴァンプ側
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p -13616,-5744,-246471 -t -11805,-5508,-247464 \
+				-r -74,1351,0 -f 2079 \
+				-a 200 \
+				-i 0 0 0 0 \
+				-s 1
+		} else {
+			// エマ側
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p -10428,-5001,-255230 -t -9524,-5222,-253048 \
+				-r 61,256,0 -f 2372 \
+				-a 200 \
+				-i 0 0 0 0 \
+				-s 1
+		}
+	}
+	proc 移動中カメラＩＮ {
+		if( $b:入水ポイント == d:WATER_ENT_VMP ) {
+			// ヴァンプ側
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p -8576,-2854,-246554 -t -11173,-4864,-247667 \
+				-r 403,2808,0 -f 3467 \
+				-a 200 \
+				-i 1 1 0 0 \
+				-s 1
+		} else {
+			// エマ側
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p -10250,-4505,-251216 -t -9696,-5629,-253536 \
+				-r 287,1895,0 -f 2636 \
+				-a 200 \
+				-i 1 1 0 0 \
+				-s 1
+		}
+	}
+
+	proc 移動中カメラＯＵＴ {
+		if( $b:入水ポイント == d:WATER_ENT_VMP ) {
+			// ヴァンプ側
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				//-p -10595,-1104,-246881 -t -11427,-4850,-247229 \
+				//-r 870,2814,0 -f 3853 \
+				//-a 200 \
+				-p -7837,-3472,-246612 -t -10605,-4939,-247754 \
+				-r 297,2817,0 -f 3335 \
+				-a 200 \
+				-i 1 1 0 0 \
+				-s 1
+		} else {
+			// エマ側
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p -10248,-4430,-251039 -t -9550,-5248,-252799 \
+				-r 266,1802,0 -f 2062 \
+				-a 170 \
+				-i 1 -1 0 0 \
+				-s 1
+		}
+	}
+
+	proc 背負いカメラＯＵＴ {
+		if( $b:入水ポイント == d:WATER_ENT_VMP ) {
+			// ヴァンプ側
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p -8157,-4194,-248687 -t -11121,-5607,-246680 \
+				-r 245,3460,0 -f 3849 \
+				-a 200 \
+				-i 1 0 0 0 \
+				-s 1
+		} else {
+			// エマ側
+			chara カメラ設定 モーションカメラ \
+				-c 1 \
+				-p -8581,-4072,-251436 -t -9761,-5263,-252240 \
+				-r 453,2682,0 -f 1859 \
+				-a 179 \
+				-i 0 1 0 0 \
+				-s 1
+		}
+	}
+
+	proc 水中入出設定 {
+		#if d:DEBUG_PRINT
+			print 'w31c1_water_in_out_set'
+		#endif
+
+		// 南側階段 ヴァンプ
+		trap wa101 d:PLAYER \
+			-mask ＊ \
+			-exec {
+				if( `@入出水チェック` ) {
+					eval( $b:入水ポイント = d:WATER_ENT_VMP )
+					if( !( `command プレイヤー状態取得` & d:PFLAG_WATER ) ) {
+						@入水処理実行 -11000 -6250 -247500 d:WEST 2000 40 290
+					} else {
+						if (( $status & d:PFLAG_WATER ) && ( $status & d:PFLAG_WATER_SURFACE )){
+							@出水処理実行 (-13000+100) -8250 -247500 d:EAST 2000 30 30
+						}
+					}
+				}
+		}
+
+		// 北側階段 エマ
+		trap wa102 d:PLAYER \
+			-mask ＊ \
+			-exec {
+				if( `@入出水チェック` ) {
+					eval( $b:入水ポイント = d:WATER_ENT_EMA )
+					if( !( `command プレイヤー状態取得` & d:PFLAG_WATER ) ) {
+						@入水処理実行 -9500 -6250 -253000 d:NORTH 2000 40 290
+					} else {
+						if (( $status & d:PFLAG_WATER ) && ( $status & d:PFLAG_WATER_SURFACE )){
+							@出水処理実行 -9500 -8250 (-255000+100) d:SOUTH 2000 30 30
+						}
+					}
+				}
+		}
+	}
+
+
+
+
+
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下仮キャラ用proc
+// -----------------------------------------------------------------------------------
+// 仮キャラ
+// ------------------------------------
+	// 照り返しエフェクトの設定
+	// ------------------------------------
+	proc 照り返しエフェクト設定 {
+		#if d:DEBUG_PRINT
+			print 'w31c0_terikaesi_effect_set'
+		#endif
+
+		// 南北用
+		command foreach -argc 4 -repeat 6 \
+			-data { \
+					{ 2048 , -8500 , -245500 , -246000 } \
+					{ 2048 , -11500 , -245500 , -246000 } \
+					{ 2048 , -14500 , -245500 , -246000 } \
+					{ 0 , -14500 , -233000 , -232500 } \
+					{ 0 , -11500 , -233000 , -232500 } \
+					{ 0 , -5500 , -233000 , -232500 } \
+				} \
+				-exec { \
+					chara 天井照り返し 天井照り返し \
+						-r 1024 $1 0 \
+						-p $2 -3000 $3 \
+						-w 1300 \
+						-h 1000 \
+						-m 0 \
+						-a 32
+
+					chara 壁照り返し 壁照り返し \
+						-r 0 $1 0 \
+						-p $2 -4500 $4 \
+						-w 1300 \
+						-h 2000 \
+						-m 1 \
+						-a 64 \
+						-b 0
+				}
+
+		// 東西用
+		command foreach -argc 4 -repeat 8 \
+			-data { \
+					{ 3072 , -16250 , -243750 , -16750 } \
+					{ 3072 , -16250 , -240750 , -16750 } \
+					{ 3072 , -16250 , -237750 , -16750 } \
+					{ 3072 , -16250 , -234750 , -16750 } \
+					{ 1024 , -3750 , -243750 , -3250 } \
+					{ 1024 , -3750 , -240750 , -3250 } \
+					{ 1024 , -3750 , -237750 , -3250 } \
+					{ 1024 , -3750 , -234750 , -3250 } \
+				} \
+				-exec { \
+					chara 天井照り返し 天井照り返し \
+						-r 1024 $1 0 \
+						-p $2 -3000 $3 \
+						-w 1300 \
+						-h 1000 \
+						-m 0 \
+						-a 32
+
+					chara 壁照り返し 壁照り返し \
+						-r 0 $1 0 \
+						-p $4 -4500 $3 \
+						-w 1300 \
+						-h 2000 \
+						-m 1 \
+						-a 64 \
+						-b 0
+				}
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------
+proc デバッグキャラセット {
+	#if d:DEBUG_PRINT
+		print 'debug_chara_set'
+	#endif
+
+	#if d:CHARA_CAMERA
+		chara キャラカメラ 敵兵カメラ \
+			-c d:TARGET_CHARA \
+			-s -920,610,200 \
+			-r -200,1024,0
+	#endif
+
+	#if d:SCREENSHOT
+		chara スクリーンショット shot
+	#endif
+
+	#if d:USB_KEY
+		chara USBキーボード実行 test \
+			-e d:KBD_ESC {
+				mesg プレイヤー d:PLAYER position -5500, -13000, -500
+			} \
+			-e d:KPD_1 {
+				print '水中エフェクト オン'
+				mesg カメラ泡     泡ぶくマン オン
+				mesg カメラダスト ダストマン オン
+			} \
+			-e d:KPD_2 {
+				print '水中エフェクト オフ'
+				mesg カメラ泡     泡ぶくマン オフ
+				mesg カメラダスト ダストマン オフ
+			}
+	#endif
+}

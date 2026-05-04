@@ -1,0 +1,34 @@
+
+
+導入手順
+
+
+§1 プログラムの導入
+
+	make clean
+	make
+	su
+	make install
+
+    で、/usr/local/bin に vsc が導入される。
+    他のディレクトリに導入したい場合は、Makefile の INSTDIR を編集する。
+
+
+
+§2 音韻辞書の作成
+
+    dic/ 以下において、
+
+	make clean
+	make
+
+    とすることで、dictool が生成される。
+    あとは DIC.DOC を参照の上、音韻辞書を作成後、
+
+	日本語用辞書	/usr/local/share/vsc/japanese.dic
+	英語用辞書	/usr/local/share/vsc/english.dic
+
+    として配置する。	
+
+
+以上。

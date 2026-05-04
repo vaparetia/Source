@@ -1,0 +1,106 @@
+// a12a.src
+// Ａ脚・屋上
+// 2002/01/31 H.Yoshiike
+// $Id: a12a.src,v 1.7 2002/07/18 08:20:37 usr03379 Exp $
+
+
+
+// ステージ名
+#define		WN_W12A
+
+// 敵兵タイプ
+#define		ENE_P_GOL
+#define		ENE_ATTACKER
+#define		ENE_HIGH_TECH	// 武装解除はハイテク兵。
+#define		ENE_SHADOW 1
+#define		ENE_NO_FINGER	// フィンガーサイン使わない
+
+// 特殊兵
+
+// 特殊兵のモーション設定
+#define		ENE_MAR '-DDEL_SHOTGUN=DUMMY -DDEL_TNG=DUMMY -DDEL_SHIELD=DUMMY -DDEL_WALKMAN=DUMMY'// -DDEL_HIGH=DUMMY'
+
+// 空・太陽
+#define		DAY_SKY
+
+
+block .use r_vr_s
+block .nocache
+block .cache
+
+// ステージ共通要素
+// 各ステージ共通要素
+#include	"common.h"
+#include	"c_effect.h"
+#include	"goverpic.h"
+
+// オルタナティブミッション用追加エフェクト
+#include	"alt_effect.h"
+
+// キャラクタ
+#include	"ene_plant.h"
+//include		"kamome.h"
+
+
+// 強制モーション
+mtn			sna_a12a.mls
+mtn			rai_a12a.mls
+
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+
+world		w12_common/other
+world		w12_common/w12_bg
+world		w12_common/fence
+hazard		a12a.hzx
+
+//----- w12c
+option makexti6 -l 256
+pack_all	oil.tri \
+				effect/plant_sea/d_oil_sea_alp_ovl_mod0222.bmp \
+				effect/plant_sea/d_oil_ref_add_alp_ovl_mod1120.bmp
+option makexti6
+
+// w12c_elvsk01、w12c_elvsk02、w12a_dr00、w12c_sdw05d_alp.bmp、w12c_sdw05e_alp.bmp、w12c_sdw05f_alp.bmp
+pack_all	zobject.tri \
+				world/w12c/w12c/w12c_elvsk01.dar \
+				world/w12c/w12c/w12c_elvsk02.dar \
+				world/door/w12c_dr00.dar
+
+pack_all	shimmer.tri \
+				effect/haze/haze03_alp_ovl.bmp
+
+world		door/w12c_dr00.kms
+
+world		w12c/w12c
+lt2			w12c.lt2
+
+// ダミー海
+world		w20b/w20b/w20b_dammy_sea.kms
+
+
+
+// オブジェクト
+// 小さいサイズのテクスチャはまとめておく
+
+// 解体Ｃ４
+goods		c4_kaitai_a
+
+// 昇降機
+world		elevator/elv_1/elv_1.kms
+
+// アイテム
+itembox
+
+
+//	振動
+vib			etc/drop_sea.vib
+vib			etc/dock_ele_01.vib
+vib			etc/dock_ele_02.vib
+vib			etc/dock_ele_03.vib
+
+
+// リネーム
+texrename w12a_24a.kms w10c_cntw04.bmp w10c_cntw04_ren.bmp	// ID Conflict のため

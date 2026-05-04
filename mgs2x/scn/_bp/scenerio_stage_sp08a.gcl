@@ -1,0 +1,1715 @@
+/*
+	sp08a.gcl
+		バラエティ ダークステージ
+
+	2002/04/09 H.Yoshiike         
+	$Id: sp08a.gcl,v 1.18 2002/09/11 05:33:08 usr03682 Exp $                      
+
+	
+*/
+
+// ------------------------------------
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_VR		1		// 共通プロック切り分け用
+// ステージ名
+#define		STAGE_SP08A		1		// 共通プロック切り分け用
+// オブジェクト
+#define		ENE_SHOT		1		// ショットガン兵
+#define		ENE_SHIELD		1		// 盾兵
+
+// ------------------------------------
+// 各種スイッチ用define
+// ------------------------------------
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// ------------------------------------
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME			sp08a
+#define		KMS_NAME			sp08a
+#define		TONBO_KMS_NAME		sp08a_tonbo
+#define		LINE_KMS_NAME		sp08a_line
+#define		LT2_NAME			vr_dark
+//#define		LT2_NAME			debug
+
+// キャラクター関係
+#define		PLAYER		ライデン
+
+
+// ------------------------------------
+// 敵兵ルート番号
+// ------------------------------------
+enum E_R {
+	共通待機Ｒ = 0,
+	雷電巡回Ｒ01,
+	雷電巡回Ｒ02,
+	雷電巡回Ｒ03,
+	雷電巡回Ｒ04,
+	雷電巡回Ｒ05,
+	スネーク巡回Ｒ01,
+	スネーク巡回Ｒ02,
+	スネーク巡回Ｒ03,
+	スネーク巡回Ｒ04,
+	スネーク巡回Ｒ05,
+	スネーク巡回Ｒ06,
+	スネーク機雷Ｒ,
+	プリスキン巡回Ｒ01,
+	プリスキン巡回Ｒ02,
+	プリスキン巡回Ｒ03,
+	プリスキン巡回Ｒ04,
+	プリスキン巡回Ｒ05,
+	プリスキン巡回Ｒ06,
+	プリスキン巡回Ｒ07,
+	プリスキン機雷Ｒ,
+	タキシードスネーク巡回Ｒ01,
+	タキシードスネーク巡回Ｒ02,
+	タキシードスネーク巡回Ｒ03,
+	タキシードスネーク巡回Ｒ04,
+	タキシードスネーク巡回Ｒ05,
+	タキシードスネーク巡回Ｒ06,
+	タキシードスネーク巡回Ｒ07,
+	タキシードスネーク機雷Ｒ,
+	刀ライデン巡回Ｒ01,
+	刀ライデン巡回Ｒ02,
+	刀ライデン巡回Ｒ03,
+	刀ライデン巡回Ｒ04,
+	刀ライデン巡回Ｒ05,
+	刀ライデン巡回Ｒ06,
+	刀ライデン巡回Ｒ07,
+	刀ライデン機雷Ｒ01,
+	刀ライデン機雷Ｒ02,
+	前作スネーク巡回Ｒ01,
+	前作スネーク巡回Ｒ02,
+	前作スネーク巡回Ｒ03,
+	前作スネーク巡回Ｒ04,
+	前作スネーク巡回Ｒ05,
+	前作スネーク巡回Ｒ06,
+	前作スネーク巡回Ｒ07,
+	前作スネーク機雷Ｒ01,
+	前作スネーク機雷Ｒ02,
+	前作スネーク機雷Ｒ03,
+
+}
+
+#define ENE_NORMAL_STATUS	d:ENE_STATUS_NIGHT_SIGHT2 d:ENE_STST_FAINT_EXIT
+#define ENE_OPT_STATUS	d:ENE_STATUS_NIGHT_SIGHT2 (d:ENE_STST_FAINT_EXIT | d:ENE_STST_OPTCAMOUFLAGE)
+
+#define	ATTACKER_COMMON_STATUS	 d:E_R:共通待機Ｒ d:ENE_STATUS_NORMAL d:ENE_EQUIP_TYPE_NORMAL
+
+// 長廊下兵守備ポイント＆攻撃タイプ
+/*
+STAND_R,	0 立ち右手攻撃
+SQUAT_R,	1 しゃがみ右手
+STAND_L,	2 立ち左手
+SQUAT_L,	3 しゃがみ左手
+STAND_BACK1	4 使用禁止
+SQUAT_WAIT,	5 使用禁止
+STAND_R_NARROW,	6 転がらない 右手攻撃
+STAND_L_NARROW,	7 転がらない 左手攻撃
+8 しゃがみと立ちのみ
+*/
+// 中央の島
+#define	D_POS_01	15500	 3000	 -14000		0
+#define	D_POS_02	20500	 3000	 -14000		2
+#define	D_POS_03	20500	 3000	 -15000		0
+#define	D_POS_04	17000	 3000	 -16500		0
+#define	D_POS_05	15000	 3000	 -15500		3
+#define	D_POS_06	16000	 3000	 -16500		2
+#define	D_POS_07	16000	 3000	 -18500		3
+#define	D_POS_08	15000	 3000	 -19500		1
+#define	D_POS_09	18500	 3000	 -21000		0
+#define	D_POS_10	20500	 3000	 -21000		7
+#define	D_POS_11	15000	 3000	 -21000		8
+// 北西の島
+#define	D_POS_12	4000	 4000	 -21000		8
+#define	D_POS_13	5500	 4000	 -22000		0
+#define	D_POS_14	6500	 4000	 -22000		2
+#define	D_POS_15	8000	 4000	 -21000		8
+#define	D_POS_16	7000	 4000	 -27000		8
+#define	D_POS_17	7000	 4000	 -25500		0
+// ステージ北東
+#define	D_POS_18	36000	 0		 -39500		7
+#define	D_POS_19	38000	 0		 -39500		6
+#define	D_POS_20	45000	 0		 -35500		6
+#define	D_POS_21	46000	 0		 -35500		7
+#define	D_POS_22	50000	 0		 -32500		6
+#define	D_POS_23	50000	 0		 -36500		0
+#define	D_POS_24	42500	 0		 -38000		0
+#define	D_POS_25	41000	 0		 -38500		2
+#define	D_POS_26	27500	 0		 -38000		0
+// ステージ北
+#define	D_POS_27	14500	 0		 -36000		0
+#define	D_POS_28	17500	 0		 -36000		2
+// ステージ南
+#define	D_POS_29	14000	 0		 -11000		6
+// ステージ南東
+#define	D_POS_30	24500	 0		 -13000		0
+// ステージ西
+#define	D_POS_31	6500	 0		 -17000		0
+#define	D_POS_32	9500	 0		 -17000		2
+
+// ------------------------------------
+// ゴールの位置
+// ------------------------------------
+#define	GOAL_POS_SP08A		56500 0 -39000
+
+// ------------------------------------
+// ＶＲウィンドウのリソース等
+// ------------------------------------
+#define	SP08A_WINDOW_RES [VRMSG_J:VRM_VRT_sp08a] [VRMSG_E:VRM_VRT_sp08a] [VRMSG_G:VRM_VRT_sp08a] \	// 日、英、独
+						 [VRMSG_F:VRM_VRT_sp08a] [VRMSG_I:VRM_VRT_sp08a] [VRMSG_S:VRM_VRT_sp08a] \	// 仏、伊、西
+						 [VRMSG_K:VRM_VRT_sp08a] \															// 韓
+						 p:ＶＲステージ開始時処理		// 終了プロック
+
+
+// ------------------------------------
+// アイテムのポジション
+// ------------------------------------
+#define	ITEM_POS_01		 14500,	 0,		 -10500
+#define	ITEM_POS_02		 14500,	 0,		 -12500
+#define	ITEM_POS_03		 8500,	 0,		 -13500
+#define	ITEM_POS_04		 15500,	 0,		 -3500
+#define	ITEM_POS_05		 17500,	 0,		 -7500
+#define	ITEM_POS_06		 24500,	 0,		 -12500
+#define	ITEM_POS_07		 24500,	 0,		 -16500
+#define	ITEM_POS_08		 17500,	 3000,	 -18000
+#define	ITEM_POS_09		 15500,	 3000,	 -17500
+#define	ITEM_POS_10		 19500,	 3000,	 -20500
+#define	ITEM_POS_11		 6000,	 4000,	 -21500
+#define	ITEM_POS_12		 3500,	 4000,	 -28500
+#define	ITEM_POS_13		 7500,	 4000,	 -28500
+#define	ITEM_POS_14		 14500,	 0,		 -30500
+#define	ITEM_POS_15		 22500,	 -250,	 -39500
+#define	ITEM_POS_16		 39500,	 0,		 -32500
+#define	ITEM_POS_17		 35500,	 0,		 -39500
+#define	ITEM_POS_18		 38500,	 0,		 -39500
+#define	ITEM_POS_19		 44500,	 0,		 -35500
+#define	ITEM_POS_20		 46500,	 0,		 -35500
+#define	ITEM_POS_21		 51500,	 0,		 -32500
+#define	ITEM_POS_22		 13500,	 750,	 -17500
+#define	ITEM_POS_23		 13500,	 0,		 -16500
+#define	ITEM_POS_24		 13500,	 0,		 -18500
+#define	ITEM_POS_25		 20500,	 750,	 -34500
+#define	ITEM_POS_26		 20500,	 0,		 -33500
+#define	ITEM_POS_27		 20500,	 0,		 -35500
+#define	ITEM_POS_28		 30500,	 0,		 -30500
+
+
+// ------------------------------------
+// include
+// ------------------------------------
+#include "rai_sp08a.mh"		// 強制モーションリスト
+#include "stdch.h"
+#include "enevoice.h"
+#include "a_stdproc.h"			// アナザーミッション設定ファイル
+#include "sload.h"
+#include "sound.h"
+#include "jump.h"
+#include "fall.h"
+#include "item_info.h"
+#include "a_item_info.h"
+#include "vr_common.h"		// ＶＲステージ共通で使用するプロック
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+// ------------------------------------
+// マップ設定
+// ------------------------------------
+chara マップ ダークステージ -k d:KMS_NAME -h d:HZX_NAME,0 -l d:LT2_NAME
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 1
+
+command マップ設定 ダークステージ -set {
+	// ローカルの初期化
+	// ------------------------------------
+	@ローカル変数初期化		// ローカルで使用する変数で初期化をする場合はここで
+
+	// 設定値を変更する場合は以下のプロック内で設定
+	// ------------------------------------
+	@設定値変更				// 敵兵や的のパラメータをステージ限定で変える時はここで
+
+	// ＶＲで必要な基本プロックのセット(vr_common.hで定義)
+	// サウンドの基本パック、ＶＲの基本システム、プレイヤー、ゴール等を設定します
+	// ※このプロックを使用する時は「ＶＲクリア時処理」というプロックが必要です
+	// ＶＲ共通プロックセット	$:スネークファイル $:雷電ファイル $:クリア条件フラグ
+	//							$:ゴールＸ $:ゴールＹ $:ゴールＺ $:タイマー初期値
+	//	VR_GOAL_TARGET	/*的全滅でゴールが開く*/
+	//	VR_GOAL_FREE	/*ゴールが最初から開いてる*/
+	//	VR_GOAL_ENEMY	/*敵全滅でゴールが開く*/
+	//	VR_GOAL_SNEAK	/*潜入モード中はゴールが開く*/
+	//	VR_GOAL_TIME	/*タイマーがゼロになるとゴールが開く*/
+	// ------------------------------------
+	@ＶＲ共通プロックセット sna_sp08a rai_sp08a d:VR_GOAL_ENEMY d:GOAL_POS_SP08A
+
+	// ＶＲウィンドウの設定
+	// ------------------------------------
+	@ダークステージＶＲウィンドウ設定
+
+	// クリア時に呼ばれるものの設定
+	// ------------------------------------
+	if ( $s:選択プレイヤー == ライデン || $s:選択プレイヤー == スネーク ) {
+		@ＶＲクリア設定 p:load_sp07a p:A_ＲＥＴＲＹプロック
+	} else if ( $s:選択プレイヤー == 前作スネーク  ) {
+		@ＶＲクリア設定 p:load_sp03a p:A_ＲＥＴＲＹプロック
+	} else {
+		@ＶＲクリア設定 p:A_ミッションエンド p:A_ＲＥＴＲＹプロック
+	}
+
+	// ステージに引かれるライン
+	// ------------------------------------
+	@ＶＲアウトライン d:KMS_NAME d:TONBO_KMS_NAME d:LINE_KMS_NAME
+
+
+	// プレイヤーの設定
+	// ------------------------------------
+	@プラグイン設定			// プレイヤーのプラグインがいる時はここで
+	@ジャンプ設定
+
+	// 敵兵・的関係の設定
+	// ------------------------------------
+	@コマンダー設定
+	@ＶＲ機雷設定
+
+	// ＢＧＭの設定(プレイヤー→敵兵→BGMの順で呼ぶ)
+	// ------------------------------------
+	@ＢＧＭ設定
+
+	// アイテムの設定
+	// ------------------------------------
+	@アイテム設定
+
+	// 光源、オブジェクト、カメラ関連の設定
+	// ------------------------------------
+	@鏡設定
+	@ガラス弾痕設定
+	@落とし穴設置
+	@フォグ設定
+	@カメラセット					// chara カメラとベースのカメラを設定
+	@ダークステージカメラ設定		// ステージ固有のカメラ設定がいる時はこのプロックで
+	@キャラ用ライト設置				// 必ず最後に設定
+#if d:DEBUG_CHARA
+//	@デバッグキャラセット
+#endif
+}
+
+//初期マップの表示
+command マップ表示 -show ダークステージ
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// 全マップ共通
+	//------------------------------------------------------------
+	// ＶＲウィンドウの設定と表示
+	//------------------------------------------------------------
+	proc ダークステージＶＲウィンドウ設定 {
+		#if d:DEBUG_PRINT
+			print 'vr_window_set'
+		#endif
+
+		@ＶＲウィンドウ設定	d:SP08A_WINDOW_RES
+
+		// ＶＲウィンドウを表示する
+		mesg ＶＲウィンドウ ＶＲウィンドウ君 開く
+
+		// スタート時とクリア時に使用するカットインカメラ
+		chara カメラ カットインカメラ		-c 0 -l 0 -p  0
+
+		// スタート時のカメラ(必要な場合)
+		chara カメラ設定 カットインカメラ \
+			-c 1 \	
+			-p 56500,6531,-35031 -t 56500,0,-39000 \
+			-r 668,2048,0 -f 7643 \
+			-a 200 \
+			-i 0 -1 0 0 \
+			-s 1
+	}
+
+	//------------------------------------------------------------
+	// ステージ開始時処理
+	//------------------------------------------------------------
+	proc ＶＲステージ開始時処理 {
+		#if d:DEBUG_PRINT
+			print 'game_start!!!!!'
+		#endif
+
+		// プレイヤーやパッドの制御等を行う a_stdproc.hで定義
+		@全ミッション共通ステージ開始時処理
+
+		// カメラワークスタート(必要な場合)
+		// 全体図
+		chara カメラ設定 カットインカメラ \
+			-c 1 \	
+			-p 26953,60228,15624 -t 26953,-12370,-26986 \
+			-r 678,2048,0 -f 84179 \
+			-a 200 \
+			-i 4 4 d:START_CAMERA_CHANGE_TIME d:START_CAMERA_CHANGE_TIME \
+			-s 1
+
+		chara delay ディレイ \
+			-time d:START_CAMERA_CHANGE_TIME \
+			-exec {
+				chara カメラ設定 カットインカメラ -s -1
+			}
+	}
+
+
+	// ------------------------------------
+	// クリア時の処理
+	// ------------------------------------
+	proc ＶＲクリア時処理 {
+		#if d:DEBUG_PRINT 
+			print 'clear'
+		#endif
+
+		// 強制モーションを発動(ザコサバイバルのないキャラは、最後のステージなのでモーションを変える）
+		if ( $s:選択プレイヤー == ライデン || $s:選択プレイヤー == スネーク || $s:選択プレイヤー == 前作スネーク ) {
+			@全ミッション共通クリアモーション発動 d:モーションリスト:non_mclr_1 0
+		} else {
+			@全ミッション共通クリアモーション発動 d:モーションリスト:non_mclr_2 0
+		}
+
+		// クリア時にカメラアングルを変える
+		chara カメラ設定 クリア時カメラ \
+			-c 1 \	
+			-p 56833,1822,-34148 -t 56310,1252,-37332 \
+			-r 114,2154,0 -f 3277 \
+			-a 200 \
+			-i 1 0 0 0 \
+			-s 1
+	}
+
+
+
+	// ------------------------------------
+	// パラメータ系の変更
+	// ------------------------------------
+	// ローカル変数初期化
+	// ------------------------------------
+	proc ローカル変数初期化 {
+		#if d:DEBUG_PRINT 
+			print 'localvar_init'
+		#endif
+
+		$$i:テンプライトカウンタ = 0;
+	}
+
+	// 設定値を変更
+	// ------------------------------------
+	proc 設定値変更 {
+		#if d:DEBUG_PRINT 
+			print 'status_set'
+		#endif
+
+		// 初期装備の追加設定
+		switch ( $s:選択プレイヤー ) {
+			case ( ライデン ) {
+				$w:武器弾数Ｒ[ d:武器:Ｍ９ ] = 16;
+				$w:武器弾数Ｒ[ d:武器:ソコム ] = 25;
+				$w:プレイヤーフラグ = ( $w:プレイヤーフラグ| d:PL_SOCOM_SPPRSR_ATTACHED );
+				$w:武器弾数Ｒ[ d:武器:マガジン ] = 5;
+				$w:アイテム数Ｒ[ d:アイテム:双眼鏡 ] = 1;
+				$w:アイテム数Ｒ[ d:アイテム:振動センサー ] = 1
+				$w:武器 = d:武器:ソコム;
+				$w:アイテム = d:アイテム:振動センサー;
+			}
+			case ( スネーク ) {
+				$w:武器弾数Ｒ[ d:武器:Ｍ９ ] = 16;
+				$w:武器弾数Ｒ[ d:武器:ＵＳＰ ] = 16;
+				$w:武器弾数Ｒ[ d:武器:マガジン ] = 5;
+				$w:プレイヤーフラグ = ( $w:プレイヤーフラグ| d:PL_USP_SPPRSR_ATTACHED );
+				$w:アイテム数Ｒ[ d:アイテム:双眼鏡 ] = 1;
+				$w:アイテム数Ｒ[ d:アイテム:振動センサー ] = 1;
+				$w:武器 = d:武器:ＵＳＰ;
+				$w:アイテム = d:アイテム:振動センサー;
+			}
+			case ( プリスキン ) {
+				$w:武器弾数Ｒ[ d:武器:Ｍ４ ] = 61;
+				$w:アイテム数Ｒ[ d:アイテム:振動センサー ] = 1
+				$w:アイテム数Ｒ[ d:アイテム:双眼鏡 ] = 1;
+				$w:武器弾数Ｒ[ d:武器:マガジン ] = 3;
+				$w:武器 = d:武器:Ｍ４;
+				$w:アイテム = d:アイテム:振動センサー;
+			}
+			case ( タキシードスネーク ) {
+				$w:武器弾数Ｒ[ d:武器:Ｍ９ ] = 7;
+				$w:アイテム数Ｒ[ d:アイテム:振動センサー ] = 1
+				$w:アイテム数Ｒ[ d:アイテム:双眼鏡 ] = 1;
+				$w:武器弾数Ｒ[ d:武器:マガジン ] = 3;
+				$w:武器 = d:武器:Ｍ９;
+				$w:アイテム = d:アイテム:振動センサー;
+			}
+			case ( 刀ライデン ) {
+				$w:武器弾数Ｒ[ d:武器:ブレード ] = 1;
+				$w:プレイヤーフラグ = ( $w:プレイヤーフラグ | d:PL_START_STATE_BLADE_OUT );		// 刀抜いている
+				$w:プレイヤーフラグ = ( $w:プレイヤーフラグ & ~(d:PL_START_STATE_BLADE_INV) );	// 峰うちじゃない
+				$w:アイテム数Ｒ[ d:アイテム:双眼鏡 ] = 1;
+				$w:アイテム数Ｒ[ d:アイテム:振動センサー ] = 1
+				$w:アイテム = d:アイテム:振動センサー;
+				$w:武器 = d:武器:ブレード;
+				$w:アイテム = d:アイテム:振動センサー;
+			}
+			default {
+				// 前作スネーク
+				$w:武器弾数Ｒ[ d:武器:ＵＳＰ ] = 7;
+				$w:アイテム数Ｒ[ d:アイテム:双眼鏡 ] = 1;
+				$w:武器 = d:武器:ＵＳＰ;
+				$w:アイテム = d:アイテム:素手;
+			}
+		}
+
+	}
+
+
+
+	// ------------------------------------
+	// プレイヤーに関する設定
+	//-------------------------------------
+	// プラグインプログラム
+	// ------------------------------------
+	proc プラグイン設定 {
+		#if d:DEBUG_PRINT
+			print 'plugin_set'
+		#endif
+
+		command プラグイン自動ジャンプ
+		command ＵＳＰライトＯＮ
+		command プラグイン落下
+	}
+	//-------------------------------------
+	// 台登り
+	// ------------------------------------
+	proc ジャンプ設定 {
+		#if d:DEBUG_PRINT
+			print 'jump_set'
+		#endif
+
+		trap ky001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				@ジャンプ発動 ky001 1000 10
+			}
+	}
+
+
+
+	// ------------------------------------
+	// 敵兵や的の処理
+	// ------------------------------------
+	// 敵兵に関する設定
+	//-------------------------------------
+	// 拠点防衛型の警備兵
+	proc VR_拠点防衛兵 $:p_名前 $:p_ルート $:p_ステータス $:p_拡張ステータス {
+		#if d:DEBUG_PRINT
+			print 'watcher_set'
+		#endif
+
+		chara 長廊下兵 $:p_名前 \
+			-r $:p_ルート \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:敵標準体力 -f $w:敵標準気絶 \
+			-s $:p_ステータス \
+			-k ( d:ENE_STST_VRBODY | $:p_拡張ステータス ) \
+			-v d:アナザーダーク \
+			-t 0
+	}
+
+	// ライデンの敵兵セット
+	proc 拠点兵セット_ライデン {
+		#if d:DEBUG_PRINT 
+			print 'watcher_set'
+		#endif
+
+		@VR_拠点防衛兵 敵兵:01 d:E_R:雷電巡回Ｒ01 d:ENE_NORMAL_STATUS
+		@VR_拠点防衛兵 敵兵:02 d:E_R:雷電巡回Ｒ02 d:ENE_NORMAL_STATUS
+		@VR_拠点防衛兵 敵兵:03 d:E_R:雷電巡回Ｒ03 d:ENE_NORMAL_STATUS
+		@VR_拠点防衛兵 敵兵:04 d:E_R:雷電巡回Ｒ04 d:ENE_NORMAL_STATUS
+		@VR_拠点防衛兵 敵兵:05 d:E_R:雷電巡回Ｒ05 d:ENE_NORMAL_STATUS
+	}
+
+	proc 拠点兵コマンダー_ライデン {
+		#if d:DEBUG_PRINT
+			print 'wccomm_set'
+		#endif
+
+		chara 長廊下コマンダー wccomm \
+			-e { 拠点兵セット_ライデン } \
+			-defense \
+				d:D_POS_01 \
+				d:D_POS_08 \
+				d:D_POS_15 \
+				d:D_POS_26 \
+				d:D_POS_25 \
+				d:D_POS_02 \
+				d:D_POS_03 \
+				d:D_POS_10 \
+				d:D_POS_16 \
+				d:D_POS_30 \
+				d:D_POS_31 \
+				d:D_POS_20 \
+				d:D_POS_23 \
+				d:D_POS_27 \
+			-type	0 \
+			-final	56500 0 -39000
+	}
+
+
+	// スネークの敵兵セット
+	proc 拠点兵セット_スネーク {
+		#if d:DEBUG_PRINT 
+			print 'watcher_set'
+		#endif
+
+		@VR_拠点防衛兵 敵兵:01 d:E_R:スネーク巡回Ｒ02 d:ENE_NORMAL_STATUS
+		@VR_拠点防衛兵 敵兵:02 d:E_R:スネーク巡回Ｒ04 d:ENE_NORMAL_STATUS
+		@VR_拠点防衛兵 敵兵:03 d:E_R:スネーク巡回Ｒ05 d:ENE_NORMAL_STATUS
+		@VR_拠点防衛兵 敵兵:04 d:E_R:スネーク巡回Ｒ06 d:ENE_NORMAL_STATUS
+	}
+
+	proc 拠点兵コマンダー_スネーク {
+		#if d:DEBUG_PRINT
+			print 'wccomm_set'
+		#endif
+
+		chara 長廊下コマンダー wccomm \
+			-e { 拠点兵セット_スネーク } \
+			-defense \
+				d:D_POS_06 \
+				d:D_POS_16 \
+				d:D_POS_18 \
+				d:D_POS_22 \
+				d:D_POS_04 \
+				d:D_POS_10 \
+				d:D_POS_11 \
+				d:D_POS_12 \
+				d:D_POS_15 \
+				d:D_POS_28 \
+				d:D_POS_29 \
+				d:D_POS_30 \
+				d:D_POS_31 \
+				d:D_POS_32 \
+				d:D_POS_23 \
+				d:D_POS_24 \
+			-type	0 \
+			-final	56500 0 -39000
+	}
+
+	proc 警備攻撃兵セット_スネーク {
+		#if d:DEBUG_PRINT 
+			print 'attacker_set'
+		#endif
+
+		// VR_警備攻撃兵 $:p_名前 $:p_ルート $:p_ノード $:p_ステータス $:p_拡張ステータス $:p_装備
+		@VR_警備攻撃兵 敵兵:11 d:E_R:スネーク巡回Ｒ01 0 d:ENE_NORMAL_STATUS d:ENE_EQUIP_TYPE_NORMAL
+		@VR_警備攻撃兵 敵兵:12 d:E_R:スネーク巡回Ｒ03 0 d:ENE_NORMAL_STATUS d:ENE_EQUIP_TYPE_SHOTGUN
+	}
+
+
+	// プリスキンの敵兵セット
+	proc 拠点兵セット_プリスキン {
+		#if d:DEBUG_PRINT 
+			print 'watcher_set'
+		#endif
+
+		@VR_拠点防衛兵 敵兵:01 d:E_R:プリスキン巡回Ｒ02 d:ENE_NORMAL_STATUS
+		@VR_拠点防衛兵 敵兵:02 d:E_R:プリスキン巡回Ｒ03 d:ENE_NORMAL_STATUS
+		@VR_拠点防衛兵 敵兵:03 d:E_R:プリスキン巡回Ｒ05 d:ENE_NORMAL_STATUS
+		@VR_拠点防衛兵 敵兵:04 d:E_R:プリスキン巡回Ｒ06 d:ENE_NORMAL_STATUS
+	}
+
+	proc 拠点兵コマンダー_プリスキン {
+		#if d:DEBUG_PRINT
+			print 'wccomm_set'
+		#endif
+
+		chara 長廊下コマンダー wccomm \
+			-e { 拠点兵セット_プリスキン } \
+			-defense \
+				d:D_POS_08 \
+				d:D_POS_14 \
+				d:D_POS_27 \
+				d:D_POS_20 \
+				d:D_POS_02 \
+				d:D_POS_05 \
+				d:D_POS_09 \
+				d:D_POS_13 \
+				d:D_POS_16 \
+				d:D_POS_28 \
+				d:D_POS_24 \
+				d:D_POS_23 \
+				d:D_POS_29 \
+				d:D_POS_30 \
+				d:D_POS_31 \
+				d:D_POS_32 \
+			-type	0 \
+			-final	56500 0 -39000
+	}
+
+	proc 警備攻撃兵セット_プリスキン {
+		#if d:DEBUG_PRINT 
+			print 'attacker_set'
+		#endif
+
+		// VR_警備攻撃兵 $:p_名前 $:p_ルート $:p_ノード $:p_ステータス $:p_拡張ステータス $:p_装備
+		@VR_警備攻撃兵 敵兵:11 d:E_R:プリスキン巡回Ｒ01 0 d:ENE_NORMAL_STATUS d:ENE_EQUIP_TYPE_NORMAL
+		@VR_警備攻撃兵 敵兵:12 d:E_R:プリスキン巡回Ｒ04 0 d:ENE_NORMAL_STATUS d:ENE_EQUIP_TYPE_SHIELD
+		@VR_警備攻撃兵 敵兵:13 d:E_R:プリスキン巡回Ｒ07 0 d:ENE_NORMAL_STATUS d:ENE_EQUIP_TYPE_SHOTGUN
+	}
+
+
+	// タキシードスネークの敵兵セット
+	proc 拠点兵セット_タキシードスネーク {
+		#if d:DEBUG_PRINT 
+			print 'watcher_set'
+		#endif
+
+		@VR_拠点防衛兵 敵兵:01 d:E_R:タキシードスネーク巡回Ｒ02 d:ENE_NORMAL_STATUS
+		@VR_拠点防衛兵 敵兵:02 d:E_R:タキシードスネーク巡回Ｒ03 d:ENE_NORMAL_STATUS
+		@VR_拠点防衛兵 敵兵:03 d:E_R:タキシードスネーク巡回Ｒ05 d:ENE_NORMAL_STATUS
+		@VR_拠点防衛兵 敵兵:04 d:E_R:タキシードスネーク巡回Ｒ06 d:ENE_NORMAL_STATUS
+	}
+
+	proc 拠点兵コマンダー_タキシードスネーク {
+		#if d:DEBUG_PRINT
+			print 'wccomm_set'
+		#endif
+
+		chara 長廊下コマンダー wccomm \
+			-e { 拠点兵セット_タキシードスネーク } \
+			-defense \
+				d:D_POS_11 \
+				d:D_POS_13 \
+				d:D_POS_23 \
+				d:D_POS_25 \
+				d:D_POS_01 \
+				d:D_POS_02 \
+				d:D_POS_03 \
+				d:D_POS_04 \
+				d:D_POS_14 \
+				d:D_POS_16 \
+				d:D_POS_20 \
+				d:D_POS_21 \
+				d:D_POS_24 \
+				d:D_POS_28 \
+				d:D_POS_30 \
+				d:D_POS_32 \
+			-type	0 \
+			-final	56500 0 -39000
+	}
+
+	proc 警備攻撃兵セット_タキシードスネーク {
+		#if d:DEBUG_PRINT 
+			print 'attacker_set'
+		#endif
+
+		// VR_警備攻撃兵 $:p_名前 $:p_ルート $:p_ノード $:p_ステータス $:p_拡張ステータス $:p_装備
+		@VR_警備攻撃兵 敵兵:11 d:E_R:タキシードスネーク巡回Ｒ01 0 d:ENE_NORMAL_STATUS d:ENE_EQUIP_TYPE_SHOTGUN
+		@VR_警備攻撃兵 敵兵:12 d:E_R:タキシードスネーク巡回Ｒ04 0 d:ENE_NORMAL_STATUS d:ENE_EQUIP_TYPE_SHIELD
+		@VR_警備攻撃兵 敵兵:13 d:E_R:タキシードスネーク巡回Ｒ07 0 d:ENE_NORMAL_STATUS d:ENE_EQUIP_TYPE_LIGHT_SHIELD
+	}
+
+
+	// 刀ライデンの敵兵セット
+	proc 拠点兵セット_刀ライデン {
+		#if d:DEBUG_PRINT 
+			print 'watcher_set'
+		#endif
+
+		@VR_拠点防衛兵 敵兵:01 d:E_R:刀ライデン巡回Ｒ04 d:ENE_NORMAL_STATUS
+		@VR_拠点防衛兵 敵兵:02 d:E_R:刀ライデン巡回Ｒ05 d:ENE_NORMAL_STATUS
+		@VR_拠点防衛兵 敵兵:03 d:E_R:刀ライデン巡回Ｒ06 d:ENE_NORMAL_STATUS
+		@VR_拠点防衛兵 敵兵:04 d:E_R:刀ライデン巡回Ｒ07 d:ENE_NORMAL_STATUS
+	}
+
+	proc 拠点兵コマンダー_刀ライデン {
+		#if d:DEBUG_PRINT
+			print 'wccomm_set'
+		#endif
+
+		chara 長廊下コマンダー wccomm \
+			-e { 拠点兵セット_刀ライデン } \
+			-defense \
+				d:D_POS_09 \
+				d:D_POS_15 \
+				d:D_POS_25 \
+				d:D_POS_19 \
+				d:D_POS_01 \
+				d:D_POS_03 \
+				d:D_POS_04 \
+				d:D_POS_05 \
+				d:D_POS_11 \
+				d:D_POS_14 \
+				d:D_POS_17 \
+				d:D_POS_21 \
+				d:D_POS_27 \
+				d:D_POS_28 \
+				d:D_POS_30 \
+				d:D_POS_32 \
+			-type	0 \
+			-final	56500 0 -39000
+	}
+
+	proc 警備攻撃兵セット_刀ライデン {
+		#if d:DEBUG_PRINT 
+			print 'attacker_set'
+		#endif
+
+		// VR_警備攻撃兵 $:p_名前 $:p_ルート $:p_ノード $:p_ステータス $:p_拡張ステータス $:p_装備
+		@VR_警備攻撃兵 敵兵:11 d:E_R:刀ライデン巡回Ｒ01 0 d:ENE_NORMAL_STATUS d:ENE_EQUIP_TYPE_SHIELD
+		@VR_警備攻撃兵 敵兵:12 d:E_R:刀ライデン巡回Ｒ02 0 d:ENE_NORMAL_STATUS d:ENE_EQUIP_TYPE_SHOTGUN
+		@VR_警備攻撃兵 敵兵:13 d:E_R:刀ライデン巡回Ｒ03 0 d:ENE_NORMAL_STATUS d:ENE_EQUIP_TYPE_SHOTGUN
+	}
+
+
+	// 前作スネークの敵兵セット
+	proc 拠点兵セット_前作スネーク {
+		#if d:DEBUG_PRINT 
+			print 'watcher_set'
+		#endif
+
+		@VR_拠点防衛兵 敵兵:01 d:E_R:前作スネーク巡回Ｒ01 d:ENE_NORMAL_STATUS
+		@VR_拠点防衛兵 敵兵:02 d:E_R:前作スネーク巡回Ｒ03 d:ENE_OPT_STATUS
+		@VR_拠点防衛兵 敵兵:03 d:E_R:前作スネーク巡回Ｒ05 d:ENE_NORMAL_STATUS
+		@VR_拠点防衛兵 敵兵:04 d:E_R:前作スネーク巡回Ｒ06 d:ENE_OPT_STATUS
+	}
+
+	proc 拠点兵コマンダー_前作スネーク {
+		#if d:DEBUG_PRINT
+			print 'wccomm_set'
+		#endif
+
+		chara 長廊下コマンダー wccomm \
+			-e { 拠点兵セット_前作スネーク } \
+			-defense \
+				d:D_POS_11 \
+				d:D_POS_13 \
+				d:D_POS_23 \
+				d:D_POS_25 \
+				d:D_POS_01 \
+				d:D_POS_02 \
+				d:D_POS_03 \
+				d:D_POS_04 \
+				d:D_POS_14 \
+				d:D_POS_16 \
+				d:D_POS_20 \
+				d:D_POS_21 \
+				d:D_POS_24 \
+				d:D_POS_28 \
+				d:D_POS_30 \
+				d:D_POS_32 \
+			-type	0 \
+			-final	56500 0 -39000
+	}
+
+	proc 警備攻撃兵セット_前作スネーク {
+		#if d:DEBUG_PRINT 
+			print 'attacker_set'
+		#endif
+
+		// VR_警備攻撃兵 $:p_名前 $:p_ルート $:p_ノード $:p_ステータス $:p_拡張ステータス $:p_装備
+		@VR_警備攻撃兵 敵兵:11 d:E_R:前作スネーク巡回Ｒ02 0 d:ENE_NORMAL_STATUS d:ENE_EQUIP_TYPE_SHOTGUN
+		@VR_警備攻撃兵 敵兵:12 d:E_R:前作スネーク巡回Ｒ04 0 d:ENE_NORMAL_STATUS d:ENE_EQUIP_TYPE_SHOTGUN
+		@VR_警備攻撃兵 敵兵:13 d:E_R:前作スネーク巡回Ｒ07 0 d:ENE_OPT_STATUS d:ENE_EQUIP_TYPE_SHOTGUN
+	}
+
+
+
+
+
+	// 各兵士のコマンダー
+	proc 拠点兵コマンダー {
+		#if d:DEBUG_PRINT
+			print 'wccomm_set'
+		#endif
+
+		switch ( $s:選択プレイヤー ) {
+			case ( ライデン ) {
+				@拠点兵コマンダー_ライデン
+			}
+			case ( スネーク ) {
+				@拠点兵コマンダー_スネーク
+			}
+			case ( プリスキン ) {
+				@拠点兵コマンダー_プリスキン
+			}
+			case ( タキシードスネーク ) {
+				@拠点兵コマンダー_タキシードスネーク
+			}
+			case ( 刀ライデン ) {
+				@拠点兵コマンダー_刀ライデン
+			}
+			default {
+				// 前作スネーク
+				@拠点兵コマンダー_前作スネーク
+			}
+		}
+	}
+
+	proc 攻撃兵コマンダー {
+		#if d:DEBUG_PRINT
+			print 'atcomm_set'
+		#endif
+
+		switch ( $s:選択プレイヤー ) {
+			case ( スネーク ) {
+				chara 攻撃コマンダー wccomm -e { 警備攻撃兵セット_スネーク }
+			}
+			case ( プリスキン ) {
+				chara 攻撃コマンダー wccomm -e { 警備攻撃兵セット_プリスキン }
+			}
+			case ( タキシードスネーク ) {
+				chara 攻撃コマンダー wccomm -e { 警備攻撃兵セット_タキシードスネーク }
+			}
+			case ( 刀ライデン ) {
+				chara 攻撃コマンダー wccomm -e { 警備攻撃兵セット_刀ライデン }
+			}
+			default {
+				// 前作スネーク
+				chara 攻撃コマンダー wccomm -e { 警備攻撃兵セット_前作スネーク }
+			}
+		}
+	}
+
+	proc コマンダー設定 {
+		#if d:DEBUG_PRINT
+			print 'commander_set'
+		#endif
+
+		if ( $s:選択プレイヤー == ライデン ) {
+			chara コマンダー 敵兵セット \
+				-w 拠点兵コマンダー \
+				-d ダークステージ \
+				-r d:GOAL_POS_SP08A ダークステージ \
+				-c d:GOAL_POS_SP08A ダークステージ \
+				-v [ene_vr_voice:01] \
+				-z $i:敵標準麻酔持続 \
+				-h $i:標準警戒時間 \
+				-o $i:敵標準気絶持続 \
+				-s (d:ENE_STAGE_VR_ANOTHER) \
+				-b 0 \
+				-m d:ALERT_MODE_SENNYU
+		} else {
+			chara コマンダー 敵兵セット \
+				-w 拠点兵コマンダー \
+				-a 攻撃兵コマンダー \
+				-d ダークステージ \
+				-r d:GOAL_POS_SP08A ダークステージ \
+				-c d:GOAL_POS_SP08A ダークステージ \
+				-v [ene_vr_voice:01] \
+				-z $i:敵標準麻酔持続 \
+				-h $i:標準警戒時間 \
+				-o $i:敵標準気絶持続 \
+				-s (d:ENE_STAGE_VR_ANOTHER) \
+				-b 0 \
+				-m d:ALERT_MODE_SENNYU
+		}
+
+	}
+
+
+
+
+	// 的に関する設定
+	//-------------------------------------
+	proc ＶＲ機雷設定 {
+		#if d:DEBUG_PRINT 
+			print 'vr_bomb_set'
+		#endif
+
+		local $$:ＶＲ機雷フラグ;
+		$$:ＶＲ機雷フラグ = ( d:VR_TRG_MINE | d:VR_TRG_FL_MARK );
+
+		switch ( $s:選択プレイヤー ) {
+			case ( スネーク ) {
+				chara	ＶＲ移動的 機雷:01 \
+					-flag $$:ＶＲ機雷フラグ \
+					-route d:E_R:スネーク機雷Ｒ \
+					-speed 25
+			}
+			case ( プリスキン ) {
+				chara	ＶＲ移動的 機雷:01 \
+					-flag $$:ＶＲ機雷フラグ \
+					-route d:E_R:プリスキン機雷Ｒ \
+					-speed 25
+			}
+			case ( タキシードスネーク ) {
+				chara	ＶＲ移動的 機雷:01 \
+					-flag $$:ＶＲ機雷フラグ \
+					-route d:E_R:タキシードスネーク機雷Ｒ \
+					-speed 25
+			}
+			case ( 刀ライデン ) {
+				chara	ＶＲ移動的 機雷:01 \
+					-flag $$:ＶＲ機雷フラグ \
+					-route d:E_R:刀ライデン機雷Ｒ01 \
+					-speed 40
+
+				chara	ＶＲ移動的 機雷:02 \
+					-flag $$:ＶＲ機雷フラグ \
+					-route d:E_R:刀ライデン機雷Ｒ02 \
+					-speed 40
+			}
+			case ( 前作スネーク ) {
+				// 前作スネーク
+				chara	ＶＲ移動的 機雷:01 \
+					-flag $$:ＶＲ機雷フラグ \
+					-route d:E_R:前作スネーク機雷Ｒ01 \
+					-speed 50
+
+				chara	ＶＲ移動的 機雷:02 \
+					-flag $$:ＶＲ機雷フラグ \
+					-route d:E_R:前作スネーク機雷Ｒ02 \
+					-speed 50
+
+				chara	ＶＲ移動的 機雷:03 \
+					-flag $$:ＶＲ機雷フラグ \
+					-route d:E_R:前作スネーク機雷Ｒ03 \
+					-speed 50
+			}
+		}
+	}
+
+
+
+	// ------------------------------------
+	// ＢＧＭの設定
+	// ------------------------------------
+	proc ＢＧＭ設定 {
+		#if d:DEBUG_PRINT 
+			print 'bgm_set'
+		#endif
+
+		chara ＢＧＭマネージャー ＢＧＭマネ
+	}
+
+
+	// ------------------------------------
+	// アイテムの設定
+	// ------------------------------------
+	// 再発生が必要な時は以下のプロックの中を記述する
+	// ------------------------------------
+	proc アイテム取得時番号設定 $:ボックス名 {
+		#if d:DEBUG_PRINT
+			print 'item_no_set'
+		#endif
+	}
+	// アイテムの設置
+	// ------------------------------------
+	proc アイテム設定 {
+		#if d:DEBUG_PRINT 
+			print 'item_set'
+		#endif
+
+		switch ( $s:選択プレイヤー ) {
+			case ( ライデン ) {
+				@A_ＰＳＧ１_初期設置 ＰＳＧ１本体 d:ITEM_POS_03 0 なし 15
+				@A_ＰＳＧ１−Ｔ_初期設置 ＰＳＧ１−Ｔ本体 d:ITEM_POS_04 0 なし 15
+				@ジアゼパム_初期設置 ジアゼパム d:ITEM_POS_05 0
+				@暗視ゴーグル_初期設置 暗視ゴーグル d:ITEM_POS_01 0
+				@サーマルゴーグル_初期設置 サーマルゴーグル d:ITEM_POS_07 0
+			}
+			case ( スネーク ) {
+				@A_ＰＳＧ１_初期設置 ＰＳＧ１本体 d:ITEM_POS_06 0 なし 15
+				@A_ＰＳＧ１−Ｔ_初期設置 ＰＳＧ１−Ｔ本体 d:ITEM_POS_01 0 なし 15
+				@ジアゼパム_初期設置 ジアゼパム d:ITEM_POS_03 0
+				@暗視ゴーグル_初期設置 暗視ゴーグル d:ITEM_POS_22 0
+				@サーマルゴーグル_初期設置 サーマルゴーグル d:ITEM_POS_09 0
+			}
+			case ( プリスキン ) {
+				@A_Ｍ９_初期設置 Ｍ９本体 d:ITEM_POS_03 0 なし 10
+				@A_ＵＳＰ_初期設置 ＵＳＰ本体 d:ITEM_POS_28 0 なし 16
+				@A_ＰＳＧ１_初期設置 ＰＳＧ１本体 d:ITEM_POS_22 0 なし 15
+				@A_ＰＳＧ１−Ｔ_初期設置 ＰＳＧ１−Ｔ本体 d:ITEM_POS_08 0 なし 10
+				@ジアゼパム_初期設置 ジアゼパム d:ITEM_POS_02 0
+				@暗視ゴーグル_初期設置 暗視ゴーグル d:ITEM_POS_13 0
+				@サーマルゴーグル_初期設置 サーマルゴーグル d:ITEM_POS_15 0
+			}
+			case ( タキシードスネーク ) {
+				@A_ＵＳＰ_初期設置 ＵＳＰ本体 d:ITEM_POS_01 0 なし 16
+				@A_ＰＳＧ１_初期設置 ＰＳＧ１本体 d:ITEM_POS_11 0 なし 15
+				@A_ＰＳＧ１−Ｔ_初期設置 ＰＳＧ１−Ｔ本体 d:ITEM_POS_22 0 なし 7
+				@ジアゼパム_初期設置 ジアゼパム d:ITEM_POS_05 0
+				@暗視ゴーグル_初期設置 暗視ゴーグル d:ITEM_POS_10 0
+				@サーマルゴーグル_初期設置 サーマルゴーグル d:ITEM_POS_15 0
+			}
+			case ( 刀ライデン ) {
+				@暗視ゴーグル_初期設置 暗視ゴーグル d:ITEM_POS_10 0
+				@サーマルゴーグル_初期設置 サーマルゴーグル d:ITEM_POS_13 0
+			}
+			default {
+				// 前作スネーク
+				@A_Ｍ９_初期設置 Ｍ９本体 d:ITEM_POS_22 0 なし 7
+				@弾薬_ＵＳＰ_初期設置 ＵＳＰ弾薬 d:ITEM_POS_12 0 なし 16
+				@A_ＰＳＧ１_初期設置 ＰＳＧ１本体 d:ITEM_POS_11 0 なし 15
+				@A_ＰＳＧ１−Ｔ_初期設置 ＰＳＧ１−Ｔ本体 d:ITEM_POS_10 0 なし 7
+				@ジアゼパム_初期設置 ジアゼパム d:ITEM_POS_03 0
+				@暗視ゴーグル_初期設置 暗視ゴーグル d:ITEM_POS_15 0
+				@サーマルゴーグル_初期設置 サーマルゴーグル d:ITEM_POS_16 0
+			}
+		}
+
+	}
+
+
+
+	// ------------------------------------
+	// その他オブジェクト関係
+	// ------------------------------------
+	// 鏡
+	// ------------------------------------
+	proc 鏡設定 {
+		#if d:DEBUG_PRINT
+			print 'mirror_set'
+		#endif
+
+		chara 真鏡面  びっくり鏡 -p 18000,1570,-42000 -a 2
+
+		command ＵＳＰライト鏡面 -p 18000,1570,-42000 -a 2
+
+		trap ev001 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					mesg 真鏡面 びっくり鏡 on
+				} else {
+					mesg 真鏡面 びっくり鏡 off
+				}
+			}
+		
+	}
+
+	// 鏡の弾痕
+	proc ガラス弾痕設定 {
+		#if d:DEBUG_PRINT 
+			print 'recoil_set'
+		#endif
+
+		// ガラス弾痕
+		chara ガラス弾痕 ガラス弾痕 \
+			-flag   0 \
+			-thick  1 \
+			-size   60 \
+			-number 3 \
+			-point	18000,4000,-41999 21000,-1000,-41999 \
+			-point	30000,4000,-41999 34000,-1000,-41999 \
+			-point	41000,4000,-41999 52000,-1000,-41999
+	}
+
+	// 落とし穴
+	// ------------------------------------
+	proc 落とし穴設置 {
+		#if d:DEBUG_PRINT
+			print 'pitfall_set'
+		#endif
+
+		command foreach -argc 3 -repeat 4 \
+			-data { \
+					{ 落とし穴:01, 25000, -36000 } \
+					{ 落とし穴:02, 25000, -34000 } \
+					{ 落とし穴:03, 35000, -32000 } \
+					{ 落とし穴:04, 37000, -32000 } \
+				} \
+				-exec { \
+					chara ＶＲ落とし穴 $1 \
+						-position $2, 0, $3 \
+						-rotate 0,0,0 \
+						-map ダークステージ \
+						-model vr2_pitfall_a0 vr2_pitfall_a0 \
+						-hazard	($2-1000), 0, ($3-1000) \	/*min maz の2点指定 */
+								($2+1000), 0, ($3+1000) \
+						-fall_time 40 \
+						-fall_pattern 7 \
+						-status 0 \
+						-proc 落し穴落下時処理
+				}
+	}
+
+	proc 落し穴落下時処理 {
+		#if d:DEBUG_PRINT
+			print 'pitfall_gameover'
+		#endif
+
+		if ( $1 == 落とし穴:01 ) {
+			mesg プレイヤー d:PLAYER position 25000,$i:プレイヤー位置Ｙ,-36000
+			@落下時カメラセット 25000 0 -36000
+			@ジャンプ落下死発動 0x0004 -10000
+			mesg ＶＲ落とし穴 落とし穴:01 fall
+		} else if ( $1 == 落とし穴:02 ) {
+			mesg プレイヤー d:PLAYER position 25000,$i:プレイヤー位置Ｙ,-34000
+			@落下時カメラセット 25000 0 -34000
+			@ジャンプ落下死発動 0x0004 -10000
+			mesg ＶＲ落とし穴 落とし穴:02 fall
+		} else if ( $1 == 落とし穴:03 ) {
+			mesg プレイヤー d:PLAYER position 35000,$i:プレイヤー位置Ｙ,-32000
+			@落下時カメラセット 35000 0 -32000
+			@ジャンプ落下死発動 0x0004 -10000
+			mesg ＶＲ落とし穴 落とし穴:03 fall
+		} else if ( $1 == 落とし穴:04 ) {
+			mesg プレイヤー d:PLAYER position 37000,$i:プレイヤー位置Ｙ,-32000
+			@落下時カメラセット 35000 0 -32000
+			@ジャンプ落下死発動 0x0004 -10000
+			mesg ＶＲ落とし穴 落とし穴:04 fall
+		}
+	}
+
+	// 落下したときに出るカメラ(落とし穴中心のＸＹＺを入力)
+	proc 落下時カメラセット $:p_Ｘ $:p_Ｙ $:p_Ｚ {
+		#if d:DEBUG_PRINT
+			print 'fall camera set'
+		#endif
+
+		chara delay ディレイ \
+			-time 1 \
+			-arg $:p_Ｘ $:p_Ｙ $:p_Ｚ \
+			-exec {
+				chara カメラ設定 クリア時カメラ \
+					-c 0 \
+					-b d:CAM_MIN,5647,($1+1851)	 d:CAM_MAX,5647,($3+1851) \
+					-l d:CAM_MIN,1500,($1+234)	 d:CAM_MAX,1500,($3+234) \
+					-r 766,2243,0 -f 4392 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+	}
+
+	// ジャンプ落下死発動から呼ばれるプロック
+	proc ジャンプ落下死開始処理 {
+		#if d:DEBUG_PRINT
+			print 'jump_gameover_start'
+		#endif
+
+		@ゲームオーバー開始処理
+	}
+
+	// 最終的に落ちたときに呼ばれるプロック（サウンドや振動を呼ぶ）
+	proc ゲームオーバー終了処理 {
+	}
+
+
+	// ------------------------------------
+	// 光源関係
+	// ------------------------------------
+	// ------------------------------------
+	proc フォグ設定 {
+		#if d:DEBUG_PRINT
+			print 'fog_set'
+		#endif
+
+		chara フォグ 霧\
+			-c 0, 15, 10 \
+			-n 3000 \
+			-f 18000
+	}
+	// キャラ用光源(マップの設置が終わってから設定することで、キャラだけに光を当てる)
+	// ------------------------------------
+	proc キャラ用ライト設置 {
+		#if d:DEBUG_PRINT
+			print 'chara_light_set'
+		#endif
+
+		chara 環境光 環境光源 \
+			 -c 0 20 10
+
+		chara 平行光 平行光源 \
+			 -c 0 35 30 \
+			 -p -2500 -3200 -2500
+
+
+		// プレイヤーの周りに光るテンプライト
+		chara プロック連続実行 テンプライトチェック \
+			-time -1 \
+			-exec { \
+				// プレイヤーが登場してから処理開始
+				if ( $f:ロードチェックＯＮフラグ == 1 ) {
+					command パッドチェック -which 0 -status
+					if ( $status & d:PAD_Y ) {
+						// 武器ボタンが押されているとき
+						if ( $w:武器 == d:武器:ソコム || $w:武器 == d:武器:ＵＳＰ ) {
+							$$i:テンプライトカウンタ = 0;
+						} else {
+							if ( $$i:テンプライトカウンタ < 60*75 ) {
+								$$i:テンプライトカウンタ = $$i:テンプライトカウンタ + 1;
+							}
+						}
+					} else {
+						if ( $$i:テンプライトカウンタ < 60*75 ) {
+							$$i:テンプライトカウンタ = $$i:テンプライトカウンタ + 1;
+						}
+					}
+
+					if ( $$i:テンプライトカウンタ > 0 ) {
+						command テンプライト プレイヤーテンプライト  \
+							-p $i:プレイヤー位置Ｘ,$i:プレイヤー位置Ｙ,$i:プレイヤー位置Ｚ \
+							-r $$i:テンプライトカウンタ -e ($$i:テンプライトカウンタ*2) -c 0,30,20 -f 0x0200
+					}
+
+					// さらにサーマルゴーグルか暗視ゴーグルをつけていたときはフォグのfarも変える
+					if ( $w:アイテム == d:アイテム:サーマルゴーグル || $w:アイテム == d:アイテム:暗視ゴーグル ) {
+						chara フォグ 霧 -c 0, 15, 10 -n 3000 -f 35000 -t 1
+					} else {
+						chara フォグ 霧 -c 0, 15, 10 -n 3000 -f 18000 -t 1
+					}
+				}
+			}
+	}
+
+	// ------------------------------------
+	// カメラ関係の設定 
+	// ------------------------------------
+	// ステージカメラ設定 
+	// ------------------------------------
+	proc カメラセット {
+		#if d:DEBUG_PRINT
+			print 'chara_camera & stage_camera_set'
+		#endif
+
+		chara カメラ ステージカメラ		-c 0 -l 3 -p 0 
+		chara カメラ メインカメラ		-c 0 -l 2 -p 40
+		chara カメラ サブカメラ			-c 0 -l 2 -p 30
+		chara カメラ クリア時カメラ		-c 0 -l 0 -p 10
+
+		// デフォルトカメラ
+		chara カメラ設定 ステージカメラ \
+			-c 0 \	
+			-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-r 560,2048,0 \
+			-f 5000 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s 1
+	}
+	// ステージ固有のカメラ設定 
+	// ------------------------------------
+	proc ダークステージカメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'stage_camera_set'
+		#endif
+
+		//---------------------
+		// 通常のステージカメラ
+		//---------------------
+		// スタート地点のカメラ
+		trap ca001 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b 4500,d:CAM_MIN,2750	 4500,d:CAM_MAX,3700 \
+					-l 4500,1500,-1500		 4500,d:CAM_MAX,-500 \
+					-r 375,2048,0 \
+					-f 5000 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// １Ｆベースのカメラ
+		trap ca002 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b 4500,5000,d:CAM_MIN	 22500,d:CAM_MAX,-1400 \
+					-l 4500,1500,d:CAM_MIN	 22500,d:CAM_MAX,-4600 \
+					-r 560,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// １Ｆ北側エリアのカメラ
+		trap ca003 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -20500 -24000 10000 12000
+				eval( $i:補完ＢＸ = $i:CS_結果１ );
+				eval( $i:補完ＬＸ = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b $i:補完ＢＸ,5000,d:CAM_MIN	 22500,d:CAM_MAX,-1400 \
+					-l $i:補完ＬＸ,1500,d:CAM_MIN	 22500,d:CAM_MAX,-4600 \
+					-r 560,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// １Ｆ中央の南北通路部分
+		trap ca004 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -25000 -30000 21000 20000
+				eval( $i:補完ＢＸ = $i:CS_結果１ );
+				eval( $i:補完ＬＸ = $i:CS_結果１ );
+				@CS_スムーズカメラ降順 $6 -22000 -30000 -21500 -25000
+				eval( $i:補完ＢＺ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $6 -23000 -30000 870 300
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b 12000,d:CAM_MIN,d:CAM_MIN	 $i:補完ＢＸ,d:CAM_MAX,$i:補完ＢＺ \
+					-l 12000,1500,d:CAM_MIN			 $i:補完ＬＸ,d:CAM_MAX,-22750 \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// １Ｆ北の落とし穴地帯付近
+		trap ca005 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -34000 -37000 20500 24500
+				$i:補完ＢＸ = $i:CS_結果１;
+				$i:補完ＬＸ = $i:CS_結果１;
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b $i:補完ＢＸ,5000,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-28500 \
+					-l $i:補完ＬＸ,1500,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-32000 \
+					-r 560,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// １Ｆ北の落とし穴地帯付近の横
+		trap ca006 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -38000 -40000 560 300
+				$i:補完ＲＸ = $i:CS_結果１;
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b 12000,d:CAM_MIN,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-28500 \
+					-l 12000,1500,d:CAM_MIN			 d:CAM_MAX,d:CAM_MAX,-32000 \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// １Ｆ北側一番東の鏡のところのカメラ
+		trap ca007 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ昇順 $4 42000 44000 -28500 -33000
+				eval( $i:補完ＢＺ = $i:CS_結果１ );
+				@CS_スムーズカメラ昇順 $4 42000 44000 -32000 -37250
+				eval( $i:補完ＬＺ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ昇順 $4 42000 43000 560 300
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b 4500,d:CAM_MIN,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,$i:補完ＢＺ \
+					-l 4500,1500,d:CAM_MIN		 d:CAM_MAX,d:CAM_MAX,$i:補完ＬＺ \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// １Ｆ北側一番東のゴール付近のカメラ
+		trap ca008 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -35000 -37000 560 300
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b 4500,d:CAM_MIN,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-30500 \
+					-l 4500,1500,d:CAM_MIN		 d:CAM_MAX,d:CAM_MAX,-34000 \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 中央の島への階段
+		trap ca009 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $5 4000 1000 4500 1500
+				eval( $i:補完ＬＹ = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b 4500,5000,d:CAM_MIN			 d:CAM_MAX,d:CAM_MAX,-10500 \
+					-l 4500,$i:補完ＬＹ,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-14000 \
+					-r 560,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 中央の島
+		trap ca010 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b 4500,5000,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-10500 \
+					-l 4500,4500,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-14000 \
+					-r 560,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 北西の島への階段
+		trap ca011 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ昇順 $5 500 3500 12000 4500
+				eval( $i:補完ＢＸ = $i:CS_結果１ );
+				eval( $i:補完ＬＸ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $5 4000 1000 4500 1500
+				eval( $i:補完ＬＹ = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b $i:補完ＢＸ,5000,d:CAM_MIN			 d:CAM_MAX,d:CAM_MAX,-17500 \
+					-l $i:補完ＬＸ,$i:補完ＬＹ,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-20750 \
+					-r 560,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 北西の島
+		trap ca012 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b 4500,5000,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-17500 \
+					-l 4500,4500,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-20750 \
+					-r 560,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+
+		//-------------------------
+		// 匍匐カメラ
+		//-------------------------
+		// １Ｆのベース部分のカメラ
+		trap ca100 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SQUAT d:TRP_STATE_GROUND \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 0 \	
+					-b 4500,5000,d:CAM_MIN	 22500,d:CAM_MAX,-1400 \
+					-l 4500,1500,d:CAM_MIN	 22500,d:CAM_MAX,-4600 \
+					-r 870,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// １Ｆのベース部分のカメラ(ＢＸが12000)
+		trap ca101 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SQUAT d:TRP_STATE_GROUND \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 0 \	
+					-b 12000,5000,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-1400 \
+					-l 12000,1500,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-4600 \
+					-r 870,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 落とし穴地帯の横のカメラ
+		trap ca102 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SQUAT d:TRP_STATE_GROUND \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 0 \	
+					-b 4500,5000,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-29500 \
+					-l 4500,1500,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-31000 \
+					-r 850,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// １Ｆ北側一番東の鏡のところのカメラ
+		trap ca103 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SQUAT d:TRP_STATE_GROUND \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 0 \	
+					-b 4500,5000,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-35000 \
+					-l 4500,1500,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-36500 \
+					-r 850,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// １Ｆゴール付近の鏡の前のカメラ
+		trap ca104 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SQUAT d:TRP_STATE_GROUND \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 0 \	
+					-b 4500,5000,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-32000 \
+					-l 4500,1500,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-33500 \
+					-r 850,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 中央の島のカメラ
+		trap ca105 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SQUAT d:TRP_STATE_GROUND \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 0 \	
+					-b 4500,5000,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-10500 \
+					-l 4500,4500,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-14000 \
+					-r 870,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 北西の島のカメラ
+		trap ca106 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SQUAT d:TRP_STATE_GROUND \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 0 \	
+					-b 4500,5000,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-17500 \
+					-l 4500,4500,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-20750 \
+					-r 870,2048,0 \
+					-f 5500 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+	}
+
+
+
+
+
+// -----------------------------------------------------------------------------------
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------
+proc デバッグキャラセット {
+	#if d:DEBUG_PRINT
+		print 'debug_chara_set'
+	#endif
+
+	#if d:CHARA_CAMERA
+		chara キャラカメラ 敵兵カメラ \
+			-c d:TARGET_CHARA \
+			-s -920,610,200 \
+			-r -200,1024,0 
+	#endif
+
+	#if d:SCREENSHOT
+		chara スクリーンショット shot
+	#endif
+
+	#if d:USB_KEY
+		chara USBキーボード実行 test \
+			-e d:KBD_ESC {	
+				mesg プレイヤー d:PLAYER position -5500, -13000, -500
+			} \
+	#endif
+}

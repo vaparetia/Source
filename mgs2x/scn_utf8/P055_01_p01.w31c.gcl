@@ -1,0 +1,408 @@
+/*
+	P055_01_p01.w31c.gcl
+	    シェル２中央棟Ｂ１（Ｂ１生物反応槽）ヴァンプ戦以降デモ用ヘッダ
+
+	2001/07/27 H.Yoshiike
+	$Id: P055_01_p01.w31c.gcl,v 1.25 2001/09/27 08:21:18 usr03635 Exp $                      
+
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+#define		DEMO_STAGE		1		// デモステージかどうかで起動するキャラを切り分ける
+
+// 各種スイッチ用define
+// ------------------------------------
+// ドア
+#define		SLIDE_DOOR		1		// スライドドア
+// フォグ
+#define		FOG				1
+// カメラ関係
+#define		CLEAR_CAMERA	0		// クリアリング専用カメラ(要子画面)
+#define		WATER_CAMERA	1		// 水中モード時のカメラをオフにする
+
+// 天井
+#define		CHARA_CEIL		1		// 天井君
+// ライト関係
+#define		SPOT_LIGHT		1		// スポットライト
+// オブジェ関係
+#define		WATER			1		// 水面
+#define		LOCKER			1		// ロッカー
+#define		LOCKER_CLOSE	0		// ロッカー開閉フラグ
+#define		LOCKER_OPEN		1		// ロッカー開閉フラグ
+// 水中モード関連
+#define	WATER_MODE			1		// 水中モード基本キャラ設定を使用するのに必要
+#define VAMP_WATER_SURFACE	-7000	// 水面の高さ(ヴァンププール)
+#define WATER_SURFACE		-6550	// 水面の高さ(エマロッカー部屋外)
+#define EMMA_WATER_SURFACE	-7050	// 水面の高さ(エマロッカー部屋内)
+#define	WATER_CAMERA_ZONE	1		// 追従カメラが使用するゾーンのあるグループ番号(必要があれば定義する)
+#define	CAMERA_BUBBLE_NUM	3		// カメラ泡の個数(いらない場合は定義しない)
+#define	CAMERA_DUST_NUM		10		// カメラダストの個数(いらない場合は定義しない)
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+#endif
+#define		SCREENSHOT		0		// スクリーンショット
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME		w31c
+#define		KMS_NAME0		w31c0
+#define		KMS_NAME1		w31c1
+#define		CEIL_NAME0		w31c0r
+#define		CEIL_NAME1		w31c1r
+#define		DOOR_NAME_LV0	dr_free
+#define		DOOR_NAME_LV4	dr_lv4_00
+#define		LT2_NAME		w31c
+
+
+// デモデバック環境用、切り替えdefine
+#if d:MGS2_DEMO
+	#define DEMO_NO_WATER 1 // 0 : 水中関係のデモ
+							// 1 : 水中関係無しのデモ
+
+	#define 水面ライト 1	// 0 : 水面ライトを消す
+							// 1 : 水面ライトをつける
+#endif
+
+
+
+
+// include
+// ------------------------------------
+#include "5sec_bfr_demo.h"
+#include "vardef.h"
+#include "stdch.h"
+#include "stdproc.h"		// 各ファイル共通して使用するプロック
+#include "story.h"
+#include "sload.h"
+#include "w31c_common.h"
+
+// キャスティングシアター対応。
+#include "lowpoly.h"
+@ローポリ設定
+
+// マップ設定
+// ------------------------------------
+chara マップ 第２濾過層 -k d:KMS_NAME0 -k d:KMS_NAME1 -h d:HZX_NAME,0 -l d:LT2_NAME
+
+command マップ設定 第２濾過層 -set {
+	#if d:MGS2_DEMO
+	// デモ環境デバッグ用
+chara デモアクトデバッグ demodebug  -i t:p055_04_p03 -d 'p055_04_p03' -l  -s 'p055_04_p03'  \
+					-p スポットライト背景イメージオフ スポットライト背景イメージオン
+		eval( $w:p_story = d:ST:P057_02_R01ヴァンプ戦終了２無線機デモ１終了 );
+	#else
+		@ポリデモ再生
+	#endif
+
+	@常駐キャラ設定						// stdch.hで定義
+	@デモ開始時シネマスクリーンセット	// demo_stdproc.hで定義
+	@ドア設置							// w31c_common.hで定義
+// フォグコントローラがＭＡＸで設定したフォグの値を潰してしまうのでコメントアウト
+//	@フォグ設定							// w31c_common.hで定義
+	@デモフォグ設定							// w31c_common.hで定義
+
+	@第２濾過層天井設置					// w31c_common.hで定義
+	@第２濾過層水面設定					// w31c_common.hで定義
+
+#if d:MGS2_DEMO
+	if(d:水面ライト == 1) {
+		@第２濾過層スポットライト設定		// w31c_common.hで定義
+	}
+#else
+	if($s:d_num != p059_01_p01) {
+		@第２濾過層スポットライト設定		// w31c_common.hで定義
+	}
+#endif
+
+	@北西エリア天井設置					// w31c_common.hで定義
+	@ブラインド設置						// w31c_common.hで定義
+	@北西エリア水面設置					// w31c_common.hで定義
+	@北西エリアスポットライト設定		// w31c_common.hで定義
+
+#if d:MGS2_DEMO
+	if(d:DEMO_NO_WATER == 0) {
+		@北西エリアロッカー設定				// w31c_common.hで定義
+		@水中モード基本キャラ設定	// stdproc.hで定義
+	}
+#else
+
+	@北西エリアロッカー設定				// w31c_common.hで定義 proc内でエマのロッカーのオンオフをする
+
+	if ( $w:p_story >= d:ST:P057_02_R01ヴァンプ戦終了２無線機デモ１終了 ) {
+	// ヴァンプ戦終了とともに北西エリアを起動（ストリーフラグによってさらにキャラを変化）
+		if( ($s:d_num != p058_01_p01) && ($s:d_num != p058_03_p02) ) {
+			@水中モード基本キャラ設定	// stdproc.hで定義
+		}
+	}
+#endif
+	@水中ゴミ設定						// w31c_common.hで定義
+}
+
+#include "p_force_cdc.ch"
+
+
+// 全てのセットが終わったところでデモ再生
+command マップ表示 -show 第２濾過層
+
+
+// ポリデモ処理
+// ------------------------------------
+	proc ポリデモ再生 {
+		#if d:DEBUG_PRINT
+			print 'polydemo_start!!  p_story ='
+			print $w:p_story
+		#endif
+
+		chara デモキャンセルチェック デモキャンセル \
+			-p ポリデモキャンセル
+
+		//--------------------------------------------------------------------
+		// ヴァンプ戦前
+		//--------------------------------------------------------------------
+		if( $w:p_story == d:ST:P055_01_P01ヴァンプ戦前１ポリゴンデモ１開始 ) {
+			/* ヴァンプ戦前ポリデモ１ */
+
+			// デモ特有の変数代入
+			eval( $s:d_num = p055_01_p01 );
+
+			@デモモデル差し替え処理
+			chara demo デモ再生 \
+				-i t:p055_01_p01 \
+				-p ダミープロック \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next ポリデモ終了	// リスタートかけてポリデモ２へ
+
+		} else if ( $w:p_story == d:ST:P055_02_P02ヴァンプ戦前２ポリゴンデモ２開始 ) {
+			/* ヴァンプ戦前ポリデモ２ */
+
+			// デモ特有の変数代入
+			eval( $s:d_num = p055_02_p02 );
+
+			@デモモデル差し替え処理
+			chara demo デモ再生 \
+				-i t:p055_02_p02 \
+				-p ダミープロック \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next ポリデモ終了	// ムービーデモ１へ
+
+		} else if ( $w:p_story == d:ST:P055_04_P03ヴァンプ戦前４ポリゴンデモ３開始 ) {
+			/* プールが生物反応槽だと語るヴァンプ　ボス戦へ */
+
+			// デモ特有の変数代入
+			eval( $s:d_num = p055_04_p03 );
+
+			@デモモデル差し替え処理
+			chara demo デモ再生 \
+				-i t:p055_04_p03 \
+				-p ダミープロック \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next ポリデモ終了	// ボス戦へ
+
+
+		//--------------------------------------------------------------------
+		// ヴァンプ戦後
+		//--------------------------------------------------------------------
+		} else if ( $w:p_story == d:ST:P057_01_P01ヴァンプ戦終了１ポリゴンデモ１開始 ) {
+			/* ヴァンプに勝利　プールに沈んでゆくヴァンプ */
+
+			// デモ特有の変数代入
+			eval( $s:d_num = p057_01_p01 );
+
+			@デモモデル差し替え処理
+			chara demo デモ再生 \
+				-i t:p057_01_p01 \
+				-p ダミープロック \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next rt_P057_02_R01ヴァンプ戦終了２無線機デモ１	// 無線後ゲームへ
+
+
+		//--------------------------------------------------------------------
+		// エマ発見後
+		//--------------------------------------------------------------------
+		} else if ( $w:p_story == d:ST:P058_01_P01エマ救出１ポリゴンデモ１開始 ) {
+			/* エマを発見 */
+
+			// デモ特有の変数代入
+			eval( $s:d_num = p058_01_p01 );
+
+			@デモモデル差し替え処理
+			chara demo デモ再生 \
+				-i t:p058_01_p01 \
+//				-i t:data_dummy_raiden \
+				-p ダミープロック \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next rt_P058_02_R01エマ救出２無線機デモ１		// 強制無線後ポリデモへ
+
+		} else if ( $w:p_story == d:ST:P058_03_P02エマ救出３ポリゴンデモ２開始 ) {
+			/* わたし泳げない… */
+
+			// デモ特有の変数代入
+			eval( $s:d_num = p058_03_p02 );
+
+			@デモモデル差し替え処理
+			chara demo デモ再生 \
+				-i t:p058_03_p02 \
+//				-i t:data_dummy_raiden \
+				-p ダミープロック \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next rt_P058_04_R02エマ救出４無線機デモ２		// 強制無線後ムービーへ
+
+		} else if ( $w:p_story == d:ST:P058_06_P03エマ救出６ポリゴンデモ３開始 ) {
+			/* これから泳ぐルートを示す（カメラのみ。シナリオデモと同じ感じ？） */
+
+			// デモ特有の変数代入
+			eval( $s:d_num = p058_06_p03 );
+
+			@デモモデル差し替え処理
+			chara demo デモ再生 \
+				-i t:p058_06_p03 \
+				-p スポットライト背景イメージオフ スポットライト背景イメージオン \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next rt_P058_07_R03エマ救出７無線機デモ３		// 強制無線後ポリデモへ
+
+		} else if ( $w:p_story == d:ST:P058_08_P04エマ救出８ポリゴンデモ４開始 ) {
+			/* 眼鏡を外すエマ　ゲームへ戻る */
+			// デモ特有の変数代入
+			eval( $s:d_num = p058_08_p04 );
+
+			@デモモデル差し替え処理
+			chara demo デモ再生 \
+				-i t:p058_08_p04 \
+//				-i t:data_dummy_raiden \
+				-p ダミープロック \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next ポリデモ終了
+
+
+		//--------------------------------------------------------------------
+		// エマと休憩
+		//--------------------------------------------------------------------
+		} else if ( $w:p_story == d:ST:P059_01_P01エマ休憩１ポリゴンデモ１開始 ) {
+			/* ボンジョビの歌 */
+
+			// このデモでは内蔵環境音を呼ぶ
+			chara サウンドマネージャー ＳＤマネ -pak -1
+			mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_PLAY_06
+
+			// デモ特有の変数代入
+			eval( $s:d_num = p059_01_p01 );
+
+			@デモモデル差し替え処理
+			chara demo デモ再生 \
+				-i t:p059_01_p01 \
+//				-i t:data_dummy_raiden \
+				-p ダミープロック \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next ポリデモ終了
+
+		}
+	}
+
+
+	// 終了proc
+	// ------------------------------------
+	proc ポリデモ終了 {
+		#if d:DEBUG_PRINT
+			print 'polydemo_end!!  d_num ='
+			print $s:d_num
+		#endif
+
+		@デモ終了時シネマスクリーンオフ
+		mesg デモキャンセルチェック デモキャンセル kill
+
+		//--------------------------------------------------------------------
+		// ヴァンプ戦前
+		//--------------------------------------------------------------------
+		if ( $s:d_num == p055_01_p01 ) {
+			eval( $w:p_story = d:ST:P055_01_P01ヴァンプ戦前１ポリゴンデモ１終了 );
+			// ポリデモ２へ
+			eval( $w:p_story = d:ST:P055_02_P02ヴァンプ戦前２ポリゴンデモ２開始 );
+			chara delay ディレイ -time 1 -exec{ restart -s }
+
+		} else if ( $s:d_num == p055_02_p02 ) {
+			eval( $w:p_story = d:ST:P055_02_P02ヴァンプ戦前２ポリゴンデモ２終了 );
+			// ムービーデモへ
+			eval( $w:p_story = d:ST:P055_03_M01ヴァンプ戦前３ムービーデモ１開始 );
+			chara delay ディレイ -time 1 -exec{ @mv_init_wmovie_0 }
+
+		} else if ( $s:d_num == p055_04_p03 ) {
+			eval( $w:p_story = d:ST:P055_04_P03ヴァンプ戦前４ポリゴンデモ３終了 );
+			eval( $s:d_num = not_demo );
+			// ゲームへ
+			chara delay ディレイ -time 1 -exec{ @mv_w31b_w31c0_0 }
+
+
+		//--------------------------------------------------------------------
+		// エマ発見後
+		//--------------------------------------------------------------------
+		} else if ( $s:d_num == p058_08_p04 ) {
+			eval( $w:p_story = d:ST:P058_08_P04エマ救出８ポリゴンデモ４終了 );
+			eval( $s:d_num = not_demo );
+			// ゲームへ
+			chara delay ディレイ -time 1 -exec{ @mv_w31b_w31c0_0 }
+
+
+		//--------------------------------------------------------------------
+		// エマと休憩
+		//--------------------------------------------------------------------
+		} else if ( $s:d_num == p059_01_p01 ) {
+			eval( $w:p_story = d:ST:P059_01_P01エマ休憩１ポリゴンデモ１終了 );
+			// ムービーデモへ
+			eval( $w:p_story = d:ST:P059_02_M02エマ休憩２ムービーデモ１開始 );
+			command セットサウンドコード -c d:SNG_FOUTS_S
+			chara delay ディレイ -time 1 -exec{ @mv_init_wmovie_0 }
+
+		}
+	}
+
+
+// ポリデモ固有プロック(SIで呼び出すもの)
+// ------------------------------------
+proc スポットライト背景イメージオン {
+	mesg スポットライト背景イメージ指定 新スポットライト テクスチャ許可 1
+}
+
+proc スポットライト背景イメージオフ {
+	mesg スポットライト背景イメージ指定 新スポットライト テクスチャ許可 0
+}
+
+proc デモフォグ設定 {
+	#if d:DEBUG_PRINT
+		print 'fog_set'
+	#endif
+
+	if($s:d_num != p058_06_p07) {
+		// 生物反応櫓
+		chara フォグ 霧\
+			-c 10, 25, 20 \
+			-n -3000 \
+			-f 28000
+	} else {
+		// 水中
+		chara フォグ 霧\
+			-c 48, 112, 96 \
+			-n -5800 \
+			-f 41000
+	}
+/*
+	chara フォグコントローラ フォグ \
+		-n 7 \
+		-z \
+		-d   10 25 20	-3000  28000  32000 32000 \	// 第２濾過室
+			 48 112 96	-5800  41000  16000  4000 \	// 水中
+			 40 39 28	0  36000 36000 36000 \	// 北西エリア
+			 48 112 96  -5800  35000 16000 4000 \
+			 48 112 96  -5800  28000 16000 4000 \
+			 48 112 96  -5800  22000 16000 4000 \
+			 48 112 96  -5800  15000 16000 4000
+*/
+}
+

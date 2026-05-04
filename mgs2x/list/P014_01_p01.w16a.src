@@ -1,0 +1,282 @@
+// P014_01_p01.w16a.src
+// Ｃ脚・食堂＆トイレデモ用ステージ
+// 2001/03/02 S.Hirano
+// $Id: P014_01_p01.w16a.src,v 1.29 2002/09/11 12:00:40 usr03682 Exp $
+
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 不要エフェクト切り分け定義
+#define EFFECT_CUSTUM
+
+//#define	E_GLASS_DANKON			// グラス系弾痕
+//#define	E_KOGETUKI				// 壁への焦げ付き
+//#define	E_FOOTSTAMP				// 足跡
+//#define	E_ENEMY					// 敵兵系
+//#define	E_ENEMY_LIGHT			// 敵兵ライト
+//#define	E_SLING					// スリング
+//#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+//#define	E_MANHATTAN_LIGHT		// マンハッタンライト
+//#define	E_C4BOMB				// Ｃ４爆弾、赤外線センサー
+//#define	E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷
+//#define	E_CROSS_FADE_LIGHT		// クロスフェード（甲板のライトで使用）
+//#define	E_CHARA_DENTOU			// chara 懐中電灯、フォーチュン戦
+//#define	E_WATER					// 水関係
+//#define	E_CHARA_HAMON			// chara 波紋
+//#define	E_BROKEN_OBJECT			// 壊れ物
+//#define	E_BROKEN_PAPEROBJECT	// 壊れ物紙
+//#define	E_BROKEN_PLATE			// 壊れ物皿
+//#define	E_HIMATU				// 水飛沫
+//#define	E_CHARA_MADOAME			// chara 窓雨
+//#define	E_STEAM					// 粉 & 水蒸気
+//#define	E_POWDER				// 小麦粉
+//#define	E_SKY_NORMAL			// 空
+//#define	E_LINEAR_GUN			// リニアガン
+//#define	E_TENKYUU				// 天球ドーム
+//#define	E_SUN					// 太陽
+#define	E_DOOR_LUMP				// ドアランプ
+//#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、
+								// ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+//#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+//#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+//#define	ENV						// 天球
+
+// 汎用空用テクスチャのためのデファイン（c_effect.h の前で）
+//#define MORNING_SKY
+//#define DAY_SKY
+//#define EVENING_SKY
+//#define NIGHT_SKY_DEMO
+
+
+
+include		common.h
+include		c_effect.h
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+//pack_all	w16a.tri world/w16a world/door/w02a_dr.dar world/door/w01f_dr.dar
+pack_all	object.tri world/door/w02a_dr.dar world/door/w01f_dr.dar
+
+pack_all w16a0_etc.tri \
+		world/w16a/w16a0/w16a0_kit_door.dar \
+		world/w16a/w16a0/w16a0_refrigerator_door.dar \
+		world/w16a/w16a0/w16a_chair.dar
+world	w16a/w16a0/w16a0_kit_door.kms
+world	w16a/w16a0/w16a0_refrigerator_door.kms
+world	w16a/w16a0/w16a_chair.kms
+
+// w16aでテクスチャが増えたので、１Ｍオーバー回避のため分割。
+option makexti6 -l 1024 -f PAL8
+pack_all w16a0_a.tri \
+		world/w16a/w16a0/w16a0.dar
+pack_all w16a0_ar.tri \
+		world/w16a/w16a0/w16a0r.dar
+option makexti6
+
+world		w16a/w16a0
+world		w16a/w16a1
+world		door/w02a_dr.kms
+world		door/w01f_dr.kms
+lt2			w16a.lt2
+hazard		d00a3.hzx
+
+// w16a の壊れ物・置物
+// 壊れ物
+pack_all	break.tri \
+		world/w16a/w16a_bro/w16a0_apple/apple_bro_l.dar \
+		world/w16a/w16a_bro/w16a0_apple/apple_org.dar \
+		world/w16a/w16a_bro/w16a0_bro_ketchup/w16a0_ketchup.dar \
+		world/w16a/w16a_bro/w16a0_bro_ketchup/w16a0_ketchup_bro.dar \
+		world/w16a/w16a_bro/w16a0_bro_solt/w16a0_solt.dar \
+		world/w16a/w16a_bro/w16a0_bro_solt/w16a0_solt_bro.dar \
+		world/w16a/w16a_bro/w16a0_bro_souce/w16a0_source.dar \
+		world/w16a/w16a_bro/w16a0_bro_souce/w16a0_source_bro.dar \
+		world/w16a/w16a_bro/w16a0_glass_bro/w16a0_glass_bro.dar \
+		world/w16a/w16a_bro/w16a0_watermelon/watermelon_bro_l.dar \
+		world/w16a/w16a_bro/w16a0_watermelon/watermelon_olg.dar
+// 壊れ物コモデル
+pack_all	break_cm.tri \
+		world/w16a/w16a_bro/w16a0_bro_ketchup/w16a0_ketchup_broS.dar \
+		world/w16a/w16a_bro/w16a0_bro_solt/w16a0_solt_broS.dar \
+		world/w16a/w16a_bro/w16a0_bro_souce/w16a0_source_broS.dar \
+		world/w16a/w16a_bro/w16a0_watermelon/watermelon_bro_s.dar
+
+// ポスター
+world		w16a/w16a0_poster
+
+world		w16a/w16a_bro
+
+// センサー
+item		bombsensor_a
+// Ｃ４
+goods		c4_kaitai_a
+//壊れ物
+world		w01d/dining
+
+pack_trnall	aa.tri \
+		debug/morita/break/dbx_dust_alp_ovl.bmp \
+		effect/crash/apple_alp.bmp
+
+pack_all	allcm_cm.tri \
+		goods/bottle/btl_piece.dar
+
+goods	bottle/btl_piece.kms
+goods	hako/hakoSub_2.kms
+goods	hako glass dbg_box/pataHakoKuro.kms
+
+cvd	world/w16a/w16a_bro/w16a0_glass_bro/w16a0_glass_bro.cv2 v
+cvd	world/w16a/w16a2/w16a2_mirror_bro.cv2 v
+
+// w18a分（P014_12_P05ピーター遭遇１２ポリゴンデモ５開始）
+option makexti6 -l 1024 -f PAL8
+pack_all w18a.tri \
+		world/w18a/w18a.dar \
+		world/w18a/w18a_hatch.dar \
+		world/w18a/w18a_crps_saku.dar \
+		world/w18a/w18ar.dar
+option makexti6
+
+//		world/w18a/w18a_water_ref.dar
+world		w18a/w18a.kms
+world		w18a/w18a_hatch.kms
+world		w18a/w18a_crps_saku.kms
+world		w18a/w18ar.kms
+//world		w18a/w18a_water_ref.kms
+
+// ハッチ用強制モーション
+mtn		rai_hatch.mls
+//柵用強制モーション
+mtn		corpse_w18a.mls
+
+pack_all w18a_dr.tri \
+		world/door/w18a_dr00.dar \
+		world/door/w18a_dr01.dar
+world		door/w18a_dr00.kms
+world		door/w18a_dr01.kms
+
+lt2			w18a.lt2
+
+// 2001/08/06 Uehara Masatoshi (追加)
+world		door/w18a_dr02.kms
+world	w18a/w18a_lowlit.kms
+world	w18a/w18a_lowlit_brk.kms
+world	w18a/w18a_pinlit.kms
+goods		fly/fly_cm.kms
+
+
+// キャラクタ
+// ライデン
+human		rai_def/rai_def_mh_mt.evm
+
+// オブジェクト
+// 小さいサイズのテクスチャはまとめておく
+// センサー
+meca		ir_sensor
+
+// デバッグ用
+
+//スプレー
+weapon	cls/cls_sub.kms 
+// リネーム
+//rename	c16a.kms	w16a.kms
+
+world	door/dr_free.kms
+human	sel_def/sel_def.kms
+human	iro_def/iro_def_mh_mt.evm
+human	iro_def/iro_def_sh_mt.kms
+human	ptr_def/ptr_stick_mt.kms
+human	ptr_def/ptr_def_mh_mt.evm
+human	ptr_def/ptr_dummy.kms
+human	rai_def/rai_def_sh_mt.kms
+human	ptr_def/ptr_food_mh_mt.evm
+human	ptr_def/ptr_dummy.kms
+weapon	usp/usp_sub.kms
+item	bombsensor_a/bombsensor_a.kms
+item	item_security_card_lv1/security_card_lv1.kms
+item	item_security_card_lv3/security_card_lv3.kms
+
+#if 0
+// 実験
+world		w10c
+// 海面(MIPMAP)
+debug	takabe/mipmap_tri/w10a_sea.tri
+// 空用テクスチャ
+pack_all skies.tri \
+		effect/plant_sky/sky_n1_alp.bmp \
+		effect/plant_sky/sky_n2_alp.bmp \
+		effect/plant_sky/sky_n3_alp.bmp \
+		effect/plant_sky/sky_n4_alp.bmp
+// モデル
+world	common_sky/n_sky_wall1.kms
+#endif
+
+// テックスリネーム
+texrename w10c_24a.kms w10c_cntw04.bmp w10c_cntw04_x.bmp
+texrename w10c_13a.kms w13a_w01.bmp w13a_w01_x.bmp/* mgdemo added ----from here (Wed Aug 15 13:07:53 2001) ---- */
+/* mgdemo added ----from here (Wed Aug 15 13:11:08 2001) ---- */
+/* mgdemo added ----from here (Wed Aug 15 13:14:52 2001) ---- */
+vib	demo/P014_13_p06_rai_01.vib
+/* mgdemo added ----upto here ---- */
+
+// テロップ
+#ifdef MGS2_LANG_ENGLISH
+// 英語d
+pack_all	staff.tri \
+		2D/demo_telop/eng/sr07j_alp_ovl.bmp
+
+#else
+// 日本語
+pack_all	staff.tri \
+		2D/demo_telop/jpn/sr07j_alp_ovl.bmp
+#endif
+
+/*
+// 水面
+pack_all	water.tri world/w18a/w18a_water/w18a_water_alp_ovl.bmp
+anmtex		w18ahakei.rat \
+			effect/w18_hakei/w18_hakei00_alp.bmp \
+			effect/w18_hakei/w18_hakei01_alp.bmp \
+			effect/w18_hakei/w18_hakei02_alp.bmp \
+			effect/w18_hakei/w18_hakei03_alp.bmp \
+			effect/w18_hakei/w18_hakei04_alp.bmp \
+			effect/w18_hakei/w18_hakei05_alp.bmp \
+			effect/w18_hakei/w18_hakei06_alp.bmp \
+			effect/w18_hakei/w18_hakei07_alp.bmp \
+			effect/w18_hakei/w18_hakei08_alp.bmp \
+			effect/w18_hakei/w18_hakei09_alp.bmp \
+			effect/w18_hakei/w18_hakei10_alp.bmp \
+			effect/w18_hakei/w18_hakei11_alp.bmp \
+			effect/w18_hakei/w18_hakei12_alp.bmp \
+			effect/w18_hakei/w18_hakei13_alp.bmp \
+			effect/w18_hakei/w18_hakei14_alp.bmp \
+			effect/w18_hakei/w18_hakei15_alp.bmp \
+			effect/w18_hakei/w18_hakei16_alp.bmp \
+			effect/w18_hakei/w18_hakei17_alp.bmp \
+			effect/w18_hakei/w18_hakei18_alp.bmp \
+			effect/w18_hakei/w18_hakei19_alp.bmp \
+			effect/w18_hakei/w18_hakei20_alp.bmp \
+			effect/w18_hakei/w18_hakei21_alp.bmp \
+			effect/w18_hakei/w18_hakei22_alp.bmp \
+			effect/w18_hakei/w18_hakei23_alp.bmp \
+			effect/w18_hakei/w18_hakei24_alp.bmp \
+			effect/w18_hakei/w18_hakei25_alp.bmp \
+			effect/w18_hakei/w18_hakei26_alp.bmp \
+			effect/w18_hakei/w18_hakei27_alp.bmp \
+			effect/w18_hakei/w18_hakei28_alp.bmp \
+			effect/w18_hakei/w18_hakei29_alp.bmp \
+			effect/w18_hakei/w18_hakei30_alp.bmp \
+			effect/w18_hakei/w18_hakei31_alp.bmp 
+*//* mgdemo added ----from here (Thu Sep 20 17:18:49 2001) ---- */
+human	iro_def/iro_def_addhand_mh_mt.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Sep 20 17:38:35 2001) ---- */
+human	rai_def/rai_def_addhand_mh_mt.evm
+/* mgdemo added ----upto here ---- */
+
+// 優先問題解決のためサングラスを入れておく
+pack_all iro_mw.tri \
+	human/iro_def/iro_glass_black_mh_mt.dar 
+human		iro_def/iro_glass_black_mh_mt.evm

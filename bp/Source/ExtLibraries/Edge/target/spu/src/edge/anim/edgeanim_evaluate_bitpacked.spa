@@ -1,0 +1,1153 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2007 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+	
+	// disable SMS scheduling as it's way too bad on register pressure
+	.setswp sms 0
+
+	// -- WARNING --
+	// The startswpsearch directive tells the SPA scheduler what cycle count it should start
+	// searching from for a valid schedule. In general, this directive should be avoided
+	//  and should only be used when:
+	//
+	// 1) The loop is very large/complex and the scheduling is slowing down your build process
+	// 2) You know exactly how many cycles the loop should schedule at
+	// 3) Your code has not changed since you checked how many cycles the loop schedules at
+	// 
+	// If you modify the loop in any way, you should remove this directive so that you can see
+	// the true cycle count that the loop succesfully schedules at. If you do not do this, there
+	// is the danger that you are getting sub-optimal schedules because the scheduler will be 
+	// starting its search from too high a cycle count.
+	// 
+	// If you are in any way unsure about whether or not to use this directive, it is best not to
+	// use it.
+	.startswpsearch 449
+	
+
+.cfunc void _edgeAnimEvaluateBitPacked(	vec_uint4 intraBitsAdr, 
+										vec_uchar16 bitMaskXXXX, 
+										vec_uchar16 bitMaskYYYY, 
+										vec_uchar16 bitMaskZZZZ, 
+										vec_uchar16 bitMaskWWWW, 
+										vec_uchar16 prevBitMaskXXXX, 
+										vec_uchar16 prevBitMaskYYYY, 
+										vec_uchar16 prevBitMaskZZZZ, 
+										vec_uchar16 prevBitMaskWWWW, 
+										vec_uint4 frameInteger, 
+										vec_float4 frameFraction, 
+										uint32_t intraKeysAdr, 
+										uint32_t initialKeysAdr, 
+										uint32_t finalKeysAdr, 
+										uint32_t count, 
+										vec_float4* output, 
+										const uint16_t* channelIds, 
+										uint32_t intraFrameCount, 
+										const uint32_t* specAdr, 
+										bool isRotation)
+    
+	//----------------------------------------------------------------------------------------------
+	// Early out
+	//----------------------------------------------------------------------------------------------    
+
+    brz			count, NoLoop
+    
+    //----------------------------------------------------------------------------------------------
+    // Init code
+    //----------------------------------------------------------------------------------------------        
+           
+       
+    .reg		shufAAAA, shufDDDD
+    il128		shufAAAA, "AAAA"
+    il128		shufDDDD, "DDDD"
+            
+    .reg		fOne, fHalf
+    ilhu    	fOne, 0x3f800000@h							//  1.0
+	ilhu		fHalf, 0x3F000000@h							//	0.5f
+	      
+    .reg		count4
+    ai			count4, count, 3
+    rotmi		count4, count4, -2
+
+    shufb		intraFrameCount, intraFrameCount, intraFrameCount, shufAAAA	
+
+    // todo: clean up init code
+    
+    // convert keyframe addresses to bit addresses
+    shli		initialKeysAdr, initialKeysAdr, 3
+    shli		intraKeysAdr, intraKeysAdr, 3
+    shli		finalKeysAdr, finalKeysAdr, 3
+    
+    // splat base addresses
+    shufb		initialKeysAdr, initialKeysAdr, initialKeysAdr, shufAAAA
+    shufb		intraKeysAdr, intraKeysAdr, intraKeysAdr, shufAAAA
+    shufb		finalKeysAdr, finalKeysAdr, finalKeysAdr, shufAAAA
+    
+    // form shuffle mask from bool
+    .reg		rotSelectMask, rotSelectShuf
+    fsm			rotSelectMask, isRotation
+    shufb		rotSelectMask, rotSelectMask, rotSelectMask, shufDDDD
+    .reg		shufABCD, shufabcd
+    il128		shufABCD, "ABCD"
+    il128		shufabcd, "abcd"    
+    selb		rotSelectShuf, shufABCD, shufabcd, rotSelectMask 
+  
+  	// Misc constants
+    .reg		shufCDab, shufABcd  
+    il128		shufCDab, "CDab"    
+    il128		shufABcd, "ABcd" 
+	.reg		shufAaBb, shufCcDd
+    il128		shufAaBb, "AaBb"
+    il128		shufCcDd, "CcDd"  	
+	.reg		shufAa00
+    il128		shufAa00, "Aa00"
+
+	// Misc constants
+	.reg		shufBbAa, shufDdCc
+    rotqbyi		shufBbAa, shufAaBb, 8
+    rotqbyi		shufDdCc, shufCcDd, 8   	
+	
+    .reg		shuf00Aa
+    rotqbyi		shuf00Aa, shufAa00, 8
+   
+    .reg		allOnes
+    fsmbi		allOnes, 0xffff
+    .reg		k7FFFFFFF    
+    il128		k7FFFFFFF, 0x7FFFFFFF_7FFFFFFF_7FFFFFFF_7FFFFFFF    
+            
+    //----------------------------------------------------------------------------------------------
+    // Loop
+    //----------------------------------------------------------------------------------------------        
+    
+Loop:
+    ai			count4, count4, -1
+    
+   	//----------------------------------------------------------------
+   	// constants moved inside the loop since it's heavily even pipe limited
+	//----------------------------------------------------------------
+
+	// Taylor - sin
+    .reg		sin0, sin1, sin2, sin3
+    il128		sin0, 0xBE2AAAAB_BE2AAAAB_BE2AAAAB_BE2AAAAB		// -0.1666666664
+    il128		sin1, 0x3C088887_3C088887_3C088887_3C088887		//  0.0083333315
+    il128		sin2, 0xB9500C03_B9500C03_B9500C03_B9500C03		// -0.000198409
+    il128		sin3, 0x3638B94F_3638B94F_3638B94F_3638B94F		//  0.0000027526        	    	
+
+     // MacLaurin - Acos
+    .reg		acos0, acos1, acos2, acos3
+    il128		acos0, 0x3FC90FDA_3FC90FDA_3FC90FDA_3FC90FDA	//  1.5707963050
+    il128		acos1, 0x3E5BBFCA_3E5BBFCA_3E5BBFCA_3E5BBFCA	//  0.2145988016
+    il128		acos2, 0x3DB63A9E_3DB63A9E_3DB63A9E_3DB63A9E	//  0.0889789874
+    il128		acos3, 0x3D4D8392_3D4D8392_3D4D8392_3D4D8392	//  0.0501743046		  
+    
+   	//----------------------------------------------------------------
+   	// load packing specs x 4
+	//----------------------------------------------------------------
+
+    .reg		ps0, ps1, specs, sshift0, sshift1
+
+    andi		sshift0, specAdr, 15    
+	ai			specAdr, specAdr, 16    
+    lqd			ps0, -0x10(specAdr)
+    lqd			ps1, 0x00(specAdr)
+    ai			sshift1, sshift0, -16
+    shlqby		ps0, ps0, sshift0
+    rotqmby		ps1, ps1, sshift1
+    or			specs, ps0, ps1
+
+	// expand packing specs
+	.reg		specX, specY, specZ
+	.reg		specMx, specMy, specMz
+	rotqmbyi	specX, specs, -2
+	rotqmbyi	specY, specs, -1
+	rotqmbii	specX, specX, -6
+	rotqmbii	specY, specY, -4
+	rotqmbii	specZ, specs, -2
+	andi		specMx, specX, 0x1f
+	andi		specMy, specY, 0x1f
+	andi		specMz, specZ, 0x1f
+
+	.reg		specEx, specEy, specEz
+	.reg		specSx, specSy, specSz
+	rotqmbii	specEx, specX, -5
+	rotqmbii	specEy, specY, -5
+	rotqmbii	specEz, specZ, -5
+	rotqmbii	specSx, specEx, -4
+	rotqmbii	specSy, specEy, -4
+	rotqmbii	specSz, specEz, -4
+	andi		specEx, specEx, 0xf
+	andi		specEy, specEy, 0xf
+	andi		specEz, specEz, 0xf
+	andi		specSx, specSx, 0x1
+	andi		specSy, specSy, 0x1
+	andi		specSz, specSz, 0x1
+
+	// get component strides
+	.reg		sumSpecX, sumSpecY, sumSpecZ
+	a			sumSpecX, specSx, specEx
+	a			sumSpecX, sumSpecX, specMx
+	a			sumSpecY, specSy, specEy
+	a			sumSpecY, sumSpecY, specMy
+	a			sumSpecZ, specSz, specEz
+	a			sumSpecZ, sumSpecZ, specMz
+	
+	// get keyframe stride
+	.reg		keyStride
+	a			keyStride, sumSpecX, sumSpecY
+	a			keyStride, keyStride, sumSpecZ
+	
+	// get addresses of the 4 initial and final keys
+	.reg		ksShft0, ksShft1, ksShft2, strideSum, keyOfs, initialKeyCurAdr, finalKeyCurAdr
+	rotqmbyi	ksShft0, keyStride, -4
+	rotqmbyi	ksShft1, keyStride, -8
+	rotqmbyi	ksShft2, keyStride, -12
+	a			strideSum, keyStride, ksShft0
+	a			strideSum, strideSum, ksShft1
+	a			strideSum, strideSum, ksShft2
+    rotqmbyi	keyOfs, strideSum, -4
+    a			initialKeyCurAdr, initialKeysAdr, keyOfs
+    a			finalKeyCurAdr, finalKeysAdr, keyOfs
+
+    // increment initial/final keys address for the next loop
+    shufb		strideSum, strideSum, strideSum, shufDDDD
+	a			initialKeysAdr, initialKeysAdr, strideSum
+	a			finalKeysAdr, finalKeysAdr, strideSum
+	
+	//----------------------------------------------------------------
+	// decode intra bit stream to determine keyframes
+	//----------------------------------------------------------------
+	
+	.reg		bitAdr, bitOfs
+    rotmi		bitAdr, intraBitsAdr, -3
+    andi		bitOfs, intraBitsAdr, 127
+    
+    // Get intra frame bits for 4 joints, left justified
+    // Note: Currently assuming a limit of 128 intra frames
+    .reg		bitAdr1, bitAdr2, bitAdr3 
+    shlqbyi		bitAdr1, bitAdr, 4
+    shlqbyi		bitAdr2, bitAdr, 8
+    shlqbyi		bitAdr3, bitAdr, 12
+    
+    .reg		bitOfs1, bitOfs2, bitOfs3
+    shlqbyi		bitOfs1, bitOfs, 4
+    shlqbyi		bitOfs2, bitOfs, 8
+    shlqbyi		bitOfs3, bitOfs, 12
+    
+    .reg		d0a, d0b, d1a, d1b, d2a, d2b, d3a, d3b
+    lqd			d0a, 0x00(bitAdr)
+    lqd			d0b, 0x10(bitAdr)
+    lqd			d1a, 0x00(bitAdr1)
+    lqd			d1b, 0x10(bitAdr1)
+    lqd			d2a, 0x00(bitAdr2)
+    lqd			d2b, 0x10(bitAdr2)
+    lqd			d3a, 0x00(bitAdr3)
+    lqd			d3b, 0x10(bitAdr3)
+
+	.reg		d0as, d0bs, d1as, d1bs, d2as, d2bs, d3as, d3bs
+    rotqbybi	d0as, d0a, bitOfs
+    rotqbybi	d0bs, d0b, bitOfs
+    rotqbybi	d1as, d1a, bitOfs1
+    rotqbybi	d1bs, d1b, bitOfs1
+    rotqbybi	d2as, d2a, bitOfs2
+    rotqbybi	d2bs, d2b, bitOfs2
+    rotqbybi	d3as, d3a, bitOfs3
+    rotqbybi	d3bs, d3b, bitOfs3
+    
+	.reg		d0as0, d0bs0, d1as0, d1bs0, d2as0, d2bs0, d3as0, d3bs0
+    rotqbi		d0as0, d0as, bitOfs
+    rotqbi		d0bs0, d0bs, bitOfs
+    rotqbi		d1as0, d1as, bitOfs1
+    rotqbi		d1bs0, d1bs, bitOfs1
+    rotqbi		d2as0, d2as, bitOfs2
+    rotqbi		d2bs0, d2bs, bitOfs2
+    rotqbi		d3as0, d3as, bitOfs3
+    rotqbi		d3bs0, d3bs, bitOfs3
+
+	.reg		msk0a, msk1a, msk2a, msk3a
+    shlqbybi	msk0a, allOnes, bitOfs
+    shlqbybi	msk1a, allOnes, bitOfs1
+    shlqbybi	msk2a, allOnes, bitOfs2
+    shlqbybi	msk3a, allOnes, bitOfs3
+        
+	.reg		msk0b, msk1b, msk2b, msk3b
+    shlqbi		msk0b, msk0a, bitOfs	    
+    shlqbi		msk1b, msk1a, bitOfs1	    
+    shlqbi		msk2b, msk2a, bitOfs2	    
+    shlqbi		msk3b, msk3a, bitOfs3	    
+    
+    .reg		ib0, ib1, ib2, ib3
+    selb		ib0, d0bs0, d0as0, msk0b
+    selb		ib1, d1bs0, d1as0, msk1b
+    selb		ib2, d2bs0, d2as0, msk2b
+    selb		ib3, d3bs0, d3as0, msk3b
+
+    // swizzle -> xxxx yyyy zzzz wwww
+    .reg		ibs0, ibs1, ibs2, ibs3
+    .reg		ibx, iby, ibz, ibw
+    shufb		ibs0, ib0, ib1, shufAaBb
+    shufb		ibs1, ib0, ib1, shufCcDd
+    shufb		ibs2, ib2, ib3, shufBbAa
+    shufb		ibs3, ib2, ib3, shufDdCc
+    shufb		ibx, ibs0, ibs2, shufABcd
+    shufb		iby, ibs0, ibs2, shufCDab
+    shufb		ibz, ibs1, ibs3, shufABcd
+    shufb		ibw, ibs1, ibs3, shufCDab
+    
+    // Clear invalid bits (if intra frame count is less than 128)
+    .reg		bx, by, bz, bw
+    and			bx, ibx, bitMaskXXXX
+    and			by, iby, bitMaskYYYY
+    and			bz, ibz, bitMaskZZZZ
+    and			bw, ibw, bitMaskWWWW
+
+    // Get bits prior to current frame
+    .reg		pbx, pby, pbz, pbw
+    and			pbx, ibx, prevBitMaskXXXX
+    and			pby, iby, prevBitMaskYYYY
+    and			pbz, ibz, prevBitMaskZZZZ
+    and			pbw, ibw, prevBitMaskWWWW
+    
+    // Count enabled bits
+    .reg		mask_0X0X0X0X        
+    fsmbi		mask_0X0X0X0X, 0x3333        
+    .reg		nbx, nby, nbz, nbw, npbx, npby, npbz, npbw, sumbx, sumby, sumbz, sumbw, numBits, numPrevBits
+    cntb		nbx, bx
+    cntb		nby, by
+    cntb		nbz, bz
+    cntb		nbw, bw
+    cntb		npbx, pbx
+    cntb		npby, pby
+    cntb		npbz, pbz
+    cntb		npbw, pbw
+    sumb		sumbx, nbx, npbx
+    sumb		sumby, nby, npby
+    sumb		sumbz, nbz, npbz
+    sumb		sumbw, nbw, npbw
+    a			numBits, sumbx, sumby
+    a			numBits, numBits, sumbz
+    a			numBits, numBits, sumbw
+    rotmi		numPrevBits, numBits, -16
+    and			numBits, numBits, mask_0X0X0X0X
+    
+    // Get number of contiguously disabled bits before (and including) current frame
+    // i.e. the number of trailing zeros of prb.
+    .reg		tz0, tz1, tz2, tz3, tzc0, tzc1, tzc2, tzc3, tzm1, tzm2, tzs1, tzs2, tzs3, bBits
+    .reg		tmp0a, tmp1a, tmp2a, tmp3a, tmp4a, tmp5a, tmp6a, tmp7a
+    sfi			tmp0a, pbx, 0
+    sfi			tmp1a, pby, 0
+    sfi			tmp2a, pbz, 0
+    sfi			tmp3a, pbw, 0
+    and			tmp4a, pbx, tmp0a
+    and			tmp5a, pby, tmp1a
+    and			tmp6a, pbz, tmp2a
+    and			tmp7a, pbw, tmp3a
+    clz			tz0, tmp4a
+    clz			tz1, tmp5a
+    clz			tz2, tmp6a
+    clz			tz3, tmp7a
+    ceqi		tzc0, tz0, 32
+    ceqi		tzc1, tz1, 32
+    ceqi		tzc2, tz2, 32
+    ceqi		tzc3, tz3, 32
+    .reg		tmp0b, tmp1b, tmp2b, tmp3b
+    sfi			tmp0b, tz0, 31
+    sfi			tmp1b, tz1, 31
+    sfi			tmp2b, tz2, 31
+    sfi			tmp3b, tz3, 31
+    selb		tz0, tmp0b, tz0, tzc0
+    selb		tz1, tmp1b, tz1, tzc1
+    selb		tz2, tmp2b, tz2, tzc2
+    selb		tz3, tmp3b, tz3, tzc3
+    and			tzm1, tzc3, tzc2
+    and			tzm2, tzm1, tzc1
+    .reg		tmp0c, tmp1c, tmp2c
+    and			tmp0c, tz2, tzc3
+    and			tmp1c, tz1, tzm1
+    and			tmp2c, tz0, tzm2
+    a			tzs1, tz3, tmp0c
+    a			tzs2, tzs1, tmp1c
+    a			tzs3, tzs2, tmp2c
+    .reg		tmp0d
+    sfi			tmp0d, frameInteger, 128
+    sf			bBits, tmp0d, tzs3
+    
+    // Get number of contiguously disabled bits after (but not including) current frame
+    // i.e. the number of leading zeros of rb
+    .reg		lz0, lz1, lz2, lz3, lzc0, lzc1, lzc2, lzm1, lzm2, lzs1, lzs2, lzs3, aBits
+    .reg		tmp0e, tmp1e, tmp2e, tmp3e, tmp4e, tmp5e, tmp6e, tmp7e
+    andc		tmp0e, bx, prevBitMaskXXXX
+    andc		tmp1e, by, prevBitMaskYYYY
+    andc		tmp2e, bz, prevBitMaskZZZZ
+    andc		tmp3e, bw, prevBitMaskWWWW
+    orc			tmp4e, tmp0e, bitMaskXXXX
+    orc			tmp5e, tmp1e, bitMaskYYYY
+    orc			tmp6e, tmp2e, bitMaskZZZZ
+    orc			tmp7e, tmp3e, bitMaskWWWW
+    clz			lz0, tmp4e
+    clz			lz1, tmp5e
+    clz			lz2, tmp6e
+    clz			lz3, tmp7e
+    ceqi		lzc0, lz0, 32
+    ceqi		lzc1, lz1, 32
+    ceqi		lzc2, lz2, 32
+    and			lzm1, lzc0, lzc1
+    and			lzm2, lzm1, lzc2
+    .reg		tmp0f, tmp1f, tmp2f
+    and			tmp0f, lz1, lzc0
+    and			tmp1f, lz2, lzm1
+    and			tmp2f, lz3, lzm2
+    a			lzs1, lz0, tmp0f
+    a			lzs2, lzs1, tmp1f
+    a			lzs3, lzs2, tmp2f
+    .reg		tmp0g
+    ai			tmp0g, lzs3, 1
+    sf			aBits, frameInteger, tmp0g
+    
+    // Get addresses of the intra frame data bracketing each joint
+    .reg		chanStride, csShft0, csShft1, csShft2, chanOfs, intraKeyOfs, leftIntraKeyAdr, rightIntraKeyAdr
+    mpy			chanStride, numBits, keyStride
+    rotqmbyi	csShft0, chanStride, -4
+    rotqmbyi	csShft1, chanStride, -8
+    rotqmbyi	csShft2, chanStride, -12
+    a			chanOfs, chanStride, csShft0
+    a			chanOfs, chanOfs, csShft1
+    a			chanOfs, chanOfs, csShft2
+    rotqmbyi	intraKeyOfs, chanOfs, -4
+    mpya		intraKeyOfs, numPrevBits, keyStride, intraKeyOfs
+    a			rightIntraKeyAdr, intraKeysAdr, intraKeyOfs
+    sf			leftIntraKeyAdr, keyStride, rightIntraKeyAdr
+    
+    // increment intra keys address for the next loop
+    shufb		chanOfs, chanOfs, chanOfs, shufDDDD
+    a			intraKeysAdr, intraKeysAdr, chanOfs
+    
+    // If there is no left/right intra frame data, use initial/final data
+    .reg		leftSelMask, rightSelMask, leftAdr, rightAdr
+    clgti		leftSelMask, numPrevBits, 0
+    ceq			rightSelMask, numPrevBits, numBits
+    selb		leftAdr, initialKeyCurAdr, leftIntraKeyAdr, leftSelMask
+    selb		rightAdr, rightIntraKeyAdr, finalKeyCurAdr, rightSelMask
+    
+    // Compute tweening factors
+    .reg		bBitsf, aBitsf, tween0, tween1, tween, tmp0h, tmp1h, tmp2h, tmp3h
+    cuflt		bBitsf, bBits, 0
+    cuflt		aBitsf, aBits, 0
+    fa			tween0, frameFraction, bBitsf
+    fa			tmp0h, bBitsf, aBitsf
+    frest		tmp1h, tmp0h
+	fi			tmp2h, tmp0h, tmp1h
+	fnms		tmp3h, tmp0h, tmp2h, fOne
+	fma			tween1, tmp3h, tmp2h, tmp2h
+	fm			tween, tween0, tween1
+    
+    // Get pointers to keyframes
+    .reg		left0BitAdr, left1BitAdr, left2BitAdr, left3BitAdr
+    .reg		right0BitAdr, right1BitAdr, right2BitAdr, right3BitAdr
+    rotqbyi		left0BitAdr, leftAdr, 0 // mov
+    shlqbyi		left1BitAdr, leftAdr, 4
+    shlqbyi		left2BitAdr, leftAdr, 8
+    shlqbyi		left3BitAdr, leftAdr, 12
+    rotqbyi		right0BitAdr, rightAdr, 0 // mov
+    shlqbyi		right1BitAdr, rightAdr, 4
+    shlqbyi		right2BitAdr, rightAdr, 8
+    shlqbyi		right3BitAdr, rightAdr, 12
+    
+    .reg		left0ByteAdr, left1ByteAdr, left2ByteAdr, left3ByteAdr
+    .reg		right0ByteAdr, right1ByteAdr, right2ByteAdr, right3ByteAdr
+    rotmi		left0ByteAdr, left0BitAdr, -3
+    shlqbyi		left1ByteAdr, left0ByteAdr, 4
+    shlqbyi		left2ByteAdr, left0ByteAdr, 8
+    shlqbyi		left3ByteAdr, left0ByteAdr, 12
+    rotmi		right0ByteAdr, right0BitAdr, -3
+    shlqbyi		right1ByteAdr, right0ByteAdr, 4
+    shlqbyi		right2ByteAdr, right0ByteAdr, 8
+    shlqbyi		right3ByteAdr, right0ByteAdr, 12
+    
+   	//-------------------------------------------------------------------------
+	// load the bitpacked keysframes (x8) and extract sign, exponent, mantissa
+	//-------------------------------------------------------------------------
+
+    .reg		left0Qw0a, left0Qw1a, left1Qw0a, left1Qw1a, left2Qw0a, left2Qw1a, left3Qw0a, left3Qw1a
+    .reg		right0Qw0a, right0Qw1a, right1Qw0a, right1Qw1a, right2Qw0a, right2Qw1a, right3Qw0a, right3Qw1a
+    lqd			left0Qw0a, 0x00(left0ByteAdr)
+    lqd			left0Qw1a, 0x10(left0ByteAdr)
+    lqd			left1Qw0a, 0x00(left1ByteAdr)
+    lqd			left1Qw1a, 0x10(left1ByteAdr)
+    lqd			left2Qw0a, 0x00(left2ByteAdr)
+    lqd			left2Qw1a, 0x10(left2ByteAdr)
+    lqd			left3Qw0a, 0x00(left3ByteAdr)
+    lqd			left3Qw1a, 0x10(left3ByteAdr)
+    lqd			right0Qw0a, 0x00(right0ByteAdr)
+    lqd			right0Qw1a, 0x10(right0ByteAdr)
+    lqd			right1Qw0a, 0x00(right1ByteAdr)
+    lqd			right1Qw1a, 0x10(right1ByteAdr)
+    lqd			right2Qw0a, 0x00(right2ByteAdr)
+    lqd			right2Qw1a, 0x10(right2ByteAdr)
+    lqd			right3Qw0a, 0x00(right3ByteAdr)
+    lqd			right3Qw1a, 0x10(right3ByteAdr)
+
+	// left justify
+    .reg		left0Qw0b, left0Qw1b, left1Qw0b, left1Qw1b, left2Qw0b, left2Qw1b, left3Qw0b, left3Qw1b
+    .reg		right0Qw0b, right0Qw1b, right1Qw0b, right1Qw1b, right2Qw0b, right2Qw1b, right3Qw0b, right3Qw1b	
+	rotqbybi	left0Qw0b, left0Qw0a, left0BitAdr
+	rotqbybi	left0Qw1b, left0Qw1a, left0BitAdr
+	rotqbybi	left1Qw0b, left1Qw0a, left1BitAdr
+	rotqbybi	left1Qw1b, left1Qw1a, left1BitAdr
+	rotqbybi	left2Qw0b, left2Qw0a, left2BitAdr
+	rotqbybi	left2Qw1b, left2Qw1a, left2BitAdr
+	rotqbybi	left3Qw0b, left3Qw0a, left3BitAdr
+	rotqbybi	left3Qw1b, left3Qw1a, left3BitAdr
+	rotqbybi	right0Qw0b, right0Qw0a, right0BitAdr
+	rotqbybi	right0Qw1b, right0Qw1a, right0BitAdr
+	rotqbybi	right1Qw0b, right1Qw0a, right1BitAdr
+	rotqbybi	right1Qw1b, right1Qw1a, right1BitAdr
+	rotqbybi	right2Qw0b, right2Qw0a, right2BitAdr
+	rotqbybi	right2Qw1b, right2Qw1a, right2BitAdr
+	rotqbybi	right3Qw0b, right3Qw0a, right3BitAdr
+	rotqbybi	right3Qw1b, right3Qw1a, right3BitAdr
+	
+    .reg		left0Qw0c, left0Qw1c, left1Qw0c, left1Qw1c, left2Qw0c, left2Qw1c, left3Qw0c, left3Qw1c
+    .reg		right0Qw0c, right0Qw1c, right1Qw0c, right1Qw1c, right2Qw0c, right2Qw1c, right3Qw0c, right3Qw1c	
+	rotqbi		left0Qw0c, left0Qw0b, left0BitAdr
+	rotqbi		left0Qw1c, left0Qw1b, left0BitAdr
+	rotqbi		left1Qw0c, left1Qw0b, left1BitAdr
+	rotqbi		left1Qw1c, left1Qw1b, left1BitAdr
+	rotqbi		left2Qw0c, left2Qw0b, left2BitAdr
+	rotqbi		left2Qw1c, left2Qw1b, left2BitAdr
+	rotqbi		left3Qw0c, left3Qw0b, left3BitAdr
+	rotqbi		left3Qw1c, left3Qw1b, left3BitAdr
+	rotqbi		right0Qw0c, right0Qw0b, right0BitAdr
+	rotqbi		right0Qw1c, right0Qw1b, right0BitAdr
+	rotqbi		right1Qw0c, right1Qw0b, right1BitAdr
+	rotqbi		right1Qw1c, right1Qw1b, right1BitAdr
+	rotqbi		right2Qw0c, right2Qw0b, right2BitAdr
+	rotqbi		right2Qw1c, right2Qw1b, right2BitAdr
+	rotqbi		right3Qw0c, right3Qw0b, right3BitAdr
+	rotqbi		right3Qw1c, right3Qw1b, right3BitAdr
+
+	// todo: is there a way to avoid this?	
+	.reg		right0BitAdrMasked, right1BitAdrMasked, right2BitAdrMasked, right3BitAdrMasked
+	.reg		left0BitAdrMasked, left1BitAdrMasked, left2BitAdrMasked, left3BitAdrMasked	
+	andi		right0BitAdrMasked, rightAdr, 0x7f
+	shlqbyi		right1BitAdrMasked, right0BitAdrMasked, 4
+    shlqbyi		right2BitAdrMasked, right0BitAdrMasked, 8
+    shlqbyi		right3BitAdrMasked, right0BitAdrMasked, 12
+	andi		left0BitAdrMasked, leftAdr, 0x7f
+	shlqbyi		left1BitAdrMasked, left0BitAdrMasked, 4
+    shlqbyi		left2BitAdrMasked, left0BitAdrMasked, 8
+    shlqbyi		left3BitAdrMasked, left0BitAdrMasked, 12
+			
+	.reg		left0Mska, left1Mska, left2Mska, left3Mska
+	.reg		right0Mska, right1Mska, right2Mska, right3Mska
+	shlqbybi	left0Mska, allOnes, left0BitAdrMasked
+	shlqbybi	left1Mska, allOnes, left1BitAdrMasked
+	shlqbybi	left2Mska, allOnes, left2BitAdrMasked
+	shlqbybi	left3Mska, allOnes, left3BitAdrMasked
+	shlqbybi	right0Mska, allOnes, right0BitAdrMasked
+	shlqbybi	right1Mska, allOnes, right1BitAdrMasked
+	shlqbybi	right2Mska, allOnes, right2BitAdrMasked
+	shlqbybi	right3Mska, allOnes, right3BitAdrMasked
+
+	.reg		left0Mskb, left1Mskb, left2Mskb, left3Mskb
+	.reg		right0Mskb, right1Mskb, right2Mskb, right3Mskb
+	shlqbi		left0Mskb, left0Mska, left0BitAdrMasked
+	shlqbi		left1Mskb, left1Mska, left1BitAdrMasked
+	shlqbi		left2Mskb, left2Mska, left2BitAdrMasked
+	shlqbi		left3Mskb, left3Mska, left3BitAdrMasked
+	shlqbi		right0Mskb, right0Mska, right0BitAdrMasked
+	shlqbi		right1Mskb, right1Mska, right1BitAdrMasked
+	shlqbi		right2Mskb, right2Mska, right2BitAdrMasked
+	shlqbi		right3Mskb, right3Mska, right3BitAdrMasked
+	
+	.reg		left0x, left1x, left2x, left3x
+	.reg		right0x, right1x, right2x, right3x
+	selb		left0x, left0Qw1c, left0Qw0c, left0Mskb
+	selb		left1x, left1Qw1c, left1Qw0c, left1Mskb
+	selb		left2x, left2Qw1c, left2Qw0c, left2Mskb
+	selb		left3x, left3Qw1c, left3Qw0c, left3Mskb
+	selb		right0x, right0Qw1c, right0Qw0c, right0Mskb
+	selb		right1x, right1Qw1c, right1Qw0c, right1Mskb
+	selb		right2x, right2Qw1c, right2Qw0c, right2Mskb
+	selb		right3x, right3Qw1c, right3Qw0c, right3Mskb
+
+	// shift packed x,y,z into preferred word
+	.reg		sumSpecX1, sumSpecY1, sumSpecX2, sumSpecY2, sumSpecX3, sumSpecY3 
+	shlqbyi		sumSpecX1, sumSpecX, 4
+	shlqbyi		sumSpecY1, sumSpecY, 4
+	shlqbyi		sumSpecX2, sumSpecX, 8
+	shlqbyi		sumSpecY2, sumSpecY, 8
+	shlqbyi		sumSpecX3, sumSpecX, 12
+	shlqbyi		sumSpecY3, sumSpecY, 12
+	
+	.reg		left0ytmp, left0ztmp, left0y, left0z
+	shlqbybi	left0ytmp, left0x, sumSpecX
+	shlqbi		left0y, left0ytmp, sumSpecX
+	shlqbybi	left0ztmp, left0y, sumSpecY
+	shlqbi		left0z, left0ztmp, sumSpecY
+
+	.reg		left1ytmp, left1ztmp, left1y, left1z
+	shlqbybi	left1ytmp, left1x, sumSpecX1
+	shlqbi		left1y, left1ytmp, sumSpecX1
+	shlqbybi	left1ztmp, left1y, sumSpecY1
+	shlqbi		left1z, left1ztmp, sumSpecY1
+
+	.reg		left2ytmp, left2ztmp, left2y, left2z
+	shlqbybi	left2ytmp, left2x, sumSpecX2
+	shlqbi		left2y, left2ytmp, sumSpecX2
+	shlqbybi	left2ztmp, left2y, sumSpecY2
+	shlqbi		left2z, left2ztmp, sumSpecY2
+
+	.reg		left3ytmp, left3ztmp, left3y, left3z
+	shlqbybi	left3ytmp, left3x, sumSpecX3
+	shlqbi		left3y, left3ytmp, sumSpecX3
+	shlqbybi	left3ztmp, left3y, sumSpecY3
+	shlqbi		left3z, left3ztmp, sumSpecY3
+
+	.reg		right0ytmp, right0ztmp, right0y, right0z
+	shlqbybi	right0ytmp, right0x, sumSpecX
+	shlqbi		right0y, right0ytmp, sumSpecX
+	shlqbybi	right0ztmp, right0y, sumSpecY
+	shlqbi		right0z, right0ztmp, sumSpecY
+
+	.reg		right1ytmp, right1ztmp, right1y, right1z	
+	shlqbybi	right1ytmp, right1x, sumSpecX1
+	shlqbi		right1y, right1ytmp, sumSpecX1
+	shlqbybi	right1ztmp, right1y, sumSpecY1
+	shlqbi		right1z, right1ztmp, sumSpecY1
+
+	.reg		right2ytmp, right2ztmp, right2y, right2z
+	shlqbybi	right2ytmp, right2x, sumSpecX2
+	shlqbi		right2y, right2ytmp, sumSpecX2
+	shlqbybi	right2ztmp, right2y, sumSpecY2
+	shlqbi		right2z, right2ztmp, sumSpecY2
+
+	.reg		right3ytmp, right3ztmp, right3y, right3z
+	shlqbybi	right3ytmp, right3x, sumSpecX3
+	shlqbi		right3y, right3ytmp, sumSpecX3
+	shlqbybi	right3ztmp, right3y, sumSpecY3
+	shlqbi		right3z, right3ztmp, sumSpecY3
+
+	// swizzle -> xxxx yyyy zzzz
+	.reg		leftx, lefty, leftz 
+	.reg		tmp0i, tmp1i, tmp2i, tmp3i, tmp4i, tmp5i
+	shufb		tmp0i, left0x, left1x, shufAa00
+	shufb		tmp1i, left2x, left3x, shuf00Aa
+	shufb		leftx, tmp0i, tmp1i, shufABcd
+	shufb		tmp2i, left0y, left1y, shufAa00
+	shufb		tmp3i, left2y, left3y, shuf00Aa
+	shufb		lefty, tmp2i, tmp3i, shufABcd
+	shufb		tmp4i, left0z, left1z, shufAa00
+	shufb		tmp5i, left2z, left3z, shuf00Aa
+	shufb		leftz, tmp4i, tmp5i, shufABcd
+
+	.reg		rightx, righty, rightz 
+	.reg		tmp0j, tmp1j, tmp2j, tmp3j, tmp4j, tmp5j
+	shufb		tmp0j, right0x, right1x, shufAa00
+	shufb		tmp1j, right2x, right3x, shuf00Aa
+	shufb		rightx, tmp0j, tmp1j, shufABcd	
+	shufb		tmp2j, right0y, right1y, shufAa00
+	shufb		tmp3j, right2y, right3y, shuf00Aa	
+	shufb		righty, tmp2j, tmp3j, shufABcd
+	shufb		tmp4j, right0z, right1z, shufAa00
+	shufb		tmp5j, right2z, right3z, shuf00Aa	
+	shufb		rightz, tmp4j, tmp5j, shufABcd
+
+	// extract s,e,m
+	.reg		leftSx, leftEx, leftMx, leftSy, leftEy, leftMy, leftSz, leftEz, leftMz
+	rot			leftSx, leftx, specSx
+	rot			leftEx, leftSx, specEx
+	rot			leftMx, leftEx, specMx
+	rot			leftSy, lefty, specSy
+	rot			leftEy, leftSy, specEy
+	rot			leftMy, leftEy, specMy
+	rot			leftSz, leftz, specSz
+	rot			leftEz, leftSz, specEz
+	rot			leftMz, leftEz, specMz
+	
+	.reg		rightSx, rightEx, rightMx, rightSy, rightEy, rightMy, rightSz, rightEz, rightMz
+	rot			rightSx, rightx, specSx
+	rot			rightEx, rightSx, specEx
+	rot			rightMx, rightEx, specMx
+	rot			rightSy, righty, specSy
+	rot			rightEy, rightSy, specEy
+	rot			rightMy, rightEy, specMy
+	rot			rightSz, rightz, specSz
+	rot			rightEz, rightSz, specEz
+	rot			rightMz, rightEz, specMz
+		
+	.reg		maskShftSx, maskShftEx, maskShftMx, maskShftSy, maskShftEy, maskShftMy, maskShftSz, maskShftEz, maskShftMz
+	ai			maskShftSx, specSx, -32
+	ai			maskShftEx, specEx, -32
+	ai			maskShftMx, specMx, -32
+	ai			maskShftSy, specSy, -32
+	ai			maskShftEy, specEy, -32
+	ai			maskShftMy, specMy, -32
+	ai			maskShftSz, specSz, -32
+	ai			maskShftEz, specEz, -32
+	ai			maskShftMz, specMz, -32
+	
+	.reg		maskSx, maskEx, maskMx, maskSy, maskEy, maskMy, maskSz, maskEz, maskMz
+	rotm		maskSx, allOnes, maskShftSx
+	rotm		maskEx, allOnes, maskShftEx
+	rotm		maskMx, allOnes, maskShftMx
+	rotm		maskSy, allOnes, maskShftSy
+	rotm		maskEy, allOnes, maskShftEy
+	rotm		maskMy, allOnes, maskShftMy
+	rotm		maskSz, allOnes, maskShftSz
+	rotm		maskEz, allOnes, maskShftEz
+	rotm		maskMz, allOnes, maskShftMz
+
+	and			leftSx, leftSx, maskSx
+	and			leftEx, leftEx, maskEx
+	and			leftMx, leftMx, maskMx
+	and			leftSy, leftSy, maskSy
+	and			leftEy, leftEy, maskEy
+	and			leftMy, leftMy, maskMy
+	and			leftSz, leftSz, maskSz
+	and			leftEz, leftEz, maskEz
+	and			leftMz, leftMz, maskMz
+
+	and			rightSx, rightSx, maskSx
+	and			rightEx, rightEx, maskEx
+	and			rightMx, rightMx, maskMx
+	and			rightSy, rightSy, maskSy
+	and			rightEy, rightEy, maskEy
+	and			rightMy, rightMy, maskMy
+	and			rightSz, rightSz, maskSz
+	and			rightEz, rightEz, maskEz
+	and			rightMz, rightMz, maskMz
+	
+	//----------------------------------------------------------------
+	// expand as float
+	//----------------------------------------------------------------
+	
+	// bias exponent (	 128 - ( 1U << ( numExponentBits - 1 ) )	
+	.reg		one
+	il128		one, 0x00000001_00000001_00000001_00000001
+	.reg		expBiasX, expBiasY, expBiasZ
+	ai			expBiasX, specEx, -1
+	ai			expBiasY, specEy, -1
+	ai			expBiasZ, specEz, -1
+	shl			expBiasX, one, expBiasX
+	shl			expBiasY, one, expBiasY
+	shl			expBiasZ, one, expBiasZ
+	sfi			expBiasX, expBiasX, 128
+	sfi			expBiasY, expBiasY, 128
+	sfi			expBiasZ, expBiasZ, 128
+	
+	.reg		leftEx0, leftEy0, leftEz0
+	a			leftEx0, leftEx, expBiasX
+	a			leftEy0, leftEy, expBiasY
+	a			leftEz0, leftEz, expBiasZ
+	shli		leftEx0, leftEx0, 23
+	shli		leftEy0, leftEy0, 23
+	shli		leftEz0, leftEz0, 23
+
+	.reg		rightEx0, rightEy0, rightEz0
+	a			rightEx0, rightEx, expBiasX
+	a			rightEy0, rightEy, expBiasY
+	a			rightEz0, rightEz, expBiasZ
+	shli		rightEx0, rightEx0, 23
+	shli		rightEy0, rightEy0, 23
+	shli		rightEz0, rightEz0, 23
+	
+	// mantissa leftshift by 23 - numBitsMantissa		
+	.reg		shiftMx, shiftMy, shiftMz
+	sfi			shiftMx, specMx, 23
+	sfi			shiftMy, specMy, 23
+	sfi			shiftMz, specMz, 23
+
+	.reg		leftMx0, leftMy0, leftMz0
+	shl			leftMx0, leftMx, shiftMx
+	shl			leftMy0, leftMy, shiftMy
+	shl			leftMz0, leftMz, shiftMz
+	
+	.reg		rightMx0, rightMy0, rightMz0
+	shl			rightMx0, rightMx, shiftMx
+	shl			rightMy0, rightMy, shiftMy
+	shl			rightMz0, rightMz, shiftMz
+	
+	// sign
+	.reg		leftSx0, leftSy0, leftSz0
+	shli		leftSx0, leftSx, 31
+	shli		leftSy0, leftSy, 31
+	shli		leftSz0, leftSz, 31
+
+	.reg		rightSx0, rightSy0, rightSz0
+	shli		rightSx0, rightSx, 31
+	shli		rightSy0, rightSy, 31
+	shli		rightSz0, rightSz, 31
+	
+	// combine
+	.reg		leftFloatX, leftFloatY, leftFloatZ
+	or			leftFloatX, leftEx0, leftMx0
+	or			leftFloatY, leftEy0, leftMy0
+	or			leftFloatZ, leftEz0, leftMz0
+	or			leftFloatX, leftFloatX, leftSx0
+	or			leftFloatY, leftFloatY, leftSy0
+	or			leftFloatZ, leftFloatZ, leftSz0
+
+	.reg		rightFloatX, rightFloatY, rightFloatZ
+	or			rightFloatX, rightEx0, rightMx0
+	or			rightFloatY, rightEy0, rightMy0
+	or			rightFloatZ, rightEz0, rightMz0
+	or			rightFloatX, rightFloatX, rightSx0
+	or			rightFloatY, rightFloatY, rightSy0
+	or			rightFloatZ, rightFloatZ, rightSz0
+		
+	//----------------------------------------------------------------
+	// expand as signed integer
+	//----------------------------------------------------------------
+	
+	.reg		intShiftX, intShiftY, intShiftZ
+	ai			intShiftX, specMx, -31
+	ai			intShiftY, specMy, -31
+	ai			intShiftZ, specMz, -31
+	
+	// sign extend
+	.reg		leftSignExtendX, leftSignExtendY, leftSignExtendZ
+	.reg		leftSignedIntLX, leftSignedIntLY, leftSignedIntLZ
+	shli		leftSignExtendX, leftSx, 31
+	shli		leftSignExtendY, leftSy, 31
+	shli		leftSignExtendZ, leftSz, 31
+	rotma		leftSignExtendX, leftSignExtendX, intShiftX
+	rotma		leftSignExtendY, leftSignExtendY, intShiftY
+	rotma		leftSignExtendZ, leftSignExtendZ, intShiftZ
+	or			leftSignedIntLX, leftMx, leftSignExtendX
+	or			leftSignedIntLY, leftMy, leftSignExtendY
+	or			leftSignedIntLZ, leftMz, leftSignExtendZ
+
+	.reg		rightSignExtendX, rightSignExtendY, rightSignExtendZ
+	.reg		rightSignedIntLX, rightSignedIntLY, rightSignedIntLZ
+	shli		rightSignExtendX, rightSx, 31
+	shli		rightSignExtendY, rightSy, 31
+	shli		rightSignExtendZ, rightSz, 31
+	rotma		rightSignExtendX, rightSignExtendX, intShiftX
+	rotma		rightSignExtendY, rightSignExtendY, intShiftY
+	rotma		rightSignExtendZ, rightSignExtendZ, intShiftZ
+	or			rightSignedIntLX, rightMx, rightSignExtendX
+	or			rightSignedIntLY, rightMy, rightSignExtendY
+	or			rightSignedIntLZ, rightMz, rightSignExtendZ
+
+	.reg		leftIntX, leftIntY, leftIntZ
+	csflt		leftIntX, leftSignedIntLX, 0
+	csflt		leftIntY, leftSignedIntLY, 0
+	csflt		leftIntZ, leftSignedIntLZ, 0
+
+	.reg		rightIntX, rightIntY, rightIntZ
+	csflt		rightIntX, rightSignedIntLX, 0
+	csflt		rightIntY, rightSignedIntLY, 0
+	csflt		rightIntZ, rightSignedIntLZ, 0
+	
+	// scale factor
+	.reg		scaleFactorX, scaleFactorY, scaleFactorZ
+	rotm		scaleFactorX, k7FFFFFFF, intShiftX
+	rotm		scaleFactorY, k7FFFFFFF, intShiftY
+	rotm		scaleFactorZ, k7FFFFFFF, intShiftZ
+	cuflt		scaleFactorX, scaleFactorX, 0
+	cuflt		scaleFactorY, scaleFactorY, 0
+	cuflt		scaleFactorZ, scaleFactorZ, 0
+	
+	// invert
+	.reg		scaleFactorX0, scaleFactorY0, scaleFactorZ0
+	.reg		tmp0k, tmp1k, tmp2k
+	frest		tmp0k, scaleFactorX
+	fi			tmp1k, scaleFactorX, tmp0k
+	fnms		tmp2k, scaleFactorX, tmp1k, fOne
+	fma			scaleFactorX0, tmp2k, tmp1k, tmp1k
+	
+	.reg		tmp0l, tmp1l, tmp2l
+	frest		tmp0l, scaleFactorY
+	fi			tmp1l, scaleFactorY, tmp0l
+	fnms		tmp2l, scaleFactorY, tmp1l, fOne
+	fma			scaleFactorY0, tmp2l, tmp1l, tmp1l
+
+	.reg		tmp0m, tmp1m, tmp2m
+	frest		tmp0m, scaleFactorZ
+	fi			tmp1m, scaleFactorZ, tmp0m
+	fnms		tmp2m, scaleFactorZ, tmp1m, fOne
+	fma			scaleFactorZ0, tmp2m, tmp1m, tmp1m
+
+	// divide by zero guard
+	ceqi		tmp0m, scaleFactorX, 0
+	ceqi		tmp1m, scaleFactorY, 0
+	ceqi		tmp2m, scaleFactorZ, 0				
+	andc		scaleFactorX, scaleFactorX0, tmp0m
+	andc		scaleFactorY, scaleFactorY0, tmp1m
+	andc		scaleFactorZ, scaleFactorZ0, tmp2m
+	
+	// scale
+	fm			leftIntX, leftIntX, scaleFactorX
+	fm			leftIntY, leftIntY, scaleFactorY
+	fm			leftIntZ, leftIntZ, scaleFactorZ
+	fm			rightIntX, rightIntX, scaleFactorX
+	fm			rightIntY, rightIntY, scaleFactorY
+	fm			rightIntZ, rightIntZ, scaleFactorZ
+	
+	//----------------------------------------------------------------
+	// select integer if num exponent bits = 0, otherwise float
+	//----------------------------------------------------------------
+
+	.reg		selIntX, selIntY, selIntZ
+	ceqi		selIntX, specEx, 0
+	ceqi		selIntY, specEy, 0
+	ceqi		selIntZ, specEz, 0
+	
+	// Implement selects with shuffles (odd pipe) to reduce even pipe usage
+	.reg		rotSelectShufMskIntX, rotSelectShufMskIntY, rotSelectShufMskIntZ
+    selb		rotSelectShufMskIntX, shufABCD, shufabcd, selIntX 
+    selb		rotSelectShufMskIntY, shufABCD, shufabcd, selIntY 
+    selb		rotSelectShufMskIntZ, shufABCD, shufabcd, selIntZ 
+		
+	.reg		leftX0, leftY0, leftZ0
+	shufb		leftX0, leftFloatX, leftIntX, rotSelectShufMskIntX
+	shufb		leftY0, leftFloatY, leftIntY, rotSelectShufMskIntY
+	shufb		leftZ0, leftFloatZ, leftIntZ, rotSelectShufMskIntZ
+	
+	.reg		rightX0, rightY0, rightZ0
+	shufb		rightX0, rightFloatX, rightIntX, rotSelectShufMskIntX
+	shufb		rightY0, rightFloatY, rightIntY, rotSelectShufMskIntY
+	shufb		rightZ0, rightFloatZ, rightIntZ, rotSelectShufMskIntZ
+	
+	//----------------------------------------------------------------
+	// compute derived value (rotations only)
+	//----------------------------------------------------------------
+
+	// w = sqrt(1 - x*x + y*y + z*z)
+	.reg		leftWSq, leftWsqr, leftW0
+	fnms		leftWSq, leftX0, leftX0, fOne
+	fnms		leftWSq, leftY0, leftY0, leftWSq
+	fnms		leftWSq, leftZ0, leftZ0, leftWSq
+
+	// clamp positive
+	.reg		tmp0m0, zero
+    fsmbi		zero, 0
+	fcgt		tmp0m0, zero, leftWSq
+	selb		leftWSq, leftWSq, zero, tmp0m0			
+
+	.reg		tmp0n, tmp1n, tmp2n, tmp3n, tmp4n
+	frsqest		tmp0n, leftWSq
+	fi			tmp1n, leftWSq, tmp0n
+	fm			tmp2n, leftWSq, tmp1n
+	fm			tmp3n, tmp1n, fHalf
+	fnms		tmp4n, tmp2n, tmp1n, fOne
+	fma			leftWsqr, tmp3n, tmp4n, tmp1n
+	fm			leftW0, leftWsqr, leftWSq
+
+	.reg		rightWSq, rightWsqr, rightW0
+	fnms		rightWSq, rightX0, rightX0, fOne
+	fnms		rightWSq, rightY0, rightY0, rightWSq
+	fnms		rightWSq, rightZ0, rightZ0, rightWSq
+
+	.reg		tmp0o, tmp1o, tmp2o, tmp3o, tmp4o	
+	frsqest		tmp0o, rightWSq
+	fi			tmp1o, rightWSq, tmp0o
+	fm			tmp2o, rightWSq, tmp1o
+	fm			tmp3o, tmp1o, fHalf
+	fnms		tmp4o, tmp2o, tmp1o, fOne
+	fma			rightWsqr, tmp3o, tmp4o, tmp1o
+	fm			rightW0, rightWsqr, rightWSq
+
+	// Constant (moved inside the loop)
+    .reg		_EEEE
+    il128		_EEEE, 0xE0000000_E0000000_E0000000_E0000000         
+
+    // Now shuffle w into the correct component (as defined by the packing spec)
+    // Using selects rather than deswizzle+shuffle as I want to keep the keys in swizzled form for the slerp...
+    .reg		rebuildIndex, sel0a, sel0b, sel0c, selMsk0a, selMsk0b, selMsk0c
+	nor			rebuildIndex, specs, specs
+	andi		rebuildIndex, rebuildIndex, 3
+    shl			sel0a, _EEEE, rebuildIndex
+    a			sel0b, sel0a, sel0a
+    a			sel0c, sel0b, sel0b
+    rotmai		selMsk0a, sel0a, -31
+    rotmai		selMsk0b, sel0b, -31
+    rotmai		selMsk0c, sel0c, -31
+    
+    // implement selb with shuffle to reduce even pipe load
+    .reg		rotSelectShufMsk0a, rotSelectShufMsk0b, rotSelectShufMsk0c
+    selb		rotSelectShufMsk0a, shufABCD, shufabcd, selMsk0a
+    selb		rotSelectShufMsk0b, shufABCD, shufabcd, selMsk0b
+    selb		rotSelectShufMsk0c, shufABCD, shufabcd, selMsk0c
+          
+    .reg		leftX, leftY, leftZ, leftW
+    shufb		leftY, leftX0, leftW0, rotSelectShufMsk0a
+    shufb		leftX, leftW0, leftX0, rotSelectShufMsk0a
+    shufb		leftZ, leftY0, leftY, rotSelectShufMsk0b
+    shufb		leftY, leftY, leftY0, rotSelectShufMsk0b
+    shufb		leftW, leftZ0, leftZ, rotSelectShufMsk0c
+    shufb		leftZ, leftZ, leftZ0, rotSelectShufMsk0c
+
+    .reg		rightX, rightY, rightZ, rightW
+    shufb		rightY, rightX0, rightW0, rotSelectShufMsk0a
+    shufb		rightX, rightW0, rightX0, rotSelectShufMsk0a
+    shufb		rightZ, rightY0, rightY, rotSelectShufMsk0b
+    shufb		rightY, rightY, rightY0, rotSelectShufMsk0b
+    shufb		rightW, rightZ0, rightZ, rotSelectShufMsk0c
+    shufb		rightZ, rightZ, rightZ0, rotSelectShufMsk0c
+  
+	//----------------------------------------------------------------
+    // slerp each (left, right) keyframe pair (rotations only)
+	//----------------------------------------------------------------
+
+	// Constant moved within the loop
+    .reg		fMinusOne
+    il128    	fMinusOne, 0xbf800000_bf800000_bf800000_bf800000	// -1.0    
+
+    // Slerp rotations : compute dot product
+    .reg		dotRotX, dotRotXY, dotRotXYZ, dotRot, floatSign, tmp0p
+    fm			dotRotX, leftX, rightX
+    fma			dotRotXY, leftY, rightY, dotRotX
+    fma			dotRotXYZ, leftZ, rightZ, dotRotXY
+    fma			dotRot, leftW, rightW, dotRotXYZ
+    fcgt		tmp0p, zero, dotRot
+    selb		floatSign, fOne, fMinusOne, tmp0p
+    
+    // Slerp rotations : determine target rotation (right or -right)
+    .reg		targetRotX, targetRotY, targetRotZ, targetRotW, cosAngle
+    fm			targetRotX, rightX, floatSign
+    fm			targetRotY, rightY, floatSign
+    fm			targetRotZ, rightZ, floatSign
+    fm			targetRotW, rightW, floatSign
+    fm			cosAngle, dotRot, floatSign
+    
+    // Slerp rotations : evaluate angle = acos(cosAngle) (MacLaurin)
+    .reg		oneMinusCosAngle, rsqTmp, evalTmp, acosEval0, acosEval1, acosEval2, acosEval3, angle
+    fs			oneMinusCosAngle, fOne, cosAngle
+    frsqest		rsqTmp, oneMinusCosAngle
+    fi			rsqTmp, oneMinusCosAngle, rsqTmp
+    fnms		evalTmp, rsqTmp, cosAngle, rsqTmp
+    fm			acosEval3, cosAngle, acos3
+    fnms		acosEval2, cosAngle, acosEval3, acos2
+    fnms		acosEval1, cosAngle, acosEval2, acos1
+    fnms		acosEval0, cosAngle, acosEval1, acos0
+    fm			angle, acosEval0, evalTmp
+    
+    // Slerp rotations : evaluate sina = sin(angle) (Taylor)
+    .reg		sqAngle, sinaEval0, sinaEval1, sinaEval2, sinaEval3, sina
+    fm			sqAngle, angle, angle
+    fma			sinaEval3, sin3, sqAngle, sin2
+    fma			sinaEval2, sinaEval3, sqAngle, sin1
+    fma			sinaEval1, sinaEval2, sqAngle, sin0
+    fma			sinaEval0, sinaEval1, sqAngle, fOne
+    fm			sina, sinaEval0, angle
+    
+    // Slerp rotations : evaluate sinb = sin(t*angle) (Taylor)
+    .reg		tAngle, sqTAngle, sinbEval0, sinbEval1, sinbEval2, sinbEval3, sinb
+    fm			tAngle, tween, angle
+    fm			sqTAngle, tAngle, tAngle
+    fma			sinbEval3, sin3, sqTAngle, sin2
+    fma			sinbEval2, sinbEval3, sqTAngle, sin1
+    fma			sinbEval1, sinbEval2, sqTAngle, sin0
+    fma			sinbEval0, sinbEval1, sqTAngle, fOne
+    fm			sinb, sinbEval0, tAngle
+    
+    // Slerp rotations : evaluate sinc = sin((1-t)*angle) (Taylor)
+    .reg		oneMinusT, oneMinusTAngle, sqOneMinusTAngle, sincEval0, sincEval1, sincEval2, sincEval3, sinc
+    fs			oneMinusT, fOne, tween
+    fm			oneMinusTAngle, oneMinusT, angle
+    fm			sqOneMinusTAngle, oneMinusTAngle, oneMinusTAngle
+    fma			sincEval3, sin3, sqOneMinusTAngle, sin2
+    fma			sincEval2, sincEval3, sqOneMinusTAngle, sin1
+    fma			sincEval1, sincEval2, sqOneMinusTAngle, sin0
+    fma			sincEval0, sincEval1, sqOneMinusTAngle, fOne
+    fm			sinc, sincEval0, oneMinusTAngle
+    
+    // Load constant inside the loop to reduce register pressure
+	.reg		fOneMinusEpsilon
+	il128		fOneMinusEpsilon, 0x3F7FBE77_3F7FBE77_3F7FBE77_3F7FBE77	//  0.999    
+    
+    // Select either sinc/sina or sinb/sina depending on the quadrant
+    .reg		invSina, fLeftTmp, fRightTmp, shufRange, fLeft, fRight, tmp0q
+    frest		invSina, sina
+    fi			invSina, sina, invSina
+    fm			fLeftTmp, sinc, invSina
+    fm			fRightTmp, sinb, invSina
+    fcgt		tmp0q, cosAngle, fOneMinusEpsilon
+    selb		shufRange, shufABCD, shufabcd, tmp0q
+    shufb		fLeft, fLeftTmp, oneMinusT, shufRange
+    shufb		fRight, fRightTmp, tween, shufRange
+    
+    // Actual blend
+    .reg		tmpRotX, tmpRotY, tmpRotZ, tmpRotW, rotX, rotY, rotZ, rotW
+    fm			tmpRotX, leftX, fLeft
+    fm			tmpRotY, leftY, fLeft
+    fm			tmpRotZ, leftZ, fLeft
+    fm			tmpRotW, leftW, fLeft
+    fma			rotX, targetRotX, fRight, tmpRotX
+    fma			rotY, targetRotY, fRight, tmpRotY
+    fma			rotZ, targetRotZ, fRight, tmpRotZ
+    fma			rotW, targetRotW, fRight, tmpRotW
+
+	//----------------------------------------------------------------
+    // lerp each (left, right) keyframe pair (non-rotations only)
+	//----------------------------------------------------------------
+
+	.reg		vecX, vecY, vecZ
+	fma			vecX, rightX, tween, leftX
+	fma			vecY, rightY, tween, leftY
+	fma			vecZ, rightZ, tween, leftZ
+	fnms		vecX, leftX, tween, vecX
+	fnms		vecY, leftY, tween, vecY
+	fnms		vecZ, leftZ, tween, vecZ
+
+	//----------------------------------------------------------------
+    // select slerp if rotation, otherwise lerp
+	//----------------------------------------------------------------
+
+	// That's really a select but we do it with a shuffle to reduce even pipe load
+	.reg		outX, outY, outZ, outW
+	shufb		outX, vecX, rotX, rotSelectShuf
+	shufb		outY, vecY, rotY, rotSelectShuf
+	shufb		outZ, vecZ, rotZ, rotSelectShuf
+	shufb		outW, fOne, rotW, rotSelectShuf
+
+   	//----------------------------------------------------------------
+    // deswizzle and store
+	//----------------------------------------------------------------
+
+    // (X0X1X2X3 Y0Y1Y2Y3 Z0Z1Z2Z3 W0W1W2W3 -> X0Y0Z0W0 X1Y1Z1W1 X2Y2Z2W2 X3Y3Z3W3)
+    .reg		outX0Y0X1Y1, outZ1W1Z0W0, outX2Y2X3Y3, outZ3W3Z2W2, out0, out1, out2, out3
+    shufb		outX0Y0X1Y1, outX, outY, shufAaBb
+    shufb		outZ1W1Z0W0, outZ, outW, shufBbAa
+    shufb		out0, outX0Y0X1Y1, outZ1W1Z0W0, shufABcd
+    shufb		out1, outX0Y0X1Y1, outZ1W1Z0W0, shufCDab
+    shufb		outX2Y2X3Y3, outX, outY, shufCcDd
+    shufb		outZ3W3Z2W2, outZ, outW, shufDdCc
+    shufb		out2, outX2Y2X3Y3, outZ3W3Z2W2, shufABcd
+    shufb		out3, outX2Y2X3Y3, outZ3W3Z2W2, shufCDab
+    
+	.reg		outOfs, outOfs1, outOfs2, outOfs3, tmp0r
+	.reg		shuf0A0B0C0D
+    lqd			outOfs, 0x00(channelIds)
+    rotqby		outOfs, outOfs, channelIds	
+    il128		shuf0A0B0C0D, "0A0B0C0D"            
+    shufb		outOfs, outOfs, outOfs, shuf0A0B0C0D
+    shli		tmp0r, outOfs, 4
+    shli		outOfs, outOfs, 5
+    a			outOfs, outOfs, tmp0r
+    shlqbyi		outOfs1, outOfs, 4
+    shlqbyi		outOfs2, outOfs, 8
+    shlqbyi		outOfs3, outOfs, 12
+    stqx		out0, output, outOfs
+    stqx		out1, output, outOfs1
+    stqx		out2, output, outOfs2
+    stqx		out3, output, outOfs3
+	
+	.reg		tmp0s
+    ai			channelIds, channelIds, 8
+    shli		tmp0s, intraFrameCount, 2
+    a			intraBitsAdr, intraBitsAdr, tmp0s
+
+    //----------------------------------------------------------------------------------------------        
+    // Loop
+    //----------------------------------------------------------------------------------------------
+
+    brnz		count4, Loop
+   
+
+NoLoop:
+
+.endfunc
+         

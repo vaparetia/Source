@@ -1,0 +1,1143 @@
+/*
+    fatman.txt                                             
+    Metal Gear Solid 2 - SONS OF LIBERTY-                
+    ファットマン系仕様ログ                                   
+    2001/10/19 Masafumi Okuta                            
+    $Id: fatman.txt,v 1.1.1.3 2002/11/19 11:48:11 Yoshizawa1 Exp $                                                 
+*/
+
+ステージw20cのファットマン戦のファットマンキャラ用のソースコード群
+
+基本システムはsource/user/korekado/npc以下のNPCシステムを用いている。
+
+fatman.h : ファットマン関連ヘッダ
+    構造体の宣言やマクロ,定数群が記述されている。コメント参照
+fatman.c : ファットマンキャラのActor処理関連
+    ファットマンキャラの呼出、初期化、動作関数、破棄関数がある。
+
+        FatmanMain( Work* work );
+            ファットマンのメイン処理を行なう
+
+        FAT_ActControl( NPCWORK *npc );
+            NPC_ActControlのカスタマイズ版
+            前の座標、移動量を取得する為
+
+        Act( Work* work);
+            GV_ACTORの動作関数
+            NPCシステムの処理とファットマンのメイン関数コールをしている
+
+        Die( Work* work);
+            GV_ACTORの破棄関数
+            後始末
+
+        GetResource( Work* work,                // ファットマンワーク
+                     int   name,                // GCLより取得する名前ID
+                     int   where);              // GCLより取得するマップID
+            初期設定関数
+            各種初期化関数のコール＆メンバの設定を行なう
+
+        NewFatman( int   name,                  // GCLより取得する名前ID
+                   int   where);                // GCLより取得するマップID    
+            GCLからコールされるファットマン生成関数
+
+        NewCmdFatInvisible( void );
+            GCL command でファットマンを非表示にする関数。
+            デモでファットマンを消したい時に使用
+
+        NewCmdFatVisible( void );
+            GCL command でファットマンを表示にする関数
+
+fatman.def : ファットマン関数宣言ファイル
+    ファットマンの関数群を宣言
+
+fatdata.c : ファットマンの静的データ群
+
+fatnpc.c : NPCシステム関連
+    NPCシステムからファットマン用にローカライズした関数
+
+        FAT_SetModeFromPad( NPCWORK*   npc,                // NPCワーク
+                            NPCACTMODE actmode,            // 動作モード
+                            int        mar,                // marファイルのstrcode
+                            int        mot,                // モーション番号
+                            int        pad );              // パッドモード
+            動作モード変更関数。モーションブレンドを解除できるようにカスタマイズ
+
+        FAT_SetActMotion( NPCWORK* npc,                    // NPCワーク
+                          int      base_mar,               // marファイルのstrcode
+                          int      mot)                    // モーション番号
+            base_mar内のmot番目のモーションを再生する。            
+
+        FAT_SetActMotionEX( NPCWORK* npc,       // NPCワーク
+                            int      n_layer,   // レイヤー番号 
+                            int      mar,       // marファイルのstrcode
+                            int      mot,       // モーション番号 
+                            u_long   mask,      // マスクビット 
+                            int      interp,    // 補完時間 
+                            float    speed);    // 再生スピード 
+            FAT_SetActMotionの拡張番。
+
+        FAT_Incline( CONTROL* ctrl );
+            体の傾きを計算。目標Y方向と現在のY方向からモデルにたいしてZ回転をかける
+
+fatsound.c : 効果音＆ストリーミング関連
+        FAT_SeManager( Work*    work);                    
+            効果音マネージャ 内蔵SEを鳴らす間隔を設定
+
+        FAT_CallSe( Work*    work,        // ファットマンワーク
+                    int      nSeIndex,    // SE番号（インデックス）
+                    FVECTOR* pvecPos,     // 発生位置
+                    int      nMode);      // 再生のモード
+            内蔵SEを鳴らす。ストリーミングとの兼ね合いなども判定して鳴らすかどうかきめる
+
+        FAT_Say( Work*    work,         // ファットマンワーク
+                 int      nSeIndex,     // SE番号（インデックス）
+                 int      nMode)        // 再生のモード
+            内蔵SEをファットマンの声として再生する。
+            FAT_CallSeの発生位置をファットマンの頭の位置にしたもの
+
+        FAT_StreamRequest( Work* work,           // ファットマンワーク
+                           int   nIndex);        // ストリームテーブルインデックス
+            ストリーミングリクエストに指定されたインデックスを代入して再生をさせる。
+            ストリーミングが再生中ならその再生が終るのを待ってから再生する。
+            実際に再生命令をだすのはFAT_StreamUpdate内
+
+        FAT_StreamRequestJustTime( Work* work,    // ファットマンワーク
+                                   int   nIndex); // ストリームテーブルインデックス
+            ストリーミングリクエストに指定されたインデックスを代入して再生をさせる。
+            ストリーミングが再生中ならあきらめる
+            実際に再生命令をだすのはFAT_StreamUpdate内
+
+        FAT_StreamRequestWithProc( Work* work,    // ファットマンワーク
+                                   int   nIndex,  // ストリームテーブルインデックス
+                                   int   nProc);  // 再生終了時に呼びたいプロシージャ
+            ストリーミングリクエストに指定されたインデックスを代入して再生をさせる。
+            再生終了時にnProcをコールする。
+            ストリーミングが再生中ならその再生が終るのを待ってから再生する。
+            実際に再生命令をだすのはFAT_StreamUpdate内
+
+        FAT_StreamUpdate( Work* work );
+            ストリーミングマネージャ。
+            リクエストにあるインデックスが有効ならストリーミング再生命令を出す。
+
+        FAT_DamageVoice( Work*  work,             // ファットマンワーク
+                         int    weapon,           // 武器種類
+                         int    part,             // ダメージを受けた部位
+                         int    bNoDmg);          // ノーダメージフラグ
+            ダメージを受けた時の内蔵SE音声呼びわけを武器の種類や部位から判定してコールする関数
+
+        FAT_ResidentRollerSe( Work* work );
+            常駐ローラー音。
+            ファットマンのモーション再生状態をチェックして走行中ならSEを定期的にコールする
+            
+fatarea.c : 存在エリア判定関連
+    ファットマンステージを7つのエリアに分割して思考の判定として使うための関数群。
+    (プレイヤーから一番遠いエリアのどこかに逃げる等)
+
+        FAT_InitAreaPos2Zone( Work* work );            
+            エリア対応座標データ(fatdata.c)からゾーン番号を取得。 
+
+        FAT_GetArea( FVECTOR vecPos);       // 調べる位置
+            位置からエリア番号を返す。
+
+        FAT_GetContArea( int nArea);        // 判定基準となるエリア
+            nAreaにたいして対となるエリアをエリア番号で返す
+
+        FAT_GetContAreaBit( int nArea);     // 判定基準となるエリア
+            nAreaにたいして対となるエリアをビットフラグ形式で返す
+
+        FAT_GetContRunPutArea( Work* work, int nArea); 
+            // 未使用
+            対となる走り設置エリアを返す
+
+fatzone.c : ゾーン選択関連
+    状況を判定して適したゾーン番号を返す    
+
+        GetRandZone( Work* work );
+            ランダムでゾーンを選択
+        FAT_GetSafetyZoneNear( Work* work );
+            自分から最も近い回避ゾーン番号取得
+            失敗した時はエリア対応ゾーンから目標(プレイヤー)の対となるゾーン番号を取得
+        FAT_GetZoneFromInnerMin( NPCWORK* npc,          // NPCワーク
+                                 int      nZoneAddr,    // 対象ゾーンアドレス
+                                 FVECTOR* pfvec,        // 方向ベクトル
+                                 float*   pfRes)        // 内積結果が入る
+            nZoneAddrの隣接ゾーンのなかからpfvecに対して最も内積値の小さいゾーンを返す
+        FAT_GetZoneFromInnerMax( NPCWORK* npc,          // NPCワーク
+                                 int      nZoneAddr,    // 対象ゾーンアドレス
+                                 FVECTOR* pfvec,        // 方向ベクトル
+                                 float*   pfRes)        // 内積結果が入る
+            nZoneAddrの隣接ゾーンのなかからpfvecに対して最も内積値の大きいゾーンを返す
+
+        GetFarZoneDir( NPCWORK* npc,            // NPCワーク
+                       int      nAddr,          // 基準となるアドレス
+                       FVECTOR  vecDir,         // 指定方向
+                       int      nDistMax,       // 指定距離
+                       int*     pnResDist)      // 結果距離
+            指定方向にあって指定距離以上離れているゾーン取得
+
+        GetFarZonePlayerDir(NPCWORK*    npc,            // NPCワーク
+                            int         nDistMax,       // 指定距離
+                            int*        pnResDist)      // 結果距離
+            // 未使用
+            プレイヤーの向いている方向にあって指定距離以上離れているゾーン取得
+
+        FAT_GetEvadeVector( Work*       work,           // ファットマンワーク
+                            int*        pnDir);         // 結果Y方向
+            // 未使用
+            プレイヤーを避ける移動方向の取得
+
+        FAT_GetAreaDataZoneEx( Work* work,              // ファットマンワーク
+                               int   nArea );           // 指定エリア
+            エリア別候補データから指定エリアの対となるゾーン番号を取得
+
+        FAT_GetAreaDataZone( Work* work );
+            エリア別候補データからプレイヤーの対となるゾーン番号を取得
+
+        FAT_InitTurnPutRef( Work* work );
+            回転設置用参照ゾーンデータ作成
+
+        FAT_GetTurnPutRefZone( Work* work );
+            距離一定以上で方向差が一番小さい回転設置用参照ゾーンを取得
+
+        FAT_FarZoneInFan( Work* work,       // ファットマンワーク
+                          int*  pnDist,     // 結果距離
+                          int   nFromAddr,  // 基準ゾーンアドレス
+                          int   nDir,       // 方向
+                          int   nChkDir);   // 判定角度
+            指定方向で一番離れているゾーン番号と距離を返す
+
+        FAT_CheckBackShoot( Work* work);
+            // 未使用
+            背後撃ち条件をチェック :: 成立時は目標ゾーン,不成立時は-1が返る
+
+        FAT_ChkFarZoneFromCrossDir( Work* work,             // ファットマンワーク
+                                    int   nDirCurrent,      // 方向
+                                    int   nDistMin);        // 最低距離
+            離れたゾーンがあるかを方向（1024毎で分類）,最低距離を条件としてチェック
+            成立時は目標ゾーン,不成立時は-1が返る
+
+        FAT_GetNearZoneNotPass( Work* work, int nZone);
+            // 未使用
+            指定されたゾーンの隣接ゾーンからそのゾーンを通過しないゾーンを取得
+
+        FAT_GetNearZoneNotPassDirPrio( Work* work,      // ファットマンワーク
+                                       int   nZone,     // 指定ゾーン
+                                       int   nAimDir);  // 指定方向
+            指定されたゾーンの隣接ゾーンからそのゾーンを通過しないゾーンを取得
+            方向計算して一番方向差の少ないゾーンを返す
+
+fatintrude.c : 対イントルード用思考関連
+    プレイヤーがイントルードしているときの思考判定
+
+        FAT_GetIntrudeArea( void );          
+            プレイヤーの位置からイントルードエリアを取得
+            成功時はエリア番号、失敗時は-1を返す
+
+        FAT_InitEscPos2Zone( Work* work);
+            プレイヤーがイントルードしているときに逃げ場所として使う位置データをゾーンデータに変換する
+            
+        FAT_GetIntrudeEscZone( Work* work,              // ファットマンワーク
+                               int   nIntrudeZone );    // プレイヤーがイントルードしているゾーン
+            プレイヤーがイントルードしているときの逃げ場所を返す
+
+fatextern.c : 外部のキャラとの通信関連
+    ファットマンが解体フェーズの余興で行なうカモメと戯れる際のメッセージ関数群
+
+        FAT_CallKamome( Work*      work,      // ファットマンワーク
+                        int        nNode,     // 付随させる関節番号
+                        int        x,         // nNodeからのオフセット（X軸）
+                        int        y,         // nNodeからのオフセット（Y軸）
+                        int        z,         // nNodeからのオフセット（Z軸）
+                        int        nDir);     // カモメのとまった時の方向
+            カモメよびメッセージ発行関数
+            指定された関節nNodeのマトリクスの相対位置(x,y,z)がかもめのとまる場所
+        
+        FAT_TakeOffKamome( Work* work,        // ファットマンワーク
+                           int   nDelay)      // ディレイタイム
+            ファットマンにとまっているカモメを飛び立たせる
+
+fatact.c : ファットマン行動関数群
+    ファットマンの行動関数。padの値を元にファットマンを動かす関数を決める
+        FAT_GetDownTime( void);   
+            ファットマンが転倒した際のダウン時間を返す
+
+	// 通常時の動作関数
+        ActRun( NPCWORK *npc, int time );                       :: 動作関数
+            走行時の動作
+        ActTurnSide( NPCWORK *npc, int time );                  :: 動作関数
+            旋回時の動作
+        ActTurn180( NPCWORK *npc, int time );                   :: 動作関数
+            180度反転時の動作
+        ActStop( NPCWORK *npc, int time );                      :: 動作関数
+            走行停止時の動作
+        ActPointMove( NPCWORK *npc, int time );                 :: 動作関数
+            指定点に移動する時の動作
+        ActRunReload( NPCWORK *npc, int time );                 :: 動作関数
+            走行中にリロードする時の動作
+        ActGunStand( NPCWORK *npc, int time );                  :: 動作関数
+            停止中に銃を構える時の動作
+        ActGunShoot( NPCWORK *npc, int time );                  :: 動作関数
+            停止中に銃を撃つ時の動作
+        ActRunShotReady( NPCWORK *npc, int time );              :: 動作関数
+            走行中に銃を構える時の動作
+        ActRunShotAct( NPCWORK *npc, int time );                :: 動作関数
+            走行中に銃を撃つ時の動作
+        ActBackShotReady( NPCWORK *npc, int time );             :: 動作関数
+            後向き走行中に銃を構える時の動作
+        ActActBackShotAct( NPCWORK *npc, int time );            :: 動作関数
+            後向き走行中に銃を撃つ時の動作
+        ActReload( NPCWORK *npc, int time );                    :: 動作関数
+            停止中にリロードする時の動作
+        ActWakeup( NPCWORK *npc, int time );                    :: 動作関数
+            起き上がり時の動作
+        ActBombSetStop( NPCWORK *npc, int time );               :: 動作関数
+            停止中に爆弾設置する時の動作
+        ActBombSetRun( NPCWORK *npc, int time );                :: 動作関数
+            走行中に爆弾設置する時の動作
+        ActBombSetTurn( NPCWORK *npc, int time );               :: 動作関数
+            爆弾を回転置きする時の動作
+        ActCountDownStart( NPCWORK *npc, int time );            :: 動作関数
+            爆弾を起動する時の動作
+        ActCountDownStartFromDmg( NPCWORK *npc, int time );     :: 動作関数
+            ダメージにより怒って爆弾を起動する時の動作
+        ActCountDownStartFailed( NPCWORK *npc, int time );      :: 動作関数
+            爆弾が全部解体されてしまい起動できなかった時の動作
+        ActFeintShoot( NPCWORK *npc, int time );                :: 動作関数
+            停止中に銃を撃つ時の動作
+        ActLimitShoot( NPCWORK *npc, int time );                :: 動作関数
+            全弾撃つ時の動作
+        ActTobidasi( NPCWORK *npc, int time );                  :: 動作関数
+            飛び出し撃ち時の動作
+        ActSlideShoot( NPCWORK *npc, int time );                :: 動作関数
+            スライド撃ち時の動作
+        ActBodyAttack( NPCWORK *npc, int time );                :: 動作関数
+            体当り時の動作
+        ActOverLook( NPCWORK *npc, int time );                  :: 動作関数
+            見渡し時の動作
+        ActBleathless( NPCWORK *npc, int time );                :: 動作関数
+            息切ればてばて時の動作
+        ActOdori( NPCWORK *npc, int time );                     :: 動作関数
+            余興時の動作
+        ActSquat( NPCWORK *npc, int time );                     :: 動作関数
+            座り時の動作
+        ActEludeKill( NPCWORK *npc, int time );                 :: 動作関数
+            エルード指きり時の動作
+        ActHoldUp( NPCWORK *npc, int time );                    :: 動作関数
+            ホールドアップ時の動作
+        ActCircleDance( NPCWORK *npc, int time );               :: 動作関数
+            円ダンス時の動作
+        ActKamome( NPCWORK *npc, int time );                    :: 動作関数
+            カモメと戯れ時の動作
+        ActRepair( NPCWORK *npc, int time );                    :: 動作関数
+            ローラーブレード修理時の動作
+        ActShootPhaseStart( NPCWORK *npc, int time );           :: 動作関数
+            銃撃フェーズ開始時の動作
+        ActActBombPhaseStart( NPCWORK *npc, int time );         :: 動作関数
+            爆弾フェーズ時の動作
+        ActBackNavi( NPCWORK *npc, int time );                  :: 動作関数
+            爆弾解体時にプレイヤーの背後につく時の動作
+
+	SampleCheckPad( NPCWORK *npc );
+            パッドチェック関数。動作関数はここで設定される
+            
+	// ダメージ時の動作関数
+        ActDamage( NPCWORK *npc, int time );                    :: 動作関数
+            ダメージを受けた時の動作
+        ActRunDamage( NPCWORK *npc, int time );                 :: 動作関数
+            走行中にダメージを受けた時の動作
+        ActFall( NPCWORK *npc, int time );                      :: 動作関数
+            転倒時の動作
+        ActRunFall( NPCWORK *npc, int time );                   :: 動作関数
+            走行時に転倒した時の動作
+        ActDownDamage( NPCWORK *npc, int time );                :: 動作関数
+            ダウン時にダメージを受けた時の動作
+        ActDown( NPCWORK *npc, int time );                      :: 動作関数
+            ダウン時の動作
+        ActHang( NPCWORK *npc, int time );                      :: 動作関数
+            首締め、投げをかけられた時の動作
+        ActNearDeath( NPCWORK *npc, int time );                 :: 動作関数
+            瀕死時の動作
+        ActDead( NPCWORK *npc, int time );                      :: 動作関数
+            死亡時の動作
+        ActDeadFall( NPCWORK *npc, int time );                  :: 動作関数
+            死亡倒れ時の動作
+
+        Action( Work* work);
+            動作関数のコール
+
+fatparty.c : ファットマン共用関数群
+    ファットマンで良く使う関数をまとめたもの            
+        FAT_SetStep( Work*  work,     // ファットマンワーク
+	             int    nStep);   // ステップ    
+            ステップ設定関数
+        FAT_SetThink1( Work* work,              // ファットマンワーク
+                       int   nNewThink1,        // 新しいルーチン:優先レベル
+                       int   nNewThink2,        // 新しいルーチン:フェーズレベル
+                       int   nNewThink3);       // 新しいルーチン:動作レベル
+            think1設定関数
+        FAT_SetThink2( Work* work,              // ファットマンワーク
+                       int   nNewThink2,        // 新しいルーチン:フェーズレベル
+                       int   nNewThink3);       // 新しいルーチン:動作レベル
+            think2設定関数
+        FAT_SetTh3( Work* work,              // ファットマンワーク
+                    int   nNewThink3);       // 新しいルーチン:動作レベル
+            think3設定関数
+        FAT_SetNextThink3( Work* work,              // ファットマンワーク
+			   int   nNextThink3);      // 次ルーチン:動作レベル
+            次のルーチン候補にnNextThink3を設定する
+        FAT_SetThink3FromNext( Work* work,          // ファットマンワーク
+			       int   nNewThink3);   // 予備の新しいルーチン:動作レベル
+            think3に次候補があればnNextThink3を、なければnNewThink3を適応する
+
+	FAT_SetNAim( Work*    work,      // ファットマンワーク          
+                     int      nNextZone, // 次のゾーン
+                     FVECTOR* pvec);      // 目標地点
+            新たな目標位置、ゾーンをセットで設定する
+
+        FAT_SetNZone( Work* work,        // ファットマンワーク
+                      int   nNextZone);  // 次のゾーン
+            次に向かうゾーン設定
+
+        FAT_SetNZone2( Work* work,        // ファットマンワーク
+                       int   nNextZone);  // 次の次のゾーン
+            次の次に向かうゾーン設定
+
+        FAT_SetNZoneFrom2( Work* work,        // ファットマンワーク
+                           int   nNextZone);  // 次のゾーン
+            Next2が有効ならNext2を、なければnNextZoneを次に向かうゾーンに指定
+
+        FAT_SetNPoint( Work*    work, 		// ファットマンワーク
+                       int	nNextZone,	// 次に向かうゾーン
+                       FVECTOR* pvecNext);	// 次に向かう位置:NULLの時はゾーン中心
+            目標位置を含めた次のゾーン指定
+
+        FAT_SetNZoneWithRelayPoint( Work*    work,       // ファットマンワーク
+                                    int      nRelayZone, // 中継ゾーン
+                                    int	     nAimZone,	 // 目標ゾーン
+                                    FVECTOR* pvecRelay,	 // 中継点 : NULLの時はゾーン中心
+                                    FVECTOR* pvecAim);   // 目標点 : NULLの時はゾーン中心
+            中継点を設定して目標ゾーンへ向かう
+
+        FAT_SetNewPhase( Work* work, int nPhase);    
+            フェーズ設定関数
+
+        FAT_AdjustAimPoint( Work*    work,     // ファットマンワーク
+                            FVECTOR* pvecTrg); // 目標地点 
+            銃口を目標地点へ向ける（アジャスト可能範囲で）
+            
+        FAT_ClearAdjust( Work* work);    
+            アジャストクリア
+
+        FAT_GetAimParts( Work* work );
+            可視パーツ情報から狙撃位置を設定
+
+        FAT_ShootGlock( NPCWORK* npc,     // NPCワーク
+                        int      nRandX,  // x回転ランダム幅
+                        int      nRandY,  // y回転ランダム幅
+                        int      nRandZ); // z回転ランダム幅
+            グロックを発射する
+	
+	CheckPointLookableObject( FVECTOR* pfvec,  // 指定する位置
+				  OBJECT*  pobj,   // 対象オブジェ
+				  int      hzx_id, // ハザードID
+				  int      dir,    // 方向	
+				  int      ang);   // 角度	
+            指定の位置からオブジェが見えるかどうか
+
+	FAT_ChgPhase( Work* work );
+            解体フェーズからフェーズ変更
+    
+        FAT_GetDirNext( Work* work );
+            次のゾーンと次の次のゾーンの角度を求める
+
+        FAT_GetZoneInPoint( FVECTOR* pvecRes, // 結果
+                            FVECTOR* pvec,    // 現在位置
+                            int      addr);   // 参照するゾーン
+            pvecの位置からaddrに入る位置を計算
+
+        FAT_CheckNearZoneIn( int nCharaAddr,	// 指定キャラのゾーン番号
+			     int nAimAddr); 	// 指定ゾーン番号
+            nCharaAddrがnAimAddrの隣接ゾーンになったかどうかを判定
+
+        ChildTargCallBack( TARGET* off,         // 攻撃ターゲット
+                           TARGET* def,         // 防御ターゲット
+                           void*   ptr );       // 防御ターゲットの所属するワークへのポインタ
+            ターゲットがダメージを受けた際に呼ばれるコールバック関数
+
+        FAT_CheckMotionMove( Work* work);
+            モーション再生状況から移動中かどうか判定
+
+        FAT_CheckTurnLR( Work* work );
+            左右旋回するかどうか判定
+
+        FAT_EludeFall( Work* work );
+            エルード指きり処理
+
+        FAT_CheckReverse( Work* work, int nNextZone);
+            次に向かうゾーンが自分の向いている方向の逆にあるかチェック
+
+        FAT_SetNPointWithNavigate( Work*    work,  // ファットマンワーク
+                                   int      nZone, // 目標ゾーン
+                                   FVECTOR* pvec); // 目標位置
+            次に移動する位置とナビターゲットを設定
+
+        FAT_CheckNextZone( Work* work);
+            次候補ゾーン不正チェック
+
+        FAT_CheckZone( Work* work);
+            ゾーン不正チェック
+
+        FAT_ChkZoneWrong( NPCWORK* npc, int nZone);
+            ゾーン不正チェック
+
+        FAT_EvadeIntoWall( NPCWORK* npc);
+            壁めりこみ回避
+
+        FAT_CalcNockBack( Work* work);
+            プレイヤーを押し戻す
+
+        FAT_CalcPushPlayer( Work* work);
+            プレイヤーを押し戻しマネージャ
+
+        FAT_IntrptZoneCheck( HZX_GROUP_ID hzx_id, int nFromZone, int nToZone);
+            nFromZoneとnToZoneの間が遮断されているかチェック
+
+fateye.c : 状況判定関連
+    ファットマンの周辺情報を取得するための関数をまとめたもの。
+    思考前に更新される
+
+        FAT_InitEyeWork( Work* work);
+            状況判定関連メンバの初期化関数
+
+        FAT_CheckEye( Work* work );
+            未使用
+            プレイヤーが視界内にいるか判定
+
+        FAT_CheckAimVisible( Work* work );
+            目標地点が見えるかどうか判定する
+
+        FAT_CheckNoise( Work* work );
+            未使用
+            物音に反応する判定
+
+        CheckFatmanInfo( Work* work );
+            思考判断前に更新されるファットマンの状況取得関数
+            
+fatc4.c : C4設置システム関連
+    ファットマンが設置するC4関連の関数をまとめたもの
+    C4は難易度が4段階あり各段階で16パターン（1パターンにつき8の設置ポイント）の計512の設置ポイントがある。
+    難易度はファットマンの耐久値、気絶値によって変化する。現在の難易度のなかから爆弾フェーズで設置する予定の
+    爆弾数より未設置ポイントが多い(空きが多い)パターンを取得し爆弾を置いていく
+
+        InitC4Work( Work* work );
+            C4関連メンバの初期化
+
+        UpdateC4Work( Work* work );
+            C4情報更新
+            C4の状態、音声判定、解体判定はここで行なわれる
+        
+        SetNewFatmanC4( Work*              work,
+                        FAT_PUTPOINT_DATA* pput,   // 設置場所構造体へのポインタ
+                        int                nMapID, // 設置するマップID
+                        int                nTime); // 爆発までの時間
+            新しいC4を設置する
+            空きC4ワークをさがして設定する
+            みつからない場合は解体済みのワークをクリアしてそれを使用する
+        
+        FAT_StartBombCount( Work* work );
+            C4のカウントダウン開始
+
+        FAT_PUTPOINT_DATA* FAT_GetPosData( Work* work, 
+                                           int   nLevel,    // 難易度
+                                           int   nPattern,  // パターン番号
+                                           int   nIndex);   // インデックス
+            難易度、パターン番号、インデックスを指定して位置データへのポインタを取得
+
+        FAT_PUTPOINT_DATA* FAT_GetCurrPosData( Work* work, int nIndex);
+            現在の難易度、パターン番号の指定インデックスの位置データへのポインタを取得
+        
+        FAT_GetPosPatternPtr( Work* work, int nLevel, int nPattern);
+            現在の難易度の指定パターン番号、指定インデックスの位置データへのポインタを取得
+        
+        FAT_GetC4PosNum( Work* work, int nLevel, int nPattern);
+            未使用
+        
+        FAT_GetCurrentC4PosNum( Work* work );
+            未使用
+
+        FAT_GetGclBombData( Work* work );
+            GCLからシナリオ引数として渡されたC4関連のデータをワークに設定
+
+        FAT_GetC4PosRandom( Work* work );
+            C4設置場所取得:未設置の設置点からランダムで取得
+
+        FAT_GetC4PosAreaPrio( Work* work,   
+                              int   nArea);      // 基準となるエリア
+            C4設置場所取得:プレイヤーの対エリアを優先検索
+        
+        FAT_GetC4PosDistPrio( Work* work,   
+                              int   nJudgeDist); // 判定距離
+            C4設置場所取得:nJudgeDistを基準として距離による検索をする
+            nJudgeDistが負の時:一番離れたポイントを返す
+            nJudgeDistが正の時:指定距離以上離れたポイントを返す
+
+        FAT_GetC4PosDirPrio( Work* work,   
+                             int   nDiff);       // 判定方向差
+            C4設置場所取得:指定方向からの差を判定材料として検索する
+            nDiffが正の時:指定した方向差以内の設置ポイントを検索
+            nDiffが負の時:一番方向差の少ない設置ポイントを返す
+
+        FAT_GetC4PosTypePrio( Work* work,   
+                              int   nType);      // 設置種類
+            C4設置場所取得:指定された設置種類のポイントを返す
+
+        FAT_GetC4PosOtherPrio( Work* work);       
+            C4設置場所取得:現在選択しているインデックス以外を優先検索する
+
+        FAT_GetCurrPutPosData( Work* work );
+            現在の爆弾設置点のデータへのポインタ取得
+
+        FAT_UpdatePatternInfo( Work* work, 
+                               int   nDifficult);  // 難易度
+            指定された難易度のパターン使用状況を更新する
+        
+        FAT_ChangeC4Difficult( Work* work, 
+                               int   nLevel);      // 新しい難易度
+            難易度レベルで設置位置を設定する。
+            新しい難易度になる時に使用される。
+
+        FAT_ChangeC4Pattern( Work* work);
+            パターンレベルで設置位置を設定する。
+            設置予定数より空き数が多いパターンを検索する
+            
+        
+        FAT_ChangeC4Index( Work* work,             // ファットマンワーク
+                           int   nSearch,          // 検索方法
+                           int   nParam);          // 検索パラメータ:検索方法で内容は異なる
+            インデックスレベルで設置位置を選定
+            検索方法とパラメータを渡してその条件に見合う設置ポイントのインデックスを返す
+            条件に合うポイントが見つからない場合はランダムで決める
+ 
+        FAT_SetNewC4Point( Work* work);
+            新しい設置ポイントを設定する
+        
+        FAT_SetNewC4Position( Work* work, int nIndex );
+            現在のC4設置ポイントへ向かうように移動ワークを設定する
+        
+        FAT_GetCurrentC4Zone( Work* work);
+            現在のC4設置ポイントゾーン番号を取得
+        
+        FAT_GetCurrentC4Put( Work* work, FVECTOR* pvec);
+            現在のC4設置ポイントのファットマン立ち位置を取得
+        
+        FAT_GetCurrentC4Pos( Work* work, FVECTOR* pvec);
+            現在のC4設置ポイントの爆弾設置位置を取得
+        
+        FAT_GetTurnPutDir( Work* work);
+            回転設置の爆弾位置とファットマンの方向差を取得
+        
+        FAT_VisibleC4Check( Work* work );
+            稼働状態なC4が画面内にあるかチェック
+        
+        FAT_SearchKaitaiC4( Work* work, FAT_C4_DATA* pbombRes );
+            プレイヤーが解体中のC4のデータ
+
+        FAT_SearchKaitaiC4FarPlayer( Work* work );
+            カウントダウン中の爆弾からプレイヤーから最も遠い物を探す
+
+        FAT_SearchKaitaiC4DistNearest( Work* work );
+            カウントダウン中の爆弾からプレイヤーから最も近い物を探す
+        
+fatmove.c : 移動処理関連
+    ファットマンの移動に関する関数をまとめたもの
+    ファットマンは既存のルートシステムで移動するとカクカク移動するのでローラーブレードの動きとしては
+    厳しい。そこでステージにベジェ曲線のルートをひいて遠くに移動する時はそのルートに乗って移動し目標に
+    近づいたらもしくは適するルートが見つからなかったらゾーン移動に切替えるというシステムを使っている
+    ベジェルートの元となる座標データはfatdata.cにべた持ちしている。
+
+        FAT_SetRSphereFromMot(Work* work);
+            ファットマンのモーション別壁めりこみ軽減
+            
+        FAT_CalcBezierIncMod( Work*    work, 
+                              FVECTOR* pvec1,  // ベジェ曲線の始点
+                              FVECTOR* pvec2,  // ベジェ曲線の制御点
+                              FVECTOR* pvec3); // ベジェ曲線の終点
+            指定された３点で生成されるベジェ曲線の傾き計算用の係数を求める
+            
+        FAT_BezierInc( FVECTOR* pvec, 
+                       FVECTOR* pvecIncMod1,   // 係数１
+                       FVECTOR* pvecIncMod2,   // 係数２
+                       float    fRate);        // 割合(0.f〜1.f)
+            指定係数、割合から傾きを取得
+            
+        FAT_GetBezierRate( FVECTOR* pvec1,     // ベジェ曲線の始点
+                           FVECTOR* pvec2,     // ベジェ曲線の制御点
+                           FVECTOR* pvec3,     // ベジェ曲線の終点
+                           float    fSpeed);   // 速度
+            指定された３点で生成されるベジェ曲線を指定された速度で進む際の1フレームですすめる割合を返す。
+            1フレームですすめる割合 = fSpeed / (pvec1とpvec2の距離 + pvec2とpvec3の距離)
+            
+        FAT_SetupMove( Work*    work, 
+                       FVECTOR* pvec1,         // ベジェ曲線の始点
+                       FVECTOR* pvec2,         // ベジェ曲線の制御点
+                       FVECTOR* pvec3);        // ベジェ曲線の終点
+            ベジェ移動用ワークを設定
+            
+        FAT_InitBezierMove( Work* work);
+            ベジェ移動関連ワーク初期設定
+            
+        FAT_SetupRouteMove( Work* work,        
+                            int   nRouteIndex, // ルート番号
+                            int   nReverse);   // ルート反転フラグ
+            指定されたルート番号、正逆方向を用いたベジェ移動をするための設定をする
+            
+        FAT_SetupNavigateMove( Work* work, 
+                               int nZoneTo );  // 目標ゾーン
+            目標ゾーンへ向かう為のナビゲートシステムの初期化
+            
+        FAT_SetupToRouteMove( Work* work, 
+                              int   nIndex,    // ルート番号
+                              int   nReverse); // ルート反転フラグ
+            ゾーン移動からベジェルート移動へ切替え
+            
+        FAT_MakeZoneDataFromRoute( Work* work);
+            ベジェルートデータからゾーンデータを作成
+            
+        FAT_SelectRoute( Work* work, int nAimZone);
+            目標ゾーンに向かうためのベジェルートを選択する
+            
+        FAT_ChkRegularRoute( Work* work, int nIndex, int nFromZone, int nToZone );
+            指定のルートデータが正ルートで目標に向かうことのできるルートかどうかチェックする
+            
+        FAT_ChkCounterRoute( Work* work, int nIndex, int nFromZone, int nToZone );
+            指定のルートデータが逆ルートで目標に向かうことのできるルートかどうかチェックする
+            
+        FAT_CheckRouteInNextZone( Work* work, int* pnIndex, int* pnReverse );
+            自分が次に向かうゾーンの中で最終目標に向かうことのできるルートが存在するかしらべる
+            
+        FAT_CheckRouteZone( Work* work, int nZoneFrom, int nZoneTo);
+            ゾーン更新時のチェック
+            ナビゲート移動時のゾーン切替えが行なわれる時, ルート終端時
+            
+        FAT_ZoneMove( Work* work );
+            ゾーンを使用した移動
+            
+        FAT_RouteMove( Work* work );
+            ベジェルートを使用した移動
+            
+        FAT_CheckBezierInTetra( Work* work, int nZone, int nRoute );
+            ゾーンとルートが接触するかチェック
+            
+        FAT_RouteZoneMove( Work* work );
+            ファットマンのルート＆ゾーン共存移動
+            到着すると1を返す
+        
+fatattack.c : 攻撃関連
+    ファットマンの攻撃に関係する関数をまとめたもの
+    攻撃ターゲットの設定や攻撃思考がある
+        HitCallBack( TARGET* off,      // 攻撃ターゲット
+                     TARGET* def,      // 防御ターゲット
+                     void*   ptr );    // ファットマンワーク
+            体当りターゲットコールバック
+
+        CrashCallBack( TARGET* off,    // 攻撃ターゲット
+                       TARGET* def,    // 防御ターゲット
+                       void*   ptr );  // ファットマンワーク
+            接触ターゲットコールバック
+
+        Attack( NPCWORK* npc );
+            体当り攻撃用の攻撃ターゲット設定
+
+        Clash( NPCWORK* npc );
+            接触攻撃用の攻撃ターゲット設定
+
+        CaptureCounter( NPCWORK* npc );
+            掴み逃れ用の攻撃ターゲット設定
+
+        RollerBladeAttack( NPCWORK* npc );
+            ローラーブレード用の攻撃ターゲット設定
+
+        BodyEvade( NPCWORK* npc );
+            体弾き用の攻撃ターゲット設定
+            一定時間接触すると転ばせるターゲット
+
+        Think3_Reload( Work* work );
+            思考ルーチン：グロックのリロード
+
+        Think3_RunReload( Work* work );
+            思考ルーチン：走行中のグロックのリロード
+
+        FAT_GetBodyAttackZone( Work* work );
+            体当りエリア内チェック
+
+        Think3_BodyAttack( Work* work );
+            思考ルーチン：体当り
+
+        Think3_BackShoot( Work* work );
+            思考ルーチン：後ろ走行中の銃撃
+
+fatdamage.c : ダメージ処理関連
+    ファットマンのダメージ処理をまとめたもの
+    ファットマンのダメージ判定は立ち状態、走り状態、ダウン状態、頭のみ判定状態、瀕死状態の5つのダメージモードが
+    ありファットマンの状態で切替えが行なわれる。
+
+        FAT_GetDamageValue( int nDmgType );
+            ダメージ計算を行ないダメージ値を返す
+
+        FAT_CheckGameClear( Work* work, 
+                            int   nKillFlag);  // 死亡フラグ
+            ゲームクリア処理
+
+        FAT_SetWepDmgWork( Work* work, 
+                           int   weapon);      // 武器の種類
+            特殊武器ダメージによるワークの設定
+
+        FAT_SetChildDmgWork( Work* work, 
+                             int   dam_child_num); // 子ターゲット番号
+            ダメージ部位によるワーク設定
+
+        Think3_StartDamage( Work *work );
+            ダメージ硬直開始
+
+        Think3_SysDamageWait( Work *work );
+            ダメージ硬直:システム
+ 
+        Think3_WakeUp( Work *work );
+            思考ルーチン:起き上がり
+
+        CheckDamageStand( NPCWORK* npc );
+            ダメージ判定:停止時のダメージチェック
+
+        CheckDamageRun( NPCWORK* npc );
+            ダメージ判定:走行時のダメージチェック
+
+        CheckDamageDown( NPCWORK* npc );
+            ダメージ判定:ダウン時のダメージチェック
+
+        CheckDamageHeadOnly( NPCWORK* npc );
+            ダメージ判定:頭のみダメージチェック
+
+        CheckDamageNearDead( NPCWORK* npc );
+            ダメージ判定:瀕死時のダメージチェック
+        
+fatbomb.c : 爆弾フェーズ思考関連
+    ファットマンの爆弾フェーズの思考関数をまとめたもの
+    Think3_BombReadyを基準として状況から思考分岐する
+
+        Think3_BombStart( Work* work );
+            思考関数：爆弾フェーズ開始
+
+        Think3_BombPointMove( Work *work );
+            思考関数：指定位置に移動
+
+        Think3_RunningPut( Work* work );
+            未使用
+            思考関数：爆弾を走り置き
+
+        Think3_TurnPut( Work* work );
+            思考関数：爆弾を走行中に置く
+
+        Think3_StopPut( Work* work );
+            思考関数：爆弾をたちどまって置く
+
+        Think3_BombReady( Work* work );
+            思考判定関数
+
+fatdemine.c : 解体フェーズ思考関連
+    ファットマンの解体フェーズの思考関数をまとめたもの
+    Think3_DemineReadyを基準として状況から思考分岐する
+        FAT_ChkAttractZoneIn( Work* work );
+            余興をおこなうゾーンにいるかどうかチェック
+            
+        FAT_InitAttractPos2Zone( Work* work );
+            余興ポジションデータからゾーンデータを作成
+            
+        FAT_GetAttractZone( Work* work );
+            余興を行なうゾーンを返す
+            
+        Think3_CountDownStart( Work* work );
+            思考関数：爆弾起動
+            
+        Think3_CountDownFirst( Work* work );
+            思考関数：初回爆弾起動
+            
+        Think3_DemineReady( Work* work );
+            解体フェーズ中の思考判定
+            
+        Think3_DisposalAttract( Work* work );
+            余興判定
+            
+        FAT_NavigateC4( Work* work);
+            ファットマンがプレイヤーの状態から適切な挑発の音声を再生するための関数
+            
+        Think3_DisposalDance( Work* work );
+            思考関数：ファットマンが円を描いて回るフェーズ
+            
+        Think3_DisposalKamome( Work* work );
+            思考関数：カモメと戯れる
+            
+        Think3_DisposalKamomeNeck( Work* work );
+            思考関数：カモメと戯れる（襟に1羽止まるタイプ）
+            
+        Think3_DisposalBackNavi( Work* work );
+            思考関数：プレイヤーの近くに現れて挑発する
+            
+        Think3_CountDownBombGuard( Work* work );
+            思考関数：起動状態の爆弾の前で待ち伏せ
+            
+fatshoot.c : 銃撃フェーズ思考関連
+    ファットマンの銃撃フェーズの思考関数をまとめたもの
+    Think3_ShootReadyを基準として状況から思考分岐する
+        Think3_ShootStart( Work* work );
+            思考関数：銃撃フェーズ開始
+        Think3_ShootFeint( Work* work );
+            思考関数：牽制撃ち
+        Think3_ShootReady( Work* work );
+            銃撃フェーズの思考判定
+        FAT_ChkThkShootMove( Work* work);
+            思考キャンセル用関数：移動中のキャンセル
+
+fatpre.c : 思考前後の処理関連
+    ファットマンの思考、行動の前処理、後処理を行なう。
+
+        FAT_GetDurRecoverTime( void );
+            難易度別で耐久値回復時間を返す
+
+        CheckMessage( Work *work );
+            メッセージチェック
+
+        InfoCheck( Work *work );
+            周辺情報の更新
+
+        BombCheck( Work* work );
+            爆弾ワークの更新
+
+        PreProcess( Work *work );
+            思考より前処理
+
+        AfterProcess( Work *work );
+            思考より後処理
+
+fatthink.c : 思考関数群
+    ファットマンの思考関数のおおもとをまとめたもの
+    think1,2の部分がある
+
+fatinit.c : 初期化関数群
+    初期化関連をまとめたもの
+
+        Think2_ShootPhase( Work *work );
+            銃撃フェーズ
+
+        Think2_BombPhase( Work *work );
+            爆弾フェーズ
+
+        Think2_DisposalPhase( Work *work );
+            解体フェーズ
+
+        Think2_StartDamage( Work *work );
+            ダメージフェーズ
+
+        Think2_SystemDamage( Work *work );
+            NPCシステムのダメージフェーズ
+
+        Think2_Event( Work *work );
+            イベントフェーズ
+
+        DamageCheck( Work *work );
+            ダメージチェック
+
+        Think1_Normal( Work *work );
+            通常状態
+
+        Think1_Damage( Work *work );
+            ダメージ状態
+
+        Think1_Event( Work *work );
+            イベント状態
+
+        Think( Work *work );
+            思考関数
+
+        StartThink( Work *work );
+            思考ワーク初期化
+
+fatcommon.c : フェーズ間共用関数群
+    思考関連でフェーズ共通の関数をまとめたもの
+        Think3_Stand( Work *work );
+            思考関数：立ち
+
+        Think3_Move( Work *work );
+            思考関数：移動
+
+        Think3_Stop( Work *work );
+            思考関数：停止
+
+        Think3_Turn180( Work *work );
+            思考関数：ターン
+
+        Think3_PointMove( Work *work );
+            思考関数：指定位置へ移動
+
+        Think3_Bleathless( Work *work );
+            思考関数：息切ればてばて
+
+        Think3_OverLook( Work* work );
+            思考関数：見渡す
+
+        Think3_Feint( Work* work );
+            思考関数：牽制銃撃
+
+        Think3_RunShoot( Work* work );
+            思考関数：走り撃ち
+
+        FAT_CheckElude( Work* work );
+            エルード落し用目標設定
+
+        Think3_EludeFall( Work* work);
+            思考関数：エルード指きり
+
+        Think3_EludeKill( Work *work );
+            未使用
+            思考関数：エルード指きり（旧）
+
+        Think3_EludeShoot( Work* work);
+            未使用
+            思考関数：エルードプレイヤー撃ち
+
+        Think3_Standby( Work* work);
+            思考関数：間を置くアクション（挑発）
+
+        Think3_EventStand( Work* work );
+            思考関数：ゲームオーバー挑発
+
+fatutil.c : 便利関数
+    便利関数やNPC系の共通演出を行なう関数をまとめたもの
+        FATUTL_BezierPassCheck( Work* work);
+            指定されたベジェ曲線がどのゾーンを通過するかをデータ化する
+
+        FAT_SpillBlood( Work*    work, 
+                        FVECTOR* pvecHit,    // 当たった位置
+                        FVECTOR* pvecForce); // 力積
+            血を出す
+            
+        FAT_BlastSuitEvadeShootEffect( Work*    work, 
+                                       FVECTOR* pvecPos,  // 当たった位置
+                                       FVECTOR* pvecDir); // 弾の方向
+            ブラストスーツ防弾エフェクト
+
+        FAT_Quake( Work* work, 
+                   int   nVibTime,           // 振動時間
+                   int   nIntence,           // 揺れ強さ
+                   int   nShakeTime);        // 画面揺れ時間
+            画面揺れ
+
+        FAT_QuakeUpdate( Work* work);
+            画面揺れマネージャ更新
+
+        FAT_ChkThkTemporary( Work* work);
+            思考キャンセルのテンポラリ関数
+
+        FAT_ClearNeedl( OBJECT* body );
+            麻酔銃をはずす
+
+        FAT_SendFaceMess( Work* work, 
+                          int   nType);      // 種類
+            顔アニメキャラにモーション再生メッセージ(目パチ)
+
+fatdebug.c : ファットマン用デバッグ関数群
+    デバッグ関数をまとめたもの
+        FAT_DbgPutLevelView(DebugView *DbgWork );
+            パターン別爆弾位置表示
+
+        FAT_DbgPutTypeView(DebugView *DbgWork );
+            未使用
+
+        FAT_DbgPutContView(DebugView *DbgWork );
+            未使用
+
+        DbgViewDie(void);
+            爆弾位置表示キャラの破棄関数
+
+        DbgViewAct(DebugView *DbgWork );
+            爆弾位置表示キャラの動作関数
+
+        NewFatC4PointView( Work* work, int name , int where );
+            爆弾位置表示キャラの生成
+
+        Think3_DbgStand( Work* work );
+            デバッグ思考関数：立ち
+
+        Think3_DbgMove( Work* work );
+            デバッグ思考関数：移動
+
+        Think3_DbgShoot( Work* work );
+            デバッグ思考関数：銃撃
+
+        Think3_DbgReload( Work* work );
+            デバッグ思考関数：リロード
+
+        Think3_DbgPointMove( Work *work );
+            デバッグ思考関数：指定位置移動
+
+        Think3_RunningDbgPut( Work* work );
+            デバッグ思考関数：爆弾走り置き
+
+        Think3_TurnDbgPut( Work* work )
+            デバッグ思考関数：爆弾回転置き
+
+        Think3_StopDbgPut( Work* work );
+            デバッグ思考関数：爆弾停止置き
+
+        FAT_DbgThink(Work* work);
+            デバッグ思考呼出
+
+        FAT_DbgViewStatus( Work* work );
+            ステータス表示
+
+        FAT_DbgDrawEyePos( Work* work );
+            目標ターゲット表示
+
+        FAT_DbgDrawRoute( Work* work );
+            ルート表示
+
+        FAT_DbgSound(Work* work);
+            サウンドチェック
+
+        FAT_DbgDrawTrgBox( Work* work );
+            ターゲット表示用箱
+
+        FAT_DbgStatusUpdate( Work* work );
+            デバッグ関連の更新
+
+        FAT_CallDbgDump(void);
+            デバッグキャラ呼出：ダンプチェック
+
+        FAT_CallDbgViewer(void);
+            デバッグキャラ呼出：爆弾チェック
+
+        FAT_CallDbgStatus(void);
+            デバッグキャラ呼出：ステータスチェック
+
+        FAT_CallDbgThink(void);
+            デバッグキャラ呼出：思考チェック
+
+        FAT_CallDbgMotion(void);
+            デバッグキャラ呼出：モーションチェック
+
+        FAT_CallDbgBomb(void);
+            デバッグキャラ呼出：爆弾チェック
+
+        FAT_UpdatePutPos(Work* work);
+            デバック用爆弾設置更新
+
+        FAT_DbgMotionUpdate( Work* work);
+            デバック用モーション再生番号更新
+
+        FAT_DbgBombThink(Work* work);
+            爆弾設置デバッグ思考
+
+        FAT_Debug( Work* work);
+            デバッグ関連の窓口
+        
+fatdbgmenu.c : デバッグメニュー用関数群
+    デバッグメニュー用宣言をまとめたもの

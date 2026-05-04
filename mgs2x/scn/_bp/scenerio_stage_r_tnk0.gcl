@@ -1,0 +1,15 @@
+//
+//	res_tnk0.gcl
+//	タンカー編常駐データシナリオ No.0
+//
+//	2001/02/14	M.Sonoyama
+//	$Id: r_tnk0.gcl,v 1.6 2002/04/15 10:33:03 usr04761 Exp $
+
+#include	"res_common.h"
+
+// タンカーデジカメ専用
+
+command 常駐領域設定 tank_jpeg_cam ( ( 48 * 32 * 2 ) * 6 + ( 16*1024 ) * 6 )
+
+eval ( $w:コンフィグ設定 = $w:コンフィグ設定 | d:CONFIG_STORY_TANKER )
+

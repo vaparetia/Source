@@ -1,0 +1,407 @@
+;
+;	vu0nearx.dsm
+;	ニアセグメントチェックＶｕ０マイクロバージョンＸ
+;
+;   	1999/11/19 M.Sonoyama
+;   	$Id: vu0nearx.dsm,v 1.1.1.3 2002/11/19 11:42:50 Yoshizawa1 Exp $
+;
+
+; レジスタ使用状況
+;
+;	vf00	:	0
+;	vf01	:	FROM
+;	vf02	:	vf02x 検出半径 vf02y 反発半径
+
+;	vf03	:	カレント壁１
+;	vf04	:	カレント壁２
+;	vf05	:	ＦＲＯＭから壁への最短点ベクトル１
+;	vf06	:	ＦＲＯＭから壁への最短点ベクトル２
+;	vf07x	:	ＦＲＯＭから壁までの現在最小距離１
+;	vf08x	:	ＦＲＯＭから壁までの現在最小距離２
+;	vf09	:	エッジ１
+;	vf10	:	エッジ２
+
+;	vf11	:	ＦＲＯＭからカレント壁への最短点ベクトル
+;	vf12x	:	ＦＲＯＭからカレント壁までの距離
+
+;	vf13 	：	検索バウンディング小
+;	vf14 	：	検索バウンディング大
+
+;	vf20	: 	ワーク 〜
+
+;	vi00	:	ゼロ
+;	vi01	:	１
+;	vi02	:	ヒット数
+;	vi03	:	ストリップ点数
+;	vi04	:	ストリップデータポインタ 
+;	vi05	:	最近点タイプ１
+;	vi06	:	最近点タイプ２
+;	vi07	:	カレント最近点タイプ
+;	vi08	:	
+;	vi09	:	データ開始点
+;	vi10	:	ワーク 〜
+
+; メモリ使用状況
+;	0x0000	:	反発ベクトル
+;	0x0001	:	FirstNearest
+;	0x0002	:	SecondNearest
+;	0x0003	:	CurrentNearest
+;	0x0010	:	First格納
+;	0x0020	:	Second格納
+;	0x0030	:	検索座標
+;	0x0031	:	検索半径
+;	0x0032	:       ヒット数
+;	0x0033	:	ストリップ点数
+;	0x0034	:	ストリップデータ
+;	
+;	壁数だけ続く（最大１２０壁）
+
+; 定義
+M_REACT_VEC	= 0x00	; 反発ベクトル
+M_FROM		= 0x30	; 検索座標
+M_SPHERE	= 0x31	; 検索半径
+M_BUFFER	= 0x31	; ダブルバッファ設定
+M_HIT_NUM	= 0x32	; ヒット数
+M_DATA_PTR	= 0x33  ; データ開始点
+M_DATA_PTR2	= 0x93  ; データ開始点２
+
+.global Vu0CheckNearHazardX
+.global Vu0CheckNearHazardFuncX
+
+Vu0CheckNearHazardFuncX : 
+	.word	( NearCheckStartProcX / 8 )
+	.word	( NearCheckStripX / 8 )
+	.word	( NearConflictCheckX / 8 )
+
+.data
+.DmaPackVif	1
+
+Vu0CheckNearHazardX :
+	DMAref *, _near_hzx
+
+.DmaData _near_hzx
+	MPG 0, *
+
+; ここから
+.vu
+NearCheckStartProcX :
+	; 初期化
+	; 					検索半径をロード vf02x <- sphere, vf02y <- r_sphere
+	nop					lq.xy	vf02xy,	 M_SPHERE(vi00)
+	; 検索半径＾２＋１．０Ｆを最近壁の距離としておく
+	; 					検索座標をロード vf01xyz <- from
+	mulx.x	vf07x, vf02x, vf02x		lq.xyz	vf01xyz, M_FROM(vi00)
+	; 検索バウンディング作成
+	;					vi01 <- 1, vi02 <- 0
+	subx.xz vf13xz, vf01xz, vf02x		iaddiu	vi01, vi00, 1
+	addx.xz vf14xz, vf01xz, vf02x		isub	vi02, vi00, vi00
+	mulx.x	vf08x, vf02x, vf02x		isub	vi05, vi00, vi00
+	addw.x  vf07x, vf07x, vf00w		isub	vi06, vi00, vi00
+	addx.y  vf13y,  vf01y, vf00x		isub	vi07, vi00, vi00
+	addx.y  vf14y,  vf01y, vf00x		isw.x	vi00, M_HIT_NUM(vi00)
+	addw.x  vf08x, vf08x, vf00w		iaddiu	vi04, vi00, M_DATA_PTR
+NearCheckStripX :
+	; １ストリップ検査
+	; ロード
+	; 最初の点もロードしておく
+	nop					iadd	vi09, vi00, vi04
+	nop					lq.xyzw	vf03xyzw, 0x01(vi04)
+	itof0 vf03xyzw, vf03xyzw		ilw.x	vi03, 0x00(vi04)
+	nop					iaddiu	vi04, vi04, 1
+Loop :	; ループ
+	; 壁ロード 最後の点だけ読み無駄にはなる
+	nop					lq.xyzw	vf04xyzw, 0x01(vi04)
+	; ポイント数チェック
+	itof0 vf04xyzw, vf04xyzw		ibeq	vi03, vi01, End ; n_points - 1 まで
+	nop					nop
+	nop					nop
+	nop					nop
+
+BoundingCheck : ; バウンディングチェック
+SegmentNearest : ; 最近点チェック
+	; vf03:P1, vf04:P2, vf13:bound_min, vf14:bound_max, vf20:max vf21:min 
+	; vf22:P1_P2, vf23:P1_FROM, vf24x:HOH, vf25x:DOH
+	; vf26x:doh, vf27x:hoh, vf28:dxh, vi07:is_edge
+	; バウンディングボックス生成
+	mini.xyz vf20xyz, vf03xyz, vf04xyz 	iaddiu	vi07, vi00, 0x0001 ; is_edge = 1
+	max.xz   vf21xz,  vf03xz, vf04xz 	nop
+	addw.y	 vf30y,   vf03y,  vf03w		nop
+	addw.y	 vf31y,   vf04y,  vf04w		nop
+	sub.xyz  vf00xyz, vf14xyz,vf20xyz	nop ; vf14 < vf20 ?
+	sub.xz   vf22xz,  vf04xz, vf03xz	nop ; P1_P2
+	sub.xz	 vf23xz,  vf01xz, vf03xz	nop ; P1_FROM
+	max.y	 vf21y,   vf30y,  vf31y		iaddiu	vi10, vi00, 0x00e0
+	addw.x   vf24x,   vf00x,  vf00w		fmand	vi11, vi10 ; HOH = 1.0F
+	mul.xz   vf27xz,  vf22xz, vf22xz	ibne	vi11, vi00, LoopEnd 
+	mul.xz   vf26xz,  vf22xz, vf23xz	nop
+	sub.xyz  vf00xyz, vf21xyz,vf13xyz	nop ; vf13 > vf21 ?
+	opmula.xyz ACCxyz,vf22xyz,vf23xyz	nop
+	addz.x   vf27x,   vf27x,  vf27z		nop ; hoh
+	addz.x   vf26x,   vf26x,  vf26z		nop ; doh
+	sub.xz   vf11xz,  vf03xz, vf01xz	fmand   vi11, vi10 ; P1だった時のため、vf11=NearVec
+	addx.x   vf25x,   vf00x,  vf00x		ibne	vi11, vi00, LoopEnd ; BoundOut
+	opmsub.xyz vf28xyz,vf23xyz,vf22xyz	iaddiu	vi10, vi00, 0x0080 ; dxh
+	subx.x   vf00x,   vf27x,  vf26x		fmand	vi11, vi10 ; DOH = 0.0F
+	nop					ibeq	vi11, vi00, NotP1 
+	nop					iaddiu  vi10, vi00, 0x0080
+	nop					b 	SetLength ; P1が最近点
+	nop					sq.xyzw	vf03,	0x03(vi00)
+NotP1 :
+	sub.xz	 vf11xz,  vf04xz, vf01xz	nop
+	addw.x   vf25x,   vf00x,  vf00w		fmand	vi11, vi10
+	nop					ibeq	vi11, vi00, NotP2 ; DOH = 1.0F
+	nop					nop
+	nop					b	SetLength ; P2が最近点
+	nop					sq.xyzw	vf04,	0x03(vi00)
+NotP2 :	
+	; 垂線の足が最近点
+	subw.z	 vf30z,   vf00z,  vf00w		isub	vi07, vi00, vi00 ; is_edge = 0 ;
+	muly.x   vf31x,   vf22x,  vf28y		div	Q, vf00w, vf27x
+	sub.xz	 vf11xz,  vf00xz, vf00xz	nop
+	addx.x	 vf25x,   vf00x,  vf26x		nop
+	mulz.z	 vf30z,   vf30z,  vf22z		nop
+	addx.x   vf24x,   vf00x,  vf27x		nop
+	nop					nop
+	nop					waitq
+	muly.z   vf30z,   vf30z,  vf28y		nop
+	mulq.x	 vf31x,   vf31x,  Q		nop
+	nop					nop
+	nop					nop
+	mulq.z	 vf31z,   vf30z,  Q		nop
+	addx.z	 vf11z,   vf00z,  vf31x		nop
+	nop					nop
+	nop					nop
+	addz.x	 vf11x,   vf00x,  vf31z		nop
+	nop					nop
+	nop					nop
+	nop					nop
+	nop					sq.xyzw	vf11, 0x03(vi00)
+SetLength :
+	mul.xz	 vf12xz,  vf11xz, vf11xz	div	Q, vf25x, vf24x
+	nop					nop		
+	nop					nop		
+	nop					nop		
+	addz.x	 vf12x,   vf12x,  vf12z		nop
+	nop					nop		
+	addw.x   vf21x,   vf00x,  vf00w		waitq
+	addq.x   vf20x,   vf00x,  Q		nop	; vf20 = depth
+	subx.x   vf00x,   vf08x,  vf12x		nop	; len > SECOND->len
+	nop					nop		
+	nop					nop		
+	subx.x   vf21x,   vf21x,  vf20x		iaddiu	vi10, vi00, 0x0080 ; vf21 = 1 - depth
+	nop					fmand	vi11, vi10
+	nop					ibne	vi11, vi00, LoopEnd
+	nop					nop
+
+DiagonalSegmentHeight :
+	mulax.xyzw ACCxyzw, vf04xyzw, vf20x	nop
+	maddx.xyzw vf30xyzw,vf03xyzw, vf21x	nop
+	nop					nop
+	nop					nop
+	nop					nop
+	addy.w	   vf31w,   vf30w,    vf30y	nop
+	suby.y	   vf00y,   vf01y,    vf30y	nop
+	nop					nop
+	nop					nop
+	suby.w     vf31w,   vf31w,    vf01y	iaddiu	vi10, vi00, 0x0040
+	nop					fmand	vi10, vi10
+	nop					ibne	vi10, vi00, LoopEnd
+	subx.x     vf00x,   vf12x,    vf07x	iaddiu	vi10, vi00, 0x0010
+	nop					fmand	vi10, vi10
+	nop					ibne	vi10, vi00, LoopEnd
+	sub.xz     vf30xz,  vf11xz,   vf05xz	iaddiu	vi10, vi00, 0x0080
+LenCheck :
+	nop					fmand	vi10, vi10
+	nop					ibne	vi10, vi00, FindFirst
+	nop					iaddiu	vi10, vi00, 0x000a
+	nop					fmand	vi11, vi10
+	nop					ibeq	vi11, vi10, LoopEnd
+	nop					nop
+
+FindSecond : ; 二番目壁更新
+	nop 					sq.xyzw vf03, 0x06(vi00)
+	nop 					sq.xyzw vf04, 0x07(vi00)
+	addx.xz	 vf06xz, vf11xz, vf00x		lq.xyzw vf30,	0x00(vi09)
+	addx.x   vf08x,  vf12x, vf00x		iaddi	vi02, vi02, 1
+	nop					lq.xz	vf31,   0x03(vi00)
+	nop					iadd	vi06, vi00, vi07
+	nop					sq.xyzw	vf30,	0x20(vi00)
+	nop					isw.x	vi03,   0x20(vi00)
+	nop					sq.xyzw vf31,   0x02(vi00)
+	nop					b	LoopEnd
+	nop					nop
+
+FindFirst : ; 最近壁更新
+	addx.xz  vf06xz, vf05xz, vf00x		iaddi	vi02, vi02, 1
+	addx.x   vf08x,  vf07x,  vf00x		iadd	vi06, vi00, vi05
+	nop					iadd	vi05, vi00, vi07
+	nop					lq.xyzw	vf21xyzw, 0x10(vi00)
+	addx.xz  vf05xz, vf11xz, vf00x		lq.xyzw vf22xyzw, 0x00(vi09)
+	addx.x   vf07x,  vf12x,  vf00x		lq.xz	vf23,     0x01(vi00)
+	nop					lq.xz	vf24,     0x03(vi00)
+	nop					sq.xyzw vf21xyzw, 0x20(vi00)
+	nop					sq.xyzw	vf22xyzw, 0x10(vi00)
+	nop					isw.x	vi03,	  0x10(vi00)
+	nop					sq.xz	vf23,	  0x02(vi00)
+	nop					sq.xz	vf24,	  0x01(vi00)
+	nop					lq.xyzw	vf30, 	  0x04(vi00)
+	nop					lq.xyzw	vf31, 	  0x05(vi00)
+	nop					sq.xyzw vf03, 	  0x04(vi00)
+	nop					sq.xyzw vf04, 	  0x05(vi00)
+	nop					sq.xyzw	vf30, 	  0x06(vi00)
+	nop					sq.xyzw	vf31, 	  0x07(vi00)
+
+LoopEnd :
+	addx.xyzw vf03xyzw, vf04xyzw, vf00x	iaddi	vi04, vi04, 1
+	nop					isubiu	vi03, vi03, 1
+	nop					b	Loop
+	nop					nop
+End :
+	; 終了
+	nop					isw.x	vi02,	  M_HIT_NUM(vi00)
+	nop					sq.xyz	vf05xyz,  0x12(vi00)
+	nop					sq.xyz	vf06xyz,  0x22(vi00)
+	nop					sq.x	vf07x,	  0x13(vi00)
+	nop					sq.x	vf08x,	  0x23(vi00)
+	nop					isw.x	vi05,	  0x11(vi00)
+	nop					isw.x	vi06,	  0x21(vi00)
+	nop					iaddiu	vi11, vi00, M_DATA_PTR
+	nop					iaddiu	vi04, vi00, M_DATA_PTR2
+	nop					ibeq	vi09, vi11, EndEnd
+	nop					nop
+	nop					iaddiu	vi04, vi00, M_DATA_PTR
+EndEnd :
+	nop[e]					nop
+	nop					nop
+
+NearConflictCheckX :
+	nop					ibeq	vi02, vi00, HazardReactionX
+	nop					ibeq	vi02, vi01, HazardReactionX
+	nop					lq.xz	vf31,     0x02(vi00)
+	add.xz	vf22, vf01, vf31		iaddiu	vi02, vi00, 2
+	nop					isw.x	vi02,	  M_HIT_NUM(vi00)
+	nop					ibeq	vi06, vi00, HazardReactionX
+	nop					lq.xz	vf30,     0x01(vi00)
+	sub.xz  vf21, vf31, vf30		lq.xz	vf28,	  0x06(vi00)
+	sub.xz  vf23, vf22, vf28		lq.xz	vf29,	  0x07(vi00)
+	sub.xz  vf24, vf22, vf29		ibeq	vi05, vi00, ConflictCheck2
+	nop					nop
+	sub.xz	vf00, vf21, vf00		nop
+	nop					nop
+	nop					nop
+	nop					iaddiu	vi11, vi00, 0x000a
+	nop					fmand	vi12, vi11
+	nop					ibne	vi12, vi11, HazardReactionX
+	nop					nop
+	nop					iaddiu	vi02, vi00, 1
+	nop					isw.x	vi02, 	  M_HIT_NUM(vi00)
+	nop					b	HazardReactionX
+	nop					nop
+ConflictCheck2 :
+	sub.xz  vf00, vf23, vf00		nop
+	sub.xz  vf00, vf24, vf00		iaddiu	vi11, vi00, 0x000a
+	nop					nop
+	nop					nop
+	nop					fmand	vi12, vi11
+	nop					fmand	vi13, vi11
+	nop					ibne	vi12, vi11, HazardReactionX
+	nop					ibne	vi13, vi11, HazardReactionX
+	nop					nop
+	nop					iaddiu	vi02, vi00, 1
+	nop					isw.x	vi02, 	  M_HIT_NUM(vi00)
+
+HazardReactionX :
+	sub.xz  vf31xz,  vf00xz, vf00xz		ibeq	vi02, vi00, HazardReactionEnd	; vf31 <- 0
+	sub.xz  vf18xz,  vf00xz, vf00xz		sqrt	Q, vf07x 	; vf18 <- 0, Q <- len1
+	nop					sq.xz	vf00xz, M_REACT_VEC(vi00) 	; react <- 0
+	nop					waitq
+	addq.x  vf07x,   vf00x,   Q		sqrt	Q, vf08x		; vf07x <- len1, Q <- len2
+	nop					nop
+	nop					nop
+	nop					iaddiu	vi11, vi00, 0x0008			
+	subx.y	vf00y,   vf02y,   vf07x		fmand	vi11, vi11	; len1 == 0 -> end
+	nop					ibne	vi11, vi00, HazardReactionEnd
+	nop					iaddiu	vi11, vi00, 0x0044			
+	addq.x  vf08x,   vf00x,   Q		div	Q, vf02y, vf07x		; vf08x <- len2, Q <- r_sphere / len1
+	nop					fmand	vi11, vi11					; len1 >= r_sphere -> end
+	nop					ibne	vi11, vi00, HazardReactionEnd
+	nop					nop
+	nop					waitq 
+	mulq.xz	vf18xz,  vf05xz, Q		nop	; RANGE1			; vf18 <- near1*r_sphere/len1
+	nop					nop
+	nop					nop
+	nop					nop
+	sub.xz	vf31xz,  vf05xz, vf18xz		ibeq	vi02, vi01, OnlyOne ; vf31 <- RANGE1, hit == 1 -> OnlyOne
+	subx.y	vf00y,   vf02y,  vf08x		nop		
+	nop					nop
+	nop					nop
+	sub.xz	vf18xz,  vf00xz, vf31xz		iaddiu	vi11, vi00, 0x0044 ; vf18 <- -vf31(RANGE1)
+	nop					fmand	vi11, vi11					; len2 >= r_sphere -> OnlyOne
+	nop					ibne	vi11, vi00, OnlyOne
+	nop					div	Q, vf02y, vf08x					; Q <- r_sphere / len2
+	mul.xz	vf22xz,  vf18xz,   vf18xz	nop					; vf22 <- vf18 * vf18
+	nop					nop
+	nop					nop
+	nop					nop
+	addz.x  vf22x,   vf22x,   vf22z		waitq	; aoa		
+	mulq.xz	vf19,    vf06,   Q		nop						; vf19 <- near2 * r_sphere / len2
+	nop					nop								
+	nop					nop	
+	nop					nop	
+	sub.xz	vf19,    vf19,   vf06		nop					; vf19 <- vf19 - near2 (RANGE2)
+	nop					nop
+	nop					nop
+	subw.x	vf29x,   vf00x,  vf00w		nop					; vf29 <- -1.0F
+	mul.xz	vf23xz,  vf19xz,  vf19xz	nop					; vf23 <- vf19 * vf19
+	mul.xz	vf24xz,  vf18xz,  vf19xz	nop					; vf24 <- vf18 * vf19
+	opmula.xyz ACCxyz,vf18xyz,vf19xyz	nop					; vf25 <- vf18 × vf19
+	opmsub.xyz vf25xyz,vf19xyz,vf18xyz	nop 	; axb
+	addz.x	vf23x,   vf23x,   vf23z		nop 	; bob		
+	addz.x  vf24x,   vf24x,   vf24z		nop 	; aob
+	nop					iaddiu	vi11, vi00, 0x0004	
+	nop					fmand	vi11, vi11					; vf25 = 0 -> OnlyOne
+	nop					ibne	vi11, vi00, OnlyOne
+	subx.x  vf00x,   vf22x,   vf24x		div	Q,    vf29x, vf25y	; Q <- - 1 / axb
+	subx.x  vf29x,   vf23x,   vf24x		nop
+	nop					iaddiu	vi11, vi00, 0x0088
+	nop					nop
+	nop					fmand	vi12, vi11						; aoa <= aob -> OnlyOne
+	mulx.z  vf26z,   vf18z,   vf23x		fmand	vi11, vi11		; vf26 <- r1z * bob, bob <= aob -> OnlyOne
+	mulx.z  vf27z,   vf19z,   vf22x		ibne	vi12, vi00, OnlyOne ; vf27 <- r2z * aoa
+	mulx.x  vf28x,   vf19x,   vf22x		ibne	vi11, vi00, OnlyOne ; vf28 <- r2x * aoa
+	mulx.x  vf29x,   vf18x,   vf23x		nop							; vf29 <- r1x * bob
+	nop					nop ;iaddiu	vi11, vi00, 0x0002
+	subz.z  vf26z,   vf26z,   vf27z		nop ;fmand	vi11, vi11		; vf26 <- r1z*bob - r2z*aoa
+	subx.x  vf28x,	 vf28x,   vf29x		nop ;ibne	vi11, vi00, HazardReactionEnd ; vf28 <- r2x*aoa - r1x*bob
+	nop					nop
+	nop					waitq
+	mulq.z	vf30z,   vf26z,   Q		nop			; vf30z <- vf26 * Q
+	mulq.x	vf30x,   vf28x,   Q		nop			; vf30x <- vf28 * Q
+	nop					nop
+	nop					nop
+	addz.x	vf31x,   vf00x,   vf30z		nop		; vf31 <- vf30
+	addx.z	vf31z,   vf00z,   vf30x		nop
+	nop					nop
+
+OnlyOne :
+	nop					nop
+	nop					nop
+	nop					sq.xz	vf31xz,   M_REACT_VEC(vi00)
+	nop					nop
+HazardReactionEnd :
+;	nop					lq.x	vf30, 0x32(vi00)
+;	nop					lq.xyzw	vf31, 0x00(vi00)
+;	nop					lq.xyzw	vf21, 0x10(vi00)
+;	nop					lq.xyzw	vf22, 0x11(vi00)
+;	nop					lq.xyzw	vf23, 0x12(vi00)
+;	nop					lq.xyzw	vf24, 0x20(vi00)
+;	nop					lq.xyzw	vf25, 0x21(vi00)
+;	nop					lq.xyzw	vf26, 0x22(vi00)
+;	nop					nop
+;	nop					nop
+;	nop					nop
+	nop[e]					nop
+	nop					nop
+
+.EndMPG
+.EndDmaData

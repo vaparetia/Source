@@ -1,0 +1,5 @@
+#!/bin/sh
+
+if decode_clrcode_sub $*;
+then echo $* :::: `date` `whoami` >> /u/develop/mj001b/exports/tmp/decode_sub/clearcode_sub.txt
+fi

@@ -1,0 +1,691 @@
+#!/usr/bin/perl
+
+require "config.pl" ;
+require "prnt.pl" ;
+
+#Flush the buffer immeadiatly
+$| = 1 ;
+
+while( 1 )
+{
+    sleep 3 ;
+
+    push( @pool, "world"  ) if ( -e "$msgdir/pool/world"  ) ;
+    push( @pool, "human"  ) if ( -e "$msgdir/pool/human"  ) ;
+    push( @pool, "item"   ) if ( -e "$msgdir/pool/item"   ) ;
+    push( @pool, "weapon" ) if ( -e "$msgdir/pool/weapon" ) ;
+    push( @pool, "lt2"    ) if ( -e "$msgdir/pool/lt2"    ) ;
+    push( @pool, "goods"  ) if ( -e "$msgdir/pool/goods"  ) ;
+    push( @pool, "effect" ) if ( -e "$msgdir/pool/effect" ) ;
+    push( @pool, "meca"   ) if ( -e "$msgdir/pool/meca"   ) ;
+    foreach( @pool )
+    {
+	unlink( "$msgdir/pool/$_" ) ;
+	$prev_comment = "ありえない変なコメント" ;
+      SWITCH:
+	{
+	    &com_world( "tnk" ), last SWITCH if /world/  ;
+	    &com_human()       , last SWITCH if /human/  ;
+	    &com_weapon()      , last SWITCH if /weapon/ ;
+	    &com_lt2()         , last SWITCH if /lt2/    ;
+	    &com_effect()      , last SWITCH if /effect/ ;
+	    &com_default( $_, "アイテム", "default" ), last SWITCH if /item/  ;
+	    &com_default( $_, "グッズ"  , "default" ), last SWITCH if /goods/ ;
+	    &com_default( $_, "メカ"    , "meca"    ), last SWITCH if /meca/  ;
+	}
+    }
+    undef( @pool ) ;
+}
+
+
+#
+# Command
+#
+#
+sub com_default()
+{
+    local ( $name, $title, $file ) = @_ ;
+    local $dir, $entry ;
+    local $outfile ;
+
+    $tags{'title'} = $title ;
+    $outfile = "$lstlog_dir/$name.t.html" ;
+    &fileout( "$listdir/list_head.html", ">$outfile", %tags ) ;
+    open( ENTRY, "ls $runtime_dir/$name |" ) ;
+    foreach $entry ( <ENTRY> )
+    {
+	chop $entry ;
+
+	$tags{'title'} = $entry ;
+	&fileout( "$listdir/$file"."_head.html", ">>$outfile", %tags ) ;
+
+	open( LS, "ls $runtime_dir/$name/$entry -R | grep -v rpt |" ) ;
+	foreach $files ( <LS> )
+	{
+	    chop $files ;
+	    print "($files)\n" ;
+	    next if ( $files eq "" ) ;
+	    if ( $files =~ /:$/ )
+	    {
+		$dir =  $files ;
+		$dir =~ s/$runtime_dir\/// ;
+		$dir =~ s/:$// ;
+	    }
+	    elsif ( $files =~ /\./ )
+	    {
+		&make_tags( 0, $dir, $files, %name_tag ) ;
+		&fileout( "$listdir/$file$tags{'fix'}.html", ">>$outfile", %tags ) ;
+	    }
+	}
+	close( LS ) ;
+	&lineout( $outfile, "<TR></TR>\n" ) ;
+    }
+    close( ENTRY ) ;
+    &lineout( $outfile, "</TABLE></BODY>\n</HTML>\n" ) ;
+    rename( $outfile, "$lstlog_dir/$name.html" ) ;
+
+    undef( %tags ) ;
+}
+
+
+sub com_weapon()
+{
+    local $name="weapon", $file="default" ;
+    local $dir, $entry ;
+    local $outfile ;
+
+    $tags{'title'} = "武器" ;
+    $outfile = "$lstlog_dir/weapon_t.html" ;
+    &fileout( "$listdir/list_head.html", ">$outfile", %tags ) ;
+    open( ENTRY, "ls $runtime_dir/$name |" ) ;
+    foreach $entry ( sort keys( %weapon_tag ) )
+    {
+	$tags{'title'} = $weapon_tag{$entry} ;
+	&fileout( "$listdir/default_head.html", ">>$outfile", %tags ) ;
+
+	$name = "$runtime_dir/weapon/".substr( $entry, 2 ) ;
+	open( LS, "ls $name* -R | grep -v rpt |" ) ;
+	foreach $files ( <LS> )
+	{
+	    chop $files ;
+	    print "($files)\n" ;
+	    next if ( $files eq "" ) ;
+	    if ( $files =~ /:$/ )
+	    {
+		$dir =  $files ;
+		$dir =~ s/$runtime_dir\/// ;
+		$dir =~ s/:$// ;
+	    }
+	    elsif ( $files =~ /\./ )
+	    {
+		&make_tags( 0, $dir, $files, %name_tag ) ;
+		&fileout( "$listdir/$file$tags{'fix'}.html", ">>$outfile", %tags ) ;
+	    }
+	}
+	close( LS ) ;
+	&lineout( $outfile, "<TR></TR>\n" ) ;
+    }
+    close( ENTRY ) ;
+    &lineout( $outfile, "</TABLE></BODY>\n</HTML>\n" ) ;
+    rename( $outfile, "$lstlog_dir/weapon.html" ) ;
+
+    undef( %tags ) ;
+}
+
+
+sub com_effect()
+{
+    local $dir, $entry ;
+    local $outfile = "" ;
+    local $i=0, $j=30, $k=0 ;
+    local @e_tags, $page=0 ;
+
+    $e_tags{'list'} = "" ;
+    open( ENTRY, "ls $runtime_dir/effect |" ) ;
+    foreach $entry ( <ENTRY> )
+    {
+	chop $entry ;
+
+	open( LS, "ls $runtime_dir/effect/$entry -R | wc -l |" ) ;
+	$i = int(<LS>) - 1 ;
+	close( LS ) ;
+	if ( ( ($j+$i) > 20 ) && ( $j > 10 ) )
+	{
+	    $j = 0 ;
+	    &lineout( $outfile, "</TABLE></BODY>\n</HTML>\n" ) if ( $outfile ) ;
+
+	    $tags{'title'} = "エフェクト（".(++$page)."ページ目）" ;
+	    $outfile = "$lstlog_dir/effect_dir/$page.html" ;
+	    &fileout( "$listdir/list_head.html", ">$outfile", %tags ) ;
+	}
+	$j += $i ;
+
+	$tags{'title'} = $entry ;
+	$tags{'title'} =~ s/.*\/([^\/]+)\/?$/$1/ ;
+	&fileout( "$listdir/effect_head.html", ">>$outfile", %tags ) ;
+
+	$e_tags{'list'} .= "<TR>\n"  if ( $k % 6 == 0 ) ;
+	$e_tags{'list'} .= "<TD><IMG SRC=/runtime/images/ball.gif>" ;
+	$e_tags{'list'} .= "<A HREF=/runtime/list/effect_dir/$page.html#$entry>$entry</A></TD>\n" ;
+	$e_tags{'list'} .= "</TR>\n" if ( $k % 6 == 5 ) ;
+	$k++ ;
+
+	open( LS, "ls -R $runtime_dir/effect/$entry | grep -v rpt |" ) ;
+	foreach( <LS> )
+	{
+	    chop ;
+	    next if ( not $_ ) ;
+	    if ( /:$/ )
+	    {
+		$dir =  $_ ;
+		$dir =~ s/$runtime_dir\/// ;
+		$dir =~ s/:$// ;
+	    }
+	    elsif ( /\./ )
+	    {
+		&make_tags( 2, $dir, $_, %name_tag ) ;
+		
+		$tags{'trans'} = "" ;
+		$tags{'trans'} .= "加算 "         if /_add/ ;
+		$tags{'trans'} .= "減算 "         if /_sub/ ;
+		$tags{'trans'} .= "半透明 "       if /_hlf/ ;
+		$tags{'trans'} .= "アルファ "     if /_alp/ ;
+		$tags{'trans'} .= "ブレンド "     if /_bld/ ;
+		$tags{'trans'} .= "オーバーレイ " if /_ovl/ ;
+		$tags{'trans'}  = "不透明" 	  if ( $tags{'trans'} eq "" ) ;
+		
+		&fork( "texconv -l$icon_dir $runtime_dir/effect/$dir/$_ > /dev/null" ) ;
+		s/pic$/bmp/ ;
+		open( TEX, "alphtex -t $icon_dir/$_ |" ) ;
+		foreach( <TEX> )
+		{
+		    s/color // , $tags{'color' } = $_ if ( /color/  ) ;
+		    s/width // , $tags{'width' } = $_ if ( /width/  ) ;
+		    s/height //, $tags{'height'} = $_ if ( /height/ ) ;
+		}
+		close( TEX ) ;
+		&fileout( "$listdir/effect$tags{'fix'}.html", ">>$outfile", %tags ) ;
+	    }
+	    &lineout( $outfile, "<TR></TR>\n" ) if ( $outfile ) ;
+	}
+	close( LS ) ;
+    }
+    close( ENTRY ) ;
+    &lineout( $outfile, "</TABLE></BODY>\n</HTML>\n" ) if ( $out_file ) ;
+
+    $e_tags{'title'} = "エフェクト" ;
+    &fileout( "$listdir/effect_main.html", ">$lstlog_dir/effect.html", %e_tags ) ;
+
+    undef( %tags ) ;
+}
+
+
+
+sub com_world()
+{
+    local ( $revision ) = @_ ;
+    local $dir, $worlds ;
+    local $stgfile, $objfile, $i=0 ;
+#    local %w_tags ;
+
+    $tags{'title'} = "ワールド（ステージ・タンカー編）" ;
+    $stgfile = "$lstlog_dir/world_". $revision ."_stg_t.html" ;
+    &fileout( "$listdir/list_head.html", ">$stgfile", %tags ) ;
+    $tags{'title'} = "ワールド（小物・タンカー編）" ;
+    $objfile = "$lstlog_dir/world_". $revision. "_obj_t.html" ;
+    &fileout( "$listdir/list_head.html", ">$objfile", %tags ) ;
+
+    open( WORLD, "ls $runtime_dir/world |" ) ;
+    foreach $worlds ( <WORLD> )
+    {
+	chop $worlds ;
+
+	next if ( $worlds =~ m/^c/ ) ;
+	next if ( $worlds =~ m/^nojiri/ ) ;
+#	next if ( $worlds !~ m/^test/ ) ;
+
+#	$w_tags{'list'} .= "<TR>"    if ( $i % 6 == 0 ) ;
+#	$w_tags{'list'} .= "\t<TD><A HREF=/cgi-bin/prnt.cgi?0&log/lst/world_dir/$worlds>$worlds</A></TD>" ;
+#	$w_tags{'list'} .= "</TR>\n" if ( $i % 6 == 5 ) ;
+#	$i++ ;
+
+	$tags{'title'} =  $worlds ;
+	$tags{'title'} =~ s/.*\/([^\/]+):$/$1/ ;
+	$tags{'jump'}  = "world_". $revision. "_obj.html" ;
+	&fileout( "$listdir/world_stg_head.html", ">>$stgfile", %tags ) ;
+	$tags{'jump'}  = "world_". $revision. "_stg.html" ;
+	&fileout( "$listdir/world_obj_head.html", ">>$objfile", %tags ) ;
+
+	open( LS, "ls $runtime_dir/world/$worlds -R | grep -v rpt |" ) ;
+	foreach $files ( <LS> )
+	{
+	    chop $files ;
+	    
+	    next if ( $files eq "" ) ;
+	    if ( $files =~ /:$/ )
+	    {
+		$dir =  $files ;
+		$dir =~ s/$runtime_dir\/// ;
+		$dir =~ s/:$// ;
+	    }
+	    elsif ( $files =~ /\./ )
+	    {
+		&make_tags( 0, $dir, $files, %name_tag ) ;
+		&fileout( "$listdir/world_stg$tags{'fix'}.html", ">>$stgfile", %tags )
+		    if ( $tags{'wtype'} =~ "ステージ" ) ;
+		&fileout( "$listdir/world_obj$tags{'fix'}.html", ">>$objfile", %tags )
+		    if ( $tags{'wtype'} !~ "ステージ" ) ;
+	    }
+	}
+	close( LS ) ;
+	&lineout( $stgfile, "<TR></TR>\n" ) ;
+	&lineout( $objfile, "<TR></TR>\n" ) ;
+    }
+#    &fileout( "$listdir/world_main.html", ">$lstlog_dir/world", %w_tags ) ;
+    close( WORLD ) ;
+    &lineout( $stgfile, "</TABLE></BODY>\n</HTML>\n" ) ;
+    &lineout( $objfile, "</TABLE></BODY>\n</HTML>\n" ) ;
+    rename( $stgfile, "$lstlog_dir/world_". $revision ."_stg.html" ) ;
+    rename( $objfile, "$lstlog_dir/world_". $revision. "_obj.html" ) ;
+
+    undef( %tags ) ;
+}
+
+
+
+
+
+
+
+
+
+sub com_human()
+{
+    local $dir, $human ;
+    local $outfile, $name, %h_tags ;
+    local $obj_name, $char_name ;
+
+    $tags{'title'} = "キャラクター" ;
+    $outfile = "$lstlog_dir/human_t.html" ;
+    &fileout( "$listdir/list_head.html", ">$outfile", %tags ) ;
+
+    foreach $human ( sort keys( %human_name ) )
+    {
+	$tags{'title'} = "" ;
+	$tags{'title'} = "タンカー編", $tags{'jump'} = "プラント編" if ( $human_name{$human} eq "スネーク" ) ;
+	$tags{'title'} = "プラント編", $tags{'jump'} = "タンカー編" if ( $human_name{$human} eq "ライデン" ) ;
+	&fileout( "$listdir/human_main_head.html", ">>$outfile", %tags ) if ( $tags{'title'} ) ;
+
+	$obj_name = $char_name = $human_name{$human} ;
+
+	$name = "$runtime_dir/human/".substr( $human, 2 )."*" ;
+	open( LS, "ls $name -R | grep -v rpt |" ) ;
+	foreach( <LS> )
+	{
+	    chop ;
+	    print "($_)\n" ;
+	    if ( $_ eq "" )
+	    {
+		$h_tags{'content_obj'} =~ s/$human_name{$human}// if ( $h_tags{'content_man'} ) ;
+		&fileout( "$listdir/human_tail.html", ">>$outfile", %h_tags ) ;
+	    }
+	    elsif ( /:$/ )
+	    {
+		$dir =  $_ ;
+		$dir =~ s/$runtime_dir\/// ;
+		$dir =~ s/:$// ;
+
+		$obj_name = $char_name = $human_name{$human} ;
+		$h_tags{'content_obj'} = $h_tags{'content_man'} = "" ;
+	    }
+	    elsif ( /\./ )
+	    {
+		&make_tags( 1, $dir, $_, %name_tag ) ;
+		if ( $tags{'htype'} =~ "付属品" )
+		{
+		    $tags{'obj_name'} = $obj_name ;
+		    $h_tags{'content_obj'} .= &pileout( "$listdir/human_obj$tags{'fix'}.html", %tags ) ;
+		    $obj_name = "" ;
+		}
+		else
+		{
+		    $tags{'char_name'} = $char_name ;
+		    $h_tags{'content_man'} .= &pileout( "$listdir/human_man$tags{'fix'}.html", %tags ) ;
+		    $char_name = "" ;
+		}
+	    }
+	}
+	close( LS ) ;
+	if ( $char_name && $obj_name )
+	{
+	    $tags{'flag'} = $tags{'entry'} = $tags{'htype'} = $tags{'comment'} = 
+		$tags{'lod'} =  $tags{'model'} = $tags{'comment'} = "" ;
+	    $tags{'char_name'} = $char_name ;
+	    $h_tags{'content_man'} .= &pileout( "$listdir/human_man$tags{'fix'}.html", %tags ) ;
+	}
+	$h_tags{'content_obj'} =~ s/$human_name{$human}// if ( $h_tags{'content_man'} ) ;
+	&fileout( "$listdir/human_tail.html", ">>$outfile", %h_tags ) ;
+	$h_tags{'content_obj'} = $h_tags{'content_man'} = "" ;
+    }
+    &lineout( $outfile, "</TABLE></BODY>\n</HTML>\n" ) ;
+    rename( $outfile, "$lstlog_dir/human.html" ) ;
+
+    undef( %tags ) ;
+}
+
+
+
+sub com_lt2()
+{
+    local $entry, $outfile ;
+
+    $tags{'title'} = "光源" ;
+    $outfile = "$lstlog_dir/lt2_t.html" ;
+    &fileout( "$listdir/list_head.html", ">$outfile", %tags ) ;
+    &fileout( "$listdir/lt2_head.html", ">>$outfile", %tags ) ;
+    open( ENTRY, "ls $runtime_dir/lt2 |" ) ;
+    foreach $entry ( <ENTRY> )
+    {
+	chop $entry ;
+
+	&make_tags( 0, "lt2", $entry, %name_tag ) ;
+	open( LS, "dumplt2 $runtime_dir/lt2/$entry |" ) ;
+	foreach( <LS> )
+	{
+	    chop ;
+	    s/^Parallel Direction //, $tags{'prl_dir'} = $_ if ( /^Parallel Direction/ ) ;
+	    s/^Parallel Color //    , $tags{'prl_col'} = $_ if ( /^Parallel Color/     ) ;
+	    s/^Ambient Color //     , $tags{'amb_col'} = $_ if ( /^Ambient Color/      ) ;
+	}
+	close( LS ) ;
+	&fileout( "$listdir/lt2$tags{'fix'}.html", ">>$outfile", %tags ) ;
+    }
+    close( ENTRY ) ;
+    &lineout( $outfile, "</TABLE></BODY>\n</HTML>\n" ) ;
+    rename( $outfile, "$lstlog_dir/lt2.html" ) ;
+
+    undef( %tags ) ;
+}
+
+
+
+
+
+sub make_tags
+{
+    local ( $style, $dir, $files, %name_tag ) = @_ ;
+    local $val, $decoded, @data ;
+    local $line, $i ;
+
+    print "search in ($files)\n" ;
+    undef( %tags ) ;
+
+    $line = &search_word( "$bbsdir/$dir/$files" ) ;
+    $decoded = &unpack( $line ) ;
+    foreach( keys( %name_tag )  )
+    {
+	@data = split( / +/, $name_tag{$_}) ;
+	$val = substr( $decoded, index( $decoded, "$_:" ) ) ;
+	$val = substr( $val, 0, index( $val, "\n" ) ) ;
+	$val =~ s/^[^:]+:([^\]]*)\].*/$1/ ;
+	$val = $data[1] if ( not $val ) ;
+#	$tags{$data[0]} .= "," if ( $tags{$data[0]} !~ m/[^ ]+/ ) ;
+	$tags{$data[0]} .= " $val" ;
+	print( "([$_]\t[$data[0]]\t[$val])\n" ) ;
+    }
+
+    $tags{'offset'} = $tags{'offs_pos'} = $tags{'offs_rot'} = "" ;
+    @data = split( ",", $tags{'offs_com'} ) ;
+    for( $i=0 ; $i<=$#data ; $i++ )
+    {
+        $tags{'offs_pos'} = "(" ;
+	$val = (split( ",", $tags{'offs_pos_x'} ) )[$i] ;
+        $tags{'offs_pos'} .=  ($val ? $val : "0"). "," ;
+	$val = (split( ",", $tags{'offs_pos_y'} ) )[$i] ;
+        $tags{'offs_pos'} .=  ($val ? $val : "0"). "," ;
+	$val = (split( ",", $tags{'offs_pos_z'} ) )[$i] ;
+        $tags{'offs_pos'} .=  ($val ? $val : "0"). ")" ;
+
+        $tags{'offs_rot'} = "(" ;
+	$val = (split( ",", $tags{'offs_rot_x'} ) )[$i] ;
+        $tags{'offs_rot'} .=  ($val ? $val : "0"). "," ;
+	$val = (split( ",", $tags{'offs_rot_y'} ) )[$i] ;
+        $tags{'offs_rot'} .=  ($val ? $val : "0"). "," ;
+	$val = (split( ",", $tags{'offs_rot_z'} ) )[$i] ;
+        $tags{'offs_rot'} .=  ($val ? $val : "0"). ")" ;
+
+        $tags{'offset'} .= "<BR>" if ( $tags{'offset'} ) ;
+        $tags{'offset'} .= (split( ",", $tags{'offs_com'} ) )[$i] ;
+        $tags{'offset'} .= ":位置$tags{'offs_pos'} 回転角度$tags{'offs_rot'}" ;
+    }
+#    $tags{'offset'  } =~ s/<BR>:.*位置 .*回転角度// ;
+
+    $tags{'name'} = $line ;
+    $tags{'name'} =~ s/.*pfrom=([^&]*).*/$1/ ;
+    $tags{'name'} = &unpack( $tags{'name'} ) ;
+
+    $val = $line ;
+    $val =~ s/^.*rtm\.gif><\/TD><TD>// ;
+    $val =~ s/<\/A><\/TD><TD>.*$/<\/A>/ ;
+    $tags{'entry'} = $val . "(". $tags{'name'} .")" ; 
+
+    $tags{'file'}  = "$dir/$files" ;
+    $tags{'file'}  =~ s/\.[^.]+$// ;
+
+    $val = $line ;
+    $val =~ s/.*pdate=([^&]*).*/$1/ ;
+    $tags{'flag'}    = &time_cmp( split( / +/, &unpack($val) ) ) ? "new" : "" ;
+
+    $val = substr( $decoded, index( $decoded, "pcomment=" ) ) ;
+    $val = substr( $val, 0, index( $val, "--" ) ) ;
+    $tags{'fix'} = "" ;
+    $tags{'fix'} = "fix"  if ( $val =~ m/\[完了\]/ ) ;
+    $tags{'fix'} = "botu" if ( $val =~ m/\[ボツ\]/ ) ;
+
+    $val = $line ;
+    $val =~ s/.*pstrcode=([^&]*).*/$1/ ;
+    $tags{'strcode'} = &unpack($val) ;
+
+    $tags{'size'}    = &get_mdlsize( "$dir/$files" ) if ( $style != 2 ) ;
+    $tags{'jnt_num'} = &get_jntnum( "$dir/$files" )  if ( $style != 2 ) ;
+
+    $tags{'comment'} = $line ;
+    $tags{'comment'} =~ s/.*pcomment=([^&]*).*/$1/ ;
+    if ( $style == 1 )
+    {
+	$tags{'comment'} = &unpack( $tags{'comment'} ) ;
+	$tags{'comment'} =~ s/\[[^\]]*\]//g ;
+	$tags{'comment'} =~ s/ //g ;
+	$tags{'comment'} = substr( $tags{'comment'}, 0, 40 ) ;
+    }
+    else
+    {
+	$tags{'comment'} = "・".&unpack( $tags{'comment'} ) ;
+	$tags{'comment'} =~ s/\[[^\]]*\]//g ;
+	$tags{'comment'} =~ s/ //g ;
+	$tags{'comment'} =~ s/--/<BR>・/g ;
+	$tags{'comment'} =~ s/・$// ;
+	if ( $tags{'comment'} eq $prev_comment )
+	{
+	    $tags{'comment'} = "同上" ;
+	}
+	elsif ( $tags{'comment'} )
+	{
+	    $prev_comment = $tags{'comment'} ;
+	}
+    }
+    $tags{'comment'} =~ s/^[ ]+// ; 
+    $tags{'comment'} =~ s/[ ]+$// ; 
+    $tags{'comment'} = "なし" if ( not $tags{'comment'} ) ;
+}
+
+
+
+
+
+
+
+
+
+
+
+#
+# Subroutines 
+#
+#
+sub pid_fileout()
+{
+    open( PID, ">$pidlstfile" ) ;
+    printf( PID "%d\n", getpgrp ) ;
+    close PID ;
+}
+
+sub time_cmp
+{
+    local ( @t1 ) = @_ ;
+    local $HOUR  = 12 ;
+    local %month = ( 'Jan' => '01', 'Feb' => '02', 'Mar' => '03', 'Apl' => '04',
+                     'May' => '05', 'Jun' => '06', 'Jul' => '07', 'Aug' => '08',
+                     'Sep' => '09', 'Oct' => '10', 'Nov' => '11', 'Dec' => '12', );
+    local @now = split( / +/, localtime ) ;
+
+    return 1 if ( int( $t1[3].$month{ $t1[0]}. $t1[1].substr( $t1[2],0,2)) + $HOUR >
+		  int($now[4].$month{$now[1]}.$now[2].substr($now[3],0,2)) ) ;
+    return 0 ;
+}
+
+sub search_word()
+{
+    local ( $file ) = @_ ;
+
+    open( FILE, $file ) ;
+    chop( $_ = <FILE> ) ;
+    close( FILE ) ;
+
+    return  $_ ;
+}
+
+sub get_mdlsize()
+{
+    local ( $file ) = @_ ;
+    local $size = "0,0,0", @data, $scale ;
+
+    $file =~ s/\.[^.]+$/.rpt/ ;
+    open( FILE, "$runtime_dir/$file" ) ;
+    foreach( <FILE> )
+    {
+	$scale = (split( / +/ ))[1] if ( /^Scale/ ) ;
+	if ( /^BOUNDING/ )
+	{
+	    @data = split( / +/ ) ;
+	    $size = sprintf( "%d,%d,%d",
+			    $scale * ($data[5] - $data[2])/2,
+			    $scale * ($data[6] - $data[3])/2,
+			    $scale * ($data[7] - $data[4])/2) ;
+	    last ;
+	}
+    }
+    close( FILE ) ;
+
+    return $size ;
+}
+
+sub get_jntnum()
+{
+    local ( $file ) = @_ ;
+    local $i=0 ;
+
+    $file =~ s/\.[^.]+$/.rpt/ ;
+    open( FILE, "$runtime_dir/$file" ) || print "($runtime_dir/$file) not found\n" ;
+    foreach( <FILE> )
+    {
+	$i++ if ( ! /^(Scale|MDLTYPE|TEXTUREFORMAT|BOUNDING|skin)/ ) ;
+    }
+    close( FILE ) ;
+
+    return  $i ;
+}
+
+sub fileout
+{
+    local ( $in, $out, %tags ) = @_ ;
+    local $line ;
+
+    open( IN , $in  ) || print "($in) not found\n" ;
+    open( OUT, $out ) || print "cannot open ($out)\n" ;
+    foreach $line ( <IN> )
+    {
+	foreach( keys( %tags ) )
+	{
+	    $line =~ s/_tag_$_/$tags{$_}/g ;
+	}
+	print OUT $line ;
+    }
+    close IN  ;
+    close OUT ;
+}
+
+sub pileout
+{
+    local ( $in, %tags ) = @_ ;
+    local $content, $line ;
+
+    open( IN , $in  ) || print "($in) not found\n" ;
+    foreach $line ( <IN> )
+    {
+	foreach( keys( %tags ) )
+	{
+	    $line =~ s/_tag_$_/$tags{$_}/g ;
+	}
+	$content .= $line ;
+    }
+    close IN  ;
+
+    return $content ;
+}
+
+#give a string to file
+sub lineout
+{
+    local ( $out, $string ) = @_ ;
+
+    open( OUT, ">>$out" ) || print "cannot open ($out)\n" ;
+    print OUT $string ;
+    close OUT ;
+}
+
+#fork process
+sub fork
+{
+    local $pid ;
+
+    unless ( $pid = fork )
+    {
+        exec( $_[0] ) ;
+        exit 0 ;
+    }
+    waitpid( $pid, 0 ) ;
+
+    return $? ;
+}
+
+#CGI packing and unpacking
+sub unpack
+{
+    local( $value ) = @_ ;
+
+    $value =~ s/\+/ /g ;
+    $value =~ s/%([0-9A-Fa-f][0-9A-Fa-f])/pack("c", hex($1))/ge ;
+
+    return $value ;
+}
+
+sub pack
+{
+    local( $value ) = @_ ;
+
+    $value =~ s/(\W)/sprintf("%%%.2X", ord($1))/ge ;
+    $value =~ s/%20/+/g ;
+
+    return $value ;
+}

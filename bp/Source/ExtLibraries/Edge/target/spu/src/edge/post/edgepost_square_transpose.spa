@@ -1,0 +1,121 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+.macro TRANSPOSE_BLOCK(dst0, dst1, dst2, dst3, src0, src1, src2, src3)
+	//if anyone can come up with one that has less shufs, I'd be interested.
+	//for naming: src0 = {a,b,c,d), src1 = {e,f,g,h}, etc.
+	
+	.localreg	acik, geom, bdjl, hfpn	
+	shufb		acik, src0, src2, kShufACac
+	shufb		geom, src1, src3, kShufCAca
+	shufb		bdjl, src0, src2, kShufBDbd
+	shufb		hfpn, src1, src3, kShufDBdb
+	selb		dst0, acik, geom, kSelb0101
+	selb		dst1, bdjl, hfpn, kSelb0101
+	shufb		dst2, acik, geom, kShufBaDc
+	shufb		dst3, bdjl, hfpn, kShufBaDc
+.endmacro
+
+.macro ITERATION
+
+	.localreg	in_line0_0, in_line1_0, in_line2_0, in_line3_0
+	.localreg	out_line0_0, out_line1_0, out_line2_0, out_line3_0
+
+
+	lqx			in_line0_0, idx0, src0
+	lqx			in_line1_0, idx1, src0
+	lqx			in_line2_0, idx2, src0
+	lqx			in_line3_0, idx3, src0
+
+	TRANSPOSE_BLOCK(
+		out_line0_0, out_line1_0, out_line2_0, out_line3_0,
+		in_line0_0, in_line1_0, in_line2_0, in_line3_0)
+
+	stqx		out_line0_0, idx0, dst1
+	stqx		out_line1_0, idx1, dst1
+	stqx		out_line2_0, idx2, dst1
+	stqx		out_line3_0, idx3, dst1
+	
+	ai			pos_in_line, pos_in_line, 16
+	.localreg	in_line, step0, step1
+	cgt			in_line, kLinePitch, pos_in_line
+	selb		step0, kBlockPitchWithOffset, kSixteen, in_line
+	selb		step1, kVerticalResetAndOffset, kBlockPitch, in_line
+	selb		pos_in_line, kZero, pos_in_line, in_line
+	
+	a			src0, src0, step0
+	a			dst0, dst0, step0
+	
+	a			src1, src1, step1
+	a			dst1, dst1, step1
+.endmacro
+
+.cfunc void edgePostTranspose(qword src_ptr, qword dst_ptr, qword size)
+	
+	//shuffles
+	.reg		kShufACac, kShufBDbd, kShufCAca, kShufDBdb, kShufBaDc
+	il128		kShufACac, "ACac"
+	il128		kShufBDbd, "BDbd"
+	il128		kShufCAca, "CAca"
+	il128		kShufDBdb, "DBdb"
+	il128		kShufBaDc, "BaDc"
+
+	
+	.reg		kSelb0101
+	il128		kSelb0101, 0x00000000_FFFFFFFF_00000000_FFFFFFFF
+		
+	
+	.reg blocks, count, kLinePitch, kBlockPitch
+	rotmi		blocks, size, -2 //blocks are 4x4
+	mpy			count, blocks, blocks
+	shli		kLinePitch, size, 2 //four byte per pixel
+	shli		kBlockPitch, size, 4 //four bytes and four lines
+	
+	.reg		idx0, idx1, idx2, idx3
+	il			idx0, 0
+	ori			idx1, kLinePitch, 0
+	mpyi		idx2, kLinePitch, 2
+	mpyi		idx3, kLinePitch, 3
+	
+	.reg		pos_in_line
+	il			pos_in_line, 0
+		
+	.reg		kBlockPitchWithOffset, kZero, kFour, kSixteen, kVerticalResetAndOffset : readoptional
+	il			kZero, 0
+	il			kFour, 4
+	il			kSixteen, 16
+	a			kBlockPitchWithOffset, idx3, kSixteen
+	
+	//this constant is used to roll back the vertical pointer.
+	//basically we have to subtract size-1 * pitch and add 16.
+	.reg		negative_size_minus_4
+	ai			negative_size_minus_4, size, -4
+	mpyi		negative_size_minus_4, negative_size_minus_4, -1
+	mpya		kVerticalResetAndOffset, kLinePitch, negative_size_minus_4, kSixteen
+	
+	
+	//[src|dst]0 goes horizontally, [src|dst]1 vertically.
+	.reg		src0, src1
+	.reg		dst0, dst1	
+	
+	ori			src0, src_ptr, 0
+	ori			src1, src_ptr, 0
+	ori			dst0, dst_ptr, 0
+	ori			dst1, dst_ptr, 0
+
+	
+loop:
+	
+	ai			count, count, -1
+
+	ITERATION
+
+	brnz		count, loop	
+.endfunc

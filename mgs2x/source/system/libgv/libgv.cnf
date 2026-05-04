@@ -1,0 +1,265 @@
+/*
+	libgv.cnf
+
+	1999/05/24 K.Uehara
+	$Id: libgv.cnf,v 1.5 2002/12/09 20:26:09 takaki Exp $
+*/
+
+#ifndef __LIBGV_CNF__
+#define __LIBGV_CNF__
+
+/* メモリ割り当て */
+
+/*
+	メモリマップ (2001/09/05)
+
+	0x00000000		カーネル
+	0x00100000		ユーザー領域
+	_program_top	プログラムバイナリ先頭(in app.cmd)
+					libc用HEAP	16K(in makefile.def)
+	_mgs2_heap_end	: HEAPの終り(in app.cmd)
+					非常駐バイナリ
+	_stage_bin_end	: 各非常駐バイナリの終り(in stage.cmd)
+
+					ワークメモリ(RESIDENT)	7M	(0x00500000)
+	MEM_ADDR		ワークメモリ(NORMAL)	15M	(0x00C00000)
+	PACK_ADDR0		ワークメモリ(DMA_TAG0)	2M	(0x01B00000)
+	PACK_ADDR1		ワークメモリ(DMA_TAG1)	2M	(0x01D00000)
+	0x01F00000		STREAM BUFFER			512K
+	0x01F80000		写真データ等			512K-4K
+	0x01FFF000		BOOT STACK				4K?	(in makefile.def)
+	0x02000000		32M Bottom
+	0x08000000		128M Bottom
+*/
+
+#if 1 //BP
+
+extern char* 	GV_MemTop;
+
+#define RESIDENT_SIZE		(7 * 1024 * 1024)
+#define MEM_SIZE			(15 * 1024*1024)
+#define PACK_SIZE	(3 * 1024*1024)		// 実はPACKには使わない。
+#define CODEC_SIZE	(4 * 1024*1024)		// 無線用。PACK用のバッファを削る形でとる。
+
+#ifdef BP_PS3
+// need a bigger buffer for ps3 right now, to deal with the higher bitrate.
+#define STREAM_BUFFER_SIZE	( (768 * 1024)*2 )	// -> 音とび問題のため変更してみる M.Kobayashi BGM=256 // BP Changed to twice as large
+#else
+#define STREAM_BUFFER_SIZE	( (768 * 1024)*9 )
+#endif
+
+
+#define MISC_BUFFER_SIZE   ( 1024 * 1024 )   //BP Estimated misc buffer size from code usage
+
+#define MEM_TOTAL_SIZE     (RESIDENT_SIZE + MEM_SIZE + PACK_SIZE*2 + STREAM_BUFFER_SIZE + MISC_BUFFER_SIZE)
+
+#define RESIDENT_BOTTOM		(GV_MemTop + RESIDENT_SIZE)
+
+#define MEM_ADDR	         RESIDENT_BOTTOM
+#define MEM_BOTTOM         (MEM_ADDR + MEM_SIZE)
+
+#define PACK_ADDR0	      ( MEM_BOTTOM )
+#define PACK_ADDR1	      ( MEM_BOTTOM + PACK_SIZE )
+#define PACK_BUF_TOP	      PACK_ADDR0
+#define PACK_BUF_BOTTOM    (PACK_BUF_TOP + PACK_SIZE * 2)
+
+#define STREAM_BUFFER		PACK_BUF_BOTTOM
+#define MISC_BUFFER			(STREAM_BUFFER + STREAM_BUFFER_SIZE)
+
+#define MAX_LOADERS 26		/* a-z */
+#define MAX_CACHES	512
+
+#else
+
+#ifdef PSX2
+
+#ifdef DESIGN_PREVIEW
+
+#if 0
+
+/* デザイナー用に、メモリをT-10000での最大値で使う */
+#define PACK_SIZE	(2 * 1024*1024)
+#define CODEC_SIZE	(3 * 1024*1024)		// 無線用。PACK用のバッファを削る形でとる。
+										// PACK_SIZE * 2よりは小さくないといけない。
+#define MEM_SIZE	((17+96) * 1024*1024)
+
+#define MEM_BOTTOM ( ( void * )0x07F00000 )
+
+#else
+
+/* 実機での動作を考えた設定 */
+#define PACK_SIZE	(2 * 1024*1024)
+#define CODEC_SIZE	(3 * 1024*1024)		// 無線用。PACK用のバッファを削る形でとる。
+										// PACK_SIZE * 2よりは小さくないといけない。
+#define MEM_SIZE	(15 * 1024*1024)
+
+#define MEM_BOTTOM ( ( void * )0x01F00000 )
+
+#endif
+
+#else // DESIGN_PREVIEW
+
+/* 実機動作環境 */
+
+#define PACK_SIZE	(2 * 1024*1024)		// 実際はこの2倍
+#define CODEC_SIZE	(3 * 1024*1024)		// 無線用。PACK用のバッファを削る形でとる。
+										// PACK_SIZE * 2よりは小さくないといけない。
+#define MEM_SIZE	(15 * 1024*1024)
+
+#define MEM_BOTTOM ( ( void * )0x01F00000 )
+
+#endif // DESIGN_PREVIEW
+
+// 2001年Ｅ３特別
+#ifdef E3_SPECIAL
+#undef MEM_SIZE
+#undef MEM_BOTTOM
+
+#define MEM_SIZE	( 24 * 1024 * 1024 )
+#define MEM_BOTTOM	( ( void * )0x07F00000 )
+#endif // E3_SPECIAL
+
+#define PACK_ADDR0	( MEM_BOTTOM - PACK_SIZE * 2 )
+#define PACK_ADDR1	( MEM_BOTTOM - PACK_SIZE )
+
+#define PACK_BUF_TOP	PACK_ADDR0
+
+#define MEM_ADDR	( PACK_ADDR0 - MEM_SIZE )
+#define RESIDENT_BOTTOM		MEM_ADDR
+#define RESIDENT_SIZE		(7 * 1024 * 1024)
+#define STREAM_BUFFER		MEM_BOTTOM
+#define STREAM_BUFFER_SIZE	( 512 * 1024 )
+
+#define MISC_BUFFER			(MEM_BOTTOM + STREAM_BUFFER_SIZE)
+
+#define SCRATCH_ADDRESS		((void*)0x70000000)
+
+/* ロードデータ初期化関数の数 */
+
+#define MAX_LOADERS 26		/* a-z */
+
+/* キャッシュに登録されるデータの最大数 */
+
+#define MAX_CACHES	512
+
+#endif /// PSX2
+
+#ifdef KP_XBOX
+#ifdef KP_WINDOWS
+// とりあえずのメモリマップ
+//	GV_MemTop	= RESIDENT_TOP
+//				カーネルからもらったメモリ論理アドレス先頭
+//		+ 8M	= MEM_TOP
+//		+ 16M	= STREAM_BUFFER = PACK_ADDR0 = PACK_ADDR1 
+//				とりあえず PACK_SIZE = 0 にしてある
+// 		+ 0.5M	= SCRATCH_ADDRESS
+// 		+ 16k	= MISC_BUFFER
+
+// 2002/02/12 変更
+// SCRATCH ADDR は0x70000000 になるように Virtual Alloc をかける
+// 
+
+extern byte* 	GV_MemTop;				// とりあえず確保アドレスのトップ
+
+//#define MEM_TOTAL_SIZE		((24+4+8) * 1024 * 1024 )
+#define MEM_TOTAL_SIZE		((24+4+8+1) * 1024 * 1024 )
+#define RESIDENT_SIZE		(7 * 1024 * 1024)
+//#define MEM_SIZE			(16 * 1024*1024)
+#define MEM_SIZE			(17 * 1024*1024)	// エフェクトが出なくなってしまったので増量
+#define PACK_SIZE	(3 * 1024*1024)		// 実はPACKには使わない。
+#define CODEC_SIZE	(4 * 1024*1024)		// 無線用。PACK用のバッファを削る形でとる。
+										// PACK_SIZE * 2よりは小さくないといけない。
+#define STREAM_BUFFER_SIZE	( 512 * 1024 * 4 )
+#define SCRATCH_SIZE		( 16 * 1024 )
+
+#define RESIDENT_BOTTOM		( GV_MemTop + RESIDENT_SIZE )
+#define MEM_ADDR	RESIDENT_BOTTOM
+#define MEM_BOTTOM	( GV_MemTop + (RESIDENT_SIZE + MEM_SIZE ))
+
+#define PACK_ADDR0	( MEM_BOTTOM - PACK_SIZE * 2 )
+#define PACK_ADDR1	( MEM_BOTTOM - PACK_SIZE )
+#define PACK_BUF_TOP	PACK_ADDR0
+
+#define STREAM_BUFFER		MEM_BOTTOM
+
+#define MISC_BUFFER			(STREAM_BUFFER + STREAM_BUFFER_SIZE )
+
+/* XBOX版では、ＤＧで使用するメモリもここでコンフィグレーションする */
+
+// 通常時
+
+#define DG_STATIC_VERTBUF_SIZE	(16*1024)		// いろいろ面倒なので最小状態で確保しておく
+#define DG_DYNAMIC_VERTBUF_SIZE	(3*1024*1024)	// この２倍
+#define DG_PUSHBUFFER_SIZE		(3*1024*1024)	// この２倍
+
+// 無線時は、DYNAMIC_VARTBUFとPUSHBUFFERを小さくする
+
+/* ロードデータ初期化関数の数 */
+
+#define MAX_LOADERS 26		/* a-z */
+
+/* キャッシュに登録されるデータの最大数 */
+
+#define MAX_CACHES	512
+
+#else	// !KP_WINDOWS
+// とりあえずのメモリマップ
+//	GV_MemTop	= RESIDENT_TOP
+//				カーネルからもらったメモリ論理アドレス先頭
+//		+ 8M	= MEM_TOP
+//		+ 16M	= STREAM_BUFFER = PACK_ADDR0 = PACK_ADDR1 
+//				とりあえず PACK_SIZE = 0 にしてある
+// 		+ 0.5M	= SCRATCH_ADDRESS
+// 		+ 16k	= MISC_BUFFER
+
+// 2002/02/12 変更
+// SCRATCH ADDR は0x70000000 になるように Virtual Alloc をかける
+// 
+
+extern byte* 	GV_MemTop;				// とりあえず確保アドレスのトップ
+
+#define MEM_TOTAL_SIZE		((24+4) * 1024 * 1024 )
+#define RESIDENT_SIZE		(7 * 1024 * 1024)
+#define MEM_SIZE			(16 * 1024*1024)
+#define PACK_SIZE	(3 * 1024*1024)		// 実はPACKには使わない。
+#define CODEC_SIZE	(4 * 1024*1024)		// 無線用。PACK用のバッファを削る形でとる。
+										// PACK_SIZE * 2よりは小さくないといけない。
+#define STREAM_BUFFER_SIZE	( 512 * 1024 )
+#define SCRATCH_SIZE		( 16 * 1024 )
+
+#define RESIDENT_BOTTOM		( GV_MemTop + RESIDENT_SIZE )
+#define MEM_ADDR	RESIDENT_BOTTOM
+#define MEM_BOTTOM	( GV_MemTop + (RESIDENT_SIZE + MEM_SIZE ))
+
+#define PACK_ADDR0	( MEM_BOTTOM - PACK_SIZE * 2 )
+#define PACK_ADDR1	( MEM_BOTTOM - PACK_SIZE )
+#define PACK_BUF_TOP	PACK_ADDR0
+
+#define STREAM_BUFFER		MEM_BOTTOM
+
+#define MISC_BUFFER			(STREAM_BUFFER + STREAM_BUFFER_SIZE )
+
+/* XBOX版では、ＤＧで使用するメモリもここでコンフィグレーションする */
+
+// 通常時
+
+#define DG_STATIC_VERTBUF_SIZE	(16*1024)		// いろいろ面倒なので最小状態で確保しておく
+#define DG_DYNAMIC_VERTBUF_SIZE	(3*1024*1024)	// この２倍
+#define DG_PUSHBUFFER_SIZE		(3*1024*1024)	// この２倍
+
+// 無線時は、DYNAMIC_VARTBUFとPUSHBUFFERを小さくする
+
+/* ロードデータ初期化関数の数 */
+
+#define MAX_LOADERS 26		/* a-z */
+
+/* キャッシュに登録されるデータの最大数 */
+
+#define MAX_CACHES	512
+
+#endif
+#endif	// KP_XBOX
+
+#endif //BP
+
+#endif /*__LIBGV_CNF__*/

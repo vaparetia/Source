@@ -1,0 +1,122 @@
+//
+//	w04a.src
+//
+//	written by Y.Matsuhana 1999.Dec
+//
+//	$Id: w04a.src,v 1.62 2001/10/01 02:09:41 usr01717 Exp $
+
+
+// 常駐データ
+block .use r_tnk0
+
+block .nocache
+block .cache
+
+#define WN_W04A
+
+
+// 各ステージ共通要素
+#include	"t_common.h"
+#include	"common.h"
+
+//エフェクト関連
+#define		EFFECT_CUSTUM
+
+#define		E_KOGETUKI				// 壁への焦げ付き
+#define		E_ENEMY					// 敵兵系
+//#define		E_DOOR_LUMP				// ドアランプ
+#define		E_ENEMY_LIGHT			// 敵兵ライト
+#define		E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define		E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+#define		E_BROKEN_OBJECT			// 壊れ物
+#define		E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷
+
+#include		"c_effect.h"
+
+//include		gover.h
+//include	codec.h
+//include		wp_tank.h
+include		item_box_tank.h
+//include		ene_tank.h
+
+//ドッグタグ
+goods	dogtag/dogtag_gps.kms
+//effect	mark/kirari_alp_ovl.bmp
+pack_trnall dogtag_effect.tri \
+	effect/mark/kirari_alp_ovl.bmp
+
+// キャラクタ
+include		marine.h
+
+
+// ワールド
+//debug		null
+world		w04a
+lt2		w04a.lt2
+
+
+//長廊下ライト用
+world		w03
+
+hazard	   	w04a.hzx
+world		door/w04_dr.kms
+world		door/w03esdr_handle.kms
+world		door/w03esdr_body.kms
+world		door/w04_sdr_hnd.kms
+world		door/w04_sdr.kms
+world		w04/hatch.kms
+
+// 開かない水密ドア用の透明モデル
+world		w01d/dining/w01d0tray.kms
+
+// 強制モーション
+mtn			sna_w04.mls
+
+mtn			hatch_w04.mls
+
+
+//水密ドア用モーション
+mtn			sna_hatch.mls
+mtn			hatch_door_sna.mls
+mtn			hatch_handle_sna.mls
+
+
+// デバッグ用
+//空中鉄棒
+debug	mogi/w04_test_bou.kms
+debug	mogi/w04_test_bou_pera.kms
+
+//プロジェクタ塵
+pack_trnall stage_effect.tri \
+	debug/shibata/staffroll/alpha03_alp_ovl.bmp
+
+
+//タイマーテスト
+//pack_all	debug.tri timer_test
+
+
+//野尻実験箱
+//world	w00b/obs_box3.kms
+//debug	mogi/sp.kms
+//debug	mogi/floor_sound.kms
+
+world	w04b/w04_box2.kms
+world	w04/w04_box.kms
+
+
+//プロジェクタリモコン
+goods	remocon/remocon.kms
+
+// デモ用スネーク
+human	sna_def/sna_def_mh.evm
+
+// 振動データ
+// データ数が多すぎてロード時に落ちるステージが出たので、一時的にカット。010729（平野）
+// 振動ファイルは一つにまとまるようになったので組み込み。010803
+vib		demo
+
+
+// 赤外線ゴーグル テスト用
+itembox		item/goggle_ibox.kms
+itembox		item/goggle_ibox_sh.kms
+itembox		item/tgl_label.kms

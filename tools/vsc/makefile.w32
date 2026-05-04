@@ -1,0 +1,150 @@
+SHAREDIR	=	c:/vsc/etc
+INSTDIR		=	c:/vsc/bin
+
+SWITCH		=
+
+INCLUDE		=	
+LIB		=	
+
+PROG		=	vsc.exe
+
+PCM_MODULE	=	wavdata.obj \
+			vagdata.obj
+
+VXCODEC		=	decode.obj \
+			dectbl.obj \
+			encode.obj \
+			enctbl.obj \
+			encxa.obj \
+			quantize.obj \
+			tools.obj
+
+OBJECT		=	main.obj \
+			fft.obj \
+			frame.obj \
+			spectrum.obj \
+			window.obj \
+			analyze.obj \
+			segmentation.obj \
+			label.obj \
+			util.obj \
+			text.obj \
+			vowel.obj \
+			formant.obj \
+			estimation.obj \
+			ref_load.obj \
+			matching.obj \
+			token.obj \
+			mel.obj \
+			cepstrum.obj \
+			pickup_vec.obj \
+			voice.obj \
+			fileutil.obj \
+			pcmdata.obj \
+			$(PCM_MODULE) \
+			$(VXCODEC) \
+			debug.obj
+
+
+
+
+# ######################
+# #   GNU C Compiler   #
+# ######################
+# ENVIRONMENT	=	-D_GCC_ -D_WIN_
+# CC		=	gcc
+# OPTIMIZE	=	-O2
+# OUTPUT		=	-o $(PROG)
+
+
+######################
+#   Borland C++ 5.5  #
+######################
+ENVIRONMENT	=	-D_WIN_
+CC		=	bcc32
+OPTIMIZE	=	-O2
+OUTPUT		=	-e$(PROG)
+
+
+
+
+OPTION		=	$(OPTIMIZE) $(SWITCH) $(ENVIRONMENT) \
+			 -D_SHAREDIR_="\"$(SHAREDIR)\""
+
+all:	$(PROG)
+
+clean:
+	del $(PROG)
+	del *.obj
+
+install:
+	copy $(PROG) $(INSTDIR)
+	copy sample.voice $(SHAREDIR)/Voice
+
+$(PROG):	$(OBJECT)
+	$(CC) $(OUTPUT) $(OBJECT) $(LIB)
+
+.c.obj:
+	$(CC) $(OPTION) $(INCLUDE) -c $*.c -o $*.obj
+
+
+main.obj:	main.c main.h pcmdata.h frame.h analyze.h \
+		segmentation.h label.h util.h text.h
+
+
+frame.obj:	frame.c frame.h pcmdata.h env.h
+
+fft.obj:	fft.c fft.h env.h
+
+spectrum.obj:	spectrum.c spectrum.h env.h
+
+analyze.obj:	analyze.c analyze.h spectrum.h window.h main.h env.h \
+		pcmdata.h estimation.h
+
+segmentation.obj:	segmentation.c segmentation.h \
+		analyze.h label.h util.h main.h \
+		text.h voice.h
+
+label.obj:	label.c label.h analyze.h text.h main.h vowel.h
+
+util.obj:		util.c util.h
+
+text.obj:		text.c text.h
+
+vowel.obj:	vowel.c vowel.h analyze.h pcmdata.h formant.h
+
+formant.obj:	formant.c formant.h pcmdata.h mel.h
+
+ref_load.obj:	ref_load.c ref_load.h token.h util.h
+
+matching.obj:	matching.c matching.h analyze.h label.h ref_load.h util.h
+
+token.obj:	token.c token.h
+
+estimation.obj:	estimation.c estimation.h env.h mel.h
+
+mel.obj:		mel.c mel.h pcmdata.h
+
+pickup_vec.obj:	pickup_vec.c pickup_vec.h env.h analyze.h cepstrum.h
+
+voice.obj:	voice.c voice.h analyze.h
+
+debug.obj:	debug.c debug.h
+
+fileutil.obj:	fileutil.c fileutil.h
+pcmdata.obj:	pcmdata.c pcmdata.h fileutil.h pcminfo.h $(PCM_MODULE:.obj=.h)
+
+# PCM module
+wavdata.obj:	wavdata.c wavdata.h pcminfo.h
+vagdata.obj:	vagdata.c vagdata.h pcminfo.h vxcodec.h
+
+
+# vxcodec
+decode.obj:	decode.c vxcodec.h
+dectbl.obj:	dectbl.c vxcodec.h
+decxa.obj:	decxa.c vxcodec.h
+envode.obj:	encode.c vxcodec.h
+enctbl.obj:	enctbl.c vxcodec.h
+encxa.obj:	encxa.c vxcodec.h
+quantize.obj:	quantize.c vxcodec.h
+tools.obj:	tools.c vxcodec.h

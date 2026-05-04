@@ -1,0 +1,2145 @@
+/*
+	a19a.gcl
+	    ＤＥ連絡橋（アナザーミッション用）
+
+	2002/02/04 S.Mukaide
+	$Id: a19a.gcl,v 1.16 2002/07/10 02:10:29 usr03379 Exp $
+
+	
+*/
+
+//	ステージ用define
+// ------------------------------------
+#define		STAGE_W19A			1
+
+#define		STAGE_PLANT			1	//	プラント編
+#define		STAGE_ALT			1	//	オルタナティブ系のステージでは全て定義する。ゲームオーバーなどで使用
+#define		ANOTHER				1	//	VR,オルタナティブ双方で定義。a_stdproc.hで定義されているため、stdch.h内では、使用することができない
+
+// 各種スイッチ用define
+// ------------------------------------
+// サウンド
+#define		SOUND			1		// サウンドデータは最初に呼ぶ
+#define		BGM				1		// BGMは敵兵コマンダーの後に呼ぶ
+// キャラクター関係
+#define		RAIDEN			1		// SNAKEとは排他
+#define		SNAKE			0
+#define		ENEMY			1		// コマンダーと警備兵(敵を出すときは必須)
+#define		SUPPORT			0		// サポート兵
+#define		ATTACKER		1		// 攻撃兵
+#define		SHIELD			0		// 盾兵(1) or 通常攻撃兵(0)
+// 監視カメラ関係
+#define		CYPHER			0		// サイファー
+// ドア
+#define		SLIDE_DOOR		1		// スライドドア
+// 入出トラップ
+#define		LOAD_TRAP		1
+#define		STAGE_END		1		// ステージ終了時処理を使用可にする
+// フォグ
+#define		FOG				1
+// エフェクト関係
+#define		EFFECT			0		// エフェクト全般
+#define		BLUR			0		// ブラー
+#define		Z_MANAGER		0		// Ｚフォーカス管理(敵のライト等で仕様)
+#define		BODY_SHADOW		0		// 敵のライトによって出る影
+// 子画面
+#define		SUB_CAMERA		0
+// カメラ関係
+#define		CLEAR_CAMERA	0		// クリアリング専用カメラ(要子画面)
+
+// 天井
+#define		CHARA_CEIL		0		// 天井君
+// 透明壁
+#define		TR_WALL			0		// シナリオ置きの透明壁
+
+// ライト関係
+#define		SPOT_LIGHT		0		// スポットライト
+#define		CHARA_LIGHT		1		// キャラ専用ライト
+
+// オブジェ関係
+#define		SEA				1		// 海面
+#define		SKY			1		// 空
+// アイテム
+#define		ITEM			1
+// 強制モーション
+#define		BY_MOTION		1		// ビヨンドモーション
+#define		BY_HIGH			1		// 高所ビヨンドモーション
+
+// デモ
+#define		SCN_DEMO			1	//	シナリオデモ
+#define		POLY_DEMO			0
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+//	アタリ
+#define		HZX_NAME			a19a
+												//	0		プレイヤーアタリ／跳弾アタリ
+												//	1		レンズフレア用アタリ
+												//	2～22	遠景跳弾アタリ
+
+#define		KMS_NAME0			w19a			//	ＤＥ連絡橋
+#define		KMS_NAME1			w19a_15a		//	ＢＣ連絡橋
+#define		KMS_NAME2			w19a_17a		//	ＣＤ連絡橋
+
+//	天井くんおき
+#define		KMS_NAME3			w19a_20a		//	Ｅ脚
+
+#define		KMS_NAME4			w19a_21a		//	ＥＦ連絡橋
+#define		KMS_NAME5			w19a_23a		//	ＦＡ連絡橋
+#define		KMS_NAME6			w19a_24a		//	シェル１中央棟
+#define		KMS_NAME7			w19a_25a		//	ＤＧ連絡橋
+#define		KMS_NAME8			w19a_gl			//	ＧＬ連絡橋
+
+//	天井くんおき
+#define		KMS_NAME9			w19a_18a		//	Ｄ脚
+#define		KMS_NAME10			w19a_20b		//	ヘリポート
+#define		KMS_NAME11			w19a_obj00		//	ＤＥ連絡橋Ｄ脚側１Ｆ
+
+#define		KMS_NAME12			w19a_31a		//	シェル２中央棟
+#define		KMS_NAME13			w19a_32a		//	狙撃１
+#define		KMS_NAME14			w19a_32b		//	狙撃２
+#define		KMS_NAME15			w19a_32c		//	狙撃３
+#define		KMS_NAME16			w19a_crane 		//	シェル１中央棟クレーン
+#define		KMS_NAME17			w19a_gh 		//	ＧＨ連絡橋
+#define		KMS_NAME18			w19a_i 			//	Ｉ脚
+#define		KMS_NAME19			w19a_kl 		//	ＫＬ連絡橋
+#define		KMS_NAME20			w19a_other00 	//	浮き橋１
+#define		KMS_NAME21			w19a_other01 	//	浮き橋２
+#define		KMS_NAME22			w19a_other02 	//	浮き橋３
+
+
+//	ドア
+#define		DOOR_NAME_LOAD1		w19a_dr00		//	ロード用
+#define		DOOR_NAME_LOAD2		w19a_dr01		//	ロード用
+
+#define		DOOR_NAME_ALT		w19a_dr00x		//	オルタナ/テイルズＢ用カード無しドア（Ｄ脚１Ｆ側）
+#define		DOOR_NAME_ALT_1		w19a_dr01x		//	オルタナ/テイルズＢ用カード無しドア（Ｄ脚１Ｆ側）
+
+//	ライト
+#define		LT2_NAME			w19a
+
+//	プットオブジェおき
+#define		KMS_NAME23			w19a_18b	//	Ｄ脚ロードエリア
+#define		KMS_NAME24			w19a_20a0	//	Ｅ脚ロードエリア
+#define		KMS_NAME25			w19a_18b_b1	//	Ｄ脚Ｂ１ロードエリア
+
+
+// キャラクター関係
+#if d:RAIDEN
+	#define		PLAYER		ライデン	// モーションができるまで名前はスネーク
+#else
+	#define		PLAYER		スネーク
+#endif
+
+//	薬莢系
+#define		ENE_P_GOL			1	//	都市迷彩ゴル
+#define		ENE_SHOT			1	// ショットガン兵
+#define		ENE_HIGH_TECH 		1	// ハイテク兵
+#define		ENE_SHIELD 			1	// 盾兵
+
+// ローカル変数
+//	$f:w19a_敵配置フラグ
+#define		STRUT_D		0		//	Ｄ脚から来たときの敵配置
+#define		STRUT_E		1		//	Ｅ脚から来たときの敵配置
+
+//	$f:w19a_双眼鏡兵遭遇デモフラグ		//	双眼鏡兵遭遇デモを見たか
+//	$f:w19a_双眼鏡兵発見デモフラグ		//	双眼鏡兵発見デモを見たか
+//	$f:w19a_双眼鏡兵覗きフラグ			//	双眼鏡兵が覗いているかどうかのフラグ
+//	$i:w19a_敵兵モード					//	敵兵のモード
+//	$f:w19a_双眼鏡兵所定位置フラグ		//	双眼鏡兵が所定位置にいるか
+
+//	その他
+#define START_CAMERA		1		//	開始処理用カメラ
+
+
+
+//	司令官音声
+resource ghq_area_alert_voice {
+	w19a:
+		$t{
+			// PLAREA0
+			t:vc040174,	//	指揮官　　「了解。増援部隊をＤＥ連絡橋に派遣する！侵入者を止めろ！」
+			t:vc040175,	//	指揮官　　「了解。応援部隊、ＤＥ連絡橋へ急行せよ！敵を逃がすな」
+			-2,
+			// PLAREA1
+			t:vc040170,	//	指揮官　　「了解。増援部隊、ＤＥ連絡橋に急行せよ！Ｄ脚入口を守れ！」
+			t:vc040171,	//	指揮官　　「了解。増援部隊をＤＥ連絡橋・Ｄ脚入口に送る！奴を逃がすな！」
+			-2,
+			// PLAREA2
+			t:vc040172,	//	指揮官　　「了解。応援部隊、ＤＥ連絡橋に向かえ！Ｅ脚入口を守れ！」
+			t:vc040173,	//	指揮官　　「了解。増援部隊、ＤＥ連絡橋・Ｅ脚入口へ向かえ！敵を仕留めろ！」
+			// PLAREA0
+			t:vc040174,	//	指揮官　　「了解。増援部隊をＤＥ連絡橋に派遣する！侵入者を止めろ！」
+			t:vc040175,	//	指揮官　　「了解。応援部隊、ＤＥ連絡橋へ急行せよ！敵を逃がすな」
+			-1
+		}
+}
+
+resource ghq_caution_voice {
+
+	//	攻撃兵が残っていない場合
+	w19a:
+		$t{
+			t:vc040601,	//	指揮官　　「了解、総員、警戒を強化せよ」
+
+			t:vc040491,	//	指揮官　　「攻撃チームは引き返せ、警戒チームはそのまま現場に残れ」
+			t:vc040492,	//	指揮官　　「攻撃チームは撤収、警戒チームは警戒を続行せよ」
+			t:vc040493,	//	指揮官　　「攻撃チーム帰投せよ、警戒チームはそのまま警戒に当たれ」
+			t:vc040496,	//	指揮官　　「攻撃チーム、配置に戻れ」
+			t:vc040497,	//	指揮官　　「攻撃チーム、撤収せよ」
+			-2,
+			t:vc040426,	//	指揮官　　「ＤＥ連絡橋との連絡が途絶えた」
+			-1
+		}
+
+	//	攻撃兵が残っている場合
+	w19a-2:
+		$t{
+			// PLAREA0
+			t:vc040337,	//	指揮官　　「了解。ＤＥ連絡橋を増員する。警戒を強化しろ」
+
+			t:vc040333,	//	指揮官　　「了解。ＤＥ連絡橋・Ｄ脚入口に増員を派遣する。警戒を強化しろ」
+			t:vc040334,	//	指揮官　　「了解。ＤＥ連絡橋に増員。Ｄ脚入口の警備を固めろ」
+
+			t:vc040335,	//	指揮官　　「了解。ＤＥ連絡橋・Ｅ脚入口に増員を派遣する。警戒を強化しろ」
+			t:vc040336,	//	指揮官　　「了解。ＤＥ連絡橋に増員。Ｅ脚入口の警備を固めろ」
+			-2,
+			t:vc040426,	//	指揮官　　「ＤＥ連絡橋との連絡が途絶えた」
+			-1
+		}
+}
+
+
+
+//	ドア設定用ステージ内ローカル変数(a_mode.hよりも先に定義する)
+dim $$b:ドアフラグ[ 3 ]
+dim $$s:ドアモデル名[ 3 ]
+
+command	配列セット $$b:ドアフラグ[0] {
+	0,	0,	0
+}
+command	配列セット $$s:ドアモデル名[0] {
+	0,	0,	0
+}
+
+
+
+// include
+// ------------------------------------
+#include "rai_a19a.mh"		// 強制モーションリスト
+#include "stdch.h"
+#include "enevoice.h"
+#include "a_mode.h"	// アナザー各モード別変数設定用ファイル
+
+#include "sload.h"
+#include "beyond.h"
+#include "fall.h"
+#include "sound.h"
+#include "item_info.h"
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+#include "obl_trap.h"
+#include "ene_item.h"
+
+// アナザー用でマップ設定前に設定する
+// ------------------------------------
+@アナザー用マップ定義前設定
+
+// マップ設定
+// ------------------------------------
+chara マップ ＤＥ連絡橋	-k d:KMS_NAME0 \
+			-k d:KMS_NAME1 \
+			-k d:KMS_NAME2 \
+
+			-k d:KMS_NAME4 \
+			-k d:KMS_NAME5 \
+			-k d:KMS_NAME6 \
+			-k d:KMS_NAME7 \
+			-k d:KMS_NAME8 \
+
+			-k d:KMS_NAME12 \
+			-k d:KMS_NAME13 \
+			-k d:KMS_NAME14 \
+			-k d:KMS_NAME15 \
+			-k d:KMS_NAME16 \
+			-k d:KMS_NAME17 \
+			-k d:KMS_NAME18 \
+			-k d:KMS_NAME19 \
+			-k d:KMS_NAME20 \
+			-k d:KMS_NAME21 \
+			-k d:KMS_NAME22 \
+
+			-h d:HZX_NAME,0 -l d:LT2_NAME
+
+//	ＨＺＸ追加登録
+//	跳弾アタリ用マップ
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 2
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 3
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 4
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 5
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 6
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 7
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 8
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 9
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 10
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 11
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 12
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 13
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 14
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 15
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 16
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 17
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 18
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 19
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 20
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 21
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 0 -add_id 22
+
+//	グループ１はレンズフレア用ダミー
+command 追加ＨＺＸグループ登録 \
+	-hzx_id 1 -add_id 0
+
+
+
+command マップ設定 ＤＥ連絡橋 -set {
+	@常駐キャラ設定
+	@ローカル変数初期化
+	@設定値変更
+	@プラグイン設定
+	@水位設定
+	@A_プレイヤー設定 sna_a19a rai_a19a
+#if d:ENEMY
+	@敵配置チェック
+#endif
+}
+
+// アナザー用でマップ設定後に設定する
+// ------------------------------------
+@アナザー用マップ定義後設定
+
+command マップ設定 ＤＥ連絡橋 -set {
+	@弾痕跳弾設定
+// マップ切り替え、ロード、ドア
+// ------------------------------------
+#if d:SLIDE_DOOR
+	@ドア設置
+	@主観禁止壁設定
+#endif
+#if d:LOAD_TRAP
+	@ロード設定
+#endif
+// ステージ、オブジェクト関連
+// ------------------------------------
+	@オブジェクト設定
+#if d:SEA
+	@海面設定
+#endif
+#if d:SKY
+	@空設定
+#endif
+	@天井設定
+#if d:FOG
+	@フォグ設定
+#endif
+#if d:EFFECT
+//	@エフェクト設定
+#endif
+	@ＤＥ連絡橋風設定
+#if d:BY_MOTION
+	@ＤＥ連絡橋ビヨンド設定
+#endif
+	@カメラセット
+	@ＤＥ連絡橋カメラ設定
+
+	@エルード落下死設定
+	@ジャンプ落下死設定
+
+#if d:CHARA_LIGHT
+	@キャラ用ライト設定
+# endif
+
+//	@プラント編全体マップ設定  d:ＤＥ連絡橋マップ	//	全体マップ表示
+
+#if d:DEBUG_CHARA
+//	@デバッグキャラセット
+#endif
+
+}
+
+//初期マップの表示
+command マップ表示 -show ＤＥ連絡橋
+
+// 全てのセットが終わったところでフェードイン
+@ＤＥ連絡橋開始時処理
+
+//###################################################################################
+//									各proc設定
+//###################################################################################
+
+//###################################################################################
+//									全マップ共通
+//###################################################################################
+
+	proc ローカル変数初期化 {
+		#if d:DEBUG_PRINT 
+			print 'localvar_init'
+		#endif
+		eval($f:w19a_双眼鏡兵覗きフラグ = d:FALSE)
+		eval($i:w19a_敵兵モード = 0)
+		eval($f:w19a_双眼鏡兵所定位置フラグ = d:FALSE)
+
+	}
+
+	proc 設定値変更 {
+		#if d:DEBUG_PRINT 
+			print 'status_set'
+		#endif
+	}
+
+	proc プラグイン設定 {
+		#if d:DEBUG_PRINT
+			print 'plugin_set'
+		#endif
+		command プラグイン落下
+	}
+
+	proc 弾痕跳弾設定 {
+		command 弾痕ノーマル -n 0
+		command 弾痕ノーマル -n 1
+		command 弾痕ノーマル -n 3
+		command 弾痕ノーマル -n 4
+
+		command 跳弾ノーマル -n 0
+		command 跳弾ノーマル -n 1
+		command 跳弾ノーマル -n 3
+		command 跳弾ノーマル -n 4
+		command 跳弾ＳＥのみ -n 6
+	}
+
+//###################################################################################
+//								敵兵
+//###################################################################################
+
+	proc 敵配置チェック {
+//		自分の来た場所で敵配置変更
+		if ( ($s:登場ポイント == Ｄ脚１Ｆから) || ($s:登場ポイント == Ｄ脚Ｂ１から) ) {
+			eval($f:w19a_敵配置フラグ = d:STRUT_D)
+		} else if ($s:登場ポイント == Ｅ脚から) {
+			eval($f:w19a_敵配置フラグ = d:STRUT_E)
+		}
+	}
+
+//###################################################################################
+//									 ドア＆マップ切り替え
+//###################################################################################
+
+	proc ドア設置 {
+		#if d:DEBUG_PRINT
+			print 'slide_door_set'
+		#endif
+/*
+		@ドアモデル名セット $:配列番号 \
+			$:ドア名１				$:ドア名２				$:ドア名３ \
+			$:ドア名４				$:ドア名５
+			d:DOOR_FLAG_CLOSE 		d:DOOR_FLAG_OPEN		d:DOOR_FLAG_ENEMY_ONLY
+			d:DOOR_FLAG_CLOSE_LEVEL	d:DOOR_FLAG_OPEN_LEVEL
+
+		@A_ドア開閉追加設定 $:ドア名 $:フラグ $:ドア位置Ｘ $:ドア位置Ｙ $:ドア位置Ｚ $:ドア回転 $:ドアスライド幅
+*/
+		//	Ｄ脚１Ｆドア
+		@ドアモデル名セット 0 d:DOOR_NAME_ALT d:DOOR_NAME_ALT d:DOOR_NAME_ALT d:DOOR_NAME_LOAD1 d:DOOR_NAME_LOAD1
+		@A_ドア開閉追加設定 Ｄ脚１Ｆドア $$b:ドアフラグ[0] -16875 0 4000 1024 d:SD_SLIDE_OUTSIDE
+
+		//	Ｄ脚Ｂ１ドア
+		@ドアモデル名セット 1 d:DOOR_NAME_ALT_1 d:DOOR_NAME_ALT_1 d:DOOR_NAME_ALT_1 d:DOOR_NAME_LOAD2 d:DOOR_NAME_LOAD2
+		@A_ドア開閉追加設定 Ｄ脚Ｂ１ドア $$b:ドアフラグ[1] -16875 -4500 4000 1024 d:SD_SLIDE_OUTSIDE
+
+		//	Ｅ脚ドア
+		@ドアモデル名セット 2 d:DOOR_NAME_LOAD1 d:DOOR_NAME_LOAD1 d:DOOR_NAME_LOAD1 d:DOOR_NAME_LOAD1 d:DOOR_NAME_LOAD1
+		@A_ドア開閉追加設定 Ｅ脚ドア $$b:ドアフラグ[2] 18125 0 -4000 1024 d:SD_SLIDE_OUTSIDE
+
+
+		//	Ｄ脚１Ｆドア
+		chara ドア Ｄ脚１Ｆドア \
+			-m $$s:ドアモデル名[0] \
+			-d 0,1024,0 \
+			-p -16875,0,4000 \
+			-slide d:SD_SLIDE_OUTSIDE \
+			-time d:SD_OPEN_TIME \
+			-between ＤＥ連絡橋 ＤＥ連絡橋 \
+			-A Ｄ脚１Ｆドアランプ \
+			-exec {
+				if( !($:開閉フラグ) ){
+					mesg プットオブジェ Ｄ脚ロードエリア off
+				}else{
+					mesg プットオブジェ Ｄ脚ロードエリア on
+				}
+			}
+		@ドアランプ設定 Ｄ脚１Ｆドアランプ 1024 -16875 0 4000 0
+		trap dr001 ？ \
+			-mask ？ \	
+			-exec {
+				if ($3 == 入る) {
+					mesg ドア Ｄ脚１Ｆドア open $2
+				} else {
+					mesg ドア Ｄ脚１Ｆドア close $2
+				}
+			}
+
+		//	Ｄ脚Ｂ１ドア
+		chara ドア Ｄ脚Ｂ１ドア \
+			-m $$s:ドアモデル名[1] \
+			-d 0,1024,0 \
+			-p -16875,-4500,4000 \
+			-slide d:SD_SLIDE_OUTSIDE \
+			-time d:SD_OPEN_TIME \
+			-A Ｄ脚Ｂ１ドアランプ \
+			-exec {
+				if ( !($:開閉フラグ) ){
+					mesg プットオブジェ Ｄ脚Ｂ１ロードエリア off
+				} else {
+					mesg プットオブジェ Ｄ脚Ｂ１ロードエリア on
+				}
+			}
+		@ドアランプ設定 Ｄ脚Ｂ１ドアランプ 1024 -16875 -4500 4000 0
+		trap dr003 ？ \
+			-mask ？ \	
+			-exec {
+				if ($3 == 入る) {
+					mesg ドア Ｄ脚Ｂ１ドア open $2
+				} else {
+					mesg ドア Ｄ脚Ｂ１ドア close $2
+				}
+			}
+
+		//	Ｅ脚ドア
+		chara ドア Ｅ脚ドア \
+			-m $$s:ドアモデル名[2] \
+			-d 0,1024,0 \
+			-p 18125,0,-4000 \
+			-slide d:SD_SLIDE_OUTSIDE \
+			-time d:SD_OPEN_TIME \
+			-between ＤＥ連絡橋 ＤＥ連絡橋 \
+			-A Ｅ脚ドアランプ \
+			-exec {
+				if ( !($:開閉フラグ) ){
+					mesg プットオブジェ Ｅ脚ロードエリア off
+				} else {
+					mesg プットオブジェ Ｅ脚ロードエリア on
+				}
+			}
+		@ドアランプ設定 Ｅ脚ドアランプ 1024 18125 0 -4000 1
+		trap dr002 ？ \
+			-mask ？ \	
+			-exec {
+				if ($3 == 入る) {
+					mesg ドア Ｅ脚ドア open $2
+				} else {
+					mesg ドア Ｅ脚ドア close $2
+				}
+			}
+
+	}
+
+	proc 主観禁止壁設定 {
+
+		@主観禁止壁 Ｄ脚１Ｆドア壁 -16875 0 4000 1024 d:SD_SLIDE_OUTSIDE
+		@主観禁止床 Ｄ脚１Ｆドア床１ Ｄ脚１Ｆドア床２ -16875 0 4000 1024 d:SD_SLIDE_OUTSIDE
+		trap dr001 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if ($3 == 入る) {
+					mesg 透明壁 Ｄ脚１Ｆドア壁 on
+				} else {
+					mesg 透明壁 Ｄ脚１Ｆドア壁 off
+				}
+			}
+
+		@主観禁止壁 Ｄ脚Ｂ１ドア壁 -16875 -4500 4000 1024 d:SD_SLIDE_OUTSIDE
+		@主観禁止床 Ｄ脚Ｂ１ドア床１ Ｄ脚Ｂ１ドア床２ -16875 -4500 4000 1024 d:SD_SLIDE_OUTSIDE
+		trap dr003 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if ($3 == 入る) {
+					mesg 透明壁 Ｄ脚Ｂ１ドア壁 on
+				} else {
+					mesg 透明壁 Ｄ脚Ｂ１ドア壁 off
+				}
+			}
+
+		@主観禁止壁 Ｅ脚ドア壁 18125 0 -4000 1024 d:SD_SLIDE_OUTSIDE
+		@主観禁止床 Ｅ脚ドア床１ Ｅ脚ドア床２ 18125 0 -4000 1024 d:SD_SLIDE_OUTSIDE
+		trap dr002 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if( $3 == 入る ) {
+					mesg 透明壁 Ｅ脚ドア壁 on
+				} else {
+					mesg 透明壁 Ｅ脚ドア壁 off
+				}
+			}
+
+	}
+
+//###################################################################################
+//									開始時処理
+//###################################################################################
+
+	proc ＤＥ連絡橋開始時処理 {
+		// Ｄ脚１Ｆから
+		if ($s:登場ポイント == Ｄ脚１Ｆから) {
+			@ステージ開始時処理（ステージ名表示） \
+			d:LOAD_TYPE:SL_DOOR_TYPE Ｄ脚１Ｆドア 1500 d:DEFAULT_M_TYPE \
+			d:wn_ＤＥ連絡橋
+		// Ｄ脚Ｂ１から
+		} else if ($s:登場ポイント == Ｄ脚Ｂ１から) {
+			@ステージ開始時処理（ステージ名表示） \
+			d:LOAD_TYPE:SL_DOOR_TYPE Ｄ脚Ｂ１ドア 1500 d:DEFAULT_M_TYPE \
+			d:wn_ＤＥ連絡橋
+		// Ｅ脚１Ｆから
+		} else if ($s:登場ポイント == Ｅ脚から) {
+			@ステージ開始時処理（ステージ名表示） \
+			d:LOAD_TYPE:SL_DOOR_TYPE Ｅ脚ドア 2250 d:DEFAULT_M_TYPE \
+			d:wn_ＤＥ連絡橋
+		// テイルズＢ立ち話盗み聞き後から
+		} else if ($s:登場ポイント == テイルズＢ立ち話盗み聞き後から) {
+			@ステージ開始時処理（ステージ名表示） \
+			d:LOAD_TYPE:NO_MOVE_TYPE 紙芝居 0 d:DEFAULT_M_TYPE \
+			d:wn_ＤＥ連絡橋
+		}
+
+	}
+
+	//	開始時カメラ
+	proc スタートカメラセット {
+		// Ｄ脚１Ｆから
+		if ($s:登場ポイント == Ｄ脚１Ｆから) {
+			chara カメラ設定 ロードカメラ \
+				-c 1 \	
+				-p -15344,4017,4477 \
+				-t -16052,1278,2774 \
+				-a 200 \
+				-i 0 1 0 0 \
+				-s 1
+		// Ｄ脚Ｂ１から
+		} else if ($s:登場ポイント == Ｄ脚Ｂ１から) {
+			chara カメラ設定 ロードカメラ \
+				-c 1 \
+				-p -15344,(4017 -4500),4477 \
+				-t -16052,(1278 -4500),2774 \
+				-a 200 \
+				-i 0 1 0 0 \
+				-s 1
+		// Ｅ脚１Ｆから
+		} else if ($s:登場ポイント == Ｅ脚から) {
+			chara カメラ設定 ロードカメラ \
+				-c 1 \
+				-p 14749,3325,-3108 \
+				-t 16942,1054,-5986 \
+				-a 200 \
+				-i 0 1 0 0 \
+				-s 1
+		}
+
+	}
+
+	proc スタートカメラオフ {
+		chara カメラ設定 ロードカメラ \
+			-s -1
+	}
+
+//###################################################################################
+//									ロード設定
+//###################################################################################
+
+	proc ロードプロック {
+		#if d:DEBUG_PRINT 
+			print 'load_proc'
+		#endif
+
+		if ($s:呼び出しプロック == mv_a19a_a18a_0) {
+			// Ｄ脚１Ｆへ
+			@mv_a19a_a18a_0
+		} else if ($s:呼び出しプロック == mv_a19a_a18a_1) {
+			// Ｄ脚Ｂ１へ
+			@mv_a19a_a18a_1
+		} else if ($s:呼び出しプロック == mv_a19a_a20a0_0) {
+			// Ｅ脚１Ｆへ
+			@mv_a19a_a20a0_0
+		}
+	}
+	proc ロード設定 {
+		#if d:DEBUG_PRINT 
+			print 'load_set'
+		#endif
+
+		trap ld001 d:PLAYER \
+			-mask いる \
+			-exec {
+				if ($f:ロードチェックＯＮフラグ == 1) {
+					//	爆弾イベント用
+//					@爆弾タイマー残り時間保存
+
+					//	双眼鏡兵状態やりとりのため
+					@A_双眼鏡兵状態保存 敵兵:01
+
+					// Ｄ脚１Ｆへ
+					@ステージ終了時処理（ステージ名表示） \
+					-17625 0 3250 3072 mv_a19a_a18a_0 d:DEFAULT_M_TYPE \
+					d:wn_Ｄ脚第一沈殿池
+					//	ロード時カメラ
+					@Ｄ脚１Ｆロード時カメラ設定
+					//	先読み
+					preseek 'a18a'
+				}
+			}
+
+		trap ld003 d:PLAYER \
+			-mask いる \
+			-exec {
+				if ($f:ロードチェックＯＮフラグ == 1) {
+					//	爆弾イベント用
+//					@爆弾タイマー残り時間保存
+
+					//	双眼鏡兵状態やりとりのため
+					@A_双眼鏡兵状態保存 敵兵:01
+
+					// Ｄ脚Ｂ１へ
+					@ステージ終了時処理（ステージ名表示） \
+					-17625 -4500 3250 3072 mv_a19a_a18a_1 d:DEFAULT_M_TYPE \
+					d:wn_Ｄ脚第一沈殿池
+					//	ロード時カメラ
+					@Ｄ脚Ｂ１ロード時カメラ設定
+					//	先読み
+					preseek 'a18a'
+				}
+			}
+
+		trap ld002 d:PLAYER \
+			-mask いる \
+			-exec {
+				if ($f:ロードチェックＯＮフラグ == 1) {
+					//	爆弾イベント用
+//					@爆弾タイマー残り時間保存
+
+					//	双眼鏡兵状態やりとりのため
+					@A_双眼鏡兵状態保存 敵兵:01
+
+					// Ｅ脚１Ｆへ
+					@ステージ終了時処理（ステージ名表示） \
+					19750 0 -4750 1024 mv_a19a_a20a0_0 d:DEFAULT_M_TYPE \
+					d:wn_Ｅ脚集配場１Ｆ
+					//	ロード時カメラ
+					@Ｅ脚ロード時カメラ設定
+					//	先読み
+					//	テイルズＢはこちらを通る
+					if ( ($b:ミッション番号 == d:MISSION:スネークテイルズ) && \
+						 ($b:tales_story_no == d:TALES_NO:B) ) {
+						preseek 'a20e'
+					} else {
+						preseek 'a20a'
+					}
+				}
+			}
+	}
+
+	//	終了時カメラ
+	proc Ｄ脚１Ｆロード時カメラ設定 {
+		chara カメラ設定 ロードカメラ \
+			-c 1 \	
+			-p -15344,4017,4477 \
+			-t -16052,1278,2774 \
+			-a 200 \
+			-i 0 1 0 0 \
+			-s 1
+
+		chara プロック連続実行 カメラ戻し管理人 \
+			-proc カメラ戻し管理
+	}
+	proc Ｄ脚Ｂ１ロード時カメラ設定 {
+		chara カメラ設定 ロードカメラ \
+			-c 1 \
+			-p -15344,(4017 -4500),4477 \
+			-t -16052,(1278 -4500),2774 \
+			-a 200 \
+			-i 0 1 0 0 \
+			-s 1
+
+		chara プロック連続実行 カメラ戻し管理人 \
+			-proc カメラ戻し管理
+	}
+	proc Ｅ脚ロード時カメラ設定 {
+		chara カメラ設定 ロードカメラ \
+			-c 1 \
+			-p 14749,3325,-3108 \
+			-t 16942,1054,-5986 \
+			-a 200 \
+			-i 0 1 0 0 \
+			-s 1
+
+		chara プロック連続実行 カメラ戻し管理人 \
+			-proc カメラ戻し管理
+	}
+	proc カメラ戻し管理 {
+		command パッドチェック \
+			-no_use
+		if ($status != 1) {
+			chara カメラ設定 ロードカメラ \
+				-s -1
+			mesg プロック連続実行 カメラ戻し管理人 kill
+		}
+	}
+
+//###################################################################################
+//									オブジェクト
+//###################################################################################
+
+	proc オブジェクト設定 {
+		chara プットオブジェ Ｄ脚ロードエリア \
+			-m 	d:KMS_NAME23 -r 0 0 0 -p 0 0 0  -l d:LT2_NAME
+		mesg プットオブジェ Ｄ脚ロードエリア off
+
+		chara プットオブジェ Ｄ脚Ｂ１ロードエリア \
+			-m 	d:KMS_NAME25 -r 0 0 0 -p 0 0 0  -l d:LT2_NAME
+		mesg プットオブジェ Ｄ脚Ｂ１ロードエリア off
+
+		chara プットオブジェ Ｅ脚ロードエリア \
+			-m 	d:KMS_NAME24 -r 0 0 0 -p 0 0 0  -l d:LT2_NAME
+			mesg プットオブジェ Ｅ脚ロードエリア off
+	}
+
+	proc 水位設定 {
+		command 水位設定 -lv -40000
+	}
+
+	proc 海面設定 {
+		#if d:DEBUG_PRINT
+			print 'w19a_sea_set'
+		#endif
+
+		chara プラント海面 seaseasea \
+			-tex oil d_oil_sea_alp_ovl_mod0222 d_oil_ref_add_alp_ovl_mod1120 \
+			-w 1,2,3 \
+			-l \
+			-pos 0,-40000,0
+
+		chara 拡張海表示 sea_serface_ex \
+			-tex d_oil_sea_alp_ovl_mod0222 \
+			-pos 0,-40000,0 \
+			-color 145 185 120			/*色合い調整 省略可*/
+
+		chara 水面監視水飛沫 落下水飛沫 \
+			-n d:PLAYER \
+			-n 敵兵
+		command 弾水飛沫処理
+	}
+
+	proc 空設定 {
+		#if d:DEBUG_PRINT
+			print 'w19a_sky_set'
+		#endif
+
+		@昼空（レンズフレア指定）	0 -40000 0 -2200 -4400 600 1
+
+	}
+
+	proc 天井設定 {
+		#if d:DEBUG_PRINT
+			print 'ceil_set'
+		#endif
+		chara 天井君 Ｄ脚天井 -m d:KMS_NAME9 -p 0,0,0  -l d:LT2_NAME -c -14000,0,0 -a 0
+		chara 天井君 Ｄ脚廊下 -m d:KMS_NAME11 -p 0,0,0  -l d:LT2_NAME -c -14000,0,0 0,287,0 -a 0 2 -e 2 1
+		chara 天井君 Ｅ脚天井  -m d:KMS_NAME3 -p 0,0,0  -l d:LT2_NAME -c 14000,0,0 -a 1
+		chara 天井君 ヘリポート -m d:KMS_NAME10 -p 0,0,0  -l d:LT2_NAME -c 14000,0,0 -a 1
+	
+	}
+
+//###################################################################################
+//									 エフェクト
+//###################################################################################
+
+	proc フォグ設定 {
+		#if d:DEBUG_PRINT
+			print 'fog_set'
+		#endif
+
+		@明るさ可変機能 220 237 198 -25000 250000 ha002 -4500
+
+	}
+
+	proc エフェクト設定 {
+		#if d:DEBUG_PRINT
+			print 'effect_set'
+		#endif
+
+		#if d:BLUR
+			chara ブラー ブラー
+		#endif
+
+		#if d:Z_MANAGER
+			chara Ｚフォーカス管理 Z_manager
+			mesg Ｚフォーカス管理 Z_manager パラメータ 5000 30
+		#endif
+
+		#if d:BODY_SHADOW
+			chara ＯＦＦ制御 off_man
+			mesg ＯＦＦ制御 off_man ボディシャドウＯＦＦ
+		#endif
+	}
+	proc キャラ用ライト設定 {
+		chara 環境光 Amb \
+			-c 55 63 38
+
+		chara 平行光 Para \
+			-c 163 164 150 \
+			-p -2200 -4400 600
+	}
+
+	proc ＤＥ連絡橋風設定 {
+		@風設定 ca002
+	}
+
+//###################################################################################
+//									カメラ
+//###################################################################################
+
+	proc カメラセット {
+		#if d:DEBUG_PRINT
+			print 'stage_camera_set'
+		#endif
+
+		chara カメラ ステージカメラ		-c 0 -l 3 -p 0 
+		chara カメラ 通路カメラ		-c 0 -l 2 -p 50
+		chara カメラ 小部屋カメラ		-c 0 -l 2 -p 40
+		chara カメラ ビヨンドカメラ		-c 0 -l 2 -p 20
+		chara カメラ 張り付きカメラ		-c 0 -l 2 -p 10
+		chara カメラ シナリオカメラ		-c 0 -l 0 -p 6
+		chara カメラ ロードカメラ		-c 0 -l 1 -p 5
+		chara カメラ ゲームオーバーカメラ	c 0 -l 1 -p 4
+
+		// デフォルトカメラ
+		chara カメラ設定 ステージカメラ \
+			-c 0 \	
+			-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-r 425,2048,0 \
+			-f 7500 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s 1
+	}
+	proc ＤＥ連絡橋カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w19a_camera_set'
+		#endif
+
+		// Ｄ脚１Ｆドア前
+		trap ca001 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+//-p -15274,4142,5689 -t -16042,1912,2014 \
+//-p -15455,5581,3364 -t -15528,1140,3017 \
+
+					@CS_スムーズカメラ昇順 $6 -1000 3000 -15274 -15455
+					eval( $i:補完ＰＸ = $i:CS_結果１ );
+
+					@CS_スムーズカメラ昇順 $6 -1000 3000 4142 5581
+					eval( $i:補完ＰＹ = $i:CS_結果１ );
+
+					@CS_スムーズカメラ昇順 $6 -1000 3000 5689 3364
+					eval( $i:補完ＰＺ = $i:CS_結果１ );
+
+
+					@CS_スムーズカメラ昇順 $6 -1000 3000 -16042 -15528
+					eval( $i:補完ＴＸ = $i:CS_結果１ );
+
+					@CS_スムーズカメラ昇順 $6 -1000 3000 1912 1140
+					eval( $i:補完ＴＹ = $i:CS_結果１ );
+
+					@CS_スムーズカメラ昇順 $6 -1000 3000 2014 3017
+					eval( $i:補完ＴＺ = $i:CS_結果１ );
+
+				chara カメラ設定 小部屋カメラ \
+					-c 1 \
+					-b -15875,d:CAM_MIN,d:CAM_MIN -14500,d:CAM_MAX,d:CAM_MAX \
+					-l -15875,d:CAM_MIN,d:CAM_MIN -14500,d:CAM_MAX,d:CAM_MAX \
+					-p $i:補完ＰＸ,$i:補完ＰＹ,$i:補完ＰＺ \
+					-t $i:補完ＴＸ,$i:補完ＴＹ,$i:補完ＴＺ \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-d 1 \
+					-z d:CAMERA_LIMITBOUND_EXIST \	//	ビハインドのためリミットを見る
+					-s $3
+			}
+
+
+
+		// 連絡橋
+		trap ca002 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+# if 1
+				//	高さ１３０以上のとき
+				if ($5 > 130) {
+					//	プレイヤーのＸ座標に沿ってＸロットが変化
+					@CS_スムーズカメラ昇順 $4  -12000 12000 450 650
+				//	高さ１３０以下のとき
+				} else if ($5 > -2700) {
+					//	高さ１３０のときのＸロットを求める。
+					@CS_スムーズカメラ昇順 $4  -12000 12000 450 650
+					//	求めたＸロットを別の変数に代入。このＸロットからスムーズにつながる
+					eval ($i:現状ＲＸ１ = $i:CS_結果１);
+
+					//	高さ－２７００のときのＸロットを求める。
+					@CS_スムーズカメラ昇順 $4  -12000 12000 300 650
+					//	求めたＸロットを別の変数に代入。このＸロットからスムーズにつながる
+					eval ($i:現状ＲＸ２ = $i:CS_結果１);
+
+					//	プレイヤーのＹ座標に沿ってＸロットが変化
+					@CS_スムーズカメラ降順 $5  100 -2700 $i:現状ＲＸ１ $i:現状ＲＸ２
+				} else {
+					@CS_スムーズカメラ昇順 $4  -12000 12000 300 650
+
+				}
+				//	最終的に求めたＸロットを代入
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $5  -600 -2700 -7823 -13000
+				eval( $i:補完ＢＸ１ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $5  -600 -2700 -7823 -13000
+				eval( $i:補完ＬＸ１ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $5  -600 -2700 13500 14000
+				eval( $i:補完ＢＸ２ = $i:CS_結果１ );
+
+				@CS_スムーズカメラ降順 $5  -600 -2700 8861 9405
+				eval( $i:補完ＬＸ２ = $i:CS_結果１ );
+
+
+
+
+				chara カメラ設定 通路カメラ \
+					-c 0 \	
+					-b $i:補完ＢＸ１,d:CAM_MIN,d:CAM_MIN $i:補完ＢＸ２,10500,d:CAM_MAX \
+					-l $i:補完ＬＸ１,d:CAM_MIN,d:CAM_MIN $i:補完ＬＸ２,d:CAM_MAX,d:CAM_MAX \
+
+					-r $i:補完ＲＸ,2496,0 -f 11000 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-d 1 \
+					-s $3
+
+# else
+				@CS_スムーズカメラ降順 $5 -500 -2000 605 505
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				chara カメラ設定 通路カメラ \
+					-c 0 \	
+					-b -9000,d:CAM_MIN,d:CAM_MIN 13886,d:CAM_MAX,d:CAM_MAX \
+					-l -9000,d:CAM_MIN,d:CAM_MIN 9500,d:CAM_MAX,d:CAM_MAX \
+					-r $i:補完ＲＸ,2393,0 -f 10132 \
+					-r $i:補完ＲＸ,2496,0 -f 11000 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-d 1 \
+					-s $3
+# endif
+			}
+
+		//	Ｅ脚側出入口付近
+		trap ca005 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 小部屋カメラ \
+					-c 1 \	
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN 16753,d:CAM_MAX,-3919 \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN 16753, d:CAM_MAX,-4776 \
+//					-p 16384,6141,-3731 -t 16384,1695,-5192 \
+//					-r 904,2048,0 -f 4684 \
+//					-a 200 \
+					-p 16730,5459,-4186 -t 16730,1563,-4912 \
+					-r 904,2048,0 -f 3963 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-d 1 \
+					-z d:CAMERA_LIMITBOUND_EXIST \	//	ビハインドのためリミットを見る
+					-s $3
+
+			}
+
+		//	Ｅ脚通路
+		trap ca003 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+//-p 15791,2470,3473 -t 14584,1477,-2455 \
+//-p 15644,4199,2742 -t 14787,1441,-1461 \
+					@CS_スムーズカメラ昇順 $6 -4000 1000 15644 15369
+					eval( $i:補完ＰＸ = $i:CS_結果１ );
+
+					@CS_スムーズカメラ昇順 $6  -4000 1000 4199 5554
+					eval( $i:補完ＰＹ = $i:CS_結果１ );
+
+					@CS_スムーズカメラ昇順 $6  -4000 1000 2742 1384
+					eval( $i:補完ＰＺ = $i:CS_結果１ );
+
+
+					@CS_スムーズカメラ昇順 $6  -4000 1000 14787 15166
+					eval( $i:補完ＴＸ = $i:CS_結果１ );
+
+					@CS_スムーズカメラ昇順 $6  -4000 1000 1441 -484
+					eval( $i:補完ＴＹ = $i:CS_結果１ );
+
+					@CS_スムーズカメラ昇順 $6  -4000 1000 -1461 385
+					eval( $i:補完ＴＺ = $i:CS_結果１ );
+
+		
+				chara カメラ設定 小部屋カメラ \
+					-c 1 \
+					-b 14375,d:CAM_MIN,d:CAM_MIN 16125,d:CAM_MAX,1750 \
+					-l 14375,d:CAM_MIN,d:CAM_MIN 16125,d:CAM_MAX,1750 \
+					-p $i:補完ＰＸ,$i:補完ＰＹ,$i:補完ＰＺ \
+					-t $i:補完ＴＸ,$i:補完ＴＹ,$i:補完ＴＺ \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-d 1 \
+					-z d:CAMERA_LIMITBOUND_EXIST \	//	ビハインドのためリミットを見る
+					-s $3
+			}
+
+		// Ｄ脚Ｂ１ドア前
+		trap ca004 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+//-p -15265,-921,4950 -t -15753,-2624,2575 \
+//-p -15559,-3,3645 -t -15672,-2916,3100 \
+
+					@CS_スムーズカメラ昇順 $6 -1000 3000 -15265 -15559
+					eval( $i:補完ＰＸ = $i:CS_結果１ );
+
+					@CS_スムーズカメラ昇順 $6 -1000 3000 -921 -3
+					eval( $i:補完ＰＹ = $i:CS_結果１ );
+
+					@CS_スムーズカメラ昇順 $6 -1000 3000 4950 3645
+					eval( $i:補完ＰＺ = $i:CS_結果１ );
+
+
+					@CS_スムーズカメラ昇順 $6 -1000 3000 -15753 -15672
+					eval( $i:補完ＴＸ = $i:CS_結果１ );
+
+					@CS_スムーズカメラ昇順 $6 -1000 3000 -2624 -2916
+					eval( $i:補完ＴＹ = $i:CS_結果１ );
+
+					@CS_スムーズカメラ昇順 $6 -1000 3000 2575 3100
+					eval( $i:補完ＴＺ = $i:CS_結果１ );
+
+				chara カメラ設定 小部屋カメラ \
+					-c 1 \
+					-b -15875,d:CAM_MIN,d:CAM_MIN -14500,d:CAM_MAX,d:CAM_MAX \
+					-l -15875,d:CAM_MIN,d:CAM_MIN -14500,d:CAM_MAX,d:CAM_MAX \
+					-p $i:補完ＰＸ,$i:補完ＰＹ,$i:補完ＰＺ \
+					-t $i:補完ＴＸ,$i:補完ＴＹ,$i:補完ＴＺ \
+					-a 139 \
+					-i 0 -1 0 0 \
+					-d 1 \
+					-z d:CAMERA_LIMITBOUND_EXIST \	//	ビハインドのためリミットを見る
+					-s $3
+			}
+
+
+
+		//	張り付き移動
+
+		//１Ｆ
+		//	Ｄ脚入口付近北側
+		trap bh001 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 0 256 \	// 方向指定
+			-camera \
+			-exec {
+				@張り付き移動カメラ１Ｆ $3
+			}
+		//	Ｄ脚入口付近南側
+		trap bh002 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 2048 256 \	// 方向指定
+			-camera \
+			-exec {
+				@張り付き移動カメラ１Ｆ $3
+			}
+		//	Ｅ脚入口付近北側
+		trap bh003 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 0 256 \	// 方向指定
+			-camera \
+			-exec {
+				@張り付き移動カメラ１Ｆ $3
+			}
+		//	Ｅ脚入口付近南側
+		trap bh004 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 2048 256 \	// 方向指定
+			-camera \
+			-exec {
+				@張り付き移動カメラ１Ｆ $3
+			}
+
+		//Ｂ１
+		//	Ｄ脚入口付近北側
+		trap bh101 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 0 256 \	// 方向指定
+			-camera \
+			-exec {
+				@張り付き移動カメラＢ１北 $3
+			}
+		//	中央付近北側
+		trap bh102 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 0 256 \	// 方向指定
+			-camera \
+			-exec {
+				@張り付き移動カメラＢ１北 $3
+			}
+		//	中央付近北側２
+		trap bh103 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 0 256 \	// 方向指定
+			-camera \
+			-exec {
+				@張り付き移動カメラＢ１北 $3
+			}
+		//	Ｅ脚側北側
+		trap bh104 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 0 256 \	// 方向指定
+			-camera \
+			-exec {
+				@張り付き移動カメラＢ１南 $3		//	カメラを立てても大丈夫なので南を使う
+			}
+		//	Ｅ脚側南側１
+		trap bh105 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 2048 256 \	// 方向指定
+			-camera \
+			-exec {
+				@張り付き移動カメラＢ１南 $3
+			}
+		//	Ｅ脚側南側２
+		trap bh106 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 2048 256 \	// 方向指定
+			-camera \
+			-exec {
+				@張り付き移動カメラＢ１南 $3
+			}
+
+		//	Ｄ脚側南北通路
+		trap bh107 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 1024 256 \	// 方向指定
+			-camera \
+			-exec {
+				@張り付き移動カメラＢ１南 $3
+			}
+		//	右階段南北通路
+		trap bh108 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 1024 256 \	// 方向指定
+			-camera \
+			-exec {
+				@張り付き移動カメラＢ１南 $3
+			}
+		//	Ｄ脚側南北通路
+		trap bh109 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 3072 256 \	// 方向指定
+			-camera \
+			-exec {
+				@張り付き移動カメラＢ１南 $3
+			}
+
+		//	エルード用特殊
+		trap bh110 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 2048 256 \	//方向指定
+			-camera \
+			-exec {
+				chara カメラ設定 張り付きカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 950,2496,0 -f 9000 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3 \
+					-z (d:CAMERA_NO_CUSHION | d:CAMERA_NO_PAD_ADJUST)
+			}
+
+
+
+
+		//階段
+		//	左側階段
+		trap bh201 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 2048 256 \	// 方向指定
+			-camera \
+			-exec {
+				@張り付き移動カメラ階段 $3
+			}
+		trap bh202 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 3072 256 \	// 方向指定
+			-camera \
+			-exec {
+				@張り付き移動カメラ階段 $3
+			}
+		trap bh203 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 2048 256 \	// 方向指定
+			-camera \
+			-exec {
+				@張り付き移動カメラ階段 $3
+			}
+		trap bh204 d:PLAYER \
+			-mask ？ \
+			-state 8 \	//張り付き
+			-dir 3072 256 \	// 方向指定
+			-camera \
+			-exec {
+				@張り付き移動カメラ階段 $3
+			}
+
+	}
+
+	proc 張り付き移動カメラ１Ｆ {
+		chara カメラ設定 張り付きカメラ \
+			-c 0 \
+//-p 11225,8163,-720 -t 11199,1622,-751 \
+//-p -12416,8164,-1720 -t -12441,1623,-1751 \
+			-b -12416,d:CAM_MIN,d:CAM_MIN 11225,d:CAM_MAX,d:CAM_MAX \
+			-l -12441,d:CAM_MIN,d:CAM_MIN 11199,d:CAM_MAX,d:CAM_MAX \
+			-r 1020,2496,0 -f 6541 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s $1 \
+			-z (d:CAMERA_NO_CUSHION | d:CAMERA_NO_PAD_ADJUST)
+	}
+
+	proc 張り付き移動カメラＢ１北 {
+		chara カメラ設定 張り付きカメラ \
+			-c 0 \
+			-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-r 360,2496,0 -f 7496 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s $1 \
+			-z (d:CAMERA_NO_CUSHION | d:CAMERA_NO_PAD_ADJUST)
+	}
+
+	proc 張り付き移動カメラＢ１南 {
+		chara カメラ設定 張り付きカメラ \
+			-c 0 \
+//-p 12415,5933,2669 -t 11250,-2878,1249 \
+			-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN 12415,d:CAM_MAX,d:CAM_MAX \
+			-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN 11250,d:CAM_MAX,d:CAM_MAX \
+			-r 890,2496,0 -f 9000 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s $1 \
+			-z (d:CAMERA_NO_CUSHION | d:CAMERA_NO_PAD_ADJUST)
+	}
+
+	proc 張り付き移動カメラ階段 {
+		@張り付き移動カメラＢ１南 $1
+	}
+
+//###################################################################################
+//									ビヨンド
+//###################################################################################
+
+	proc ＤＥ連絡橋ビヨンド設定 {
+		#if d:DEBUG_PRINT
+			print 'w19a_beyond_set'
+		#endif
+
+// 連絡橋１Ｆ北側
+		//	エルード発動
+		trap by001 d:PLAYER \
+			-mask いる \
+			-button d:ACTION_BUTTON \		//アクションボタン
+			-state 0,4 \	//立ち状態or張り付き
+			-exec {
+				@北向きビヨンド発動 by001 -1000 $4 -4750 7750 0x00000002		//	カネキャッチのため
+			}
+		//	発動カメラ
+		trap by001 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \ 
+					-c 0 \
+					-b d:CAM_MIN,3891,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,1319,d:CAM_MAX \
+					-r 304,2386,0 -f 5675 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		//	エルードカメラ
+		trap by001 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 0 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 956,2386,0 -f 5675 \
+					-a 224 \
+					-i 3 2 0 0 \
+					-s $3 \
+					-z d:CAMERA_NO_CUSHION
+			}
+		//	張り付きカメラ
+		trap by001 d:PLAYER \
+			-mask ？ \
+			-state 8 \
+			-dir 0 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 張り付きカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 1020,2496,0 -f 6541 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3 \
+					-z (d:CAMERA_NO_CUSHION | d:CAMERA_NO_PAD_ADJUST)
+			}
+// 連絡橋１Ｆ南側左
+		//	エルード発動
+		trap by002 d:PLAYER \
+			-mask いる \
+			-button d:ACTION_BUTTON \		//アクションボタン
+			-state 0,4 \	//立ち状態or張り付き
+			-exec {
+				@南向きビヨンド発動 by002 2000 $4 -13750 -12250 0x00000002
+			}
+		//	発動カメラ
+		trap by002 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 0 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 0 \
+					-b d:CAM_MIN,3223,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,1319,d:CAM_MAX \
+					-r 100,2377,0 -f 5657 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		//	エルードカメラ
+		trap by002 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,6500,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 706,2297,0 -f 5557 \
+					-a 299 \
+					-i 3 2 0 0 \
+					-s $3 \
+					-z d:CAMERA_NO_CUSHION
+			}
+		// 	張り付きカメラ
+		trap by002 d:PLAYER \
+			-mask ？ \
+			-state 8 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 張り付きカメラ \
+					-c 0 \
+					-b -11882,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l -12390,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 926,2496,0 -f 5657 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3 \
+					-z (d:CAMERA_NO_CUSHION | d:CAMERA_NO_PAD_ADJUST)
+			}
+// 連絡橋１Ｆ南側中央
+		//	エルード発動
+		trap by003 d:PLAYER \
+			-mask いる \
+			-button d:ACTION_BUTTON \		//アクションボタン
+			-state 0,4 \	//立ち状態or張り付き
+			-exec {
+				@南向きビヨンド発動 by003 1000 $4 -4750 5750 0x00000002
+			}
+		//	発動カメラ
+		trap by003 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 0 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 0 \
+					-b d:CAM_MIN,2203,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,1319,d:CAM_MAX \
+					-r 100,2386,0 -f 5675 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		//	エルードカメラ
+		trap by003 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 745,2396,0 -f 5674 \
+					-a 303 \
+					-i 3 2 0 0 \
+					-s $3 \
+					-z d:CAMERA_NO_CUSHION
+			}
+		//	張り付きカメラ
+		trap by003 d:PLAYER \
+			-mask ？ \
+			-state 8 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 張り付きカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-p -5366,8494,847 -t -5510,1624,626 \
+					-r 1020,2496,0 -f 6541 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3 \
+					-z (d:CAMERA_NO_CUSHION | d:CAMERA_NO_PAD_ADJUST)
+			}
+// 連絡橋１Ｆ南側右
+		//	エルード発動
+		trap by004 d:PLAYER \
+			-mask いる \
+			-button d:ACTION_BUTTON \		//アクションボタン
+			-state 0,4 \	//立ち状態or張り付き
+			-exec {
+				@南向きビヨンド発動 by004 2000 $4 12250 13750 0x00000002
+			}
+		//	発動カメラ
+		trap by004 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 0 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 0 \
+					-b d:CAM_MIN,2482,d:CAM_MIN 13812,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN 12530,1319,d:CAM_MAX \
+					-r 116,2200,0 -f 5637 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		//	エルードカメラ
+		trap by004 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN 13359,7000,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN 12607,d:CAM_MAX,d:CAM_MAX \
+					-r 851,2396,0 -f 5637 \
+					-a 298 \
+					-i 3 2 0 0 \
+					-s $3 \
+					-z d:CAMERA_NO_CUSHION
+			}
+		//	張り付きカメラ
+		trap by004 d:PLAYER \
+			-mask ？ \
+			-state 8 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 張り付きカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN 12469,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN 12249,d:CAM_MAX,d:CAM_MAX \
+					-r 984,2496,0 -f 5657 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3 \
+					-z (d:CAMERA_NO_CUSHION | d:CAMERA_NO_PAD_ADJUST)
+			}
+// 連絡橋Ｂ１北側
+		//	エルード発動
+		trap by005 d:PLAYER \
+			-mask いる \
+			-button d:ACTION_BUTTON \		//アクションボタン
+			-state 0,4 \	//立ち状態or張り付き
+			-exec {
+				@北向きビヨンドハイ発動 by005 -1000 $4 -3750 1750 0x00000002
+			}
+		//	発動カメラ
+		trap by005 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 0 \
+					-b d:CAM_MIN,-2030,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,-3181,d:CAM_MAX \
+					-r 125,2386,0 -f 6000 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		//	エルードカメラ
+		trap by005 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 0 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 43,2103,0 -f 6000 \
+					-a 363 \
+					-i 3 2 0 0 \
+					-s $3 \
+					-z d:CAMERA_NO_CUSHION
+			}
+		//	張り付きカメラ
+		trap by005 d:PLAYER \
+			-mask ？ \
+			-state 8 \
+			-dir 0 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 張り付きカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 360,2496,0 -f 7496 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3 \
+					-z (d:CAMERA_NO_CUSHION | d:CAMERA_NO_PAD_ADJUST)
+			}
+// 連絡橋Ｂ１南側一番左
+		//	エルード発動
+		trap by006 d:PLAYER \
+			-mask いる \
+			-button d:ACTION_BUTTON \		//アクションボタン
+			-state 0,4 \	//立ち状態or張り付き
+			-exec {
+				@南向きビヨンドハイ発動 by006 1000 $4 -11750 -10250 0x00000002
+			}
+		//	発動カメラ
+		trap by006 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 0 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 0 \
+					-b d:CAM_MIN,968,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,-3181,d:CAM_MAX \
+					-r 450,2200,0 -f 6550 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		//	エルードカメラ
+		trap by006 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 3950,2300,0 -f 8000 \
+					-a 300 \
+					-i 3 2 0 0 \
+					-s $3 \
+					-z d:CAMERA_NO_CUSHION
+			}
+		//	張り付きカメラ
+		trap by006 d:PLAYER \
+			-mask ？ \
+			-state 8 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 張り付きカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 890,2496,0 -f 9000 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3 \
+					-z (d:CAMERA_NO_CUSHION | d:CAMERA_NO_PAD_ADJUST)
+			}
+// 連絡橋Ｂ１南側左から２番目
+		//	エルード発動
+		trap by007 d:PLAYER \
+			-mask いる \
+			-button d:ACTION_BUTTON \		//アクションボタン
+			-state 0,4 \	//立ち状態or張り付き
+			-exec {
+				@南向きビヨンドハイ発動 by007 3000 $4 -9750 -2250 0x00000002
+			}
+		//	発動カメラ
+		trap by007 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 0 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 0 \
+					-b d:CAM_MIN,-2244,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,-3181,d:CAM_MAX \
+					-r 100,2396,0 -f 6000 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		//	エルードカメラ
+		trap by007 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 3950,2300,0 -f 8000 \
+					-a 425 \
+					-i 3 2 0 0 \
+					-s $3 \
+					-z d:CAMERA_NO_CUSHION
+			}
+		//	張り付きカメラ
+/*
+		//	エルード用特殊を使用するのでなし
+		trap by007 d:PLAYER \
+			-mask ？ \
+			-state 8 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 張り付きカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 950,2496,0 -f 9000 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3 \
+					-z (d:CAMERA_NO_CUSHION | d:CAMERA_NO_PAD_ADJUST)
+			}
+*/
+// 連絡橋Ｂ１南側右から２番目
+		//	エルード発動
+		trap by008 d:PLAYER \
+			-mask いる \
+			-button d:ACTION_BUTTON \		//アクションボタン
+			-state 0,4 \	//立ち状態or張り付き
+			-exec {
+				@南向きビヨンドハイ発動 by008 2000 $4 -1750 1750 0x00000002
+				//	エルード中フラグを立ててこのときのみエルードカメラが発動するようにする
+				eval($f:w19a_エルード中フラグ = d:TRUE)
+			}
+		//	発動カメラ
+		trap by008 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 0 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				if ($f:w19a_エルード中フラグ == d:TRUE) {
+					chara カメラ設定 ビヨンドカメラ \
+						-c 0 \
+						-b d:CAM_MIN,-2244,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+						-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,-3181,d:CAM_MAX \
+						-r 100,2396,0 -f 6000 \
+						-a 200 \
+						-i 0 -1 0 0 \
+						-s 1
+				}
+			}
+		//	エルードカメラ
+		trap by008 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				if ($f:w19a_エルード中フラグ == d:TRUE) {
+					chara カメラ設定 ビヨンドカメラ \
+						-c 0 \
+						-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+						-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+						-r 3950,2300,0 -f 8000 \
+						-a 425 \
+						-i 3 2 0 0 \
+						-s $3 \
+						-z d:CAMERA_NO_CUSHION
+					
+					//	エルードカメラから出るとき（=エルード終了時）エルード中フラグをおろす
+					if ($3 == 出る) {
+						eval($f:w19a_エルード中フラグ = d:FALSE)
+					}
+				}
+			}
+		//	張り付きカメラ
+		trap by008 d:PLAYER \
+			-mask ？ \
+			-state 8 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 張り付きカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 950,2496,0 -f 9000 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3 \
+					-z (d:CAMERA_NO_CUSHION | d:CAMERA_NO_PAD_ADJUST)
+			}
+// 連絡橋Ｂ１南側一番右
+		//	エルード発動
+		trap by009 d:PLAYER \
+			-mask いる \
+			-button d:ACTION_BUTTON \		//アクションボタン
+			-state 0,4 \	//立ち状態or張り付き
+			-exec {
+				@南向きビヨンドハイ発動 by009 3000 $4 2250 3500 0x00000002
+			}
+		//	発動カメラ
+		trap by009 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 0 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 0 \
+					-b d:CAM_MIN,-2244,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,-3181,d:CAM_MAX \
+					-r 100,2200,0 -f 6000 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		//	エルードカメラ
+		trap by009 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 3950,2300,0 -f 8000 \
+					-a 425 \
+					-i 3 2 0 0 \
+					-s $3 \
+					-z d:CAMERA_NO_CUSHION
+			}
+		//	張り付きカメラ
+		trap by009 d:PLAYER \
+			-mask ？ \
+			-state 8 \
+			-dir 2048 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 張り付きカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 950,2496,0 -f 9000 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3 \
+					-z (d:CAMERA_NO_CUSHION | d:CAMERA_NO_PAD_ADJUST)
+			}
+
+
+
+	//	カネキャッチ
+		trap by005 d:PLAYER \
+			-mask いる \
+			-button d:ACTION_BUTTON \
+			-state  d:TRP_STATE_ELUDE_FALL \
+			-exec {
+				@エルード落下キャッチハイ by001 $1 -4500 $4 $5 $6 0  0x00000002
+			}
+
+
+	}
+
+//###################################################################################
+//									特殊ゲームオーバー
+//###################################################################################
+
+	//	ゲームオーバー背景処理
+	proc ゲームオーバー背景設定 {
+		command ゲームオーバー背景設定 \
+			-t gmov \
+			-s dekisi_alp_ovl \
+			-m 2
+	}
+
+	//	ゲームオーバー開始処理
+	//	fall.h内に記述
+	
+	//	ゲームオーバー終了処理
+	proc ゲームオーバー終了処理 {
+		chara パッド振動 落下振動 -vibfile drop_sea
+
+		@ゲームオーバー背景設定
+
+	}
+
+	//	エルード落下死開始処理
+	//	fall.h内に記述
+
+	//	エルード落下死終了処理
+	//	fall.h内に記述
+
+	//	エルード落下死
+	proc エルード落下死設定 {
+
+		trap de002 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_ELUDE_FALL \
+			-exec {
+				if ($3 == 入る) {
+					#if d:DEBUG_PRINT
+						print 'gameoverstart'
+					#endif
+					chara カメラ設定 ゲームオーバーカメラ \
+						-c 0 \
+//						-b d:CAM_MIN,-7000,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+//						-l d:CAM_MIN,-40000,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+						-b -2000,-7000,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+						-l -9300,-40000,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+						-r 3960,3731,0 -f 4340 \
+						-a 200 \
+						-i 0 -1 0 0 \
+						-s 1
+
+					@エルード落下死開始処理
+
+				} else if ( $3 == 出る ) {
+					@ゲームオーバー終了処理
+					@エルード落下死終了処理
+				}
+			}
+
+	}
+
+
+
+	//	ジャンプ落下死開始処理
+	proc ジャンプ落下死開始処理 {
+		chara カメラ設定 ゲームオーバーカメラ \
+			-c 0 \
+			-b d:CAM_MIN,-6000,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-l d:CAM_MIN,-40000,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-r 3960,3731,0 -f 4340 \
+			-a 200 \
+			-i 0 -1 0 0 \
+			-s 1
+
+		@ゲームオーバー開始処理
+	}
+
+	//	ジャンプ落下死終了処理
+	//	fall.h内に記述　ゲームオーバー終了処理と同じ
+
+	proc ジャンプ落下死設定 {
+
+		trap de001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				#if d:DEBUG_PRINT
+					print 'JUMPDEAD1'
+				#endif
+					command プレイヤー状態取得
+						@ジャンプ落下死発動 0x0004 -41000
+
+			}
+
+	}
+
+
+
+
+
+
+
+
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------
+proc デバッグキャラセット {
+	#if d:DEBUG_PRINT
+		print 'debug_chara_set'
+	#endif
+
+	#if d:CHARA_CAMERA
+		chara キャラカメラ 敵兵カメラ \
+			-c d:TARGET_CHARA \
+			-s -920,610,200 \
+			-r -200,1024,0 
+	#endif
+
+	#if d:SCREENSHOT
+		chara スクリーンショット shot
+	#endif
+
+	#if d:USB_KEY
+		chara USBキーボード実行 test \
+			-e d:KBD_ESC {	
+				mesg プレイヤー d:PLAYER position -5500, -13000, -500
+			} \
+	#endif
+}
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,165 @@
+MGS2 用 gclconv たたき台
+	1999/12/20 K.Uehara
+	$Id: TODO.txt,v 1.24 1999/12/21 07:57:51 usr01475 Exp $
+
+// サイズの拡張 *
+
+バッファ容量、各種内部オフセットを32Bitに拡張。
+
+// 型の拡張 *
+
+浮動小数点数は扱わない。
+
+16ビット数値(符合付き)	$w:変数名
+8ビット符合なし			$b:変数名
+1ビットフラグ			$f:変数名
+24ビット文字コード		$s:変数名
+
+に加えて、
+
+32ビット数値（符合付き）	$i:変数名	(デフォルト）
+
+を扱う。
+
+また、VECTOR型は32ビット*3であらわす。
+
+// 配列を新設。 *
+
+$f:配列名[ 式 ];
+
+配列の最大要素数の宣言は
+
+dim $f:配列名[ 最大要素数 ];
+
+で行う。これはプロトタイプ宣言。
+宣言は要素数が同じなら複数認める。
+最大要素数チェックは実行時にも行う。
+
+// 構文
+
+switch( 変数 ) {
+	case ( 式 ) {
+		...;
+	}
+	default {
+		...;
+	}
+}
+
+のサポート??
+
+// プリプロセッサ *
+
+#if, #ifdef のサポート。
+・#はコメントからはずす。
+
+define, include も#define, #includeに変更。
+
+// proc *
+
+引数の数の情報を埋め込む。
+
+// command.def *
+
+gclconvで各ステージ用の*.cを自動生成することを考える。
+各コマンドの定義にCの関数名を埋め込む。
+
+chara ほげほげ[NewHogeHoge] $s:キャラ名 ... 
+
+// 内部データ *
+
+コマンドラインのスキップ値を16Bitも使用可能にする。
+
+// 名前空間 *
+
+command.def で定義された$s:変数名の変数名が
+特殊なものに限り、名前空間のチェックを行う。
+
+group テクスチャ名 {
+	テクスチャ名,
+		:
+};
+
+group モーション名 {
+	モーション名,
+		:
+};
+
+といった宣言を各ファイル中で行い、
+バッティング、存在チェックを可能にする。
+
+// enum *
+
+enum シンボル名 {
+	d:シンボル = 値,
+	d:シンボル,
+};
+の数え上げシンボルも使用可能にする。
+command.def定義でシンボル名を使って、先行チェックをかける
+ことができる。
+
+パーサーの都合で
+#enum も作成
+
+// mesg プロトタイプ *
+
+mesg の第一引数にプログラム名を入れることで、
+command.def において引数チェックを行えるようにする。
+前述の名前空間チェックを使うことでテクスチャ名等の
+チェックを可能にする。
+
+mesg ほげほげ $s:キャラ名 kill
+mesg ほげほげ $s:キャラ名 action $w:アクション番号
+
+コマンドに[]で数字をつけることにより、そのコードで呼び出すことができる
+mesg ほげほげ $s:キャラ名 kill[0]
+とすると、killコマンドはプログラムに０で送られる
+
+プログラムでの引数対応は今まで通り。
+
+// 文字列の扱い *
+
+文字列は文字列テーブルとして持つ。
+同じようにフォントデータも含める。
+変数と同じようにgclconvで解決する。
+procと同じように、本体から呼び出されているものしか登録しない。
+
+リソース扱いにして、管理しやすくする。
+
+string hogehoge {
+	STR_1:
+		'hogehogeh'
+	STR_2:
+		'hogehogeh'
+	STR_3:
+		'hogehogeh'
+};
+
+-s [hogehoge:STR_1]
+
+GCL_STRTBL(0x0e) ID(short)
+
+フォントテーブルの構造 
+
++0
+	size_fontblock(int)
+	offset_message_top(int)
+	offset_string_top(int)
+	offset_fontdata(int)
+
++offset_message_top
+	offset_message(int)
+	offset_message(int)
+	offset_message(int)
+	offset_message(int)
+		:
+
++offset_string_top
+	string(char[])
+	string(char[])
+	string(char[])
+	string(char[])
+		:
+
++offset_fontdata
+	font( char[] )

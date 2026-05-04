@@ -1,0 +1,336 @@
+/* 関数リスト */
+
+	1999/08/06 K.Kano
+	$Id: mtxvec.txt,v 1.1.1.3 2002/11/19 11:41:44 Yoshizawa1 Exp $
+
+
+/* VU0 */
+
+/* ロード/ストア */
+void vu0_Ldv0(VECTOR *a);
+void vu0_Ldv1(VECTOR *a);
+void vu0_Ldv2(VECTOR *a);
+
+void vu0_LdSVv0(SVECTOR *a);
+void vu0_LdSVv1(SVECTOR *a);
+void vu0_LdSVv2(SVECTOR *a);
+
+void vu0_Stv0(VECTOR *a);
+void vu0_Stv1(VECTOR *a);
+void vu0_Stv2(VECTOR *a);
+
+void vu0_StSVv0(SVECTOR *a);
+void vu0_StSVv1(SVECTOR *a);
+void vu0_StSVv2(SVECTOR *a);
+
+void vu0_Ldm0(MATRIX *a);
+void vu0_Ldm1(MATRIX *a);
+void vu0_Ldm2(MATRIX *a);
+
+void vu0_Stm0(MATRIX *a);
+void vu0_Stm1(MATRIX *a);
+void vu0_Stm2(MATRIX *a);
+
+/* ベクトルを０クリアする */
+void vu0_Clrv0(void);
+void vu0_Clrv1(void);
+void vu0_Clrv2(void);
+
+/* ベクトルのｗ値を、0.0にする */
+void vu0_Setv0w0(void);
+void vu0_Setv1w0(void);
+void vu0_Setv2w0(void);
+
+/* ベクトルのｗ値を、1.0にする */
+void vu0_Setv0w1(void);
+void vu0_Setv1w1(void);
+void vu0_Setv2w1(void);
+
+/* コピー */
+void vu0_Cpv0v1(void);
+void vu0_Cpv0v2(void);
+void vu0_Cpv1v2(void);
+void vu0_Cpv1v0(void);
+void vu0_Cpv2v0(void);
+void vu0_Cpv2v1(void);
+
+void vu0_Cpm0m1(void);
+void vu0_Cpm0m2(void);
+void vu0_Cpm1m2(void);
+void vu0_Cpm1m0(void);
+void vu0_Cpm2m0(void);
+void vu0_Cpm2m1(void);
+
+/* 演算 */
+
+/* 加算 */
+void vu0_Addv0v1(void);
+void vu0_Addv0v2(void);
+void vu0_Addv1v2(void);
+void vu0_Addv1v0(void);
+void vu0_Addv2v0(void);
+void vu0_Addv2v1(void);
+
+void vu0_Addv2v0v1(void);
+void vu0_Addv1v0v1(void);
+void vu0_Addv1v0v2(void);
+void vu0_Addv2v0v2(void);
+void vu0_Addv0v1v2(void);
+void vu0_Addv2v1v2(void);
+void vu0_Addv2v1v0(void);
+void vu0_Addv0v1v0(void);
+void vu0_Addv1v2v0(void);
+void vu0_Addv0v2v0(void);
+void vu0_Addv0v2v1(void);
+void vu0_Addv1v2v1(void);
+
+/* 減算 */
+void vu0_Subv0v1(void);
+void vu0_Subv0v2(void);
+void vu0_Subv1v2(void);
+void vu0_Subv1v0(void);
+void vu0_Subv2v0(void);
+void vu0_Subv2v1(void);
+
+void vu0_Subv2v0v1(void);
+void vu0_Subv1v0v1(void);
+void vu0_Subv1v0v2(void);
+void vu0_Subv2v0v2(void);
+void vu0_Subv0v1v2(void);
+void vu0_Subv2v1v2(void);
+void vu0_Subv2v1v0(void);
+void vu0_Subv0v1v0(void);
+void vu0_Subv1v2v0(void);
+void vu0_Subv0v2v0(void);
+void vu0_Subv0v2v1(void);
+void vu0_Subv1v2v1(void);
+
+/* 乗算 */
+void vu0_Mulv0a(float a);
+void vu0_Mulv1a(float a);
+void vu0_Mulv2a(float a);
+
+void vu0_Mulv1v0a(float a);
+void vu0_Mulv2v0a(float a);
+void vu0_Mulv0v1a(float a);
+void vu0_Mulv2v1a(float a);
+void vu0_Mulv0v2a(float a);
+void vu0_Mulv1v2a(float a);
+
+void vu0_Mulv0Q(void);
+void vu0_Mulv1Q(void);
+void vu0_Mulv2Q(void);
+
+void vu0_Mulv1v0Q(void);
+void vu0_Mulv2v0Q(void);
+void vu0_Mulv0v1Q(void);
+void vu0_Mulv2v1Q(void);
+void vu0_Mulv0v2Q(void);
+void vu0_Mulv1v2Q(void);
+
+/* 除算 */
+void vu0_DivQab(float a,float b);
+
+/* 平方根 */
+void vu0_SqrtQ(float a);
+
+/* 平方根の逆数  q = b/sqrt(a) */
+void vu0_RsqrtQ(float a,float b);
+
+/* 内積 */
+float vu0_InnerProductv0v1(void);
+float vu0_InnerProductv0v2(void);
+float vu0_InnerProductv1v2(void);
+
+/* ベクトルの長さの平方 */
+float vu0_VectorLength2v0(void);
+float vu0_VectorLength2v1(void);
+float vu0_VectorLength2v2(void);
+
+/* ベクトルの正規化する */
+void vu0_VectorNormalv0(void);
+void vu0_VectorNormalv1(void);
+void vu0_VectorNormalv2(void);
+
+/* 外積 */
+void vu0_OuterProductv0v1(void);
+void vu0_OuterProductv0v2(void);
+void vu0_OuterProductv1v2(void);
+void vu0_OuterProductv1v0(void);
+void vu0_OuterProductv2v0(void);
+void vu0_OuterProductv2v1(void);
+
+void vu0_OuterProductv2v0v1(void);
+void vu0_OuterProductv1v0v1(void);
+void vu0_OuterProductv1v0v2(void);
+void vu0_OuterProductv2v0v2(void);
+void vu0_OuterProductv0v1v2(void);
+void vu0_OuterProductv2v1v2(void);
+void vu0_OuterProductv2v1v0(void);
+void vu0_OuterProductv0v1v0(void);
+void vu0_OuterProductv1v2v0(void);
+void vu0_OuterProductv0v2v0(void);
+void vu0_OuterProductv0v2v1(void);
+void vu0_OuterProductv1v2v1(void);
+
+/* マトリクス同士を掛け合わせる */
+void vu0_Mulm2m0m1(void);
+void vu0_Mulm2m1m0(void);
+void vu0_Mulm1m0m2(void);
+void vu0_Mulm1m2m0(void);
+void vu0_Mulm0m1m2(void);
+void vu0_Mulm0m2m1(void);
+
+/* マトリクスとベクトルを掛け合わせる */
+void vu0_Mulv0m0v0(void);
+void vu0_Mulv1m0v0(void);
+void vu0_Mulv2m0v0(void);
+void vu0_Mulv0m0v1(void);
+void vu0_Mulv1m0v1(void);
+void vu0_Mulv2m0v1(void);
+void vu0_Mulv0m0v2(void);
+void vu0_Mulv1m0v2(void);
+void vu0_Mulv2m0v2(void);
+void vu0_Mulv0m1v0(void);
+void vu0_Mulv1m1v0(void);
+void vu0_Mulv2m1v0(void);
+void vu0_Mulv0m1v1(void);
+void vu0_Mulv1m1v1(void);
+void vu0_Mulv2m1v1(void);
+void vu0_Mulv0m1v2(void);
+void vu0_Mulv1m1v2(void);
+void vu0_Mulv2m1v2(void);
+void vu0_Mulv0m2v0(void);
+void vu0_Mulv1m2v0(void);
+void vu0_Mulv2m2v0(void);
+void vu0_Mulv0m2v1(void);
+void vu0_Mulv1m2v1(void);
+void vu0_Mulv2m2v1(void);
+void vu0_Mulv0m2v2(void);
+void vu0_Mulv1m2v2(void);
+void vu0_Mulv2m2v2(void);
+
+float vu0_Sin(float x);
+float vu0_Cos(float x);
+void vu0_Sin4(float *x,float *ans);
+void vu0_Cos4(float *x,float *ans);
+
+float vu0_SinS(int x);
+float vu0_CosS(int x);
+void vu0_Sin4(short *x,float *ans);
+void vu0_Cos4(short *x,float *ans);
+
+/* ランダムの出力 */
+void vu0_RandInit(float x);
+float vu0_Rand(void);
+
+/* PS系の角度を、ラジアンに変換 */
+void vu0_PSDegV2RadV(SVECTOR *s,FVECTOR *f);
+void vu0_RadV2PSDegV(FVECTOR *f,SVECTOR *s);
+
+/* ベクトルの変換 */
+void vu0_IV0toFVv0(void);
+void vu0_IV0toFVv1(void);
+void vu0_IV0toFVv2(void);
+void vu0_IV0toFV(IVECTOR *iv,FVECTOR *fv);
+void vu0_SV0toFV(SVECTOR *iv,FVECTOR *fv);
+
+void vu0_IV12toFVv0(void);
+void vu0_IV12toFVv1(void);
+void vu0_IV12toFVv2(void);
+void vu0_IV12toFV(IVECTOR *iv,FVECTOR *fv);
+void vu0_SV12toFV(SVECTOR *iv,FVECTOR *fv);
+
+void vu0_FVtoIV0v0(void);
+void vu0_FVtoIV0v1(void);
+void vu0_FVtoIV0v2(void);
+void vu0_FVtoIV0(FVECTOR *fv,IVECTOR *iv);
+void vu0_FVtoSV0(FVECTOR *fv,SVECTOR *iv);
+
+void vu0_FVtoIV12v0(void);
+void vu0_FVtoIV12v1(void);
+void vu0_FVtoIV12v2(void);
+void vu0_FVtoIV12(FVECTOR *fv,IVECTOR *iv);
+void vu0_FVtoSV12(FVECTOR *fv,SVECTOR *iv);
+
+/* バウンディングボックス内に、ある点が存在するかどうかのチェック
+   バウンディングボックス内に存在すれば１、しなければ０を返す。*/
+int vu0_CheckBoundingBox(VECTOR *vertex,VECTOR *v0,VECTOR *v1);
+
+
+/* FPU */
+
+/* 絶対値 */
+float fpu_Abs(float a);
+
+/* 最大値／最小値 */
+float fpu_Max(float a,float b);
+float fpu_Min(float a,float b);
+
+/* ベクトルのクリア */
+void fpu_ClearVector(VECTOR *r);
+
+/* ベクトルのコピー */
+void fpu_CopyVector(VECTOR *r,VECTOR *a);
+
+/* マトリクスのコピー */
+void fpu_CopyMatrix(MATRIX *r,MATRIX *a);
+
+/* 単位行列の作成 */
+void fpu_CopyUnitMatirx(MATRIX *m);
+
+/* 加算 */
+void fpu_AddVectors(VECTOR *r,VECTOR *a,VECTOR *b);
+
+/* 減算 */
+void fpu_SubVectors(VECTOR *r,VECTOR *a,VECTOR *b);
+
+/* ベクトルとスカラーの乗算 */
+void fpu_MulVectorScaler(VECTOR *r,VECTOR *a,float b);
+
+/* ベクトルとスカラーの除算 */
+void fpu_DivVectorScaler(VECTOR *r,VECTOR *a,float b);
+
+/* 内積 */
+float fpu_InnerProduct(VECTOR *a,VECTOR *b);
+
+/* 外積 */
+void fpu_OuterProduct(VECTOR *r,VECTOR *a,VECTOR *b);
+
+/* ベクトルの長さの平方 */
+float fpu_VectorLength2(VECTOR *a);
+
+/* 平方根 */
+float fpu_Sqrt(float a);
+
+/* 平方根の逆数 = b/sqrt(a) */
+float fpu_Rsqrt(float a,float b);
+
+/* ベクトルの長さを正規化する */
+void fpu_VectorNormal(VECTOR *a);
+
+/* マトリクス同士を掛け合わせる */
+void fpu_MulMatrices(MATRIX *r,MATRIX *a,MATRIX *b);
+
+/* マトリクスとベクトルを掛け合わせる */
+void fpu_MulMatrixVector(VECTOR *r,MATRIX *m,VECTOR *a);
+
+
+/* VU0 + FPU */
+
+/* ベクトルの長さを算出 */
+float VectorLengthv0(void);
+float VectorLengthv1(void);
+float VectorLengthv2(void);
+
+float VectorLength(VECTOR *a);
+
+/* ベクトルを正規化する */
+void VectorNormalv0(void);
+void VectorNormalv1(void);
+void VectorNormalv2(void);
+
+void VectorNormal(VECTOR *a);
+
+/* 逆行列を求める。(Gauss-Jordan法) */
+void InverseMatrix(MATRIX *ans,MATRIX *m);

@@ -1,0 +1,37 @@
+//
+//	w15a.src	
+//
+//	written by Y.Matsuhana 2000.May
+//
+//	$Id: w15a.src,v 1.27 2002/05/31 11:51:49 usr02774 Exp $
+
+
+//	共通データ
+#define		MORNING_SKY		//	朝空
+#include	"w15_common.h"
+
+// ワールド
+
+//	ＡＢ共通
+world		w15_common/other
+world		w15_common/w15_bg
+
+//	Ａのみ
+world		w15a
+
+//	ライト
+lt2		w15a.lt2
+
+//	海
+option makexti6 -l 256
+pack_all	oil.tri \
+		effect/plant_sea/m_oil_sea_alp_ovl_mod0222.bmp \
+		effect/plant_sea/m_oil_ref_add_alp_ovl_mod1120.bmp
+option makexti6
+
+
+//	かもめ
+include		kamome.h
+
+//	リネーム
+texrename w15_24a.kms w10c_cntw04.bmp w10c_cntw04aaaa.bmp

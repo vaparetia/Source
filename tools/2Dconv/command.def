@@ -1,0 +1,20 @@
+/*
+ * 2D レイアウトツールの中間形式書式を規定するファイル
+ *
+ * %d:num	任意の整数値
+ * %f:float	任意の浮動小数点数値
+ * %s:string	任意の文字列
+ * %e:enum{a|b|c|d|e}  a,b,c,d,e のいずれか
+ * (%d:num)	%d:num を置けるが、無くても良い
+ */
+
+/*
+ * オブジェクト定義命令
+ */
+defun obj
+		%s:label  \
+		%e:attrib{empty|point|line|lstrip|box|sprite|zoom} \
+		(%d:vertex) \
+		(parent %s:parent_obj)
+
+output

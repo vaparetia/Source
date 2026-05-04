@@ -1,0 +1,172 @@
+//
+//	プログラムとリンクする特殊な変数リスト
+//	横にプログラム中での変数名を書いておく
+//	-hオプションでヘッダファイルとして出力できる
+//	すべての変数はshort or long
+//  配列も使用可能
+//	アライメントに注意すること
+//
+//  $Id: linkvar.def,v 1.53 2002/07/10 02:08:42 usr01475 Exp $
+
+#include	"equip.h"
+
+// ------------------------------ システム関連
+// -------------------------------NewGame時に初期化されない
+
+$w:クリア回数			GM_GameClearCount
+$w:タンカー編クリア回数	GM_TankerClearCount
+$w:プラント編クリア回数	GM_PlantClearCount
+$w:コンフィグ設定		GM_Configuration
+$i:コンフィグ設定２		GM_Configuration2
+$i:ＶＲ設定				GM_VRConfiguration
+$w:ゲーム設定			GM_GameLevel
+$w:プログラム結果		GM_Result
+$w:言語					GM_Language		
+$w:クリア後フラグ		GM_ClearFlag
+$w:スクリーン補正Ｘ		GM_ScrAdjX
+$w:スクリーン補正Ｙ		GM_ScrAdjY
+
+$i:常駐ディレクトリ[ 4 ]	GM_SaveResidentDir
+$i:エリアディレクトリ[ 4 ]	GM_SaveAreaDir
+
+$i:取得ドッグタグ[ 32 ]	GM_DogTagFlag
+
+// ------------------------------ ゲーム処理関連
+
+$s:エリア				GM_SaveArea
+$s:マップ				GM_SaveMap
+
+$s:エリア履歴[ 4 ]		GM_AreaHistory
+
+$s:直前のエリア			GM_PrevArea
+$i:Ｘ位置				GM_SaveX
+$i:Ｙ位置				GM_SaveY
+$i:Ｚ位置				GM_SaveZ
+
+$i:ステージプレイ時間	GM_StagePlayTime ;
+
+// ------------------------------ プレイヤー関連
+
+$i:プレイヤー位置Ｘ		GM_PlayerPosX
+$i:プレイヤー位置Ｙ		GM_PlayerPosY
+$i:プレイヤー位置Ｚ		GM_PlayerPosZ
+$w:プレイヤー方向		GM_PlayerDir
+$w:プレイヤーモーション		GM_PlayerMotion
+
+$w:ビハインド角度		GM_BehindRot 		//廃止
+$w:体力				GM_Vitality
+$w:体力最大			GM_VitalityMax
+$w:Ｏ２				GM_O2
+$w:Ｏ２最大			GM_O2Max 
+$w:プレイヤー姿勢	GM_PlayerStance
+$w:武器				GM_Weapon
+$w:アイテム			GM_Item
+
+$w:風邪状態					GM_PlayerCold
+$w:風邪くしゃみ間隔			GM_PlayerSneezeTime
+$i:風邪引きカウンタ			GM_PlayerColdCount
+$i:風邪引き始め時間			GM_PlayerColdStartTime
+
+$w:プレイヤーフラグ			GM_PlayerStateFlag
+$w:プレイヤー前武器			GM_WeaponPrev
+$w:プレイヤー前装備			GM_ItemPrev
+
+$w:アラートモード			GM_AlertMode
+$w:スタートアラートモード	GM_StartAlertMode
+
+$w:スネークグリップ最大[ 4 ]		GM_SnakeGripMax
+$w:ライデングリップ最大[ 4 ]		GM_RaidenGripMax
+
+$w:スネーク懸垂回数			GM_SnakeChin_Up
+$w:ライデン懸垂回数			GM_RaidenChin_Up
+
+// ------------------------------ プログラム関連
+
+$w:コンティニュー回数		GM_ContinueCount
+$w:ゲームオーバー回数		GM_GameOverCount
+$w:セーブ回数				GM_SaveCount
+
+$i:プレイタイム			GM_PlayTime		// 秒カウンタ
+$i:最後のセーブ			GM_LastSave		// 秒カウンタ
+
+$w:発砲数				GM_ShootCount
+$w:危険モード回数		GM_AlertCount
+$w:殺傷人数				GM_KillCount
+$w:累積ダメージ			GM_DamageCount
+$i:クリアコード[ 4 ]	GM_ClearCode
+$w:メカ破壊個数				GM_MecaKillCount
+
+$w:プログラムパディング		Padding_Dummy
+
+// ------------------------------ アイテム処理
+
+$w:武器弾数[ d:武器種類 ]						_GM_Weapons
+$w:武器最大数[ d:武器種類 ]						_GM_WeaponsMax
+$w:アイテム数[ d:アイテム種類 ]					_GM_Items
+$w:アイテム最大数[ d:アイテム種類 ]				_GM_ItemsMax
+
+$w:武器弾数Ｒ[ d:武器種類 ]					_GM_WeaponsR
+$w:武器最大数Ｒ[ d:武器種類 ]				_GM_WeaponsMaxR
+$w:アイテム数Ｒ[ d:アイテム種類 ]			_GM_ItemsR
+$w:アイテム最大数Ｒ[ d:アイテム種類 ]		_GM_ItemsMaxR
+
+$w:武器弾数保存[ d:武器種類 ]				_GM_WeaponsSaved
+$w:アイテム数保存[ d:アイテム種類 ]			_GM_ItemsSaved
+
+// ------------------------------ カメラ関連
+
+$i:カメラＸ位置				GM_CameraX
+$i:カメラＹ位置				GM_CameraY
+$i:カメラＺ位置				GM_CameraZ
+$i:注視点Ｘ位置				GM_CamTargX
+$i:注視点Ｙ位置				GM_CamTargY
+$i:注視点Ｚ位置				GM_CamTargZ
+$i:カメラ角度Ｘ				GM_CamRotX
+$i:カメラ角度Ｙ				GM_CamRotY
+
+// ------------------------------ 敵関連
+
+$i:アラートレベル			GM_AlertLevel
+
+// ------------------------------ 無線
+
+$w:最近無線周波数			GM_LastCodecFreq
+$w:グローバルロード回数		GM_GlobalLoadCount
+
+// ------------------------------ 敵兵情報
+// 敵兵情報量＊ステージ出現人数＊死体＊最大記憶ステージ数
+// 連続する４ステージの敵兵人数が１２＊４を越えるとバグるよ！！
+// 11(40byte)*12*2*4 = 1056
+
+$i:敵兵情報記憶[ 1056 ]		ENEMEM_EneMem
+$w:リセットロード回数		GM_ResetLoadCount
+$w:敵兵情報記憶位置			ENEMEM_CurrentNum
+
+// ------------------------------ その他
+
+$i:タンカー編カメラステータス GM_TnkerCamStatus
+// 128 / 8 = 15 文字まで入る + 1 は ターミネーター
+$i:ネームエントリー結果名前[ 5 ]       GM_MyName
+$i:ネームエントリー結果性別            GM_MySexData
+$i:ネームエントリー結果生年月日（年）  GM_MyYearData
+$i:ネームエントリー結果生年月日（月）  GM_MyMonthData
+$i:ネームエントリー結果生年月日（日）  GM_MyDayData
+$i:ネームエントリー結果血液型          GM_MyBloodData
+$i:ネームエントリー結果国              GM_MyRegionData
+
+$i:全体マップ壊れ場所指定              GM_StageBreakPoint
+$i:全体マップ範囲指定                  GM_SelectStageLimit
+
+$w:現ステージ番号			GM_StageNum
+$w:タイトルメニュー設定		GM_TitleMenuStatus
+
+$w:メニューフナムシ状態				GM_ShipwormFlag
+$w:メニューフナムシ侵食量			GM_ShipwormCorrode
+
+// -------- クリアコード関連
+
+$w:レーション使用回数		GM_RationUseCount
+$w:クリアリング回避回数		GM_ClearingCount
+$w:赤びっくり回数			GM_RedFindCount
+$w:クリアーコードフラグ		GM_ClearCodeFlag
+

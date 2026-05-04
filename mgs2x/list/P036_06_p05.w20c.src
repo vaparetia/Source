@@ -1,0 +1,205 @@
+// P036_06_p05.w20c.src // 010809 に P021_01_p01.w20b.src より名称変更
+// Ｅ脚・ヘリポートデモステージ
+// 爆弾解体オルガ登場１_pd１/ファットマン登場１/ファットマン死亡１/忍者登場１〜１２（全て）
+// 2001/02/23 S.Yamashita
+// $Id: P036_06_p05.w20c.src,v 1.6 2001/08/28 14:16:24 usr03635 Exp $
+
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 不要エフェクト切り分け定義
+#define EFFECT_CUSTUM
+
+//#define	E_GLASS_DANKON			// グラス系弾痕
+#define	E_KOGETUKI				// 壁への焦げ付き
+#define	E_FOOTSTAMP				// 足跡
+#define	E_ENEMY					// 敵兵系
+//#define	E_ENEMY_LIGHT			// 敵兵ライト
+#define	E_SLING					// スリング
+//#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+//#define	E_MANHATTAN_LIGHT		// マンハッタンライト
+#define	E_C4BOMB				// Ｃ４爆弾、赤外線センサー
+//#define	E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷
+//#define	E_CROSS_FADE_LIGHT		// クロスフェード（甲板のライトで使用）
+//#define	E_CHARA_DENTOU			// chara 懐中電灯、フォーチュン戦
+#define	E_WATER					// 水関係
+//#define	E_CHARA_HAMON			// chara 波紋
+//#define	E_BROKEN_OBJECT			// 壊れ物
+//#define	E_BROKEN_PAPEROBJECT	// 壊れ物紙
+//#define	E_BROKEN_PLATE			// 壊れ物皿
+//#define	E_HIMATU				// 水飛沫
+//#define	E_CHARA_MADOAME			// chara 窓雨
+#define	E_STEAM					// 粉 & 水蒸気
+//#define	E_POWDER				// 小麦粉
+#define	E_SKY_NORMAL			// 空
+//#define	E_LINEAR_GUN			// リニアガン
+#define	E_TENKYUU				// 天球ドーム
+#define	E_SUN					// 太陽
+#define	E_DOOR_LUMP				// ドアランプ
+//#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、
+								// ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+//#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+#define	ENV						// 天球
+
+// 汎用空用テクスチャのためのデファイン（c_effect.h の前で）
+//#define MORNING_SKY
+#define DAY_SKY
+//#define EVENING_SKY
+//#define NIGHT_SKY_DEMO
+
+// 各ステージ共通要素
+include		common.h
+#include	"c_effect.h"
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+pack_all	w20c.tri world/w20c world/door/w02a_l_dr.dar world/door/w24b_dr02.dar world/door/w01f_dr.dar world/sea
+world		w20c
+//world		door/w02a_l_dr.kms
+//world		door/w24b_dr02.kms
+//world		door/w01f_dr.kms
+//world		sea
+
+// w20cからの切り出しモデル メモリに余裕がありそうなのでw20cを丸々出す
+//pack_all w20c_demo.tri world/w20c_demo
+//world    w20c_demo
+
+// 中央塔１Ｆエレベータホール
+world		w24a/w24a0
+world		w24a/w24a1
+world		elevator/elv_2
+//world		w24a/other
+//world		door/w24a_dr00.kms
+//world		door/w24a_dr01.kms
+lt2			w24a.lt2
+
+// w10c のモデル 010814 田中コメントアウト
+//pack_all	w10c.tri \
+//			world/w10c/w10c_12a.dar \ // 追加
+//			world/w10c/w10c_18a.dar \ // 追加
+//			world/w10c/w10c_19a.dar \ // 追加
+//			world/w10c/w10c_22a.dar \ // 追加
+//			world/w10c/w10c_24a.dar \ // 追加
+//			world/w10c/w10c_25a.dar \ // 追加
+//			world/w10c/w10c_31a.dar \// 追加
+//			world/w10c/w10c_crane.dar \// 追加
+//			world/w10c/w10c_gl.dar \// 追加
+//			world/w10c/w10c_h.dar \// 追加
+//			world/w10c/w10c_hi.dar \// 追加
+//			world/w10c/w10c_i.dar \// 追加
+//			world/w10c/w10c_j.dar \// 追加
+//			world/w10c/w10c_ik.dar \// 追加
+//			world/w10c/w10c_k.dar \// 追加
+//			world/w10c/w10c_l.dar \// 追加
+//			world/w10c/w10c_14a.dar
+
+//world		w10c/w10c_12a.kms // 追加
+//world		w10c/w10c_18a.kms // 追加
+//world		w10c/w10c_19a.kms // 追加
+//world		w10c/w10c_22a.kms // 追加
+//world		w10c/w10c_24a.kms // 追加
+//world		w10c/w10c_25a.kms // 追加
+//world		w10c/w10c_crane.kms // 追加
+//world		w10c/w10c_gl.kms // 追加
+//world		w10c/w10c_h.kms // 追加
+//world		w10c/w10c_hi.kms // 追加
+//world		w10c/w10c_i.kms // 追加
+//world		w10c/w10c_j.kms // 追加
+//world		w10c/w10c_ik.kms // 追加
+//world		w10c/w10c_k.kms // 追加
+//world		w10c/w10c_l.kms // 追加
+//world		w10c/w10c_14a.kms // 追加
+//world		w10c/w10c_31a.kms // 追加
+
+// w20b遠景用のモデル 010813 田中追加
+pack_all	w20b_other.tri \
+			world/w20b/other/w20b_12a.dar \
+			world/w20b/other/w20b_14a.dar \
+			world/w20b/other/w20b_15a.dar \
+			world/w20b/other/w20b_17a.dar \
+			world/w20b/other/w20b_19a.dar \
+			world/w20b/other/w20b_21a.dar \
+			world/w20b/other/w20b_23a.dar \
+			world/w20b/other/w20b_24a.dar \
+			world/w20b/other/w20b_25a.dar \
+			world/w20b/other/w20b_31a.dar \
+			world/w20b/other/w20b_crane.dar \
+			world/w20b/other/w20b_gl.dar \
+			world/w20b/other/w20b_h.dar \
+			world/w20b/other/w20b_hi.dar \
+			world/w20b/other/w20b_i.dar \
+			world/w20b/other/w20b_jk.dar \
+			world/w20b/other/w20b_k.dar
+
+world		w20b/other/w20b_12a.kms
+world		w20b/other/w20b_14a.kms
+world		w20b/other/w20b_15a.kms
+world		w20b/other/w20b_17a.kms
+world		w20b/other/w20b_19a.kms
+world		w20b/other/w20b_21a.kms
+world		w20b/other/w20b_23a.kms
+world		w20b/other/w20b_24a.kms
+world		w20b/other/w20b_25a.kms
+world		w20b/other/w20b_31a.kms
+world		w20b/other/w20b_crane.kms
+world		w20b/other/w20b_gl.kms
+world		w20b/other/w20b_h.kms
+world		w20b/other/w20b_hi.kms
+world		w20b/other/w20b_i.kms
+world		w20b/other/w20b_jk.kms
+world		w20b/other/w20b_k.kms
+
+// プラント海面用
+include d_surface.h
+/*pack_all	oil.tri \
+				debug/takabe/tex/oil_alp_ovl_mod0222.bmp \
+				debug/takabe/tex/sky_day_add_alp_ovl_mod1120.bmp
+*/
+
+// プラント用監視カメラ
+meca		svc_plant
+meca		svc_plant/demo_svc_plant_pose.kms
+
+// 破壊不可能監視カメラ
+meca		svc_unbreak
+
+// ライト等
+lt2			w20b.lt2 // w20c.lt2 というファイルは存在しない。
+//lt2			w24b.lt2 // 網膜チェックデモ時用ライト
+hazard		d00a3.hzx
+
+// キャラクタ
+// ライデン
+human		rai_def/rai_def_mh_mt.evm
+/* mgdemo added ----from here (Tue Aug 14 22:07:59 2001) ---- */
+human	gps_def/gps_def_mt.kms
+human	gps_def/gps_sling.kms
+human	gbs_def/gbs_def.kms
+human	org_tng/org_tng_sld_mt.kms
+goods	demo_org_tng_hfb/demo_org_tng_hfb_r_blade_mt.kms
+goods	demo_org_tng_hfb/demo_org_tng_hfb_r_sheath.kms
+human	org_tng/org_tng_mh_mt.evm
+weapon	usp/usp_sub.kms
+human	gbs_def/gbs_hlst.kms
+human	gbs_def/gbs_bp.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Aug 14 22:39:54 2001) ---- */
+weapon	aks/aks_sp.kms
+/* mgdemo added ----upto here ---- */
+
+// たなかついか
+item  radio/rad.kms
+human gbs_def/gbs_sling.kms
+human gbs_def/gbs_kanagu.kms
+human gps_def/gps_knife.kms/* mgdemo added ----from here (Thu Aug 16 15:20:46 2001) ---- */
+weapon	abakan/abk.kms
+weapon  abakan/abk_amo.kms 
+/* mgdemo added ----upto here ---- */
+
+// リネーム
+texrename w20b_24a.kms w10c_cntw04.bmp w10c_cntw04aaaaa.bmp
+

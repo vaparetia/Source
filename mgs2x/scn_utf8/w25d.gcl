@@ -1,0 +1,1279 @@
+/*
+	w25d.gcl                     
+	    タイトロープ（１） 夕方バージョン
+
+	2000/11/30 Y.Matsuhana         
+	$Id: w25d.gcl,v 1.96 2002/07/25 05:58:52 usr03379 Exp $                      
+
+	
+*/
+
+// 各種スイッチ用define
+// ------------------------------------
+// プラント編識別
+#define STAGE_PLANT			1
+#define STAGE_W25D			1 
+
+// 敵兵、ＮＰＣ状況（薬莢を呼び分けるのに必要）
+#define		ENE_P_GOL		1		// 都市迷彩ゴル兵
+#define		GUN_MECA		1 					// ガンカメ ガンサイファー 
+
+// サウンド
+#define		SOUND			1		// サウンドデータは最初に呼ぶ
+#define		BGM			1		// BGMは敵兵コマンダーの後に呼ぶ
+// デモ
+#define		DEMO			0
+// キャラクター関係
+#define		RAIDEN			1		// SNAKEとは排他
+#define		SNAKE			0
+#define		ENEMY			1		// コマンダーと警備兵(敵を出すときは必須)
+#define		SUPPORT			0		// サポート兵
+#define		ATTACKER		1		// 攻撃兵
+#define		SHIELD			0		// 盾兵(1) or 通常攻撃兵(0)
+// ドア
+#define		SLIDE_DOOR		1		// スライドドア
+// 入出トラップ
+#define		LOAD_TRAP		1
+#define		STAGE_END		1
+// 監視カメラ関係
+#define		CYPHER			1		// サイファー
+// エマ
+#define		EMMA			1
+#define		EMMA_GEOVER_CAMERA	1
+// フォグ
+#define		FOG			1
+// エフェクト関係
+#define		EFFECT			0		// エフェクト全般
+#define		BLUR			0		// ブラー
+#define		Z_MANAGER		0		// Ｚフォーカス管理(敵のライト等で仕様)
+#define		BODY_SHADOW		0		// 敵のライトによって出る影
+// 子画面
+#define		SUB_CAMERA		0
+// カメラ関係
+#define		CLEAR_CAMERA		0		// クリアリング専用カメラ(要子画面)
+
+// 天井
+#define		CHARA_CEIL		0		// 天井君
+// イベント
+#define		EVENT			1		// イベント
+// 透明壁
+#define		TR_WALL			0		// シナリオ置きの透明壁
+// ライト関係
+#define		SPOT_LIGHT		0		// スポットライト
+#define		CHARA_LIGHT		1		// キャラ専用ライト
+// オブジェ関係
+#define		LOCKER			0		// ロッカー
+#define		SEA			1		// 海面
+#define		FIRE			1		// ステージ炎
+// アイテム
+#define		ITEM			0
+// 強制モーション
+#define		JP_MOTION		0		// ジャンプモーション
+#define		BY_MOTION		1		// ビヨンドモーション
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA	0		// デバッグキャラ全体(FIX時は0)
+#else
+	#define		DEBUG_CHARA	1		// デバッグキャラ全体
+#endif
+#define		FALLDOWN_RESET		1		// 落下したらリセット
+
+#define		CHARA_CAMERA		0		// キャラ追従カメラ
+#define		TARGET_CHARA		敵兵:01		// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+// エマ関係
+#define		WITH_EMMA		1		// エマと一緒のロード処理をするのに必要
+#define		EMMA_STAGE		w25d		// エマと一緒のロード処理をするのに必要
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME		w25d
+#define		KMS_NAME0		w25d0
+#define		KMS_NAME1		w25d1
+#define		KMS_NAME2		w25cd_17a
+#define		KMS_NAME3		w25cd_18a
+#define		KMS_NAME4		w25cd_19a
+#define		KMS_NAME5		w25cd_20a
+#define		KMS_NAME6		w25cd_21a
+#define		KMS_NAME7		w25cd_24a
+#define		KMS_NAME8		w25cd_25a
+#define		KMS_NAME9		w25cd_31a
+#define		KMS_NAMEA		w25cd_32a
+#define		KMS_NAMEB		w25cd_32b
+#define		KMS_NAMEC		w25cd_32c
+#define		KMS_NAMED		w25cd_crane
+#define		KMS_NAMEE		w25cd_gh
+#define		KMS_NAMEF		w25cd_i
+#define		KMS_NAMEG		w25cd_ij
+#define		KMS_NAMEH		w25cd_jk
+#define		KMS_NAMEI		w25cd_k
+#define		KMS_NAMEJ		w25cd_l
+#define		KMS_NAMEK		w25cd_other00
+#define		KMS_NAMEL		w25cd_other01
+#define		LT2_NAME		w25d
+#define		KMS_NAME_SEA		sea
+
+#define		KMS_ENT_L_0		w25d_28a
+#define		KMS_ENT_C_0		w25cd_31b
+
+#define	BY_HIGH				1
+
+// キャラクター関係
+#if d:RAIDEN
+	#define		PLAYER		ライデン	// モーションができるまで名前はスネーク
+#else
+	#define		PLAYER		スネーク
+#endif
+
+#define ENE_SNEAK_SIGHT_W25		3000
+#define ENE_ALERT_SIGHT_W25		8000
+
+// ローカル変数
+
+
+
+// モーション関係
+// ------------------------------------
+#include "rai_w25d.mh"
+
+// include
+// ------------------------------------
+#include "stdch.h"
+#include "sload.h"
+#include "beyond.h"
+#include "sound.h"
+#include "enevoice.h"
+#include "item_info.h"
+#include "fall.h"
+#include "sdemo.h"
+#include "w25cd_common.h"
+#include "emavoice.h" /* エマ用の音声 */
+#include "ene_item.h"
+#include "w25_kamome.gcl"
+
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+/*
+w25d関連のストーリーフラグ
+	P063_01_P01カード五１ポリゴンデモ１開始,
+	P063_01_P01カード五１ポリゴンデモ１終了,
+*/
+
+// マップ設定
+// ------------------------------------
+chara マップ タイトロープ２ 	\
+				-k d:KMS_NAME0 \
+				-k d:KMS_NAME1 \
+				-k d:KMS_NAME2 \
+				-k d:KMS_NAME3 \
+				-k d:KMS_NAME4 \
+				-k d:KMS_NAME5 \
+				-k d:KMS_NAME6 \
+				-k d:KMS_NAME7 \
+				-k d:KMS_NAME8 \
+				-k d:KMS_NAME9 \
+				-k d:KMS_NAMEA \
+				-k d:KMS_NAMEB \
+				-k d:KMS_NAMEC \
+				-k d:KMS_NAMED \
+				-k d:KMS_NAMEE \
+				-k d:KMS_NAMEF \
+				-k d:KMS_NAMEG \
+				-k d:KMS_NAMEH \
+				-k d:KMS_NAMEI \
+				-k d:KMS_NAMEJ \
+				-k d:KMS_NAMEK \
+				-k d:KMS_NAMEL \
+				-h d:HZX_NAME,0 -l d:LT2_NAME
+
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 1
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 2
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 3
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 4
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 5
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 6
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 7
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 8
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 9
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 10
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 11
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 12
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 13
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 14
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 15
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 16
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 17
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 18
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 19
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 20
+command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 21
+
+	command マップ設定 タイトロープ２ -set {
+		@サウンド設定	// データは最初に呼ぶ
+		@レーダー設定
+		@常駐キャラ設定
+		@ローカル変数初期化
+		@ドア設置
+		@主観禁止壁設定
+		@ロード設定
+		@ステージ炎設置
+		@アイテム設置
+		@フォグ設定
+		@エフェクト設定
+		@カメラセット
+		@w25cd共通カメラ設定
+		@キャラ用ライト設置		// マップ設定の最後に呼ぶ
+		@w25cd落下死亡処理
+		@プラント編全体マップ設定 d:ＫＬ連絡橋マップ	// stdproc.hで定義
+		//@見回り兵発動
+		//@w25dカモメ配置
+		@w25cd共通エルード設定
+		@デバッグキャラセット
+	}
+
+	// 無線用include ※位置は動かさないこと
+	#include "w25d_cdc.ch"
+	// ステージ状態による個別開始設定
+	// ------------------------------
+	if ( $w:p_story <  d:ST:P063_01_P01カード五１ポリゴンデモ１開始 ) {
+		if ( $s:エマ存在ステージ == w25d ) {
+			command マップ設定 タイトロープ２ -set {
+				@エマカード渡しイベント発動
+			}
+		}
+	}
+	// 全てのセットが終わったところでフェードイン
+	command マップ設定 タイトロープ２ -set {
+		if( $s:登場ポイント == sp_w31a_w25c_0 ) {
+			print 'sp_w31a_w25c_0'
+			// 全てのセットが終わったところでフェードイン
+			@プレイヤー設定
+			@プラグイン設定
+			@エマ設定
+			@ステージ開始時処理（ステージ名表示） d:LOAD_TYPE:SL_DOOR_TYPE 中央棟へのドア 2100 d:DEFAULT_M_TYPE d:wn_ＫＬ連絡橋
+			@中央棟ロード時カメラ設定
+		} else if( $s:登場ポイント == sp_w28a_w25c_0 ) {
+			print 'sp_w28a_w25c_0'
+			// 全てのセットが終わったところでフェードイン
+			@プレイヤー設定
+			@プラグイン設定
+			@エマ設定		// 敵兵より先に起動
+			@ステージ開始時処理（ステージ名表示） d:LOAD_TYPE:SL_DOOR_TYPE Ｌ脚ドア 2900 d:DEFAULT_M_TYPE d:wn_ＫＬ連絡橋
+			@Ｌ脚ロード時カメラ設定
+		} else if( $s:登場ポイント == polydemo_after ) {
+			print 'polydemo after'
+			// 全てのセットが終わったところでフェードイン
+			eval( $i:プレイヤー初期Ｘ位置 = 52000 ) ;
+			eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+			eval( $i:プレイヤー初期Ｚ位置 = -225000 ) ;
+			eval( $i:プレイヤー初期方向 = 0 ) ;
+			eval( $f:ロードチェックＯＮフラグ = 0);
+			@プレイヤー設定
+			@プラグイン設定
+			@エマ設定		// 敵兵より先に起動
+			@ステージ開始時処理 d:LOAD_TYPE:NO_MOVE_TYPE 0 0 0
+		} else {
+			print 'GCL ERROR ! Stage Start No Point.'
+		}
+		#if d:ENEMY
+		@空と海面設置
+		@コマンダー設定		// エマの状態に左右されるため、エマセットの後に配置すること！
+		@サイファー設置		// コマンダの後でないとダメです
+		#endif
+		#if d:BGM	
+		@ＢＧＭ設定	// プレイヤー→敵兵→BGMの順で呼ぶ
+		#endif
+	}
+command マップ表示 -show タイトロープ２
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// 全マップ共通
+	// レーダー
+	// ------------------------------------
+	proc レーダー設定 {
+		#if d:DEBUG_PRINT 
+			print 'menu set'
+		#endif
+		@レーダーオンオフチェック $f:w31a_ノードフラグ
+	}
+
+	// サウンド
+	// ------------------------------------
+	proc サウンド設定 {
+		#if d:DEBUG_PRINT 
+			print 'sound_set'
+		#endif
+
+		chara サウンドマネージャー ＳＤマネ -pak 0
+		@w25cd共通サウンド設定
+		@弾痕跳弾設定
+	}
+
+	// ローカル変数初期化
+	// ------------------------------------
+	proc ローカル変数初期化 {
+		#if d:DEBUG_PRINT 
+			print 'localvar_init'
+		#endif
+		eval( $f:エマゲームオーバーフラグ = 0 );
+	}
+
+
+	// ポリデモ
+	// ------------------------------------
+	// ノード端末
+	// ------------------------------------
+
+	// プラグインプログラム
+	// ------------------------------------
+	proc プラグイン設定 {
+		#if d:DEBUG_PRINT
+			print 'plugin_set'
+		#endif
+
+		#if d:JP_MOTION
+			command プラグイン自動ジャンプ
+		#endif
+		command プラグイン落下
+	}
+
+	// プレイヤー 
+	// ------------------------------------
+	proc プレイヤー設定 {
+		#if d:DEBUG_PRINT
+			print 'player_set'
+		#endif
+
+		#if d:RAIDEN
+			chara プレイヤー d:PLAYER \
+				-p $i:プレイヤー初期Ｘ位置,$i:プレイヤー初期Ｙ位置,$i:プレイヤー初期Ｚ位置 \
+				-d 0,$i:プレイヤー初期方向,0 \
+				-s 0 \
+				-m rai_def -a raiden -o rai_w25d \
+				-f d:PLY_NO_FOOT_SHADOW
+			@ライデン髪の毛設定 d:NORMAL_HAIR
+			@プレイヤーＬＯＤ設定 d:C_DISTANCE_TYPE 4000
+		#else if d:SNAKE
+			chara プレイヤー d:PLAYER \
+				-p $i:プレイヤー初期Ｘ位置,$i:プレイヤー初期Ｙ位置,$i:プレイヤー初期Ｚ位置 \
+				-d 0,$i:プレイヤー初期方向,0 \
+				-s 0 \
+				-m sna_def -a snake -o rai_common
+
+				//バンダナ
+				chara ロープモデル３ バンダナ１ \
+					-n sna_bdn1 \
+					-d 1 \
+					-y スネーク \
+					-z 12 \
+					-x 0,60,-90 \
+					-m 12 \
+					-p 250 \
+					-k 350 \
+					-o 110 \
+					-f 1
+
+				chara ロープモデル３ バンダナ２ \
+					-n sna_bdn2 \
+					-d 1 \
+					-y スネーク \
+					-z 12 \
+					-x 0,50,-90 \
+					-m 22 \
+					-p 250 \
+					-k 350 \
+					-o 110 \
+					-f 1
+		#endif
+
+	}
+
+#define	EMA_DISTANCE	20000
+	// エマ設定 
+	// ------------------------------------
+	proc エマ設定 {
+		#if d:DEBUG_PRINT
+			print 'emma_set'
+		#endif
+		if ( $f:エマ存在フラグ == 1 && $s:登場ポイント == sp_w31a_w25c_0 ) {
+			// ライデンと一緒に中央棟からきた
+			chara エマ・エメリッヒ 手繋ぎエマ \
+				-pos	($i:プレイヤー初期Ｘ位置-750),$i:プレイヤー初期Ｙ位置,($i:プレイヤー初期Ｚ位置+500) \
+				-dir	1024 \
+				-hide	20957,(-1500+2000),-237943 \
+					54000,(    0+2000),-246000 \
+					51000,(    0+2000),-253000 \
+					53000,(    0+2000),-253000 \
+					59500,(-3000+2000),-253000 \
+					59500,(-3000+2000),-227000 \
+					53000,(    0+2000),-225000 \
+				-voice [emma_voice:vox_list] \
+				-stage d:EMA_STG_W25D \
+				-vitality $i:エマライフ最大値 $i:エマライフ現在値 \
+				-idcard $f:IDcard \
+				-proc   手繋ぎエマゲームオーバー 
+			command プラグインエマ手繋ぎ -motion rai_ee
+		} else if ( $f:エマ存在フラグ == 1 && $s:登場ポイント == sp_w28a_w25c_0 ) {
+			// ライデンと一緒にＬ脚からきた
+			chara エマ・エメリッヒ 手繋ぎエマ \
+				-pos	($i:プレイヤー初期Ｘ位置+500),$i:プレイヤー初期Ｙ位置,($i:プレイヤー初期Ｚ位置+750) \
+				-dir	2048 \
+				-hide	20957,(-1500+2000),-237943 \
+					54000,(    0+2000),-246000 \
+					51000,(    0+2000),-253000 \
+					53000,(    0+2000),-253000 \
+					59500,(-3000+2000),-253000 \
+					59500,(-3000+2000),-227000 \
+					53000,(    0+2000),-225000 \
+				-voice [emma_voice:vox_list] \
+				-stage d:EMA_STG_W25D \
+				-vitality $i:エマライフ最大値 $i:エマライフ現在値 \
+				-idcard $f:IDcard \
+				-proc   手繋ぎエマゲームオーバー 
+			command プラグインエマ手繋ぎ -motion rai_ee
+		} else if ( $f:エマ存在フラグ == 0 && $s:エマ存在ステージ == w25d ) {
+			// ＫＬ連絡橋に置き去りにされた
+			chara エマ・エメリッヒ 手繋ぎエマ \
+				-pos	$i:エマ初期位置Ｘ,$i:エマ初期位置Ｙ,$i:エマ初期位置Ｚ \
+				-dir	2048 \
+				-hide	20957,(-1500+2000),-237943 \
+					54000,(    0+2000),-246000 \
+					51000,(    0+2000),-253000 \
+					53000,(    0+2000),-253000 \
+					59500,(-3000+2000),-253000 \
+					59500,(-3000+2000),-227000 \
+					53000,(    0+2000),-225000 \
+				-voice [emma_voice:vox_list] \
+				-stage d:EMA_STG_W25D \
+				-vitality $i:エマライフ最大値 $i:エマライフ現在値 \
+				-idcard $f:IDcard \
+				-proc   手繋ぎエマゲームオーバー 
+			command プラグインエマ手繋ぎ -motion rai_ee
+			mesg エマ・エメリッヒ 手繋ぎエマ 強制隠れ位置移動
+		}
+
+		if ( $s:エマ存在ステージ == w25d ) {
+			trap ld002 手繋ぎエマ \
+				-mask ？ \
+				-exec {
+					if ( $3 == 入る ) {
+						eval( $s:エマ存在ステージ = w31d );
+					} else {
+						eval( $s:エマ存在ステージ = w25d );
+					}
+				}
+			trap ld003 手繋ぎエマ \
+				-mask ？ \
+				-exec {
+					if ( $3 == 入る ) {
+						eval( $s:エマ存在ステージ = w28a );
+					} else {
+						eval( $s:エマ存在ステージ = w25d );
+					}
+				}
+		}
+	}
+	proc エマゲームオーバー時カメラ {
+		eval( $f:エマゲームオーバーフラグ = 1 );
+		if ( $s:エマ存在ステージ == w31d ) {
+			chara カメラ設定 エマ死にカメラ \
+				-c 1 \
+				-p 20887,2336,-233983 -t 19456,-312,-235338 \
+				-r 607,2578,0 -f 3301 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+		} else if ( $s:エマ存在ステージ == w28a ) {
+			chara カメラ設定 エマ死にカメラ \
+				-c 1 \
+				-p 49421,3682,-225625 -t 48970,1598,-223986 \
+				-r 578,3921,0 -f 2690 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+		} else {
+			command ゲットエマ足元座標 $i:epx , $i:epy , $i:epz ;
+			chara カメラ設定 エマ死にカメラ \
+				-c 1 \
+				-p ($i:epx + 30) , ($i:epy + 2000) , ($i:epz + 30)  \
+				-t $i:epx , $i:epy , $i:epz \
+				-a 180 \
+				-i 0 -1 0 0 \
+				-s 1
+		}
+	}
+
+	// 監視カメラ関係
+	// ------------------------------------
+	proc サイファー設置 {
+		#if d:DEBUG_PRINT 
+			print 'cypher_set'
+		#endif
+		if ( $f:サイファー破壊１フラグ == 0 ) {
+			chara サイファ  サイファー:01 \		// 先発
+				-route 12 0 \ 
+				-type 1 \ /* 0:NORMAL,1:GUN */
+				-i 8000 \
+				-speed 60 \
+				-b 1000 \
+				-kinkyuspeed 150 \
+				-proc サイファー破壊１ \
+				-skipflag 1 
+			// 監督指示により全ての敵兵/サイファーは初期からセットしておく 2001.7.18
+			mesg サイファ サイファー:01 スタート
+			mesg サイファ サイファー:01 ルート変更 0 0
+		}
+		if ( $f:サイファー破壊２フラグ == 0 ) {
+			chara サイファ  サイファー:02 \		// 後発
+				-route 13 0 \ 
+				-type 1 \ /* 0:NORMAL,1:GUN */
+				-i 8000 \
+				-speed 60 \
+				-b 1000 \
+				-kinkyuspeed 150 \
+				-proc サイファー破壊２
+//	8/22 向手修正
+//				-skipflag 1 
+			// 監督指示により全ての敵兵/サイファーは初期からセットしておく 2001.7.18
+			mesg サイファ サイファー:02 スタート
+			mesg サイファ サイファー:02 ルート変更 1 0
+		}
+	}
+
+	proc サイファー破壊１ { eval( $f:サイファー破壊１フラグ = 1 ) ; }
+	proc サイファー破壊２ { eval( $f:サイファー破壊２フラグ = 1 ) ; }
+
+	// 敵兵 
+	// ------------------------------------
+	proc 警備兵０ {
+		#if d:DEBUG_PRINT
+			print 'watcher_set'
+		#endif
+		if( $s:エマ存在ステージ == w25d ) {
+			eval( $i:警備兵ステータス = ( d:ENE_STATUS_NO_BLURR | d:ENE_STATUS_NPC | d:ENE_STATUS_URBAN )) ;
+		} else {
+			eval( $i:警備兵ステータス = ( d:ENE_STATUS_NO_BLURR | d:ENE_STATUS_URBAN )) ;
+		}
+		// ステージ置き炎の関係で、朧モード無し
+
+		chara 警備兵 敵兵:01 \	// ＫＬ補助橋にいる
+			-r 8 -n 0 -d 52000 0 -246000 タイトロープ２ \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+			-j ドッグタグ_敵兵 \
+				[dogtag:plt_w25d_guard_ve_01],\
+				[dogtag:plt_w25d_guard_ea_01],\
+				[dogtag:plt_w25d_guard_no_01],\
+				[dogtag:plt_w25d_guard_ha_01],\
+				[dogtag:plt_w25d_guard_vh_01] \
+			-q 引きずり１ $b:アイテム率１ 引きずり２ $b:アイテム率２ 引きずり３ $b:アイテム率３ \
+			-a ホールドアップ１ $b:アイテム率１ ホールドアップ２ $b:アイテム率２ ホールドアップ３ $b:アイテム率３ \
+			-s $i:警備兵ステータス
+		if ( $w:ゲーム設定 >= d:LEVEL_EXTREME ) {
+			chara 警備兵 見回り兵５ \	// 屋上
+				-r 5 -n 0 -d 21500 6000 -240000 タイトロープ２ \
+				-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+				-l $w:敵標準体力 -h 0 -f $w:敵標準気絶 \		// 聴力はありません
+				-s $i:警備兵ステータス
+				// PSG1にてサイファーを処理しないと進めない事と背反するため聴力ゼロです
+		}
+		trap ev005 d:PLAYER -mask 入る -exec {
+			mesg 警備兵 敵兵:01 ルート変更 9 52000 0 -246000 タイトロープ２
+		}
+	}
+	proc 攻撃兵０ {
+		#if d:DEBUG_PRINT
+			print 'attacker_set'
+		#endif
+		if( $s:エマ存在ステージ == w25d ) {
+			eval( $i:攻撃兵ステータス = ( d:ENE_STATUS_NO_BLURR | d:ENE_STATUS_NPC | d:ENE_STATUS_URBAN )) ;
+		} else {
+			eval( $i:攻撃兵ステータス = ( d:ENE_STATUS_NO_BLURR | d:ENE_STATUS_URBAN )) ;
+		}
+		chara アタッカー 敵兵:10 -r 2 \
+			-s $i:攻撃兵ステータス \// エマ狙い
+			-h $w:敵標準聴力 \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:敵標準体力 \
+			-f $w:敵標準気絶 
+
+		chara アタッカー 敵兵:11 -r 2 \
+			-s $i:攻撃兵ステータス \// エマ狙い
+			-h $w:敵標準聴力 \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:敵標準体力 \
+			-f $w:敵標準気絶 
+	}
+
+	proc 警備兵コマンダー {
+		#if d:DEBUG_PRINT
+			print 'wccomm_set'
+		#endif
+		chara 警備コマンダー wccomm -e 警備兵０
+	}
+	proc 攻撃兵コマンダー {
+		#if d:DEBUG_PRINT
+			print 'atcomm_set'
+		#endif
+		chara 攻撃コマンダー atcomm -e 攻撃兵０ \
+			-wait	(60*3) \
+			-avoidwait (60*5)  /*回避モードで始まる場合のみ有効*/
+	}
+
+	resource ghq_area_alert_voice {
+	w25d:
+		$t{
+			// PLAREA0
+			t:vc049009	// 指揮官「了解！敵を殲滅せよ！」
+			-1
+		}
+	}
+
+	resource ghq_caution_voice {
+	w25d:
+		$t{
+			// PLAREA0
+			t:vc040601,	// 指揮官　　「了解！僧院警戒を強化せよ！」
+			-2,
+			t:vc040614,	// 指揮官　　「ＫＬ連絡橋で異常発生。至急確認へ向かえ」
+			-3,
+			t:vc040613,	// 指揮官　　「ＫＬ連絡橋で異常発生。至急確認へ向かえ」
+			-1
+		}
+	}
+
+	proc コマンダー設定 {
+		#if d:DEBUG_PRINT
+			print 'commander_set'
+		#endif
+		if( $s:エマ存在ステージ == w25d ) {
+			eval( $i:コマンダステータス = (d:ENE_STAGE_GPS | d:ENE_STAGE_NPC_EMMA)) ;
+		} else {
+			eval( $i:コマンダステータス = (d:ENE_STAGE_GPS)) ;
+		}
+		chara コマンダー 敵兵セット \
+			-w 警備兵コマンダー \
+			-a 攻撃兵コマンダー \
+			-m $w:スタートアラートモード \
+			-r 10500 -1500 -238000 タイトロープ２ \
+			-c 10500 -1500 -238000 タイトロープ２ \
+			-v [ene_plant_voice:04] \
+			-x [ghq_area_alert_voice:w25d] \
+			-y [ghq_caution_voice:w25d] \
+			-b 10 \		/* 監督指示によりトータル攻撃兵は12名 */
+			-z $i:敵標準麻酔持続 \
+			-b $w:敵標準再発生数 \
+			-s $i:コマンダステータス \
+			-h $i:標準警戒時間 // 警戒時間←ここの行を追加する。
+	}
+
+	// ＢＧＭ
+	// ------------------------------------
+	proc ＢＧＭ設定 {
+		#if d:DEBUG_PRINT 
+			print 'bgm_set'
+		#endif
+
+		chara ＢＧＭマネージャー ＢＧＭマネ
+		chara ＢＧＭ風音 風音 \
+			-s d:BGM_WINDNOISE_WEATHER_FAIN
+	}
+
+
+	// 入出トラップ
+	// ------------------------------------
+	proc ロードプロック {
+		#if d:DEBUG_PRINT 
+			print 'load_proc'
+		#endif
+		if ($s:呼び出しプロック == mv_w25c_w31a_0) {
+			// Ｂ１へ
+			@mv_w25c_w31a_0
+		} else if ($s:呼び出しプロック == mv_w25c_w28a_0) {
+			// Ｂ１へ
+			@mv_w25c_w28a_0
+		}
+	}
+
+	proc ロード設定 {
+		#if d:DEBUG_PRINT 
+			print 'load_set'
+		#endif
+		trap ld002 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if( $f:ロードチェックＯＮフラグ == 1 ) {
+					// シェル２中央棟
+					if ( $f:夕方フラグ ) {
+						preseek 'w31d'
+					} else {
+						preseek 'w31a'
+					}
+					@ステージ終了時処理（ステージ名表示） 15750 -7000 -235000 3072 \
+						mv_w25c_w31a_0 d:DEFAULT_M_TYPE d:wn_シェル２中央棟１Ｆ空気清浄室
+					@中央棟ロード時カメラ設定 ;
+				}
+			}
+		trap ld003 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if( $f:ロードチェックＯＮフラグ == 1 ) {
+					// シェル２中央棟
+					preseek 'w28a'
+					@ステージ終了時処理（ステージ名表示） 48750 0 -220250 0 \
+						mv_w25c_w28a_0 d:DEFAULT_M_TYPE d:wn_Ｌ脚汚水処理場
+					@Ｌ脚ロード時カメラ設定 ;
+				}
+			}
+	}
+
+	proc 見回り兵発動 {
+		#if d:DEBUG_PRINT 
+			print 'mimawari hatsudou'
+		#endif
+		if ( $s:エマ存在ステージ == w25d ) {
+			eval( $f:後発サイファ破壊フラグ = 0 ) ;
+			trap ev006 手繋ぎエマ \
+				-mask 入る \
+				-exec {
+					if( $f:後発サイファ破壊フラグ == 1 ) {
+						if( $f:w25d見回り兵起動1 == 0 ) {
+							eval( $f:w25d見回り兵起動1 = 1 ) ;
+							chara delay 遅れ -time (60+30) -exec {
+								print 'MIMAWARI HEI START!'
+								mesg 敵兵共通 見回り兵 永久アンリアルＯＦＦ
+								mesg 警備兵 見回り兵 ルート変更 3 52000 0 -240000 タイトロープ２
+							}
+							@シナリオデモ用安全チェック
+							if( $status == 1 ) {
+								@シナリオカメラデモフラグ変更 -1 30 240
+								@シナリオカメラデモ 60 \
+									46231,1357,-241880 37214,-1550,-238793 200 \
+									22931,1124,-242700 20286,-2110,-233630 200 
+							}
+						}
+					}
+				}
+			trap ev007 手繋ぎエマ \
+				-mask 入る \
+				-exec {
+					/*
+					if( $f:w25d見回り兵起動2 == 0 ) {
+						eval( $f:w25d見回り兵起動2 = 1 ) ;
+						chara delay 遅れ -time (10+30) -exec {
+							print 'MIMAWARI HEI 2 START!'
+							mesg 警備兵 見回り兵２ ルート変更 5 21500 5000 -240000 タイトロープ２
+						}
+						@シナリオデモ用安全チェック
+						if( $status == 1 ) {
+							@基本シナリオデモ開始処理
+							@シナリオカメラデモフラグ変更 -1 10 180
+							@シナリオカメラデモ 30 \
+								$i:カメラＸ位置,$i:カメラＹ位置,$i:カメラＺ位置 $i:注視点Ｘ位置,$i:注視点Ｙ位置,$i:注視点Ｚ位置 200 \
+								29141,2003,-234422 21058,4924,-240133 200 
+						}
+					}
+					*/
+				}
+			trap ev008 手繋ぎエマ \
+				-mask 入る \
+				-exec {
+					if( $f:w25d見回り兵起動3 == 0 ) {
+						eval( $f:w25d見回り兵起動3 = 1 ) ;
+						chara delay 遅れ -time (15) -exec {
+							print 'MIMAWARI HEI 3 START!'
+							mesg 警備兵 敵兵:01 ルート変更 8 52000 0 -246000 タイトロープ２
+						}
+						@シナリオデモ用安全チェック
+						if(( $f:w25d_敵兵:01が守備位置に居る ) && ( $status == 1 )) {
+							@基本シナリオデモ開始処理
+							@シナリオカメラデモフラグ変更 -1 30 180
+							@シナリオカメラデモ 30 \
+								62380,-2657,-244233 57381,-1201,-245284 200 \
+								62380,-2657,-244231 60910,-2039,-239164 200 
+						}
+					}
+				}
+			trap ev011 敵兵:01 -mask ？ -exec {
+				// シナリオデモカットを見せるため、敵兵:01が守備位置に居るかどうかを検査
+				if ( $3 == 入る ) {
+					eval( $f:w25d_敵兵:01が守備位置に居る = 1 );
+				} else {
+					eval( $f:w25d_敵兵:01が守備位置に居る = 0 );
+				}
+			}
+			// 消火のタイミングで起動する予定
+			trap ev008 手繋ぎエマ \
+				-mask 入る \
+				-exec {
+					if( $f:w25d見回り兵起動4 == 0 ) {
+						eval( $f:w25d見回り兵起動4 = 1 ) ;
+						chara delay 遅れ -time (90+60) -exec {
+							print 'MIMAWARI HEI 4 START!'
+							mesg 警備兵 見回り兵４ ルート変更 11 52000 0 -250000 タイトロープ２
+						}
+					}
+				}
+			trap ev009 手繋ぎエマ \
+				-mask 入る \
+				-exec {
+					if( $f:w25d見回り兵起動5 == 0 ) {
+						eval( $f:w25d見回り兵起動5 = 1 ) ;
+						chara delay 遅れ -time (1) -exec {
+							print 'MIMAWARI HEI 4 START!'
+							mesg サイファ サイファー:01 スタート
+							mesg サイファ サイファー:01 ルート変更 0 0
+						}
+						@シナリオデモ用安全チェック
+						if( $status == 1 ) {
+							@シナリオカメラデモフラグ変更 -1 120 120
+							@シナリオカメラデモ 20 \
+								18682,564,-238919 24026,964,-239855 170 \
+								18682,564,-238919 24026,964,-239855 900 
+						}
+					}
+				}
+			trap ev010 手繋ぎエマ \
+				-mask 入る \
+				-exec {
+					if( $f:w25d見回り兵起動6 == 0 ) {
+						eval( $f:w25d見回り兵起動6 = 1 ) ;
+						chara delay 遅れ -time (1) -exec {
+							print 'MIMAWARI HEI 4 START!'
+							mesg サイファ サイファー:02 スタート
+							mesg サイファ サイファー:02 ルート変更 1 0
+						}
+						@シナリオデモ用安全チェック
+						if( $status == 1 ) {
+							@シナリオカメラデモフラグ変更 -1 20 120
+							@シナリオカメラデモ 100 \
+								26391,-2559,-237168 41822,75,-239506 200 \
+								27061, 1784,-237212 42469,  98,-239910 200 
+						}
+					}
+				}
+		}
+	}
+
+	proc 危険モード退避 {
+		// 次のステージへのアラートモード引継
+		if ($w:ゲーム設定 <= d:LEVEL_EASY) {
+			// easyより易しいレベルはロードすると潜入モード
+			eval( $w:スタートアラートモード = d:ALERT_MODE_SENNYU );
+		} else {
+			if ($w:アラートモード == d:ALERT_MODE_KIKEN && $i:アラートレベル < 1024) {
+				// 危険モード時(危険値MAXは除く)は回避モードまで下げる
+				eval( $w:スタートアラートモード = d:ALERT_MODE_KAIHI );
+			} else {
+				eval( $w:スタートアラートモード = $w:アラートモード );
+			}
+		}
+	}
+
+	proc エマカード渡しイベント発動 {
+		#if d:DEBUG_PRINT 
+			print 'emma card-5 demo'
+		#endif
+
+		trap ev003a 手繋ぎエマ -mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					eval ( $f:エマがドア前に居る = 1 ) ;
+				} else {
+					eval ( $f:エマがドア前に居る = 0 ) ;
+				}
+			}
+
+		trap ev003 d:PLAYER -mask ＊ -exec {\
+			if (( $f:エマがドア前に居る ) && ( $w:アラートモード != d:ALERT_MODE_KIKEN )) {
+				if( $f:w25d強制移動開始 == 0 ) {
+					@基本シナリオデモ開始処理
+					mesg シネマスクリーン シネマ フェードアウト 0
+					eval( $f:w25d強制移動開始 = 1 ) ;
+					mesg プレイヤー d:PLAYER run \
+						48750 0 -224250 \
+						0 \	// モーション：立ち歩き
+						0 \	// 終了方向
+						( d:FA_NO_CHECK_SEG | d:FA_DIRECT_MOVE ) \	// フラグ
+						カード五デモ発動
+					chara カメラ設定 カットインカメラ \
+						-c 2 \	
+						-p 53715,3783,-225647 \
+						-a 180 \
+						-i 0 -1 0 0 \
+						-s 1
+				}
+			}
+		}
+	}
+	proc カード五デモ発動 {
+		@危険モード退避 ;
+		command パッド操作 -release
+		chara delay 遅延 -time (1*60) -exec {
+			eval( $w:p_story = d:ST:P063_01_P01カード五１ポリゴンデモ１開始 ) ;
+			eval( $s:登場ポイント = polydemo_after ) ;
+			if ( $w:アイテム == d:アイテム:ゴル兵制服 ) {
+				preseek 'r_plt5'
+			} else {
+				preseek 'd063p01'
+			}
+			chara フェードインアウト フェードアウト -c 0,0,0 128 -t 30 -p w25dフェード終了
+		}
+	}
+	proc w25dフェード終了 {
+		// エマからカード５をもらう(デモ前だけど確定しているのでココで渡しておきます）
+		eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+		eval( $f:IDcard = 0 ) ;		/* エマのカラダからIDカードを取り除く */
+		command セットサウンドコード -c d:SNG_FOUTS_S
+		// エマのライフを継承するための処理（2001.11.20更新 Y.Matsuhana）
+		command ゲットエマライフ $i:エマライフ現在値 ;
+		@mv_w25d_d063p01_0
+	}
+
+	// ステージ炎設置
+	// ------------------------------------
+#define 炎数マックス	4
+
+	proc ステージ炎設置 {
+		if( $f:ステージ置き炎鎮火 ) {
+			// もう消えている
+			eval( $i:鎮火ステータス = 1 ) ;
+//			command セットゾーンフラグ 0 52000 0 -236000 ;	// 通過できるようになりました
+			//	むかいで修正（下が正しい使用法）2002.07.25
+			command アンセットゾーンフラグ 1 52000 0 -236000 ;	// 通過できるようになりました
+
+		} else {
+			// まだ消えていない
+			eval( $i:鎮火ステータス = 0 ) ;
+			eval( $b:ステージ置き炎消火数 = 0 ) ;   // 完全鎮火していない場合は、ステージ初期化で全部の炎復活
+			chara 透明壁 とうせんぼ壁 \
+				-position 51125 0 -236750 3000 \
+					  52875 0 -236750 3000 \
+				-attribute (	d:HZX_SEG_NO_BULLET | \
+						d:HZX_SEG_NO_MISSILE | \
+						d:HZX_SEG_NO_C4 | \
+						d:HZX_SEG_NO_RECOIL | \
+						d:HZX_SEG_NO_BULLETHOLE | \
+						d:HZX_SEG_NO_DISP_RADAR | \
+						d:HZX_SEG_NO_HARITSUKI | \
+						d:HZX_SEG_NO_SPRAY | \
+						d:HZX_SEG_NO_ENEMY_EYES | \
+						d:HZX_SEG_NO_ENEMY_IK | \
+						d:HZX_SEG_NO_KNOCK_SE) \
+				-direct \
+				-map タイトロープ２
+		}
+
+		/* 下記二つの繰り返し処理は、当たりを持つものと持たないもので、透明壁を消す処理のためだけに分けました */
+		command foreach -argc 4 -repeat 2 \
+			-data { \
+				{ 1 51250, 0, -236250 } \
+				{ 1 52750, 0, -235750 } \
+			} \
+			-exec { \
+				chara ステージ置き炎 fire -pos $2 $3 $4 -flag $1 -xwidth 500 -zwidth 250 \
+					-status $i:鎮火ステータス \
+					-exec {
+						mesg 透明壁 とうせんぼ壁 kill
+						chara テスト昇り煙 smoke \
+							-radius 500 -pos $1 $2 $3	// 発生位置
+						eval( $b:ステージ置き炎消火数 =  $b:ステージ置き炎消火数 + 1 ) ;
+						if( $b:ステージ置き炎消火数 >= 1 ) { eval( $f:ステージ置き炎鎮火 = 1 ); }
+						if( $b:ステージ置き炎消火数 >= d:炎数マックス ) {
+//							command セットゾーンフラグ 0 52000 0 -236000 ;	// 通過できるようになりました
+							//	むかいで修正（下が正しい使用法）2002.07.25
+							command アンセットゾーンフラグ 1 52000 0 -236000 ;	// 通過できるようになりました
+						}
+					};
+			}
+		command foreach -argc 4 -repeat 2 \
+			-data { \
+				{ 0 51750, 0, -235500 } \
+				{ 0 52850, 0, -236500 } \
+			} \
+			-exec { \
+				chara ステージ置き炎 fire -pos $2 $3 $4 -flag $1 -xwidth 500 -zwidth 250 \
+					-status $i:鎮火ステータス \
+					-exec {
+						chara テスト昇り煙 smoke \
+							-radius 500 -pos $1 $2 $3	// 発生位置
+						eval( $b:ステージ置き炎消火数 =  $b:ステージ置き炎消火数 + 1 ) ;
+						if( $b:ステージ置き炎消火数 >= 1 ) { eval( $f:ステージ置き炎鎮火 = 1 ); }
+						if( $b:ステージ置き炎消火数 >= d:炎数マックス ) {
+//							command セットゾーンフラグ 0 52000 0 -236000 ;	// 通過できるようになりました
+							//	むかいで修正（下が正しい使用法）2002.07.25
+							command アンセットゾーンフラグ 1 52000 0 -236000 ;	// 通過できるようになりました
+						}
+					};
+			}
+
+	}
+
+	// 空と海面設置
+	// ------------------------------------
+	proc 空と海面設置 {
+		#if d:DEBUG_PRINT
+			print 'w25c_sea_set'
+		#endif
+
+		chara プラント海面 plant_sea \
+			-single_mode \	// シングルテクスチャモード
+			-tex oil e_oil_sea_alp_ovl_mod0222 e_oil_ref_add_alp_ovl_mod1120 \
+			-pos 52000,-40000,-240000 \
+			-w 1 2 3 \
+			-l
+		mesg プラント海面 plant_sea 上下運動計算処理 0
+		chara 拡張海表示皿型 sea_serface_ex \
+		 	-tex entyou_oil_sea		\
+			-pos 52000,-40000,-240000		\
+			-color 128 224 224	\			/*色合い調整 省略可*/
+			-lines	 0			\			/* ライン数 何ラインの拡張海に合わせるか */
+			-radius  270000 330000 \		/* 内側：270000+60000*lines を目安に */
+			-hight   15000		\		/*皿状のトップの高さ*/
+			-devide  10					/* MAX:59  */
+		chara 水面監視水飛沫 落下水飛沫 \
+			-n d:PLAYER 
+		command 水位設定 -lv -40000
+
+		@Ｗ２５Ｄ夕空（レンズフレア指定） 52000 -40000 -240000 -2810 -741 -4069 0
+		@風基本設定
+	}
+
+	// アイテム
+	// ------------------------------------
+	proc アイテム取得時番号設定 $:ボックス名 {
+		#if d:DEBUG_PRINT
+			print 'item_no_set'
+		#endif
+		if ( $:ボックス名 == ＰＳＧ１弾 ) {
+			eval($b:w25d_取得ロード回数[0] = $w:グローバルロード回数);	
+		} else if ( $:ボックス名 == チャフ ) {
+			eval($b:w25d_取得ロード回数[1] = $w:グローバルロード回数);	
+		} else if ( $:ボックス名 == レーション ) {
+			eval($b:w25d_取得ロード回数[2] = $w:グローバルロード回数);	
+		} 
+	}
+
+	proc アイテム設置 {
+		#if d:DEBUG_PRINT
+			print 'item_set'
+		#endif
+		@アイテム再セットチェック $b:w25d_取得ロード回数[0]
+		if ($f:再セットフラグ) { @弾薬_ＰＳＧ１_初期設置 ＰＳＧ１弾 23000 -1500 -241500 0 }
+		@アイテム再セットチェック $b:w25d_取得ロード回数[1]
+		if ($f:再セットフラグ) { @チャフ_初期設置 チャフ 23000 -1500 -238500 0 }
+		@アイテム再セットチェック（難易度対応） $b:w25d_取得ロード回数[2]
+		if ($f:再セットフラグ) { @レーション_初期設置 レーション 20000 -1500 -241250 0 }
+		@アイテム再セットチェック $b:w25d_取得ロード回数[3]
+		if ($f:再セットフラグ) { @弾薬_Ｍ４_初期設置 Ｍ４弾 58750 -3000 -236000 0 }
+		@アイテム再セットチェック $b:w25d_取得ロード回数[4]
+		if ($f:再セットフラグ) { @弾薬_ソコム_初期設置 ソコム弾 59000 -3000 -253000 0 }
+	}
+
+	// フォグ
+	// ------------------------------------
+	/*
+	　　空RGB値　… R58,G47,B38
+	　　フォグ値 … R143,G100,B50
+	　　　　　　　　NEAR… -16000,FAR… 250000
+	*/
+	proc フォグ設定 {
+		#if d:DEBUG_PRINT
+			print 'fog_set'
+		#endif
+
+		/*
+		chara フォグ 霧\
+			-c  143, 100, 50 \
+			-n -16000 \
+			-f 250000 
+		*/
+		
+		@明るさ可変機能 143, 100, 50 \
+			-60000 320000\
+			ev092 -1750
+	}
+
+	// キャラ用光源(マップの設置が終わってから設定することで、キャラだけに光を当てる)
+	// ------------------------------------
+	proc キャラ用ライト設置 {
+		#if d:DEBUG_PRINT
+			print 'chara_light_set'
+		#endif
+
+		chara 環境光 環境光源 \
+			 -c 27,45,50		// 2001.7.27 根岸指示の値に変更
+
+		chara 平行光 平行光源 \
+			 -c 176,144,63 \	// 2001.7.27 根岸指示の値に変更
+			 -p -2500 -3500 -2500
+	}
+
+	// エフェクト関係
+	// -----------------------------------
+	proc エフェクト設定 {
+		#if d:DEBUG_PRINT
+			print 'effect_set'
+		#endif
+
+		#if d:BLUR
+			chara ブラー ブラー
+		#endif
+
+		#if d:Z_MANAGER
+			chara Ｚフォーカス管理 Z_manager
+			mesg Ｚフォーカス管理 Z_manager パラメータ 5000 30
+		#endif
+
+		#if d:BODY_SHADOW
+			chara ＯＦＦ制御 off_man
+			mesg ＯＦＦ制御 off_man ボディシャドウＯＦＦ
+		#endif
+		chara シネマスクリーン シネマ \
+			-top d:CINEMA_BELT_UPPER \
+			-bottom d:CINEMA_BELT_LOWER \
+			-ftime d:C_FADE_TIME
+	}
+
+	// 子画面設定 
+	// ------------------------------------
+	proc 子画面設定 {
+		#if d:DEBUG_PRINT
+			print 'sub_camera_set'
+		#endif
+
+		chara サブ画面 子画面 \
+			-w (512-d:SUB_MARGIN-d:SUB_WIDTH),d:SUB_MARGIN (512-d:SUB_MARGIN),(d:SUB_HEIGHT+d:SUB_MARGIN)
+	}
+
+	// ステージカメラ設定 
+	// ------------------------------------
+	proc カメラセット {
+		#if d:DEBUG_PRINT
+			print 'stage_camera_set'
+		#endif
+
+		chara カメラ ステージカメラ		-c 0 -l 3 -p 0 
+		chara カメラ 通路カメラ			-c 0 -l 2 -p 50
+		chara カメラ 小部屋カメラ		-c 0 -l 2 -p 40
+		chara カメラ ロードカメラ		-c 0 -l 2 -p 30
+		chara カメラ ビヨンドカメラ		-c 0 -l 2 -p 20
+		chara カメラ モーションカメラ		-c 0 -l 2 -p 10
+		chara カメラ カットインカメラ		-c 0 -l 2 -p 5 
+		chara カメラ エマ死にカメラ		-c 0 -l 0 -p 10 
+
+		// デフォルトカメラ
+		chara カメラ設定 ステージカメラ \
+			-c 0 \	
+			-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-r 750,2048,0 \
+			-f 6500 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s 1
+	}
+
+	// ------------------------------------
+	// ビヨンド設定
+	// ------------------------------------
+	/* ビヨンドは共通設定へ */
+
+// 各マップ別設定
+// ------------------------------------
+// タイトロープ１
+	// 天井設置
+	// ------------------------------------
+	proc タイトロープ１天井設置 {
+		#if d:DEBUG_PRINT
+			print 'w25c0_ceil_set'
+		#endif
+	}
+
+	// 強制モーション用トラップ
+	// ------------------------------------
+	// ジャンプ設定
+	// ------------------------------------
+	proc タイトロープ１ジャンプ設定 {
+		#if d:DEBUG_PRINT
+			print 'w25c_jump_set'
+		#endif
+		trap ky001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				@ジャンプ発動 ky001 1000 100
+			}
+		trap ky002 d:PLAYER \
+			-mask 入る \
+			-exec {
+				@ジャンプ発動 ky002 1000 100
+			}
+	}
+
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下仮キャラ用proc
+// -----------------------------------------------------------------------------------
+// 仮キャラ
+// ------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------
+proc デバッグキャラセット {
+	#if d:DEBUG_PRINT
+		print 'debug_chara_set'
+	#endif
+
+	#if d:SCREENSHOT
+		chara スクリーンショット shot
+	#endif
+	#if d:USB_KEY
+		chara USBキーボード実行 test \
+			-e d:KBD_ESC {	
+				mesg プレイヤー d:PLAYER position -5500, -13000, -500
+			} \
+	#endif
+}

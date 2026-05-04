@@ -1,0 +1,64 @@
+//
+//	wp63a.src
+//	武器訓練 ニキータ３面
+//
+//	$Id$
+
+#define WN_WP63A
+#define WN_ANOTHER
+
+block .use r_vr_r
+block .nocache
+block .cache
+
+// 的モデル
+#define VR_TGT_CUBE			1 // キューブ
+//#define VR_TGT_SQUARE		1 // 十字
+//#define VR_TGT_TRIANGLE	1 // 三角
+//#define VR_TGT_OCTA		1 // 八面体
+//#define VR_TGT_STRAW		1 // 刀用
+//#define VR_TGT_HEXA		1 // スティンガー用的
+//#define VR_TGT_WALL		1 // ＶＲ箱
+
+// ＶＲ用define
+#include	"vr_def.h"
+
+// ＶＲ的
+#include	"vrstage.h"
+
+// ＶＲ追加エフェクト
+#include	"vr_effect.h"
+
+// 各ステージ共通要素
+#include	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+
+// 強制モーション
+mtn			rai_wp63a.mls
+mtn			sna_wp63a.mls
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+option makexti6 -l 1024 -f PAL8
+pack_all	ws63a.tri \
+	world/vr_weapon/ws63a
+option makexti6
+
+world		vr_weapon/ws63a
+hazard		ws63a.hzx
+rol			world/vr_weapon/ws63a/ws63a.rol
+
+// オブジェクト
+
+// 消火器
+
+// アイテム
+itembox
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム

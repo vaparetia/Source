@@ -1,0 +1,580 @@
+/*
+	P045_01_p01.w25a.gcl
+	    タイトロープ（１）デモステージ
+	    ハリアー登場
+
+	2000/11/30 Y.Matsuhana         
+	$Id: P045_01_p01.w25a.gcl,v 1.51 2001/09/26 07:43:18 usr03635 Exp $                      
+
+	
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+#define		DEMO_STAGE		1		// デモステージかどうかで起動するキャラを切り分ける
+
+// 各種スイッチ用define
+// ------------------------------------
+// テスト用ハリア
+#define		HARRIER			1
+#define		KAMOFU			1
+
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// 各種設定用define
+// ------------------------------------
+#define		HZX_NAME		d00a3
+
+#define		KMS_NAME_SEA		sea
+
+#define		KMS_NAME_HARRIER	hri_def		// 実験用ハリア
+#define		KMS_NAME_KAMOFU		kamofu_w20b	// 実験用カモフ
+#define		KMS_IRS			irs			// 赤外線センサー
+#define		KMS_IRS_BOX		irs_box		// 赤外線センサー制御箱
+
+#define		KMS_NAME0		w25a0		// シェル1シェル２連絡橋上部
+#define		KMS_NAME1		w25a1		// シェル1シェル２連絡橋下部
+#define		KMS_NAME2		w25ab_17a	// 遠景
+#define		KMS_NAME3		w25ab_18a	// 遠景
+#define		KMS_NAME4		w25ab_19a	// 遠景
+#define		KMS_NAME5		w25ab_20a	// 遠景
+#define		KMS_NAME6		w25a_gl		// 遠景
+#define		KMS_NAME7		w25ab_gh	// 遠景
+#define		KMS_NAME8		w25a_g		// 遠景
+#define		KMS_NAME9		w25ab_14a	// 遠景
+#define		KMS_NAMEA		w25ab_21a	// 遠景
+#define		KMS_NAMEB		w25ab_24a	// 遠景
+#define		KMS_NAMEC		w25ab_31a	// 遠景
+#define		KMS_NAMED		w25ab_32a	// 遠景
+#define		KMS_NAMEE		w25ab_32b	// 遠景
+#define		KMS_NAMEF		w25ab_32c	// 遠景
+#define		KMS_NAMEG		w25ab_crane	// 遠景
+#define		KMS_NAMEH		w25ab_i1	// 遠景
+#define		KMS_NAMEI		w25ab_i2	// 遠景
+#define		KMS_NAMEJ		w25ab_kl	// 遠景
+#define		KMS_NAMEK		w25ab_l		// 遠景
+#define		KMS_NAMEL		w25ab_other00	// 遠景
+#define		KMS_NAMEM		w25ab_other01	// 遠景
+#define		KMS_NAMEN		w25ab_other02	// 遠景
+#define		KMS_NAMEO		w25a_18b	// Ｄ脚ロード部分
+
+// デモ前
+#define		KMS_ENT_D_0		w25a_brk00a	// Ｄ脚入り口破壊前
+#define		KMS_ENT_G_0		w25a_brk01a	// Ｇ脚入り口破壊前
+#define		KMS_ENT_P_0		w25a_brk02a	// パイプへこみ前
+
+// デモ後
+#define		KMS_ENT_D_1		w25a_brk00b	// Ｄ脚入り口破壊後
+#define		KMS_ENT_G_1		w25a_brk01b	// Ｇ脚入り口破壊後
+#define		KMS_ENT_P_1		w25a_brk02b	// パイプへこみ後
+
+#define		KMS_NAME0_BEFORE	w25a0_obj00	// 破壊前上部
+#define		KMS_NAME1_BEFORE	w25a1_obj00	// 破壊前下部
+#define		KMS_NAME0_AFTER		w25a0_obj01	// 破壊後上部
+#define		KMS_NAME1_AFTER		w25a1_obj01	// 破壊後下部
+#define		KMS_NAME_SEA		sea		// 海
+
+#define		DOOR_NAME_LOAD		w25a_dr00		// ロード用
+
+#define		LT2_NAME		w25a
+
+#define		NULL_KMS_NAME		null
+#define		NULL_LT2_NAME		null
+
+
+
+// include
+// ------------------------------------
+#include "5sec_bfr_demo.h"
+#include "demo_vardef.h"
+#include "demo_stdch.h"
+#include "demo_stdch2.h"
+#include "stdproc.h"
+#include "story.h"
+#include "sload.h"
+#include "sound.h"
+#include "sdemo.h"
+#include "w25_kamome.gcl"		/* 奥田君管理（かもめヘッダ） */
+#include "w25a_common.h"
+
+#include "sea_surface.h"
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+#if d:PLANT_DEMO_ALL_SKIP
+	#define		DEMO_SKIP_ENABLE 1
+#else
+	#define		DEMO_SKIP_ENABLE 0
+#endif
+
+// マップ設定
+// ------------------------------------
+chara マップ ＤＧ連絡橋1F -h d:HZX_NAME -l d:LT2_NAME
+
+#include "w25a_cdc.ch"
+
+command マップ設定 ＤＧ連絡橋1F -set {
+//	デモ環境かゲーム環境かで起動を読み分ける。
+// ------------------------------------
+#if d:MGS2_DEMO
+
+chara デモアクトデバッグ demodebug  -i t:p045_01_p01 -d 'p045_01_p01' -l  -s 'p045_01_p01'  \
+		-p Ｄ脚破壊 Ｇ脚破壊 パイプ凹み ドア部セムテックス消去 \
+		   マントソリダス影オン マントソリダス影オフ ソリダス影オン ソリダス影オフ \
+		   ソリダスパイプ影投影オン ソリダスパイプ影投影オフ \
+		   ソリダスハリアー影投影オン ソリダスハリアー影投影オフ
+
+		// ハリアー戦前 を再生するとき
+		eval($s:d_num = P045_01_p01)
+		// ハリアー戦後 を再生するとき
+		//eval($s:d_num = P046_01_p01)
+
+#else
+
+// 実際の再生
+//-----------------------------------------------------------
+	// 実際のデモ再生の方も、ストーリーフラグで変える
+	if($w:p_story == d:ST:P045_01_P01ハリアー登場１ポリゴンデモ１開始) {
+		print '$w:p_story = ST:P045_01_P01ハリアー登場１ポリゴンデモ１開始'
+
+		/* ソリダス出現　ハリアー戦手前 */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P045_01_p01)
+
+		proc デモ再生_P045_01_p01 {
+			@デモモデル差し替え処理
+			chara demo デモ再生 \
+				-i t:p045_01_p01 \
+				-p Ｄ脚破壊 Ｇ脚破壊 パイプ凹み ドア部セムテックス消去 \
+				   マントソリダス影オン マントソリダス影オフ ソリダス影オン ソリダス影オフ \
+				   ソリダスパイプ影投影オン ソリダスパイプ影投影オフ \
+				   ソリダスハリアー影投影オン ソリダスハリアー影投影オフ \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next P045_01_p01終了
+		}
+		@デモ再生_P045_01_p01
+	}
+#endif
+
+
+// 以下、諸々セット
+//-----------------------------------------------------------
+	@常駐キャラ設定						// stdch.hで定義
+
+	chara デモキャンセルチェック デモキャンセル \
+		-p demo_cancel
+
+	@ＤＧ連絡橋B1モデルセット
+	@ＤＧ連絡橋1Fモデルセット
+	@天井セット
+	@ドア設置
+	@海面設置
+	@空設置
+	@w25a専用赤外線設定
+	@フォグ設定
+	@エフェクト設定
+//	@デバッグキャラセット
+	@シネマスクリーンセット
+
+	@リアル影セット
+	@リアル影セットパイプ用
+	@リアル影セット２ハリアー用
+
+/*
+	// デバッグ用
+	chara delay ディレイ \
+		-time 9100 \ 
+		-exec{
+			@ソリダスパイプ影投影オン
+		}
+
+	chara delay ディレイ \
+		-time 11000 \ 
+		-exec{
+			@ソリダスハリアー影投影オン
+		}
+*/
+	if($s:d_num == P045_01_p01) {
+		@ＤＧ連絡橋1F破壊前セット
+	} else if($s:d_num == P046_01_p01){
+		@ＤＧ連絡橋1F破壊後セット
+	}
+
+	@デモ用薬莢用メモリ確保セット
+
+
+} // 「command マップ設定 タイトロープ」の閉じカッコ
+
+
+// ====================================
+// 初期マップ表示
+// ====================================
+// デモ専用ステージなので、ここでshow
+command マップ表示 -show ＤＧ連絡橋1F	
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// デモデモ再生関連のプロック
+//-----------------------------------------------------------
+proc null {}
+
+proc demo_cancel {
+	command StreamStopAll
+}
+
+proc P045_01_p01終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+
+	print '$w:p_story = d:ST:P045_01_P01ハリアー登場１ポリゴンデモ１終了'
+	eval($w:p_story = d:ST:P045_01_P01ハリアー登場１ポリゴンデモ１終了)
+
+	chara delay ディレイ \
+		-time 1 \ 
+		-exec{
+			// ゲームへ
+			@ゲームステージへ戻る
+			load "" -r 'r_plt0'
+			@mv_w18a_w25a_1
+		}
+}
+
+
+
+proc シネマスクリーンセット  {
+	chara シネマスクリーン シネマ \
+		-top d:CINEMA_BELT_UPPER \
+		-bottom d:CINEMA_BELT_LOWER \
+		-ftime 60	//デフォルト値（ゼロは駄目）
+	mesg シネマスクリーン シネマ フェードアウト 1
+}
+
+
+// 全マップ共通
+	// ポリデモ
+	// ------------------------------------
+	// ノード端末
+	// ------------------------------------
+
+	// ドア＆マップ切り替え関係
+	// ------------------------------------
+#if 0
+	proc ドア設置 {
+		chara プットオブジェ １Ｆ右ドア \
+			-m d:DOOR_NAME_LOAD \
+			-r 0,1024,0 \
+			-p 17125,0,-234250 \
+			-s 100,100,100 \
+			-l d:LT2_NAME
+
+		chara プットオブジェ 倉庫ドア \
+			-m d:DOOR_NAME_LOAD \
+			-r 0,3072,0 \
+			-p -8875,0,-231500 \
+			-s 100,100,100 \
+			-l d:LT2_NAME
+	}
+#endif
+
+	// 海面設置
+	// ------------------------------------
+	proc 海面設置 {
+		#if 1
+			@プラント海面セット 昼 w25a 1
+		#else
+			chara プラント海面 plant_sea \
+				-tex oil oil_alp_ovl_mod0222 sky_day_add_alp_ovl_mod1120 \
+				-pos 0,-40000,-180000
+		#endif
+	}
+
+	// 空設置
+	// ------------------------------------
+	proc 空設置 {
+		@プラントステージでの汎用空セット ハリアー昼 w25a
+
+		chara 太陽 ソル \
+			-p 0 -40000 -150000 \    //中心の位置
+			-f -2700 -3100 -2700     //平行光源の-pと同じ値
+	}
+
+
+	proc Ｄ脚破壊 {
+		print 'Destory D-prop'
+		mesg  プットオブジェ Ｄ脚入口破壊前  kill ;
+		chara プットオブジェ Ｄ脚入口破壊後   -m d:KMS_ENT_D_1 -p 0,0,0 -r 0,0,0 -l d:LT2_NAME
+	}
+
+	proc Ｇ脚破壊 {
+		print 'Destory G-prop'
+		mesg  プットオブジェ Ｇ脚入口破壊前  kill ;
+		chara プットオブジェ Ｇ脚入口破壊後   -m d:KMS_ENT_G_1 -p 0,0,0 -r 0,0,0 -l d:LT2_NAME
+		mesg ドアランプ Ｇ脚方面ドアランプ 破壊
+	}
+
+	proc パイプ凹み {
+		print 'Destory Pipe'
+		mesg  プットオブジェ 凹んでないパイプ kill ;
+		chara プットオブジェ 凹んだパイプ     -m d:KMS_ENT_P_1 -p 0,0,0 -r 0,0,0 -l d:LT2_NAME
+	}
+
+	// フォグ
+	// ------------------------------------
+	proc フォグ設定 {
+		#if 1
+			@プラントステージでのフォグセット 昼 0
+		#else
+			chara フォグ 霧\
+				-c 160, 180, 160 \
+				-n 5000 \
+				-f 130000
+		#endif
+	}
+
+	// エフェクト関係
+	// -----------------------------------
+	proc エフェクト設定 {
+			//chara ブラー ブラー
+
+			chara Ｚフォーカス管理 Z_manager
+
+			chara ＯＦＦ制御 off_man
+			mesg ＯＦＦ制御 off_man ボディシャドウＯＦＦ
+	}
+
+
+// ステージモデルセット
+// ------------------------------------
+// ＤＧ連絡橋
+proc ＤＧ連絡橋1Fモデルセット {
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_2 -m d:KMS_NAME2 -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_3 -m d:KMS_NAME3 -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_4 -m d:KMS_NAME4 -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_5 -m d:KMS_NAME5 -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_6 -m d:KMS_NAME6 -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_7 -m d:KMS_NAME7 -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_8 -m d:KMS_NAME8 -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_9 -m d:KMS_NAME9 -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_A -m d:KMS_NAMEA -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_B -m d:KMS_NAMEB -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_C -m d:KMS_NAMEC -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_D -m d:KMS_NAMED -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_E -m d:KMS_NAMEE -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_F -m d:KMS_NAMEF -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_G -m d:KMS_NAMEG -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_H -m d:KMS_NAMEH -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_I -m d:KMS_NAMEI -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_J -m d:KMS_NAMEJ -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_K -m d:KMS_NAMEK -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_L -m d:KMS_NAMEL -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_M -m d:KMS_NAMEM -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_N -m d:KMS_NAMEN -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1Fモデル_O -m d:KMS_NAMEO -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+
+	chara プットオブジェ Ｄ脚入口破壊前   -m d:KMS_ENT_D_0 -p 0,0,0 -r 0,0,0 -l d:LT2_NAME ;
+	chara プットオブジェ Ｇ脚入口破壊前   -m d:KMS_ENT_G_0 -p 0,0,0 -r 0,0,0 -l d:LT2_NAME ;
+	chara プットオブジェ 凹んでないパイプ -m d:KMS_ENT_P_0 -p 0,0,0 -r 0,0,0 -l d:LT2_NAME ;
+
+}
+
+proc ＤＧ連絡橋B1モデルセット {
+	chara プットオブジェ ＤＧ連絡橋B1モデル_0 \
+			-m d:KMS_NAME0 -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+}
+
+proc 天井セット {
+	chara プットオブジェ 天井モデル \
+			-m d:KMS_NAME1 -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+}
+
+proc ＤＧ連絡橋1F破壊前セット {
+	chara プットオブジェ ＤＧ連絡橋1F破壊前０ \
+			-m d:KMS_NAME0_BEFORE -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1F破壊前１ \
+			-m d:KMS_NAME1_BEFORE -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+}
+
+proc ＤＧ連絡橋1F破壊後セット {
+	chara プットオブジェ ＤＧ連絡橋1F破壊後０ \
+			-m d:KMS_NAME0_AFTER -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プットオブジェ ＤＧ連絡橋1F破壊後１ \
+			-m d:KMS_NAME1_AFTER -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+}
+
+proc デモ用薬莢用メモリ確保セット {
+	chara M4弾 M4グレネード
+	chara M4_DEMO_GUN弾 デモ弾Ｍ４
+	
+}
+
+// [追加] 2001/08/30 Uehara Masatoshi
+proc リアル影セット {
+	chara 影投影モデル 影もでる \
+		-m w25demo_sdw00 \
+		-p -1 1 -1
+
+	chara 影管理 影かんり \
+		-t 0 \
+		-p -30 -85 -30
+
+	mesg 影管理 影かんり demo_add rai_def_mh_demo  影もでる	// ライデン
+	// デバッグ用
+//	mesg 影管理 影かんり demo_add sol_def_mant_body_mh_mt 影もでる	// ソリダス（マント状態）
+//	mesg 影管理 影かんり demo_add sol_def_mh_mt 影もでる	// ソリダス（通常）
+}
+
+proc マントソリダス影オン {
+	mesg 影管理 影かんり demo_add sol_def_mant_body_mh_mt 影もでる	// ソリダス（マント状態）
+}
+proc マントソリダス影オフ {
+	mesg 影管理 影かんり del sol_def_mant_body_mh_mt
+}
+proc ソリダス影オン {
+	mesg 影管理 影かんり demo_add sol_def_mh_mt 影もでる	// ソリダス（通常）
+}
+proc ソリダス影オフ {
+	mesg 影管理 影かんり del sol_def_mh_mt
+}
+
+proc リアル影セットパイプ用 {
+	chara 影投影モデル 影もでるパイプ用 \
+		-m w25demo_sdw02 \
+		-p 0 0 0
+
+	chara 影管理 影かんりパイプ用 \
+		-t 0 \
+		-p -30 -85 -30
+}
+
+proc ソリダスパイプ影投影オン {
+	mesg 影管理 影かんりパイプ用 demo_add sol_def_mh_mt  影もでるパイプ用	// ライデン
+}	
+
+proc ソリダスパイプ影投影オフ {
+	mesg 影管理 影かんりパイプ用 del sol_def_mh_mt
+}	
+
+proc リアル影セット２ハリアー用 {
+	chara 影投影モデル２ 影もでる２ハリアー用 \
+		-ctrl hri_def
+
+	chara 影管理 影かんり２ハリアー用 \
+		-t 0 \
+		-p -30 -85 -30
+}
+
+proc ソリダスハリアー影投影オン {
+	mesg 影管理 影かんり２ハリアー用 demo_add sol_def_mh_mt  影もでる２ハリアー用	// ライデン
+}
+
+proc ソリダスハリアー影投影オフ {
+	mesg 影管理 影かんり２ハリアー用 del sol_def_mh_mt
+}
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下仮キャラ用proc
+// -----------------------------------------------------------------------------------
+// 仮キャラ
+// ------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------
+proc デバッグキャラセット {
+	#if d:SCREENSHOT
+		chara スクリーンショット shot
+	#endif
+
+	#if d:USB_KEY
+		chara USBキーボード実行 test \
+			-e d:KBD_ESC {	
+				mesg プレイヤー d:PLAYER position -5500, -13000, -500
+			} \
+	#endif
+
+	#if d:HARRIER
+	// 大きさ比較用ハリア（2000.12.14）
+	#if d:DEBUG_PRINT
+	print 'harrier_test'
+	#endif
+	chara プットオブジェ harrier_test \
+			-m d:KMS_NAME_HARRIER -p 0,0,0  -l d:LT2_NAME -r 0,0,0 
+	chara プロック連続実行 harrier_test_fly \
+		-time -1 \
+		-exec {
+			eval( $w:実験ハリア角度   = (($w:実験ハリア角度   +  3) & 4095) );
+			eval( $w:実験ハリア角度２ = (($w:実験ハリア角度２ +  5) & 4095) );
+			eval( $i:実験ハリアＸ軸方向 = 0 );
+			eval( $i:実験ハリアＹ軸方向 = 0 );
+			eval( $i:実験ハリアＺ軸方向 = 0 );
+			eval( $i:実験ハリア位置Ｘ   = (`command cos $w:実験ハリア角度`) * 3 );
+			eval( $i:実験ハリア位置Ｙ   = (`command sin $w:実験ハリア角度`) * 3 -1000 );
+			eval( $i:実験ハリア位置Ｚ   = (`command sin $w:実験ハリア角度２`) * 3 -150250 );
+			mesg プットオブジェ harrier_test turn $i:実験ハリアＸ軸方向 $i:実験ハリアＹ軸方向 $i:実験ハリアＺ軸方向
+			mesg プットオブジェ harrier_test move $i:実験ハリア位置Ｘ $i:実験ハリア位置Ｙ $i:実験ハリア位置Ｚ
+		}
+	#endif
+	#if d:KAMOFU
+	// 大きさ比較用カモフ（2000.12.14）
+	#if d:DEBUG_PRINT
+	print 'kamofu_test'
+	#endif
+	chara プットオブジェ kamofu_test \
+			-m d:KMS_NAME_KAMOFU -p 0,0,0  -r 0,0,0 -f 0x20
+	chara プロック連続実行 kamofu_test_fly \
+		-time -1 \
+		-exec {
+			eval( $w:実験カモフ角度   = (($w:実験カモフ角度   +  5) & 4095) );
+			eval( $w:実験カモフ角度２ = (($w:実験カモフ角度２ +  7) & 4095) );
+			eval( $i:実験カモフＸ軸方向 = 0 );
+			eval( $i:実験カモフＹ軸方向 = 0 );
+			eval( $i:実験カモフＺ軸方向 = 0 );
+			eval( $i:実験カモフ位置Ｘ   = (`command cos $w:実験カモフ角度`) * 4 );
+			eval( $i:実験カモフ位置Ｙ   = (`command sin $w:実験カモフ角度`) * 4 -1000 );
+			eval( $i:実験カモフ位置Ｚ   = (`command sin $w:実験カモフ角度２`) * 3 -150250 );
+			mesg プットオブジェ kamofu_test turn $i:実験カモフＸ軸方向 $i:実験カモフＹ軸方向 $i:実験カモフＺ軸方向
+			mesg プットオブジェ kamofu_test move $i:実験カモフ位置Ｘ $i:実験カモフ位置Ｙ $i:実験カモフ位置Ｚ
+		}
+	#endif
+}
+

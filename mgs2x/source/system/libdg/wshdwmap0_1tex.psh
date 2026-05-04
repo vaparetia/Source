@@ -1,0 +1,14 @@
+; シャドウマップ用ピクセルシェーダー(Windows 簡素版)
+; 
+;
+; 2002.04.08  K.Takabe
+; 2002.09.05  E.Takaki
+
+ps.1.1
+
+tex t0
+
+mul_x2 r0.a, v0, t0
+mul_x2 r0.rgb, v0, t0
+
+;mul_x2 r0.rgb, v0, t0	; デバッグ用

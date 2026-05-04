@@ -1,0 +1,294 @@
+/*--------------------------------------------------------------------------*/
+/*	x2w_util.c																*/
+/*					Utility													*/
+/*--------------------------------------------------------------------------*/
+#define	__X2W_UTIL_C__
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "xtl.h"
+#include "libfs.h"
+#include "x2w_util.h"
+
+/*--------------------------------------------------------------*/
+/*	typedef														*/
+/*--------------------------------------------------------------*/
+typedef	struct	X2W_OSSTATUS_PARAM_
+{
+	OSVERSIONINFO	version_info ;		// OSVersion情報
+
+	BOOL	overlapped_readfile_enable ;
+} X2W_OSSTATUS_PARAM ;
+
+/*--------------------------------------------------------------*/
+/*	ローカル関数宣言											*/
+/*--------------------------------------------------------------*/
+static	void	CheckOverlappedReadFileEnable(void) ;
+
+/*--------------------------------------------------------------*/
+/*	static														*/
+/*--------------------------------------------------------------*/
+static	X2W_OSSTATUS_PARAM	X2W_OSStatus ;
+
+/*--------------------------------------------------------------*/
+/*	X2W_InisOSStatus	OS状態管理 初期化						*/
+/*--------------------------------------------------------------*/
+void	X2W_InisOSStatus(void)
+{
+	ZeroMemory(&X2W_OSStatus, sizeof(X2W_OSSTATUS_PARAM)) ;
+
+	/*-- OS Version 取得 ---------------------------------------*/
+
+	X2W_OSStatus.version_info.dwOSVersionInfoSize = sizeof(OSVERSIONINFO) ;
+	GetVersionEx(&X2W_OSStatus.version_info);
+
+#ifdef	DEBUG_MODE
+	/* プラットホーム判別 */
+	switch( X2W_OSStatus.version_info.dwPlatformId )
+	{
+	  /* Win 3.1 */
+	  case VER_PLATFORM_WIN32s :
+		ErrorLogPrintf("OS Platform: Win 3.1\n") ;
+		break ;
+
+	  /* 95/98系 */
+	  case VER_PLATFORM_WIN32_WINDOWS :
+		switch( X2W_OSStatus.version_info.dwMajorVersion )
+		{
+		  case 4 :
+			switch( X2W_OSStatus.version_info.dwMinorVersion )
+			{
+			  case 0 :
+				ErrorLogPrintf("OS Platform: Windows 95\n") ;
+				break ;
+
+			  case 10 :
+				ErrorLogPrintf("OS Platform: Windows 98\n") ;
+				break ;
+
+			  case 90 :
+				ErrorLogPrintf("OS Platform: Windows ME\n") ;
+				break ;
+
+			  default :
+				ErrorLogPrintf("OS Platform: Windows95/98/ME[MinorVersion:%d]\n",
+							X2W_OSStatus.version_info.dwMinorVersion) ;
+				break ;
+			}
+			break ;
+		}
+		break ;
+
+	  /* NT系 */
+	  case VER_PLATFORM_WIN32_NT :
+		switch( X2W_OSStatus.version_info.dwMajorVersion )
+		{
+		  /* NT */
+		  case 0 :
+		  case 1 :
+		  case 2 :
+		  case 3 :
+		  case 4 :
+			ErrorLogPrintf("OS Platform: Windows NT%d.%d\n",
+				X2W_OSStatus.version_info.dwMajorVersion,
+				X2W_OSStatus.version_info.dwMinorVersion) ;
+			break ;
+
+		  /* 2000/XP/.NET系 */
+		  case 5 :
+			switch( X2W_OSStatus.version_info.dwMinorVersion )
+			{
+			  /* 2000 */
+			  case 0 :
+				ErrorLogPrintf("OS Platform: Windows 2000\n") ;
+				break ;
+
+			  /* XP */
+			  case 1 :
+				ErrorLogPrintf("OS Platform: Windows XP\n") ;
+				break ;
+
+			  /* .NET */
+			  case 2 :
+				ErrorLogPrintf("OS Platform: Windows .NET\n") ;
+				break ;
+
+			  default :
+				ErrorLogPrintf("OS Platform: Windows 2000/XP/.NET[MinorVersion:%d]\n",
+							X2W_OSStatus.version_info.dwMinorVersion) ;
+				break ;
+			}
+			break ;
+		}
+		break ;
+
+	  /* 未知のPLATFORM */
+	  default :
+		ErrorLogPrintf("OS Platform: Unknown[%d]\n",
+				X2W_OSStatus.version_info.dwPlatformId) ;
+		break ;
+	}
+
+	/* その他 */
+	ErrorLogPrintf("\tMajor:%d, Minor:%d\n",
+				X2W_OSStatus.version_info.dwMajorVersion,
+				X2W_OSStatus.version_info.dwMinorVersion) ;
+
+#endif
+	/*----------------------------------------------------------*/
+
+	/*-- 機能判定 ----------------------------------------------*/
+
+	CheckOverlappedReadFileEnable() ;
+	/*----------------------------------------------------------*/
+}
+
+/*--------------------------------------------------------------*/
+/*	X2W_ReleaseOSStatus	OS状態管理 終了処理						*/
+/*--------------------------------------------------------------*/
+void	X2W_ReleaseOSStatus(void)
+{
+}
+
+/*--------------------------------------------------------------*/
+/*	X2W_OverlappedReadFileEnable								*/
+/*							非同期ReadFileが使用できるか検査	*/
+/*--------------------------------------------------------------*/
+BOOL	X2W_OverlappedReadFileEnable(void)
+{
+	return( X2W_OSStatus.overlapped_readfile_enable ) ;
+}
+
+/*--------------------------------------------------------------*/
+/*	CheckOverlappedReadFileEnable								*/
+/*					非同期ReadFileが使用できるか検査して設定	*/
+/*--------------------------------------------------------------*/
+static	void	CheckOverlappedReadFileEnable(void)
+{
+	BOOL	enable ;
+
+	/*-- プラットホームによる判別 ------------------------------*/
+
+	enable = FALSE ;
+	switch( X2W_OSStatus.version_info.dwPlatformId )
+	{
+	  /* NT/2000/XP系 */
+	  case VER_PLATFORM_WIN32_NT :
+		enable = TRUE ;	
+		break ;
+	}
+	/*----------------------------------------------------------*/
+
+	/*-- 設定 --------------------------------------------------*/
+	
+	X2W_OSStatus.overlapped_readfile_enable = enable ;
+	/*----------------------------------------------------------*/
+
+#ifdef DEBUG_MODE
+	if( enable ){ printf("Overlapped ReadFile Enable\n") ; }
+	else{ printf("Overlapped ReadFile Disable\n") ; }
+#endif
+}
+
+/*--------------------------------------------------------------*/
+/*	X2W_NextProcess												*/
+/*					次のProcess起動								*/
+/*--------------------------------------------------------------*/
+#define	NEXT_PROCESS_NAME	"MGS2SSetup.exe"
+
+void	X2W_NextProcess(void)
+{
+#ifndef DEBUG_MODE	// Releaseの時のみ
+
+	char				mname[512] ;
+	PROCESS_INFORMATION	pi ;
+	STARTUPINFO			si ;
+
+	/*-- モジュール名作成 --------------------------------------*/
+
+	sprintf(mname, "%s/" NEXT_PROCESS_NAME, pcGetIniFilePath()) ;
+	/*----------------------------------------------------------*/
+
+	/*-- 起動状態設定 ------------------------------------------*/
+
+	ZeroMemory(&si, sizeof(si)) ;
+	si.cb = sizeof(STARTUPINFO) ;
+
+	si.dwFlags     = STARTF_USESHOWWINDOW ;
+	si.wShowWindow = SW_SHOWNORMAL ;
+	/*----------------------------------------------------------*/
+
+	/*-- 起動 --------------------------------------------------*/
+
+	ZeroMemory(&pi, sizeof(pi)) ;
+	CreateProcess(mname, "", NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi) ;
+	/*----------------------------------------------------------*/
+#endif
+}
+
+/*--------------------------------------------------------------*/
+/*	X2W_OSIsWin32System											*/
+/*					Windows 95/98/ME系列判定					*/
+/*--------------------------------------------------------------*/
+BOOL	X2W_OSIsWin32System(void)
+{
+	return(X2W_OSStatus.version_info.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS) ;
+}
+
+/*--------------------------------------------------------------*/
+/*	X2W_OSIsWinNTSystem											*/
+/*					Windows NT/2000/XP系列判定					*/
+/*--------------------------------------------------------------*/
+BOOL	X2W_OSIsWinNTSystem(void)
+{
+	return(X2W_OSStatus.version_info.dwPlatformId == VER_PLATFORM_WIN32_NT) ;
+}
+
+/*--------------------------------------------------------------*/
+/*	X2W_InsertDiskCheck											*/
+/*					Disk挿入検査(違法複製対策)					*/
+/*--------------------------------------------------------------*/
+extern	BOOL IsChkMGS2DvdDrive();
+
+BOOL	X2W_InsertDiskCheck(void)
+{
+#if FALSE
+	BOOL	ret ;
+	int		sel ;
+
+	ret = TRUE ;
+	while( !IsChkMGS2DvdDrive() )
+	{
+		/*-- 入れてと懇願 --------------------------------------*/
+
+		sel = X2W_ErrorPrintfID(X2W_MB_OKCANCEL, X2WERR_ID_CHECKDISK_FAILED) ;
+		switch( sel )
+		{
+		  case IDCANCEL :	// CANCEL選択
+			ret = FALSE ;	// 作業中止
+			break ;
+		}
+		/*------------------------------------------------------*/
+
+		if( !ret ){ break ; }
+	}
+
+	return(ret) ;
+#else
+	
+	BOOL	ret ;
+
+	ret = IsChkMGS2DvdDrive() ;
+
+	/*-- 入れてねと警告 ----------------------------------------*/
+	// (Diskを入れたらAutoRunが働くので聞き返さない)
+
+	if( !ret ){ X2W_ErrorPrintfID(X2W_MB_WARNING, X2WERR_ID_CHECKDISK_FAILED) ; }
+	/*----------------------------------------------------------*/
+
+	return(ret) ;
+#endif
+}
+
+/*-- End Of File --*/

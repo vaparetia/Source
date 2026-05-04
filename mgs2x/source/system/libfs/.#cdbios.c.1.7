@@ -1,0 +1,640 @@
+/*
+   CDBIOS for XBOX
+*/
+
+#include <xtl.h>
+
+#include <stdio.h>
+#include "libfs.h"
+#include "cdbios_in.h"
+
+#ifdef _DEV_
+
+#define DEV_MODE 1
+#define DVD_MODE 1
+#define HD_MAX_FILENUM		16		// 1からはじまるので、最大数はこの数-1
+#define HD_MAX_FILENAME		1024
+
+#elif defined( _XDAT_ )
+
+// XBOXセキュリティ対応
+#define XDAT_MODE 1
+#define HD_MAX_FILENUM		16		// 1からはじまるので、最大数はこの数-1
+#define XDAT_MAX			(10*2)
+#define DISC_0_TOP			0x00000000
+#define DISC_1_TOP			0x01000000
+
+#else
+
+#define DVD_MODE 1
+#define HD_MAX_FILENUM		16
+
+#endif
+
+#define DVD_MAX_HANDLE		16
+
+#define HD_FILE_ID( _id )			( (_id) << 24 )
+#define DEV_FILE_MASK				0x40000000
+
+#define SECTOR_SIZE				(2048)
+#define SECTOR( _size )		( (_size+SECTOR_SIZE-1)/SECTOR_SIZE )
+
+#define CDBIOS_STACK_SIZE	(12*1024)
+
+typedef struct {
+	CDBIOS_TASK_STATUS common;
+	int force_stop_flag;
+	void *buffer_address;
+
+	int command;
+	int thread_id;
+	HANDLE thread_handle;
+	HANDLE sema_handle;
+	void (*callback_func)( CDBIOS_READ_STATUS * );
+#ifdef DVD_MODE
+	HANDLE	dvd_file_handle[ DVD_MAX_HANDLE ];
+#endif
+#ifdef XDAT_MODE
+	int datnum[ 2 ];
+	int filenum;
+
+	struct {
+		HANDLE handle;
+		unsigned int len;
+	} dats[ 2 ][ XDAT_MAX ];
+
+	struct {
+		char name[ 16 ];
+		int top;
+	} file[ HD_MAX_FILENUM ];
+#endif
+
+#ifdef DEV_MODE
+	char *hd_filename[ HD_MAX_FILENUM ];
+	char hd_filename_buf[ HD_MAX_FILENAME ];
+	HANDLE	file_handle[ HD_MAX_FILENAME ];
+#endif
+} CDBIOS_WORK;
+
+static CDBIOS_WORK work;
+
+
+/* ---------------------------------------------------------------------- */
+/*
+	サブルーチン
+*/
+
+static int wait_command( CDBIOS_WORK *w )
+{
+	WaitForSingleObject( w->sema_handle, INFINITE );
+	w->command = w->common.exec_com;
+
+	return w->command;
+}
+
+static void set_status( CDBIOS_WORK *w, int status )
+{
+	w->common.status = status;
+}
+
+/*
+   各状況のステータスマシン
+*/
+
+// リード関数
+// posからsizeだけbufferに読み込む。
+
+static int read_callback_result = 0;
+
+static void CALLBACK read_callback(DWORD dwErrorCode, DWORD dwSize, LPOVERLAPPED p)
+{
+	read_callback_result -= dwSize;
+}
+
+static int do_read_file( CDBIOS_WORK *w, HANDLE handle, void *buffer
+						, int size, OVERLAPPED *ov )
+{
+	// 無限リトライ付きリード関数
+
+#ifdef _WINDOWS
+	if( !X2W_OverlappedReadFileEnable() ){ ov = NULL ; }
+#endif
+
+	if( SleepEx( 0, TRUE ) == WAIT_IO_COMPLETION ){
+		printf( "Flush Event\n" );
+	}
+	read_callback_result = size;
+
+	while( ReadFileEx( handle, buffer, size, ov, read_callback ) == 0 ){
+		printf( "ReadError %d\n", GetLastError() );
+		set_status( w, CDBIOS_STATE_COMMAND_ERROR );
+		Sleep( 500 );	// 0.5 Sec
+	}
+	while( SleepEx( 5000, TRUE ) != WAIT_IO_COMPLETION ){
+		printf( "TIMEOUT\n" );
+		set_status( w, CDBIOS_STATE_COMMAND_ERROR );
+		// タイムアウトの発生
+	}
+	if( read_callback_result == size ){
+		// read error
+		printf( "ReadError %d\n", GetLastError() );
+		return 0;
+	}
+	return 1;
+}
+
+#if defined( DVD_MODE ) || defined( DEV_MODE )
+
+static int read_sectors( CDBIOS_WORK *w, void *buffer, unsigned int pos, int size )
+{
+	int fn;
+	int ps;
+	OVERLAPPED ov;
+
+	fn = pos >> 24;
+	ps = pos & 0x00FFFFFF;
+
+	ov.Offset = ps * SECTOR_SIZE;
+	ov.OffsetHigh = 0;
+
+	size = SECTOR( size ) * SECTOR_SIZE;
+
+	return do_read_file( w, w->dvd_file_handle[ fn ], buffer, size, &ov );
+}
+
+#endif
+
+#ifdef XDAT_MODE
+
+#define MIN( a, b )	((a)<(b)?(a):(b))
+
+static int read_sectors( CDBIOS_WORK *w, void *buffer, unsigned int pos, int size )
+{
+	int disc_no;
+	int n;
+	int s;
+	unsigned int sect;
+	HANDLE handle = INVALID_HANDLE_VALUE;
+	OVERLAPPED ov;
+
+	// ＰＯＳからどのファイルかを検索。
+	if( pos < DISC_1_TOP ){
+		disc_no = 0;
+	} else {
+		disc_no = 1;
+		pos -= DISC_1_TOP;
+	}
+
+	for( n = 0; n < w->datnum[ disc_no ]; n++ ){
+		unsigned int len;
+		len = w->dats[ disc_no ][ n ].len;
+		if( pos < len ){
+			break;
+		}
+		pos = pos - len;
+	}
+	if( n == w->datnum[ disc_no ] ){
+		printf( "MAX ERROR !!\n" );
+		return 0;
+	}
+
+	sect = SECTOR( size );
+
+	s = MIN( sect, ( w->dats[ disc_no ][ n ].len - pos ) );
+
+	// 一回目。
+	ov.Offset = pos * SECTOR_SIZE;
+	ov.OffsetHigh = 0;
+
+	if( do_read_file( w, w->dats[ disc_no ][ n ].handle
+					 , buffer, s * SECTOR_SIZE, &ov ) == 0 ){
+		// 失敗。
+		return 0;
+	}
+
+	buffer = ( char * )buffer + s * SECTOR_SIZE;
+	sect -= s;
+	s = sect;
+
+	if( sect > 0 && n + 1 < w->datnum[ disc_no ] ){
+		// 二回目。posは次のファイルの頭からになる。
+		n = n + 1;
+		ov.Offset = 0 * SECTOR_SIZE;
+		ov.OffsetHigh = 0;
+
+		printf( "2nd Read %d %d\n", n, s );
+
+		if( do_read_file( w, w->dats[ disc_no ][ n ].handle
+						 , buffer, s * SECTOR_SIZE, &ov ) == 0 ){
+			// 失敗。
+			return 0;
+		}
+	}
+	return 1;
+}
+#endif
+
+#ifdef DEV_MODE
+
+static int read_sectors_dev( CDBIOS_WORK *w, void *buffer, unsigned int pos, int size )
+{
+	int fn;
+	int ps;
+	int fd;
+
+	pos = pos & ~DEV_FILE_MASK;
+
+	fn = pos >> 24;
+	ps = pos & 0x00FFFFFF;
+
+
+//@02/12/23(月)@一度開いたファイルは閉じない
+
+	if(w->file_handle[ fn]){
+		fd = w->file_handle[ fn];
+	}else{
+		w->file_handle[ fn] = fd = pcOpen( w->hd_filename[ fn ], O_RDONLY );
+	}
+	pcLseek( fd, ps * SECTOR_SIZE, SEEK_SET );
+	pcRead( fd, buffer, size );
+//@@@	pcClose( fd );
+
+	return 1;
+}
+
+#endif
+
+static int read_command( CDBIOS_WORK *w )
+{
+	volatile CDBIOS_READ_STATUS *rs;
+
+	int intr_mode;
+
+	int (*read_func)( CDBIOS_WORK *w, void *buffer, unsigned int pos, int size )
+		= read_sectors;
+
+	set_status( w, CDBIOS_STATE_COMMAND_EXECUTING );
+
+	intr_mode = 0;
+
+	rs = &w->common.read;
+
+#ifdef DEV_MODE
+	if( rs->pos & DEV_FILE_MASK ){
+		read_func = read_sectors_dev;
+	}
+#endif
+
+	while( rs->read_size < rs->total_size ){
+		int size;
+
+		if( rs->intr_size > 0 ){
+			size = rs->intr_size;
+			intr_mode = 1;
+		} else {
+			size = rs->total_size - rs->read_size;
+		}
+		while( ( *read_func )( w, rs->ee_buffer, rs->pos, size ) == 0 ){
+			// 無限リトライ
+			set_status( w, CDBIOS_STATE_COMMAND_ERROR );
+			Sleep( 500 );	// 0.5 Sec
+		}
+		rs->read_size += size;
+		( char * )rs->ee_buffer += size;
+		if( rs->intr_size > 0 ){
+			rs->intr_size -= size;
+		}
+		rs->pos += SECTOR( size );
+
+		if( intr_mode || rs->read_size == rs->total_size ){
+			// ユーザーコールバッグを発生
+
+			if( w->callback_func != NULL ){
+				( *w->callback_func )( rs );
+			}
+			intr_mode = 0;
+		}
+	}
+	w->callback_func = NULL;
+	return CDBIOS_COMMAND_WAIT;
+}
+
+/* ---------------------------------------------------------------------- */
+/*
+	スレッド
+*/
+
+static int WINAPI cdbios_thread( void *param )
+{
+	CDBIOS_WORK *w = param;
+	int status;
+
+	status = CDBIOS_COMMAND_WAIT;
+	for( ;; ){
+		switch( status ){
+		  case CDBIOS_COMMAND_WAIT:
+			set_status( w, CDBIOS_STATE_IDLE );
+			status = wait_command( w );
+			set_status( w, CDBIOS_STATE_COMMAND_EXECUTING );
+			break;
+		  case CDBIOS_COMMAND_READ:
+			status = read_command( w );
+			break;
+		  case CDBIOS_COMMAND_SEEK:
+			// 後回し
+			break;
+#if 0
+		  case CDBIOS_COMMAND_SRCHFILE:
+			// リードスレッドではないところで実装する
+#endif
+		  default:
+			status = CDBIOS_COMMAND_WAIT;
+			break;
+		}
+//		w->common.exec_com = status;
+	}
+}
+
+/* ---------------------------------------------------------------------- */
+/*
+	コマンド発生
+*/
+
+static void send_command( int command )
+{
+	work.common.exec_com = command;
+	work.common.status = CDBIOS_STATE_COMMAND_SET;
+	ReleaseSemaphore( work.sema_handle, 1, NULL );
+}
+
+/* ---------------------------------------------------------------------- */
+/*
+	外からのインターフェース
+*/
+
+/*
+   ファイルを設定し、アクセス用のIDを返す。
+*/
+
+int cdbios_get_filepos( char *name )
+{
+	CDBIOS_WORK *w = &work;
+	int res = -1;
+	int i;
+
+	// DVD_MODEはファイルをopenして、そのHandleを持つ。
+	if( name[ 1 ] == ':' ){
+		// XBOXのドライブレターがある。
+#ifdef DVD_MODE
+		for( i = 1; i < DVD_MAX_HANDLE; i++ ){
+			if( w->dvd_file_handle[ i ] == NULL ){
+				/* 空きがあった */
+				w->dvd_file_handle[ i ]
+					= CreateFile( name, GENERIC_READ, 0
+								 , NULL, OPEN_EXISTING
+								 , FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING, NULL );
+				if( w->dvd_file_handle[ i ] == INVALID_HANDLE_VALUE ){
+					printf( "CreateFile Error '%s' %X\n", name, GetLastError() );
+					//				ASSERT( 0 );
+					return -1;
+				}
+				res = HD_FILE_ID( i );
+				return res;
+			}
+		}
+		printf( "Too Many Files\n" );
+#endif
+#ifdef XDAT_MODE
+		// すでにファイルテーブルは読み込まれている。
+		for( i = 0; i < w->filenum; i++ ){
+			char *p;
+			if( ( p = strrchr( name + 2, '\\' ) ) != NULL ){
+				p = p + 1;
+			} else {
+				p = name + 2;
+			}
+			
+			if( strcmp( p, w->file[ i ].name ) == 0 ){
+				return w->file[ i ].top;
+			}
+		}
+		printf( "NO FILE %s\n", name );
+		return -1;
+#endif
+	} else {
+#ifdef DEV_MODE
+	// DEV_MODEは、ファイル名を持ち、逐次OPENする
+#define HD_FILENAME_OFS( _work )	( (( int *)( _work )->hd_filename)[ 0 ] )
+
+		for( i = 1; i < HD_MAX_FILENUM; i++ ){
+			if( w->hd_filename[ i ] != NULL ){
+				if( strcmp( w->hd_filename[ i ], name ) == 0 ){
+					// すでに設定済み
+					res = HD_FILE_ID( i );
+					break;
+				}
+			} else {
+				int len;
+				len = strlen( name ) + 1;
+				if( HD_FILENAME_OFS( w ) + len >= HD_MAX_FILENAME ){
+					printf( "FILENAME BUFFER OVER !!\n" );
+				} else {
+					int ofs;
+					ofs = HD_FILENAME_OFS( w );
+					w->hd_filename[ i ] = &( w->hd_filename_buf[ ofs ] );
+					strcpy( w->hd_filename_buf + ofs, name );
+					HD_FILENAME_OFS( w ) = ofs + len;
+					res = HD_FILE_ID( i ) | DEV_FILE_MASK;
+				}
+				break;
+			}
+		}
+#else
+		printf( "cdbios:Filename Error %s\n", name );
+#endif
+	}
+	return res;
+}
+
+/* ---------------------------------------------------------------------- */
+/*
+   そととのインターフェース関数
+*/
+
+int cdbios_get_status( void )
+{
+//printf( "STAT=%X\n", work.common.status );
+	return work.common.status;
+}
+
+int cdbios_get_read_size( void )
+{
+	return work.common.read.read_size;
+}
+
+void cdbios_callback_read( void *buffer, int pos, int size
+						   , void (*callback)(CDBIOS_READ_STATUS *), int intr_size )
+{
+	CDBIOS_READ_STATUS *rs;
+
+	rs = &work.common.read;
+	rs->pos = pos;
+	rs->ee_buffer = buffer;
+	rs->total_size = size;
+	rs->read_size = 0;
+	rs->intr_size = intr_size;
+	work.callback_func = callback;
+
+	send_command( CDBIOS_COMMAND_READ );
+}
+void cdbios_callback_read_stm( void *buffer, int pos, int size
+						   , void (*callback)(CDBIOS_READ_STATUS *), int intr_size )
+{
+	cdbios_callback_read( buffer, pos, size, callback, intr_size );
+}
+
+void cdbios_read( void *buffer, int pos, int size )
+{
+	cdbios_callback_read( buffer, pos, size, NULL, -1 );
+}
+
+void cdbios_stop( void )
+{
+}
+
+void cdbios_preseek( int pos )
+{
+}
+
+/* ---------------------------------------------------------------------- */
+/*
+	cdReadインターフェース
+*/
+
+int cdRead( int pos, void *buffer, int size )
+{
+	CDBIOS_WORK *w = &work;
+	// 完全にメイン側の読み込みが終わってからということが保証されている
+	while( read_sectors( w, buffer, pos, size ) == 0 ){
+		printf( "Error %x\n", GetLastError() );
+	}
+	return size;
+}
+
+/* ---------------------------------------------------------------------- */
+/*
+   初期化
+*/
+
+#if defined( DEV_MODE )
+void cdbios_dev_init( void )
+#elif defined( XDAT_MODE )
+void cdbios_xdat_init( void )
+#else
+void cdbios_init( void )
+#endif
+{
+	// ワーク初期化
+	memset( &work, 0, sizeof( CDBIOS_WORK ) );
+
+	// コマンド取得セマフォ作成
+	work.sema_handle = CreateSemaphore( NULL, 0, 1, NULL );
+
+	// ファイル読み込みスレッド起動
+
+	work.thread_handle = CreateThread( NULL, CDBIOS_STACK_SIZE
+									, ( LPTHREAD_START_ROUTINE )cdbios_thread
+									, &work
+									, CREATE_SUSPENDED
+									, &work.thread_id );
+#ifndef _WINDOWS
+//	SetThreadPriority( work.thread_handle, THREAD_PRIORITY_NORMAL );	// ?
+	SetThreadPriority( work.thread_handle, 1 );	// ?
+#else
+//@	SetThreadPriority( work.thread_handle, THREAD_PRIORITY_ABOVE_NORMAL ) ;
+	SetThreadPriority( work.thread_handle, THREAD_PRIORITY_HIGHEST ) ;
+//@	SetThreadPriority( work.thread_handle, THREAD_PRIORITY_IDLE ) ;
+#endif
+	ResumeThread( work.thread_handle );
+
+#ifdef XDAT_MODE
+	{
+		// 初期化シーケンス
+		int disc, i;
+		int f = 0;
+		char buffer[ SECTOR_SIZE ];
+
+		// DISC1, DISC2に焼いてあるすべてのＤＡＴをオープンする
+		for( disc = 0; disc < 2; disc ++ ){
+			for( i = 0; ; i++ ){
+				HANDLE handle;
+				char name[ 64 ];
+				sprintf( name, "D:\\DISC%d_%d.DAT", disc + 1, i );
+				handle = CreateFile( name, GENERIC_READ, 0
+								 , NULL, OPEN_EXISTING
+								 , FILE_FLAG_OVERLAPPED | FILE_FLAG_NO_BUFFERING, NULL );
+				if( handle == INVALID_HANDLE_VALUE ){
+					printf( "%s Failed\n", name );
+					break;
+				}
+				work.dats[ disc ][ i ].handle = handle;
+				work.dats[ disc ][ i ].len = GetFileSize( handle, NULL ) / SECTOR_SIZE;
+printf( "DAT %s LEN %X\n", name, work.dats[ disc ][ i ].len );
+			}
+			work.datnum[ disc ] = i;
+			// 各ディスク先頭のセクタを読み取り、FILETABLEに登録
+			{
+				OVERLAPPED ov;
+				DWORD res;
+#ifdef _WINDOWS
+				OVERLAPPED *ovp;
+#endif
+
+				ov.Offset = 0;
+				ov.OffsetHigh = 0;
+#ifndef _WINDOWS
+				while( ReadFileEx( work.dats[ disc ][ 0 ].handle
+							 , buffer, SECTOR_SIZE, &ov, read_callback ) == 0 ){
+					printf( "Read ErrorD %d\n", GetLastError() );
+					Sleep( 500 );	// 0.5 Sec
+				}
+#else
+				if( X2W_OverlappedReadFileEnable() ){ ovp = NULL ; }
+				else{ ovp = &ov ; }
+				while( ReadFileEx( work.dats[ disc ][ 0 ].handle
+							 , buffer, SECTOR_SIZE, ovp, read_callback ) == 0 ){
+					printf( "Read ErrorD %d\n", GetLastError() );
+					Sleep( 500 );	// 0.5 Sec
+				}
+#endif
+				SleepEx( INFINITE, TRUE );
+			}
+			{
+				typedef struct {
+					char name[ 16 ];
+					int top;
+					int len;
+				} FILETABLE;
+				typedef struct {
+					int filenum;
+					FILETABLE files[ 1 ];	// 本当は可変長。
+				} HEADER;
+
+				HEADER *head = ( HEADER * )buffer;
+				int n;
+				FILETABLE *ft;
+				ft = head->files;
+				for( n = head->filenum; n > 0; n-- ){
+					strcpy( work.file[ f ].name, ft->name );
+					work.file[ f ].top = ft->top
+						| ( ( disc == 0 ) ? DISC_0_TOP : DISC_1_TOP );
+printf( "FILE %s TOP %08X\n", work.file[ f ].name, work.file[ f ].top );
+					f++;
+					ft ++;
+				}
+			}
+		}
+		work.filenum = f;
+	}
+#endif
+}

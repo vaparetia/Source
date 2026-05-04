@@ -1,0 +1,60 @@
+//
+//	wp41a.src
+//	武器訓練ミッション１面
+//	written by S.Kaneyoshi 2002.02.14
+//
+//	$Id$
+
+#define WN_WP41A
+
+block .use r_vr_r
+block .nocache
+block .cache
+
+// 的モデル呼び分け用
+#define		VR_TGT_CUBE		1
+#define		VR_TGT_SQUARE	1
+#define		VR_TGT_TRIANGLE	1
+#define		VR_TGT_OCTA		1
+#define		VR_TGT_STRAW	1
+#define		VR_TGT_HEXA		1
+#define		VR_TGT_WALL		1
+
+// 各ステージ共通要素
+#include	"vr_def.h"		// defineファイル 厳密にはc_effect.hの前でよい
+#include	"p_common.h"
+#include	"common.h"
+#include 	"vrstage.h"
+#include	"c_effect.h"
+
+// VR用追加エフェクト
+#include	"vr_effect.h"
+
+
+// 強制モーション
+mtn			rai_wp41a.mls
+mtn			sna_wp41a.mls
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+
+option makexti6 -l 1024 -f PAL8		// Xbox用劣化無しテクスチャ採用
+	pack_all	ws41a.tri \
+				world/vr_weapon/ws41a
+option makexti6
+
+world		vr_weapon/ws41a
+
+hazard		ws41a.hzx
+rol			world/vr_weapon/ws41a/ws41a.rol
+cvd			world/vr_weapon/ws41a/ws41a.cv2 v
+
+// オブジェクト
+// アイテム
+itembox
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+// リネーム

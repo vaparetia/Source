@@ -1,0 +1,32 @@
+#
+# Makefile for MGS2 Sub Module
+#	各ソースがおかれたディレクトリ用 makefile
+#
+# 1999/07/08 K.Uehara
+# $Id: makefile.compile,v 1.11 2002/02/22 07:04:10 usr04098 Exp $
+#
+
+# ベースディレクトリ
+BASEDIR = ../../../..
+
+# ライブラリ名
+
+LIBNAME = mode.a
+
+# オブジェクトリスト
+SOURCES = $(wildcard *.c)
+OBJECTS = $(SOURCES:.c=.o)
+XOBJECTS = $(SOURCES:.c=.obj)
+
+# ここでのローカルフラグリスト
+
+LOCAL_INCLUDES = 
+LOCAL_DEFINES = 
+LOCAL_OPTIONS = 
+
+# 設定の実体
+include $(BASEDIR)/makefile.sub
+
+
+# 依存関係のリスト
+

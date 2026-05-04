@@ -1,0 +1,69 @@
+//
+//	e45a.src	
+//
+//	written by H.Yoshiike 2000.Aug
+//
+//	$Id: e45a.src,v 1.4 2001/06/04 10:50:13 usr02011 Exp $
+
+block .use r_tnk0
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include		"common.h"
+include		c_effect.h
+//include		wp_plant.h
+
+// キャラクタ 
+include		ene_tng.h
+
+/*
+human		sna_def/sna_def.kms
+human		for_def
+*/
+
+// 強制モーション
+
+mtn		sna_w02a.mls
+/*
+mtn		sna_w45a.mls			// 仮置き用スネーク
+*/
+
+// NPCスネークのモーション
+/*
+mtn		npc_snake.mls
+mtn		npc_snake_cap.mls
+mtn		npc_snake_drag.mls
+*/
+
+// ワールド
+// それ以外のモデル 
+world		w45a
+lt2			w45a.lt2
+hazard		w45a.hzx
+
+// オブジェ関係
+// 小さいサイズのテクスチャはまとめておく
+world		door/w01f_dr.kms
+
+
+
+//カタナ
+
+pack_all	hfb_mt.tri weapon/hfb/hfb_mt.dar weapon/hfb/hfb_mineuchi.dar
+weapon		hfb/hfb_mt.kms
+weapon		hfb/hfb_mineuchi_mt.kms
+mtn		rai_blade.mls
+
+
+// E3用スネーク
+human		sna_def/sna_def_mh.evm
+rmt			sna_rmt
+
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+
+// リネーム

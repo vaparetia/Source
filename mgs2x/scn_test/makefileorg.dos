@@ -1,0 +1,375 @@
+#
+# makefile for MGS2 scenario file
+#
+#	2000/02/01 S.Hirano         
+#	$Id: makefileorg.dos,v 1.1 2002/02/01 06:08:31 usr01475 Exp $                      
+#
+#	2001/04/17 NISINO Motoaki
+#	DOS上で動作するように修正
+#
+
+
+
+# -------------------------------------------- ソースファイル定義
+
+# 共通ソース
+# ※体験版用は別のところで設定する
+INIT_SCENARIOS = init.gcl select.gcl r_tnk0.gcl r_plt0.gcl
+
+TITLE_SCENARIOS = title.gcl special.gcl
+
+COMMON_TANKER_SCENARIOS =	w00a.gcl w00b.gcl w00c.gcl \
+							w01a.gcl w01f.gcl w01b.gcl w01c.gcl w01d.gcl w01e.gcl \
+							w02a.gcl \
+							w03a.gcl w03b.gcl \
+							w04a.gcl w04b.gcl w04c.gcl \
+
+COMMON_PLANT_SCENARIOS =	w11a.gcl w11c.gcl w12a.gcl w12b.gcl w13a.gcl w14a.gcl w15a.gcl \
+							w16a.gcl w17a.gcl w18a.gcl w19a.gcl w20a.gcl w20b.gcl w20c.gcl \
+							w21a.gcl w22a.gcl w23a.gcl w24a.gcl w24b.gcl w24c.gcl w24d.gcl w25a.gcl w25b.gcl w25c.gcl w28a.gcl \
+							w31a.gcl w31b.gcl w31c.gcl w32a.gcl \
+							w41a.gcl w42a.gcl w43a.gcl w44a.gcl w45a.gcl w46a.gcl \
+							w61a.gcl
+
+DEBUG_SCENARIOS = debug.gcl
+
+E3_SCENARIOS = etitle.gcl e01a.gcl e04b.gcl e11c.gcl e45a.gcl
+
+# ゲーム用の基本ステージをパック(デバッグ用、Ｅ３用、通常)
+ifeq ($(MGS2_DEBUG),1)
+# デバッグ用・プレゼン用のシナリオ構成（タンカーやプラントはなし）
+COMMON_SCENARIOS = $(TITLE_SCENARIOS) $(DEBUG_SCENARIOS)
+else
+ifeq ($(MGS2_E3),1)
+# E3用ステージを追加したもの
+COMMON_SCENARIOS = $(TITLE_SCENARIOS) $(COMMON_TANKER_SCENARIOS) $(COMMON_PLANT_SCENARIOS) $(E3_SCENARIOS)
+else
+COMMON_SCENARIOS = $(TITLE_SCENARIOS) $(COMMON_TANKER_SCENARIOS) $(COMMON_PLANT_SCENARIOS) 
+endif
+endif
+
+
+# デモステージ
+COMMON_DEMO_TANKER_SCENARIOS =	d00t.gcl d01t.gcl d04t.gcl d05t.gcl \
+								d11t.gcl d12t.gcl d12t3.gcl d12t4.gcl d13t.gcl d14t.gcl
+
+COMMON_DEMO_PLANT_SCENARIOS =	d001p01.gcl d003p01.gcl \
+								d010p01.gcl d012p01.gcl d014p01.gcl \
+								d021p01.gcl \
+								d036p02.gcl d036p03.gcl \
+								d045p01.gcl d047p01.gcl \
+								d070p01.gcl
+
+COMMON_DEMO_SCENARIOS = $(COMMON_DEMO_TANKER_SCENARIOS) $(COMMON_DEMO_PLANT_SCENARIOS)
+
+COMMON_CODECS    =  t_otacon.cdc t_demo.cdc t_save.cdc
+
+
+
+# シナリオ班ローカルのソース
+CONCEPT_SCENARIOS = 
+
+CONCEPT_CODECS   = 
+
+# デモ班ローカルのソース
+ifndef DEMO_SCENARIOS
+# コンパイルするgclを直接指定するため。mgdemo対応。2000/09/30 田中(信) 追加
+# DEMO_SCENARIOS =  d00a.gcl d00b.gcl
+DEMO_SCENARIOS =  t00a1D.d00a.gcl t01a1D.w00a.gcl t04a1D.w00a.gcl t05a1D.w00b.gcl w03b.gcl w04a.gcl w04c.gcl t11a1D.w04c.gcl t12a1D.w04c.gcl t12a4D.w04c.gcl t13a1D.w04c.gcl \
+				  P001_01_p01.w10c.gcl P003_01_p01.w11a.gcl \
+				  P010_01_p01.w14a.gcl P012_01_p01.w15a.gcl P014_01_p01.w16a.gcl \
+				  P021_01_p01.w20b.gcl \
+				  P036_02_p02.w20a.gcl \
+				  P036_04_p03.w24c.gcl \
+				  P045_01_p01.w25a.gcl P047_01_p01.w31a.gcl \
+				  P070_01_p01.w24d.gcl \
+				  t12a3D.w04c.gcl \
+				  w11c.gcl w18a.gcl \
+				  w24b.gcl \
+				  e04b.gcl
+
+endif
+
+DEMO_CODECS   = $(COMMON_CODECS)
+
+
+# 体験版用のステージ
+# 体験版には余分なデータを入れないために独自に設定する
+TRIAL_SCENARIOS = init.gcl select.gcl title.gcl special.gcl \
+                  w00a.gcl w00b.gcl \
+                  w01a.gcl w01f.gcl w01b.gcl w01c.gcl w01d.gcl w01e.gcl
+
+# TRIAL_DEMO_SCENARIOS =	d00a0.gcl d00a1.gcl d00a4.gcl d00a5.gcl
+TRIAL_DEMO_SCENARIOS =	d00t.gcl d01t.gcl d04t.gcl d05t.gcl
+
+# 無線ファイル
+TRIAL_CODECS    =  t_otacon_t.cdc t_demo_t.cdc
+
+
+# ------------------------------------------ 各環境ごとの定義
+
+# 言語オプション
+ifeq ($(MGS2_LANG),ENGLISH)
+LANGOPT = -D ENGLISH
+else
+LANGOPT = -D JAPANESE
+endif
+
+# TVモードオプション
+ifeq ($(MGS2_VMODE),PAL)
+VMODEOPT = -D PAL
+else
+VMODEOPT = -D NTSC
+endif
+
+# E3用オプション
+ifeq ($(MGS2_E3),1)
+E3OPT = -D MGS2_E3=1
+else
+E3OPT = -D MGS2_E3=0
+endif
+
+ifeq ($(MGS2_DESIGN),1)
+
+# --------------------
+
+# デザイナープレビュー環境
+
+SOURCEPATH = $(PREVIEW_DATA)
+STAGEPATH = $(PREVIEW_DATA)/stage
+CODECPATH = .
+
+LOCAL_OPTIONS = -I $(PREVIEW_DATA) -D DESIGN_PREVIEW -D MGS2_TRIAL=0 -D MGS2_SCN=0 -D MGS2_DEMO=0
+SCENARIOS = init.gcl r_tnk0.gcl $(PREVIEW_DATA)/preview.gcl
+CODECS = t_otacon.cdc
+DEMOLISTPATH = ../list/demolist
+
+else # デザイナープレビュー環境以外
+
+SOURCEPATH = ../source/stage
+STAGEPATH = ../cdrom.img/stage
+CODECPATH = ../cdrom.img
+DEMOLISTPATH = ../list/demolist
+
+ifeq ($(MGS2_TRIAL),1)
+
+# 体験版環境
+ifeq ($(FIX_MODE),1)
+LOCAL_OPTIONS = -D FIX_MODE=1 -D MGS2_TRIAL=1 -D MGS2_SCN=0 -D MGS2_DEMO=0
+else
+LOCAL_OPTIONS = -D MGS2_SCN=0 -D MGS2_DEMO=0
+endif
+
+SCENARIOS = $(TRIAL_SCENARIOS) $(TRIAL_DEMO_SCENARIOS)
+CODECS = $(TRIAL_CODECS)
+
+else
+ifeq ($(MGS2_TANKER),1)
+#タンカー編のみ
+LOCAL_OPTIONS = -D MGS2_SCN=1 -D MGS2_DEMO=0 -D MGS2_TANKER=1 -D MGS2_PLANT=0 $(E3OPT)
+
+SCENARIOS = $(INIT_SCENARIOS) $(TITLE_SCENARIOS) $(COMMON_TANKER_SCENARIOS) $(COMMON_DEMO_TANKER_SCENARIOS)
+
+CODECS = $(COMMON_CODECS) $(CONCEPT_CODECS)
+
+else
+#プラント編のみ
+ifeq ($(MGS2_PLANT),1)
+LOCAL_OPTIONS = -D MGS2_SCN=1 -D MGS2_DEMO=0 -D MGS2_TANKER=0 -D MGS2_PLANT=1 $(E3OPT)
+
+SCENARIOS = $(INIT_SCENARIOS) $(TITLE_SCENARIOS) $(COMMON_PLANT_SCENARIOS) $(COMMON_DEMO_PLANT_SCENARIOS)
+
+CODECS = $(COMMON_CODECS) $(CONCEPT_CODECS)
+
+else
+ifeq ($(MGS2_SCN),1)
+# シナリオ班作成環境
+LOCAL_OPTIONS = -D MGS2_SCN=1 -D MGS2_DEMO=0 -D MGS2_TANKER=1 -D MGS2_PLANT=1 $(E3OPT)
+
+SCENARIOS = $(INIT_SCENARIOS) $(COMMON_SCENARIOS) $(CONCEPT_SCENARIOS) $(COMMON_DEMO_SCENARIOS)
+
+CODECS = $(COMMON_CODECS) $(CONCEPT_CODECS)
+
+else
+ifeq ($(MGS2_SCN),2)
+# デモ班作成環境
+LOCAL_OPTIONS = -D MGS2_SCN=0 -D MGS2_DEMO=1 -D MGS2_TANKER=1 -D MGS2_PLANT=1 $(E3OPT)
+
+SCENARIOS = $(INIT_SCENARIOS) $(DEMO_SCENARIOS)
+
+CODECS = $(DEMO_CODECS)
+
+else
+ifeq ($(MGS2_SCN),3)
+# モーション班作成環境
+LOCAL_OPTIONS = -D MGS2_SCN=1 -D MGS2_DEMO=0 -D MGS2_TANKER=1 -D MGS2_PLANT=1 $(E3OPT)
+
+SCENARIOS = $(INIT_SCENARIOS) $(COMMON_SCENARIOS) $(CONCEPT_SCENARIOS) $(COMMON_DEMO_SCENARIOS)
+
+CODECS = $(COMMON_CODECS) $(CONCEPT_CODECS)
+
+else
+# リリース環境
+LOCAL_OPTIONS = -D MGS2_SCN=0 -D MGS2_DEMO=0 -D MGS2_TANKER=1 -D MGS2_PLANT=1
+
+SCENARIOS = $(INIT_SCENARIOS) $(COMMON_SCENARIOS) $(COMMON_DEMO_SCENARIOS)
+
+CODECS = $(COMMON_CODECS)
+
+endif
+endif
+endif
+endif
+endif
+endif
+endif
+
+
+# MGS2STAGEで特定のステージだけ
+ifneq ($(MGS2STAGE),)
+ifneq ($(MGS2STAGE),all)
+SCENARIOS = $(addsuffix .gcl, init $(MGS2RESIDENT:.bin=) $(MGS2STAGE:.bin=))
+endif
+endif
+
+
+#LOCAL_OPTIONS_ = $(LOCAL_OPTIONS) -D MGS2_MEMCARD=1
+#SCENARIOS_ = $(SCENARIOS) memcard.gcl
+
+LOCAL_OPTIONS_ = $(LOCAL_OPTIONS) -D MGS2_MEMCARD=0
+SCENARIOS_ = $(SCENARIOS)
+
+
+# --------------------------------------------------- マクロ定義
+
+.SUFFIXES: .gco .gcl .cdc .cdo
+
+CDLISTS     = vox.lst demo.lst movie.lst
+LISTS		= tsymbol.lst $(CDLISTS)
+CODECLISTS	= codec.lst
+FACELIST    = face.lst
+DEPENDS     = make.depend
+
+# 仮フォルダ 2001/04/16 NISINO
+OPTIONS = -f ./../mj001b $(LOCAL_OPTIONS_) $(LANGOPT) $(VMODEOPT)
+#OPTIONS = -f /u/develop/mj001b/tools/bin/linux $(LOCAL_OPTIONS_) $(LANGOPT) $(VMODEOPT)
+
+
+GCLOPTIONS   = $(OPTIONS) -d command.def $(addprefix -t ,$(LISTS) $(CODECLISTS))
+CODECOPTIONS = $(OPTIONS) -b -d codec.def $(addprefix -t ,$(LISTS) $(FACELIST))
+
+OBJECTS = $(SCENARIOS_:.gcl=.gco)
+CODECOBJS = $(CODECS:.cdc=.cdo)
+
+# -------------------------------------------------- ターゲット定義
+
+all : compiled
+
+.gcl.gco :
+	gclconv $(GCLOPTIONS) $<
+
+.cdc.cdo : 
+	gclconv $(CODECOPTIONS) $< -o $@
+
+$(CODECOBJS) : $(LISTS)
+$(OBJECTS)   : $(CODECLISTS) $(LISTS)
+
+compiled : $(OBJECTS) linkvar.h
+	gclk -p $(STAGEPATH) $(OBJECTS)
+	touch compiled
+
+$(CODECLISTS) : $(CODECOBJS) $(LISTS)
+	gclk -b $(CODECOBJS) -o $(CODECPATH)/codec.dat -t $(CODECLISTS)
+
+$(CDLISTS) :
+	echo '' > $@				# 暫定
+
+#	@echo "$@ is not exist"
+#	@echo "please 'make newcd'"
+#	@false
+
+linkvar.h : linkvar.def
+	gclk -i
+
+# ------------------------------------------------------ コマンド定義
+
+.PHONY : clean stage depend allstage source list strcheck
+
+
+clean : depend 
+	for %%f in ($(OBJECTS) $(CODECOBJS) compiled linkvar.h _ChangeLog) do del %%f 
+	
+#	del $(OBJECTS) $(CODECOBJS) compiled linkvar.h _ChangeLog
+#	-rm -f *.gco compiled tsymbol.def linkvar.h .#*
+#	-rm -f $(OBJECTS) $(CODECOBJS) compiled linkvar.h _ChangeLog .#*
+
+
+ifeq ($(MGS2_DEMO),1)
+
+# DOS
+stage :
+	@echo "Demo Compile."
+	for %%f in ($(SCENARIOS_:.gcl=)) do gclconv $(GCLOPTIONS) %%f -m $(SOURCEPATH)  -l $(DEMOLISTPATH) 
+
+# LINUX
+#	@echo "Demo Compile."
+#	-(for i in $(SCENARIOS_:.gcl=); do gclconv $(GCLOPTIONS) $$i.gcl -m $(SOURCEPATH) -l $(DEMOLISTPATH) ; done)
+
+else
+
+# DOS
+stage :
+	for %%f in ($(SCENARIOS_)) do gclconv $(GCLOPTIONS) %%f -m $(SOURCEPATH)  -l $(DEMOLISTPATH) 
+
+# LINUX
+#stage :
+#	-(for i in $(SCENARIOS_); do gclconv $(GCLOPTIONS) $$i -m $(SOURCEPATH)  -l $(DEMOLISTPATH) ; done)
+
+
+endif
+
+# DOS
+depend :
+	del $(DEPENDS)
+	for %%f in ($(SCENARIOS_)) do gclconv $(GCLOPTIONS) %%f -M$(DEPENDS)
+
+# LINUX
+#depend
+#	-rm $(DEPENDS)
+#	(for i in $(SCENARIOS_); do if gclconv $(GCLOPTIONS) $$i -M$(DEPENDS); then true; else rm $(DEPENDS); break; fi ; done)
+
+allstage :
+	gclconv $(GCLOPTIONS) init.gcl -A $(SOURCEPATH)
+
+source :
+	cd ../module; $(MAKE) all
+	cd ../source; $(MAKE) all
+
+list :
+	cd ../list; cvs update; $(MAKE) all
+
+strcheck :
+	gclconv $(GCLOPTIONS) $(PARAM)
+
+go : run
+
+run download module:
+	cd $(SOURCEPATH); make $@
+
+debug :
+	gclconv $(GCLOPTIONS) -p $(STAGE).gcl
+	cd ../source; $(MAKE) debug
+
+log :
+	-cvs2cl.pl -f _ChangeLog -d -l "-d '>2 months ago'"
+
+newcd :
+	ps2file $(addprefix /mgs2/,$(CDLISTS))
+
+.DEFAULT:
+	mergescene -i $(STAGEPATH)/$@/$@.scn -o $(STAGEPATH)/$@/_$@.scn 
+	scn2hzx	-i $(STAGEPATH)/$@/_$@.scn -o $(STAGEPATH)/$@/$@.hzx
+
+ifneq ($(wildcard $(DEPENDS)),)
+include $(DEPENDS)
+endif

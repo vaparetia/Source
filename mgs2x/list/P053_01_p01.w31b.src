@@ -1,0 +1,156 @@
+//
+//	P053_01_p01.w31b.src
+//
+//	written by H.Yoshiike 2000.Nov
+//
+//	$Id: P053_01_p01.w31b.src,v 1.24 2002/09/11 12:14:27 usr03682 Exp $
+
+// 常駐データ
+block .use r_plt0
+
+block .nocache
+block .cache
+
+
+#define wn_w02a
+
+// 各ステージ共通要素
+#include	"common.h"
+include		c_effect.h
+
+//human		ema_def
+
+// ワールド
+// マルチテクスチャモデル
+option makexti6 -l 1024 -f PAL8
+pack_all	w31b.tri world/w31b/w31b0 world/w31b/w31b3
+pack_all	w31b_bmp.tri world/w31b/w31b_water		// BMPフォルダ
+option makexti6
+
+world		w31b/w31b0
+world		w31b/w31b3
+
+
+
+// w24d分（電算室オウムデモ用）
+option makexti6 -l 1024 -f PAL8
+pack_all	demo_w24d0.tri \
+		world/w24d/w24d1/w24d1_a.dar \
+		world/w24d/w24d1/w24d1_b.dar
+
+pack_all	demo_w24d1.tri \
+		world/w24d/w24d1/w24d1r.dar \
+		world/w24d/w24d2/w24d2.dar \
+		world/w24d/w24d2/w24d2_wall.dar
+
+pack_all	demo_w24d2.tri \
+		world/w24d/w24d2/w24d2r.dar \
+		world/elevator \
+		world/door/w02a_l_dr.dar \
+		human/par_def/bird_cage.dar
+
+world		w24d/w24d0
+option makexti6
+
+
+world		w24d/w24d1/w24d1_a.kms
+world		w24d/w24d1/w24d1_b.kms
+world		w24d/w24d1/w24d1r.kms
+world		w24d/w24d2/w24d2.kms
+world           w24d/w24d2/w24d2_wall.kms
+world		w24d/w24d2/w24d2r.kms
+world		elevator
+world		door/w24d_dr01.kms
+human		par_def/bird_cage.kms
+
+//オウム
+human	par_def/par_def_mh.evm
+mtn	parrot.mls
+
+// ライトとハザード
+lt2			w31b.lt2
+lt2			w24d.lt2
+//hazard		w31b.hzx
+hazard		d00a3.hzx
+
+// ドア
+world		door/dr_lv4_00.kms
+
+// それ以外のモデル
+world		elevator/elv_2
+
+
+
+// 水中機雷
+goods		watermine/watermine.kms
+
+// 水面
+pack_all	water.tri effect/env/w04c_envmap_alp_ovl.bmp
+// 気泡
+effect		scr_effect/scr_kihou01.kms
+cvd			effect/scr_effect/scr_kihou01.cv2 vn
+
+// 水飛沫用cv2
+cvd		human/sna_skl/sna_skl3.cvd vn
+
+// エマ
+//エマ・エメリッヒ
+human ema_def/ema_def_sh_mt.kms
+human ema_def/ema_def_mh_mt.evm
+
+//ＩＤカード
+human ema_def/ema_idrope.kms
+
+// ピーター
+human	ptr_def/ptr_dead_mh_mt.evm
+
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+/* 以下はポリデモで使用する為の追加 */
+/* ---------------------------------------------- */
+/* added by S.Hirano 010405 */
+// ライデン
+human		rai_def/rai_def_mh_mt.evm
+
+goods		demo_w00_sdr/demo_w00_sdr_r.kms
+
+/* mgdemo added ----from here (Fri Jun 29 16:03:08 2001) ---- */
+world	door/w31_sdr_l.kms
+human	ptr_def/ptr_dead_Otie_mh.evm
+world	door/w31_sdr_handle.kms
+human	ptr_def/ptr_dead_food_tie_mh_mt.evm
+human	ptr_def/ptr_dummy.kms
+human	ptr_def/ptr_dead_food_tie_mh_mt.evm
+human	ptr_def/ptr_dummy.kms
+human	ptr_def/ptr_dead_Otie_mh.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Aug 10 14:40:12 2001) ---- */
+item	mo_disk/mo_disk.kms
+human	ema_def/ema_glasses_mt.kms
+human	ema_def/ema_idrope_mh_mt.evm
+human	ema_def/ema_bounding.kms
+human	ema_def/ema_hair_mh.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Aug 10 14:43:54 2001) ---- */
+human	ema_def/ema_glasses_sh_mt.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Aug 28 16:53:38 2001) ---- */
+vib	demo/P054_01_p01_ptr_01.vib
+vib	demo/P054_01_p01_hatch_01.vib
+/* mgdemo added ----upto here ---- */
+
+// アーセナル
+world/w24d/w24d_lamp	w24d_lamp_alp.bmp
+/* mgdemo added ----from here (Sat Sep  1 13:50:46 2001) ---- */
+vib	demo/P062_08_p04_rai_01.vib
+/* mgdemo added ----upto here ---- */
+
+// 強制モーション
+mtn		locker.mls			// ロッカー扉開閉モーション
+
+// ロッカー
+pack_all	object.tri goods/locker/neo_locker_door.dar
+goods		locker/neo_locker_door.kms

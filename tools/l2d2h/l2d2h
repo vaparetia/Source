@@ -1,0 +1,131 @@
+#!/usr/bin/env perl
+
+use strict;
+
+# 文字列IDの計算
+
+use vars qw( $bit );
+
+$bit = 24;
+
+sub strid( $ ) {
+	my $str = shift @_;
+	my $code = 0;
+	my $mask = ( 1 << $bit ) - 1;
+	
+	for my $i ( 0...length($str) ){
+		my $c = ord( substr( $str, $i, 1 ) );
+		last if( $c == 0 );
+		$code = ( $code << 5 ) | ( $code >> ( $bit - 5 ) );
+		$code += $c;
+		$code &= $mask;
+	}
+	if( $code == 0 ){
+		$code = 1;
+	}
+	$code;
+}
+
+# l2dからの抽出
+
+sub dump_l2d( @ )
+{
+	my( $file, $out ) = @_;
+	my $line;
+	my $base;
+	my %refs;
+
+	if( $file !~ /([^\/\s]*)\.l2d/ ){
+		# l2d以外の場合は、生成されたものの読み込みかどうかをチェック
+		open ( OUT, $file );
+		$line = <OUT>;
+		if( $line =~ /\/\* Auto Generated : \S*l2d2h ([^\s]+)\s*([^\*\s]*)/ ){
+			# 同一パラメータでやり直す
+			$file = $1;
+			$out = $2;
+			print "REDO : l2d2h $file $out\n";
+		} else {
+			print "Error : $file is not l2d2h output.\n";
+		}
+		close( OUT );
+	}
+
+	($base) = ( $file =~ /([^\/\s]*)\.l2d/ );
+
+	if( $out eq "" ){
+		$out = $base . ".h";
+	}
+
+	if( open( OUT, $out ) ){
+		# すでにファイルがあったら読み込んでおく
+		while( $line = <OUT> ){
+		   if( $line =~ /#define L2D_(.*)_OBJ_([^\s]+)/ ){
+			  $refs{ $2 } = 1;
+		   }
+		   if( $line =~ /#define L2D_(.*)_ACT_([^\s]+)/ ){
+			  $refs{ $2 } = 2;
+		   }
+		}
+		close( OUT );
+	}
+
+	open( FILE, $file ) || die "not found $file\n";
+
+	open( OUT, ">".$out ) || die "can not open $out\n";
+	print( OUT "/* Auto Generated : $0 $file $out */\n\n" );
+
+	printf( OUT "#define L2D_%s\t\t0x%08X\n", $base, strid( $base )  );
+	printf( OUT "\n" );
+
+	while( $line = <FILE> ){
+		# obj のチェック
+		if( $line =~ /^\s*obj\s+\"([^\s]*)\"/ ){
+			my $res = $1;
+			my $code = strid( $res );
+
+			# '-' が名前に含まれている場合があるのを修正
+			$res =~ s/-/_/g;
+			printf( OUT "#define L2D_%s_OBJ_%s\t\t0x%08X\n", $base, $res, $code );
+			# 前回登録されているかどうかをチェック
+			if( $refs{ $res } == 0 ){
+				print "ADD OBJECT : $res\n";
+			} else {
+				$refs{ $res } = 3;
+			}
+		}
+		# action のチェック
+		if( $line =~ /^\s*action\s+\"([^\s]*)\"/ ){
+			my $res = $1;
+			my $code = strid( $res );
+			
+			# '-' が名前に含まれている場合があるのを修正
+			$res =~ s/-/_/g;
+			printf( OUT "#define L2D_%s_ACT_%s\t\t0x%08X\n", $base, $res, $code );
+			# 前回登録されているかどうかをチェック
+			if( $refs{ $res } == 0 ){
+				print "ADD ACTION : $res\n";
+			} else {
+				$refs{ $res } = 3;
+			}
+		}
+	}
+	foreach my $i ( sort keys( %refs ) ){
+		if( $refs{ $i } == 1 ){
+			printf( "DELETED OBJECT : $i\n" );
+		}
+		if( $refs{ $i } == 2 ){
+			printf( "DELETED ACTION : $i\n" );
+		}
+	}
+	close( OUT );
+	close( FILE );
+}
+
+# ------------------------------------- MAIN
+
+if( $#ARGV < 0 ){
+	print "$0 <l2dfile>\n";
+	exit;
+}
+
+dump_l2d( @ARGV );

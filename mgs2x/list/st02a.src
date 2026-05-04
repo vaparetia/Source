@@ -1,0 +1,65 @@
+//
+//	st02a.src
+//	ＶＲストリーキングミッション２面
+//	2002/06/21 T.Ohtani
+//
+//	$Id: st02a.src,v 1.2 2002/08/19 01:03:29 usr13731 Exp $
+
+#define WN_ST02A
+
+block .use r_vr_r
+block .nocache
+block .cache
+
+// 敵兵関連define
+// 敵兵タイプ
+#define ENE_VR_GOL		// ＶＲ敵兵
+#define ENE_ATTACKER	// 攻撃兵
+#define ENE_SHIELD		// 盾兵
+#define ENE_SHOT		// ショットガン兵
+#define ENE_HIGH_TECH	// 人質イベント後はハイテク兵
+
+// 特殊兵のモーション設定
+#define ENE_MAR '-DDEL_TNG=DUMMY -DDEL_WALKMAN=DUMMY'
+
+// ＶＲ空の半透明テクスチャ
+#include	"vr_def.h"
+
+// 各ステージ共通要素
+#include	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+
+// ＶＲ追加エフェクト
+#include	"vr_effect.h"
+
+// キャラクタ
+#include	"ene_plant.h"
+
+// 強制モーション
+mtn			rai_st01a.mls
+mtn			sna_st01a.mls
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+option makexti6 -l 1024 -f PAL8 // ↓↓↓↓↓↓ここから テクスチャ品質向上委員会(ゲイツ用)
+	pack_all	vs02a.tri \
+				world/vr_sneaking/vs02a
+option makexti6					// ↑↑↑↑↑↑↑↑ ここまで
+
+world		vr_sneaking/vs02a
+hazard		st02a.hzx
+rol			world/vr_sneaking/vs02a/vs02a.rol
+// オブジェクト
+
+// 消火器
+
+// アイテム
+itembox
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム

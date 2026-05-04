@@ -1,0 +1,37 @@
+; マルチテクスチャ用ピクセルシェーダー（グロスマップ付き環境マップ）
+; 
+;
+; 2002.04.21  K.Takabe
+
+ps.1.1
+
+tex t0							; ベーステクスチャ
+tex t1							; ハイトマップテクスチャ
+tex t2							; ハイトマップテクスチャ
+
+; カラーモジュレート式バンプマップ
+mul_x2 r0.a,   v0.a,   t0.a			; アルファはテクスチャ０のみを参照
+sub    r0.rgb, t1.rgb, t2.rgb		; エンボス用差分計算
+mul_x2 r0.rgb, r0.rgb, v0.rgb		; 差分値をカラーでモジュレート
+add    r0.rgb, r0.rgb, v0			; 差分から求めたカラーを本来のカラーに加える
+mul_x2 r0.rgb, r0.rgb, t0.rgb		; ベースのモジュレート
+
+; ＰＳ２互換エンボスバンプマップ
+;mul_x2 r0.a,   v0.a,   t0.a			; アルファはテクスチャ０のみを参照
+;sub    t1.rgb, t1.rgb, t2.rgb		; エンボス用差分計算
+;mul_x2 t1.rgb, t1.rgb, v0.rgb		; 差分値をカラーでモジュレート
+;mul_x2 r0.rgb, v0.rgb, t0.rgb		; ベースのモジュレート
+;add    r0.rgb, r0.rgb, t1			; 差分から求めたカラーを本来のカラーに加える
+
+
+;; ＭＧＳ２のマルチテクスチャを分解すると・・・
+;mul    r0.a,   t0.a    v0.a
+;mul    t0.rgb, t0.rgb, v0.rgb
+;mul    t1.rgb, t1.rgb, v0.rgb
+;mul    t2.rgb, t2.rgb, v0.rgb
+;; 各テクスチャ間のブレンディング（４命令以内）
+;mov    r0.rgb, t0.rgb
+;; 最後にＰＳ２出力に合わせるため２倍にスケーリング
+;add    r0.rgba, r0.rgba, r0.rgba
+;; という流れになるかも
+

@@ -1,0 +1,104 @@
+// P080_14_p08.w61a.src
+// ソリダス戦
+// 2001/03/29 H.Yoshiike
+// $Id: P080_14_p08.w61a.src,v 1.10 2002/06/20 07:18:59 usr02774 Exp $
+
+#define WN_W61A
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"w61a_common.h"
+
+// 壊れ地形
+world		w60a/building/vw60a_9.kms
+
+pack_all w60a_land.tri \
+	world/w60a/land/w60a_1.dar \
+	world/w60a/land/w60a_2.dar \
+	world/w60a/land/w60a_3.dar \
+	world/w60a/land/w60a_4.dar \
+	world/w60a/land/w60a_5.dar \
+	world/w60a/land/w60a_6.dar \
+	world/w60a/land/w60a_8.dar
+
+world		w60a/land/w60a_1.kms
+world		w60a/land/w60a_2.kms
+world		w60a/land/w60a_3.kms
+world		w60a/land/w60a_4.kms
+world		w60a/land/w60a_5.kms
+world		w60a/land/w60a_6.kms
+world		w60a/land/w60a_8.kms
+
+world		w60a/sky
+
+// 海面
+#ifndef MGS2_XBOX_1
+mipmap w10a/w10a_sea.tri
+#else
+pack_mip w10a_sea.tri \
+	effect/sea_mipmap/w10a_sea03_256_alp_ovl.bmp \
+	effect/sea_mipmap/w10a_sea03_128_alp_ovl.bmp \
+	effect/sea_mipmap/w10a_sea03_64_alp_ovl.bmp \
+	effect/sea_mipmap/w10a_sea03_32_alp_ovl.bmp 
+#endif
+
+// ライデン
+pack_all	raiden.tri \
+		human/rai_def/rai_def_mt.dar \
+		human/rai_def/rai_def_mh_mt.dar
+human		rai_def/rai_def_mt.kms
+human		rai_def/rai_def_mh_mt.evm
+/* mgdemo added ----from here (Mon Jul 16 14:17:45 2001) ---- */
+human	sol_def/sol_faceguard.kms
+goods	demo_katana_sol/demo_mst_uni_mount.kms
+goods	demo_katana_sol/demo_mst_sht.kms
+goods	demo_katana_sol/demo_kwt_uni_mount.kms
+goods	demo_katana_sol/demo_kwt_sht.kms
+human	sol_def/sol_gantai_mh_mt.evm
+human	rai_def/rai_def_addhand_mh_mt.evm
+goods	demo_tejyou/demo_tjo_rai_link.kms
+weapon	usp/usp_sub.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Jul 16 23:13:27 2001) ---- */
+human	sol_def/sol_def_addhand_mh_mt.evm
+/* mgdemo added ----upto here ---- */
+
+// ------- Okuta add pegion data 2001/07/19
+human kmo_def/kmo_hane.kms
+human pgn_def
+mtn   '-DWN_W61A' kamome.mls
+/* mgdemo added ----from here (Tue Jul 24 14:23:34 2001) ---- */
+human	sol_def/sol_snakearm_2_mh_mt.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Aug  7 16:25:29 2001) ---- */
+weapon	minsyutou/mst_l_mt.kms
+weapon	kyowatou/kwt_r_mt.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Wed Aug 15 21:18:19 2001) ---- */
+pack_trnall trn.tri effect/light/light05_msk.bmp
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Aug 16 11:31:01 2001) ---- */
+goods	demo_dummy/demo_dummy.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Aug 16 12:20:49 2001) ---- */
+weapon	minsyutou/mst_hl_cm.kms
+weapon	kyowatou/kwt_hl_cm.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Aug 16 21:38:46 2001) ---- */
+world	w01d/dining/potato03.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Aug 24 15:21:49 2001) ---- */
+meca	arsenal_gear/amg_def.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Aug 28 20:24:12 2001) ---- */
+vib	demo/P080_28_p12_rai_03.vib
+vib	demo/P080_28_p12_rai_02.vib
+vib	demo/P080_28_p12_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Aug 28 20:51:57 2001) ---- */
+vib	demo/P080_14_p08_rai_02.vib
+vib	demo/P080_14_p08_rai_01.vib
+/* mgdemo added ----upto here ---- */

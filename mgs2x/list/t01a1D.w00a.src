@@ -1,0 +1,181 @@
+//
+//	t01a1D.w00a.src
+//
+//	written by S.Hirano 2000.Aug
+//
+//	$Id: t01a1D.w00a.src,v 1.25 2002/07/29 02:11:19 usr04098 Exp $
+
+// デファイン
+
+
+
+
+block .use r_tnk0
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+include		common.h
+include		a_effect.h
+
+// キャラクタ
+
+//高波用
+option makexti6 -l 128
+pack_all	wave.tri effect/wave/wave06.bmp effect/wave/wave09_alp_ovl.bmp
+option makexti6
+
+// タンカー部分モデル
+
+
+
+
+world		w00a
+//ヌルモデル
+goods	null/null.kms
+
+//ワイヤー／旗 頂点アニメーション
+
+
+
+
+cvd	world/w00/w00_vfg.cv2 vn
+cvd	world/w00/w00_vw1.cv2 vn
+cvd	world/w00/w00_vw2.cv2 vn
+cvd	world/w00/w00_vw3.cv2 vn
+cvd	world/w00/w00_vw4.cv2 vn
+cvd	world/w00/w00_vw5.cv2 vn
+cvd	world/w00/w00_vw6.cv2 vn
+
+// ほかタンカー関係共通部分。
+world		w00
+
+// ライトファイル（ステージ用）
+lt2			w00a.lt2
+
+// ライトファイル（個別オブジェ用）
+
+// ハザード
+hazard		d00a.hzx
+
+// 小物類
+
+//ＶＴＲ主観エフェクト
+//l2d		2D/sight/dcm/dcm.l2d
+
+
+
+
+//水飛沫エフェクトで使用するCV2等
+
+
+
+
+cvd	human/sna_skl/sna_skl3.cvd vn
+cvd human/crg_def/crg_raindammy.cv2 vn
+
+//振動データ
+// データ数が多すぎてロード時に落ちるステージが出たので、一時的にカット。010729（平野）
+// 振動ファイルは一つにまとまるようになったので組み込み。010803
+vib		demo
+
+//タンカークルーはメモリ確保までコメントアウト (追加水谷)
+human	tnr_def/tnr_coat_sgl.kms
+cvd human/tnr_def/tnr_coat_sgl.cv2 vn
+cvd human/tnr_def/tnr_coat_sgl_anim00.cv2 vn
+cvd human/tnr_def/tnr_coat_sgl_anim01.cv2 vn
+human	tnr_def/tnr_coat_mlch.evm
+goods flashlight/tnr_frashlight.kms
+cvd goods/flashlight/tnr_frashlight.cv2 vn
+
+
+//セルゲイの装備 （追加 田中修平）
+human crg_def/crg_hlst.kms
+human crg_def/crg_skn.kms
+human crg_def/crg_waist_parts00.kms
+human crg_def/crg_waist_parts01.kms
+
+//ゴルルコ兵目パチセット（追加 田中修平）
+human gbs_def/gbs_eye0.kms
+human gbs_def/gbs_eye1.kms
+human gbs_def/gbs_eye2.kms
+human gbs_def/gbs_eye3.kms
+human gbs_def/gbs_eye4.kms
+
+//ゴルルコ兵フィンガーサインセット （追加 田中修平）
+human gbs_hand/gbs_hand_def.kms
+cvd human/gbs_hand vn
+
+//ゴルルコ兵の装備（追加 田中修平）
+human gbs_def/gbs_hlst.kms
+//human gbs_def/gbs_knif.kms
+//human gbs_def/gbs_mag.kms
+human gbs_def/gbs_bp.kms
+item	radio/rad.kms
+weapon ssk/ssk_mt.kms
+weapon ssk/ssk_inv_mt.kms
+goods flashlight/tnr_frashlight.kms
+weapon aks/aks_sp.kms
+item gbs_nv_goggle/gbs_nvg2.kms
+human gbs_def/gbs_sling.kms
+item gbs_nv_goggle/gbs_nvg1.kms
+human gbs_def/gbs_kanagu.kms
+
+human	gbs_demo/gbs_def_mt.kms
+goods	demo_bag/demo_bag.kms
+goods  	demo_bag/demo_box.kms
+
+//weapon	aks/aks_sp.kms
+//weapon	aks/aks_amo.kms
+weapon	aks/aks.kms
+goods	demo_aks_sp_gbs/demo_aks_sp_gbs.kms
+goods	demo_aks_sp_gbs/demo_aks_amo_gbs.kms
+//リネーム
+rename	demo_aks_sp_gbs.kms aks_sp.kms
+rename	demo_aks_amo_gbs.kms aks_amo.kms
+
+human	crg_def/crg_hut_mt.kms
+human	crg_def/crg_def_mh_mt.evm
+human	gbc_def/gbc_mic.kms
+human	gbc_def/gbc_def.kms
+
+human	tnr_def/tnr_def.kms
+human	gbs_demo/gbs_def_mt.kms
+human	sna_def/sna_def_mh.evm
+
+// デバッグ用（実験終了次第外すよう、心がけること）
+
+# End Demo Model List.
+# Add Demo Model List by mgdemo. by t02a1D.w00a/test2.lst
+//weapon	usp/usp.kms
+
+# End Demo Model List.
+# Add Demo Model List by mgdemo. by t02a1D.w00a/test3.lst
+goods	demo_digicam/dcm.kms
+# End Demo Model List.
+
+
+//--------------------------
+//タンカークルーはメモリ確保までコメントアウト (追加水谷)
+human	tnr_def/tnr_coat_sgl.kms
+cvd human/tnr_def/tnr_coat_sgl.cv2 vn
+cvd human/tnr_def/tnr_coat_sgl_anim00.cv2 vn
+cvd human/tnr_def/tnr_coat_sgl_anim01.cv2 vn
+human	tnr_def/tnr_coat_mlch.evm
+goods flashlight/tnr_frashlight.kms
+cvd goods/flashlight/tnr_frashlight.cv2 vn
+
+#ifdef MGS2_XBOX_1
+pack_trnall	effect.tri \
+	effect/cloud/w00_sky_add.bmp /* XBOXの「thunder_flash.c」でのみ使用 */
+#endif
+
+// デバッグ用（実験終了次第外すよう、心がけること）
+
+// 水密ドア
+goods	demo_w00_sdr
+
+//ICO
+
+rename		ssk_mt.kms ssk.kms
+

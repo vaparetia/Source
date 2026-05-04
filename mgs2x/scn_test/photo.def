@@ -1,0 +1,30 @@
+// 転送端末用 command.def  ( 転送端末はサブセット )
+
+// 写真判定処理ブロック定義
+block photo $s:写真転送ブロック { 実行ブロック }
+
+// 繰り返し処理
+repeat { 実行ブロック }
+
+// 表示画像変更
+photoframe $i:コマ番号
+
+// 表示画像消去
+photoerase
+
+// 指定コマの写真をセーブ指定
+photosave $i:コマ番号
+
+// コマ番号取得
+nowframe
+
+// パペットアニメーション関連
+loadpuppet $s:パペットレイアウト $s:登場アクション
+defaction $s:デフォルトアクション -tired $s:疲れアクション $i:疲れ時間
+puppet $s:アクション -time $i:再生時間 -loop -sound $i:SE番号
+
+// スクリプト側から鳴らす SE
+sound  $i:SE番号
+
+// キー入力待ち
+keywait

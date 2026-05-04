@@ -1,0 +1,121 @@
+static	int		CheckDamage( Work * ) ;
+static	void	ResetParam( Work  * ) ;
+
+
+static	void	ActStandStill( Work *, int ) ;
+
+move.c
+static	void	ActMove( Work *, int ) ;
+
+
+static	void	ActDiscovery( Work *, int ) ;
+static	void	ActDiscoveryNikita( Work *, int ) ;
+static	void	ActCallTeam( Work *, int ) ;
+static	void	ActDanbowlKeri( Work *, int ) ;
+
+clearing.c
+static	void	ActFingerCall( Work *, int ) ;
+static	void	ActKeep180( Work *, int ) ;
+static	void	ActAP_Stand( Work *, int ) ;
+static	void	ActAP_Scout( Work *, int ) ;
+static	void	ActAP_CautionStand( Work *, int ) ;
+static	void	ActAP_Nod( Work *, int ) ;
+static	void	ActAP_GreatPunch( Work *, int ) ;
+static	void	ActAP_DoorOpen( Work *, int ) ;
+static	void	ActAP_GoBackSign( Work *, int ) ;
+
+attack.c
+static	void	ActReadyGun( Work *, int ) ;
+static	void	ActShoot( Work *, int ) ;
+static	void	ActShoot3burst( Work *, int ) ;
+static	void	ActGrenade( Work *, int ) ;
+static	void	ActPunch( Work *, int ) ;
+static	void	ActButukaru( Work *, int ) ;
+
+damage.c
+static	void	ActOgetup( Work *, int ) ;
+static	void	ActThrowDown( Work *, int ) ;
+static	void	ActHanging( Work *, int ) ;
+static	void	ActFlash( Work *, int ) ;
+static	void	ActFaint( Work *, int ) ;
+static	void	ActKubiori( Work *, int ) ;
+static	void	ActWakeup( Work *, int ) ;
+static	void	ActShrink( Work *, int ) ;
+
+down.c
+static	void	ActDown( Work *, int ) ;
+static	void	ActDroppe( Work *, int ) ;
+static	void	ActDeath( Work *, int ) ;
+static	void	ActReset( Work *, int ) ;
+
+static	void	ShowMotion( Work *, int ) ;
+static	void	Action( Work * ) ;
+
+/* override.c */
+static	void	ActOverLegBreak( Work *, int ) ;
+static	void	ActOverRHandBreak( Work *, int ) ;
+static	void	ActOverLHandBreak( Work *, int ) ;
+static	void	ActOverLRHandBreak( Work *, int ) ;
+static	void	ActOverScoutR( Work *, int ) ;
+static	void	ActOverScoutL( Work *, int ) ;
+static	void	ActOverScoutD( Work *, int ) ;
+static	void	ActOverScoutU( Work *, int ) ;
+static	void	ActOverKushami( Work *, int ) ;
+static	void	ActOverAkubi( Work *, int ) ;
+static	void	ActOverKatakori( Work *, int ) ;
+static	void	ActOverSenobi( Work *, int ) ;
+static	void	ActOverInemuri( Work *, int ) ;
+static	void	ActOverHounyou( Work *, int ) ;
+static	void	ActOverPipi( Work *, int ) ;
+
+/* put.c */
+static	void	PutBlood( Work *, int, int ) ;
+static	void	PutDust( Work * ) ;
+static	void	PutItem( Work * ) ;
+void	ENE_PutMark( Work *, int ) ;
+static	void	PutFootNoise( Work * ) ;
+static	void	PutBreath( Work * ) ;
+static	void	PutSightLine( Work  *) ;
+static	void	GunShoot( Work * ) ;
+
+int		ENE_SetPutChar( Work *, int ) ;
+static	int		UnsetPutChar( Work *, void	(*putchar)( Work * )) ;
+
+
+wrok->target
+work->act_status
+work->vision.length
+work->vision.facedir
+CheckDamage( work )
+CheckPad( work )
+work->pad.dir
+work->physic.actnum
+work->control
+work->body
+
+sound
+	time
+	se no.
+
+
+
+typedef	struct	{
+	CONTROL	*ctrl ;
+	TARGET	*targ ;
+	OBJECT	*body ;
+	short	dir ;			/* 体の向き */
+	short	motion_num ;	/* モーション番号（bodyにセット) */
+	short	c_motion_num ;	/* 使用中のモーション番号 */
+	short	pad0 ;
+	int		status ;		/* アクションステータス */	
+	int		time ;			/* 経過時間 */
+	
+	void	*CheckDamae( void * ) ;	/* ダメージチェック関数 */
+	void	*CheckPad( void * ) ;	/* パッドチェック関数 */
+	
+	short	*se_time ;				/* ＳＥタイムバッファ */
+	int		*se_num ;				/* ＳＥ番号バッファ */
+	short	se_next ;				/* 次のＳＥバッファ番号 */
+	short	pad1 ;
+
+} ACTION ;

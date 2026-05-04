@@ -1,0 +1,498 @@
+;
+;	t4_fast.vu1
+;	カリング処理付き高速描画ＶＵ１プログラム（フォグ対応）
+;
+;	2000/02/26 K.Takabe
+;	$Id: t5_fast.vu1,v 1.1.1.3 2002/11/19 11:42:30 Yoshizawa1 Exp $
+;
+
+; ================================================================
+; 通常レジスタ割り当て
+; ================================================================
+;	vf00:fix
+;	vf01:定数読み込みベクトル
+;	vf02:プリミティブ座標変換スケール
+;	vf03:プリミティブ座標変換オフセット
+;	vf04:透視変換マトリクス
+;	vf05:透視変換マトリクス
+;	vf06:透視変換マトリクス
+;	vf07:透視変換マトリクス
+;	vf08:ローカルライトマトリクス
+;	vf09:ローカルライトマトリクス
+;	vf10:ローカルライトマトリクス
+;	vf11:フォグパラメータ
+;	vf12:ローカルカラーマトリクス
+;	vf13:ローカルカラーマトリクス
+;	vf14:ローカルカラーマトリクス
+;	vf15:ローカルカラーマトリクス
+;	vf16:頂点読み込み
+;	vf17:法線読み込み
+;	vf18:ＵＶ０読み込み
+;	vf19:変換後頂点
+;	vf20:変換後法線
+;	vf21:変換後ＵＶ
+;	vf22:書き込み頂点
+;	vf24:書き込みカラー
+;	vf25:書き込みＵＶ０
+;	vf26:計算用テンポラリ
+;	vf27:計算用テンポラリ
+;	vf28:エンベロープ計算用マトリクス
+;	vf29:エンベロープ計算用マトリクス
+;	vf30:エンベロープ計算用マトリクス
+;	vf31:エンベロープ計算用マトリクス
+
+;	vi00:０
+;	vi01:条件判断又はテンポラリ
+;	vi02:条件判断他
+;	vi03:定数記憶用
+;	vi04:定数記憶用
+;	vi05:キックフラグチェック用
+;	vi06:キックフラグ＆固定フォグ値用
+;	vi07:キックフラグ読み込み用
+;	vi08:頂点数
+;	vi09:読み込みデータアドレス
+;	vi10:書き込みデータアドレス
+;	vi11:エンベロープマトリクス読み取りアドレス
+;	vi12:処理フラグ記憶用
+;	vi13:バッファ先頭アドレス
+;	vi15:リンクレジスタ＆クリップ処理チェックフラグ
+
+
+
+; --------------------------------------
+; 最高速光源計算付き透視変換ルーチン
+; --------------------------------------
+;	upper		.					lower		.
+FastTransStart:
+	; 変換初期化処理
+	; バッファアドレス、ループ回数のセットとデータのプリロード処理
+.if 0
+	nop								xtop		vi13				; -,
+	nop								lq.xyzw		vf01,FV_PRM(vi00)	; -,定数読み込み
+	nop								ilw.x		vi08,PACKDAT(vi13)	; -,処理頂点数の読み込み
+	nop								lq.yzw		vf04,GIFNORMAL(vi13); -,GIFタグ生成
+	nop								iaddiu		vi01,vi00,0x4000	; -,GIFタグ生成
+	muly.w		vf20,vf00,vf01		iadd		vi01,vi01,vi01		; アルファ設定,GIFタグ生成
+	nop								ior			vi01,vi01,vi08		; -,GIFタグ生成
+	nop								isw.x		vi01,WORK_TOP(vi13)	; -,GIFタグ生成
+	nop								sq.yzw		vf04,WORK_TOP(vi13)	; -,GIFタグ生成
+	nop								iaddiu		vi09,vi13,DATA_OFT	; -,データ先読みアドレス設定
+	nop								iaddiu		vi10,vi13,PACK_TOP	; -,データ書き戻しアドレス設定
+	nop								lq.xyzw		vf16,BUF_VERT(vi09)	; -,第１頂点読み込み
+	nop								lq.xyzw		vf17,BUF_NORM(vi09)	; -,第１法線（＆キック情報）読み込み
+	nop								lq.xyzw		vf18,BUF_UV0(vi09)	; -,第１ＵＶ値読み込み
+	nop								lq.xyzw		vf04,M_PRS0(vi13)	; -,透視変換マトリクスロード
+	itof0.xyzw	vf16,vf16			lq.xyzw		vf05,M_PRS1(vi13)	; -,透視変換マトリクスロード
+	nop								lq.xyzw		vf06,M_PRS2(vi13)	; -,透視変換マトリクスロード
+	itof12.xyz	vf17,vf17			lq.xyzw		vf07,M_PRS3(vi13)	; -,透視変換マトリクスロード
+
+	nop								lq.xyzw		vf08,M_LIT0(vi13)	; -,ローカルライトマトリクス読み込み
+	nop								lq.xyzw		vf09,M_LIT1(vi13)	; -,ローカルライトマトリクス読み込み
+	nop								lq.xyzw		vf10,M_LIT2(vi13)	; -,ローカルライトマトリクス読み込み
+	nop								lq.xyzw		vf12,M_COL0(vi13)	; -,ローカルカラーマトリクス読み込み
+	nop								lq.xyzw		vf13,M_COL1(vi13)	; 透視変換,ローカルカラーマトリクス読み込み
+	nop								lq.xyzw		vf14,M_COL2(vi13)	; 透視変換,ローカルカラーマトリクス読み込み
+	nop								lq.xyzw		vf15,M_COL3(vi13)	; 透視変換,ローカルカラーマトリクス読み込み
+	nop								ilw.z		vi06,PACKDAT(vi13)	; 透視変換,固定フォグ値記憶
+	nop								iaddiu		vi03,vi00,0x0fff	; 透視変換,キックフラグマスク
+.else
+	nop								lq.xyzw		vf08,M_LIT0(vi13)	; -,ローカルライトマトリクス読み込み
+	mula.xyz	ACC ,vf04,vf02		lq.xyzw		vf09,M_LIT1(vi13)	; -,ローカルライトマトリクス読み込み
+	maddw.xyz	vf04,vf03,vf04		lq.xyzw		vf10,M_LIT2(vi13)	; -,ローカルライトマトリクス読み込み
+	mula.xyz	ACC ,vf05,vf02		lq.xyzw		vf12,M_COL0(vi13)	; -,ローカルカラーマトリクス読み込み
+	maddw.xyz	vf05,vf03,vf05		lq.xyzw		vf13,M_COL1(vi13)	; 透視変換,ローカルカラーマトリクス読み込み
+	mula.xyz	ACC ,vf06,vf02		lq.xyzw		vf14,M_COL2(vi13)	; 透視変換,ローカルカラーマトリクス読み込み
+	maddw.xyz	vf06,vf03,vf06		lq.xyzw		vf15,M_COL3(vi13)	; 透視変換,ローカルカラーマトリクス読み込み
+	mula.xyz	ACC ,vf07,vf02		ilw.z		vi06,PACKDAT(vi13)	; 透視変換,固定フォグ値記憶
+	maddw.xyz	vf07,vf03,vf07		iaddiu		vi03,vi00,0x0fff	; 透視変換,キックフラグマスク
+.endif
+
+	; ディレイ処理の為の前処理
+	mulax.xyzw	ACC ,vf04,vf16		ilw.w		vi07,BUF_FLG(vi09)			; 透視変換,キックフラグ
+	madday.xyzw	ACC ,vf05,vf16		iaddiu		vi09,vi09,BUF_NEXT			; 透視変換,読み込みアドレス増加
+	maddaz.xyzw	ACC ,vf06,vf16		nop										; 透視変換,-
+	maddw.xyzw	vf19,vf07,vf00		lq.xyzw		vf16,BUF_VERT(vi09)			; 透視変換,(先)頂点読み込み
+	minix.xyzw	vf24,vf20,vf01		nop										; (遅)光源計算,-
+	mulax.xyzw	ACC ,vf08,vf17		nop										; 光源計算,-
+	madday.xyzw	ACC ,vf09,vf17		ior			vi07,vi07,vi03				; 光源計算,キックフラグ
+	maddz.xyz	vf20,vf10,vf17		div			Q,vf00w,vf19w				; 光源計算,透視変換
+	ftoi4.xyz	vf22,vf22			iaddi		vi08,vi08,-1				; (遅)透視変換,カウンタのデクリメント
+	itof0.xyzw	vf16,vf16			lq.xyzw		vf17,BUF_NORM(vi09)			; (先)透視変換,(先)法線読み込み
+	itof12.xyz	vf18,vf18			iand		vi07,vi07,vi06				; ＵＶ座標,フォグ処理
+	maxx.xyzw	vf20,vf20,vf00		nop										; 光源処理,-
+	ftoi0.xyzw	vf24,vf24			nop										; (遅)光源計算,
+	itof12.xyz	vf17,vf17			isw.w		vi07,DST_XYZ(vi10)			; (先)光源計算,描画キック
+	mulq.xyzw	vf22,vf19,Q			nop										; 透視変換,(遅)透視変換
+	mulax.xyz	ACC ,vf12,vf20		nop										; 光源計算,(遅)ＵＶ座標
+	madday.xyz	ACC ,vf13,vf20		nop										; 光源計算,(遅)光源計算
+	maddaz.xyz	ACC ,vf14,vf20		iaddiu		vi10,vi10,DST_NEXT			; 光源計算,書き込みアドレス増加
+	maddw.xyz	vf20,vf15,vf00		ibgtz		vi08,_FastTransLoop			; 光源計算,ループジャンプ
+	mulq.xyz	vf25,vf18,Q			lq.xyzw		vf18,BUF_UV0(vi09)			; ＵＶ座標,(先)ＵＶ読み込み
+
+_FastTransLoop:
+	; 頂点変換処理（途中で次の頂点の情報を読み込んでおく）
+	mulax.xyzw	ACC ,vf04,vf16		ilw.w		vi07,BUF_FLG(vi09)			; 透視変換,キックフラグ
+	madday.xyzw	ACC ,vf05,vf16		iaddiu		vi09,vi09,BUF_NEXT			; 透視変換,読み込みアドレス増加
+	maddaz.xyzw	ACC ,vf06,vf16		nop										; 透視変換,-
+	maddw.xyzw	vf19,vf07,vf00		lq.xyzw		vf16,BUF_VERT(vi09)			; 透視変換,(先)頂点読み込み
+	minix.xyzw	vf24,vf20,vf01		nop										; (遅)光源計算,-
+	mulax.xyzw	ACC ,vf08,vf17		nop										; 光源計算,-
+	madday.xyzw	ACC ,vf09,vf17		ior			vi07,vi07,vi03				; 光源計算,キックフラグ
+	maddz.xyz	vf20,vf10,vf17		div			Q,vf00w,vf19w				; 光源計算,透視変換
+	ftoi4.xyz	vf22,vf22			iaddi		vi08,vi08,-1				; (遅)透視変換,カウンタのデクリメント
+	itof0.xyzw	vf16,vf16			lq.xyzw		vf17,BUF_NORM(vi09)			; (先)透視変換,(先)法線読み込み
+	itof12.xyz	vf18,vf18			iand		vi07,vi07,vi06				; ＵＶ座標,フォグ処理
+	maxx.xyzw	vf20,vf20,vf00		nop										; 光源計算,-
+	ftoi0.xyzw	vf24,vf24			nop										; (遅)光源計算,
+	itof12.xyz	vf17,vf17			isw.w		vi07,DST_XYZ(vi10)			; (先)光源計算,描画キック
+	mulq.xyzw	vf22,vf19,Q			sq.xyz		vf22,DST_XYZ-DST_NEXT(vi10)	; 透視変換,(遅)透視変換
+	mulax.xyz	ACC ,vf12,vf20		sq.xyz		vf25,DST_UV0-DST_NEXT(vi10)	; 光源計算,(遅)ＵＶ座標
+	madday.xyz	ACC ,vf13,vf20		sq.xyzw		vf24,DST_COL-DST_NEXT(vi10)	; 光源計算,(遅)光源計算
+	maddaz.xyz	ACC ,vf14,vf20		iaddiu		vi10,vi10,DST_NEXT			; 光源計算,書き込みアドレス増加
+	maddw.xyz	vf20,vf15,vf00		ibgtz		vi08,_FastTransLoop			; 光源計算,ループジャンプ
+	mulq.xyz	vf25,vf18,Q			lq.xyzw		vf18,BUF_UV0(vi09)			; ＵＶ座標,(先)ＵＶ読み込み
+	; 後始末
+	minix.xyzw	vf24,vf20,vf01		iaddiu		vi01,vi13,TX0_OFT			; (遅)光源計算,テクスチャ設定
+	ftoi4.xyz	vf22,vf22			xgkick		vi01						; (遅)透視変換,テクスチャ設定
+	ftoi0.xyzw	vf24,vf24			sq.xyz		vf25,DST_UV0-DST_NEXT(vi10)	; (遅)光源計算,(遅)ＵＶ座標
+	nop								sq.xyz		vf22,DST_XYZ-DST_NEXT(vi10)	; -,(遅)透視変換
+	nop								sq.xyzw		vf24,DST_COL-DST_NEXT(vi10)	; -,(遅)光源計算
+
+	; 終端ダミーパケットをキックし待機
+	nop								iaddiu		vi01,vi13,WORK_TOP	; 
+	nop								xgkick		vi01				; ＧＩＦへのキック
+	nop[e]							nop								; 終了
+	nop								nop								; 
+
+
+; --------------------------------------
+; エンベロープ対応ルーチン
+; --------------------------------------
+;	upper		.					lower		.
+FastTransEnvelopeStart:
+	; 変換初期化処理
+	; バッファアドレス、ループ回数のセットとデータのプリロード処理
+.if 0
+	nop								xtop		vi13				; -,
+	nop								lq.xyzw		vf01,FV_PRM(vi00)	; -,定数読み込み
+	nop								ilw.x		vi08,PACKDAT(vi13)	; -,処理頂点数の読み込み
+	nop								lq.yzw		vf04,GIFNORMAL(vi13); -,GIFタグ生成
+	nop								iaddiu		vi01,vi00,0x4000	; -,GIFタグ生成
+	muly.w		vf20,vf00,vf01		iadd		vi01,vi01,vi01		; -,GIFタグ生成
+	nop								ior			vi01,vi01,vi08		; -,GIFタグ生成
+	nop								isw.x		vi01,WORK_TOP(vi13)	; -,GIFタグ生成
+	nop								sq.yzw		vf04,WORK_TOP(vi13)	; -,GIFタグ生成
+	nop								iaddiu		vi09,vi13,DATA_OFT	; -,データ先読みアドレス設定
+	nop								iaddiu		vi10,vi13,PACK_TOP	; -,データ書き戻しアドレス設定
+	nop								lq.xyzw		vf16,BUF_VERT(vi09)	; -,第１頂点読み込み
+	nop								lq.xyzw		vf17,BUF_NORM(vi09)	; -,第１法線（＆キック情報）読み込み
+	nop								lq.xyzw		vf18,BUF_UV0(vi09)	; -,第１ＵＶ値読み込み
+	nop								lq.xyzw		vf28,M_SUP0(vi13)	; エンベロープ補正マトリクス読み込み
+	itof0.xyz	vf16,vf16			lq.xyzw		vf29,M_SUP1(vi13)	; エンベロープ補正マトリクス読み込み
+	itof12.w	vf26,vf16			lq.xyzw		vf30,M_SUP2(vi13)	; エンベロープ補正マトリクス読み込み
+	itof12.xyz	vf17,vf17			lq.xyzw		vf31,M_SUP3(vi13)	; エンベロープ補正マトリクス読み込み
+	nop								lq.xyzw		vf04,M_PRS0(vi13)	; -,透視変換マトリクスロード
+	nop								lq.xyzw		vf05,M_PRS1(vi13)	; -,透視変換マトリクスロード
+	mulax.xyz	ACC ,vf28,vf16		lq.xyzw		vf06,M_PRS2(vi13)	; trans_v,透視変換マトリクスロード
+	madday.xyz	ACC ,vf29,vf16		lq.xyzw		vf07,M_PRS3(vi13)	; trans_v,透視変換マトリクスロード
+	maddaz.xyz	ACC ,vf30,vf16		lq.xyzw		vf08,M_LIT0(vi13)	; trans_v,ローカルライトマトリクス読み込み
+	maddw.xyz	vf26,vf31,vf00		lq.xyzw		vf09,M_LIT1(vi13)	; trans_v,ローカルライトマトリクス読み込み
+	sub.w		vf27,vf00,vf26		lq.xyzw		vf10,M_LIT2(vi13)	; make v&n,ローカルライトマトリクス読み込み
+	mulax.xyz	ACC ,vf28,vf17		lq.xyzw		vf12,M_COL0(vi13)	; trans_n,ローカルカラーマトリクス読み込み
+	madday.xyz	ACC ,vf29,vf17		lq.xyzw		vf13,M_COL1(vi13)	; trans_n,ローカルカラーマトリクス読み込み
+	maddz.xyz	vf27,vf30,vf17		lq.xyzw		vf14,M_COL2(vi13)	; trans_n,ローカルカラーマトリクス読み込み
+	mulaw.xyz	ACC ,vf16,vf26		lq.xyzw		vf15,M_COL3(vi13)	; make v,ローカルカラーマトリクス読み込み
+	maddw.xyz	vf16,vf26,vf27		ilw.z		vi06,PACKDAT(vi13)	; make v,固定フォグ値記憶
+	mulaw.xyz	ACC ,vf17,vf26		iaddiu		vi03,vi00,0x0fff	; make n,キックフラグマスク
+	maddw.xyz	vf17,vf27,vf27		nop								; make n,-
+.else
+	mula.xyz	ACC ,vf04,vf02		nop								; 透視変換,
+	maddw.xyz	vf04,vf03,vf04		nop								; 透視変換,
+	mula.xyz	ACC ,vf05,vf02		nop								; 透視変換,
+	maddw.xyz	vf05,vf03,vf05		nop								; 透視変換,
+	mula.xyz	ACC ,vf06,vf02		nop								; 透視変換,
+	maddw.xyz	vf06,vf03,vf06		nop								; 透視変換,
+	mula.xyz	ACC ,vf07,vf02		nop								; 透視変換,
+	maddw.xyz	vf07,vf03,vf07		iaddiu		vi03,vi00,0x0fff	; 透視変換,
+.endif
+
+	; ディレイ処理の為の前処理
+	mulax.xyzw	ACC ,vf04,vf16		ilw.w		vi07,BUF_FLG(vi09)			; 透視変換,キックフラグ
+	madday.xyzw	ACC ,vf05,vf16		iaddiu		vi09,vi09,BUF_NEXT			; 透視変換,読み込みアドレス増加
+	maddaz.xyzw	ACC ,vf06,vf16		nop										; 透視変換,-
+	maddw.xyzw	vf19,vf07,vf00		lq.xyzw		vf16,BUF_VERT(vi09)			; 透視変換,(先)頂点読み込み
+	minix.xyzw	vf24,vf20,vf01		nop										; (遅)光源計算,-
+	mulax.xyzw	ACC ,vf08,vf17		nop										; 光源計算,
+	madday.xyzw	ACC ,vf09,vf17		ior			vi07,vi07,vi03				; 光源計算,キックフラグ
+	maddz.xyz	vf20,vf10,vf17		div			Q,vf00w,vf19w				; 光源計算,透視変換
+	ftoi4.xyz	vf22,vf22			iaddi		vi08,vi08,-1				; (遅)透視変換,カウンタのデクリメント
+	itof0.xyz	vf16,vf16			lq.xyzw		vf17,BUF_NORM(vi09)			; (先)透視変換,(先)法線読み込み
+	itof12.xyz	vf18,vf18			iand		vi07,vi07,vi06				; ＵＶ座標,フォグ処理
+	maxx.xyzw	vf20,vf20,vf00		nop										; 光源処理,-
+	ftoi0.xyzw	vf24,vf24			nop										; (遅)光源計算,
+	itof12.xyz	vf17,vf17			isw.w		vi07,DST_XYZ(vi10)			; (先)光源計算,描画キック
+	mulq.xyzw	vf22,vf19,Q			nop										; 透視変換,(遅)透視変換
+	mulax.xyz	ACC ,vf12,vf20		nop										; 光源計算,(遅)ＵＶ座標
+	madday.xyz	ACC ,vf13,vf20		nop										; 光源計算,(遅)光源計算
+	maddaz.xyz	ACC ,vf14,vf20		iaddiu		vi10,vi10,DST_NEXT			; 光源計算,書き込みアドレス増加
+	maddw.xyz	vf20,vf15,vf00		ibgtz		vi08,_FastTransEnvelopeLoop	; 光源計算,ループジャンプ
+	itof12.w	vf26,vf16			nop										; (先)透視変換,-
+
+_FastTransEnvelopeLoop:
+	; 頂点変換処理（途中で次の頂点の情報を読み込んでおく）
+	mulax.xyz	ACC ,vf28,vf16		nop								; trans_v
+	madday.xyz	ACC ,vf29,vf16		nop								; trans_v,-
+	maddaz.xyz	ACC ,vf30,vf16		nop								; trans_v,make v
+	maddw.xyz	vf26,vf31,vf00		nop								; trans_v,-
+	sub.w		vf27,vf00,vf26		nop								; make v&n,-
+	mulax.xyz	ACC ,vf28,vf17		nop								; trans_n,-
+	madday.xyz	ACC ,vf29,vf17		nop								; trans_n,-
+	maddz.xyz	vf27,vf30,vf17		nop								; trans_n,-
+	mulaw.xyz	ACC ,vf16,vf26		nop								; make v,-
+	maddw.xyz	vf16,vf26,vf27		nop								; make v,-
+	mulaw.xyz	ACC ,vf17,vf26		nop								; make n,-
+	maddw.xyz	vf17,vf27,vf27		nop								; make n,-
+
+	mulq.xyz	vf25,vf18,Q			lq.xyzw		vf18,BUF_UV0(vi09)			; (遅)ＵＶ座標,ＵＶ読み込み
+	mulax.xyzw	ACC ,vf04,vf16		ilw.w		vi07,BUF_FLG(vi09)			; 透視変換,キックフラグ
+	madday.xyzw	ACC ,vf05,vf16		iaddiu		vi09,vi09,BUF_NEXT			; 透視変換,読み込みアドレス増加
+	maddaz.xyzw	ACC ,vf06,vf16		nop										; 透視変換,-
+	maddw.xyzw	vf19,vf07,vf00		lq.xyzw		vf16,BUF_VERT(vi09)			; 透視変換,(先)頂点読み込み
+	minix.xyzw	vf24,vf20,vf01		nop										; (遅)光源計算,-
+	mulax.xyzw	ACC ,vf08,vf17		nop										; 光源計算,
+	madday.xyzw	ACC ,vf09,vf17		ior			vi07,vi07,vi03				; 光源計算,キックフラグ
+	maddz.xyz	vf20,vf10,vf17		div			Q,vf00w,vf19w				; 光源計算,透視変換
+	ftoi4.xyz	vf22,vf22			iaddi		vi08,vi08,-1				; (遅)透視変換,カウンタのデクリメント
+	itof0.xyz	vf16,vf16			lq.xyzw		vf17,BUF_NORM(vi09)			; (先)透視変換,(先)法線読み込み
+	itof12.xyz	vf18,vf18			iand		vi07,vi07,vi06				; ＵＶ座標,フォグ処理
+	maxx.xyzw	vf20,vf20,vf00		nop										; 光源計算,-
+	ftoi0.xyzw	vf24,vf24			nop										; (遅)光源計算,
+	itof12.xyz	vf17,vf17			isw.w		vi07,DST_XYZ(vi10)			; (先)光源計算,描画キック
+	mulq.xyzw	vf22,vf19,Q			sq.xyz		vf22,DST_XYZ-DST_NEXT(vi10)	; 透視変換,(遅)透視変換
+	mulax.xyz	ACC ,vf12,vf20		sq.xyz		vf25,DST_UV0-DST_NEXT(vi10)	; 光源計算,(遅)ＵＶ座標
+	madday.xyz	ACC ,vf13,vf20		sq.xyzw		vf24,DST_COL-DST_NEXT(vi10)	; 光源計算,(遅)光源計算
+	maddaz.xyz	ACC ,vf14,vf20		iaddiu		vi10,vi10,DST_NEXT			; 光源計算,書き込みアドレス増加
+	maddw.xyz	vf20,vf15,vf00		ibgtz		vi08,_FastTransEnvelopeLoop	; 光源計算,ループジャンプ
+	itof12.w	vf26,vf16			nop										; (先)透視変換,-
+	; 後始末
+	mulq.xyz	vf25,vf18,Q			nop										; (遅)ＵＶ座標,-
+	minix.xyzw	vf24,vf20,vf01		iaddiu		vi01,vi13,TX0_OFT			; (遅)光源計算,テクスチャ設定
+	ftoi4.xyz	vf22,vf22			xgkick		vi01						; (遅)透視変換,テクスチャ設定
+	ftoi0.xyzw	vf24,vf24			sq.xyz		vf25,DST_UV0-DST_NEXT(vi10)	; (遅)光源計算,(遅)ＵＶ座標
+	nop								sq.xyz		vf22,DST_XYZ-DST_NEXT(vi10)	; -,(遅)透視変換
+	nop								sq.xyzw		vf24,DST_COL-DST_NEXT(vi10)	; -,(遅)光源計算
+
+	; 終端ダミーパケットをキックし待機
+	nop								iaddiu		vi01,vi13,WORK_TOP	; 
+	nop								xgkick		vi01				; ＧＩＦへのキック
+	nop[e]							nop								; 終了
+	nop								nop								; 
+
+
+; --------------------------------------
+; プリシェード用最高速透視変換ルーチン
+; --------------------------------------
+;	vf26:キックフラグ設定用
+;	vf02:フォグ係数
+;
+;	upper		.					lower		.
+FastPreshadeTransStart:
+	; 変換初期化処理
+	; バッファアドレス、ループ回数のセットとデータのプリロード処理
+.if 0
+	nop								xtop		vi13				; -,
+	nop								lq.xyzw		vf01,FV_PRM(vi00)	; -,定数読み込み
+	nop								ilw.x		vi08,PACKDAT(vi13)	; -,処理頂点数の読み込み
+	nop								lq.yzw		vf04,GIFNORMAL(vi13); -,GIFタグ生成
+	nop								iaddiu		vi01,vi00,0x4000	; -,GIFタグ生成
+	muly.w		vf17,vf00,vf01		iadd		vi01,vi01,vi01		; アルファ設定,GIFタグ生成
+	nop								ior			vi01,vi01,vi08		; -,GIFタグ生成
+	nop								isw.x		vi01,WORK_TOP(vi13)	; -,GIFタグ生成
+	nop								sq.yzw		vf04,WORK_TOP(vi13)	; -,GIFタグ生成
+	ftoi0.w		vf17,vf17			iaddiu		vi09,vi13,DATA_OFT	; アルファ設定,データ先読みアドレス設定
+	nop								iaddiu		vi10,vi13,PACK_TOP	; -,データ書き戻しアドレス設定
+	nop								lq.xyzw		vf16,BUF_VERT(vi09)	; -,第１頂点読み込み
+	nop								lq.xyz		vf17,BUF_NORM(vi09)	; -,第１法線（＆キック情報）読み込み
+	nop								lq.xyzw		vf18,BUF_UV0(vi09)	; -,第１ＵＶ値読み込み
+	nop								lq.xyzw		vf04,M_PRS0(vi13)	; -,透視変換マトリクスロード
+	itof0.xyzw	vf16,vf16			lq.xyzw		vf05,M_PRS1(vi13)	; -,透視変換マトリクスロード
+	nop								lq.xyzw		vf06,M_PRS2(vi13)	; -,透視変換マトリクスロード
+	nop								lq.xyzw		vf07,M_PRS3(vi13)	; -,透視変換マトリクスロード
+	nop								lq.xyzw		vf02,FV_FOG(vi00)	; フォグ係数読み込み
+	nop								iaddiu		vi06,vi00,0x4000	;
+	nop								iadd		vi06,vi06,vi06		;
+.else
+	mula.xyz	ACC ,vf04,vf02		nop								; 透視変換,-
+	maddw.xyz	vf04,vf03,vf04		iaddiu		vi06,vi00,0x4000	; 透視変換,-
+	mula.xyz	ACC ,vf05,vf02		iadd		vi06,vi06,vi06		; 透視変換,-
+	maddw.xyz	vf05,vf03,vf05		nop								; 透視変換,-
+	mula.xyz	ACC ,vf06,vf02		nop								; 透視変換,-
+	maddw.xyz	vf06,vf03,vf06		nop								; 透視変換,-
+	mula.xyz	ACC ,vf07,vf02		nop								; 透視変換,-
+	maddw.xyz	vf07,vf03,vf07		lq.xyzw		vf02,FV_FOG(vi00)	; 透視変換,フォグ係数読み込み
+.endif
+
+	; ディレイ処理の為の前処理
+	; 頂点変換処理（途中で次の頂点の情報を読み込んでおく）
+	mulax.xyzw	ACC ,vf04,vf16		ilw.w		vi07,BUF_FLG(vi09)			; 透視変換,描画キック
+	madday.xyzw	ACC ,vf05,vf16		iaddiu		vi09,vi09,BUF_NEXT			; 透視変換,先読みアドレス増加
+	minix.w		vf22,vf22,vf01		iand		vi05,vi07,vi06				; (遅)フォグ,キックフラグ
+	maddaz.xyzw	ACC ,vf06,vf16		nop										; 透視変換,(遅)ＵＶ座標
+	maddw.xyzw	vf19,vf07,vf00		lq.xyzw		vf16,BUF_VERT(vi09)			; 透視変換,(先)頂点読み込み
+	itof12.xyz	vf25,vf18			lq.xyzw		vf18,BUF_UV0(vi09)			; ＳＴ座標,(先)ＵＶ読み込み
+	add.w		vf22,vf22,vf26		sq.xyzw		vf17,DST_COL(vi10)			; (遅)透視変換,光源計算
+	nop								nop										; -,
+	mulax.w		ACC ,vf19,vf02		div			Q,vf00w,vf19w				; フォグ,透視変換
+	maddy.w		vf19,vf00,vf02		mfir.w		vf26,vi05					; フォグ,キックフラグ
+	ftoi4.xyzw	vf22,vf22			lq.xyz		vf17,BUF_NORM(vi09)			; (遅)透視変換,(先)光源計算
+	nop								nop										; -,-
+	itof0.xyzw	vf16,vf16			nop										; (先)透視変換,-
+	itof4.w		vf26,vf26			isubiu		vi08,vi08,1					; キックフラグ,カウンタのデクリメント
+	maxx.w		vf22,vf19,vf00		nop										; フォグ,(遅)透視変換
+	mulq.xyz	vf22,vf19,Q			ibgtz		vi08,_FastPreshadeTransLoop	; 透視変換,ループジャンプ
+	mulq.xyz	vf25,vf25,Q			iaddiu		vi10,vi10,DST_NEXT			; ＳＴ座標,書き込みアドレス増加
+
+_FastPreshadeTransLoop:
+	; 頂点変換処理（途中で次の頂点の情報を読み込んでおく）
+	mulax.xyzw	ACC ,vf04,vf16		ilw.w		vi07,BUF_FLG(vi09)			; 透視変換,描画キック
+	madday.xyzw	ACC ,vf05,vf16		iaddiu		vi09,vi09,BUF_NEXT			; 透視変換,先読みアドレス増加
+	minix.w		vf22,vf22,vf01		iand		vi05,vi07,vi06				; (遅)フォグ,キックフラグ
+	maddaz.xyzw	ACC ,vf06,vf16		sq.xyz		vf25,DST_UV0-DST_NEXT(vi10)	; 透視変換,(遅)ＵＶ座標
+	maddw.xyzw	vf19,vf07,vf00		lq.xyzw		vf16,BUF_VERT(vi09)			; 透視変換,(先)頂点読み込み
+	itof12.xyz	vf25,vf18			lq.xyzw		vf18,BUF_UV0(vi09)			; ＳＴ座標,(先)ＵＶ読み込み
+	add.w		vf22,vf22,vf26		sq.xyzw		vf17,DST_COL(vi10)			; (遅)透視変換,光源計算
+	nop								nop										; -,-
+	mulax.w		ACC ,vf19,vf02		div			Q,vf00w,vf19w				; フォグ,透視変換
+	maddy.w		vf19,vf00,vf02		mfir.w		vf26,vi05					; フォグ,キックフラグ
+	ftoi4.xyzw	vf22,vf22			lq.xyz		vf17,BUF_NORM(vi09)			; (遅)透視変換,(先)光源計算
+	nop								nop										; -,-
+	itof0.xyzw	vf16,vf16			nop										; (先)透視変換,-
+	itof4.w		vf26,vf26			isubiu		vi08,vi08,1					; キックフラグ,カウンタのデクリメント
+	maxx.w		vf22,vf19,vf00		sq.xyzw		vf22,DST_XYZ-DST_NEXT(vi10)	; フォグ,(遅)透視変換
+	mulq.xyz	vf22,vf19,Q			ibgtz		vi08,_FastPreshadeTransLoop	; 透視変換,ループジャンプ
+	mulq.xyz	vf25,vf25,Q			iaddiu		vi10,vi10,DST_NEXT			; ＳＴ座標,書き込みアドレス増加
+
+	; 後始末
+	minix.w		vf22,vf22,vf01		iaddiu		vi01,vi13,TX0_OFT			; (遅)フォグ,テクスチャ設定
+	add.w		vf22,vf22,vf26		xgkick		vi01						; (遅)透視変換,テクスチャ設定
+	ftoi4.xyzw	vf22,vf22			sq.xyz		vf25,DST_UV0-DST_NEXT(vi10)	; (遅)透視変換,(遅)ＵＶ座標
+	nop								sq.xyzw		vf22,DST_XYZ-DST_NEXT(vi10)	; フォグ,(遅)透視変換
+
+	; 終端ダミーパケットをキックし待機
+	nop								iaddiu		vi01,vi13,WORK_TOP	; 
+	nop								xgkick		vi01				; ＧＩＦへのキック
+	nop[e]							nop								; 終了
+	nop								nop								; 
+
+; --------------------------------------
+; プリシェード用最高速透視変換ルーチン（カリング処理付き）
+; --------------------------------------
+;	vf26:キックフラグ設定用
+;	vf27:１つ前の頂点
+;	vf28:１つ前のベクトル
+;	vf29:ベクトル計算用テンポラリ
+;	vf30:外積計算結果
+;	vf02:フォグ係数
+;
+;	upper		.					lower		.
+CullFastPreshadeTransStart:
+	; 変換初期化処理
+	; バッファアドレス、ループ回数のセットとデータのプリロード処理
+.if 0
+	nop								xtop		vi13				; -,
+	nop								lq.xyzw		vf01,FV_PRM(vi00)	; -,定数読み込み
+	nop								ilw.x		vi08,PACKDAT(vi13)	; -,処理頂点数の読み込み
+	nop								lq.yzw		vf04,GIFNORMAL(vi13); -,GIFタグ生成
+	nop								iaddiu		vi01,vi00,0x4000	; -,GIFタグ生成
+	muly.w		vf17,vf00,vf01		iadd		vi01,vi01,vi01		; アルファ設定,GIFタグ生成
+	nop								ior			vi01,vi01,vi08		; -,GIFタグ生成
+	nop								isw.x		vi01,WORK_TOP(vi13)	; -,GIFタグ生成
+	nop								sq.yzw		vf04,WORK_TOP(vi13)	; -,GIFタグ生成
+	ftoi0.w		vf17,vf17			iaddiu		vi09,vi13,DATA_OFT	; アルファ設定,データ先読みアドレス設定
+	nop								iaddiu		vi10,vi13,PACK_TOP	; -,データ書き戻しアドレス設定
+	nop								lq.xyzw		vf16,BUF_VERT(vi09)	; -,第１頂点読み込み
+	nop								lq.xyz		vf17,BUF_NORM(vi09)	; -,第１法線（＆キック情報）読み込み
+	nop								lq.xyzw		vf18,BUF_UV0(vi09)	; -,第１ＵＶ値読み込み
+	nop								lq.xyzw		vf04,M_PRS0(vi13)	; -,透視変換マトリクスロード
+	itof0.xyzw	vf16,vf16			lq.xyzw		vf05,M_PRS1(vi13)	; -,透視変換マトリクスロード
+	nop								lq.xyzw		vf06,M_PRS2(vi13)	; -,透視変換マトリクスロード
+	nop								lq.xyzw		vf07,M_PRS3(vi13)	; -,透視変換マトリクスロード
+	nop								lq.xyzw		vf02,FV_FOG(vi00)	; フォグ係数読み込み
+	nop								iaddiu		vi06,vi00,0x4000	;
+	nop								iadd		vi06,vi06,vi06		; 
+.else
+	mula.xyz	ACC ,vf04,vf02		nop								; 
+	maddw.xyz	vf04,vf03,vf04		iaddiu		vi06,vi00,0x4000	; 
+	mula.xyz	ACC ,vf05,vf02		iadd		vi06,vi06,vi06		; 
+	maddw.xyz	vf05,vf03,vf05		nop								;
+	mula.xyz	ACC ,vf06,vf02		nop								;
+	maddw.xyz	vf06,vf03,vf06		nop								;
+	mula.xyz	ACC ,vf07,vf02		nop								;
+	maddw.xyz	vf07,vf03,vf07		lq.xyzw		vf02,FV_FOG(vi00)	; フォグ係数読み込み
+.endif
+
+	; ディレイ処理の為の前処理
+	; 頂点変換処理（途中で次の頂点の情報を読み込んでおく）
+	mulax.xyzw	ACC ,vf04,vf16		ilw.w		vi07,BUF_FLG(vi09)			; 透視変換,描画キック
+	madday.xyzw	ACC ,vf05,vf16		iaddiu		vi09,vi09,BUF_NEXT			; 透視変換,先読みアドレス増加
+	minix.w		vf22,vf22,vf01		iand		vi05,vi07,vi06				; (遅)フォグ,キックフラグ
+	maddaz.xyzw	ACC ,vf06,vf16		nop										; 透視変換,(遅)ＵＶ座標
+	maddw.xyzw	vf19,vf07,vf00		lq.xyzw		vf16,BUF_VERT(vi09)			; 透視変換,(先)頂点読み込み
+	itof12.xyz	vf25,vf18			lq.xyzw		vf18,BUF_UV0(vi09)			; ＳＴ座標,(先)ＵＶ読み込み
+	add.w		vf22,vf22,vf26		sq.xyzw		vf17,DST_COL(vi10)			; (遅)透視変換,光源計算
+	nop								nop										; -,
+	mulaw.xyz	ACC ,vf19,vf27		nop										; カリング,-
+	msubw.xyz	vf29,vf27,vf19		move.xyzw	vf27,vf19					; カリング,カリング
+	mulax.w		ACC ,vf19,vf02		div			Q,vf00w,vf19w				; フォグ,透視変換
+	maddy.w		vf19,vf00,vf02		mfir.w		vf26,vi05					; フォグ,キックフラグ
+	ftoi4.xyzw	vf22,vf22			lq.xyz		vf17,BUF_NORM(vi09)			; (遅)透視変換,(先)光源計算
+	opmula.xyz	ACC ,vf28,vf29		iaddiu		vi02,vi00,0x0020			; カリング,カリング
+	opmsub.xyz	vf30,vf29,vf28		move.xyzw	vf28,vf29					; カリング,カリング
+	nop								nop										; -,-
+	itof0.xyzw	vf16,vf16			nop										; (先)透視変換,-
+	itof4.w		vf26,vf26			isubiu		vi08,vi08,1					; キックフラグ,カウンタのデクリメント
+	maxx.w		vf22,vf19,vf00		nop										; フォグ,(遅)透視変換
+	mulq.xyz	vf22,vf19,Q			ibgtz		vi08,_CullFastPreshadeTransLoop	; 透視変換,ループジャンプ
+	mulq.xyz	vf25,vf25,Q			iaddiu		vi10,vi10,DST_NEXT			; ＳＴ座標,書き込みアドレス増加
+
+_CullFastPreshadeTransLoop:
+	; 頂点変換処理（途中で次の頂点の情報を読み込んでおく）
+	mulax.xyzw	ACC ,vf04,vf16		ilw.w		vi07,BUF_FLG(vi09)			; 透視変換,描画キック
+	madday.xyzw	ACC ,vf05,vf16		iaddiu		vi09,vi09,BUF_NEXT			; 透視変換,先読みアドレス増加
+	minix.w		vf22,vf22,vf01		iand		vi05,vi07,vi06				; (遅)フォグ,キックフラグ
+	maddaz.xyzw	ACC ,vf06,vf16		sq.xyz		vf25,DST_UV0-DST_NEXT(vi10)	; 透視変換,(遅)ＵＶ座標
+	maddw.xyzw	vf19,vf07,vf00		lq.xyzw		vf16,BUF_VERT(vi09)			; 透視変換,(先)頂点読み込み
+	itof12.xyz	vf25,vf18			lq.xyzw		vf18,BUF_UV0(vi09)			; ＳＴ座標,(先)ＵＶ読み込み
+	add.w		vf22,vf22,vf26		sq.xyzw		vf17,DST_COL(vi10)			; (遅)透視変換,光源計算
+	nop								nop										; -,-
+	mulaw.xyz	ACC ,vf19,vf27		iaddiu		vi03,vi00,0x0030			; カリング,カリング
+	msubw.xyz	vf29,vf27,vf19		move.xyzw	vf27,vf19					; カリング,カリング
+	mulax.w		ACC ,vf19,vf02		div			Q,vf00w,vf19w				; フォグ,透視変換
+	maddy.w		vf19,vf00,vf02		mfir.w		vf26,vi05					; フォグ,キックフラグ
+	ftoi4.xyzw	vf22,vf22			lq.xyz		vf17,BUF_NORM(vi09)			; (遅)透視変換,(先)光源計算
+	opmula.xyz	ACC ,vf28,vf29		iaddiu		vi02,vi00,0x0020			; カリング,カリング
+	opmsub.xyz	vf30,vf29,vf28		move.xyzw	vf28,vf29					; カリング,カリング
+	itof0.xyzw	vf16,vf16			iand		vi03,vi03,vi07				; (先)透視変換,カリング
+	itof4.w		vf26,vf26			isubiu		vi08,vi08,1					; キックフラグ,カウンタのデクリメント
+	maxx.w		vf22,vf19,vf00		sq.xyzw		vf22,DST_XYZ-DST_NEXT(vi10)	; フォグ,(遅)透視変換
+	nop								fmand		vi02,vi02					; -,カリング
+	nop								ibne		vi02,vi03,l0a				; -,カリング
+	nop								loi			2047.0						; -,カリング
+	addi.w		vf26,vf00,I			nop										; -,カリング
+l0a:mulq.xyz	vf22,vf19,Q			ibgtz		vi08,_CullFastPreshadeTransLoop	; 透視変換,ループジャンプ
+	mulq.xyz	vf25,vf25,Q			iaddiu		vi10,vi10,DST_NEXT			; ＳＴ座標,書き込みアドレス増加
+
+	; 後始末
+	minix.w		vf22,vf22,vf01		iaddiu		vi01,vi13,TX0_OFT			; (遅)フォグ,テクスチャ設定
+	add.w		vf22,vf22,vf26		xgkick		vi01						; (遅)透視変換,テクスチャ設定
+	ftoi4.xyzw	vf22,vf22			sq.xyz		vf25,DST_UV0-DST_NEXT(vi10)	; (遅)透視変換,(遅)ＵＶ座標
+	nop								sq.xyzw		vf22,DST_XYZ-DST_NEXT(vi10)	; フォグ,(遅)透視変換
+
+	; 終端ダミーパケットをキックし待機
+	nop								iaddiu		vi01,vi13,WORK_TOP	; 
+	nop								xgkick		vi01				; ＧＩＦへのキック
+	nop[e]							nop								; 終了
+	nop								nop								; 
+
+
+

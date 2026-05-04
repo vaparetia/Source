@@ -1,0 +1,75 @@
+//
+//	vs08a.src
+//	ＶＲスニーキングミッション８面 (主観ステージ)
+//	written by T.Ohtani 2002.Feb
+//
+//	$Id$
+
+#define WN_VS08A
+
+block .use r_vr_r
+block .nocache
+block .cache
+
+// 敵兵関連define
+// 敵兵タイプ
+#define ENE_VR_GOL		// ＶＲ兵
+#define ENE_ATTACKER	// 攻撃兵
+#define ENE_SHIELD		// 盾兵
+#define ENE_SHOT		// ショットガン兵
+#define ENE_HIGH_TECH	// 人質イベント後はハイテク兵
+
+// 特殊兵のモーション設定
+#define ENE_MAR '-DDEL_TNG=DUMMY -DDEL_WALKMAN=DUMMY'
+
+// ＶＲ空の半透明テクスチャ
+#include	"vr_def.h"
+
+// 各ステージ共通要素
+#include	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+
+// VR 追加エフェクト
+#include	"vr_effect.h"
+
+// キャラクタ
+#include	"ene_plant.h"
+
+// 強制モーション
+mtn			rai_vs08a.mls
+mtn			sna_vs08a.mls
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+
+// 劣化なしテクスチャオプション ↓↓↓↓↓↓↓↓↓ここから
+option makexti6 -l 1024 -f PAL8
+	pack_all	vs08a.tri \
+				world/vr_sneaking/vs08a
+option makexti6 // ↑↑↑↑↑↑↑↑ここまで
+
+world		vr_sneaking/vs08a
+
+// 監視カメラ
+// オブジェクト
+pack_all	object.tri \
+			meca/svc_plant
+meca		svc_plant
+
+hazard		vs08a.hzx
+rol			world/vr_sneaking/vs08a/vs08a.rol
+
+// オブジェクト
+
+// 消火器
+
+// アイテム
+itembox
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム

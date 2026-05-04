@@ -1,0 +1,588 @@
+/*
+    kamome.txt                                             
+    Metal Gear Solid 2 - SONS OF LIBERTY-                
+    カモメ仕様ログ                                   
+    2001/10/24 Masafumi Okuta                            
+    $Id: kamome.txt,v 1.1.1.3 2002/11/19 11:48:12 Yoshizawa1 Exp $                                                 
+*/
+
+カモメキャラ用のソースコード群
+
+カモメは管理を行なう_KAMOME_MNG構造体と単体のデータとなる_KAMOME構造体が存在する
+_KAMOMEはマネージャ内のリストに追加されて動作する
+
+☆メモリモーション
+カモメは数が多いのでモーションの計算を省く為に先にメモリ上にモーションデータを展開してそれを参照する形を取っている。
+okuta/conv/memmot.c, okuta/conv/memmot.h のメモリモーションシステムを使用
+
+☆メッセージ処理
+メッセージはマネージャに飛ばされ、その中で受け取るカモメを選定して専用のメッセージバッファに
+データを設定する。各カモメは自分の前処理の段階でそのメッセージバッファの内容を受け思考を切替えたりする
+各カモメはメッセージを1フレーム中1つしか受け取ることができない。
+優先の高いメッセージ(内部設定)以外は後から上書きされます
+
+例：指定されたエリア内のかもめを５羽着陸させる
+            ↓
+カモメマネージャにたいしてメッセージを送る（指定エリア内着地＆５匹）
+            ↓
+カモメマネージャがそのメッセージを受け取り解釈
+            ↓
+メッセージバッファにデータを設定
+            ↓
+着陸させるカモメ（メッセージの受け取り手）を設定
+(すべてのカモメの中から条件のエリア内を満たすもの５羽分選び出す)
+            ↓
+個々のカモメが受け取ったデータから着陸へのルーチン切替えをする
+
+☆飛行
+カモメは個々に飛行エリア(バウンダリボックス)内に１６の通過ポイントを設定して
+そのポイントを順に回りながら飛ぶ自由飛行状態と目的の位置に移動する状態がある
+
+
+流れは以下の通り
+
+かもめマネージャ生成
+        ↓
+かもめマネージャ初期化
+        ↓
+かもめを指定個数分生成
+        ↓
+かもめマネージャ動作 ←←←←←←←←←←↑
+        ↓                               ↑
+かもめ前処理(周辺情報更新も行なう)       ↑
+        ↓                               ↑
+かもめメッセージ処理                     ↑
+        ↓                               ↑
+かもめ思考                               ↑
+        ↓                               ↑
+かもめ動作                               ↑
+        ↓                               ↑ 
+かもめ後処理                             ↑
+        ↓                               ↑
+かもめ描画設定                           ↑
+        ↓                               ↑
+（かもめが指定高さより下にいったら消す） ↑
+        ↓                               ↑
+全滅したか？ →→→→→→→→→→→→→→↑
+        ↓
+かもめマネージャ破棄
+
+kamome.h
+    カモメ関連ヘッダ
+
+kmmng.c 
+    カモメマネージャ
+
+        KMM_InsertKamome( KAMOME_MNG* kmmng,    // かもめマネージャ
+                          KAMOME*     pKamome); // リストに加えるかもめ
+            リストにカモメを追加
+        KMM_RemoveKamome( KAMOME_MNG* kmmng,    // かもめマネージャ
+                          KAMOME*     pKamome); // リストから外すかもめ
+            リストからカモメを外す
+        KMMNG_CheckKamomeIn( FVECTOR* pvecCenter,  // 中心
+                             int      nRadius);    // 半径
+            カモメが指定球内にいるかチェック
+
+        KMMNG_CheckLandKamomeInBox( FVECTOR* pvecCenter, // 中心
+                                    float    fBoxX,      // チェックX
+                                    float    fBoxY,      // チェックY
+                                    float    fBoxZ);     // チェックZ
+            カモメが指定エリア内にいるかチェック
+
+        KMM_SetAllLandOperation〜KMM_SetConcomitantEndOpperation( KAMOME_MNG* kmmng, 
+                                                                  GV_MSG* msg, 
+                                                                  int code,
+                                                                  int nMess);
+            カモメマネージャ宛のメッセージを処理
+            適応されるカモメの選定とデータをバッファにプールする
+        
+        KMMNG_RecieveMessage( KAMOME_MNG* kmmng);
+            メッセージ受信
+
+        KMMNG_ActControl( KAMOME_MNG* kmmng);
+            マネージャのコントロールシステムの更新
+
+        KMMNG_ActDanna( KAMOME_MNG* kmmng);
+            かもめの糞処理
+
+        KMMNG_ActTarget( KAMOME_MNG* kmmng);
+            ターゲット更新
+
+        KMMNG_ActSound( KAMOME_MNG* kmmng);
+            音更新
+
+        KMM_ExecKamome( KAMOME_MNG* kmmng);
+            カモメ動作関数コール
+
+        KMMNG_Act( KAMOME_MNG* kmmng);
+            カモメマネージャ動作関数
+
+        KMMNG_Die( KAMOME_MNG* kmmng);
+            カモメマネージャ破棄関数
+
+        KMM_GetGCLData( KAMOME_MNG* kmmng );
+            GCLからのデータを設定＆かもめの生成
+
+        KMMNG_GetResources( KAMOME_MNG* kmmng, int name, int where );
+            初期化関数
+
+        NewKamomeManager( int name, int where );
+            カモメマネージャ生成
+
+        NewCmdKamomeInvisible( void );
+            シナリオcommand関数：かもめ非表示
+
+        NewCmdDeadKamomeInvisible( void );
+            シナリオcommand関数：死んだかもめ非表示
+
+        NewCmdKamomeVisible( void );
+            シナリオcommand関数：かもめ表示
+
+        GetConcKamomeNum( void );
+            キャラ付随しているカモメの数取得
+
+kamome.def 
+    カモメ関連関数宣言
+        
+kmtest.c 
+    カモメ生成
+
+        KMM_SetLodMode( KAMOME* kamome, int mode);
+            LODチェック
+
+        KMM_ActControl( KAMOME* kamome );
+            制御処理
+
+        KMM_ActSystem( KAMOME* kamome );
+            システム処理
+
+        KMM_Routine( KAMOME* kamome );
+            思考、動作処理とその前後処理
+
+        Act( KAMOME* kamome );
+            動作関数
+
+        Die( KAMOME* kamome );
+            破棄関数
+
+        KMM_InitObject( KAMOME* kamome, int modelname ); 
+            モデル初期化
+
+        KMM_InitMotion( KAMOME* kamome, int motname);
+            モーション初期化 
+
+        KMM_InitPose( KAMOME*  kamome,     // かもめワーク
+                      FVECTOR* pvecPos,    // 初期位置
+                      int      nDirY,      // 初期方向
+                      int      nInitMar,   // 初期使用モーション
+                      int      nInitMot);  // 初期再生モーション番号
+            初期状態設定
+
+        KMM_InitTarget( KAMOME* kamome);
+            ターゲット初期化
+
+        KMM_InitHeadMark( KAMOME* kamome );
+            ヘッドマーク初期化
+
+        KMM_CallHeadMark( KAMOME* kamome, int mode );
+            ヘッドマーク呼出
+
+        KMM_EraseHeadMark( KAMOME* kamome );
+            ヘッドマーク消去
+
+        InitWork( KAMOME*  kamome;
+                  int      name;
+                  int      where;
+                  FVECTOR* pvec;
+                  int      nYRot;
+                  int      nInitMot;
+                  int      nInitThink;
+                  int      nNumber);
+            ワークの初期化
+
+        GetResource2 未使用
+
+        GetResource( KAMOME* kamome,
+                     int     name,
+                     int     where);
+            初期化関数
+
+        NewKamomeTest( int name, int where );
+            カモメ生成
+
+        NewKamomeTestProg 未使用
+kmmess.c 
+    カモメメッセージ処理
+
+        KMM_MessageLandLine〜KMM_MessageConcomitantEnd( KAMOME* kamome, 
+                                                        int*    nMsg);
+            メッセージを反映する為の設定関数 
+
+        KMM_SettingMessage( KAMOME* kamome, int code, int* pmsg);
+            メッセージの種類で設定関数を呼び分け
+
+        KMM_RecieveMessage( KAMOME* kamome);
+            未使用
+            個別に送る
+
+        KMM_PickAttackMessage( KAMOME* kamome);
+            ファットマン戦かもめ戯れ時のつつき攻撃用のメッセージを送信する
+
+kmsend.c 
+    カモメからメッセージ送信
+
+        KMMNG_SendMessageNumAttackPlayer( KAMOME_MNG* kmmng );
+            プレイヤー攻撃メッセージを自分に送る
+        
+kmact.c 
+    カモメ動作関数
+       
+        Get_EvadeWallDir( KAMOME* kamome);
+            壁避け
+
+        KMM_SetNeedl( KAMOME* kamome, FVECTOR *pos, int model );
+            麻酔モデルをつける
+        
+        KMM_ClearNeedl( OBJECT *body );
+            麻酔モデルを外す
+        
+        KMM_TargetCallback( TARGET* off, TARGET* def, void* pvKamome);
+            ダメージコールバック関数
+        
+        KMM_Incline( KAMOME* kamome );
+            体の傾きを計算
+
+        KMM_GetMotCtrl( KAMOME* kamome);
+            モーションコントロール取得;
+
+        KMM_GetMotPlayRate( KAMOME* kamome); 
+            モーション再生割合
+
+        KMM_CheckObject_IsEnd( MEMMOT_CTRL* mmt_ctrl, int nLayer);
+            モーション再生が終ったかどうか
+
+        KMM_SetActMotionEx( KAMOME* kamome, int n_layer, int mot, int start, u_long mask, int interp, float speed );
+            モーション再生を切替える
+        
+        KMM_SetActMotion( KAMOME* kamome, int n_layer, int mot );
+            モーション再生を切替える
+        
+        KMM_ActStandStill〜KMM_ActDead( KAMOME* kamome, int time);
+            カモメの動作関数
+
+        KamomeCheckPad( KAMOME* kamome );
+            動作関数更新
+
+        KMM_InitAction( KAMOME* kamome, int nInitThink );
+            初期動作設定
+
+        KMM_CheckDamage( KAMOME* kamome );
+            ダメージ判定
+
+        KMM_CheckDownDamage( KAMOME* kamome );
+            ダウン中のダメージ判定
+
+        Action( KAMOME* kamome );
+            動作関数
+
+kmmove.c 
+    カモメ移動
+
+        KMM_UpdateHermiteWork( KAMOME* kamome );
+            エルミート補間移動
+
+        KMM_InitMoveWork( KAMOME* kamome );
+            移動ワーク初期化
+
+        UpdateHoverWork( KAMOME* kamome);
+            滑空移動
+
+        KMM_LandMove( KAMOME* kamome);
+            着地点に向かう
+
+        KMM_LandingMove( KAMOME* kamome );
+            着地移動
+
+        KMM_FlipflopMove( KAMOME* kamome );
+            ばたつき移動
+
+        KMM_AttackMove( KAMOME* kamome );
+            攻撃移動
+
+        KMM_Attack( KAMOME* kamome );
+            攻撃
+
+        KMM_ConcomitantMove( KAMOME* kamome );
+            キャラ付随
+
+        KMM_CameraZMove( KAMOME* kamome );
+            未使用：カメラ方向に移動
+
+        KMM_BoxRide( KAMOME* kamome );
+            未使用：ダンボールに乗る
+
+        KMM_AddFallAtcList( KAMOME_MNG* kmmng, KAMOME* kamome);
+            落下攻撃のリストに追加
+
+        KMM_FallMove( KAMOME* kamome );
+            落下移動
+
+        KMM_GetTargetNearZonePos( KAMOME* kamome, FVECTOR* pvecPos, int addr, FVECTOR* pvecAim, int* pnAddr );
+            指定目標に対してゾーン追跡で移動（隣接エリアまで）
+
+        KMM_CheckNearZone( int nCharaAddr, int nAimAddr );
+            隣接ゾーンチェック
+
+        KMM_MakeFlyingArea( KAMOME* kamome, FVECTOR* pvecMin, FVECTOR* pvecMax);
+            飛行エリア設定
+
+        KMM_EulerMove( KAMOME* kamome );
+            オイラー角を使って移動
+
+        KMM_EulerLand( KAMOME* kamome );
+            オイラー角を使って着地
+
+        KMM_ChkDownFloorCheck( KAMOME* kamome);
+            ダウン中の床チェック
+
+kmthink.c 
+    カモメの思考関数
+
+        DamageCheck( KAMOME* kamome );
+            ダメージモードの思考設定
+
+        Think3_Rest( KAMOME* kamome );
+            羽休め
+
+        Think3_RestGround( KAMOME* kamome );
+            地面で羽休め
+
+        Think3_Flying( KAMOME* kamome );
+            自由飛行
+
+        Think3_Hovering( KAMOME* kamome );
+            滑空
+
+        Think3_LandingMove( KAMOME* kamome );
+            着地点へ移動
+
+        Think3_Landing( KAMOME* kamome );
+            着地
+
+        Think3_FlipMove( KAMOME* kamome );
+            ばたつき移動
+
+        Think3_Flipflop( KAMOME* kamome );
+            ばたつき
+
+        Think3_Backward( KAMOME* kamome );
+            後退
+
+        Think3_AttackMove( KAMOME* kamome );
+            攻撃移動
+
+        Think3_Attack( KAMOME* kamome );
+            攻撃
+
+        Think3_Takeoff(KAMOME* kamome );
+            飛び立ち
+
+        Think3_Evade(KAMOME* kamome );
+            回避
+
+        Think3_ConcMove( KAMOME* kamome );
+            キャラに付随するまでの移動
+
+        Think3_Concomitant( KAMOME* kamome );
+            キャラに付随して移動
+
+        Think3_CamZHover( KAMOME* kamome );
+            未使用：カメラ方向へ向かう
+
+        Think3_CBoxRide( KAMOME* kamome );
+            ダンボールに着地
+
+        Think3_EludeMove( KAMOME* kamome );
+            未使用：エルード妨害移動中
+            
+        Think3_Eluding( KAMOME* kamome );
+            未使用：エルード妨害中
+
+        Think3_CtrlMove( KAMOME* kamome );
+            コントロール着地
+
+        Think3_DamageWait( KAMOME* kamome);
+            ダメージ中
+
+        Think3_Backoff( KAMOME* kamome);
+            後退
+
+        Think3_DamageFall( KAMOME* kamome);
+            ダメージ落下
+
+        Think3_DamageSleepFall( KAMOME* kamome);
+            睡眠落下
+
+        Think3_DamageGroundSleep( KAMOME* kamome);
+            地面でねている
+            
+        Think3_DamageStandSleep( KAMOME* kamome);
+            立ち睡眠
+            
+        Think3_Wakeup( KAMOME* kamome);
+            起きる
+            
+        Think3_StandWakeup( KAMOME* kamome);
+            立ち状態で起きる
+            
+        Think3_DamageFeintFall( KAMOME* kamome);
+            気絶落下
+            
+        Think3_DamageFeint( KAMOME* kamome);
+            気絶
+            
+        Think3_DamageDead( KAMOME* kamome);
+            死亡
+            
+        Think2_Normal( KAMOME* kamome );
+            通常思考
+            
+        Think2_Damage( KAMOME* kamome );
+            ダメージ思考
+            
+        Think1_Normal( KAMOME* kamome );
+            通常思考
+
+        Think1_Damage( KAMOME* kamome );
+            ダメージ思考
+
+        Think( KAMOME* kamome );
+            思考関数
+            
+        KMM_InitThink( KAMOME* kamome, int nInitThink );
+            思考ワーク初期化
+
+kmpre.c 
+    カモメの思考、行動処理の前後に行なう処理
+
+        PreProcess( KAMOME* kamome);
+            思考、行動処理の前処理
+
+        AfterProcess( KAMOME* kamome);
+            思考、行動処理の後処理
+
+kmsound.c 
+    カモメ音関連
+        
+        KAMOME_CallSe( KAMOME*  kamome,    // かもめワーク
+                       int      nSeIndex,  // SE番号（インデックス）
+                       FVECTOR* pvecPos,   // SE発生位置
+                       int      nMode);    // SE再生モード        
+            SE再生
+
+        KAMOME_Say( KAMOME*  kamome,       // かもめワーク
+                    int      nSeIndex,     // SE番号（インデックス）
+                    int      nMode);       // SE再生モード
+            カモメの頭の位置からSE再生
+ 
+        KMM_ClearSeList( KAMOME_MNG* kmmng);
+            SEリストをクリア
+
+        KMM_AddAtcSeList( KAMOME_MNG* kmmng, KAMOME* kamome);
+            攻撃音のリストに追加
+
+        KMM_AddNearSeList( KAMOME_MNG* kmmng, KAMOME* kamome);
+            鳴き声のリストに追加
+
+        KMM_InitSoundWork( KAMOME* kamome);
+            音ワーク
+
+        KMM_UpdateSoundWork( KAMOME* kamome);
+            音ワーク更新
+
+        KMM_CallMotionSe( KAMOME* kamome);
+            モーションに合わせて音再生
+ 
+kmdbg.c 
+    カモメデバッグ関連
+
+        KMM_CallDbgNumber(void);
+            デバッグメニュー追加：番号
+
+        KMM_CallDbgRoute(void);
+            デバッグメニュー追加：ルート表示
+
+        KMM_CallDbgSound(void);
+            デバッグメニュー追加：音
+
+        KMM_CallDbgArea(void);
+            デバッグメニュー追加：飛行エリア
+
+        KMM_DbgCheckSe(KAMOME_MNG* kmmng);
+            音チェック
+
+        KMM_DbgDrawNumber( KAMOME_MNG* kmmng );
+            番号表示
+
+        KMM_DbgDrawRoute( KAMOME_MNG* kmmng );
+            ルート表示
+            
+        KMM_DbgDrawArea( KAMOME_MNG* kmmng);
+            エリア表示
+            
+        KMM_DbgProcess(KAMOME_MNG* kmmng);
+            デバッグ実行関数
+            
+        KMM_InitDebugWork(KAMOME_MNG* kmmng);
+            デバッグワーク初期化
+            
+        KMM_DbgDumpExecTime(KAMOME_MNG* kmmng, int nTime);
+            実行時間表示
+            
+        KMM_DbgActControl( KAMOME_MNG* kmmng );
+            コントロール動作
+            
+        以下未使用
+        TestLineAct( TestLine* work );
+        TestLineDie( TestLine* work );
+        TestLineGetResources( TestLine*  work,
+                              FVECTOR*   pvec1, 
+                              FVECTOR*   pvec2, 
+                              u_char     r,
+                              u_char     g,
+                              u_char     b);
+        NewMaoTestLine( FVECTOR* pvec1, 
+                        FVECTOR* pvec2, 
+                        u_char   r,
+                        u_char   g,
+                        u_char   b);
+            未使用
+            
+kmginfo.c 
+    カモメの周辺情報
+
+        KMMNG_UpdateInfo( KAMOME_MNG* kmmng);
+            周辺情報更新
+            
+        KMMNG_BaseLight( KAMOME_MNG* kmmng );
+            基本反応：計算少ない
+            
+        KMMNG_BaseBardy( KAMOME_MNG* kmmng );
+            基本反応：ずうずうしい
+            
+        KMMNG_BaseEscape( KAMOME_MNG* kmmng );
+            基本反応：敏感
+            
+        KMMNG_BaseAngry( KAMOME_MNG* kmmng );
+            基本反応：怒り
+            
+        KMM_CheckNoiseTakeOff( KAMOME_MNG* kmmng);
+            音による飛び立ちチェック
+            
+        KMMNG_JudgeBase( KAMOME_MNG* kmmng );
+            基本反応処理
+            
+        KMM_CallDmgProc( KAMOME_MNG* kmmng, int nType);
+            カモメがダメージ受けた時に呼ばれるプロシージャをコール
+            
+

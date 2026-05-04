@@ -1,0 +1,76 @@
+//
+//	etitle.src
+//
+//	written by Y.Matsuhana 2001.Apr
+//
+//	$Id: etitle.src,v 1.11 2002/07/17 12:15:00 usr04098 Exp $
+
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+include		common.h
+include		c_effect.h
+
+// キャラクタ
+//include		wp_plant.h
+
+//高波用
+option makexti6 -l 128
+pack_all	wave.tri effect/wave/wave06.bmp effect/wave/wave09_alp_ovl.bmp 
+option makexti6
+
+// E3用スネーク
+human		sna_def/sna_def_mh.evm
+rmt		sna_rmt
+
+// 橋モデル
+// オーバーレイを使うので、マンハッタン部分を先に描画。
+pack_all	aaa_d00a2.tri world/d00a/d00a2.dar
+world		d00a/d00a2.kms
+world		w00/w00_sky.kms
+// 橋モデル
+// 描画フェイズの違うテクスチャの切り分け
+world		d00a/d00a_wire_cm.dar
+
+// その他橋モデル。
+// world		d00a
+include			d00a_title_trial.h
+
+// ライトファイル（ステージ用）
+lt2			d00a.lt2
+
+// ライトファイル（スケールかけたモデル用）
+lt2			title_trial.lt2
+
+// ハザード
+hazard		etitle.hzx
+
+// 2D
+
+
+//    ＊＊＊ハリア関連   Satoyoshi
+meca	harrier/hri_def.kms
+meca	harrier/hri_pirot_def.kms
+meca	harrier/hri_clst_math.kms
+meca	harrier/hri_amraam.kms
+meca	harrier/hri_canopy_def_mt.kms
+pack_all	tt_cm.tri harrier/hri_mspod_warhead_cm.kms harrier/hri_clst_warhead_cm.kms
+meca		harrier/hri_mspod_warhead_cm.kms
+meca		harrier/hri_clst_warhead_cm.kms
+meca		harrier/hri_gunpod_flash.kms 
+
+//エフェクと
+pack_all	hr_eff.tri effect/bonbori/svc_bonbori_r.bmp effect/smoke effect/bakuha/bombgas1_alp.bmp 
+
+
+
+
+
+
+
+
+
+
+
+

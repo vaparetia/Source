@@ -1,0 +1,4943 @@
+//
+// コマンド定義ファイル
+//
+// $Id: command.def.old,v 1.1 2002/02/01 06:08:31 usr01475 Exp $
+//
+
+// システム関数
+
+if ( 式 ) { 実行ブロック } -else { 実行ブロック }
+return [$i:返り値]
+
+eval ( 式 )
+
+// デバッグ用
+
+print * ...
+
+// システム起動処理
+
+start
+
+restart -save
+
+// 変数のセーブ
+command varsave[NewSaveVariable] [$r:変数名 ...]
+// 変数名を省略した場合は全変数セーブ。配列は要素を１つずつ。
+
+// 言語
+//あえてアメリカとイギリスを分けてみた（今は中身は一緒） */
+#enum {
+	LANG_JAPANESE			= 0,		//日本
+	LANG_ENGLISH		    = 1,		//英語
+	LANG_ENGLISH_USA		= 1,		//亜米利加	
+	LANG_ENGLISH_ENGLAND	= 1,		//英吉利
+	LANG_FRENCH				= 2,		//仏蘭西
+	LANG_GERMANY			= 3,		//独逸
+	LANG_ITALY				= 4,		//伊太利亜
+	LANG_SPANISH			= 5			//西班牙
+} ;
+
+// ゲームレベル
+// 必ずデファイン名を用いる事！直値禁止！
+
+#ifdef JAPANESE
+#enum {
+	LEVEL_VERYEASY			= 10,
+	LEVEL_EASY				= 20,
+	LEVEL_NORMAL			= 30,
+	LEVEL_HARD				= 40,
+	LEVEL_EXTREME			= 50
+} ;
+#endif
+#ifdef ENGLISH
+#enum {
+	LEVEL_VERYEASY			= 10,
+	LEVEL_EASY				= 20,
+	LEVEL_NORMAL			= 30,
+	LEVEL_HARD				= 40,
+	LEVEL_EXTREME			= 50
+} ;
+#endif
+
+// システムコンフィグ定義（ GM_Configuration ）
+#enum {
+	CONFIG_VIBRATION_OFF 	= 	0x0001,	/* 振動ＯＦＦ */
+	CONFIG_CAPTION_OFF  	= 	0x0002,	/* 字幕ＯＦＦ */
+	CONFIG_RADAR_OFF 		= 	0x0004,	/* レーダーＯＦＦ */
+	CONFIG_BLOOD_OFF		= 	0x0008,	/* 血ＯＦＦ */
+	CONFIG_SOUND_MONAURAL	= 	0x0010,	/* モノラル */
+	CONFIG_RADAR_OFF_INTRUDE = 	0x0020,	/* イントルード時レーダーＯＦＦ */
+	CONFIG_SHUKAN_REVERSE =		0x0040,	/* 主観操作反転 */
+	GM_CONFIG_OLD_TYPE_MENU		=	0x0080	/* 旧式メニュー */
+} ;
+
+// アラートモード定義( GM_AlertMode )
+#enum {
+	ALERT_MODE_SNEAK = 0,	/* 潜入モード */
+	ALERT_MODE_ALERT,		/* 危険モード */
+	ALERT_MODE_AVOID,		/* 回避モード */
+	ALERT_MODE_SEARCH		/* 探索モード */
+} ;
+
+// システムコールバック
+command システムコールバック[NewSystemCallback] \
+	-load $p:ロードがかかった（restartは含まず） \
+	-restart $p:リスタートがかかった \
+	-gameover $p:ゲームオーバーロゴが開始される直線 \
+	-continue $p:ゲームオーバー後コンティニューされた \
+	-item $p:アイテムが変更された \
+	-weapon $p:武器が変更された \
+	-exit $p:ゲームオーバー後ＥＸＩＴ \
+	-dead $p:プレイヤー死亡直後 \
+	-active_map_change $p:表示マップ切り替え（主画面）//$1に表示マップＩＤ
+
+//メニュー状態操作
+command メニュー設定[NewSetMenuStatus] \
+	-menu $s:on／off \			//武器・アイテムメニューのオンオフ
+	-gage $s:on／off \			//ゲージのオンオフ
+	-radar $s:on／off \			//レーダーのオンオフ、ジャミング
+	-subwin $s:on／off \ 		//子画面のオンオフ
+	-vibrate $s:on／off \ 		//振動のオンオフ
+	-rAdio $s:on／off \ 		//無線の許可／不許可
+	-pause $s:on／off \			//ポーズの許可／不許可
+	-jamming $s:on／off \ 		//電波障害中／電波障害解除
+	-disable_menu $s:on／off	//メニューオープンの許可／不許可
+
+//ゲーム状況に応じて、各種メニューのオンオフを設定する。
+//コンフィグ設定ではないので、ステージリセットでクリアされる。
+//（デフォルトはすべてＯＮ）
+
+//シナリオデモ設定
+command シナリオデモ開始[NewStartScenarioDemo]
+command シナリオデモ終了[NewEndScenarioDemo]
+
+// ゲームオーバー音声セット
+command ゲームオーバー音声設定[NewSetGameOverVox] \
+	-vox $T:サウンドコード
+
+// パッド関係 
+
+command パッド操作[NewPadControl] \
+	-which $b:パッド番号 \		// パッド番号（０が１コン、１が２コン。省略時は１コン。）
+	-release \			// パッドリリース
+	-mask $i:ボタン指定 \		// 指定ボタンをマスク( 指定ビットを1にするとそのボタンは無効になる）
+	-press $i:ボタン指定 \		// 指定ボタンをそのフレームだけおしたことにする
+	-cancel [$i:モード] 		// 0:リリースもマスクも解除。1:リリースのみ解除。2:マスクのみ解除
+					//   省略時は０と同じ
+
+//パッドの状態を操作する。
+// -release, -mask, -press, -cancel はどれか一つのみ設定すること
+
+command パッドチェック[NewPadCheck] \
+	-which $b:パッド番号 \
+	-direct \		//リリースされたりしていても情報がとれる。
+	-press \		//押された
+	-status \		//押されている
+	-release		//離された
+
+//パッドの状態を返す
+//-press,-status,-releaseはどれか一つを指定
+//-which を省略すると １コンを指定したことになる。
+//
+// たとえば、１コンの○が押されたかどうかは、
+// command パッドチェック -which 0 -press
+// if ( $status & d:PAD_A ) { }
+// とすれば取得できる。
+
+//ボタン定義
+#define PAD_U	0x1000	//十字キー上
+#define PAD_D	0x4000	//下
+#define PAD_L	0x8000	//左
+#define PAD_R	0x2000	//右
+#define PAD_A	0x0020	//○
+#define PAD_B	0x0040	//×
+#define PAD_X	0x0010	//△
+#define PAD_Y	0x0080	//□
+
+#define PAD_L1	0x0004
+#define PAD_R1	0x0008
+#define PAD_L2	0x0001
+#define PAD_R2	0x0002
+
+#define PAD_STA	0x0800	//START
+#define PAD_SEL	0x0100	//SELECT
+
+#define PAD_AL	0x0200	//アナログ左押し込み
+#define PAD_AR	0x0400	//アナログ右押し込み
+
+//振動
+chara パッド振動[NewPadVibrationScn] $s:名前 \
+	-vibfile $s:振動バイナリファイル名
+
+//パッドデモ再生
+chara パッドデモ[NewPadDemoPlay] $s:名前 \
+	-which $b:パッド番号（省略すると１コン） \
+	-file $s:パッドデモファイル（.rpd） \
+	-end_proc $p:終了プロック 
+
+mesg パッドデモ $s:名前 start[0]
+mesg パッドデモ $s:名前 stop[1]
+mesg パッドデモ $s:名前 kill[2]
+    	
+// ステージロード
+
+load 'ステージ名' \
+	 -s $b:タイプ \				// ロードタイプ
+	 -no_save \					// 指定すると変数をセーブしない
+	 -resident '常駐ステージ名'	// 常駐データ入れ替え後、ステージロード
+
+/*
+	各キャラクタ定義
+	担当別に区切る
+*/
+
+//--------------------------------------------------------------------- 
+// 植原
+
+// 汎用関数
+
+// rand: 返り値($status, $?)に、値を返す。 (`command rand 10`)も可能。
+command rand[NewRand] $i:最大値
+
+command foreach[NewForeach] -argc $i:引数の数 -repeat $i:繰返し回数 \
+	 -data * ... -exec { 実行ブロック }
+// 繰返し実行。 実行ブロックには、$1,$2...で[$i:引数の数]個のデータが渡される。
+// -value には、 $i:引数の数 * $i:繰返し回数のデータが必要
+
+command sound[NewSound] -x $i:サウンドコード -w
+		// -w をつけるとロード完了までまつ
+
+command 配列セット[NewArraySet] $r:変数 * ...
+
+chara delay[NewDelay] $s:名前 -time $i:時間 -exec { 実行ブロック } \
+	 -proc $p:proc \
+	 -arg $i:実行ブロックへのパラメータ ...
+// 時間は 1/60 単位
+mesg delay $s:名前 kill[-1]
+
+command sin[NewGclSin] $w:角度（４０９６）		// 返り値は-4096から4096
+command cos[NewGclCos] $w:角度（４０９６）		// 返り値は-4096から4096
+command atan[NewGclAtan] $w:X移動量 $w:Y移動量	// 返り値は0から4096
+command abs[NewGclAbs] $i:数値
+command VecLen[NewGclVecLen] $i:x0 $i:y0 $i:z0 $i:x1 $i:y1 $i:z1
+
+command assert[NewGclAssert] $i:評価式 [ 'アサート文字列' ]
+
+command 現在時刻取得[NewGclGetRTC]		// 返り値は、[時]*60+[分]
+
+// オブジェクト
+
+chara MGSシステム初期化[NewGameInit] $s:名前 \
+	 -debug $f:デバッグモード許可
+
+command フォント初期化[NewFontInit]
+
+command 変数初期化[NewGclVarClear]
+
+command 常駐リソース設定[NewResidentResourceSet] \
+	-string $d:リソース $i:参照ID ...2 \
+	-binary $d:リソース $i:参照ID ...2
+// リソースは、[RESOURCE:*]と記述することで、プログラムはその先頭番号が取れる。
+// 参照IDはstringとbinaryで重ならないこと。
+
+chara select[NewSelect] $s:名前 \
+	-s '文字列' $p:proc ...2
+
+chara ドア[NewDoor] $s:名前 -m $s:オブジェクト名 -d $v:向き -p $v:場所 \
+	-slide $i:スライド量 -time $i:時間 \
+	-between $s:マップ名１ $s:マップ名２ \
+	-exec { $:開閉フラグ }
+// マップ名１.２はそのドアが境界になっているマップの名前
+// 省略すると、command マップ設定 で設定されたマップが用いられる。
+
+// $:開閉フラグ は、0(閉まり切った) or 1(開き始めた)
+
+mesg ドア $s:名前 open[1]
+mesg ドア $s:名前 入る[1]
+mesg ドア $s:名前 close[2]
+mesg ドア $s:名前 出る[2]
+
+mesg ドア $s:名前 on[3]
+mesg ドア $s:名前 off[4]
+mesg ドア $s:名前 visible[5] $i:フラグ
+
+//visibleを指定したときのフラグには、
+//可視、不可視フラグが入る
+//たとえば、天井君切り替えプロックの$1など。
+
+chara サブ画面[NewTs_SubWindow_S] $s:名前 -w $w:x0 $w:y0 $w:x1 $w:y1
+// 座標設定は無効。
+// ２つ以上出せない。
+
+mesg サブ画面 $s:名前 on[1]
+mesg サブ画面 $s:名前 off[0]
+
+/*2000.09.12 レーダーを重野管理に移動*/
+
+chara 字幕[NewJimaku] $s:名前 '文字列'
+
+// マップ
+
+chara マップ接合[NewMapConnect] $s:名前 $s:マップ１ $s:マップ２
+mesg マップ接合 $s:名前 on[1]
+mesg マップ接合 $s:名前 off[0]
+
+// USBキーボードを使ったデバッグ用コマンド
+
+chara USBキーボード実行[NewKbdExec]	$s:名前 \
+	-e $b:キーコード { 実行ブロック }
+// キーコードはusbkbd.hに定義してあります。
+// -e は複数指定可能
+
+// デバッグ用ポーズ
+
+chara デバッグポーズ[NewDebugPause] $s:名前 'STRING' -p $p:proc
+// STRINGを表示してポーズをかけ、○ボタンが押されたらprocを実行
+
+// 無線システム
+
+chara 無線システム[NewCodecDaemon] $s:名前
+// 名前は、"Codec"固定
+
+command 無線設定[NewCodec] \
+	-base $w:周波数 $C:無線コード \
+	-over $i:入る／出る $w:周波数 $C:無線コード \
+	-call $w:周波数 $C:無線コード $w:呼び出しタイプ [$p:proc_id] \
+	-reset \
+	-allclear \
+	-f $w:フェードオプション \
+	-d
+
+// 呼び出しタイプは、
+#define CODEC_CALL		2	// CALL
+#define CODEC_DEMO		3	// CALLから強制移行
+#define CODEC_DIRECT	4	// CALLなしで強制移行
+
+// フェードオプション
+#define CODEC_IN_FADE    9	// フェードで無線モードに入る
+#define CODEC_OUT_FADE   6	// フェードで無線モードから出る
+#define CODEC_IO_FADE    3	// フェードで無線モードに出入りする
+
+//
+// フェード/アクション制御のマクロ定数は、以下の命名法則に従う。
+//
+//  CODEC_I_<無線in時の挙動>_O_<無線out時の挙動>
+//
+//  <挙動>
+//     NO        フェード、枠アクションともに無し
+//     FD        フェードのみ。枠アクションは無し
+//     AC        枠アクションのみ。フェードは無し
+//     FA        フェード、枠アクションともに有り
+//
+#define CODEC_I_NO_O_NO  0x0000
+#define CODEC_I_NO_O_FD  0x0002
+#define CODEC_I_NO_O_AC  0x0008
+#define CODEC_I_NO_O_FA  0x000a
+
+#define CODEC_I_FD_O_NO  0x0001
+#define CODEC_I_FD_O_FD  0x0003
+#define CODEC_I_FD_O_AC  0x0009
+#define CODEC_I_FD_O_FA  0x000b
+
+#define CODEC_I_AC_O_NO  0x0004
+#define CODEC_I_AC_O_FD  0x0006
+#define CODEC_I_AC_O_AC  0x000c
+#define CODEC_I_AC_O_FA  0x000e
+
+#define CODEC_I_FA_O_NO  0x0005
+#define CODEC_I_FA_O_FD  0x0007
+#define CODEC_I_FA_O_AC  0x000d
+#define CODEC_I_FA_O_FA  0x000f
+
+#define CODEC_FDIN_BREAK  0x0010  // フェードインを暗転状態から開始
+#define CODEC_FDOUT_BREAK 0x0020  // フェードアウトを暗転状態で終了
+
+
+// ストリーミング用
+
+command Stream[NewStreamSet] $T:VOXコード -p $p:終了proc -w -c $b:チャンネル \
+	-action $p:アクションproc -menustop
+	// -w は、初期読み込み後、stream startがくるまで停止
+	// 終了procには、$1で中断したかどうかがわたる（0:正常終了、1:中断)
+	// アクションproc は、$:ストリームID $:話者名 $:アクションコード
+
+// 以下のcommandは、このcommandの返り値(int)を使ってアクセス。
+
+command StreamStart[NewStreamStart] $i:StreamCode
+	// -wで初期読み込み後停止しているstreamをスタート
+command StreamStop[NewStreamStop] $i:StreamCode
+	// ストリームの強制停止
+command StreamStopAll[NewStreamStopAll]
+	// すべてのストリームの強制停止
+command StreamIsPlay[NewStreamIsPlay]
+	// ストリームが何本再生中かを返す
+command StreamSetPan[NewStreamSetPan] $i:StreamCode -p $b:パン -v $b:ボリューム
+	// ストリームにパンとボリュームを設定する。
+	// pan 0(左)-0x20(中)-0x3F(右), vol 0-0x3F
+
+command StreamStatus[NewStreamStatus] $i:StreamCode
+	// 以下の値を返す。d:STREAM:WAITのように参照。
+
+#enum STREAM {
+	INIT_WAIT = -2,		// 初期化後CD読み込み開始待ち
+	INIT = -1,			// 初期CD読み込み中
+	WAIT = 0,			// -w でのWAIT状態
+	PLAY = 1,			// 再生中
+	READ_END = 2,		// CD読み取りは最後まで終った
+	END = 3				// 終了
+};
+
+// --- デモ、ストリーミングキャンセルチェック
+
+chara デモキャンセルチェック[NewPadCancel] $s:名前 -p $proc
+// ×ボタンかスタートボタンか押されて(離されたら)procを呼び出す。
+mesg デモキャンセルチェック $s:名前 kill[-1]
+
+// --- ムービー
+
+chara PSS再生[NewMpegPssMovie] $s:名前 -name 'PSSFILE' -proc $p:終了proc \
+	-top $w:x $w:y
+
+chara MOVIE再生[NewMpegPssMovieStr] $s:名前 -file $t:番号 -proc $p:終了proc \
+	-top $w:x $w:y
+
+//--------------------------------------------------------------------- 
+
+//園山 M.Sonoyama
+
+//-------- マップ関連 ------------------------------------------------
+
+//マップシステム
+chara マップ[NewSetMap] $s:名前 \
+	-k $s:モデル名 [$v:セット位置] \
+	-h $s:ハザード [$b:開始グループ] \			
+	-g $b:ハザードグループナンバー \	//不使用
+	-l $s:ライト \
+	-s $s:影投影モデル名 [$v:セット位置]	//廃止
+
+command	マップ設定[NewMapAbout] $s:名前 ... \
+		-set { キャラセット }
+
+command	マップ表示[NewShowMap] -add $s:名前 ... -delete $s:名前 ... \
+                               -show $s:名前 ...			      
+
+command マップ表示チェック[NewCheckMapIsDisplay] \
+	-which $i:チャンネル（省略すると０） \
+	-map $s:マップ名
+//1が返ると表示中
+
+//キャラのマップを変更する
+command キャラマップチェンジ[GM_ComMapChange] \
+	-name $s:キャラの名前 \
+	-map $s:変更先マップ名
+
+//追加ＨＺＸグループ関連
+
+//追加ＨＺＸグループを登録
+command 追加ＨＺＸグループ登録[NewHzxSetGroupAdd] \
+	-hzx_id $b:元になるグループ番号 \
+	-add_id $b:追加するグループ番号
+
+//追加ＨＺＸグループを削除
+command 追加ＨＺＸグループ削除[NewHzxResetGroupAdd] \
+	-hzx_id $b:元になるグループ番号 \
+	-add_id $b:削除するグループ番号
+
+//-------- カメラ関連 ------------------------------------------------
+// CAMERA
+
+//カメラ
+chara カメラ[NewCamera] $s:名前 \
+	-c $b:チャンネル番号 \
+	-l $b:カメラレベル \
+	-p $b:優先度
+
+//シナリオカメラは最大16個までおける。
+
+//チャンネル番号 ：
+//	０：通常画面 １：小窓
+//
+//カメラレベル ：
+//	０：カットインカメラ（主観より強） 強
+//	１：カットインカメラ（主観より弱） ↑
+//	２：エリアカメラ		   ↓
+//	３：ステージデフォルトカメラ	   弱
+//
+//優先度 ：
+//	エリアカメラに有効
+//	数字が小さい程優先度高
+
+// カメラの設定をする
+chara カメラ設定[NewSetCamera] $s:名前 \
+	-c $b:カメラタイプ \
+	-b $v:バウンド小 $v:バウンド大 \
+	-l $v:リミット小 $v:リミット大 \
+	-p $v:カメラ位置 \
+	-t $v:ターゲット位置 \
+	-r $v:カメラ角度 \
+	-f $w:カメラトラック \
+	-a $w:カメラ画角 \
+	-i $w:カメラ補完方法（ＩＮ） $w:カメラ補完方法（ＯＵＴ） \
+	   $w:補完時間（ＩＮ） $w:補完時間（ＯＵＴ） \
+	-d $f:パッドフラグ \
+	-z $i:各種フラグ \
+	-k $f:ＫＩＬＬ \
+	-s $i:０オフ／１オン \
+	-o $w:ＯＮになるまでの待ち時間 \
+	-slidE $f:スライドタイプ $w:スライド待ち時間 \
+	       $i:スライド距離１ $i:スライド距離２ \
+	       $i:スライドスピード [$i:スライドフラグ] \
+	-iNterp_time $i:内部補完時間
+
+// フラグ
+#define	CAMERA_NO_PAD_ADJUST		0x00000400	//パッド調整に影響を及ぼさない
+#define	CAMERA_CUT_IN				0x00010000	//カットインカメラ
+#define	CAMERA_NO_CUSHION			0x00700000	//遊びなしカメラ
+#define	CAMERA_BOUNDCHANGE_QUICK	0x01000000	//バウンド変更を即時に反映
+#define	CAMERA_INTERP_CAMERA		0x02000000	//補完カメラ設定
+	
+// -b -l は必要に応じて設定。
+// -p -t -r はタイプに応じて使用するものが取得
+// される。
+// 省略したオプションは、前回設定を引き継ぐ。
+//
+//カメラタイプ ：
+//	０：上俯瞰追従型（トラックと角度を指定）
+//	１：位置・角度固定型（ターゲット位置とカメラ位置を指定）
+//	２：位置固定、追従型（カメラ位置を指定）
+//	３：位置固定、Ｘ角度追従型（カメラ位置を指定）※未作成
+//	４：ターゲット固定、プレイヤー追従カメラ（ターゲットとトラックを指定）
+//	５：位置固定、Ｙ回転固定、追従型（カメラ位置と回転を指定）
+
+// 補完方法
+// −１：指定なし ０：一瞬 １：補完シューン ２：補完ウニョーン 
+//   ３：補完ウーニャーン  ４：一定時間で 
+// 補完時間は４番指定のとき有効
+// 補完（ＩＮ）の指定は必須。
+// ２つのカメラ間の補完方法は、ＯＵＴ側カメラのＯＵＴ補完関数が指定してある
+// 場合にはその関数を使用し、指定がない場合には、ＩＮ側カメラの
+// ＩＮ補完関数を使用するようになっている。
+//
+// パッドフラグ 
+// このフラグを指定しておくと、
+// パッドの上が画面の上になるように自動調節する。
+
+// スライドカメラ設定方法
+// スライドタイプ：０／１ − 左右タイプ／前後タイプ
+// スライド待ち時間：スライドするまでの待ちフレーム数
+// スライド距離１・２：左右タイプの場合 左右スライド距離
+//		       前後タイプの場合 接近距離、離れた距離
+// スライドスピード：そのまんま
+// スライドフラグ ：
+//		1にしておくと、入った時スライドしていない状態から始まります。
+
+// 補完カメラの設定方法
+// 補完カメラとは？
+//		設定したカメラに指定フレーム数かけて移動するカメラ。
+//		例として、オルガ戦のパンカメラ。
+// 設定方法
+//		-z に d:CAMERA_INTERP_CAMERA を指定。さらに
+//		-interp_time に補完フレーム数を指定。
+
+chara カメラ上下振動[NewCameraOscillation] $s:名前 \
+	-a $w:振幅 \
+	-c $w:周期（フレーム数） 
+// カメラの位置−ターゲットベクトルを
+// 上下に単振動させる。
+// 主観時は、無効
+
+command カメラ上下振動スイッチ[NewCameraSwingMode] \
+	-which $b:画面番号（０：主画面、１：子画面） \
+	-mode $s:on／off
+// 上記、カメラ上下振動の一時的なＯＮ／ＯＦＦに使用する。
+
+//カメラ状態をチェックする。
+//ＯＮになっていれば１を返す。
+command	カメラ状態[NewCameraSwitchCheck] -s $s:カメラ名
+
+command カメラマップ設定[NewSetChanlTargetMap] \
+	-chanl $b:チャンネル（メイン：０子画面：１） \
+	-map $s:マップ名
+
+//-------- プレイヤー ----------------------------------------------------
+//PLAYER
+
+chara プレイヤー[NewRaiden] $s:名前 \
+	-model $s:モデル名 \
+	-archive $s:モーション名 \
+	-position $v:出現位置 \
+	-direction $v:出現方向 \
+	-level $w:出現位置床高さ \ 	//廃止
+	-stance $b:出現時姿勢 \
+	-other_mar $s:強制モーション用モーションファイル名 \
+	-id_table $b:ＳＥ変換テーブルＩＤ \
+	-homing $i:ホーミング距離 $i:ホーミング角度 \
+	-flags $i:各種フラグ 
+
+// 出現時姿勢 ： ０／１／２／３ ： 立ち／しゃがみ／匍匐／イントルード
+
+//各種フラグ ： どんどん追加される。かな？
+
+#define PLY_SPLASH		0x00000001 //体足水飛沫あり
+#define	PLY_NO_FOOT_SHADOW	0x00000002 //足影なし
+
+//プレイヤーメッセージ一覧（詳細は各項）
+//
+//mesg プレイヤー $s:名前 motion[0] 		強制モーション
+//mesg プレイヤー $s:名前 position[1] 		強制位置移動
+//mesg プレイヤー $s:名前 position2[2] 		強制位置移動２
+//mesg プレイヤー $s:名前 menu[3] 			メニューＯＮ／ＯＦＦ
+//mesg プレイヤー $s:名前 beyond_trap[4]	エルードトラップ指定
+//mesg プレイヤー $s:名前 locker[5] 		ロッカーモード
+//mesg プレイヤー $s:名前 wt_door[6] 		水密ドアモード
+//mesg プレイヤー $s:名前 ladder[7]			はしごモード
+//mesg プレイヤー $s:名前 shadow[8] 		足影ＯＮ／ＯＦＦ
+//mesg プレイヤー $s:名前 headmark[9] 		赤びっくり
+//mesg プレイヤー $s:名前 stance[10] 		強制姿勢制御
+//mesg プレイヤー $s:名前 water[11]			水中モード
+//mesg プレイヤー $s:名前 run[12] 			強制移動
+//mesg プレイヤー $s:名前 beltconv[13] 		ベルトコンベア乗り降り
+//mesg プレイヤー $s:名前 rotate[14] 		Ｙ方向セット
+//mesg プレイヤー $s:名前 evpanel[15]		エレベータパネル
+//mesg プレイヤー $s:名前 fall[16]			落下
+
+//-------- 強制モーション
+
+mesg プレイヤー $s:名前 motion[0] \
+	$i:モーション番号 \
+	$i:初期方向 \
+	$i:終了方向 \
+	$i:終了姿勢 \
+	$i:フラグ \
+	[$i:開始時Ｘ座標 $i:開始時Ｚ座標 $i:開始時Ｙ座標] 
+
+//開始時座標指定は、ＸＺＹの順なので注意！
+//ＸＺを指定して、Ｙを省略も可能
+
+//フラグ定義（随時追加）
+#enum {
+    FA_NO_CHECK_SEG	= 0x00000001,	/* 壁見ない */
+    FA_NO_CHECK_FLR	= 0x00000002,	/* 床見ない == 重力処理しない */
+    FA_NO_CHECK_TRP	= 0x00000004,	/* トラップ見ない */
+    FA_NO_RECHECK_TRP	= 0x00000008,	/* トラップチェック再開しない */
+    FA_USE_DEFAULT	= 0x00000100,	/* デフォルトのmarから指定 */
+    FA_NO_WEAPON        = 0x00000200,   /* 装備武器を非表示 */
+	FA_NO_INTERP 	= 0x00000400,	/* モーション補完なし */
+	FA_USE_NOW_HEIGHT =	0x00001000,	/* 無理やり今の高さからはじめる */
+	FA_DIRECT_MOVE =    0x00010000,	/* 強制移動用、ゾーンを使用せず一直線に移動する。*/
+} ;
+
+//初期方向、終了方向、終了姿勢については、
+// -1 を指定することで、強制モーション直前の
+//値になります。
+//終了時姿勢 ： ０−立ち、１−しゃがみ、２−匍匐
+//終了時姿勢に ４ を指定すると、終了後ビヨンドモード
+//			   １１ を指定すると、終了後水中モード
+//以下のdefineを使うとよい。
+
+#define	FA_END_STAND 	0
+#define	FA_END_SQUAT	1
+#define	FA_END_GROUND	2
+#define	FA_END_ELUDE	4
+#define	FA_END_SWIM		11
+
+command	強制モーション終了プロック[NewForceActEndProc] \
+	-motion $i:モーション番号 \
+	-proc $p:プロック
+
+//強制モーションが終了したときに呼ぶプロックを設定できます。
+//モーション番号の設定がない場合には、直後の強制モーション終了時に
+//呼ばれます。
+//プロックの第一引数には、下に記述する「モード」が入ります。
+//このプロックは一度実行されるとクリアされるので、
+//毎回呼ぶ場合には、その都度設定しなおす必要があります。
+
+command 強制モーションプロック[NewForceActProc] \
+	-proc $p:プロック \
+	-exec { $:Ｘ位置 $:Ｙ位置 $:Ｚ位置 $:経過時間 $:モード $:状態 } \
+	-flag $i:フラグ 
+
+// -proc と -exec はどちらか一つ
+// -flag に 0x0001 を指定すると、強制モーション中毎フレーム実行されるようになる。
+// -flag に 0x0002 を指定すると、終了時にも実行されるようになる。
+//                               強制モーション終了プロック」と共存はできない。
+//このプロックは強制が終了するとクリアされる。
+//
+//状態は、入る、いる、出るの３つ
+
+//強制モーションプロックと強制モーション終了プロックの
+//適用範囲は、現在、
+
+//・強制モーション
+//・強制移動
+//・強制姿勢変更
+//・はしごつかまり／離し
+//・エルード入りモーション／出るモーション発動／落下
+
+//です。
+
+//プロックに渡される引数の「モード」は、
+//以下のようになっています。
+
+#enum {
+	FA_PROCMODE_MOTION 		= 0,		//強制モーション
+	FA_PROCMODE_RUN    		= 1,		//強制移動
+	FA_PROCMODE_STANCE 		= 2,		//強制姿勢変更
+	FA_PROCMODE_LADDER_IN 	= 3,		//はしごつかまり
+	FA_PROCMODE_LADDER_OUT 	= 4,		//はしご離し
+	FA_PROCMODE_ELUDE_IN 	= 5,		//エルード開始
+	FA_PROCMODE_ELUDE_OUT 	= 6,		//エルード戻り
+	FA_PROCMODE_ELUDE_FALL 	= 7			//エルード落下開始
+} ;
+
+command 強制モーションキャンセル[NewForceActCancel]
+
+//-------- 強制姿勢制御
+
+command プラグイン姿勢制御[NewPluginStance]
+
+mesg プレイヤー $s:名前 stance[10] \
+	$i:姿勢 \
+	$i:初期方向 \
+	$i:終了方向 \
+	$i:フラグ
+//各パラメータの意味は強制モーション設定と同じ
+
+//-------- 強制移動
+
+command プラグイン強制移動[NewPluginForceRunMove]
+
+mesg プレイヤー $s:名前 run[12] \
+	$i:目標Ｘ $i:目標Ｙ $i:目標Ｚ \
+	$w:モーション \
+	$w:終了方向 \
+	$i:フラグ \
+	[$p:終了プロック]
+
+//各パラメータの意味は強制モーション設定と同じ
+//フラグに関しては、以下が有効
+//	FA_NO_WEAPON
+//	FA_NO_CHECK_SEG
+//	FA_NO_CHECK_FLR
+//	FA_NO_CHECK_TRP
+//	FA_NO_RECHECK_TRP
+//  FA_DIRECT_MOVE
+
+//モーションは、
+//０：立ち歩き、１：立ち走り、２：立ちダッシュ
+//３：匍匐前進、４：匍匐前進（速）５：ダンボール（予定）
+//−１ ： 今のままで
+//匍匐の時、壁のめり込み回避はできないので注意。
+
+//-------- 強制位置セット 
+mesg プレイヤー $s:名前 position[1] \
+	$i:位置Ｘ $i:位置Ｙ $i:位置Ｚ
+
+mesg プレイヤー $s:名前 position2[2] \
+	$w:軸 $i:位置 [$w:軸 $i:位置 $w:軸 $i:位置]
+// position2は、軸ごとの移動（Ｘ軸のみ、など）
+// 軸 ： ０／１／２ ： Ｘ軸／Ｙ軸／Ｚ軸
+
+mesg プレイヤー $s:名前 rotate[14] $w:方向
+
+//-------- エルード設定
+mesg プレイヤー $s:名前 beyond[3] \
+	$b:静止モーション \
+	$b:移動モーション右 \
+	$b:移動モーション左 \	
+	$b:戻りモーション \
+	$b:床チェックする関節番号 \
+	$w:開始時向き \
+	$w:終了時向き \
+	$i:フラグ \
+	[$b:戻りモーション（壁有り） \
+	 $b:戻り時に壁チェックする関節番号（省略時は右膝）\
+	 $b:静止モーション（疲れ）]
+
+//パラメータ数がオーバーしてしまったので
+//command にします。
+command エルード設定[NewSetEludeParam] -values \
+	$b:静止モーション \
+	$b:移動モーション右 \
+	$b:移動モーション左 \	
+	$b:戻りモーション \
+	$b:床チェックする関節番号 \
+	$w:開始時向き \
+	$w:終了時向き \
+	$i:フラグ \
+	$b:戻りモーション（壁有り） \
+	$b:戻り時に壁チェックする関節番号（省略時は右膝）\
+	$b:静止モーション（疲れ） \
+	$b:落下モーション（落ちはじめ） \
+	$b:落下中モーション \
+	$b:落下してダメージ \
+	$b:落下して死亡 \
+	$b:落下しても無事着地 \
+	$b:撃たれダメージ \
+	[$b:懸垂開始 \
+	 $b:懸垂静止 \
+	 $b:懸垂終了]
+
+//※※強制モーション用mar必須！！
+//
+//フラグ定義
+//	
+#enum {
+    BY_CHECK_FLOOR = 		0x00000000,	/* 床からエッジ検出（廃止） */
+    BY_CHECK_SEGMENT = 		0x00000001,	/* 壁からエッジ検出（廃止） */
+    BY_NOFOOTSHADOW = 		0x00000002,	/* 足影なし */
+	BY_FALL_DEAD =			0x00000004,	/* 落ちたら死ぬぜ */
+	BY_CANNOT_FALL =		0x00000008,	/* パッド操作での落下禁止 */
+	BY_NO_STAMP =			0x00000010,	/* ふみつけなし（低いエルードなど） */
+	BY_FALL_IMMEDIATELY = 	0x00000020,	/* すぐ降りエルード */
+	BY_NO_MOVE_LR =			0x00000040,	/* 左右移動なし */
+	BY_DEC_GRIP_FAST =		0x00000080	/* グリップ減少速度大 */
+} ;
+
+command エルード移動範囲設定[NewSetEludeRange] \
+	-x_range $i:Ｘ最小 $i:Ｘ最大 \
+	-z_range $i:Ｚ最小 $i:Ｚ最大
+
+//※エルード設定の後に記述すること
+
+mesg プレイヤー $s:名前 beyond_trap[4] $i:トラップ名
+
+//-------- 水中モード
+
+command プラグイン水中[NewPluginWaterModeTest]
+
+command 水中設定[NewWaterModeSettingTest] \
+	-horizon $i:水平面高さ \
+	-motion $s:モーションファイル
+
+command 新プラグイン水中[NewPluginWaterMode] \
+	-zone_group $i:カメラ追従用ゾーンのグループ番号 \
+	-height $i:カメラ追従高さ（デフォルト１６５０）
+
+command 新水中設定[NewWaterModeSetting] \
+	-horizon $i:水平面高さ \
+	-motion $s:モーションファイル \
+	-elude2water $i:エルード落下から水中にはいる時のモーション番号 \
+	-flag $i:フラグ
+
+mesg プレイヤー $s:名前 water[11] $s:入る／出る $i:モーション番号 $i:開始方向 \
+			[$i:開始Ｘ位置 $i:開始Ｚ位置 $i:開始Ｙ位置]
+
+//フラグ定義 
+#enum {
+	WATER_FLAG_NORMAL		= 	0x0000,
+	WATER_FLAG_AUTO_ROTATE	=	0x0001,		//角度自動調節機能付き
+	WATER_FLAG_NO_ZONE_TRACE =	0x0002		//ゾーンを使用した追従をしない
+} ;
+
+chara 息継ぎポイント管理[NewBreathPointManager] $s:名前 
+
+command 息継ぎポイント登録[NewAddBreathPoint] \
+	-position $v:座標 
+
+chara 水中機雷[NewWaterMine] $s:名前 \
+	-map $s:マップ名 \
+	-position $v:位置 \
+	-rotate $v:回転 \
+	-rOute $i:ルート番号 \
+	-speed $i:移動スピード
+
+chara 水中エマ[NewEESwim] $s:名前 
+
+//-------- ロッカーモード
+mesg プレイヤー $s:名前 locker[5] \
+	$s:ロッカーの名前 $i:そのロッカーの状態 \
+	$w:外からロッカーに正対した方向 $w:方向幅 \
+	[$i:ロッカー位置Ｘ $i:ロッカー位置Ｚ]
+
+//-------- 水密ドアモード
+mesg プレイヤー $s:名前 wt_door[6] \
+	$s:水密ドアの名前 $i:そのドアの状態 \
+	$w:ドアに正対した方向 $w:方向幅 \
+	$i:ドア位置Ｘ $i:ドア位置Ｚ \
+	[$f:開け方向]
+
+//開け方向 ０：引き １：押し 省略時は「引き」
+
+//-------- はしごモード
+
+//強制モーションｍａｒ必須！！
+
+command プラグインはしご[NewPluginLadder]
+
+command はしご設定[NewSetupLadder] \
+	-limit	$i:はしご下限 $i:はしご上限 \ 
+	-basic  $b:はしご静止モーション右手上 \
+			$b:はしご静止モーション左手上 \
+			$b:はしご登りループ \
+			$b:はしご降りループ \
+			[$b:はしごダメージ右手上 \
+	 		 $b:はしごダメージ左手上 \
+			 $b:はしご落下開始右手上 \
+			 $b:はしご落下開始左手上 \
+			 $b:はしご落下ループ \
+			 $b:はしご落下終了] \
+	-start  $b:はしご開始モーション \
+			$v:はしご開始モーション発動位置 \
+			$w:発動時向き \
+	-end	$b:はしご終了モーション \
+			$v:はしご終了モーション発動位置 \
+			$w:終了時向き
+
+mesg プレイヤー $s:名前 ladder[7]
+
+//はしご手モーフィング管理
+chara はしごプレイヤー手モーフィング管理[NewLadderPlayerHandMofingManager] $s:名前 \
+		-patterns			$b:右パターン数 $b:左パターン数 \
+		-right_hand_cv2		$s:右手用パターン ... \
+		-left_hand_cv2		$s:左手用パターン ... \
+		-timing_r			$i:切り替えタイミング右 ... \
+		-tIming_l			$i:切り替えタイミング左 ... 
+
+command はしごプレイヤー手モーフィングタイミング設定[NewSetLadderPlayerHandMofingTiming] \
+		-timing_r			$i:切り替えタイミング右 ... \
+		-tIming_l			$i:切り替えタイミング左 ... 		
+
+//切り替えタイミングの書き方 
+//		３つの数で１セット	0,24,2	（モーション番号、フレーム、切り替えパターン）
+//		モーション番号の定義：	０：はしご静止モーション右手上
+//								１：はしご静止モーション左手上 
+//								２：はしご登りループ
+//								３：はしご降りループ
+//								４：はしご開始モーション
+//								５：はしご終了モーション
+
+//-------- ベルトコンベア
+
+command プラグインベルトコンベア[NewPluginBeltConveyer]
+
+mesg プレイヤー $s:名前 beltconv[13] \
+	$s:乗り場マップ $s:乗り場トラップ台 $s:乗り場トラップベルト $w:乗り向き \
+	$s:降り場マップ $s:降り場トラップ台 $s:降り場トラップベルト $w:降り向き
+
+command ベルトコンベア時プロック設定[NewSetPlayerBeltConveyerProc] \
+	-proc $p:プロック 
+
+//プロックの$1引数
+//0 : 乗り開始 1 : 乗り終了 2:降り開始 3:降り終了
+
+//-------- おまけ
+
+mesg プレイヤー $s:名前 shadow[8] $f:ＯＮ／ＯＦＦ
+//影の表示・非表示
+//１がＯＮ、０がＯＦＦ
+
+mesg プレイヤー $s:名前 headmark[9] 
+
+//-------- プレイヤー関連キャラ
+
+chara ダンボール柄トラップ設定[NewCheckBoxHidden] $s:名前 \
+	-name $s:プレイヤーの名前 \
+	-traps $i:アイテム番号（equip.h） $s:トラップ名 ...
+
+//[$i:アイテム番号,$s:トラップ名 ] の組み合わせを４つまで指定できます。
+
+//-------- プレイヤー関連コマンド
+//PL_COMMAND
+
+mesg プレイヤー $s:名前 menu[3] $s:on／off
+// onで表示
+// offで非表示
+
+command	PlayerStatus[NewGetPlayerStatus] -f $w:チェックしたい状態 ...
+//チェックしたい状態は下記（トラップのプレイヤー状態）と同じ。
+//羅列することでＯＲが可能。
+
+command プレイヤー状態取得[NewGetPlayerStateFlag]
+//上に代わるもの
+//実行結果と下記フラグの＆をとるとプレイヤーの状態がわかる
+#enum {
+	PFLAG_INTRUDE =			0x0008,		/* イントルード */
+	PFLAG_SUBJECT =			0x0010,		/* 主観 */
+	PFLAG_CAUTION =			0x0020,		/* 張り付き */
+	PFLAG_ELUDE =			0x0040,		/* エルード */
+	PFLAG_LOCKER =			0x0080,		/* ロッカー */
+	PFLAG_LADDER = 			0x0100,		/* はしご */
+	PFLAG_ENEMY_PULL =		0x0200,		/* 死体引き摺り */
+	PFLAG_WATER =			0x0400,		/* 水中 */
+	PFLAG_BEHIND =			0x0800,		/* ビハインドカメラ中 */
+	PFLAG_DIAZEPAM =		0x1000,		/* ジアゼパム中 */
+	PFLAG_PEEP_R =			0x2000,		/* 覗き込み右最大 */
+	PFLAG_PEEP_L =			0x4000,		/* 覗き込み左最大 */
+	PFLAG_BLOOD =			0x8000,		/* 流血 */
+	PFLAG_WALK =			0x00010000,	/* 歩き */
+	PFLAG_RUN =				0x00020000,	/* 走り */
+	PFLAG_BOX =				0x00040000,	/* ダンボール */
+	PFLAG_WATER_SURFACE =	0x00080000,	/* 水中モードで、カメラは水面上 */
+	PFLAG_NO_BREATH =		0x00100000,	/* 無呼吸状態 */
+	PFLAG_SNAKE =			0x00200000	/* スネークである */
+} ;
+
+command プレイヤーマップ名[NewGetPlayerMapName]
+//現在プレイヤーのいるマップのＳＴＲＣＯＤＥを返す
+
+command プレイヤー無敵セット[NewPlayerSetInvincible]
+command プレイヤー無敵解除[NewPlayerResetInvincible]
+
+command プレイヤー瞬殺[NewKillPlayer] \
+	-name $s:プレイヤー名 \
+	-blow 					//これがあると「吹っ飛び」
+
+command プレイヤー死体歩き[NewCorpseWalk] 
+
+command プレイヤーモーション振動ＯＦＦ[NewPlayerMotionVibOff]
+
+//-------- 主観デモ ------------------------------------------------------
+
+chara	主観デモプレイヤー[NewSubjectDemoPlayer] $s:名前 \
+	-kms $s:ＫＭＳモデル \
+	-evm $s:ＥＶＭモデル \
+	-mar $s:モーションファイル \
+	-position $v:初期位置 \
+	-rotate $v:初期方向 
+
+//通常プレイヤーとの共存は不可
+
+mesg 主観デモプレイヤー $s:名前 position[0] $i:Ｘ位置 $i:Ｚ位置 [$i:Ｙ位置]
+
+mesg 主観デモプレイヤー $s:名前 rotate[1] $i:Ｘ角度 $i:Ｙ角度	//-1で無視
+
+mesg 主観デモプレイヤー $s:名前 motion[2] $i:モーション番号 $i:動作
+//$i:動作
+//	0	:	モーションをリピート
+//	1	:	モーションが終了したら、その状態で止める
+//	2	:	モーションが終了したら、０番モーションになり、その後０番をリピート
+
+//-------- ロッカー ------------------------------------------------------
+
+chara ロッカー管理[NewLockerDaemon] $s:名前 \
+	-n_lockers $w:ロッカー最大数 \
+	-type $f:ロッカータイプ（廃止）
+
+command ロッカーモーション[NewSetLockerMotion] \
+	-motion $s:ロッカー開閉モーション
+
+command プレイヤーロッカーモーション[NewSetPlayerLockerMotion] \
+	-motion $s:プレイヤーのロッカー開閉モーション
+
+chara ロッカー[NewLocker] $s:名前 \
+	-kms $s:モデル \
+	-body $s:箱モデル（省略すると扉のみ） \
+	-position $v:位置 \
+	-rotate $v:回転 \
+	-down_rot $v:倒れたときの角度 \
+	-doWn_shift $v:倒れたときのシフト量 \
+	-state $i:初期状態 \
+	-code $w:ドア動作ＳＥコード $w:ドア閉まるＳＥコード（廃止） \
+	-flag $i:フラグ \
+	-light $s:スポットライト名 \
+	-name_of_spotlight $s:対応スポットライト名 \
+	-exec { $:トリガ $:実行キャラ $:行動 } \
+	-prOc $p:呼び出しプロック \ //$:トリガ $:実行キャラ $:行動 \
+	-seNo $i:壁音番号 \
+	-gravure $v:キス音発生範囲最小 $v:キス音発生範囲最大 \
+			 $v:胸範囲最小 $v:胸範囲最大 \
+			 $v:秘所範囲最小 $v:秘所範囲最大
+
+//フラグ
+#define	LOCKER_FLAG_SHADOWDROP	0x0001 	//扉の影が投影される（廃止）
+#define	LOCKER_FLAG_SELFSUBJECT	0x0002	//内部でもオートで主観にはならない
+#define	LOCKER_FLAG_SHADOWWRITE	0x0004	//扉に影が投影される
+#define	LOCKER_FLAG_TOILET		0x1000	//トイレである
+
+//-code を省略するとデフォルトのコードが使われる。
+
+//-exec と -prOc はどちらか一つ。
+//$1に開始時／終了時 = 1／0 が入る。
+//$2は実行キャラクタ名
+//$3は以下の通り
+//  0:外から開けた
+//  1:外から閉めた
+//  2:内から開けた
+//  3:内から閉めた
+//  4:壊れて開いた
+//  5:死体を入れて閉める
+
+//開けられる向きとは、プレイヤーがそのロッカーに正対したときの
+//プレイヤーの向き。
+
+//初期状態は以下の値で指定 
+#enum {
+    LOCKER_STATE_CLOSE =        0x0001, /* しまっている */
+    LOCKER_STATE_OPEN =         0x0002, /* 開いている */
+    LOCKER_STATE_CORPSE_IN = 	0x0020,	/* 死体が入っている */
+    LOCKER_STATE_ENEMY_IN = 	0x0040, /* 気絶兵が入っている */
+    LOCKER_STATE_DESTROY =		0x4000,	/* 開けられない／閉められない */
+	LOCKER_STATE_POSTER =		0x00010000,	/* ポスターあり */
+	LOCKER_STATE_NO_OPEN_SEG =	0x00040000	/* 開いているときの扉プレイヤーあたりなくす */
+} ;
+
+//呼び出しプロックの引数は検討中
+//次のパターンを数字で返すといいかも。
+
+//プレイヤー外から開ける／閉める
+//プレイヤー中から開ける／閉める
+//プレイヤー気絶兵入れる／死体入れる
+//敵兵クリアリング時開ける／閉める
+//敵兵中から開ける
+//死体ｏｒ気絶兵中から転がり出てくる
+
+mesg ロッカー $s:名前 open[ 0 ] $s:操作キャラ $f:外／内＝０／１ [$b:モーション]
+mesg ロッカー $s:名前 close[ 1 ] $s:操作キャラ $f:外／内＝０／１ [$b:モーション]
+mesg ロッカー $s:名前 put_enemy[ 2 ]
+mesg ロッカー $s:名前 put_corpse[ 3 ]
+mesg ロッカー $s:名前 open_end[ 4 ]
+mesg ロッカー $s:名前 close_end[ 4 ]
+mesg ロッカー $s:名前 rotate[ 5 ] $i:手の位置Ｘ $i:手の位置Ｚ $i:下駄
+mesg ロッカー $s:名前 rotate2[ 6 ] $w:相対回転角度
+
+//指定ロッカーの状態（開いている、しまっているなど）
+command ロッカー状態[NewLockerStatus] -n $s:名前 
+
+// 結果の見方
+// $status & 0x0001	: 閉じている
+// $status & 0x0002	: 開いている
+// $status & 0x2000 : 扉が外れている
+
+//つながりロッカー
+command ロッカー接合[NewLockerConnection] \
+	-connection $s:プレイヤーが中に入った状態で右側に当たるロッカー \
+	       	 	$s:プレイヤーが中に入った状態で左側に当たるロッカー 
+//ロッカー接合指定は、1ステージに４つまで
+
+//-------- 水密ドア  -----------------------------------------------------
+
+chara 水密ドア管理[NewWatertightDoorManager] $s:名前 \
+	-n_doors $b:最大ドア数 \
+	-motions $s:プレイヤーモーション $s:ドアモーション $s:ハンドルモーション \
+	-adjusts $i:左軸ドア引き時プレイヤー位置調整Ｘ \
+		     $i:左軸ドア引き時プレイヤー位置調整Ｚ \
+			 $i:左軸ドア押し時プレイヤー位置調整Ｘ \
+		     $i:左軸ドア押し時プレイヤー位置調整Ｚ \
+			 $i:右軸ドア引き時プレイヤー位置調整Ｘ \
+		     $i:右軸ドア引き時プレイヤー位置調整Ｚ \
+			 $i:右軸ドア押し時プレイヤー位置調整Ｘ \
+		     $i:右軸ドア押し時プレイヤー位置調整Ｚ 
+
+//motions指定がない場合はプログラムで動かす
+
+chara 水密ドア[NewWatertightDoor] $s:名前 \
+	-kms $s:ハンドル無しモデル $s:ハンドルモデル \
+	-position $v:位置 \
+	-rotate $v:回転 \
+	-type $f:ドアタイプ \	  //０：左軸 １：右軸 省略時は０
+	-exec { $:トリガ $:実行キャラ } \
+	-prOc $p:呼び出しプロック \ //$:トリガ $:実行キャラ 
+	-flag $i:フラグ \
+	-hazard $v:プレイヤー当たり壁点１ $v:プレイヤー当たり壁点２
+	
+//execのコールされるタイミングとトリガ
+// 開け終わったとき     ： トリガ ０
+// 取っ手をつかんだとき ： トリガ １
+// 取っ手を離したとき   ： トリガ ２
+// 開き始めのとき		： トリガ ３
+// 閉まりきったとき		： トリガ ４
+
+//フラグ
+#enum {
+	WT_DOOR_FLAG_NOT_OPEN	= 0x0001,	//開かない
+	WT_DOOR_FLAG_OPEN_START = 0x0002	//開いた状態からスタート
+} ;
+
+
+mesg 水密ドア $s:名前 hold[ 0 ] $s:操作キャラ [$i:ハンドルモーション番号]
+mesg 水密ドア $s:名前 rotate[ 1 ] $w:回転角度（相対）	//廃止
+mesg 水密ドア $s:名前 open[ 2 ] 						//シナリオで開ける（モーション不使用）
+mesg 水密ドア $s:名前 hold_end[ 3 ] 
+mesg 水密ドア $s:名前 open_end[ 4 ] $s:操作キャラ
+mesg 水密ドア $s:名前 rotate2[ 5 ] 						//廃止
+mesg 水密ドア $s:名前 door_rotate[ 6 ] 					//廃止
+mesg 水密ドア $s:名前 door_rotate2[ 7 ] 				//廃止
+mesg 水密ドア $s:名前 door_rotate3[ 8 ] 				//廃止
+mesg 水密ドア $s:名前 open_start[ 9 ] $s:操作キャラ [$i:ドアモーション番号]
+mesg 水密ドア $s:名前 not_open[ 10 ] $s:操作キャラ [$i:ハンドルモーション番号]
+mesg 水密ドア $s:名前 close[ 12 ] 	//開いた状態からスタートしたドアを閉めるメッセージ
+mesg 水密ドア $s:名前 handle[ 13 ] $f:on／off	// onで表示 offで非表示
+
+//指定ドアの状態を返す
+command 水密ドア状態[NewWatertightDoorStatus] -n $s:名前
+
+//プレイヤーの水密ドア時
+//手モーフィング管理
+chara 水密ドアプレイヤー手モーフィング管理[NewWtDoorPlayerHandMofingManager] $s:名前 \
+		-patterns			$b:右パターン数 $b:左パターン数 \
+		-right_hand_cv2		$s:右手用パターン ... \
+		-left_hand_cv2		$s:左手用パターン ... \
+		-timing_r			$i:切り替えタイミング右 ... \
+		-tIming_l			$i:切り替えタイミング左 ... 
+
+//切り替えタイミングの書き方 
+//		３つの数で１セット	0,24,2	（モーション番号、フレーム、切り替えパターン）
+//		モーション番号の定義：	０：取っ手まわし（正面）
+//								１：掴んで引く（左軸）
+//								２：掴んで押す（左軸）
+//								３：掴んで引く（右軸）
+//								４：掴んで押す（右軸）
+//								５：取っ手まわし（裏面）
+//								６：開けられない
+
+
+//-------- 自動ジャンプ --------------------------------------------------
+
+command プラグイン自動ジャンプ[NewPluginAutoJump] 
+
+command 自動ジャンプ設定[NewAutoJumpSetting] \
+	-motions $i:ジャンプアップ \
+			 $i:ジャンプダウンスタート \
+			 $i:ジャンプダウンループ \
+		   	 $i:ジャンプダウンエンド \
+		     [$i:ジャンプアップ張り付きから] \
+	-trap $s:処理をするトラップ名（省略するといつも処理する） \
+	-climb_height $i:登れる高さ $i:高さ幅 \
+	-dir $w:登り降り角度 \
+	-flag $i:フラグ \
+	-proc $p:プロック	//$:動作 
+
+// motions は強制モーションmar内でのモーション番号
+// $:動作 は 0:登り開始 1:登り終了 2:降り開始 3:降り終了
+// 登り降り角度が指定してあると、ジャンプ時に、
+// 指定dirと指定dir+2048のうち、近いほうを向く
+
+command 自動ジャンプ角度[NewSetAutoJumpDir] -dir $w:角度
+//上の登り降り角度設定のみ版
+
+
+// フラグ
+// 0x0001	:	前方に壁があったらジャンプしない
+
+//-------- 落とし穴 --------------------------------------------------
+
+chara 崩落床[NewFallFloor] $s:名前 \
+	-position $v:位置 \
+	-rotate $v:方向 \
+	-mAp $s:マップ名 \
+	-model $s:モデル名 \
+	-mOtion $s:落下モーションファイル名 $i:落下モーション番号 \
+	-hazard $v:床座標 ... \
+	-fall_time $i:キャラが乗ってから落ちるまでの時間（フレーム数（自動ＰＡＬ化）） \
+	-pRoc $p:崩落開始時プロック
+		
+//-motion の指定がないときは適当に落ちる
+//崩落開始時プロックの$1に崩落させたキャラ名が入る。
+//（メッセージで落ちたときは０が入る。）
+
+mesg 崩落床 $s:名前 fall[0]
+
+command プラグイン落下[NewPluginFall]
+
+mesg プレイヤー $s:名前 fall[16] \
+	$i:落下開始モーション \
+	$i:落下ループモーション \
+	$i:落下終了モーション \
+	$i:落下終了高さ \
+	$i:フラグ $p:落下開始プロック $p:落下終了プロック
+
+//強制モーションmar内に落下セットを持っておく。
+//落下終了モーションをつけない場合は、落下終了高さまで
+//落下したら終了する。
+
+//フラグ
+// 0x0001 :	落ちてもゲームオーバーじゃない
+// 0x0002 : 足影ＯＦＦ
+
+//-------- ベルトコンベア --------------------------------------------------
+
+command ベルトコンベア管理[NewBeltConveyerManager] \
+	-n $i:ベルト最大数 
+
+command ベルトコンベア登録[NewSetBeltConveyer] \
+	-trap $s:トラップ名 \
+	-route $i:キャラクタルート番号 $i:ルート内ポイント番号０ $i:ルート内ポイント番号１ \
+	-next $i:次のキャラクタルート番号 $i:次のポイント番号 \
+	-speed $i:移動スピード \
+	-chara $s:対象キャラ 
+
+//-trapで指定した、トラップ内のオブジェクトを
+//-routeで指定したポイント１まで移動させる。
+//移動ベクトルは、ポイント０→ポイント１
+
+//-nextの、次のキャラクタルートとポイントとは、
+//ポイント１に到達した後に向かうポイントのこと。
+//指定が無い場合は、ポイント１と同じルートの次のポイントが
+//指定される。
+
+//対象キャラは省略可能。
+//対象キャラを変えた別ルートを設定することで、分岐させられる。
+
+command ベルトコンベア動作[NewSetBeltConveyerMode] \
+	-move \			//動かす
+	-stop 			//停止する
+//-move と -stop はどちらか一つ
+
+command ベルトコンベア荷物管理[NewBeltObjectManager] 
+
+chara	ベルトコンベア荷物[NewBeltObject] $s:名前 \
+	-model $s:モデル名 \
+	-position $v:位置 \
+	-rotate $v:回転 
+
+mesg ベルトコンベア荷物 $s:名前 position[0] $i:Ｘ位置 $i:Ｙ位置 $i:Ｚ位置
+mesg ベルトコンベア荷物 $s:名前 map[1] $s:マップ名
+
+command トラップ内荷物チェック[NewBeltObjCheckInsideTrap] \
+	-map $s:マップ名 \
+	-trap $s:チェックするトラップ名
+
+//-------- エレベータ --------------------------------------------------
+
+command プラグインエレベータ[NewPluginElevator] 
+
+mesg プレイヤー $s:名前 evpanel[15] $s:入る／出る $i:方向
+
+//エレベータ内でのパネル操作プラグインです。
+//仕様：
+//	エレベータ内部にプレイヤーしかいない状態でかつ
+//	危険モードでなければ、パネル操作モードに入ることができる。
+//	パネル操作モード中に、危険モードになるが、エレベータ内に敵が入ってくると
+//	強制的にパネル操作モードを抜ける。
+
+chara エレベータ[NewElevator] $s:名前 \
+	-map $s:マップ名 \
+	-door1 $s:モデル名１ $v:位置１ $i:方向１ $i:スライド距離１ $i:開閉時間１ \
+	-dOor2 $s:モデル名２ $v:位置２ $i:方向２ $i:スライド距離２ $i:開閉時間２ \
+	-wall $v:扉透明壁位置１ $v:扉透明壁位置２ $i:扉透明壁高さ \
+	-close_time $i:開ききってから閉まるまでの時間（秒）\
+	-trap $s:エレベータ箱トラップ名 $s:パネル操作トラップ名 \
+	-cAmera $v:パネルカメラ位置 $v:パネルカメラ注視点 \
+	-panel_proc $p:パネル操作決定時プロック 
+	
+//エレベータ仕様
+//
+//openメッセージが来ると、指定した時間（指定がない場合はランダム）経つと開く。
+//開いている状態で、エレベータの中に誰かいるときは閉まらない。
+//指定時間経過後、中に誰もいないときは閉まる。
+//closeメッセージが来ると、強制的に閉まる。
+//パネル操作決定時プロックの$1に、どれを決定したかが入る。
+
+mesg エレベータ $s:名前 open[0] $i:開くまでの時間 $p:開き開始時プロック $p:開き終了時プロック
+//開くまでの時間に負数を指定すると、ランダムになります。
+
+mesg エレベータ $s:名前 close[1] $p:閉まり開始時プロック $p:閉まり終了時プロック
+//強制的に閉めます。普段は使わないでしょう。
+
+mesg エレベータ $s:名前 stagestart[2]
+//ステージ開始時にパネルモードから始めるとき、これを送信
+
+//-------- くしゃみ --------------------------------------------------
+
+command プラグインくしゃみ[NewPluginSneeze]
+
+command プレイヤー風邪引かせ[NewPlayerSetCold] \
+	-time	$i:くしゃみ間隔（秒）
+
+command プレイヤー風邪直し[NewPlayerRecoverCold]
+
+//-------- ブレード --------------------------------------------------
+
+command プラグインブレード[NewPluginBlade] -motion $s:モーションファイル
+
+//-------- エマと手繋ぎ --------------------------------------------------
+
+command プラグインエマ手繋ぎ[NewPluginGraspEE] -motion $s:モーションファイル
+
+//-------- 透明壁・床 ----------------------------------------------------
+
+chara 透明壁[NewDynamicSegment] $s:名前 \
+	-position $i:頂点１Ｘ $i:頂点１Ｙ $i:頂点１Ｚ $i:頂点１高さ \
+		  $i:頂点２Ｘ $i:頂点２Ｙ $i:頂点２Ｚ $i:頂点２高さ \
+	-attribute $i:アトリビュート \
+	-map $s:マップ名
+
+chara 透明床[NewDynamicFloor] $s:名前 \
+	-position $i:頂点１Ｘ $i:頂点１Ｙ $i:頂点１Ｚ \
+		  $i:頂点２Ｘ $i:頂点２Ｙ $i:頂点２Ｚ \
+		  $i:頂点３Ｘ $i:頂点３Ｙ $i:頂点３Ｚ \
+		  [$i:頂点４Ｘ $i:頂点４Ｙ $i:頂点４Ｚ] \
+	-n_points $b:頂点数（３ｏｒ４） \
+	-attribute $i:アトリビュート \
+	-map $s:マップ名
+
+mesg 透明壁 $s:名前 kill[0]
+mesg 透明壁 $s:名前 on[1]
+mesg 透明壁 $s:名前 off[2]
+mesg 透明壁 $s:名前 move[3] $i:頂点１Ｘ $i:頂点１Ｙ $i:頂点１Ｚ $i:頂点１高さ \
+	 	  	    $i:頂点２Ｘ $i:頂点２Ｙ $i:頂点２Ｚ $i:頂点２高さ
+mesg 透明壁 $s:名前 rotate[4] $b:回転モード $i:Ｙ回転
+mesg 透明壁 $s:名前 shift[5] $i:シフト量Ｘ $i:シフト量Ｙ $i:シフト量Ｚ
+
+mesg 透明床 $s:名前 kill[0]
+mesg 透明床 $s:名前 on[1]
+mesg 透明床 $s:名前 off[2]
+mesg 透明床 $s:名前 move[3] $i:頂点１Ｘ $i:頂点１Ｙ $i:頂点１Ｚ \
+	 	  	    $i:頂点２Ｘ $i:頂点２Ｙ $i:頂点２Ｚ \
+	 	  	    $i:頂点３Ｘ $i:頂点３Ｙ $i:頂点３Ｚ \
+	 	  	    [$i:頂点４Ｘ $i:頂点４Ｙ $i:頂点４Ｚ]
+mesg 透明床 $s:名前 rotate[4] $b:回転モード \
+				$i:回転ベクトルＸ $i:回転ベクトルＹ $i:回転ベクトルＺ
+mesg 透明床 $s:名前 shift[5] $i:シフト量Ｘ $i:シフト量Ｙ $i:シフト量Ｚ
+
+//回転ベクトルは絶対角度指定
+//回転モードについて
+//透明壁の場合：０ - 回転中心は頂点１と頂点２の中点
+//		１ - 回転中心は頂点１
+//		２ - 回転中心は頂点２
+//回転ベクトルはＹ成分のみ有効
+
+//透明床の場合：０ - 回転中心は重心
+//		１〜４ - 回転中心は頂点１〜４
+//		５〜８ - 回転中心は頂点１２頂点２３頂点３４頂点４１の中点
+
+
+//透明壁属性
+#define HZX_SEG_ALL	      0x0000	/* 全ての当たりをチェックする */
+#define HZX_SEG_NO_PLAYER     0x0010	/* プレイヤーの当たりチェックをしない */
+#define HZX_SEG_NO_ENEMY      0x0020	/* 敵兵の当たりチェックをしない */
+#define HZX_SEG_NO_BULLET     0x0040	/* ショットの当たりをチェックしない */
+#define HZX_SEG_NO_MISSILE    0x0080	/* ミサイル系の当たり判定をしない */
+#define HZX_SEG_NO_C4         0x0100	/* C4爆弾がセットできない */
+#define HZX_SEG_NO_RECOIL     0x0200	/* ショットが跳弾しない */
+#define HZX_SEG_NO_HARITSUKI  0x0400	/* 張り付かない */
+#define HZX_SEG_NO_DISP_RADAR 0x0800	/* レーダーに写らない */
+#define HZX_SEG_NO_BULLETHOLE 0x1000	/* 弾痕つかない */
+#define HZX_SEG_NO_SPRAY      0x2000	/* スプレーつかない */
+#define	HZX_SEG_NO_ENEMY_EYES 0x00010000	/* 敵兵視線通り抜ける */
+#define HZX_SEG_NO_KNOCK_SE   0x00020000	/* 壁コンコンならない */
+
+//透明床属性
+#define HZX_FLOOR_NO_PLAYER           	0x0010	/* プレイヤーの当たりチェックをしない */
+#define HZX_FLOOR_NO_ENEMY            	0x0020	/* 敵兵の当たりチェックをしない */
+#define HZX_FLOOR_NO_BULLET           	0x0040	/* ショットの当たりをチェックしない */
+#define HZX_FLOOR_NO_MISSILE          	0x0080	/* ミサイル系の当たり判定をしない */
+#define HZX_FLOOR_NO_C4              	0x0100	/* C4爆弾がセットできない */
+#define HZX_FLOOR_NO_RECOIL           	0x0200	/* ショットが跳弾しない */
+#define HZX_FLOOR_NO_CLAYMORE     	0x0400	/* クレイモアがセットできない */
+#define HZX_FLOOR_NO_BLOOD            	0x0800	/* 血痕つかない */
+#define HZX_FLOOR_NO_BULLETHOLE  	0x1000	/* 弾痕つかない */
+#define HZX_FLOOR_NO_SPRAY            	0x2000	/* スプレーつかない */
+#define HZX_FLOOR_IK 			0x4000	/* インバース・キネマティクスを適用する */
+#define HZX_FLOOR_STEP               	0x8000	/* ここの床は階段である */
+#define	HZX_FLOOR_NO_ENEMY_EYES			0x00010000	/* 敵兵視線通りぬける */
+
+//イベント壁
+//通常状態でないと通り抜けられない壁
+chara イベント壁[NewEventWall] $s:名前 \
+	-position $i:頂点１Ｘ $i:頂点１Ｙ $i:頂点１Ｚ $i:頂点１高さ \
+			  $i:頂点２Ｘ $i:頂点２Ｙ $i:頂点２Ｚ $i:頂点２高さ
+mesg イベント壁 $s:名前 kill[0]
+
+//-------- トラップ ------------------------------------------------------
+
+trap $s:トラップ名 $s:キャラクタ \	//？で全キャラクタ 
+	-mask $s:入る／出る／いる／？／＊ \	
+	//設定ブロックを実行するタイミング。？で入る／出るの２つ共（いる以外）。
+	-and \				//Andモード
+	-dir $w:プレイヤー方向 $w:幅 ... \	//0〜4096、+-512の範囲指定	
+	-wHich $b:ボタンを見るパッド番号 \ //0が１コン 1が２コン
+	-button $w:ボタン ... \		//下記参照
+	-key $i:パッド ... \		
+	-state $w:プレイヤー状態 ... \	//下記参照
+	-time $w:ディレイタイム \	//実行までの待ち時間（未対応）
+	-item $w:アイテム ... \		//アイテム切り替え時にもチェック
+	-weapon $w:武器 ... \		//武器切り替え時にもチェック
+	-aLert $b:アラートモード \	//アラートモード切り替え時にもチェック
+	-camera \			//カメラトラップであることを明示
+	-proc $p:実行関数 \		// exec、procはどちらか一方
+	-exec { $:トラップ名 $:キャラ名 $:トリガ $:X $:Y $:Z }
+
+//mask :
+// ？は、「入る／出る」
+// ＊は、「いる／出る」をあらわす
+//
+//...での羅列は、３つまで可能
+//<<-and オプションがない場合>>
+//３つの or になる。
+//たとえば、「立ちかしゃがみの時」という指定は、-state 0,1 で可能
+//
+//<<-and オプションがある場合>>
+//全チェックのAndをORしたチェックになる。（なんだそりゃ）
+//たとえば、
+//”「立ち状態」で「方向0方向幅256」で「○ボタンが押された時」”または、
+//”「張り付き状態」で「方向2048方向幅256」で「ボタンは関係ない」”の
+//どちらかが成立する場合、というような指定をしたい時、
+//
+//  trap 名前 キャラ -mask ＊ \
+//	-and \
+//	-state  d:TRP_STATE_STAND, d:TRP_STATE_CAUTION \
+//	-dir    0,256              2048,256 \
+//	-button 0,                 -1
+//と記述することで実現できる。
+
+//
+//button :
+//０：○ １：□ ２：× ３：△
+//-keyとの併用は不可。
+
+//key :
+//d:PAD_A等で指定できる。
+//-button との併用は不可。
+
+//state
+//0 立ち 1 しゃがみ 2 匍匐  3 主観  4 張り付き 5 エルード中
+//6 強制モーション 7 ロッカーモード 8 ビハインドカメラＯＫ
+//現在ここまで。
+
+//-cameraオプションのついているトラップに引っかかるようにするには
+//キャラのCONTROL初期化時に、
+//	GM_ConfigControlCameraTrapCheck( CONTROL * )
+//をコールする必要があります。
+
+#enum {
+	TRP_STATE_STAND = 0,				//通常立ち状態
+	TRP_STATE_SQUAT,					//しゃがみ
+	TRP_STATE_GROUND,					//匍匐、ダウン
+	TRP_STATE_SUBJECT,					//主観
+	TRP_STATE_CAUTION,					//張り付き
+	TRP_STATE_ELUDE,					//エルード
+	TRP_STATE_FORCE,					//強制モーション、強制走り
+	TRP_STATE_LOCKER,					//ロッカー
+	TRP_STATE_BEHINDCAMERA_ENABLE,		//ビハインド可能
+	TRP_STATE_LADDER,					//はしご
+	TRP_STATE_ENEMY_PULL,				//死体引き摺り
+	TRP_STATE_WATER,					//水中
+	TRP_STATE_BEHIND,					//ビハインドカメラ中
+	TRP_STATE_ROLLING,					//転がり中
+	TRP_STATE_INTRUDE,					//イントルード中
+	TRP_STATE_BOX,						//ダンボール中
+	TRP_STATE_WATER_SURFACE				//水面付近泳ぎ
+} ;
+
+// 実行部に渡される引数
+// $1:トラップ名 $2:キャラ名 $3:入る／出る／いる 
+// $4,$5,$6 : キャラの座標(x,y,z)
+
+//トラップＯＮ／ＯＦＦ切り替え
+command トラップ切り替え[NewTrapSwitchCommand] \
+	-trap $s:トラップ名 \
+	-switch $f:ＯＮ／ＯＦＦ 
+
+// 1 : ＯＮ 
+// 0 : ＯＦＦ 
+
+//シナリオトラップ生成
+chara シナリオトラップ[NewDynamicTrapScn] $s:名前 \
+	-bound $i:最小Ｘ $i:最小Ｙ $i:最小Ｚ \
+	       $i:最大Ｘ $i:最大Ｙ $i:最大Ｚ \
+	-attribute $i:アトリビュート \
+	-map $s:マップ
+
+//アトリビュート
+#enum {
+ 	HZX_TRP_ATR_NO_CHECK = 0x0002	//チェックしない
+} ;
+
+//トラップイベント削除
+//	シナリオのtrap記述を無効にします。
+//	hzx内のトラップを消去するわけではありません。
+command トラップ削除[NewRemoveTrapBind] \
+	-name $s:トラップ名 ...
+
+//マップチェンジトラップ
+command マップチェンジトラップ登録[GM_ComSetMapChangeTrap] \
+	-trap $s:トラップ名 \
+	-map $s:現在マップ名 $s:変更先マップ名 \
+	-chara $s:対象キャラクタ（全キャラの場合は省略）
+
+//-------- その他 ----------------------------------------------------------
+
+//シナリオゲームオーバー
+command ゲームオーバー処理開始[GM_GameOverStartScn] \
+		-exec { ゲームオーバー処理 } \
+		-proc $p:ゲームオーバー処理
+
+//-exec と -proc はどちらか一つ
+
+command ゲームオーバー処理終了[GM_GameOverEndScn]
+
+//Ｏ２ゲージ
+chara	Ｏ２ゲージ[NewO2Gage] $s:名前 \
+	-max $i:最大値
+
+//ニキータタイマー設定
+command ニキータタイマー設定[NewSetNikitaTimer] -time $i:時間
+
+//プレイヤーパッド振動 指定モーション開始時に振動起動
+chara プレイヤー振動[NewSetPlayerVibration] $s:名前 \
+	-marfile $s:モーションファイル名（ｍａｒ） \
+	-order $i:モーションファイル内での順番 \
+	-vib_file $s:振動ファイル名（ｖｉｂ）
+
+//影投影ハザード
+command	影投影ハザード[NewShadowDropHazard] \
+	-name $s:マップ名 \
+	-group $b:グループ番号
+
+//スポットライト投影ハザード
+command スポットライト投影ハザード[NewSpotDropHazard] \
+	-name $s:マップ名 \
+	-group $b:グループ番号 
+
+//マップ名を省略すると、現在のマップが使用される
+
+
+//ＵＳＰを構えたら自動でライトＯＮ
+command ＵＳＰライトＯＮ[NewUSPLightOn]
+
+//ハンドガン主観射程設定
+command 主観射程距離設定[NewSetSubjectShotLen] -len $i:距離
+
+//ゲーム中のキャラをマルチウェイトモデルにする。
+chara マルチウェイトキャラ[NewMultiweightChara] $s:名前 \
+		-name $s:マルチウェイトモデルとすげ替えるキャラ \
+		-model $s:マルチウェイトモデル名
+
+//ＬＯＤ制御
+chara ＬＯＤ制御[NewLoDControl] $s:名前 \
+		-name $s:ＬＯＤ制御するキャラ \
+		-type $b:ＬＯＤタイプ \
+		-model $s:モデル ... \ // HIGH <-----> LOW （４つまで）
+		-value $i:ＬＯＤ制御値 ...
+
+//ＬＯＤタイプ
+//	0 : プレイヤー状態に依存（状態は、トラップの項のenumと同じ）
+//  1 : カメラからの距離に依存
+
+//白い息
+chara 白息[NewCharaBreath] $s:名前 \
+	-name $s:息を出すキャラ名 \
+	-object $b:息を出す関節番号 \
+	-shift $v:上の関節中心から息出し位置へのシフト量 \
+	-interval $w:息間隔 
+mesg 白息 $s:名前 on[ 0 ]
+mesg 白息 $s:名前 off[ 1 ]
+
+//跳弾・弾痕登録
+//壁・床の音番号に対応した跳弾・弾痕エフェクトの登録
+
+//ノーマル：担当はおかじ
+command 跳弾ノーマル[NewEntryNewSpark] -n $b:登録番号
+command 跳弾ＳＥのみ[NewEntrySparkOnlySE] -n $b:登録番号
+
+//パイプ水蒸気：担当はおかじ
+command	跳弾水蒸気小[NewEntrySteamAttackTargetSmall] -n $b:登録番号 
+command	跳弾水蒸気中[NewEntrySteamAttackTargetMiddle] -n $b:登録番号 
+command	跳弾水蒸気大[NewEntrySteamAttackTargetLarge] -n $b:登録番号 
+//弾痕ノーマル：担当は森田さん
+command 弾痕ノーマル[NewEntryWallScar] -n $b:登録番号
+command 弾痕じゃじゃじゃ[NewEntryWallJajaja] -n $b:登録番号
+
+//カメラにチェック面（四角形）を設定
+//チェック面は最大１６まで
+command カメラチェック面ワーク確保[NewMallocCameraSquareWork] 
+command カメラチェック面登録[NewSetCheckSquareOfCamera] \
+	-points $v:頂点１ $v:頂点２ $v:頂点３ $v:頂点４ \	//時計周りに設定
+	-far $i:画面を占める率 \
+	-pRoc $p:撮影時プロック
+
+//-far 画面を占める率 とは？
+//画面を占める率（％）がこの数字以下だった場合、
+//「遠すぎる」と判断される。
+
+//プロックの引数（＄１）
+//0 : ＮＧ ／ 4点のうち画面外の点があり、
+//		      判定面の中心が画面の中心から３０％以上離れている。
+//1 : ＮＧ ／ 「近すぎる」画面外の点があるが、
+//		      判定面の中心が画面の中心から３０％以内である。
+//				もしくは、画面全部が、チェック面内である。
+//2 : ＮＧ ／ 4点は全て画面内だが、当たりがあって見えない点がある。
+//
+//3 : ＮＧ ／ 「遠すぎる」全て画面内だが、
+//				-farで指定した範囲より表示範囲が小さい。
+//4 : ＯＫ
+
+//カメラにキャラが映っているか判定
+//チェックキャラは最大８まで。
+//キャラの起動より後に記述すること
+command カメラチェックキャラワーク確保[NewMallocCameraCharaWork]
+command カメラチェックキャラ登録[NewSetCheckCharaOfCamera] \
+	-name $s:チェックするキャラの名前 \
+	-joint $b:チェックする関節番号 \
+	-far $i:画面を占める率 \
+	-proc $p:撮影時プロック
+
+//プロックの引数（＄１）
+//0 : ＮＧ
+//1 : ＯＫ
+
+command カメラ撮影時プロック[NewSetCameraProc] \
+	-proc $p:カメラ撮影時プロック
+
+//隠し君
+chara 隠し君[NewHideMan] $s:名前
+
+//実験君
+chara 木偶人形[NewDekuDoll] $s:名前
+
+//実験カメラ
+chara キャラカメラ[NewCharaTraceCamera] $s:名前 \
+	-c $s:追従キャラ名 \
+	-s $v:シフト量 \
+	-r $v:回転角度 
+
+//Ｃ４爆発メッセージ
+mesg Ｃ４ $s:名前 bomb[0]
+
+//プロックの連続実行
+chara プロック連続実行[NewExecProcContinual] $s:名前 \
+	-proc $p:プロック \
+	-exec { 実行ブロック } \
+	-time $i:連続実行フレーム数（マイナス値を指定するといつまでも）\
+	-end_pRoc $p:終了プロック \
+	-end_eXec { 実行ブロック }
+
+//proc, exec はどちらか一つ
+//$1として、残り回数が渡される
+//end_proc, end_exec もどちらかひとつ
+//引数はありません
+
+mesg プロック連続実行 $s:名前 kill[0]
+
+chara 解体Ｃ４[NewSetKaitaiC4] $s:名前 \
+	-position $v:位置 \
+	-rotate $v:回転 \
+	-type $b:タイプ（０／１：臭いあり／なし） \
+	-state $b:初期状態（０／１：通常／凍結） \
+	-enemy $s:つける敵の名前 $i:関節番号 \
+	-prOc $p:プロック
+
+//プロックの$1には、$s:名前が入る
+//プロックが呼ばれるのは状態に変化があったとき＆ステージ終了時
+//プロックの$2には、爆発時($2==0)、凍結時($2==1)、通常時($2==2)が入る
+//-enemyを使うとき、-positionには、その敵の腰からの相対ベクトルを入れる。
+
+chara 設置クレイモア[NewScenarioClaymore] $s:名前 \
+	-position $v:位置 \
+	-rotate $v:回転 \
+	-prOc $p:終了プロック
+
+//終了プロックは $1 に、
+//	0 : 爆破せずにステージ終了（ロード、リスタート）
+//	1 : 爆発した。
+//  2 : 回収された。
+//が入る。
+
+//テストエマ
+command テストエマ初期位置[NewComEETestSetStartPos] \
+	-position $v:位置 \
+	-rotate $v:方向
+
+//--------------------------------------------------------------------- 
+//是角 /user/korekado
+
+chara コマンダー[NewCommander] $s:名前 \
+	-w $p:警備コマンダーproc ... \
+	-a $p:攻撃コマンダーproc ... \
+	-r $v:復活場所 $s:マップＩＤ ...4 \
+	-c $v:待機場所 $s:マップＩＤ ...4 \
+	-p $w:クリアリングエリア $w:ルート $w:ポイント $p:プロック ...4 \
+	-v $d:音声 ... \
+	-x $d:司令官危険音声 ... \
+	-y $d:司令官警戒音声 ... \
+	-g $b:銃ライト \
+	-m $i:危険モード \
+	-z $i:麻酔持続時間 \
+	-b $i:危険モードでの復活人数 
+
+mesg コマンダー $s:名前 視界オフ[0]
+mesg コマンダー $s:名前 視界オン[1]
+mesg コマンダー $s:名前 待機所替え[2] $i:待機所番号
+mesg コマンダー $s:名前 警戒体制変更[3] $i:警戒体制番号
+mesg コマンダー $s:名前 引き釣られ兵消す[4]
+
+command セットクリアリング[COM_SetClearingData] \
+	-p $w:クリアリングエリア $w:ルート $w:ポイント $p:プロック ...4 \
+	-i $w:ルート指定 ...
+
+command チェンジクリアリングルート[COM_ChangeClearingRoot] \
+	$s:敵兵名 -r $w:チェンジルート -p $w:チェンジポイント番号
+
+command クリアリングキャンセル[COM_ClearingCancel]
+
+command クリアリングから通常回避へ[COM_ClearingGoNormal]
+
+command ゲット敵兵座標[COM_GetEnemyPos] \
+	$s:敵兵名 $r:Ｘ座標変数 $r:Ｙ座標変数 $r:Ｚ座標変数
+
+command ゲット敵兵状態[COM_GetEnemyStatus] \
+	$s:敵兵名 $r:敵兵状態
+
+command ゲット敵兵状態２[COM_GetEnemyStatus2] \
+	$s:敵兵名 $r:敵兵状態
+
+command ゲット敵兵状態拡張版[COM_GetEnemyStSt] \
+	$s:敵兵名 $r:敵兵状態
+
+command ゲット敵兵アクション[COM_GetEnemyAction] \
+	$s:敵兵名 $r:ルート番号 $r:ポイント番号 $r:アクション番号
+
+command ゲット捕まえられ兵の名前[COM_GetCaptureModelName] $r:敵兵モデル名
+
+command ゲット捕まえられ兵の本当の名前[COM_GetCaptureName] $r:敵兵モデル名
+
+chara 警備コマンダー[NewWcCommander] $s:名前 \
+	-e $p:警備兵proc ...
+
+chara 警備兵[NewWatcher] $s:名前 -r $b:初期ルート -n $b:初期ノード -d $v:初期守備位置 $s:マップ \
+								-s $w:ステータス -i $w:視力 ... -l $w:ライフ値 -f $w:気絶値 \
+								-e $p:終了proc ... -b $b:個別ＢＧＭ -h $w:聴力 -v $w:声優\
+								-q $p:アイテムプロック $b:確率 ...2 \
+								-a $p:ホールドアップアイテムプロック $b:確率 ...2 \
+								-w $p:気づいた時プロック
+
+mesg 警備兵 $s:名前 ルート変更[1] $i:ルート番号 $i:守備位置Ｘ $i:守備位置Ｙ $i:守備位置Ｚ $s:マップ [$i:ポイント番号]
+
+/* 敵兵共通メッセージ */
+mesg 敵兵共通 $s:名前 トラップ影ＯＮ[256]
+mesg 敵兵共通 $s:名前 トラップ影ＯＦＦ[257]
+
+mesg 敵兵共通 $s:名前 アクションスタート[258]
+
+//mesg 警備兵 $s:名前 ルート変更[1] $i:ルート番号 $i:守備位置Ｘ $i:守備位置Ｙ $i:守備位置Ｚ
+
+// ステータス	1で２１関節兵の実験モード
+
+//chara 攻撃兵[NewAttacker] $s:名前 -r $b:初期ルート
+
+chara サポート兵[NewSupport] $s:名前 -r $b:初期ルート -b $s:サポートする兵の名前 -s $w:ステータス \
+								 -i $w:視力 ... -l $w:ライフ値 -f $w:気絶値 -e $p:終了proc ... \
+								  -h $w:聴力 -q $p:プロック $b:確率 ...2 -v $w:声優
+//	サポート兵は必ずサポートする兵より後にセットすること
+
+chara プットオブジェ[NewPutObject] $s:名前 -m $s:オブジェクト名 ... -r $v:向き -p $v:場所  -l $s:光源 \
+									-s $v:スケール  -f $w:フラグ  -t $i:ＬＯＤ閾値 ...
+mesg プットオブジェ $s:名前 off[0]
+mesg プットオブジェ $s:名前 on[1]
+mesg プットオブジェ $s:名前 turn[2] $i:Ｘ軸方向 $i:Ｙ軸方向 $i:Ｚ軸方向
+mesg プットオブジェ $s:名前 move[3] $i:位置Ｘ $i:位置Ｙ $i:位置Ｚ
+mesg プットオブジェ $s:名前 preshade[4] 
+mesg プットオブジェ $s:名前 kill[5] 
+
+//スケールは１００が標準の大きさ、２倍にしたかったら２００、半分なら５０
+chara プットモデル[NewPutModel] $s:名前 -m $s:オブジェクト名 ... -r $v:向き -p $v:場所  -l $s:光源 \
+									-s $v:スケール  -f $w:フラグ  -t $i:ＬＯＤ閾値 ...
+
+chara 船倉兵[NewHoldEnemy] $s:名前 	\
+	-a $s:名前 $v:場所 $v:方向 $w:モデル番号 $w:スケール $w:モーション $w:アイテム ...11 \
+	-t $i:ＬＯＤ閾値 ... -s $v:みるべき場所 ... \
+	-c $v:場所 $w:向き $s:カメラマン名 $s:ターゲット名 ...6 \
+	-w $w:最初の見つめる場所 \ /* 0:プロジェクタ1 1:プロジェクタ２ 2:スコット */
+	-m $w:モード \
+	-b $p:パンツプロック \
+	-e $p:プロック ... -p $v:プロジェクター場所 $v:方向 $w:視野 ...7
+
+mesg 船倉兵 $s:名前 通常状態[0]
+mesg 船倉兵 $s:名前 スクリーン２[2]
+mesg 船倉兵 $s:名前 スコットを見る[16]
+mesg 船倉兵 $s:名前 スクリーン１[17]
+
+mesg 船倉兵 $s:名前 右を向け[3]
+mesg 船倉兵 $s:名前 左を向け[4]
+mesg 船倉兵 $s:名前 後を向け[5]
+mesg 船倉兵 $s:名前 前を向け[6]
+
+mesg 船倉兵 $s:名前 右に銃を向けろ[7]
+mesg 船倉兵 $s:名前 左に銃を向けろ[8]
+mesg 船倉兵 $s:名前 後に銃を向けろ[9]
+mesg 船倉兵 $s:名前 前に銃を向けろ[10]
+
+mesg 船倉兵 $s:名前 右に首を向けろ[11]
+mesg 船倉兵 $s:名前 左に首を向けろ[12]
+mesg 船倉兵 $s:名前 下に首を向けろ[13]
+mesg 船倉兵 $s:名前 前に首を向けろ[14]
+mesg 船倉兵 $s:名前 上に首を向けろ[15]
+
+mesg 船倉兵 $s:名前 アメリカンジョーク[18]
+
+
+mesg 船倉兵 $s:名前 ライターを落とせ[64] $s:兵隊名前 $i:発生場所Ｘ $i:発生場所Ｙ $i:発生場所Ｚ
+
+mesg 船倉兵 $s:名前 プロジェクタ１動け[66]
+mesg 船倉兵 $s:名前 プロジェクタ２動け[67]
+mesg 船倉兵 $s:名前 プロジェクタ１止まれ[68]
+mesg 船倉兵 $s:名前 プロジェクタ２止まれ[69]
+
+mesg 船倉兵 $s:名前 ルート変更[ 1 ] $i:ルート番号 $i:ポイント番号
+
+/*	
+プロックはセットした順に 「通常発見時」「プロジェクタ1で発見時」「プロジェクタ2で発見時」
+に呼ばれます
+プロジェクタには "chara 静止スポットライト設置" で設定した場所と方向を入れてください
+プロジェクタは２つまで。
+*/
+
+command ゲット船倉兵座標[HLD_GetHoldPosition] \
+	$s:敵兵名 $r:Ｘ座標変数 $r:Ｙ座標変数 $r:Ｚ座標変数
+
+chara 天井君[NewCeiling] $s:名前 \
+	-m $s:オブジェクト名 -p $v:場所  -l $s:光源 -v $p:表示切替えプロック -h $i:高さ \
+	-c $v:チェック座標 -a $b:チェック軸 \
+	-n $v:チェック軸方向直接指定
+
+mesg 天井君 $s:名前 常に表示[1]
+mesg 天井君 $s:名前 常に表示ＯＦＦ[2]
+
+// -h と -c,-a,-n 及び -a と -n は共に排他オプションです
+// -h を使う場合はそれだけで完結（従来と同様）
+// -c を使う場合は -a もしくは -n でチェック軸の方向を指定（指定しないとY-になる）
+// -c で指定する座標は判定を行なう平面上の任意の座標です
+// （意味的にはその座標をチェック方向に越えると表示ONになる）
+// -a に指定する値
+// 0 ... X軸方向+でチェック
+// 1 ... X軸方向-でチェック
+// 2 ... Y軸方向+でチェック
+// 3 ... Y軸方向-でチェック （デフォルト）
+// 4 ... Z軸方向+でチェック
+// 5 ... Z軸方向-でチェック
+// -n はチェック方向直接指定。チェック方向のベクトルを指定。これを使うと斜めなども指定できる
+// -a 3 は -n 0,-100,0 と同義である
+
+
+chara サウンドマネージャー[NewSoundManager] $s:名前 \
+			-pak $i:サウンドパック番号 \
+//			-b $i:BGM -a $i:常駐ＳＥ -e $i:ＳＥ -w $i:ＷＡＶＥ ... \
+			-s $i:ステータス
+mesg サウンドマネージャー $s:名前 SD_CODE[0] $i:サウンドコード
+mesg サウンドマネージャー $s:名前 SD_AUTO[1] $i:サウンドコード
+
+chara ＢＧＭマネージャー[NewBGMManager] $s:名前 \
+			-s $i:ステータス
+mesg ＢＧＭマネージャー $s:名前 SD_SNEAK_AUTO[0] $i:オートフェーダーコード
+
+command ＳＥセットモード[GM_SeSetModeGcl] -s $w:音番号 -p $v:発生場所  -m $w:モード
+command セットノイズ[GM_SetNoiseGcl] -n $w:ノイズ種類 -p $v:発生場所  -m $s:マップ
+command セットサウンドコード[GM_SdSetGcl] -c $i:サウンドコード
+
+chara 死体君[NewCorpGcl] $s:名前 -m $s:モデル名 -d $w:ポーズ -p $v:場所 -r $v:方向 \
+			 -n $w:初期モーション番号  -s $i:ステータス -e $s:マルチウェイトモデル \
+			 -q $p:プロック $b:確率 ...2
+
+mesg 死体君 $s:名前 kill[-1]
+
+chara ＢＧＭ風音[NewWindNoise] $s:名前 
+
+chara ＢＧＭフェーダー[NewBgmFader] $s:名前 	\
+	-t $i:トラック番号 -a $v:場所 $v:サイズ $s:マップ名  ...7 -s  $i:ステータス
+
+
+command ゲットゲームステータス[GM_GetGameStatusForScn] \
+	$r:ゲームステータス
+
+chara ＮＰＣサンプル君[NewNPCSample] $s:名前 -s $i:スピード -p $v:場所
+
+mesg 死体君 $s:名前 モードチェンジ[0] $i:モード $i:ゾーン
+//モード 0:ノーマル
+//モード 1:ゾーンへ移動
+
+
+#enum {
+	STATE_GAMEOVER  =	0x80000000		/* ゲームオーバー処理中 */
+} ;
+//--------------------------------------------------------------------- 
+// 高部管理分
+// <Takabe>
+
+// ====== 実験関連キャラクタ定義
+chara 高部実験プログラム[NewTestProgram] $s:名前
+chara てすと[NewPrimTestProgram] $s:name
+chara Prim2TestProgram[NewPrim2TestProgram] $s:名前
+chara EvmTestProgram[NewEvmObjectTest] $s:name
+chara DmapackTestProgram[NewDmapackTestProgram] $s:name
+chara BlurTestProgram[NewBlurTest] $s:name
+chara MenuPrintTest[NewMenuPrintTest] $s:name
+chara ModelTest[NewModelTestProgram] $s:name
+chara PatchTestProgram[NewPatchTestProgram] $s:name
+chara IKDoll[NewInversKinematicTest] $s:name -pos $v:中心座標 -rot $v:初期向き
+command VRAM初期化[NewVramInitialize]
+// ====== 実験関連キャラクタ定義終了
+
+chara 影投影モデル[NewShadowDrawObjectSet] $s:名前 \
+	-model $s:影投影専用モデル \
+	-pos $v:設置位置
+// 影投影用モデルを設置する
+// 「スポットライト投影モデル」キャラとは排他である
+
+chara スポットライト投影モデル[NewSpotDrawObjectSet] $s:名前 \
+	-model $s:影投影専用モデル \
+	-pos $v:設置位置
+// スポット投影用モデルを設置する
+// 「影投影モデル」キャラとは排他である
+
+chara 静止スポットライト設置[NewPutStaticSpotLight] $s:名前 \
+	-pos $v:設置位置 \
+	-dir $v:光源方向（自動的に正規化される） \
+	-range $w:有効距離 \
+	-angle $b:円錐角度（１度単位で、最大は１８０未満） \
+	-color $b:光源色（赤） $b:光源色（緑） $b:光源色（青） \
+	-fadeproc $p:フェードイン・アウト用コールバック \
+	-option $i:オプションフラグ
+mesg 静止スポットライト設置 $s:名前 on[1]
+mesg 静止スポットライト設置 $s:名前 off[0]
+mesg 静止スポットライト設置 $s:名前 fadein[2] $w:カウント（１／３００秒単位）
+mesg 静止スポットライト設置 $s:名前 fadeout[3] $w:カウント（１／３００秒単位）
+// スポットライトを設置する
+// . . . .
+// 同じ名前の「スポットライト投影モデル」を予め置いていないと効果がない
+// フェードイン・アウトには終了検出用のコールバック用procを設定可能
+// オプションフラグ詳細
+//  0x0001:-dir指定を方向ベクトルではなく回転ベクトルとして認識
+//  0x0002:OFF状態で起動する（デフォルトはONで起動）
+//  0x0004:キャラに反映するライトを置かない（スポットライト投影のみに）
+//  0x0010:高速画角切替え（おそらく使用しない）
+//  0x0020:レイブン影用Y軸回転アニメーション
+//  0x8000:デバッグ機能ＯＮ（２コンＬ１を押しながら操作）
+
+command 壁床効果音設定[NewSetExchangeSeCode] \
+	-id $b:変換テーブルID（０〜１２７） \
+	-type $b:属性設定（０：床、１：壁） \
+	-se $i:変換対象コード \
+	-data $w:音コード $b:ノイズ音量 ...2 \	// 必ず８セット書くこと
+	-clear // 内部のリストを全てクリアする（普通は使用しない）
+// ノイズ音量定義
+#enum {
+	NOISE_ZERO ,
+	NOISE_HOLD ,
+	NOISE_DEC ,	/* 拳銃デコック */
+	NOISE_SS ,	/* 至近距離なら反応で白？ */
+	NOISE_S,
+	NOISE_CHOUDAN,	/* 跳弾御 */
+	NOISE_SCREAM,
+	NOISE_MM,
+	NOISE_M,
+	NOISE_L,
+	NOISE_LL
+};
+// 壁床の効果音鳴らし分け用リストを作成する
+// １回のコマンドで１つだけセットする（複数設定する場合には複数記述）
+// 変換対象コード１つに対し、音コードは壁床属性番号に対応しているため
+// 必ず８つ必要すること。
+// また、変換テーブルIDはプレイヤーキャラやコマンダーキャラの様な
+// 効果音を発生させるキャラに渡す必要があります。このID毎に違うもの
+// 設定し、敵キャラにこの固有のIDを渡すことによりキャラ毎に異なる
+// SEをならすことも可能です。
+
+chara 遠景ぼかし[NewFarFocusEffectSet] $s:name \
+	-plane	$b:最大描画枚数 \
+	-near	$i:ぼかし最小距離 \
+	-far	$i:ぼかし最大距離 \
+	-enable // 起動時にオン
+mesg 遠景ぼかし $s:名前 off[0]
+mesg 遠景ぼかし $s:名前 on[1]
+mesg 遠景ぼかし $s:名前 set[2] $w:補間時間 $b:補間タイプ $i:ぼかし最小距離 $i:ぼかし最大距離
+// 最大距離と最小距離との間を最大描画枚数で指定した段階でぼかす
+// メッセージにより途中で補間しながら影響距離を変更できる
+// このときの補間時間は1/60秒単位ではなく1/300秒単位なので注意すること
+
+chara 近景ぼかし[NewNearFocusEffectSet] $s:name \
+	-plane	$b:最大描画枚数 \
+	-near	$i:ぼかし最大距離 \
+	-far	$i:ぼかし最小距離 \
+	-enable // 起動時にオン
+mesg 近景ぼかし $s:名前 off[0]
+mesg 近景ぼかし $s:名前 on[1]
+mesg 近景ぼかし $s:名前 set[2] $w:補間時間 $b:補間タイプ $i:ぼかし最大距離 $i:ぼかし最小距離
+// 最大距離と最小距離との間を最大描画枚数で指定した段階でぼかす
+// メッセージにより途中で補間しながら影響距離を変更できる
+// このときの補間時間は1/60秒単位ではなく1/300秒単位なので注意すること
+
+chara 鏡面モデル管理[NewMirrorControl] $s:name \
+	-pos	$v:鏡面座標 \
+	-axis	$b:反点軸		// 0:X軸反点 1:Y軸反点 2:Z軸反点
+mesg 鏡面モデル管理 $s:名前 add[0] $s:追加キャラ
+mesg 鏡面モデル管理 $s:名前 del[1] $s:削除キャラ
+// 指定した座標で指定した軸方向に反転したモデルを生成する
+// メッセージにより追加、削除ができるので部屋の入口のトラップなどに
+// 引っかけて使用すると良い
+
+chara 臨時顔アニメキャラ[NewE3FaceAnimationSet] $s:name \
+	-chara	$s:キャラクタ名
+mesg 臨時顔アニメキャラ $s:名前 モーション再生[0] $s:モーション名 $w:補間時間
+mesg 臨時顔アニメキャラ $s:名前 視線変更[1] $w:タイプ [$w:補間時間 $v:注目座標]
+// E３素材取り専用マルチウェイトエンベロープモデル顔アニメキャラ
+// メッセージによりコントロールする（時間は全て1/300秒単位）
+// ＜モーション再生コマンド捕捉＞
+//  モーション名にはrmtファイルのファイル名を指定
+// ＜視線変更コマンド捕捉＞
+//  $w:タイプ = -1 視線はモーションに依存（補間時間、注目座標の指定は必要なし）
+//            =  0 絶対座標による注目座標指定
+//            =  1 頭部モデルからの相対座標による注目座標指定
+//            =  2 カメラ目線（注目座標の指定は必要なし）
+//  
+
+chara 顔アニメキャラ[NewFaceAnimationSet] $s:name \
+	-fanim	$s:フェイスアニメファイル指定 \
+	-chara	$s:キャラクタ名
+mesg 顔アニメキャラ $s:名前 モーション再生[0] $s:モーション名
+mesg 顔アニメキャラ $s:名前 視線変更[1] $w:タイプ [$w:補間時間 $v:注目座標]
+// マルチウェイトエンベロープモデル顔アニメキャラ
+// メッセージによりコントロールする（時間は全て1/300秒単位）
+// ＜視線変更コマンド捕捉＞
+//  $w:タイプ = -1 視線はモーションに依存（補間時間、注目座標の指定は必要なし）
+//            =  0 絶対座標による注目座標指定
+//            =  1 頭部モデルからの相対座標による注目座標指定
+//            =  2 カメラ目線（注目座標の指定は必要なし）
+//  
+
+chara スポットライト背景イメージ指定[NewSpotLightImageSet] $s:name \
+	-image $s:テクスチャ名（raw形式イメージなので注意！（RGBARGBA・・・））\
+	-file $s:ＩＰＵデータ名（stm形式をraw形式にリネームしたもの）\
+	-movie $t:ムービー指定（ＩＰＵ形式ストリーム） \
+	-proc $p:コールバック
+mesg スポットライト背景イメージ指定 $s:名前 停止[0]
+mesg スポットライト背景イメージ指定 $s:名前 イメージ変更[1]
+mesg スポットライト背景イメージ指定 $s:名前 ムービー再生[2] $t:ムービー指定（ＩＰＵ形式ストリーム）
+// スポットライト投影のプリミティブ描画のスポットライト模様の変わりに
+// 使用する背景イメージを指定する
+// IPUストリームによるムービーも再生可能
+// IPUストリーム再生時に再生開始直後は$1=0、再生終了後直後は$1=1が設定され
+// コールバックが呼ばれる
+
+chara 嵐の川波[NewStormyRiverWaveSet] $s:name \
+	-tex $s:ＴＲＩファイル名 $s:テクスチャ名 $s:波頭テクスチャ \
+	-pos $v:中心座標 \
+	-ambient $b:ローカル環境光Ｒ $b:ローカル環境光Ｇ $b:ローカル環境光Ｂ \
+	-color $b:ローカル並行光Ｒ $b:ローカル並行光Ｇ $b:ローカル並行光Ｂ \
+	-dir $v:ローカル並行光ベクトル \
+	-invisible $v:非表示バウンディング最小値 $v:非表示バウンディング最大値
+mesg 嵐の川波 $s:名前 水しぶき発生[0] $s:キャラ名
+// タンカー編用波オブジェクト
+// テクスチャはこの波プログラム専用のテクスチャ単体でPACK_ALLしたTRIファイルが必要なので注意
+// メッセージを送るとそのキャラが着水した場合に水しぶきを発生させることができる。
+
+#if 0
+chara キラキラ水面[NewReflectionWaterSurfaceSet] $s:name \
+	-tex $s:ＴＲＩファイル名 $s:テクスチャ名 \
+	-pos $v:中心座標 \
+	-invisible $v:非表示バウンディング最小値 $v:非表示バウンディング最大値
+mesg キラキラ水面 $s:名前 水しぶき発生[0] $s:キャラ名
+// 室内用水面オブジェクト
+// テクスチャはこの波プログラム専用のテクスチャ単体でPACK_ALLしたTRIファイルが必要なので注意
+// このキャラは使わない
+#endif
+
+chara キラキラ水面２[NewReflectionWaterSurface2Set] $s:name \
+	-tex $s:ＴＲＩファイル名 $s:テクスチャ名 \
+	-pos $v:中心座標 \
+	-force $w:波影響倍率（デフォルト＝１０） \
+	-ctrl \	// これをつけると水面コントロールキャラによる水面高さの変更が可能に
+	-invisible $v:非表示バウンディング最小値 $v:非表示バウンディング最大値
+mesg キラキラ水面２ $s:名前 波発生源追加[0] $s:キャラ名
+mesg キラキラ水面２ $s:名前 波発生源削除[1] $s:キャラ名
+mesg キラキラ水面２ $s:名前 表示位置移動[256] $v:座標
+mesg キラキラ水面２ $s:名前 波影響倍率[257] $w:倍率（デフォルト＝１０）
+// 室内用水面オブジェクト
+// テクスチャはこの波プログラム専用のテクスチャ単体でPACK_ALLしたTRIファイルが必要なので注意
+// メッセージを送るとそのキャラの動きによって水面に波が立つ。
+
+chara プラント海面[NewSeaSurfaceSet] $s:name \
+	-tex $s:ＴＲＩファイル名 $s:テクスチャ名 $s:テクスチャ名 \
+	-pos $v:中心座標 \
+	-invisible $v:非表示バウンディング最小値 $v:非表示バウンディング最大値
+mesg プラント海面 $s:名前 表示位置移動[256] $v:座標
+// テクスチャはこの波プログラム専用のテクスチャ単体でPACK_ALLしたTRIファイルが必要なので注意
+
+chara 浮き橋[NewFlotingBridgeSet] $s:name \
+	-pos $v:始点座標 $v:終点座標 \
+	-n $w:配置個数 \
+	-model $s:モデル名 \
+	-flag $w:フラグ
+mesg 浮き橋 $s:name 動的床強制更新禁止[0]
+mesg 浮き橋 $s:name 動的床強制更新開始[1]
+// キャラ「プラント海面」が起動していなければならない。（w32a用）
+// 指定した２点間に指定した個数の足場モデルを海面に浮かせる
+// 浮き橋の上にＮＰＣなどを乗らせる場合には「動的床強制更新開始」
+// メッセージを送らなければならない。動的床強制更新は処理が重たいので
+// 必要がなくなったら「動的床強制更新禁止」メッセージを送る必要がある
+
+chara 影管理[NewShadowControl] $s:name \
+	-type $b:光源タイプ \
+	-length $i:光源距離（並行光源時のみ有効）
+mesg 影管理 $s:名前 add[0] $s:追加キャラ [$s:投影モデル名指定]
+mesg 影管理 $s:名前 del[1] $s:削除キャラ
+// 光源タイプ
+//   0:無限遠並行光源（ステージの平行光に対して）
+//   1:点光源エミュレーション（影フラグのついた点光源に対して）
+// メッセージにより追加、削除ができるので部屋の入口のトラップなどに
+// 引っかけて使用すると良い
+// 投影モデル名指定を指定することで特定の投影モデルのみに投影することが可能
+// また、すでに影を表示しているキャラに対してさらにaddでメッセージを
+// 送ると投影モデル名のみの変更が可能です。
+
+
+// </Takabe>
+// <libdg>
+
+command カメラ視界チェック[NewViewCheckCommand] \
+	-camera $b:カメラフラグ \
+	-pos $v:チェック座標 \
+	-bound $v:バウンディング座標０ $v:バウンディング座標１ 
+// チェック座標もしくはバウンディングがカメラの視界内に入っているかをチェックする
+// 視界内に全て、もしくは一部が入っている場合に１が返り、そうでなければ０が返る
+// カメラフラグは以下のビットフラグの論理和で指定する
+// 0x01 - メインカメラ
+// 0x02 - サブカメラ
+// 0x04 - ＜予約＞
+// 0x08 - ＜予約＞
+// 座標でのチェックとバウンディングでのチェックはどちか一方のみ有効なので注意！
+
+command メインスクリーンサイズ変更[NewScreenSizeChange] \
+	-scale $w:スケール
+// メイン画面の描画領域サイズを強制的に変更する（使用には十分注意すること）
+// スケールは1~256で指定し、256で通常の大きさになる
+
+// </libdg>
+// <mode/menu>
+
+chara メニューフナムシ[NewMenuShipwormSet] $s:名前 \
+	-speed $w:レーション食いつぶしスピード（秒単位）
+mesg メニューフナムシ $s:名前 remove[0]
+mesg メニューフナムシ $s:名前 transfer[1]
+// transferメッセージで取り付き開始
+// removeメッセージで強制的に排除することも可能
+
+// </mode/menu>
+// <demo>
+
+chara デモ再生実験[NewPolygonDemoFile] $s:名前 \
+	-d 'ファイル名' \
+	-wait 
+mesg デモ再生実験 $s:名前 起動[0]
+// ファイルからデモを起動
+// -waitオプションをつけることでメッセージが発行されるまで再生を開始しない
+// （但し実際にはメッセージは受けとらない）
+
+// </demo>
+//--------------------------------------------------------------------- 
+
+
+//--------------------------------------------------------------------- 
+//岡嶋 okajima
+
+chara 漏電火花[NewShortSparkLine] $s:名前 \
+	-p $i:中心座標 ... 		// XYZ データ数３個
+
+
+chara スリット光[NewSlitLight] $s:名前 \
+	-p $i:中心座標 ... \		// XYZ データ数３個
+	-n $i:法線 ... \		// XYZ データ数３個
+	-d $i:光線の絶対方向 ... \	// XYZ データ数３個
+	-l $i:光線の到達距離
+
+chara 水面監視水飛沫[NewCheckWaterLevel] $s:名前 \
+	-n $s:キャラネーム
+
+chara 濁流[NewPassingSplash] $s:名前 \
+	-n $i:ルート中心 ... \	// （XYZW の４つ。wは幅）を任意のセット数（３２まで）
+	-h $i:高さ \
+	-p $i:種類 \ // ０：主流用 １：周辺ガス用 ２：パーティクル用
+	-s $i:サイズ
+
+chara 床照り返し管理[NewFloorLightMan] $s:名前
+
+chara 水面に落下物の水飛沫[NewDiveSplashScn] $s:名前 \
+	-p $i:中心座標 ... \			// XYZ データ数３個：水面上の点
+	-f $i:タンカー座標系の時１を指定	// 発生後手前に移動する
+
+chara 泡で波紋管理[NewRipBubbleMan] $s:名前
+
+chara 波紋管理[NewRippleMan] $s:名前
+
+chara 水飛沫管理[NewSplushMan] $s:名前
+
+chara 連続発生線状泡[NewBubbleLineScn] $s:名前 \
+	-p $i:発生場所 ...			// XYZ データ数３個
+
+chara カメラダスト[NewDustOnCamera] $s:名前 \
+	-i $i:不可視起動  // ０以外で不可視
+mesg カメラダスト $s:名前 オフ[0]
+mesg カメラダスト $s:名前 オン[1]
+
+chara カメラ泡[NewBubbleOnCamera] $s:名前 \
+	-i $i:不可視起動  // ０以外で不可視
+mesg カメラ泡 $s:名前 オフ[0]
+mesg カメラ泡 $s:名前 オン[1]
+
+chara 窓からの光 [NewWindowLight] $s:名前 \
+	-p $i:窓枠中心座標 ... \			// XYZ データ数３個
+	-r $i:回転（４０９６系） ... \		// XY  ２
+	-s $i:縦幅、横幅 ... \				// ２
+	-t $i:光源位置 ... \				// XYZ ３
+	-l $i:光到達距離 \					// １
+	-c $i:ＲＧＢα ...					// ＲＧＢα ４
+
+chara 巻き上げ煙 [NewDynamicFlow] $s:名前 \
+	-b $i:バンダリ ... \		// XYZ のセット２つ
+	-s $i:パーティクルサイズ
+
+chara カメラ前曇り [NewSteamOnCameraScenario] $s:名前 \
+	-t $i:消えるまでのフレーム数（ＮＴＳＣ基準）デフォルト600
+
+chara 任意稲光 [NewFreeThunder] $s:名前 \
+	-x $i:画面の中心をゼロとしたＸ座標（始点） \ // -4096(LEFT ) 〜 4096(RIGHT)
+	-y $i:画面の中心をゼロとしたＹ座標（始点） \ // -4096(UPPER) 〜 4096(LOWER)
+	-u $i:画面の中心をゼロとしたＸ座標（終点） \ // -4096(LEFT ) 〜 4096(RIGHT)
+	-v $i:画面の中心をゼロとしたＹ座標（終点）   // -4096(UPPER) 〜 4096(LOWER)
+// 上限下限とも制限しないので、画面の外を設定可能
+
+
+chara 速度可変 [NewSlowDown] $s:名前 \
+	-l $i:繰り返しの数 \
+	-t $i:スキップ
+
+command マッキー音[NewMakkyRainSet] $i:ＳＥナンバー
+// 0:常駐ＯＦＦ
+// 1:常駐雨音ＯＮ
+
+chara 斜め回転床水飛沫 [NewSplashRotate] $s:名前 \
+	-n $i:量 \			// ３２枚の何倍？
+	-p $i:場所 ... \	// ＸＹＺの ３つ
+	-r $i:向き ... \	// Ｘ回転、Ｙ回転 の２つ
+	-w $i:幅 ... 		// 回転前のＸ幅、Ｙ幅（厚みに相当）、Ｚ幅 の ３つ
+mesg 斜め回転床水飛沫 $s:名前 オフ[0]
+mesg 斜め回転床水飛沫 $s:名前 オン[1]
+mesg 斜め回転床水飛沫 $s:名前 殺す[2]
+mesg 斜め回転床水飛沫 $s:名前 kill[-1]
+
+chara 壁消火器 [NewExtinguisherMini] $s:名前 \
+	-p $v:場所 \
+	-b $i:バンダリ ... \	// XYZ のセット２つ
+	-i $i:赤外線センサーに有効 \// １で有効
+	-d $i:デバグ // １でデバグターゲットが見える
+
+chara 消火器 [NewExtinguisher] $s:名前 \
+	-r $v:向き \
+	-p $v:場所 \
+	-l $s:光源 \
+	-b $i:バンダリ ... \	// XYZ のセット２つ
+	-i $i:赤外線センサーに有効 \// １で有効
+	-d $i:デバグ // １でデバグターゲットが見える
+
+command セットファークリップ[NewFarClipParamSet] $i:near $i:far
+
+chara スローパラメータ制御 [NewSlowParamMan] $s:名前 \
+	-s $i:パーセント
+//-s は １００でデフォルトと同等
+mesg スローパラメータ制御 $s:名前 パーセント[0] $i:パーセント $i:変化フレーム
+//      １００でデフォルトと同等
+
+
+//chara ジョージワシントン橋のライン補強[NewGWB_Lines] $s:名前
+chara ジョージワシントン橋のライン補強モデル[NewGWB_LinesModel] $s:名前
+
+chara アイテム[NewItemBox] $s:名前 \
+	-b $b:発生パターン \ // 0:その場発生 1:その場に弾んで発生 2:ランダム方向に発射（収得不可の可能性アリ）
+	-p $v:（必須）発生位置 \
+	-k $s:（必須）本体モデル名 \
+	-s $s:（必須）影モデル名 \
+	-l $s:ラベルモデル名 \	// 無くてもよい
+	-f $b:（必須）アイテム・武器の区別 \
+	-i $b:（必須）中身のID \
+	-n $b:（必須）個数 \
+	-h $w:高さ \		// 影からの高さ
+	-e $p:取得時実行関数 \
+	-r $i:０でなし、１であり、設定しなければなし \
+	-g '文字列' \ //収得時メッセージ。無ければデフォルトメッセージを表示。
+	-x { 実行ブロック }
+// -e -x は どちらか一方のみ指定。
+// -e -x ともに、出力として
+//         $1 に アイテム・武器の区別
+//         $2 に 中身のＩＤ
+//         $3 に 個数
+//         $4 に 名前
+// を返す。
+mesg アイテム $s:名前 オフ[0]
+mesg アイテム $s:名前 オン[1]
+mesg アイテム $s:名前 殺す[2]
+mesg アイテム $s:名前 影だけオフ[3]
+mesg アイテム $s:名前 kill[-1]
+
+
+chara くるくる物体 [NewRotateY_Object] $s:名前 \
+	-k $s:モデル名 \ // 必ず指定する
+	-p $v:中心の座標 \
+	-r $i:回転速度 \ // 4096=360°系。１フレームに回転する角度を指定。
+	-s $i:水飛沫ＯＮ・ＯＦＦ \ // 1 を指定したらモデルに外接する最小直方体の上面に水飛沫
+	-f $i:カメラから何mmからフェードしはじめるか \ //default:3000
+	-l $i:カメラから何mmでクリッピングするか \     //default:10000
+	-d $i:ユニット数 \ // ユニット数（1unit=32polygons:max_unit=16）
+	   $i:水平の位置ランダム幅 \
+	   $i:上方位置ランダム幅 \
+	   $i:色の強度（α）
+
+chara ライン水飛沫 [NewLineSplash] $s:名前 \
+	-n $i:データ数 \
+	-f $i:カメラから何mmからフェードしはじめるか \ //default:3000
+	-l $i:カメラから何mmでクリッピングするか \     //default:10000
+	-d $i:ユニット数 \ // ユニット数（1unit=32polygons:max_unit=16）
+	   $i:水平の位置ランダム幅 \
+	   $i:上方位置ランダム幅 \
+	   $i:色の強度（α） \
+	   $v:線分の端点２つ ...
+mesg ライン水飛沫 $s:名前 オフ[0]
+mesg ライン水飛沫 $s:名前 オン[1]
+mesg ライン水飛沫 $s:名前 殺す[2]
+mesg ライン水飛沫 $s:名前 kill[-1]
+
+chara 落下水飛沫[NewSplashFall_Scn] $s:名前 \
+	-l $i:２点指定ライン ... \	// XYZ のセット２つ
+	-s $i:落下方向 \		// ０）直角右回転に落下 １）直角左回転に落下
+	-n $i:水飛沫の数 \		// １フレームに出す数
+	-t $i:サウンドのトラックＮｏ    // 省略可
+// -l オプションの１つ目から２つ目へに向かってをベクトルと見て
+//（その時Ｙは見ず、上から見たときを考える）、
+// それからの -s オプション方向に落下させる
+// ぶっちゃけた話、実行して壁の内側に出てるようなら -s を変えれば済む。
+mesg 落下水飛沫 $s:名前 オフ[0]
+mesg 落下水飛沫 $s:名前 オン[1]
+mesg 落下水飛沫 $s:名前 殺す[2]
+mesg 落下水飛沫 $s:名前 kill[-1]
+
+chara 床水飛沫[NewSplashFloor_Scn] $s:名前 \
+	-b $i:バンダリ ... \	// XYZ のセット２つ
+	-n $i:水飛沫の数	// １フレームに出す数
+mesg 床水飛沫 $s:名前 オフ[0]
+mesg 床水飛沫 $s:名前 オン[1]
+mesg 床水飛沫 $s:名前 殺す[2]
+mesg 床水飛沫 $s:名前 kill[-1]
+
+chara コントラスト[NewContrast_Scn] $s:名前 \
+	-c $i:ＲＧＢα ... \	//最初にＲＧＢを引いた後にαを掛ける。(α=128で１倍)
+	-n $i:ネガポジ \	//０：ポジティブ １：ネガティブ
+	-t $i:変化フレーム	//変化完了までのフレーム数
+
+chara フェードインアウト [NewFadeInOut_Scn] $s:名前 \
+	-i $i:初期ＲＧＢα ... \		//設定するとこのＲＧＢαから始まる
+	-c $i:ＲＧＢα ... \		//目標のＲＧＢα
+	-t $i:変化フレーム \		//変化完了までのフレーム数
+	-p $p:移行時間後起動proc \
+	-s $i:設定されればプライオリティを低く設定
+
+/*
+chara フェード [NewFadeInOutScn] $s:名前 \
+	-m $i:加算減算 \	//0:加算 1:減算
+	-c $v:初期ＲＧＢα \	//設定するとこのＲＧＢαから始まる
+	-f $i:フェードモード \	//0:fade_in 1:fade_out
+	-v $i:バリエーション \	//0:full 1:center 2:drop
+	-t $i:移行時間（フレーム） \
+	-p $p:移行時間後起動proc \
+	-s $i:移行時間後デストロイしない //αの最終値をセットする（そのαで変化ストップ）
+*/
+
+chara 蓋付き段ボール[NewHako_purapura] $s:名前 \
+	-p $v:場所 \
+	-r $v:向き \
+	-a $i:蓋の初期角度（４つ：無くてもいい） ... //モデルの形状依存の為 -2048 〜 256
+
+chara 波紋 [NewRipple] $s:名前 \
+	-n $i:ユニット数 \ // ユニット数（1unit=16ripple:max_unit=32）
+	-b $i:バンダリＸＺＸＺ ... \ // ＹなしのＸＺの組２つ
+	-h $i:出現の高さ
+mesg 波紋 $s:名前 オフ[0]
+mesg 波紋 $s:名前 オン[1]
+mesg 波紋 $s:名前 殺す[2]
+mesg 波紋 $s:名前 kill[-1]
+
+chara 身体水飛沫 [NewBodySplashScn] $s:名前 \
+	-n $s:キャラネーム \
+	-c $s:ＣＶ２モデルネーム \
+	-l $i:「可視化最大距離」と「薄くなりはじめ距離」 ... \
+	-s $i:太り率
+// -n -c のオプションが無いとダメ
+// -l -s は 無くてよい。
+// -l:(8000 5000) が 目安。
+// -s:100でデフォルト等倍
+
+chara 窓の外は雨 [NewRainWindow] $s:名前 \
+	-c $v:中心の座標 \
+	-s $i:縦と横 ... \
+	-r $v:例によってＹＸＺ順回転（Ｚ＝０が無難）
+// どのオプションが無くても落とす
+
+chara プロジェクタライト [NewProjectorLight] $s:名前 \
+	-p $v:中心座標 \
+	-d $v:目標地点
+// 中心から目標地点方向を照らす
+mesg プロジェクタライト $s:名前 オフ[0]
+mesg プロジェクタライト $s:名前 オン[1]
+mesg プロジェクタライト $s:名前 ゆっくりオフ[2]
+mesg プロジェクタライト $s:名前 ゆっくりオン[3]
+
+chara 固定ボリュームライト [NewCircleLightSpot] $s:名前 \
+	-p $v:中心座標 \
+	-d $v:目標地点 \
+	-n $i:ポリゴン数（ＭＡＸ３２） \ // 以下カスタマイズ用。無くてもよい。
+	-l $i:全長 \
+	-w $i:最大幅
+// 中心から目標地点方向を照らす
+mesg 固定ボリュームライト $s:名前 オフ[10]
+mesg 固定ボリュームライト $s:名前 オン[11]
+
+chara 武器水飛沫 [NewWeaponSplash] $s:名前
+
+//「プットテクスチャクロスフェードカメラ」と
+//「プットテクスチャクロスフェードカメラドア」の前にセットする
+chara カメラ雨[NewRainCamera] $s:名前 \
+	-l $i:目の前吹き込みＯＦＦ \ // ０以外で吹き込みＯＦＦする
+	-i $i:不可視起動  // ０以外で不可視
+mesg カメラ雨 $s:名前 オフ[0]
+mesg カメラ雨 $s:名前 オン[1]
+mesg カメラ雨 $s:名前 カメラ前水飛沫出っ放し[2]
+mesg カメラ雨 $s:名前 カメラ前水飛沫出っ放し解除[3]
+mesg カメラ雨 $s:名前 カメラ前水飛沫制御オフ[4]
+mesg カメラ雨 $s:名前 カメラ前水飛沫制御オン[5]
+
+
+chara ＯＦＦ制御[NewOffMan] $s:名前
+mesg ＯＦＦ制御 $s:名前 ボディシャドウＯＦＦ[0]
+mesg ＯＦＦ制御 $s:名前 ボディシャドウＯＮ[1]
+
+chara プットテクスチャ[NewPutWorldTex] $s:名前 \
+	-t $s:テクスチャ名 ...\
+	-p $v:中心座標 ...\
+	-r $i:Ｙ軸回転 ...\
+	-c $i:Ｒ $i:Ｇ $i:Ｂ $i:α ...4\
+	-s $i:幅 $i:高さ ...2
+
+//ワールド座標固定
+chara プットテクスチャクロスフェードワールド[NewPutWorldTexFadeWorld] $s:名前 \
+	-t $s:テクスチャ名１ \
+	-u $s:テクスチャ名２ \
+	-p $v:中心座標 ...\
+	-r $i:Ｘ軸回転 $i:Ｙ軸回転 ...2\
+	-s $i:幅 $i:高さ
+
+//常にカメラの方向を向く
+chara プットテクスチャクロスフェードカメラ[NewPutWorldTexFadeCamera] $s:名前 \
+	-t $s:テクスチャ名１ \
+	-u $s:テクスチャ名２ \
+	-v $s:テクスチャ名３ \
+	-p $v:中心座標 ...\
+	-s $i:幅１ $i:幅２ $i:幅３ \
+	-z $i:遠景時拡大率
+//遠景時拡大率は４０９６で等倍
+
+//常にカメラの方向を向く（ドア用）
+chara プットテクスチャクロスフェードカメラドア[NewPutWorldTexFadeCameraForDoor] $s:名前 \
+	-t $s:テクスチャ名１ \
+	-u $s:テクスチャ名２ \
+	-p $v:中心座標 ...\
+	-s $i:幅\
+	-z $i:遠景時拡大率
+//遠景時拡大率は４０９６で等倍
+
+
+//常にカメラの方向を向く
+chara プットテクスチャクロスフェードターゲット無し[NewPutTexNoTarget] $s:名前 \
+	-t $s:テクスチャ名１ \
+	-u $s:テクスチャ名２ \
+	-v $s:テクスチャ名３ \
+	-p $v:中心座標 ...\
+	-s $i:幅１ $i:幅２ $i:幅３ \
+	-z $i:遠景時拡大率 \ //遠景時拡大率は４０９６で等倍
+	-b $i:点滅時間 \
+	-w $i:ワイヤー用
+//点滅時間を「指定しない」もしくは「０以下の値をセットする」と出っ放し
+
+
+chara スクリーンショット[NewScreenShotControl] $s:名前
+//常駐させる。
+//１コンの L３ボタン でショットをセーブする。
+//セーブ場所は 実行環境の cdrom.img の直下にナンバリングされて入る。
+
+chara ライト位置管理[NewDynamicLightPosManager] $s:名前
+
+chara 風制御[NewWindManager] $s:名前 \
+	 -i $w:通常風単位時間移動距離（風速）ＭＡＸ \
+	 -j $w:突風単位時間移動距離（風速）ＭＡＸ \
+	 -r $v:通常風方向（鉛直下向きからの方向）\
+	 -a $w:方向のランダム幅 \
+	 -b $w:突風頻度（何フレームに１回（目安））\
+	 -c $w:突風継続時間ＭＡＸ（フレーム）
+
+mesg 風制御 $s:名前 オフ[0]
+mesg 風制御 $s:名前 オン[1]
+
+chara ローカル風[NewLocalWind] $s:名前 \
+	 -n $i:データ塊の数 \
+	 -d $i:データ ...
+// データの並び
+// ２点で立方体を表現（６つ）、
+// その立方体内の風方向（Ｙ軸のみ１つ）
+// 風方向ランダム幅（4096(=360度)）（全方向に加味される、１つ）
+// 風速MAX（１つ）
+// 以上９つの数字で一塊。
+
+// キャラ起動時はオン
+mesg ローカル風 $s:名前 オフ[0]
+mesg ローカル風 $s:名前 オン[1]
+mesg ローカル風 $s:名前 殺す[2]
+mesg ローカル風 $s:名前 kill[-1]
+
+//______________
+//影響キャラ一覧
+//~~~~~~~~~~~~~~
+//雨
+//煙突
+//カメラ雨
+//霧雨
+
+// ★常駐用
+chara カメラ血[NewBloodCamera] $s:名前
+
+// ★常駐用
+chara 壁血[NewBloodWall] $s:名前
+
+// ★常駐用
+chara 追跡血[NewBloodSpread] $s:名前
+
+// ★常駐用
+chara 壁焦げ[NewBombWall] $s:名前
+
+
+chara 霧雨[NewRainFogPers] $s:名前
+mesg 霧雨 $s:名前 オフ[0]
+mesg 霧雨 $s:名前 オン[1]
+mesg 霧雨 $s:名前 殺す[2]
+mesg 霧雨 $s:名前 kill[-1]
+
+
+chara ブラー[NewBlur] $s:名前 \
+	-i $i:強度 //初期強度０〜２５５、直ちに反映される
+mesg ブラー $s:名前 オフ[0]
+mesg ブラー $s:名前 オン[1]
+mesg ブラー $s:名前 キャラ削除[2]
+mesg ブラー $s:名前 パラメータ[3] $i:強度 $i:変化時間
+
+chara Ｚフォーカス管理[NewZman] $s:名前 \
+		-z $i:カメラ相対近Ｚ \
+		   $i:カメラ相対遠Ｚ \
+		-t $i:変化時間
+mesg Ｚフォーカス管理 $s:名前 パラメータ１[0] \
+		$i:カメラ相対近Ｚ \
+		$i:カメラ相対遠Ｚ \
+		$i:変化時間
+mesg Ｚフォーカス管理 $s:名前 パラメータ２[1] \
+		$i:カメラ相対近Ｚ \
+		$i:カメラ相対遠Ｚ \
+		$i:変化時間
+mesg Ｚフォーカス管理 $s:名前 パラメータ３[2] \
+		$i:カメラ相対近Ｚ \
+		$i:カメラ相対遠Ｚ \
+		$i:変化時間
+mesg Ｚフォーカス管理 $s:名前 パラメータ４[3] \
+		$i:カメラ相対近Ｚ \
+		$i:カメラ相対遠Ｚ \
+		$i:変化時間
+mesg Ｚフォーカス管理 $s:名前 パラメータ２有効[11]
+mesg Ｚフォーカス管理 $s:名前 パラメータ３有効[12]
+mesg Ｚフォーカス管理 $s:名前 パラメータ４有効[13]
+mesg Ｚフォーカス管理 $s:名前 パラメータ２無効[21]
+mesg Ｚフォーカス管理 $s:名前 パラメータ３無効[22]
+mesg Ｚフォーカス管理 $s:名前 パラメータ４無効[23]
+//--------------
+// $i:カメラ相対Ｚ \
+// $i:変化時間
+// パラメータ１の値は、キャラ：Ｚフォーカス管理起動時の値となる（変更不可）。
+// 優先度：パラメータ４ ＞ パラメータ３ ＞ パラメータ２ ＞ パラメータ１
+//
+// 設定値はパラメータ１〜４で指定する（この状態だけではパラメータ１のみが
+// 有効設定される）。設定値は個別にいつでも変更可。
+// それぞれの優先の設定値を有効無効にするには、個別に有効メッセージを送る。
+// （無効にしても設定値はクリアされない）
+// 同時に幾つも有効の場合、優先度に沿って設定される。
+
+
+//表示枚数２枚以上、１６枚以下
+chara デプス[NewDepthEffect] $s:名前 -n $w:表示枚数 \
+	-d $i:拡大ドット \
+	-i $i:重ねあわせ強度
+mesg デプス $s:名前 パラメータ１[0] $i:拡大ドット $i:重ねあわせ強度
+mesg デプス $s:名前 パラメータ２[1] $i:拡大ドット $i:重ねあわせ強度
+mesg デプス $s:名前 パラメータ３[2] $i:拡大ドット $i:重ねあわせ強度
+mesg デプス $s:名前 パラメータ４[3] $i:拡大ドット $i:重ねあわせ強度
+mesg デプス $s:名前 パラメータ１有効[10]
+mesg デプス $s:名前 パラメータ２有効[11]
+mesg デプス $s:名前 パラメータ３有効[12]
+mesg デプス $s:名前 パラメータ４有効[13]
+mesg デプス $s:名前 パラメータ１無効[20]
+mesg デプス $s:名前 パラメータ２無効[21]
+mesg デプス $s:名前 パラメータ３無効[22]
+mesg デプス $s:名前 パラメータ４無効[23]
+// $i:拡大ドット \     ぼかしは拡大で表現する。縦横何ドット拡大するか。
+// $i:重ねあわせ強度 \ ６４が標準２５５まで
+// デプス内部で参照する「カメラ相対位置」はＺフォーカス管理の遠近Ｚを
+// 使用している。
+// 各パラメータが有効になったとき、その以前の値からの変化が終了するまでの
+// 時間は、Ｚフォーカス管理の変化時間となる。
+// すべてのパラメータが無効になったときデプス効果は処理をしない（有効になれば
+// 処理を再開する）。
+
+chara モデル位置アニメ[NewModelPosAnimation] $s:名前 \
+	-k $s:モデル名 \
+	-n $w:データ数 \ メモリが許す限り
+	-d $i:データ列 ...\ time, pos_x, pos_y, pos_z, rot_x, rot_y, rot_z
+	-r $w:リピートありなし
+
+// -d $i:データ列 ...\ time, pos_x, pos_y, pos_z, rot_x, rot_y, rot_z では、
+// time : フレーム
+// pos_x: 相対移動値Ｘ
+// pos_y: 相対移動値Ｙ
+// pos_z: 相対移動値Ｚ
+// rot_x: 相対回転値Ｘ
+// rot_y: 相対回転値Ｙ
+// rot_z: 相対回転値Ｚ
+// をあらわす。ただし、最初の組みは、初期値として直接代入される（絶対値）。
+
+chara モデル切り替えアニメ[NewModelPatAnimation] $s:名前 \
+	-n $w:データ数 \ メモリが許す限り
+	-p $v:表示位置 \
+	-r $v:表示角度 \
+	-d $s:モデル名 $i:表示フレーム ...2 \
+	-i $w:リピートありなし
+
+chara モデル切り替えアニメステージ[NewModelPatAnimation2] $s:名前 \
+	-l $s:ライト名 \
+	-n $w:データ数 \ メモリが許す限り
+	-p $v:表示位置 \
+	-r $v:表示角度 \
+	-d $s:モデル名 $i:表示フレーム ...2 \
+	-i $w:リピートありなし
+
+chara 環境光[NewAmbientSet] $s:名前 \
+	 -c $v:ＲＧＢカラー
+
+chara 平行光[NewParallelSet] $s:名前 \
+	 -c $v:ＲＧＢカラー \
+	 -d $v:回転 \	// ＸＹＺ回転系
+	 -p $v:方向		// 原点からこの位置に向かって光が射す
+// -d -p の同じ指定不可
+
+chara フォグ[NewFogSet] $s:名前 \
+	 -c $v:ＲＧＢカラー \
+	 -n $i:ＮＥＡＲ値 \
+	 -f $i:ＦＡＲ値 \
+	 -t $i:変化フレーム（ＮＴＳＣ基準で指定） \
+	 -z
+// -z オプションを付けると -f で指定した値でＦＡＲクリップする。
+
+
+chara 雨[NewRain] $s:名前 \
+	-n $w:ユニット数 \（１ユニット＝128ライン）256ユニットまで
+	-b $v:非表示バンダリ ... \ ２個でバンダリボックスを表現
+	-c $w:輝度値
+mesg 雨 $s:名前 オフ[0]
+mesg 雨 $s:名前 オン[1]
+mesg 雨 $s:名前 殺す[2]
+mesg 雨 $s:名前 kill[-1]
+mesg 雨 $s:名前 パーセンテージ[3] $i:シナリオＭＡＸを１００とする
+
+
+//雨のスロー対応版
+chara 雨速度可変[NewRainSlow] $s:名前 \
+	-n $w:ユニット数 \（１ユニット＝128ライン）256ユニットまで
+	-b $v:非表示バンダリ ... \ ２個でバンダリボックスを表現
+	-c $w:輝度値
+
+chara 固定雨[NewRainFix] $s:名前 \
+	-n $w:ユニット数 \（１ユニット＝128ライン）256ユニットまで
+	-b $v:非表示バンダリ ... \ ２個でバンダリボックスを表現
+	-c $w:輝度値
+// バンダリに入っているかチェック（雨粒を表示させない）
+mesg 固定雨 $s:名前 オフ[0]
+mesg 固定雨 $s:名前 オン[1]
+mesg 固定雨 $s:名前 殺す[2]
+mesg 固定雨 $s:名前 kill[-1]
+mesg 固定雨 $s:名前 パーセンテージ[3] $i:シナリオＭＡＸを１００とする
+
+chara 位置指定雨[NewRainParts] $s:名前 \
+	-n $w:ユニット数 \（１ユニット＝128ライン）256ユニットまで
+	-b $v:表示位置バンダリ ... \ ２個でバンダリボックスを表現。必ず必要
+	-c $w:輝度値 \
+	-o $b:主観時以外はＯＦＦにする // デフォルトでは常に表示。１を指定で有効。
+// キャラ起動時はオン
+mesg 位置指定雨 $s:名前 オフ[0]
+mesg 位置指定雨 $s:名前 オン[1]
+mesg 位置指定雨 $s:名前 殺す[2]
+mesg 位置指定雨 $s:名前 kill[-1]
+mesg 位置指定雨 $s:名前 パーセンテージ[3] $i:シナリオＭＡＸを１００とする
+
+chara プレビューカメラ[NewDebugCam] $s:名前
+
+
+chara   天球[NewSkyColumn] $s:名前 \
+	    -h $i:高さ \
+	    -b $i:底
+chara   煙突煙[New_ChimnySmoke] $s:名前 \
+	    -n $w:ユニット数 \ // ５ユニットまで
+	    -c $v:色 ...     \
+	    -p $v:出現位置 ... //ユニット数個
+//chara   プラズマ[New_Plasma] $s:名前
+
+chara   マンハッタン[NewManhattan3D] $s:名前 \
+	    -l $s:光源 \
+	    -h $i:高さの絶対座標（指定無しでデフォルト）
+mesg マンハッタン $s:名前 殺す[-1]
+chara   マンハッタンフォグ有効[NewManhattan3D_Fog] $s:名前 \
+	    -l $s:光源 \
+	    -h $i:高さの絶対座標（指定無しでデフォルト）
+mesg マンハッタンフォグ有効 $s:名前 殺す[-1]
+
+chara   マンハット黄灯[NewManhatLight] $s:名前
+chara   マンハット赤灯1[NewManhatLight_L1] $s:名前
+chara   マンハット赤灯2[NewManhatLight_L2] $s:名前
+
+chara   ブルックリン[NewBrooklyn3D] $s:名前 \
+	    -l $s:光源 \
+	    -h $i:高さの絶対座標（指定無しでデフォルト）
+mesg ブルックリン $s:名前 殺す[-1]
+chara   ブルックリンフォグ有効[NewBrooklyn3D_Fog] $s:名前 \
+	    -l $s:光源 \
+	    -h $i:高さの絶対座標（指定無しでデフォルト）
+mesg ブルックリンフォグ有効 $s:名前 殺す[-1]
+
+chara   ブルックリン赤灯[NewBrooklyn_R2] $s:名前
+chara   AKS弾テスト[NewCartridgeAksALL] $s:名前 
+chara   USP弾テスト[NewCartridgeUspALL] $s:名前
+chara   FMS弾テスト[NewCartridgeFmsALL] $s:名前
+chara   新空[NewSky_Prev] $s:名前 \
+	    -u $i:設定すると雲を適当に高くセットする \
+	    -h $i:設定すると雲を任意の高さにセットする \
+	    -m $s:テンプ
+mesg 新空 $s:名前 kill[-1]
+chara   新空アルファ[NewSkyAlpha_Prev] $s:名前 \
+	    -u $i:設定すると雲を適当に高くセットする \
+	    -h $i:設定すると雲を任意の高さにセットする \
+	    -m $s:テンプ
+mesg 新空アルファ $s:名前 kill[-1]
+chara   新雷フラッシュ[NewThund_Flash] $s:名前
+chara   懐中電灯[NewFlashLight] $s:名前 \
+	    -m $s:モデル名 \
+	    -p $v:位置 \
+	    -r $v:回転 \
+	    -e $p:破壊proc
+
+// レイブン 
+chara  レイブン人形[New_Figure_Raven] $s:名前 \
+	    -m $s:モデル名 \
+	    -p $v:位置 \
+            -r $v:回転
+
+// 回転度 4096 = 360度
+chara   赤外線[NewIRS] $s:名前 \
+	    -p $v:スイッチ座標 $v:センサー１ $v:センサー２ \
+	    -r $v:スイッチ回転 $v:センサー１ $v:センサー２ \
+	    -e $p:赤外線接触proc \
+	    -s $p:スイッチ破壊時proc \
+	    -a $i:１を指定すると下部のセンサー無し（50cmの隙間ができる）
+mesg    赤外線 $s:名前 on[1]
+mesg    赤外線 $s:名前 off[0]
+
+// トラップ用 C4
+chara   トラップ専用C4[NewTRAP_C4] $s:名前 \
+	    -p $v:c4の座標 \
+	    -r $v:回転度 \
+	    -e $p:爆破時実行プロック \
+	    -n $i:設定すると、爆発音が敵兵に聞こえなくなる
+mesg    トラップ専用C4 $s:名前 off[0]
+mesg    トラップ専用C4 $s:名前 on[1]
+mesg    トラップ専用C4 $s:名前 lamp_off[2]
+
+/* 小麦粉 */
+chara   メリケン粉[NewFlour] $s:名前 \
+		-m $s:モデル名 \
+		-p $v:位置 \
+		-r $v:回転度 \
+		-e $p:赤外線可視proc
+mesg    メリケン粉 $s:名前 くしゃみ[0]
+
+//--------------------------------------------------------------------- 
+//森田
+
+//中心位置から10ユニットずつ前後左右に広がります。(デフォルト 0,-2000, 0)
+//うねり周期は、0 厳禁。周期なので大きいほど遅くなります。(デフォルト 256)
+chara 波面[NewOceanWave] $s:名前 \
+	-s $w:うねり周期 \
+	-t $s:テクスチャ名 \
+	-p $v:中心位置 \
+	-n $i:波涛個数 \           //（最大5個）
+	-no_sOund \   // 音を鳴らしたくない
+	-b $i:位置パラメータ ... \ // posx, posy, posz, size, roty, alpha
+	-x $i:非表示領域位置X $i:非表示領域位置Z $i:非表示領域幅X $i:非表示領域奥行Z \
+	-w $i:ブロック数（X） $i:ブロック数（Z）
+// posx posz 波涛出現位置
+// posy      波涛発生高さの条件
+// size      波涛の高さ
+// roty      波涛の向き（4096 = 360deg）
+// alpha     波涛のα調整（-薄い  +濃い）
+
+chara ブレットバリア[NewBulletBarriar] $s:名前 \
+        -mode $i:モード \
+        -pos  $v:発射位置
+//見えない所から銃が撃ってきてふっ飛ぶキャラです。
+//モードは、関係なし
+mesg ブレットバリア $s:名前 領域に入る[0]
+mesg ブレットバリア $s:名前 領域を出る[1]
+
+
+chara 弾痕[NewWallScarBase] $s:名前 \
+        -u $i:ユニット数
+mesg 弾痕 $s:名前 on[1]
+mesg 弾痕 $s:名前 off[0]
+
+chara ゴキブリ[NewCockRoach] $s:名前 \
+	-model       $s:ゴキブリモデル名 \
+	-emerge_spot $v:発生位置 ... \
+	-hiding_spot $v:隠れ位置 ... \
+	-number      $i:ゴキブリの数 \
+	-flag        $i:フラグ
+
+
+
+//壊れ用 当たりのハザードＩＤ
+//以下壊れ物キャラにおいてハザードＩＤに使用するためのフラグ
+#define BRK_HZD_W01A1_STAIRWAY  1
+#define BRK_HZD_W01A1_BAR       2
+#define BRK_HZD_W01A1_TV_SPACE1 3
+#define BRK_HZD_W01A1_TV_SPACE2 4
+#define BRK_HZD_W01F_STAIRWAY   1
+#define BRK_HZD_W01F_BAR        2
+#define BRK_HZD_W01F_TV_SPACE1  3
+#define BRK_HZD_W01F_TV_SPACE2  4
+#define BRK_HZD_W01D_STORAGE    5
+#define BRK_HZD_W01D_KITCHEN    6
+#define BRK_HZD_W01D_DINING_L   7
+#define BRK_HZD_W01D_DINING_R   8
+#define BRK_HZD_W01D_DINING     9
+#define BRK_HZD_W01F_BAR2       10
+#define BRK_HZD_W01F_BAR3       11
+
+#define BRK_HZD_W11C_FORTUNE    12
+
+
+chara プット壊れオブジェ[NewPutBreakObject] $s:名前 \
+	-model    $s:壊れ前モデル名 $s:壊れ後モデル名 ... \
+	-param    $i:パラメータ ... \
+	-light    $s:光源 \
+	-number   $i:物体の数 \
+	-radius   $i:物体の半径 \
+	-stable   $i:安定度 \
+	-explode  $i:破裂度 $i:破裂時の跳ね度 \
+        -hAzard   $i:ハザードＩＤ \
+	-human    $i:登録できる足の人数 \
+	-box      $s:箱のモデル \
+	-geometry $i:箱のパラメータ ... \
+	-dust     $i:カス出しモード \
+	-brk_sE   $i:壊れの時のSE \
+	-drp_Se   $i:落ちるの時のSE \
+	-proC     $p:壊れぷロック \
+	-Broken   $f:壊れフラグ \
+	-flag     $i:フラグ
+// -model   壊れ前のモデル 壊れ後のモデル [壊れかすのコモデル (なくてもいい)]
+//	の順番に指定する
+// -light   指定するとプリシェードで、なければシェードで表示する。
+// -param px,py,pz, rx,ry,rz  ... （必須）
+//	px,py,pz 初期位置
+//	rx,ry,rz 初期角度
+// -number  物体の数（必須）
+// -explode 破裂度 0〜100目安（事実上上限はない） 破裂時の跳ね度 0〜100目安
+// -radius  物体の大きさ(半径) なければ幅をモデルより自動的に検出する
+// -stable  物体の安定度 0〜100  大きければ安定性大
+// -hazard  壊れ当たりを指定する。BRK_HZD_????で定義されている物を使うこと
+// -human   登録した人の足に物体が反応する（登録はメッセージで）
+// -dust    カスを出すモード
+//	0 はカボチャのカス
+//	1 はガラスのカス
+// -flag    フラグは、以下の意味をなす。（必須）
+//	BRK_COLLISION	物体同士の当たり(sphereの球形当たり)を見る
+//	BRK_STRICT_FLR  ポリゴンの形通りに床に接する（少し重い、頂点数に比例）
+//	BRK_ROLLOVER    動く時には転がる
+//	BRK_NO_GRAVITY  本体に重力なし
+//	BRK_STABLE_X    X軸に対し安定している
+//	BRK_STABLE_Y    Y軸に対し安定している
+//	BRK_STABLE_Z    Z軸に対し安定している
+//	BRK_NO_BOXSHOW  箱の表示なし
+//	BRK_NO_BOXTRG   箱のターゲット及び当たり無し
+//      BRK_RND_DRP_SE  落ちた時にランダムにSEを鳴らす（ランダム幅は４）
+//      BRK_RND_BRK_SE  壊れた時にランダムにSEを鳴らす（ランダム幅は４）
+#define BRK_COLLISON    0x00000001
+#define BRK_STRICT_FLR  0x00000002
+#define BRK_ROLLOVER    0x00000004
+#define BRK_NO_GRAVITY  0x00000008
+#define BRK_STABLE_X    0x00000010
+#define BRK_STABLE_Y    0x00000020
+#define BRK_STABLE_Z    0x00000040
+#define	BRK_NO_BOXSHOW  0x00000080
+#define BRK_NO_BOXTRG   0x00000100
+#define BRK_RND_DRP_SE  0x00000200
+#define BRK_RND_BRK_SE  0x00000400
+mesg プット壊れオブジェ $s:名前 foot[0] $i:オブジェクトへのポインタ
+//このメッセージにより 登録した人の足に物体が反応するようになる
+//0 ならプレーヤの足を登録する
+mesg プット壊れオブジェ $s:名前 もう壊れている[1]
+
+
+chara プットテレビオブジェ[NewPutTVObject] $s:名前 \
+        -model $s:モデル名 \
+        -speed $i:画面スクロールスピード \ //デフォルト 100
+	-proC   $p:壊れぷロック \
+	-Broken $f:壊れフラグ \
+        -light $s:光源 \
+        -rot   $v:向き \
+        -pos   $v:場所 
+mesg プットテレビオブジェ $s:名前 もう壊れている[1]
+
+chara プット雑誌オブジェ[NewPutMagazineObject] $s:名前 \
+	-number $i:雑誌の数 \                     //雑誌の数 は 1以上を入れること
+        -break  $s:ページモデル  $s:埃コモデル \  //ページモデル：2オブジェ コモデル：2オブジェ
+        -hazard $i:ハザードＩＤ \
+        -model  $s:壊れ前モデル $s:壊れモデル \   //壊れ前：1オブジェ、壊れモデル：2間接オブジェ
+        -pos    $v:場所 \
+        -rot    $v:向き \
+	-type   $i:テクスチャー種類 \					// 0 -> 8
+	-proC   $p:壊れぷロック \
+	-Height $i:静止Ｙ位置 \
+	-Broken $f:壊れフラグ \
+        -light  $s:光源
+//複数指定の場合は modelからlightまでをnumberの指定した回数だけ繰り返す。
+//その際modelを必ず最初にlightを最後にすること
+//-break,-numberと-hazardは一つでいいです。
+mesg プット雑誌オブジェ $s:名前 もう壊れている[1]
+command ゲット雑誌オブジェ座標[ComGetMagazinePos] $i:テクスチャー種類 $r:Ｘ座標変数 $r:Ｙ座標変数 $r:Ｚ座標変数 $r:有効フラグ
+
+chara プット植物オブジェ[NewPutTreeObject] $s:名前 \
+        -m $s:モデル名 \
+        -b $s:葉のモデル名 \
+        -r $v:向き \
+        -p $v:場所 \
+        -l $s:光源 \
+	-proC   $p:壊れぷロック \
+	-Broken $f:壊れフラグ \
+        -s $v:スケール 
+//植物で親子関係を持ったモデルの木で、葉っぱを散らせることが出来る
+mesg プット植物オブジェ $s:名前 もう壊れている[1]
+
+chara プット大ガラスオブジェ[NewPutBigGlassObject] $s:名前 \
+        -m $s:モデル名 $s:破片モデル名 $s:壊れモデル名 \
+        -r $v:向き \
+        -p $v:場所 \
+        -l $s:光源 \
+        -c $p:壊れプロック \
+	-Broken $f:壊れフラグ \
+        -s $v:スケール 
+mesg プット大ガラスオブジェ $s:名前 割れる[0]
+mesg プット大ガラスオブジェ $s:名前 もう壊れている[1]
+
+chara プット逆さグラスオブジェ[NewPutGlassObject] $s:名前 \
+        -model  $s:モデル名 $s:壊れモデル名 \
+        -rot    $v:向き \
+        -pos    $v:場所 \
+	-proC   $p:壊れぷロック \
+	-Broken $f:壊れフラグ \
+        -light  $s:光源
+mesg プット逆さグラスオブジェ $s:名前 もう壊れている[1]
+
+chara プットアイスボックスオブジェ[NewPutIceboxObject] $s:名前 \
+        -model  $s:ボックスモデル $s:壊れボックスモデル $s:氷モデル \
+        -rot    $v:向き \
+        -pos    $v:場所 \
+        -hazard $i:ハザードＩＤ ... \
+        -flag   $i:フラグ \
+	-proC   $p:壊れぷロック \
+	-Broken $f:壊れフラグ \
+        -number $i:氷の数
+mesg プットアイスボックスオブジェ $s:名前 もう壊れている[1]
+
+chara プット瓶オブジェ[NewPutBottleObject] $s:名前 \
+        -m $s:モデル名 ... \
+        -b $s:壊れモデル名 ... \
+        -r $v:向き \
+        -p $v:場所 ... \
+        -l $s:光源 \
+        -h $i:ハザードＩＤ \
+        -s $i:当たり情報 ... \
+	-proC   $p:壊れぷロック ... \
+	-Broken $f:半分壊れフラグ $f:壊れフラグ \
+	-n $i:瓶の数
+// 当たり情報は、以下の規則を守ること
+//	-s ハザードの数 ハザードの種類 各ハザードの引数 ... ハザードの種類 各ハザードの引数 ...
+// ハザードの数 ： ハザード情報に必要なメモリ数（すべてのハザードに必要なメモリ数）
+// ハザードの種類 ：
+//	 [0] 円盤当たり   [メモリ] 1 [引数] 半径 位置X 位置Y 位置Z
+//	 [1] 長方形当たり [メモリ] 2 [引数] 最小位置X 最小位置Y 最小位置Z 最大位置X 最大位置Y 最大位置Z
+//	 [2] 筒形当たり   [メモリ] 2 [引数] 最小位置X 最小位置Y 最小位置Z 最大位置X 最大位置Y 最大位置Z
+// つまり以下のような記述になる
+//	-s 3,  0 200,19000,1000,-13000  1 19000,0,-13000, 20000,1000,-12000, 
+// 円盤当たりを半径20cmの（19000,1000,-13000）に位置させ、
+// 直方体あたりを (19000,0,-13000) と ( 20000,1000,-12000) の対角にしたものを置く という意味になる
+#define BOTTLE_HZD_DISK   0
+#define BOTTLE_HZD_BOX    1
+#define BOTTLE_HZD_TUNNEL 2
+#define BOTTLE_TUNNEL_XAXIS 0
+#define BOTTLE_TUNNEL_YAXIS 1
+#define BOTTLE_TUNNEL_ZAXIS 2
+
+#define WINE_BOTTLE1 0
+#define WINE_BOTTLE2 1
+#define WINE_BOTTLE3 2
+#define WINE_BOTTLE4 3
+#define WINE_BOTTLE5 4
+#define WINE_BOTTLE6 5
+#define WINE_BOTTLE7 6
+#define WATER_GLASS1 7
+#define WINE_GLASS1  8
+
+//半分が壊れオブジェになっている
+mesg プット瓶オブジェ $s:名前 もう半分壊れている[1]
+//全てが壊れオブジェになっている
+mesg プット瓶オブジェ $s:名前 もう壊れている[2]
+
+
+//現在未使用
+chara プットロッカーオブジェ[NewPutLockerObject] $s:名前 \
+        -m $s:モデル名 \
+        -r $v:向き \
+        -p $v:場所 \
+        -l $s:光源 \
+        -s $v:スケール 
+
+chara プットポテトオブジェ[NewPutPotatoObject] $s:名前 \
+        -m $s:モデル名 $s:壊れモデル名 \
+        -l $s:光源 \
+        -n $i:ポテトの数 \
+        -b $s:箱モデル名 \
+        -r $i:箱の向き（Ｙ軸回転） $i:向き最大値 $i:向き最小値 \
+        -s $v:箱のサイズ \
+        -p $v:箱の位置 \
+	-h $i:登録できる足の数 \
+	-proC   $p:壊れぷロック \
+	-Broken $f:壊れフラグ \
+	-f $i:フラグ
+#define POTATO_FALL_BOTHSIDE  0x00000001
+//デフォルトは、片方にしか倒れない
+//向きは、4096を360°として計算して下さい。
+mesg プットポテトオブジェ $s:名前 foot[0] $i:オブジェクトへのポインタ（０ならプレーヤの足）
+mesg プットポテトオブジェ $s:名前 もう壊れている[1]
+
+chara プットオタマオブジェ[NewPutRadleObject] $s:名前 \
+        -m $s:モデル名 \
+        -r $v:向き \
+        -p $v:場所 \
+        -s $v:スケール 
+
+chara プット揺れオブジェ[NewPutRadleObject] $s:名前 \
+        -flag  $i:フラグ \
+        -model $s:モデル名 \
+        -scale $v:スケール \
+        -rot   $v:向き \
+        -pos   $v:場所 \
+	-end
+//ぶら下がって当てたら揺れるもの
+
+chara プット筒物転がりオブジェ[NewPutRollObject] $s:名前 \
+	-number $i:個数 \
+	-hazard $i:ハザードＩＤ \
+	-proC   $p:壊れぷロック \
+	-Broken $f:壊れフラグ \
+        -model  $s:モデル名 \
+        -rol    $v:向き \
+        -pos    $v:場所 \
+	-limit  $v:安定角度
+//[機能] 筒状の倒れたら転がるもの
+//
+//  複数指定の場合は modelからlimitまでをnumberの指定した回数だけ繰り返す。
+//  その際modelを必ず最初にlimitを最後にすること
+//
+//  -numberと-hazardは一つでいいです。
+//
+//  安定角度は 3つ 指定可能。意味ない角度は-1にしてください。
+mesg  プット筒物転がりオブジェ $s:名前 もう壊れている[1]
+
+chara プット皿オブジェ[NewPutPlateObject] $s:名前 \
+        -model  $s:重ねモデル $s:一枚モデル $s:壊れモデル ... \
+	-hazard $i:ハザードＩＤ \
+	-number $i:皿の数 \
+        -param  $i:重ね数 $v:向き $v:位置 ... \
+	-light  $s:光源 \
+	-proC   $p:壊れぷロック \
+	-Broken $f:壊れフラグ \
+	-flag   $i:フラグ
+//現在、フラグは未使用
+mesg  プット皿オブジェ $s:名前 もう壊れている[1]
+
+chara プット紙オブジェ[NewPutPaperObject] $s:名前 \
+        -model  $s:重ねモデル $s:一枚モデル $s:壊れモデル ... \
+	-hazard $i:ハザードＩＤ \
+	-number $i:紙の数 \
+        -param  $v:場所 ... \
+	-light  $s:光源 \
+	-proC   $p:壊れぷロック \
+	-Broken $f:壊れフラグ \
+	-flag   $i:フラグ
+//現在、フラグは未使用
+mesg  プット紙オブジェ $s:名前 もう壊れている[1]
+
+chara プット揺れライト[NewPutHangLight] $s:名前 \
+        -model $s:モデル \
+        -pos   $v:位置 \
+        -rot   $v:向き \
+	-light $s:光源 \
+	-flag  $i:フラグ
+//現在、フラグは未使用
+mesg プット揺れライト $s:名前 ライト管理[0] $i:フラグ（天井君の返り値）
+
+
+
+//現在未使用
+chara プット飛沫オブジェ[NewPutSplashObject] $s:名前 \
+	-m $s:オブジェクト名 \
+	-r $v:向き \
+	-p $v:場所 \
+	-s $v:スケール 
+
+
+chara プット頂点アニメオブジェ[NewPutVanimeObject] $s:名前 \
+        -m $s:モデル名 \
+        -b $i:ベースフレーム数 \
+        -w $i:ランダムビット幅 \
+        -r $v:向き \
+        -p $v:場所 \
+        -l $s:光源
+//表示用のKMSとCV2は同じ名前になっている
+//各モデル毎の頂点アニメフレーム数は、（ベースフレーム数）＋（乱数）＆（1<<（ビット幅）―１）
+//となる
+
+chara プットストリーム頂点アニメオブジェ[NewPutSTanimeObject] $s:名前 \
+        -m $s:モデル名 \
+	-a $s:アニメデータ ... \
+        -t $i:再生速度 \
+        -b $v:バウンダリ最大 $v:バウンダリ最小 \
+        -s $v:スケール \
+        -r $v:向き \
+        -p $v:場所
+//バウンダリは、モデルを正しく表示させるために、前もって動く量を計算しその範囲を与える必要がある
+//表示用のKMSとCV2は同じ名前になっている
+//再生速度は、２５６を１フレームとし １フレームおきに再生するには、１２８を入れる。
+//デフォルトは１２８。０および２５６以上の数は厳禁！！！
+
+
+chara プットスポットライトオブジェ[NewPutSpotLightObject] $s:名前 \
+        -m $s:モデル名 $s:壊れモデル名 ... \
+        -n $s:スポットライトキャラ名 \
+	-t $v:ターゲット位置  $i:大きさ ... \
+        -r $v:向き \
+	-l $s:光源 \
+        -f $i:フラグ \
+        -b $p:壊れプロック \
+        -p $v:場所
+//大きさの後に影響範囲を付けることが出来る。単位はmm
+//以下のフラグを付けることで付加機能を付けられる。
+#define BRK_LGT_SHOWTRGT  0x00000001 //ターゲットにフレームを付ける(デバッグ用)
+#define BRK_LGT_PUTW00B   0x00000002 //w00b,w00c用のボンボリを付ける
+#define BRK_LGT_PUTW03A   0x00000004 //w03a用のボンボリを付ける
+#define BRK_LGT_VOLSHADOW 0x00000100 //岡嶋さんのボリューミックシャドウに反応するようにする
+//-t オプションでターゲットの位置や大きさを決めることが出来る。爆発用のターゲットも指定が可能
+// -t 位置(ベクトル) 
+//    銃用のターゲットの大きさ(一辺の長さ)
+//    lt2のライトを消す半径  
+//    爆発用のターゲットの大きさ(一辺の長さ)指定しなければ爆発で壊れない
+mesg プットスポットライトオブジェ $s:名前 ライト消す[0]     //壊れ後モデルで、光源ごと消す(つまり破壊)
+mesg プットスポットライトオブジェ $s:名前 ライト点ける[1]   //壊れ前モデルで、光源をつける(つまり修理)
+mesg プットスポットライトオブジェ $s:名前 ライト点灯[5]     //光源のみ消す（モデルはそのまま）
+mesg プットスポットライトオブジェ $s:名前 ライト消灯[6]     //光源のみつける（モデルはそのまま）
+mesg プットスポットライトオブジェ $s:名前 オブジェ不可視[2] //モデルを非表示
+mesg プットスポットライトオブジェ $s:名前 オブジェ可視[3]   //モデルを表示
+mesg プットスポットライトオブジェ $s:名前 ライト管理[4] $i:フラグ（天井君の返り値）
+
+
+chara 頂点アニメブラー[NewVanimeBuller] $s:名前 \
+        -model     $s:モデル名 \
+        -base      $i:ベースフレーム数 \
+        -width     $i:ランダムビット幅 \
+        -speed     $i:移動スピード \
+        -rot_speed $i:回転スピード \
+        -direction $v:向き \
+	-flag      $i:フラグ \
+        -pos       $v:場所
+//flagの解説
+// 奇数番号は、黄色のステルスになります。
+// 0 : 一回分だけ最後までアニメーションし、消えます。
+// 1 : デバッグモード
+// 2 : 繰返し１（最後のフレームから最初のフレームに行きなり飛びます）
+// 4 : 繰返し２（最後のフレームから最初のフレームに滑らかにアニメーションします）
+//表示用のKMSとCV2は同じ名前になっている
+//各モデル毎の頂点アニメフレーム数は、（ベースフレーム数）＋（乱数）＆（1<<（ビット幅）―１）
+//となる
+
+
+chara デモ弾丸[NewDemoBullet] $s:名前 \
+        -model     $s:モデル名 \
+        -speed     $i:移動スピード \
+        -rot_speed $i:回転スピード \
+        -direction $v:向き \
+        -pos       $v:場所 \
+        -flag      $i:表示フラグ
+//表示用のKMSとCV2は同じ名前になっている
+//各モデル毎の頂点アニメフレーム数は、（ベースフレーム数）＋（乱数）＆（1<<（ビット幅）―１）
+//となる
+//表示フラグ 0非表示／1表示
+
+
+
+
+//オルガ戦 専用キャラ
+//
+chara ボスオルガ[NewOrga] $s:名前 \
+        -m $s:モデル名 \
+        -a $s:モーション名 \
+        -p $v:出現位置 \
+        -d $v:出現方向 \
+        -s $b:出現時姿勢 \
+        -h $p:カメラプロック ... \
+        -c $i:スネーク銃 $i:スネーク手榴弾 $i:オルガへのダメージ ... \
+        -v $t:ストリーム音声 ... \
+        -f $i:各種フラグ 
+//-h は、カメラ切替え用のプロックです。
+// ホロ撃ち（必須）  ホロを飛ばすために隠れて撃つ時
+// 死に（必須）      オルガを倒した
+// グレネードなげ    グレネードをスネークに向かって投げる時
+// めくら撃ち 乱射   物陰からスネークを見ずに乱射する時
+// アンチエルード    スネークがエルードした時に撃つ
+// とんぼ返り        側転から狙われたときに出る発動する
+// 側転              ダメージを多く受けた時に側転をして移動し始める
+// ダメージ          ダメージを受けた時
+// 覗き込み          警戒している覗き込みをしたとき（移動の前後に発動する可能性あり）
+// スライディング    スライディングをするとき（移動する際、近くを狙われると発動する可能性あり）
+// マシンガンな奴    ステップ前に入ってきたときに撃ちまくる
+// 挑発              止まっている時間が長く,低い隠れ場所にいるときする
+// ホロ舞う          ホロが飛び去る何れかのときに必ず呼ばれる
+// ライフ１／２      ライフが１／２になったときのみに呼ばれる
+// ライフ１／４      ライフが１／４になったときのみに呼ばれる
+// ライフ１／８      ライフが１／８になったときのみに呼ばれる
+// ライフ３／４      ライフが３／４になったときのみに呼ばれる
+// スネークすき間    スネークがすき間から撃っているとき（移動してから）
+// 人生語り最初始め      オルガが人生を語る（１番めのセリフ）
+// 人生語り最初終り      オルガが人生を語る（１番めのセリフ）
+// 人生語り最後始め      オルガが人生を語る（４番めのセリフ）
+// 人生語り最後終り      オルガが人生を語る（４番めのセリフ）
+
+//-c は、ダメージ調整用パラメータです。
+// スネーク銃：    オルガがUSPでスネークを撃った時のスネークのダメージ量（５）
+// スネーク手榴弾：オルガのグレネードがスネークに当たった時のスネークのダメージ量（１０）
+// スネーク手榴弾：オルガのグレネードがスネークに当たった時のスネークのダメージ半径
+// スネーク手榴弾：オルガのグレネードがスネークに当たった時のスネークのふっ飛び半径
+// オルガへのダメージ：以下の順序で登録される
+//    頭  ：デフォルト ３２
+//    心臓：デフォルト ３２
+//    右腕：デフォルト ８
+//    右肩：デフォルト ８
+//    左腕：デフォルト ８
+//    左肩：デフォルト ８
+//    右腿：デフォルト ８
+//    右脛：デフォルト ８
+//    左腿：デフォルト ８
+//    左脛：デフォルト ８
+//    腹  ：デフォルト １０
+
+//各種フラグに該当するもの
+#define ORGA_NOBODYSPLASH 0x00001
+#define ORGA_NOFOOTSHADOW 0x00002
+#define ORGA_NOBODYSHADOW 0x00004
+#define ORGA_BODYSPECULAR 0x00008
+#define ORGA_HAIRMOVE     0x00010
+
+mesg ボスオルガ $s:名前 snake_hide[1] $i:隠れ場所ＩＤ
+mesg ボスオルガ $s:名前 snake_unhide[0]
+mesg ボスオルガ $s:名前 スネーク階段入る[3]
+mesg ボスオルガ $s:名前 スネーク階段出る[4]
+
+mesg ボスオルガ $s:名前 デバッグアクション[255] $i:アクション番号
+//アクション番号1  0to1 回転移動     ORG_ActionRolloutRun          
+//アクション番号2  0to1 しゃがみ走り ORG_ActionCrowRun             
+//アクション番号3  1to0 しゃがみ走り ORG_ActionCrowRun             
+//アクション番号4  0to1 飛び込み前転 ORG_ActionTumbleRun           
+//アクション番号5  1to0 飛び込み前転 ORG_ActionTumbleRun           
+//アクション番号6  0to1 飛び込み前転 ORG_ActionTumbleDash          
+//アクション番号7  1to0 飛び込み前転 ORG_ActionTumbleDash          
+//アクション番号8  0to1 走り激撃ち   ORG_ActionAimmingDashWithRage 
+//アクション番号9  0to1 走り撃ち     ORG_ActionAimmingDash        
+//アクション番号10 1to0 走り激撃ち   ORG_ActionAimmingDashWithRage 
+//アクション番号11 1to0 走り撃ち     ORG_ActionAimmingDash        
+//アクション番号12 0to1 スライヂング ORG_ActionRunSliding
+//アクション番号13 1to0 スライヂング ORG_ActionRunSliding
+//アクション番号14 0to1 側転移動     ORG_ActionRolling
+//アクション番号15 1to0 側転移動     ORG_ActionRolling
+
+mesg ボスオルガ $s:名前 マルチウェイト表示[6]
+mesg ボスオルガ $s:名前 シングルウェイト表示[7]
+//呼ばれた瞬間にシングル／マルチの表示に切り替わります
+
+mesg ボスオルガ $s:名前 オルガ静止[8] $i:姿勢 $i:方向
+//姿勢は、立ち（０）しゃがみ（１）ビハインド立ち（２）ビハインドしゃがみ（３）の何れかです。
+//方向は。３６０°を４０９６で
+mesg ボスオルガ $s:名前 オルガ静止解除[9]
+//「オルガ静止」と同フレームに呼び出しても解除しないので注意して下さい。
+mesg ボスオルガ $s:名前 オルガ強制移動[10] $i:Ｘ座標変数 $i:Ｙ座標変数 $i:Ｚ座標変数
+//強制的に指定先に走って移動します
+mesg ボスオルガ $s:名前 オルガ瞬間移動[11] $i:Ｘ座標変数 $i:Ｙ座標変数 $i:Ｚ座標変数 $i:方向
+//その瞬間に指定先に移動します
+mesg ボスオルガ $s:名前 回避無効[12]
+//オルガがリセットおよび回避をしなくなる
+mesg ボスオルガ $s:名前 回避有効[13]
+//オルガがリセットおよび回避が出来るようになる
+mesg ボスオルガ $s:名前 全機能停止[14] $i:停止フレーム数
+//指定したフレーム数だけ全機能を停止する（モーションの再生も）
+//256フレーム以上は禁止
+mesg ボスオルガ $s:名前 デモスキップ可能[15]
+//カットインデモをスキップできるようになる
+mesg ボスオルガ $s:名前 デモ開始[16]
+//カットインデモの重複を避けるため デモ開始プロックにはこのメッセージを入れること
+mesg ボスオルガ $s:名前 デモ終了[17]
+//カットインデモの重複を避ける デモ終了プロックにはこのメッセージを入れること
+
+command ゲットオルガ座標[NewGetOrgaPos] $r:Ｘ座標変数 $r:Ｙ座標変数 $r:Ｚ座標変数
+command ゲットオルガ目的地[NewGetOrgaSrcDst] $r:目的地 $r:現在地
+command ゲットオルガフラグ[NewGetOrgaFlag] $r:フラグ
+command ゲットオルガライフ[NewGetOrgaLife] $r:ライフ
+command ゲットオルガ行動フラグ[NewGetOrgaActFlag] $r:フラグ
+command ゲットホロ状況[NewGetHoloStatus] $r:ステータス
+
+chara プット隠れオブジェ[NewPutHideObject] $s:名前 \
+        -m $s:モデル名 ... \
+        -r $i:向き ... \
+        -p $v:場所 ... \
+        -l $s:光源 
+//モデル名と場所は一対一対応で数を合わせて下さい。
+
+chara プットスネーク隠れオブジェ[NewPutSnakeHideObject] $s:名前 \
+        -m $s:モデル名 \
+        -r $v:向き \
+        -p $v:場所 \
+        -l $s:光源 
+//オプションの順序は、上の通りにお願いします。光源が一番最後。
+//あと順繰りに入れていけば複数おけます。
+
+chara プットホロオブジェ[NewPutHoloObject] $s:名前 \
+        -c $s:モデル名 \
+        -m $s:アニメ名 ... \
+        -r $i:向き \
+        -b $p:飛沫プロック \
+        -p $v:場所
+//アニメ名はホロのSoftImageからXSIを吐きだし st_animeによって変換を掛け
+//LZSH を更に掛けたものである。アニメ展開させる分だけ入れる。
+//向きは ３６０°を４０９６で表現
+//KMS と CV2 が必要。
+mesg プットホロオブジェ $s:名前 オルガ開く[1] 
+mesg プットホロオブジェ $s:名前 右開く[2] 
+mesg プットホロオブジェ $s:名前 左開く[3] 
+mesg プットホロオブジェ $s:名前 リセット[4] 
+mesg プットホロオブジェ $s:名前 左紐当たり位置変更[5] $i:Ｘ座標 $i:Ｙ座標 $i:Ｚ座標
+mesg プットホロオブジェ $s:名前 右紐当たり位置変更[6] $i:Ｘ座標 $i:Ｙ座標 $i:Ｚ座標
+mesg プットホロオブジェ $s:名前 映り込み消し[7]
+mesg プットホロオブジェ $s:名前 オルガ開いている[8] 
+mesg プットホロオブジェ $s:名前 左開いている[9] 
+mesg プットホロオブジェ $s:名前 右開いている[10] 
+mesg プットホロオブジェ $s:名前 飛沫ＯＦＦ[11] 
+mesg プットホロオブジェ $s:名前 飛沫ＯＮ[12] 
+
+//オルガ  おわり
+
+
+chara プット投光器オブジェ[NewPutSearchLightObject] $s:名前 \
+        -m $s:モデル名 $s:壊れモデル名 \
+        -n $s:背景プットオブジェキャラ名 $s:スポットライトキャラ名 \
+	-l $s:光源 \
+        -b $p:壊れプロック \
+        -p $v:場所
+
+chara スポット雨[NewSpotRain] $s:名前 \
+        -ratio  $i:コーン角度 \
+	-sphere $i:有効範囲 \
+	-to     $v:目標位置 \
+        -from   $v:場所
+mesg スポット雨 $s:名前 消す[0]
+
+//現在未使用
+chara プット箱型オブジェ[NewPutBoxObject] $s:名前 \
+	-l $s:光源 \
+        -m $s:モデル名 ... \
+	-p $i:パラメータ ... \
+	-f $i:フラグ
+//パラメータの詳細
+// 向きx 向きy  位置x 位置y 位置z
+//を1セットとしてモデルの個数分だけ用意する
+// フラグは以下のものがあり、ビットを立てることによりその機能を選択できる
+//	0x00000001 移動あり(衝撃により移動する。)
+//	0x00000002 回転あり(衝撃により回転する。なしの場合はY軸回転のみ)
+//	0x00000004 ハザードあり(移動回転の際 周りのハザードを見る、なしの場合は最初だけ)
+//	0x00000008 密度あり(モデルの大きさに動きが比例)
+//	0x00000010 箱同士の当たりあり(未完成)
+//	0x00000020 光源計算あり
+
+//現在未使用
+chara プット箱型ハザード[NewPutDynamicHzxBox] $s:名前 \
+        -m $s:モデル名 ... \
+	-p $i:パラメータ ...
+//パラメータの詳細
+// 向きx 向きy  位置x 位置y 位置z
+//を1セットとしてモデルの個数分だけ用意する
+
+
+
+//フォーチュン戦 専用キャラ
+//
+chara ボスフォーチュン[NewFortune] $s:名前 \
+        -model $s:シングルモデル名 $s:マルチモデル名 \
+        -pos   $v:出現位置 \
+        -dir   $v:出現方向 \
+        -proC  $p:プロック群 ... \
+        -voice $t:ストリーム音声 ... \
+        -flag  $i:各種フラグ 
+
+
+mesg ボスフォーチュン $s:名前 マルチウェイト表示[2]
+mesg ボスフォーチュン $s:名前 シングルウェイト表示[3]
+//呼ばれた瞬間にシングル／マルチの表示に切り替わります
+
+mesg ボスフォーチュン $s:名前 フォーチュン静止[4] $i:姿勢 $i:方向
+//姿勢は、立ち（０）しゃがみ（１）ビハインド立ち（２）ビハインドしゃがみ（３）の何れかです。
+//方向は。３６０°を４０９６で
+mesg ボスフォーチュン $s:名前 フォーチュン静止解除[5]
+//「フォーチュン静止」と同フレームに呼び出しても解除しないので注意して下さい。
+mesg ボスフォーチュン $s:名前 フォーチュン強制移動[6] $i:Ｘ座標変数 $i:Ｙ座標変数 $i:Ｚ座標変数
+//強制的に指定先に走って移動します
+mesg ボスフォーチュン $s:名前 フォーチュン瞬間移動[7] $i:Ｘ座標変数 $i:Ｙ座標変数 $i:Ｚ座標変数 $i:方向
+//その瞬間に指定先に移動します
+mesg ボスフォーチュン $s:名前 全機能停止[8] $i:停止フレーム数
+//指定したフレーム数だけ全機能を停止する（モーションの再生も）
+//256フレーム以上は禁止
+mesg ボスフォーチュン $s:名前 デモスキップ可能[9]
+//カットインデモをスキップできるようになる
+mesg ボスフォーチュン $s:名前 デモ開始[10]
+//カットインデモの重複を避けるため デモ開始プロックにはこのメッセージを入れること
+mesg ボスフォーチュン $s:名前 デモ終了[11]
+//カットインデモの重複を避ける デモ終了プロックにはこのメッセージを入れること
+mesg ボスフォーチュン $s:名前 スローモーション再生開始[12]
+//フォーチュンの再生スピードを遅くする
+mesg ボスフォーチュン $s:名前 スローモーション再生終了[13]
+//フォーチュンの再生スピードを元に戻す
+
+//フォーチュンの現在の位置をとります
+command ゲットフォーチュン座標[NewGetFortunePos] $r:Ｘ座標変数 $r:Ｙ座標変数 $r:Ｚ座標変数
+command ゲットフォーチュン弾座標[NewGetFortuneBulletPos] $r:Ｘ座標変数 $r:Ｙ座標変数 $r:Ｚ座標変数
+command ゲットフォーチュングレネード座標[NewGetFortuneBombPos] $r:Ｘ座標変数 $r:Ｙ座標変数 $r:Ｚ座標変数
+
+
+chara フォーチュン戦ライデン隠れオブジェ[NewFortHideObject] $s:名前 \
+        -light $s:光源 \
+        -flag  $i:フラグ \
+        -type  $i:タイプ \
+	-phAse $i:壊れフェーズ \
+	-move  $i:相対登録順 \
+	-slide $v:ずり落ち場所 \
+	-proC  $p:プロック ... \
+        -rot   $i:向き \
+        -pos   $v:場所
+
+//オプションの順序は、上の通り-typeから-posを繰り返して記述して
+// -flag -lightは、最初に一度だけ書いて下さい。
+//あと順繰りに入れていけば複数おけます。
+// -slide 下のコンテナが壊されてずり落ちる場合にその位置を指定する。下
+//のコンテナが何であるかは -modeで指定する。
+// -move 指定したコンテナをずり落す。指定の仕方は、自分を0として登録順
+// にいくつ離れているかを指定する。例えば一つ前なら -mode -1を指定する。
+// -slideと-modeは、下のフラグを立てるのを忘れずに！！
+
+// タイプは、下のdefineをお使い下さい
+#define FRT_WOODEN_1M    0x0001
+#define FRT_CONTAINER1A  0x0002 /* 全く壊れていない */
+#define FRT_CONTAINER1B  0x0003 /* あと1発で壊れる  */
+#define FRT_CONTAINER1C  0x0004 /* 壊れ切った後     */
+#define FRT_CONTAINER1D  0x0005 /* 壊れ切った後     */
+#define FRT_CONTAINER2A  0x0006 /* 全く壊れていない */
+#define FRT_CONTAINER2B  0x0007 /* 穴のみ  */
+#define FRT_CONTAINER2C  0x0008 /* 穴のみ  */
+#define FRT_CONTAINER2D  0x0009 /* 穴のみ  */
+#define FRT_CONTAINER2E  0x000a /* 上部が飛ぶ */
+#define FRT_CONTAINER2F  0x000b /* 上部が飛ぶ */
+#define FRT_CONTAINER2G  0x000c /* 半壊 */
+#define FRT_CONTAINER2H  0x000d /* ほぼ全壊 */
+#define FRT_CONTAINER2I  0x000e /* 全壊 */
+#define FRT_EXPL_CAN_A   0x000f
+#define FRT_EXPL_CAN_B   0x0010
+#define FRT_EXPL_CAN_C   0x0011
+#define FRT_FORKLIFT_A   0x0012 /* 全く壊れていない */
+#define FRT_FORKLIFT_B   0x0013 /* あと1発で壊れる  */
+#define FRT_FORKLIFT_C   0x0014 /* 壊れ切った後     */
+#define FRT_FORKLIFT_D   0x0015 /* 壊れ切った後     */
+#define FRT_EXPL_DRUM_RA 0x0016 /* 全く壊れていない */
+#define FRT_EXPL_DRUM_RB 0x0017 /* 火花飛び         */
+#define FRT_EXPL_DRUM_RC 0x0018 /* 爆発             */
+#define FRT_CONTAINER1E  0x0019 /* 全く壊れていない(傾き壊れ) */
+#define FRT_CONTAINER1F  0x001a /* あと1発で壊れる  */
+#define FRT_CONTAINER1G  0x001b /* 壊れ切った後     */
+#define FRT_EXPL_DRUM_LA 0x001c /* 全く壊れていない */
+#define FRT_EXPL_DRUM_LB 0x001d /* 火花飛び         */
+#define FRT_EXPL_DRUM_LC 0x001e /* 爆発             */
+#define FRT_CONTAINER1H  0x001f /* 全く壊れていない(不滅) */
+#define FRT_CONTAINER1I  0x0020 /* あと1発で壊れる  */
+
+//タイプに付随させてフラグ管理もしています。
+#define FRT_SHADOW0      0x00000000 /* 影優先上げ       */
+#define FRT_SHADOW1      0x00000100 /* 影優先上げ       */
+#define FRT_SHADOW2      0x00000200 /* 影優先上げ       */
+#define FRT_SHADOW3      0x00000300 /* 影優先上げ       */
+#define FRT_SHADOW4      0x00000400 /* 影優先上げ レベル上げ  */
+#define FRT_SYNMETRY     0x00001000 /* 左右反転         */
+#define FRT_SLIDEOFF     0x00002000 /* ずり落ちる       */
+#define FRT_ON_ME        0x00004000 /* ずり落ちブロックが上にある */
+#define FRT_UPPER_DECK   0x00008000 /* 上にある */
+
+//フォーチュン  おわり
+
+chara フォーチュン戦揺れライト[NewFortHangLight] $s:名前 \
+        -model  $s:ハンガーモデル $s:ライトモデル  $s:壊れライトモデル \
+	-volume $s:ライトコモデル  $s:ボリュームモデル \
+        -pos    $v:位置 \
+        -rot    $v:向き \
+	-light  $s:光源 \
+	-hazard $i:ハザードＩＤ \
+	-flag   $i:フラグ
+//現在、フラグは未使用
+//ライトコモデルは、光の洩れを加算で表現されているもの
+//ボリュームモデルは、光のモワモワ感が出ているもの
+mesg フォーチュン戦揺れライト $s:名前 ライト管理[0] $i:フラグ（天井君の返り値）
+
+
+chara フォーチュン戦壁ライト[NewFortWallLight] $s:名前 \
+        -model  $s:ライトモデル $s:銃壊れモデル  $s:ふっ飛び壊れモデル $s:ライトコモデル \
+        -pos    $v:位置 \
+        -rot    $v:向き \
+	-light  $s:光源 \
+	-hazard $i:ハザードＩＤ \
+	-flag   $i:フラグ
+//現在、フラグは 0x10 が X座標シンメトリ
+//ライトコモデルは、光の洩れを加算で表現されているもの
+
+chara フォーチュン戦巻き上げ煙 [NewFortDynamicFlow] $s:名前 \
+	-b $i:バンダリ ... \		// XYZ のセット２つ
+	-s $i:パーティクルサイズ
+
+chara フォーチュン戦オイル燃え [NewOilSpread] $s:名前 \
+	-life $i:燃えの寿命 \
+	-time $i:広がる時間 \
+	-lifT $i:底上げの高さ（パカパカ防止） \
+	-pos  $v:広がり位置
+
+chara フォーチュン戦プットモーション [NewFortPutMotion] $s:名前 \
+	-kms_model  $s:シングルモデル \
+	-evm_model  $s:マルチモデル \
+	-mar_motion $s:モーション（ＭＡＲ） \
+	-motion_Num $i:モーション番号 \
+	-rotation   $v:回転 \
+	-position   $v:位置 \
+	-prOc       $p:プロック \
+	-flag       $i:フラグ
+//フラグに FRT_MOTION_STOP を立てておけば再生は開始されず1フレーム目のポーズで止まる
+//プロックは、モーションの一番最後のフレームで呼ばれます。
+//コントロールがないので当たりを見ることが出来ませんが
+//かなり軽々のキャラです。（フォーチュン戦に限ったキャラではありません）
+#define    FRT_MOTION_NOMOVE  0x0001 //再生しても場所が動かない
+#define    FRT_MOTION_LOOP    0x0002 //ループ再生
+#define    FRT_MOTION_STOP    0x0004 //再生停止
+mesg フォーチュン戦プットモーション $s:名前 回転設定[0] $i:Ｘ軸回転角 $i:Ｙ軸回転角 $i:Ｚ軸回転角
+mesg フォーチュン戦プットモーション $s:名前 位置設定[1] $i:Ｘ座標 $i:Ｙ座標 $i:Ｚ座標
+mesg フォーチュン戦プットモーション $s:名前 再生停止[2]
+mesg フォーチュン戦プットモーション $s:名前 再生開始[3] $i:モーション番号 $i:補間レート
+mesg フォーチュン戦プットモーション $s:名前 繰返し再生開始[4] $i:モーション番号 $i:補間レート
+
+
+chara フォーチュン戦昇降機スイッチ [NewFortElevatorButton] $s:名前 \
+	-up   $v:上ボタン位置 \
+	-down $v:下ボタン位置 \
+	-mode $i:初期ボタン
+//-modeは１で上ボタンが押されている状態
+//-modeは０で下ボタンが押されている状態
+mesg フォーチュン戦昇降機スイッチ $s:名前 上ボタンを押す[0]
+mesg フォーチュン戦昇降機スイッチ $s:名前 下ボタンを押す[1]
+mesg フォーチュン戦昇降機スイッチ $s:名前 緑に点灯[2]
+mesg フォーチュン戦昇降機スイッチ $s:名前 赤に点灯[3]
+
+chara フォーチュン戦昇降機 [NewFortElevator] $s:名前 \
+	-e_Model   $s:昇降機モデル \
+	-e_Top     $v:上端位置 \
+	-e_Bottom  $v:下端位置 \
+	-e_Rot     $v:回転 \
+	-prOc      $p:到着プロック \
+	-kms_model $s:シングルモデル \
+	-evm_model $s:マルチモデル \
+	-motion    $s:モーション（ＭＡＲ） \
+	-rotation  $v:回転 \
+	-position  $v:位置
+// -kms_model から -position までは、昇降機に載っている物。
+// -kms_model から -positionの順に載せたい個数分だけ指定する
+// evm の場合は、モーションが要る kmsも要るので悪しからず
+//位置、回転は、昇降機での相対位置
+
+mesg フォーチュン戦昇降機 $s:名前 下がる[0]
+mesg フォーチュン戦昇降機 $s:名前 上がる[1]
+mesg フォーチュン戦昇降機 $s:名前 モーション停止[2]
+mesg フォーチュン戦昇降機 $s:名前 モーション再生[3]
+
+chara フォーチュン戦天井崩れ [NewFortCeiling] $s:名前 \
+	-model $s:壊れ前天井モデル $s:壊れ後天井モデル \
+	-pos   $v:位置 \
+	-prOc  $p:壊れ呼出プロック \
+	-break $s:瓦礫モデル名  $s:瓦礫モーション名  $i:瓦礫モーション番号  $v:瓦礫位置 \
+	-aim   $v:標的位置
+// -aim   は ５個まで
+// -break は ３個まで
+mesg フォーチュン戦天井崩れ $s:名前 表示管理[1] $i:フラグ（天井君の返り値）
+
+
+
+
+chara エマ・エメリッヒ[NewEmma] $s:名前 \
+        -model   $s:シングルモデル名 $s:マルチモデル名 \
+        -pos     $v:出現位置 \
+        -dir     $i:出現方向 \
+        -route   $i:ルート番号 $i:ポイント番号 \
+        -proC    $p:プロック群 ... \
+        -voice   $t:ストリーム音声 ... \
+        -viaLity $i:ＭＡＸライフ ... \
+        -flag    $i:各種フラグ 
+
+//-vitality はマックス値（メーターに反映）を入れ、現在のライフがあれば
+//入れて下さい。つまり、使いかたは、
+//  -vitality マックス値
+//  -vitality マックス値 現在値
+//の何れかになります。
+//-dir は、エマの初期方向を表し、単位は４０９６ラジアンです。y軸方向の
+//みの回転です。それ以外の挙動は、現在制御できません。
+//-proc には、
+//	ゲームオーバープロック		エマによってゲームオーバーになったとき呼ばれるプロック
+//	狙撃イベントプロック×6個	狙撃イベントの各ノードで呼ばれるプロック
+//の順番に -proc の場所に書いていく。プロックが要らない場合は、プログ
+//ラマ要相談です。
+//-flag は、source/user/morita/emma/include/emma_flag.h のフラグを立て
+//ることで初期状態としてその効果を得ることが出来る。狙撃イベントの時で
+//は、かならずd:ema_t:EMA_F_EVENT_SNIPEを立てなければならない。ストリー
+//ム音声、現在何もありません
+
+chara ボス狙撃ヴァンプ[NewVamp] $s:名前 \
+        -model   $s:シングルモデル名 $s:マルチモデル名 \
+        -pos     $v:出現位置 \
+        -dir     $i:出現方向 \
+        -proC    $p:プロック群 ... \
+        -voice   $t:ストリーム音声 ... \
+        -viaLity $i:ＭＡＸライフ ... \
+        -flag    $i:各種フラグ 
+//狙撃
+//-vitalityはマックス値（メーターに反映）を入れ、現在のライフがあれば入れて下さい。
+//つまり、使いかたは、 -vitality マックス値   or -vitality マックス値 現在値
+//方向は、４０９６ラジアンです。y軸方向のみの回転です。
+//プロック群、ストリーム音声、フラグは、現在何もありません
+
+
+//テスト用
+chara ヒットマン[NewHitMan] $s:名前
+chara 透明な水[NewWaterWave] $s:名前
+chara エマテスト[NewEma] $s:名前
+
+//
+//--------------------------------------------------------------------- 
+//--------------------------------------------------------------------- 
+//重野 /user/sigeno shigeno
+/*2000.09.12 植原さんから引継ぎ*/
+chara レーダー[NewRadar] $s:名前 \
+	-dir $i:角度
+mesg レーダー $s:名前 off[0]
+mesg レーダー $s:名前 on[1]
+
+chara タイマー[NewTimer] $s:名前 \
+	-time $iタイム \ /*NTSCフレーム数で指定(1分の場合3600)*/
+	-proc $p:終了プロック \ /*タイム０の時に実行*/
+	-status	$i:ステータス 
+/*status */
+//ST_STOP (0x01) 一時停止状態で起動
+mesg タイマー $s:名前 停止[0]
+mesg タイマー $s:名前 開始[1]
+mesg タイマー $s:名前 加算[2] $iタイム
+
+
+command ゲット残りタイム[NewGetLeftTime]
+command タイマー加算[NewAddLeftTime] -time $iタイム  /*NTSCフレーム数で指定(1分の場合3600)*/
+
+
+chara 攻撃コマンダー[NewAtCommander] $s:名前 \
+	-e $p:アタッカーproc ... \
+	-cover $i:エリア数 $v:遮蔽物 ... \ 
+	-status	$i:ステータス \
+	-wait	$i:待機時間 \
+	-video $w:ビデオ用モード 
+//	-cover $i:遮蔽エリア数 棚などの数
+//$v:遮蔽物 ... \ /*座標二つ一組でひとつのエリアを設定*/
+//	-status	$i:ステータス \
+//		0x01	危険モード開始時にワープ
+mesg 攻撃コマンダー $s:名前 ステータスセット[1] $i:フラグ
+
+
+chara アタッカー[NewSigAttacker] $s:名前 \
+	-r $b:初期ルート \
+	-s $w:ステータス \
+	-i $w:視力 ... \
+	-l $w:ライフ値 \
+	-f $w:気絶値 \
+	-e $w:装備タイプ \
+	-d $v:守備位置 $s:マップ \
+	-o $v:待避位置 \ /*守備位置に他の兵が近い時に使用*/
+	-q $p:プロック $b:確率 ...2 \
+	-c $b:探索ルート \
+	-v $w:声優
+// 装備タイプ	０標準 １盾 ２ライト付き盾 3ショットガン
+
+mesg アタッカー $s:名前 ルート変更[1] $i:ルート番号
+
+chara 長廊下兵[NewSigDefender] $s:名前 \
+	-r $b:初期ルート \
+	-s $w:ステータス \
+	-i $w:視力 ... \
+	-l $w:ライフ値 \
+	-f $w:気絶値 \
+	-e $w:装備タイプ \
+	-b $b:個別ＢＧＭ \
+	-type $b:種類 \
+	-proc $p:死亡時proc ... \
+	-a	$w:照準ぶれ幅 
+// type:０左舷位置自動、１左舷位置mesg指定 ２右舷守備 ３右舷後方
+mesg 長廊下兵 $s:名前 守備開始[0] 
+mesg 長廊下兵 $s:名前 追跡開始[1] 
+mesg 長廊下兵 $s:名前 ワープ[2] $i:位置Ｘ $i:位置Ｙ $i:位置Ｚ $s:マップ
+mesg 長廊下兵 $s:名前 ルート変更[3] $i:ルート番号 
+mesg 長廊下兵 $s:名前 モード変更[4] $i:モード番号 
+mesg 長廊下兵 $s:名前 初期待機[5] 
+mesg 長廊下兵 $s:名前 守備位置設定[6] $i:位置番号 
+
+
+chara 長廊下コマンダー[NewDefCommander] $s:名前 \
+	-e $p:長廊下兵proc ... \
+	-map $s:マップ ... \
+	-defense $i:守備地点設定 ... \
+	-type $b:タイプ設定 \
+	-proc $p:proc ... \
+	-final $v:位置判定基準 ... \
+	-light $v:目標照明座標 ... \
+	-count $i:照明破壊時間
+mesg 長廊下コマンダー $s:名前 ライト破壊[1]  $i:番号 
+mesg 長廊下コマンダー $s:名前 再発生所替え[2] $i:場所番号
+
+//ライトが破壊されたことを敵兵に通知
+//守備地点は、Ｘ座標、Ｙ座標、Ｚ座標、アクション番号
+//を一組としてポイント数分設定。最大6点。
+//アクション番号	０ 右手攻撃 上下
+//					１ 右手攻撃 下段
+//					２ 左手攻撃 上下
+//					３ 左手攻撃 下段
+//マップも6箇所 各守備座標と同じ順番にそれぞれのマップ名を設定
+//タイプは0左舷用と1右舷用
+
+
+
+chara 天狗兵Ａ[NewSigTengA] $s:名前 \
+	-r $b:初期ルート \
+	-s $w:ステータス \
+	-i $w:視力 ... \
+	-h $w:聴力 -v \
+	-l $w:ライフ値 \
+	-f $w:気絶値 \
+	-e $w:装備タイプ \
+	-type $b:種類 \
+	-proc $p:死亡時proc ... \
+	-a	$w:照準ぶれ幅 
+// type:０左舷位置自動、１左舷位置mesg指定 ２右舷守備 ３右舷後方
+mesg 天狗兵Ａ $s:名前 ルート変更[3] $i:ルート番号 
+//mesg 天狗兵Ａ $s:名前 ワープ[2] $i:位置Ｘ $i:位置Ｙ $i:位置Ｚ $s:マップ
+chara 天狗兵コマンダー[NewTngCommander] $s:名前 \
+	-e $p:天狗兵proc ... \
+	-defense $i:守備地点設定 ... \
+	-final $v:位置判定基準 ... \
+	-type $b:タイプ設定 \
+	-res  $v:再発生位置 ... \
+	-sub $s:目標名前   /*サポートスネークの名前*/
+
+//-defense 守備地点は ルート番号 ,再発生場所番号,
+//			行動開始レベル の順。
+
+
+mesg 天狗兵コマンダー $s:名前 レベルＵＰ[1] $i:レベル 
+mesg 天狗兵コマンダー $s:名前 危険開始[2] 
+
+
+chara 天狗兵Ｂ[NewSigTengB] $s:名前 \
+	-r $b:初期ルート \
+	-s $w:ステータス \
+	-i $w:視力 ... \
+	-h $w:聴力 -v \
+	-l $w:ライフ値 \
+	-f $w:気絶値 \
+	-e $w:装備タイプ \
+	-type $b:種類 \
+	-proc $p:死亡時proc ... \
+	-a	$w:照準ぶれ幅 
+
+
+
+/*エマ狙撃イベント用*/
+chara 海上巡回兵[NewW32Defender] $s:名前 \
+	-r $b:初期ルート \
+	-s $w:ステータス \
+	-i $w:視力 ... \
+	-l $w:ライフ値 \
+	-t $s:目標名前 \ /*エマのシナリオ上の名前*/
+	-f $w:気絶値 
+mesg 海上巡回兵 $s:名前 ルート変更[1] $i:ルート番号 $i:ポイント番号
+
+/************************/
+chara	ジャンプ地点[NewSetJumpPos]  $s:名前 \
+			-up $v:上階座標 \
+			-down $v:下階座標 
+
+chara ロッカー死体[NewLockerCP] $s:名前 \
+	-pos $v:配置座標 \
+	-dir $i:方向 \
+	-kms $s:モデル名 \
+	-mar $s:モーションファイル名 \
+	-number $i:モーション番号 
+mesg ロッカー死体 $s:名前 倒れ[0] 
+//	kmsとmarとnumberは省略可 
+//省略時はtnc_def.kms locker_cp.mar 0番がそれぞれ指定されます
+
+chara プットモーションモデル[NewSigPutModelEvm] $s:名前 \
+	-pos $v:配置座標 \
+	-dir $i:方向 \
+	-kms $s:KMSモデル名 \ /*evmを表示する場合はダミーKMSが必要*/
+	-evm $s:EVMモデル名 \ /*KMSを表示する場合は不要*/
+	-mar $s:モーションファイル名 \
+	-number $i:基本モーション番号 \ /*省略時０*/
+	-item	$s:装備モデル名 $i:関節番号 \ /*オブジェを付随*/
+	-proC $p:終了時プロック \ /*終了判定モードでの再生時のみ有効*/
+	-status	$w:ステータス 
+//ステータスフラグ設定は以下のとおり
+//(0x01) モーションの水平移動量を無視
+//(0x02) 廃止
+//(0x04) 廃止
+//(0x08) モーション停止で待機 (mesgで再生開始)
+//(0x10) 再生開始時に座標をリセット
+//(0x20) モーション補完無し
+//(0x40) プリシェード使用
+//(0x80) 非表示で起動（再生mesgで表示開始）
+
+mesg プットモーションモデル $s:名前 モーション再生[1] $i:番号
+mesg プットモーションモデル $s:名前 モーション進む[2] 
+mesg プットモーションモデル $s:名前 モーション戻る[3] 
+mesg プットモーションモデル $s:名前 初期座標[4] 
+mesg プットモーションモデル $s:名前 回転[5]  $i:方向
+mesg プットモーションモデル $s:名前 終了判定[6]  $i:番号
+mesg プットモーションモデル $s:名前 非表示[7] 
+mesg プットモーションモデル $s:名前 表示[8] 
+
+//mesg 終了判定 (終了判定付き再生と呼ぶべきか？)
+//指定されたモーションを再生終了後に静止。
+//通常 -numberで指定された基本モーションを繰り返し、mesgを受信すると
+//そのモーションを再生。終了すると再び基本モーションのループに入る
+
+
+chara ルートデモ人形[NewSigRouteModel] $s:名前 \
+	-route $i:ルート $b:ノード \ 
+	-kms $s:KMSモデル名 \ /*EVMを表示する場合はダミーKMSが必要*/
+	-evm $s:EVMモデル名 \ /*KMSを表示する場合は不要*/
+	-mar $s:モーションファイル名 \
+	-number $i:移動モーション番号 \ 
+	-item	$s:装備モデル名 $i:関節番号 
+mesg ルートデモ人形 $s:名前 ルート変更[1] $i:ルート番号 
+mesg ルートデモ人形 $s:名前 kill[-1]
+
+
+chara 沈没タンカー[NewSigSinkTanker] $s:名前 \
+	-pos $v:配置座標 \
+	-dir $i:方向 \
+	-kms $s:KMSモデル名 \ 
+	-mar $s:モーションファイル名 \
+	-number $i:モーション番号 \ 
+	-scale	$i:倍率 \
+	-light    $s:光源 
+
+mesg 沈没タンカー $s:名前 再生[1] 
+
+
+/*指定された順にモーション再生後プロック呼んで消滅*/
+chara デモ人形[NewDemoDoll] $s:名前 \
+	-pos $v:配置座標 \
+	-dir $i:方向 \
+	-kms $s:KMSモデル名 \	/*code 優先*/
+	-code $i:モデルSTRCODE \ /*KMS とどちらか使用 */
+	-mar $s:モーションファイル名 \
+	-list	$i:再生順番 ... \ /*最大8個*/
+	-end $p:終了時プロック \
+	-status	$w:ステータス /*現在無効*/
+/*3次元ルート巡回オブジェクト*/
+chara	プットルートオブジェ[NewRoute3d]  $s:名前 \
+	-route $i:ルート番号 \
+	-kms $s:KMSモデル名 \
+	-speed $i:移動速度 \
+	-flag $i:フラグ
+
+
+
+//
+//--------------------------------------------------------------------- 
+//--------------------------------------------------------------------- 
+//里吉 /user/satoyoshi satoyoshi
+/*2001.1.15 重野さんから引継ぎ*/
+//フラグ (0x01) 複数パーツモデル
+
+chara サイファ[NewCypher]  $s:名前 \
+	-route $i:ルート $b:ノード \ 
+	-xran $i:横視野角 \ /*省略可*/
+	-yran $i:縦視野角 \ /*省略可*/
+	-type $i:タイプ \ /*0-NORMAL,1-GUN*/
+	-i $w:視力 \
+	-speed $i:最高速度 /*初期値80*/
+mesg サイファ $s:名前 ルート変更[1] $i:ルート番号 $i:ノード番号 
+mesg サイファ $s:名前 スタート[258] 
+
+chara 監視カメラ[NewSvCamera]  $s:名前 \
+	-pos $v:設置場所 \
+	-rot $v:支柱部方向 \ /*ＸＹ値のみ有効*/
+	-dir $i:振り幅 \ /*片側角度*/
+	-center $i:振り中心角 $i:初期方向 \ /*初期方向は符号付き相対指定*/
+	-xran $i:縦視野角 \ /*省略可 512*/
+	-yran $i:横視野角 \ /*省略可 512*/
+	-i $w:視力 /*省略可*/ \
+	-status $i:ステータスフラグ \
+	-exec { 実行ブロック } /*破壊時*/
+
+/*
+振り中心角省略時は支柱方向が中心 初期方向は中心角度から相対指定
+ステータスフラグ (0x01) 破壊状態１
+*/
+mesg 監視カメラ $s:名前 視界オフ[1] 
+mesg 監視カメラ $s:名前 視界オン[2] 
+
+chara ガンカメラ[NewGunCamera]  $s:名前 \
+	-pos $v:設置場所 \
+	-rot $v:初期方向 \ /*ＸＹ値のみ有効*/
+	-dir $i:振り幅 \
+	-xran $i:横視野角 \ /*省略可*/
+	-yran $i:縦視野角 \ /*省略可*/
+	-i $w:視力 /*省略可*/
+
+chara ハリアー[NewHarrier]  $s:名前
+chara 装備品セット[NewEquipment]  $s:名前
+
+chara ルート表示 [NewDebugRouteViewer] $s:名前 
+//これを起動することによりデバッグメニューから
+//巡回ルート及びクリアリングルートの可視化が行えるようになります。
+
+/*--------------これ以降実験用非公式キャラ----------------*/
+
+/*パッド操作でproc実行*/
+/*paddef.h のincludeが必要*/
+chara デバッグパッドプロック[NewSigPadProc] $s:名前 \
+	-proc $p:実行プロック ... \
+	-key $i:キー番号 ... \
+	-cont $i:パッド番号 
+
+chara 安地みるみる君[NewSigZoneView] $s:名前 
+
+//--------------------------------------------------------------------- 
+
+// 狩野 K.Kano
+
+
+chara ロープモデル[NewRopeModel] $s:名前 \
+	-n $s:モデル名 \
+	-d $i:サンプルデータ番号 \
+	-x $v:OBJ0表示位置 \
+	-r $v:モデルの回転 \
+	-m $i:各OBJの重さ \
+	-p $i:風の影響の割合 \
+	-k $i:速度に対する抵抗の割合 \
+	-e $i:壁に対する反発係数 \
+	-l $i:壁検出距離 \
+	-f $i:当たり判定を行なうかどうかのフラグ \
+	-h $i:バンダナモード（０）か髪の毛モード（１）か
+
+chara ロープモデル２[NewRopeModel2] $s:名前 \
+	-n $s:モデル名 \
+	-d $i:サンプルデータ番号 \
+	-x $v:OBJ0表示位置 \
+	-r $v:モデルの回転 \
+	-m $i:各OBJの重さ \
+	-p $i:風の影響の割合 \
+	-k $i:速度に対する抵抗の割合 \
+	-s $i:元位置に戻そうとするバネの定数 \
+	-t $i:OBJの動く範囲の全長に対する割合 \
+	-e $i:壁に対する反発係数 \
+	-l $i:壁検出距離 \
+	-f $i:当たり判定を行なうかどうかのフラグ
+
+chara ロープモデル３[NewRopeModel3] $s:名前 \
+	-n $s:モデル名 \
+	-d $i:サンプルデータ番号 \
+	-b $s:バウンディングボックスによる当たり判定に使うモデル \
+	-y $s:つける相手の名前 \
+	-z $i:つける場所のOBJ番号 \
+	-x $v:ローカル座標上でのつける位置 \
+	-r $v:モデルの回転 \
+	-m $i:各OBJの重さ \
+	-p $i:風の影響の割合 \
+	-k $i:速度に対する抵抗の割合 \
+	-o $i:楕円球当たり判定用パラメータ \
+	-f $i:当たり判定を行なうかどうかのフラグ \
+	-h $i:バンダナモード（０）か髪の毛モード（１）か \
+	-v // 強制表示フラグ
+
+mesg ロープモデル３ $s:名前 visible[0] $i:モード
+
+chara ロープサーバー[NewRopeServer] $s:名前 \
+	-s $i:登録可能サイズ
+
+chara ロープ登録[NewRegistRope] $s:名前 \
+	-n $s:モデル名 \
+	-d $i:サンプルデータ番号 \
+	-b $s:バウンディングボックスによる当たり判定に使うモデル \
+	-y $s:つける相手の名前 \
+	-z $i:つける場所のOBJ番号 \
+	-x $v:ローカル座標上でのつける位置 \
+	-r $v:モデルの回転 \
+	-m $i:各OBJの重さ \
+	-p $i:風の影響の割合 \
+	-k $i:速度に対する抵抗の割合 \
+	-o $i:楕円球当たり判定用パラメータ \
+	-f $i:当たり判定を行なうかどうかのフラグ \
+	-h $i:バンダナモード（０）か髪の毛モード（１）か \
+	-v // 強制表示フラグ
+
+
+// m ... グラム単位
+// p ... 1/100000単位
+// k ... 1/100000単位
+// s ... 1/100000単位
+// t ... 0-10000(0.00% - 100.00%)
+// e ... 0-1000(0.0% - 100.0%)
+// l ... 1000 = 1 meter
+// o ... 0-100-(0.00 - 1.00 -)
+// f ... 0 or 1
+// 計算式  f = p * windv - k * v
+//         a = f/m
+//         v'= v + a
+//         x'= x + v'
+
+// 解説
+// -m OBJ一個一個がどの程度の質量を持っているか指定します。
+// 　 これを大きくすると、質量が大きくなりますので、動かしにくく止まりにくい
+// 　 物体になります。
+// 
+// -p 風がどの程度OBJに影響を与えるかを指定します。
+// 　 これを大きくすると、風がOBJを押す力が強くなります。
+// 
+// -k 今現在の速度を止めようとする力の割合を指定します。
+// 　 これを大きくすると、OBJは空気抵抗のようなものを強く受けますので、
+// 　 振動しにくくなります。
+// 
+// -s OBJを元位置にもどすために設定した、ばねの強さを指定します。
+// 　 これを大きくしますと、元に戻ろうとする力が強くなりますので、
+// 　 振幅が小さくなります。また、ばねには振動しようとする性質が
+// 　 ありますので、振動しやすくなり、止まりにくくなります。
+// 
+// -e 壁にぶつかった時に、ぶつかった時の速度の何%が跳ね返りの速度になるかを
+// 　 指定します。これを大きくしますと、壁がゴムのようにOBJを跳ね返すように
+// 　 なります。
+// 
+// -l 壁にぶつかったと判定する距離です。壁当たりにどの程度近づいたら
+// 　 壁に当たったと判定されるかを指定します。壁の厚みに相当します。
+
+// サンプルデータでの設定値
+// 0を指定した場合:
+// 　　　　-m 100 \
+// 　　　　-p 1000 \
+// 　　　　-k 10000 \
+// 　　　　-s 1000 \
+// 　　　　-t 3000 \
+// 　　　　-e 100 \
+// 　　　　-l 200 \
+// 
+// 1を指定した場合:
+// 　　　　-m 10 \
+// 　　　　-p 1000 \
+// 　　　　-k 200 \
+// 　　　　-s 50 \
+// 　　　　-t 1000 \
+// 　　　　-e 100 \
+// 　　　　-l 100 \
+
+
+
+chara 髪の毛モデル[NewHairModel] $s:名前 \
+	-n $s:モデル名 \
+	-d $i:サンプルデータ番号 \
+	-b $s:バウンディングボックスによる当たり判定に使うモデル \
+	-y $s:つける相手の名前 \
+	-z $i:つける場所のOBJ番号 ... \
+	-x $v:ローカル座標上でのつける位置 \
+	-r $v:モデルの回転 \
+	-m $i:各OBJの重さ \
+	-p $i:風の影響の割合 \
+	-k $i:速度に対する抵抗の割合 \
+	-a $i:曲がりを正すパラメータの割合 \
+	-o $i:楕円球当たり判定用パラメータ \
+	-w $i:全体の移動値の何割を無視するかのパラメータ \
+	-f $i:当たり判定を行なうかどうかのフラグ \
+	-c $i:当たり判定を行うオブジェの数 $i:オブジェ番号 ... \
+	-q $i:ライトの影響をアンビエント主体にするフラグ \
+	-v // 強制表示フラグ
+
+mesg 髪の毛モデル $s:名前 visible[0] $i:フラグ
+mesg 髪の毛モデル $s:名前 パラメータチェンジ[1] $i:サンプルデータ番号
+mesg 髪の毛モデル $s:名前 ライトフラグチェンジ[2] $i:ライトフラグ
+
+
+chara マルチウェイト髪の毛モデル[NewEvmHairModel] $s:名前 \
+	-n $s:モデル名 \
+	-d $i:サンプルデータ番号 \
+	-b $s:バウンディングボックスによる当たり判定に使うモデル \
+	-y $s:つける相手の名前 \
+	-z $i:つける場所のOBJ番号 ... \
+	-x $v:ローカル座標上でのつける位置 \
+	-r $v:モデルの回転 \
+	-m $i:各OBJの重さ \
+	-p $i:風の影響の割合 \
+	-k $i:速度に対する抵抗の割合 \
+	-a $i:曲がりを正すパラメータの割合 \
+	-o $i:楕円球当たり判定用パラメータ \
+	-w $i:全体の移動値の何割を無視するかのパラメータ \
+	-f $i:当たり判定を行なうかどうかのフラグ \
+	-c $i:当たり判定を行うオブジェの数 $i:オブジェ番号 ... \
+	-q $i:ライトの影響をアンビエント主体にするフラグ \
+	-v // 強制表示フラグ
+
+mesg マルチウェイト髪の毛モデル $s:名前 visible[0] $i:フラグ
+mesg マルチウェイト髪の毛モデル $s:名前 パラメータチェンジ[1] $i:サンプルデータ番号
+mesg マルチウェイト髪の毛モデル $s:名前 ライトフラグチェンジ[2] $i:ライトフラグ
+
+// 解説
+//
+// m, p, k, e, l, o, fに関してはロープと同じ
+// a ... 1/100単位
+// w ... 0-100 (0.00 - 1.00)
+//
+// -a 各関節が初期状態の曲がり具合に戻ろうとする力を調節します。
+//
+// -w 全体が移動した場合、それをどの程度無視して計算を行うかの割合です。
+//    100にすると完全に移動は無視され、回転のみが反映されることになります。
+//
+
+
+/*
+	テストで２バージョン作成
+
+chara マルチウェイト髪の毛モデル２[NewEvmHairModel2] $s:名前 \
+	-n $s:モデル名 \
+	-d $i:サンプルデータ番号 \
+	-b $s:バウンディングボックスによる当たり判定に使うモデル \
+	-y $s:つける相手の名前 \
+	-z $i:つける場所のOBJ番号 \
+	-x $v:ローカル座標上でのつける位置 \
+	-r $v:モデルの回転 \
+	-m $i:各OBJの重さ \
+	-p $i:風の影響の割合 \
+	-k $i:速度に対する抵抗の割合 \
+	-o $i:楕円球当たり判定用パラメータ \
+	-f $i:当たり判定を行なうかどうかのフラグ \
+	-v // 強制表示フラグ
+
+*/
+
+
+
+chara 装備品Ａ[NewAttachment] $s:名前 \
+	-n $s:モデル名 \
+	-y $s:つける相手の名前 \
+	-z $i:つける場所のOBJ番号 \
+	-x $v:ローカル座標上でのつける位置 \
+	-v $v:当たりを見る位置 \
+	-a $f:X軸可動の指定 $f:Y軸可動の指定 $f:Z軸可動の指定 \
+	-r $v:モデルの回転 \
+	-l $i:モデルをどの程度可動できるかを回転角で指定 \
+	-o $i:楕円球当たり判定用パラメータ
+
+chara 装備品Ｂ[NewAttachment2] $s:名前 \
+	-n $s:モデル名 \
+	-y $s:つける相手の名前 \
+	-z $i:つける場所のOBJ番号 \
+	-x $v:ローカル座標上でのつける位置 \
+	-q $i:回転決定に用いる位置のOBJ番号 \
+	-p $v:ローカル座標上での、回転決定に用いる位置 \
+	-v $v:回転決定のために見る位置 \
+	-r $v:モデルの回転
+
+chara 装備品Ｃ[NewAttachment3] $s:名前 \
+	-n $s:モデル名 \
+	-y $s:つける相手の名前 \
+	-z $i:つける場所のOBJ番号 \
+	-x $v:ローカル座標上でのつける位置 \
+	-r $v:モデルの回転 \
+	-f $i:遅れフレーム数
+
+chara 装備品Ｄ[NewAttachment4] $s:名前 \
+	-n $s:モデル名 \
+	-y $s:つける相手の名前 \
+	-z $i:つける場所のOBJ番号 \
+	-x $v:ローカル座標上でのつける位置 \
+	-r $v:モデルの回転 \
+	-v $v:当たりを見る位置 \
+	-l $i:モデルをどの程度可動できるかを回転角で指定 \
+	-f $i:遅れフレーム数
+
+chara 装備品サーバー[NewAttachment_Server] $s:名前 \
+	-s $i:ワークサイズ
+
+
+// 装備品Ａ、装備品Ｂ、装備品Ｃ、装備品Ｄ、装備品Ｓ(装備品Ａ、Ｂ、Ｃを同時に処理する)に
+// 対して表示/非表示メッセージを送る。
+// 例:
+// mesg 装備品メッセージ 装備品Ａ visible スネーク 1      ... 表示
+// mesg 装備品メッセージ 装備品Ａ visible スネーク 0      ... 非表示
+// mesg 装備品メッセージ 装備品Ａ visible スネーク -1     ... 表示/非表示切替え
+
+mesg 装備品メッセージ $s:装備品の名前 visible[0] $s:つけている相手の名前 $i:フラグ
+
+
+// 専用データ作成の必要有り
+chara 布モデル[NewWavingClothModel] $s:名前 \
+	-n $i:モデル数 $s:モデル名 \
+	-x $v:出現位置 \
+	-r $v:モデルの回転 \
+	-d $i:サンプルデータ \
+	-p $i:風の影響の度合 \
+	-k $i:速度対する抵抗値 \
+	-s $i:バネ定数 \
+	-t $i:可動範囲係数 \
+	-u $i:元位置に戻るためのバネ定数
+
+chara オブジェに付く布モデル[NewWavingClothModelW] $s:名前 \
+	-n $i:モデル数 $s:モデル名 ... \
+	-x $v:出現位置 \
+	-r $v:モデルの回転 \
+	-y $s:付ける相手の名前 \
+	-z $i:付ける場所のOBJ番号 \
+	-b $s:バウンディングボックスを使った当たり判定に使うモデル \
+	-d $i:サンプルデータ \
+	-p $i:風の影響の度合 \
+	-k $i:速度対する抵抗値 \
+	-u $i:バネ定数 \
+	-s $i:元位置に戻るためのバネ定数 \
+	-t $i:可動範囲係数 \
+	-o $i:楕円球当たり判定用パラメータ \
+	-v // 強制表示フラグ
+
+chara ジャケットモデル[NewWavingJacketModelW] $s:名前 \
+	-n $i:モデル数 $s:モデル名 \
+	-y $s:付ける相手の名前 \
+	-d $i:サンプルデータ \
+	-p $i:風の影響の度合 \
+	-k $i:速度対する抵抗値 \
+	-u $i:バネ定数 \
+	-s $i:元位置に戻るためのバネ定数 \
+	-t $i:可動範囲係数 \
+	-o $i:楕円球当たり判定用パラメータ \
+	-v // 強制表示フラグ
+
+// 解説
+// -p 風がどの程度ポリゴンに影響を与えるかを、面積単位で指定します。
+// 　 これを大きくすると、風がポリゴンを押す力が強くなります。
+// 
+// -k 今現在の速度を止めようとする力の割合を指定します。
+// 　 これを大きくすると、OBJは空気抵抗のようなものを強く受けますので、
+// 　 振動しにくくなります。
+// 
+// -u 頂点同士を結ぶ辺をばねに見立てた場合の、ばねの強さを指定します。
+//    この値が大きいと、頂点同士の結び付きが強くなり、布表面の揺れが
+//    細かくなります。
+//
+// -s OBJを元位置にもどすために設定した、ばねの強さを指定します。
+// 　 これを大きくしますと、元に戻ろうとする力が強くなりますので、
+// 　 振幅が小さくなります。また、ばねには振動しようとする性質が
+// 　 ありますので、振動しやすくなり、止まりにくくなります。
+//
+// -t 布には、頂点ごとに可動範囲を設けてあります。これはその頂点の動ける
+//    幅の割合を指定します。頂点は、この値と固定点からの距離を元に動きます。
+
+// サンプルデータでの設定値
+// 0を指定した場合:
+// 　　　　-p 25 \
+// 　　　　-k 100000 \
+//         -u 30000 \
+// 　　　　-s 5000 \
+// 　　　　-t 6000
+// 
+// 1を指定した場合:
+// 　　　　-p 25 \
+// 　　　　-k 100000 \
+//         -u 80000 \
+// 　　　　-s 100000 \
+// 　　　　-t 6000
+
+
+// 専用データが要らないバージョン
+chara 布モデル２[NewWavingClothModel_withoutDATAFILE] $s:名前 \
+	-n $i:モデル数 $s:モデル名 \
+	-x $v:出現位置 \
+	-r $v:モデルの回転 \
+	-d $i:サンプルデータ \
+	-p $i:風の影響の度合 \
+	-k $i:速度対する抵抗値 \
+	-s $i:バネ定数 \
+	-t $i:可動範囲係数 \
+	-u $i:元位置に戻るためのバネ定数
+
+chara オブジェに付く布モデル２[NewWavingClothModelW_withoutDATAFILE] $s:名前 \
+	-n $i:モデル数 $s:モデル名 ... \
+	-x $v:出現位置 \
+	-r $v:モデルの回転 \
+	-y $s:付ける相手の名前 \
+	-z $i:付ける場所のOBJ番号 \
+	-b $s:バウンディングボックスを使った当たり判定に使うモデル \
+	-d $i:サンプルデータ \
+	-p $i:風の影響の度合 \
+	-k $i:速度対する抵抗値 \
+	-u $i:バネ定数 \
+	-s $i:元位置に戻るためのバネ定数 \
+	-t $i:可動範囲係数 \
+	-o $i:楕円球当たり判定用パラメータ \
+	-v // 強制表示フラグ
+
+chara ジャケットモデル２[NewWavingJacketModelW_withoutDATAFILE] $s:名前 \
+	-n $i:モデル数 $s:モデル名 \
+	-y $s:付ける相手の名前 \
+	-d $i:サンプルデータ \
+	-p $i:風の影響の度合 \
+	-k $i:速度対する抵抗値 \
+	-u $i:バネ定数 \
+	-s $i:元位置に戻るためのバネ定数 \
+	-t $i:可動範囲係数 \
+	-o $i:楕円球当たり判定用パラメータ \
+	-v // 強制表示フラグ
+
+
+
+chara モーション頂点アニメ[NewMATest] $s:名前 \
+	-n $s:相手キャラ名 \
+	-m $s:モデル名 \
+	-f $i:フレーム数
+
+chara モーション頂点アニメテスト２[NewMATest2] $s:名前 \
+	-n $s:相手キャラ名 \
+	-m $s:モデル名 \
+	-f $i:フレーム数
+
+chara オルガ乳揺れ[NewMMOrga] $s:名前 \
+	-n $s:相手キャラ名 \
+	-m $s:モデル名
+
+chara レインコート[NewRaincoat] $s:名前 \
+	-y $s:相手キャラ名 \
+	-e $s:マルチウェイトモデルファイル名 \
+	-m $i:シングルウェイト頂点アニメーションファイル数  $s:モデル名 ... \
+	-w $i:反応する風の強さの最小 $i:反応する風の強さの最大 \
+	-f $i:アニメーションフレーム数の最小 $i:アニメーションフレーム数の最大
+
+
+chara ＮＰＣスネーク[NewNPCSnake] $s:名前 \
+	-m $s:表示モデル \
+	-a $s:モーションアーカイブ名 \
+	-l $i:サポートレベル \
+	-s $i:サポートポイント数 $v:サポートポイント $i:ポイントフラグ ...2 \
+	-x $v:初期表示位置 \
+	-r $v:初期表示向き
+
+// ポイントフラグ
+// 0x00000001 ... 隠れられるポイント
+// 0x00000002 ... 座ると隠れられるポイント
+// 0x00000010 ... 右へ覗き込む
+// 0x00000020 ... 左へ覗き込む
+
+mesg ＮＰＣスネーク $s:名前 サポートレベル[0] $i:レベル
+
+
+
+// T-10000用モーション記録プログラム
+// 指定のモデルのモーションを記録する。
+
+chara モーションレコーダー[NewRecmtn] $s:名前 \
+	-t $s:相手キャラ名 \
+	-m $i:モーションを記録するオブジェクト数 \
+	-o '出力ファイル名' \
+	-f $i:記録出来る最大のフレーム数 \
+	-e $i:記録終了時の処理を指定（０＝ＥＸＩＴ、１＝ＷＡＩＴに戻る） \
+	-k $i:キー入力でも記録を開始できる（通常はメッセージ）
+
+mesg モーションレコーダー $s:名前 rec_start[0]
+mesg モーションレコーダー $s:名前 rec_stop[1]
+mesg モーションレコーダー $s:名前 rec_exit[2]
+
+
+//プレビュー環境用
+//----- Begin -----
+
+chara プレビュー環境用オブジェすり替え[NewOCHumanPreview2]  $s:名前 \
+	-x $v:位置 \
+	-r $v:回転角度 \
+	-m $s:モーション名 \
+	-d $f:表示非表示フラグ
+
+chara プレビュー環境用頂点アニメ[NewVAPreview] $s:名前 \
+	-x $v:位置 \
+	-r $v:回転角度 \
+	-d $f:表示非表示フラグ \
+	-o $s:取り付ける相手の名前 \
+	-n $i:オブジェ番号 \
+	-b $s:基準モデル
+
+chara ヌルオブジェ[NewNullObj] $s:名前 \
+	-x $v:位置 \
+	-r $v:回転角度 \
+	-m $s:モデル名 \
+	-a $s:モーション名 \
+	-n $i:モーション番号
+	
+//----- End -----
+
+
+// メモリーカードファイラー
+//----- Begin -----
+
+chara メモリーカードファイラー[NewMemcardChecker] $s:名前
+
+//----- End -----
+
+
+//テスト用
+//----- Begin -----
+
+chara 旧布モデル[NewClothModel] $s:名前 \
+	-n $s:モデル名 \
+	-x $v:出現位置 \
+	-r $v:モデルの回転
+
+chara パーティクル汎用[NewBasicParticle] $s:名前 \
+	-p $v:境界領域  -q $v:境界領域 \
+	-s $i:パーティクル数
+
+chara 頂点アニメテスト[NewVATest] $s:名前
+
+chara じゃんけんテスト[NewVATestJanken] $s:名前 \
+	-x $v:出現位置 \
+	-r $v:モデルの回転
+
+chara オブジェすり替えテスト[NewOCTest] $s:名前 \
+	-n $s:相手キャラ名 \
+	-m $s:モデル名 \
+	-l $s:モデル名２
+
+chara オブジェすり替えプレビュー人形[NewOCHumanPreview] $s:名前 \
+	-m $s:モデル名 \
+	-l $s:モデル名２ \
+	-a $s:モーション名 \
+	-x $v:位置 \
+	-r $v:回転角度
+
+//----- End -----
+
+
+//--------------------------------------------------------------------- 
+// 田中(信) /user/nobu
+// chara デモアクトデバッグ[NewDemoActDebug] $s:名前 \
+
+// 本番用：シナリオ班はこれに書き換えて下さい
+chara demo[NewPolygonDemoStart] $s:名前 \
+	-i $E:symbol \			// ストリーミング用t:シンボル
+	-p $p:プロック ... \	// デモデータから呼び出されるproc列
+	-next $p:proc	\		// 終了時に呼び出されるproc
+	-begin $p:proc \		// 開始1フレーム前に呼び出されるproc
+	-undraw $b:flag			// 画面更新を止めるフラグ
+							// 0x01:開始0x02終了0x03デフォルト
+
+#define DEMO_NO_UNDRAW		0x00
+#define DEMO_UNDRAW_BEGIN	0x01
+#define DEMO_UNDRAW_END		0x02
+
+// デモ班作成時用：デモ班はこれで作成して下さい
+chara デモアクトデバッグ[NewPolygonDemoStart] $s:名前 \
+	-i $E:symbol \			// ストリーミング用t:シンボル
+	-p $p:プロック ... \	// デモデータから呼び出されるproc列
+	-next $p:proc \			// 終了時に呼び出されるproc
+	-begin $p:proc \		// 開始時に呼び出されるproc
+	-undraw $b:flag		\	// 画面更新を止めるフラグ
+	\						// 0x01:開始0x02終了0x03デフォルト
+	-d 'E文字列' \			// ここから下はデバッグ用
+	-l \	
+	-s '文字列' \
+	-e $i:エフェクトリスト表示時間 \
+	-v $i:デモ表示初期状態設定 \
+	-f $i:30フレームカウンタのベースタイム \
+	-t $i:タイミングカウンタ
+
+// d オプションはデモファイル名の文字列
+// l オプションはデモをループさせるかどうかを指定するが、デバッグ版のみの機能です。
+// s オプションはデモ中に文字列を表示させる場合に指定します。デバッグ版のみの機能です。
+// e オプションはデモ中に実行されたエフェクトをテキスト表示します。表示するテキストは lst ファイルの記述されています。
+// v オプションはデバッグ表示の初期状態を設定します。
+// f オプションは30フレームカウンタの初期タイムを設定します。
+// t オプションは最初に指定の秒数だけカウンタダウンしたのちデモを再生するようにします。
+// p オプションは、プロックをエフェクト側から呼び出すためのもの。リスト化したプロックリストの何番目という形で指定する。
+
+//--------------------------------------------------------------------- 
+// 松崎		/user/matsu
+
+chara 両開き扉[NewMzTwindoor] $s:名前 \
+	-model $s:モデル名 \
+	-pos $v:設置場所 \
+	-rot $i:Ｙ軸回転 \
+	-arclimit 	$i:左扉の−制限角 $i:左扉の＋制限角 \
+				$i:右扉の−制限角 $i:右扉の＋制限角
+
+chara イスのワタ[NewMzChair] $s:名前 \
+	-pos $v:設置場所 ...\
+	-rot $i:Ｙ軸回転 ...
+
+
+//---------------------------------------------------------------------
+// 吉良 /user/kira
+
+//
+// 2D レイアウト関連
+//
+chara 2Dレイアウトドライバ[NewLayout2D_Player] $s:name
+
+//
+// ノード画面関連
+//
+chara ノードシステム[NewNodeDaemon] $s:name \
+				-skin $s:スキン名 \
+				-proc $p:proc_id
+command ノード画面起動[NewNode] -map
+
+//
+// 顔アニメマネージャ
+//
+chara 顔アニメマネージャ[NewFaceManager] $s:name
+
+
+
+// レーダ: 爆弾センサ
+chara 爆弾検知領域[NewBombArea] $s:name \
+				-trap $s:トラップ名 \
+				-rgb $i:red $i:green $i:blue
+
+//
+// リップシンク関係。作ったけど使ってない。
+//
+command リップシンクドライバ[GM_StreamLipDriverInit]
+
+chara 顔アニメ[NewFaceMotionSet] $s:name \
+        -chara $s:キャラクタ名 \
+	-a $d:顔アニメモーションパーツ群
+
+mesg 顔アニメ $s:名前 表情設定[0] $s:モーション名 $w:レート $w:補間時間
+mesg 顔アニメ $s:名前 表情ニュートラル[1] $w:補間時間
+mesg 顔アニメ $s:名前 口パク強度[2] $w:強度
+mesg 顔アニメ $s:名前 強制目パチ[3] $w:目パチ回数
+mesg 顔アニメ $s:名前 自動目パチ禁止[4]
+mesg 顔アニメ $s:名前 自動目パチ許可[5]
+
+//--------------------------------------------------------------------- 
+// スクール	/user/okajima
+
+chara 課題雛形[NewLesson] $s:名前
+
+
+//---------------------------------------------------------------------
+// 柴田	/user/shibata
+
+chara タイトル[NewGameTitle_Trial] $s:name \
+	-eproc $p:終了proc \
+	-rproc $p:雨降りproc \
+	-sproc $p:雨ストップproc \
+	-proc  $p:スペシャルへ \
+	-mode  $i:ワーニング \
+	-k $w:英語版フラグ \
+	-data $d:レーダー説明 ... \
+	-log $d:ミッションログ ... \
+	-flag $i:クリアコードあり \
+	-tane $i:種 \
+	-code $i:元データ ...
+	
+//startでeprocを呼び出して終了
+//雨rproc
+
+chara トゥービーコンテニュード[NewToBeContinued] $s:name \
+	-proc $p:終了proc \
+	-radio $t:ラジオドラマ
+
+chara クリアコード表示[NewClearCode] $s:name \
+	-proc $p:終了proc \
+	-eng  $f:英語版フラグ \
+	-seed $i:エンコードシード値 \
+	-data $i:元データ ...
+
+//終了プロックを呼び出して死にます。
+
+chara シネマスクリーン[NewCinemaScreen] $s:name \
+	-top $i:上のピクセル数 \
+	-bottom $i:下のピクセル数 \
+	-ftime $i:フェードのフレーム数	//デフォルト値（ゼロは駄目）
+
+mesg シネマスクリーン $s:名前 フェードアウト[0] $i:フェードのフレーム数		//ゼロでデフォルト値
+mesg シネマスクリーン $s:名前 フェードイン[1] $i:フェードのフレーム数		//ゼロでデフォルト値
+mesg シネマスクリーン $s:名前 kill[2]
+
+chara ２Ｄスプライト表示[New2DSprite] $s:name \	
+	-tri $s:ＴＲＩコード \
+	-x $s:ＴＥＸコード \
+	-pos $i:座標Ｘ $i:座標Ｙ \
+	-size $i:サイズＷ $i:サイズＨ \
+	-b $i:スケール ... \
+	-count $i:カウント ... \
+	-flag $i:フラグ
+
+//座標ＸＹ(0,0)<->(512,384)
+//サイズＷＨ(0,0)<->(512,384)
+//スケールｗｈ（１００００で１．０）なしだと１．０
+//カウント0　フェードインタイム
+//カウント1　ウェイト
+//カウント2　フェードインアウト
+//デフォルト左上
+//#define FLAG_RIGHT 	(0x0001)
+//#define FLAG_BOTTOM 	(0x0002)
+//#define FLAG_CENTER 	(0x0010)
+
+chara テロップ表示君[NewRunTelop_Trial] $s:name
+
+mesg テロップ表示君 $s:名前 表示開始[0] $i:Ｘ座標 $i:Ｙ座標 $i:テロップ番号
+
+chara 窓雨 [NewWindowRain] $s:名前 \
+	-c $i:中心の座標 ... \
+	-s $i:縦と横 ... \
+	-r $i:例によってＹＸＺ順回転（Ｚ＝０が無難） ... \
+	-m $i:モード設定すると粒なし
+
+chara 水溜り管理[NewPuddle] $s:name \
+	-n_obj $i:波紋発生キャラ数 \
+	-obj   $s:キャラネーム ... 
+
+mesg 水溜り管理 $s:名前 入る[0] $s:キャラ名
+mesg 水溜り管理 $s:名前 出る[1] $s:キャラ名
+
+
+chara 操作説明表示[NewOpenCntrlExp] $s:name \
+	-eng $f:英語版フラグ
+
+chara ３Ｄスプライト表示[NewGeneralSprite_Scn] $s:name \
+	-tex $s:ＴＥＸコード \
+	-pos $i:座標Ｘ $i:座標Ｙ $i:Ｚ座標 \
+	-size $i:サイズＷ $i:サイズＨ \
+	-col $i:ＲＧＢＡ ... \
+	-mode $i:ＴＥＸモード \
+	-f $i:カメラ方向シフト値
+
+mesg ３Ｄスプライト表示 $s:名前 ＯＮ[0]
+mesg ３Ｄスプライト表示 $s:名前 ＯＦＦ[1]
+
+//ＴＥＸモード
+#define GSPRT_MODE_FOG		0x00200000	// フォグが掛かる
+#define GSPRT_MODE_TEX		0x00000000	// 描画モード　テクスチャーそのまま　起動時のみ
+#define GSPRT_MODE_ADD		0x00010000	// 描画モード　加算　起動時のみ
+#define GSPRT_MODE_SUB		0x00020000	// 描画モード　減算　起動時のみ
+#define GSPRT_MODE_ALPHA	0x00030000	// 描画モード　アルファ　起動時のみ
+
+chara スペシャルメニュー[NewSpecialMenu] $s:name \
+	-flag $i:見たかどうかフラグ \
+	-end $p:エンドプロック \
+	-data $p:ムービープロック $d:説明文 $d:題名 $w:キーデータ ...4 
+
+mesg スペシャルメニュー $s:name ムービー終了[0]
+
+chara 英語版スペシャルメニュー[NewSpecialMenu_Eng] $s:name \
+	-flag $i:見たかどうかフラグ \
+	-end $p:エンドプロック \
+	-data $p:ムービープロック $d:説明文 $d:題名 $w:キーデータ ...4 
+
+mesg 英語版スペシャルメニュー $s:name ムービー終了[0]
+
+chara 昼空ドーム[NewPlantSkyMain] $s:name \
+	-col $w:ＲＧＢ ... \
+	-pos $i:座標 ... 
+
+chara 太陽[NewPlantSunMain] $s:名前 \
+	-p $i:方向 ... \	// 位置
+	-f $i:方向 ... 		// 原点からこの位置に向かって光が射す
+
+chara 水中カメラ[NewScrWater] $s:名前 \
+	-col $i:ＲＧＢ ... \	//ＲＧＢ
+	-warp $i:ピクセル		//ずらし最大ピクセル数
+
+chara メタルレイの目[NewRayEye_Scn] $s:名前 \
+	-ray_name $s:レイの名前 \
+	-mode $i:モード		//(未対応)0:最初からアクティヴ 1:メッセージで起動アニメーションのちアクティヴ
+
+command 水位設定[NewWaterLevelControl] -lv $i:水位 
+
+chara 照り返しイメージ生成[NewSpotLightReflectedWaterImageMake] $s:名前
+
+chara ライトエフェクト接続[NewPutLight_doll] $s:名前 \
+	-put $s:コントロール名 \
+	-mode $i:モード
+
+mesg ライトエフェクト接続 $s:name 非表示[0]
+mesg ライトエフェクト接続 $s:name 表示[1]
+mesg ライトエフェクト接続 $s:name スペシャル[2]
+mesg ライトエフェクト接続 $s:name 終了[3]
+
+//chara 船蟲テスト第５弾[NewTestSlater5] $s:名前 \
+//	-num $i:数（１で八匹）\
+//	-move $i:フラグ \
+//	-bnd $i:バンダリＸＹＺ ... \//頂点２つつ分列挙(x1 y1 z1 x2 y2 z2)
+//	-esb $i:逃げバンダリＸＹＺ ... //頂点２つつ分列挙(x1 y1 z1 x2 y2 z2)
+
+chara 船蟲テスト[NewPrevTest] $s:名前 \
+	-num $i:数（１で八匹）\
+	-move $i:フラグ \
+	-bnd $i:バンダリＸＹＺ ... //頂点２つつ分列挙(x1 y1 z1 x2 y2 z2)
+
+//--------------------------------------------------------------------- 
+// 奥田 /user/okuta
+
+// 爆弾設置ポイントは３２まで
+// type は上位8ビットがレベル,下位8ビットが設置タイプを持ちます
+// 
+chara ファットマン[NewFatman] $s:名前 \
+	-s $i:スピード \
+	-p $v:場所 \
+	-type $s:爆弾設置ポイント種類 ... \
+	-nmtrap $s:爆弾設置ポイントトラップ名 ... \
+	-bmpos $v:爆弾設置ポイント位置 ... 
+
+
+//--------------------------------------------------------------------- 
+// シナリオユーティリティ
+
+command 内包チェック[NewGclInsideChk4P] $i:検査点Ｘ $i:検査点Ｙ $i:Ａ点Ｘ $i:Ａ点Ｙ $i:Ｂ点Ｘ $i:Ｂ点Ｙ $i:Ｃ点Ｘ $i:Ｃ点Ｙ $i:Ｄ点Ｘ $i:Ｄ点Ｙ 
+
+// 検査点Ｘ，Ｙ
+// Ａ点、Ｂ点、Ｃ点、Ｄ点	囲むべき４頂点を時計回りに代入する。(必ず時計回り、凸多角形）
+// 検査点が4点で囲まれる凸多角形の中に存在（線上は中と判定）すれば"1"、外なら"0"が返る
+
+command 絶対角度差[NewGclDiffDirABS] $w:角度１ $w:角度２
+
+// "4095"の境目を気にせず二つの角度の差の絶対値を返す
+
+
+// ---------------- Xbox
+// システムに常駐する頂点シェーダ/ピクセルシェーダ読み込み & 初期化
+command 常駐シェーダ初期化[NewResidentShader]
+
+// ---------------- Xbox TEST
+command 仮シナリオ[TempScenario]
+chara テストシナリオ[TempScenario] $s:名前
+#if 0
+chara うそスネーク[NewNetworkPlayerTest] $s:名前 \
+	-position $v:出現位置 \
+	-direction $v:出現方向 \
+	-mEmber_id $i:メンバＩＤ
+#else
+chara うそスネーク[NewControlTest] $s:名前 \
+	-position $v:出現位置 \
+	-direction $v:出現方向 \
+	-mEmber_id $i:メンバＩＤ
+#endif
+
+chara ソフトリセット[NewSoftReset] $s:名前
+
+chara セッション確立[NewEstablishSession] $s:名前 \
+	-proc $p:終了時プロシージャ
+
+#if 0
+chara にせプレイヤー[NewRaiden2] $s:名前 \
+	-model $s:モデル名 \
+	-archive $s:モーション名 \
+	-position $v:出現位置 \
+	-direction $v:出現方向 \
+	-level $w:出現位置床高さ \ 	//廃止
+	-stance $b:出現時姿勢 \
+	-other_mar $s:強制モーション用モーションファイル名 \
+	-id_table $b:ＳＥ変換テーブルＩＤ \
+	-homing $i:ホーミング距離 $i:ホーミング角度 \
+	-flags $i:各種フラグ 
+#endif
+
+chara ネット対応プレイヤー[NewNetworkRaidenScn] $s:名前 \
+	-model $s:モデル名 ...\
+	-archive $s:モーション名 \
+	-position $v:出現位置 ...\
+	-direction $v:出現方向 \
+	-level $w:出現位置床高さ \ 	//廃止
+	-stance $b:出現時姿勢 \
+	-other_mar $s:強制モーション用モーションファイル名 \
+	-id_table $b:ＳＥ変換テーブルＩＤ \
+	-homing $i:ホーミング距離 $i:ホーミング角度 \
+	-flags $i:各種フラグ \
+	-mEmber_id $i:メンバＩＤ
+
+chara ネットゴール[NewNetworkGoalScn] $s:名前 \
+	-position	$v:位置 \
+	-width		$i:幅 \
+	-depth		$i:奥行き
+
+chara ネット敵テスト[NewNetworkEnemyTest] $s:名前 \
+	-position	$v:位置 \
+	-dir		$i:方向
+
+mesg ネット敵テスト $s:名前 攻撃開始[1] $s:攻撃対象
+mesg ネット敵テスト $s:名前 攻撃停止[2] $s:攻撃対象
+mesg ネット敵テスト $s:名前 塹壕攻撃開始[3] $s:攻撃対象
+mesg ネット敵テスト $s:名前 塹壕攻撃停止[4] $s:攻撃対象
+mesg ネット敵テスト $s:名前 逝ってよし[5]
+
+
+
+command スタート同期カウンタ[NewNetworkSyncStartScn]
+
+
+#if 1
+chara ネット敵その２[NewNetworkEnemyTest2] $s:名前 \
+	-position	$v:位置 \
+	-dir		$i:方向
+
+mesg ネット敵その２ $s:名前 攻撃開始[1] $s:攻撃対象
+mesg ネット敵その２ $s:名前 攻撃停止[2] $s:攻撃対象
+mesg ネット敵その２ $s:名前 塹壕攻撃開始[3] $s:攻撃対象
+mesg ネット敵その２ $s:名前 塹壕攻撃停止[4] $s:攻撃対象
+#endif
+
+command ネットワークコールバック設定[NH_SetScnCallback] \
+	-startsession $p:セッションスタート時コールバック \
+	-logIn $p:メンバーログイン時コールバック \
+	-logOut $p:メンバーログアウト時コールバック
+
+
+chara ネットワークパッドテスト[NewNetworkPadTest] $s:名前 -i $i:メンバＩＤ

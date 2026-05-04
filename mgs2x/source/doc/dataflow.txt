@@ -1,0 +1,53 @@
+MGS2 dataflow
+    1999/12/03 K.Uehara
+    $Id: dataflow.txt,v 1.1.1.3 2002/11/19 11:41:42 Yoshizawa1 Exp $
+
+・基本的にMGS2のデータは以下のような経路をたどる。
+
+local   : 各人のローカルディレクトリ
+  ↓  http://mutsu.konami (森田作) ここではコピーするだけ。
+runtime : /u/develop/mj001data/runtime
+  ↓  プログラム班作成のツール <...>。 http://mutsu.konamiで変換を起動。
+fix     : /u/develop/mj001data/fix
+  ↓  dpack (森田作) / 内部でプログラム班作成のツール[...]を使用。
+cdrom.img ( local ) ステージ毎のデータ
+
+
+・MGS2で使用されるデータの変換フロー図
+
+runtime  ────────────> fix  ──────────> cdrom.img
+
+mdl  ─> mdl,rpt ──────┬─> kms  ──────────> kms (モデル)
+  3DCoodinater      <mdl2kc> ├─> cv2  ──────────> cv2 (頂点情報)
+                             │
+                             │
+bmp  ────────────┴─> bmp(dar) ────────> tri (テクスチャ)
+          <texconv>(半透明処理)          [makecm2, make_tri]
+
+mtn  ──────────────> mt3  ──────────> mar (モーション)
+               <mtnconv>(圧縮)                  [mar]
+
+scn  ──────────────> hzx  ──────────> hzx (アタリ情報)
+        <mergescene, scn2hzx>
+
+
+・担当者一覧
+
+mdl2kc   園山(狩野)
+texconv  園山
+makecm2  園山
+make_tri 高部
+mtnconv  高部
+mar      高部
+
+mergescene 田中（信）
+scn2hzx  園山
+
+
+・ツールについて
+
+ ACTGUYで使用するモデルデータは linuxのシェルスクリプト
+ nagato:/u/develop/mj001b/exports/tools/etc/models/model_new.sh
+ で更新できる。
+ ただ、(99/12/03)現在ツールの不具合のため、使用すると不具合が発生する。
+ 99/12/06 or 12/07に修正完了予定。

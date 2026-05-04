@@ -1,0 +1,104 @@
+//
+//	w22a.src	
+//	Ｆ脚倉庫
+//	written by H.Yoshiike 2000.Oct
+//
+//	$Id: w22a.src,v 1.35 2002/09/11 12:02:17 usr03682 Exp $
+
+#define WN_W22A
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 敵兵関連define
+// 敵兵タイプ
+#define ENE_P_GOL		// w22aは都市迷彩攻撃兵
+#define ENE_ATTACKER	// 攻撃兵
+#define ENE_SHIELD		// 盾兵
+#define ENE_SHOT		// ショットガン兵
+#define ENE_HIGH_TECH	// 人質イベント後はハイテク兵
+
+// 特殊兵のモーション設定
+#define ENE_MAR '-DDEL_TNG=DUMMY -DDEL_WALKMAN=DUMMY'
+
+// 各ステージ共通要素
+#include	"p_common.h"
+#include	"common.h"
+include		c_effect.h
+
+// 特殊ゲームオーバーPICT
+#include	"goverpic.h"
+
+// キャラクタ
+#include	"ene_plant.h"
+
+// 強制モーション
+mtn			rai_w22a.mls
+mtn			gps_w22a.mls			// ゴル兵肩回しモーション
+// ロッカー
+mtn			sna_locker.mls
+mtn			locker.mls
+
+// パッドデモ
+#ifdef MGS2_VMODE_PAL
+rpd		w22a_paddemo_01_p.rpd
+rpd		w22a_paddemo_02_p.rpd
+#else
+rpd		w22a_paddemo_01.rpd
+rpd		w22a_paddemo_02.rpd
+#endif
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル 
+option makexti6 -l 1024 -f PAL8
+pack_all	w22a.tri \
+	world/w22a/w22a0 \
+	world/w22a/obj \
+	world/door/dr_free.dar \
+	world/door/dr_lv1_01.dar \
+	world/door/dr_lv1_02.dar \
+	world/door/dr_lv2_01.dar \
+	world/door/dr_lv2_02.dar \
+	world/door/dr_lv3_01.dar \
+	world/door/w22a_dr00.dar \
+	world/door/w22a_dr01.dar
+option makexti6
+
+world		w22a/w22a0
+world		w22a/obj
+world		w22a/w22a1
+world		door/dr_free.kms
+world		door/dr_lv1_01.kms
+world		door/dr_lv1_02.kms
+world		door/dr_lv2_01.kms
+world		door/dr_lv2_02.kms
+world		door/dr_lv3_02.kms
+world		door/w22a_dr00.kms
+world		door/w22a_dr01.kms
+lt2			w22a.lt2
+hazard		w22a.hzx
+
+// オブジェクト
+pack_all	object.tri goods/locker/neo_locker_door.dar goods/c4_kaitai_a meca/ir_sensor weapon/cfr/cfr_trp.dar
+
+goods		locker/neo_locker_door.kms
+goods		c4_kaitai_a
+meca		ir_sensor
+weapon		cfr/cfr_trp.kms
+
+// 消火器
+debug		okajima/hose_test/hose_cone.kms
+debug		okajima/hose_test/hose_new2.kms
+cvd  		debug/okajima/hose_test/hose_new2.cvd vn
+
+// アイテム
+itembox
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム
+rename		gps_w22a.mar	gbsstage.mar

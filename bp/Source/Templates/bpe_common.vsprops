@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="BPE Common"
+	OutputDirectory="$(ConfigurationName)"
+	IntermediateDirectory="$(BPE_ROOT)\Source\Intermediate\$(ProjectName)\$(ConfigurationName)"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="&quot;$(BPE_ROOT)/Source&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/lua-5.0.2/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/Boost/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/FMod/inc&quot;"
+		FloatingPointModel="2"
+		RuntimeTypeInfo="false"
+		WarningLevel="3"
+	/>
+   <Tool
+		Name="VCCLX360CompilerTool"
+		AdditionalIncludeDirectories="&quot;$(BPE_ROOT)/Source&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/lua-5.0.2/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/Boost/include&quot;;&quot;$(BPE_ROOT)/Source/ExtLibraries/FMod/inc&quot;"
+		FloatingPointModel="2"
+		RuntimeTypeInfo="false"
+		WarningLevel="3"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		OutputFile="$(BPE_ROOT)/Bin/$(ProjectName)_$(ConfigurationName).dll"
+	/>
+   <Tool
+		Name="VCX360LinkerTool"
+		OutputFile="$(BPE_ROOT)/Bin/$(ProjectName)_$(ConfigurationName).dll"
+	/>
+</VisualStudioPropertySheet>

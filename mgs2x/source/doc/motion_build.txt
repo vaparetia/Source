@@ -1,0 +1,121 @@
+
+
+音声認識から口パクモーション生成までの流れ
+
+※音声データを foobar.pcm として記述。
+
+
+[1] 音声から時系列および音素列の抽出
+
+    vsc [-F|-M] foobar.pcm > foobar.seq
+
+    必要なもの:
+
+	/usr/local/share/vsc/jp_male.dic	日本語男声用音韻辞書
+	/usr/local/share/vsc/jp_female.dic	日本語女声用音韻辞書
+
+	~/.voice				閾値表
+
+	※上記のものは、変更予定あり。
+
+		/usr/local/share/vsc/jp_male.dic    ->	$SHARE/jp_male.dic
+		/usr/local/share/vsc/jp_female.dic  ->	$SHARE/jp_female.dic
+		~/.voice			    ->	$SHARE/voice.cnf
+
+	  $SHARE がどこになるかは未定。
+
+   [2001/03/13補足]
+	現在、$SHARE は /u/develop/mj001b/tools/shared/vsc となっています。
+
+
+
+[2] 時系列と inf から、話者ごとのモーション生成
+
+    vmtn -l blend.inf -m speaker1.inf [-m speaker2.inf[:set] [...]] [-i foobar.inf ] -s foobar.seq -o outdir
+
+    必要なもの:
+
+	blend.inf		音素->モーション変換表
+
+	speaker?.inf		話者毎のモーション素材情報
+				(実際は snake.inf, otacon.inf などとして
+				 事前に作成)
+
+	set			speaker?.inf 内に用意された、モーション素材
+				セット名(同じ話者名で素材を切替えることが可能)
+
+	foobar.inf		Xx によって出力された .inf ファイル
+
+	foobar.seq		vsc によって出力された .seq ファイル([1]で出力)
+
+	outdir			モーション出力先ディレクトリ
+
+
+    出力されるデータ
+
+	foobar_???????.mtn	foobar のあとに、話者名の strcode が付加された
+				名称で、.mtn ファイルが話者の数だけ出力される。
+
+	[2001/03/12補足]
+		現行のバージョンでは、speaker?.inf の中に idname フィールドを
+		用意することで、
+
+			foobar_idname_set.mtn
+
+		のようなファイル名で出力できます。ファイル名中の idname には、
+		idname フィールドの値(文字列)、set にはコマンドラインで指定
+		されたモーションセット名が入ります。
+
+
+[3] .mst (ストリーミング用モーションデータ)の生成
+
+    mtn2mst -o foobar.mst \
+	    -i AAAAAA foobar_AAAAAA.mtn [-i BBBBBB foobar_BBBBBB.mtn [...]]
+
+    必要なもの
+
+	foobar_AAAAAA.mtn
+	foobar_BBBBBB.mtn	vmtn によって出力された .mtn データ([2]で作成)
+
+
+    出力されるもの
+
+	foobar.mst		複数の .mtn をまとめた .mst データ
+
+
+
+[4] 字幕切替え情報の作成
+
+    convinf -f /u/develop/mj001b/tools/bin/linux/fontall.dat \
+	    -t /u/develop/mj001b/tools/bin/linux/zen_table   \
+	    foobar.inf -o foobar.cap
+
+
+    必要なもの
+
+	foobar.inf		Xx によって出力された .inf ファイル
+				([2] で使用したものと同じ)
+
+
+    出力されるもの
+
+	foobar.cap		字幕の切替え情報
+
+
+
+[5] list/vox.scr への記述
+
+		 :
+		 :
+    block FOOBAR
+    {
+	sound	*どこか*/foobar.pcm     …音声ファイル
+	cdccap	*どこか*/foobar.cap	…[4] で生成された .cap ファイル
+	motion	*どこか*/foobar.mst	…[3] で生成された .mtn ファイル
+    }
+		 :
+		 :
+
+
+
+以上。

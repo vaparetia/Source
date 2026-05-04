@@ -1,0 +1,204 @@
+/*
+    parrot.txt                                             
+    Metal Gear Solid 2 - SONS OF LIBERTY-                
+    オウム仕様ログ                                   
+    2001/10/24 Masafumi Okuta                            
+    $Id: parrot.txt,v 1.1.1.3 2002/11/19 11:48:12 Yoshizawa1 Exp $                                                 
+*/
+
+w24d - 電算室にいるオウムキャラ用のソースコード群
+
+基本システムはsource/user/korekado/npc以下のNPCシステムを用いている。
+
+parrot.c
+    オウム呼出
+        SampleMain( PARROT *work );
+        Act( PARROT *work );
+        Die( PARROT *work );
+        GetResources( PARROT *work, int name, int where );
+        NewParrot2( int name, int where );
+parrot.h
+    オウムヘッダ
+        
+parrot.def 
+    オウム関連関数宣言
+        
+pardata.c
+    オウム用データ
+        
+parparty.c 
+    オウム共用関数
+
+        CheckThinkInit( PARROT* work );
+            思考が切り替わったかチェック
+
+        PAR_SetThink1( PARROT* work,        
+                       int     nNewThink1,  // 新しいルーチン:モード
+                       int     nNewThink2,  // 新しいルーチン:フェーズレベル
+                       int     nNewThink3); // 新しいルーチン:動作レベル
+            モードレベルで思考切替え
+
+        PAR_SetThink2( PARROT* work,        
+                       int     nNewThink2,  // 新しいルーチン:フェーズレベル
+                       int     nNewThink3); // 新しいルーチン:動作レベル
+            フェーズレベルで思考切替え
+
+        PAR_SetThink3( PARROT* work,        
+                       int     nNewThink3); // 新しいルーチン:動作レベル
+            動作レベルで思考切替え
+
+        PAR_ShakeCage( PARROT* work, int nLevel );        
+            とりかご揺らし発動
+        PAR_UpdateCageRot( PARROT* work );
+            とりかご揺らし更新
+        
+parsound.c 
+    オウム音関連
+        PAR_SeManager(PARROT*    work);
+            内蔵SE管理
+
+        PAR_CallSe(PARROT*  work,     // オウムワーク
+                   int      nSeIndex, // SE番号（インデックス）
+                   FVECTOR* pvecPos,  // 位置
+                   int      nMode);   // 再生モード
+            内蔵SEをコール
+
+        PAR_Say(PARROT*  work,
+                int      nSeIndex,
+                int      nMode);
+            オウムの頭の位置から内蔵SEをコール
+        
+        PAR_StreamReq( PARROT* work,    // オウムワーク
+                       int     nIndex); // ストリームテーブルインデックス
+            ストリームリクエストに指定されたインデックスを入れる
+
+        PAR_StreamUpdate( PARROT* work );
+            ストリーミングマネージャ更新
+        
+parpre.c
+    オウム思考行動処理の前後処理
+
+        PAR_AvoidNearBomb( PARROT* work );
+            近くの爆弾を無効化
+
+        CheckMessage( PARROT* work );
+            メッセージ取得
+
+        InfoCheck( PARROT* work );
+            周辺情報の取得
+
+        PreProcess( PARROT* work );
+            思考、行動処理の前処理
+
+        AfterProcess( PARROT* work );
+            思考、行動処理の後処理
+        
+paract.c
+    オウムの行動処理
+
+        PAR_AdjustAimPoint( PARROT*  work,	
+			    FVECTOR* pvecTrg);	// 目標地点
+            目標地点に向く
+
+        PAR_ClearAdjust( PARROT* work);
+            アジャストクリア
+
+        PAR_GetNextMot( int* pnPar); // 確率
+            次のモーションをランダムで決める
+
+        PAR_TargetCallback( TARGET* off,   // 攻撃ターゲット
+                            TARGET* def,   // 防御ターゲット
+                            void*   ptr ); // オウムワーク
+            ターゲットコールバック
+
+        ActIdle( NPCWORK *npc, int time );
+            動作関数：アイドリング
+
+        ActFlipFlop( NPCWORK *npc, int time );
+            動作関数：ばたつき
+
+        ActAttention( NPCWORK *npc, int time );
+            動作関数：注目
+
+        ActTalk( NPCWORK *npc, int time );
+            動作関数：喋る
+
+        SampleCheckPad( NPCWORK *npc );
+            動作関数更新
+
+        SmpCheckDamage( NPCWORK	*npc );
+            ダメージチェック
+
+        Action( PARROT* work );
+            動作処理
+
+parthk.c
+    オウムの思考処理
+
+        Think3_Stand( PARROT* work );
+            思考関数：待機
+
+        Think3_Say( PARROT* work );
+            思考関数：通常しゃべり
+
+        Think3_EroBookListen( PARROT* work );
+            思考関数：兵士達のエロ本トークを聞く
+
+        Think3_EroBookSpeak( PARROT* work );
+            思考関数：エロ本しゃべり
+
+        Think3_EamesListen( PARROT* work );
+            思考関数：あんたがエイムズを聞く
+
+        Think3_EamesSpeak( PARROT* work );
+            思考関数：あんたがエイムズ
+
+        Think3_EnemyCall( PARROT* work );
+            思考関数：敵兵呼び
+
+        Think3_Flipflop( PARROT* work );
+            思考関数：ばたつき
+
+        Think3_SmpDamageWait( PARROT* work );
+            思考関数：ダメージ処理
+
+        Think3_SysDamageWait( PARROT* work );
+            思考関数：NPCシステムによるダメージ処理
+
+        Think3_WakeUp( PARROT* work );
+            思考関数：起きる
+
+        Think2_Ataraxia( PARROT* work );
+            思考関数：平常
+
+        Think2_SampleDamage( PARROT* work );
+            思考関数：ダメージ
+
+        Think2_SystemDamage( PARROT* work );
+            思考関数：NPCシステムによるダメージ
+
+        DamageCheck( PARROT* work );
+            思考関数：ダメージチェック
+
+        Think1_Normal( PARROT* work );
+            思考関数：通常
+
+        Think1_Damage( PARROT* work );
+            思考関数：ダメージ中
+
+        Think( PARROT* work );
+            思考関数
+
+        StartThink( PARROT* work );
+            思考関数：始め
+        
+parinit.c
+    オウム関連初期化        
+
+        PAR_InitSoundWork( PARROT* work );
+            サウンド関連初期化
+ 
+        PAR_WorkInit(PARROT* work);
+            オウムワーク初期化
+
+

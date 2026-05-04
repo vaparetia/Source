@@ -1,0 +1,614 @@
+//
+//	select.gcl
+//
+#include "varinit.h"
+#include "sload.h"
+
+//シナリオ班環境のみデバッグ入れるびっち。
+#if d:MGS2_SCN
+	#ifdef d:EU_TRIAL
+		#include "cdc_debug.h"
+	#else
+	//ＸＸＸＸＸＸＸＸＸＸＸＸＸｘ
+		#include "cdc_debug.h"
+		#include "cdc_debug_p.h"
+	#endif
+#endif
+
+#include "vox_test.h"
+
+if ( $w:プログラム結果 == 9999 ) {
+	/* デバッグリセットからSELECTにきた */
+	eval ( $w:プログラム結果 = 0 )
+	eval ( $b:res_mode = d:RES_SELECT )
+
+	command 変数初期化
+	eval($w:ゲーム設定 = d:LEVEL_NORMAL)
+	@タンカー編ストーリーフラグ初期化
+	@プラント編ストーリーフラグ初期化
+	@グローバル変数初期化 $w:ゲーム設定
+	@プレイヤー初期設定 $w:ゲーム設定 スネーク
+	@プレイヤー初期設定 $w:ゲーム設定 ライデン
+}
+
+if( $f:sound_test ){
+	@vox_test
+	eval( $f:sound_test = 0 );
+
+	return;
+}
+
+proc mv_vox_test {
+	eval( $f:sound_test = 1 );
+	load 'select' -r 'r_tnk0'
+}
+
+proc mv_ending_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 0 ) ;
+	load "ending" -r r_plt0 ;
+}
+
+proc set_lang_english {
+	eval( $w:言語 = d:LANG_ENGLISH );
+	command 字幕言語設定
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc set_lang_french {
+	eval( $w:言語 = d:LANG_FRENCH );
+	command 字幕言語設定
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc set_lang_german {
+	eval( $w:言語 = d:LANG_GERMANY );
+	command 字幕言語設定
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc set_lang_italian {
+	eval( $w:言語 = d:LANG_ITALY );
+	command 字幕言語設定
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc set_lang_spanish {
+	eval( $w:言語 = d:LANG_SPANISH );
+	command 字幕言語設定
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+//$f:rft_enter_codec_debug_mode_tが立っていたら担架変無線デバッグモードに入ります。
+//$f:rft_enter_codec_debug_mode_pが立っていたら不乱闘遍無線デバッグモードに入ります。
+if((!$f:rft_enter_codec_debug_mode_t) && (!$f:rfp_enter_codec_debug_mode_p) ){
+	if ($b:res_mode == d:RES_SELECT) {
+		// 一番最初はライデンとスネークの選択
+		chara select name -s {
+			'select_tanker(res_snake)'	load_res_snake
+			'select_plant(res_raiden)'	load_res_raiden
+			'n_title' 					mv_init_n_title_0
+			'ending' mv_ending_0
+			'boss_survival'				load_boss_survival
+			'start_e_extreme' 			start_e_extreme
+		#ifdef d:TGS2001F
+			'TGS_2001f_special' 		mv_tgs2001f_special
+		#endif
+			'vox_test' mv_vox_test
+			'memcard' mv_memcard
+			'select_english' set_lang_english
+			'select_french' set_lang_french
+			'select_german' set_lang_german
+			'select_italian' set_lang_italian
+			'select_spanish' set_lang_spanish
+			'low_poly_t00a1D'			mv_lowpoly_t00a1D
+			'low_poly_t04a1D'			mv_lowpoly_t04a1D
+			'low_poly_t05a1D'			mv_lowpoly_t05a1D
+			'low_poly_t12a1D'			mv_lowpoly_t12a1D
+			'low_poly_p010_01_p01'		mv_lowpoly_p010_01_p01
+			'low_poly_p012_01_p01'		mv_lowpoly_p012_01_p01
+			'low_poly_p080_03_p02'		mv_lowpoly_p080_03_p02
+			'low_poly_p082_01_p01'		mv_lowpoly_p082_01_p01
+		};
+	} else if ($b:res_mode == d:RES_SNAKE) {
+		// 常駐をスネークにしたときの選択
+
+		eval($s:n_title_ゲームモード = タンカー編);
+		chara select name -s {
+			'stage' snake_stage_select
+			'story' snake_story_select
+		#if d:MGS2_SCN
+			'Tanker:CODEC_motion_debug' enter_codec_debug_mode_t	//めくるめく無線デバッグモードへの扉
+		#endif
+			'return_select' load_select
+		};
+	} else if ($b:res_mode == d:SNAKE_STAGE) {
+		chara select name -s {
+//			'title' mv_init_title_0
+			'special' mv_init_special_0
+			'config_veryeasy' config_veryeasy_t
+			'config_easy' config_easy_t
+			'config_normal' config_normal_t
+			'config_hard' config_hard_t
+			'config_veryhard' config_veryhard_t
+			'config_e_extreme' config_e_extreme_t
+			'config_itemfull' config_fullitem_p
+			'config_debug' config_debug_t
+			'config_end_if_found'         config_end_if_found
+			'config_not_end_if_found'     config_not_end_if_found
+			'start(veryeasy)' trialgame_start_veryeasy
+			'start(easy)' trialgame_start_easy
+			'start(normal)' trialgame_start_normal
+			'start(hard)' trialgame_start_hard
+			'start(veryhard)' trialgame_start_veryhard
+		#ifdef d:MGS2_TANKER
+			'tanker_demo' mv_tanker_demos_0
+			'w00a_paddemo' mv_init_w00a_0
+			'w00a' mv_init_w00a_1
+			'w00b' mv_w01e_w00b_0
+			'w00c' mv_w01e_w00c_0
+			'w01a' mv_w00a_w01a_0
+			'w01f' mv_w01a_w01f_1x
+			'w01b' mv_w01f_w01b_1
+			'w01c' mv_w01b_w01c_0
+			'w01d' mv_w01c_w01d_0
+			'w01e' mv_w01d_w01e_0
+			'w02a' mv_w01f_w02a0_0
+			'w03a' mv_w02a3_w03a_0
+			'w03b' mv_w03a_w03b_0
+			'w04a' mv_init_w04a_0
+			'w04b' mv_init_w04b_0
+			'w04c' mv_init_w04c_0
+		#endif
+			'return_select' load_select
+		};
+	} else if ($b:res_mode == d:SNAKE_STORY) {
+		chara select name -s {
+			'vs_orga' vs_orga
+			'after_orga' mv_story_set_afterorga
+			'corridor' mv_story_corridor
+			'hold' mv_story_hold
+//			'title' mv_init_title_0
+			'special' mv_init_special_0
+			'config_veryeasy' config_veryeasy_t
+			'config_easy' config_easy_t
+			'config_normal' config_normal_t
+			'config_hard' config_hard_t
+			'config_veryhard' config_veryhard_t
+			'config_e_extreme' config_e_extreme_t
+			'config_itemfull' config_fullitem_p
+			'config_debug' config_debug_t
+			'config_end_if_found'         config_end_if_found
+			'config_not_end_if_found'     config_not_end_if_found
+			'start(veryeasy)' trialgame_start_veryeasy
+			'start(easy)' trialgame_start_easy
+			'start(normal)' trialgame_start_normal
+			'start(hard)' trialgame_start_hard
+			'start(veryhard)' trialgame_start_veryhard
+		#ifdef d:MGS2_TANKER
+		#endif
+		#if d:MGS2_SCN
+			'CODEC_motion_debug' enter_codec_debug_mode_t	//めくるめく無線デバッグモードへの扉
+		#endif
+			'return_select' load_select
+		};
+	} else if ($b:res_mode == d:RES_RAIDEN) {
+		// 常駐をライデンにしたときの選択
+
+		eval($s:n_title_ゲームモード = プラント編);
+		chara select name -s {
+			'stage' raiden_stage_select
+			'story' raiden_story_select
+			'demo_test' mv_demotest
+			'movie test' mv_movietest
+			'boss_check' mv_boss_check
+			'count_zero_test 1' mv_bombtest1
+			'count_zero_test 2' mv_bombtest2
+			'count_zero_test 3' mv_bombtest3
+		#if d:MGS2_SCN
+			#ifdef d:EU_TRIAL
+			#else
+	//ＸＸＸＸＸＸＸＸＸＸＸＸＸＸＸＸＸ
+				'PLANT:CODEC_motion_debug' enter_codec_debug_mode_p	//めくるめく無線デバッグモードへの扉
+		#endif
+		#endif
+			'return_select' load_select
+		};
+	} else if ($b:res_mode == d:RAIDEN_STAGE) {
+		// 常駐をライデンにしたときの選択
+		chara select name -s {
+		#ifdef d:MGS2_PLANT
+			'plant_demo' mv_plant_demos_0
+			'config_veryeasy' config_veryeasy_p
+			'config_easy' config_easy_p
+			'config_normal' config_normal_p
+			'config_hard' config_hard_p
+			'config_veryhard' config_veryhard_p
+			'config_e_extreme' config_e_extreme_p
+			'config_debug' config_debug_p
+			'config_cardlevel_5' config_card5_p
+			'config_itemfull' config_fullitem_p
+			'config_end_if_found'         config_end_if_found
+			'config_not_end_if_found'     config_not_end_if_found
+			'story_set_bombstart' mv_story_set_bombstart
+			'story_set_b_sensor_get' mv_story_set_b_sensor_get
+			'story_set_vs_fortune_end' mv_story_set_vs_fortune_end
+			'story_set_ninjademo_end' mv_story_set_ninjademo_end
+			'story_set_biometrix' mv_story_biometrix
+			'hostage_1st' hostage_1st
+			'hostage_2nd' hostage_2nd
+			'hostage_beauties' hostage_beauties
+			'hostage_old_beauties' hostage_old_beauties
+			'hostage_beasts' hostage_beasts
+			'story_set_ames_died' mv_story_set_ames_died
+			'w11a' mv_init_w11a0_0
+			'w11b' mv_w12a_w11b_0
+			'w11c' mv_w11b_w11c_0
+			'w12a' mv_w11a2_w12a_0
+			'w12b' mv_w12a_w12b0_0
+			'w12c' mv_w12b0_w12a_0
+			'w13a-1' mv_w12b0_w13a_0
+			'w13a-2' mv_w14a_w13a_0
+			'w13b' mv_init_w13b_0
+			'w14a' mv_w13a_w14a_0
+			'w15a-1' mv_w14a_w15a_0
+			'w15a-2' mv_w16a_w15a_0
+			'w15b' mv_init_w15b_0
+			'w16a' mv_w15a_w16a_0
+			'w17a-1' mv_w16a_w17a_0
+			'w17a-2' mv_w18a_w17a_0
+			'w18a' mv_w17a_w18a_0
+			'w19a-1' mv_w18a_w19a_0
+			'w19a-2' mv_w18a_w19a_1
+			'w19a-3' mv_w20a0_w19a_0
+			'w20a' mv_w19a_w20a0_0
+			'w20a_2' mv_w32a_w20a2_0
+			'w20b' mv_w20a1_w20b_0
+			'w21a-1'  mv_w20a0_w21a_0
+			'w21a-2' mv_w22a0g_w21a_0
+			'w21a-3' mv_w24a_w21a_0
+			'w21b' mv_init_w21b_0
+			'w22a' mv_w23a_w22a0h_0
+			'w23a-1' mv_w12b0_w23a_0
+			'w23a-2' mv_w22a0h_w23a_0
+			'w23a-3' mv_w22a1c_w23a_0
+			'w23b' mv_init_w23b_0
+			'w24a' mv_w21a_w24a_0
+			'w24b' mv_w24a_w24b_0
+			'w24b_caution' mv_caution_w24b
+			'w24c' mv_w24b_w24c_0
+			'w24c_eavesdrop' mv_demo_w24c_0
+			'w24c_ocelot_approaching_fast!!!!'mv_demo_w24c_1
+			'w24d' mv_w24a_w24d_0
+			'w25a' mv_w18a_w25a_0
+			'w25a harrier' mv_w18a_w25a_1
+			'w25b' mv_w25a_w25b_0
+			'w25c' mv_w25b_w25c_0
+			'w28a' mv_w25c_w28a_0
+			'w31a' mv_w25c_w31a_0
+			'w31b' mv_w31a_w31b_0
+			'w31c' mv_w31b_w31c0_0
+			'w31d' mv_w31b_w31d_0
+			'w32a' mv_w28a_w32a_0
+			'w32b' mv_w32a_w32b_0
+			'w41a-1' mv_w24d_w41a_0
+			'w41a-AFTER_GOUMON' mv_init_GOUMONGO
+			'w42a' mv_w41a_w42a_0
+			'w43a' mv_w42a_w43a_0
+			'w44a' mv_w43a_w44a_0
+			'w45a' mv_w44a_w45a_0
+			'w46a' mv_w45a_w46a_0
+			'VS_METAL' mv_init_VSMETAL
+			'w51a' mv_w46a_w51a_0
+			'w61a' mv_init_w61a_0
+			'wmovie' mv_init_wmovie_0
+		#endif
+			'return_select' load_select
+		};
+	} else if ($b:res_mode == d:RAIDEN_STORY) {
+		// 常駐をライデンにしたときの選択
+		chara select name -s {
+		#ifdef d:MGS2_PLANT
+			'config_veryeasy'             config_veryeasy_p
+			'config_easy'                 config_easy_p
+			'config_normal'               config_normal_p
+			'config_hard'                 config_hard_p
+			'config_veryhard'             config_veryhard_p
+			'config_e_extreme'            config_e_extreme_p
+			'config_debug'                config_debug_p
+			'config_cardlevel_5'          config_card5_p
+			'config_itemfull'             config_fullitem_p
+			'config_end_if_found'         config_end_if_found
+			'config_not_end_if_found'     config_not_end_if_found
+			'plant_start(w10a)'           load_plant_start
+			'dock_demo_start(w11a)'       load_dock_demo_start
+			'snake_demo_end(w11a)'        load_snake_demo_end
+			'title demo end (w12a)'       load_title_demo_end
+			'before vamp demo (w14a)'     load_before_vamp_demo
+			'after vamp demo (w14a)'      load_after_vamp_demo
+			'after fortune demo (w15a)'   load_after_fortune_demo_w15a
+			'peter sdemo (w16a)'          load_peter_sdemo
+			'bomb event start (w16b)'     load_bomb_event_start
+//			'bomb event (w20b)'           load_bomb_event_w20b
+//			'bomb event (w12b)'           load_bomb_event_w12b
+//			'bomb event (w14a)'           load_bomb_event_w14a
+			'bomb event 2 left (w16b)'    load_bomb_event_2_left_w16b
+			'bomb event 1 left after sensor B Get (w12b)'    load_bomb_event_1_left_w12b
+			'b sensor event start (w16b)' load_b_sensor_event_start
+			'before deep sea dock (w12c)' load_before_deep_sea_dock
+			'vs fortune(w11c)'            load_vs_fortune
+			'after vs fortune (w12c)'     load_after_vs_fortune
+			'before vs fatman (w20c)'     load_before_vs_fatman
+			'vs fatman (w20c)'            load_vs_fatman
+			'after vs fatman (w20c)'      load_after_vs_fatman
+			'after ninja demo (w20c)'     load_after_ninja_demo
+			'story_set_biometrix'         mv_story_biometrix
+			'ames_demo_end'               load_ames_demo_end
+			'after_ames (w12b)'           load_after_ames_w12b
+			'after_ames (w16b)'           load_after_ames_w16b
+			'psg1_event'                  load_psg1_event
+			'vs harrier'                  load_vs_harrier
+			'vs harrier_end'              load_vs_harrier_end
+			'tightrope_L'                 load_tightrope_L
+			'tightrope_L2'                 load_tightrope_L2
+			'shell2_in'                   load_shell2_in
+			'nikita_event_start'          load_nikita_event_start
+			'nikita_event_end'            load_nikita_event_end
+			'prez_demo_end'               load_prez_demo_end
+			'load_water_stage_start'      load_water_stage_start
+			'vs vamp(w31c)'               load_vs_vamp
+			'vs vamp_end(w31f)'           load_vs_vamp_end
+			'emma_find_demo_end'          load_emma_find_demo_end
+			'load_emma_ai_demo_end'       load_emma_ai_demo_end
+			'emma_event_start(w31d)'      load_emma_event_start
+			'emma_event_KL_Bridge'        load_emma_event_kl_bridge
+			'emma_event_L_prop'           load_emma_event_l_prop
+			'sniping_event_start'         load_sniping_event_start
+			'sniping_event_end(w20a)'     load_sniping_event_end
+			'arsenal_event_start'         load_arsenal_event_start
+			'after_goumon_w41a'           load_after_goumon_w41a
+			'arsenal_w43a'                load_arsenal_w43a
+			'meet_snake_w43a'             load_meet_snake_w43a
+			'vs TENGU B (w44a) Very Easy'     load_vs_tengu_B_w44a_VeryEasy
+			'vs TENGU B (w44a) Normal'        load_vs_tengu_B_w44a_Normal
+			'vs TENGU B (w44a) Extreme'       load_vs_tengu_B_w44a_Extreme
+			'vs TENGU B (w44a) Extreme (1/2)' load_vs_tengu_B_w44a_ExtremeHalf
+			'arsenal_w45a'                load_arsenal_w45a
+			'VS_TENG_w45a'                load_VS_TENG_w45a
+			'vs TENG VH'                  mv_vs_teng_vh
+			'vs ray'                      load_vs_ray
+			'arsenal event(w51a)'         load_arsenal_event
+			'arsenal demo'                load_arsenal_demo
+			'vs solidus(w61a)'            load_vs_solidus
+		#endif
+			'return_select' load_select
+		}
+	} else if ($b:res_mode == d:BOSS_SURVIVAL ) {
+		// ボスラッシュモード
+		chara select name -s {
+			'veryeasy'	veryeasy_set
+			'easy'		easy_set
+			'normal'	normal_set
+			'hard'		hard_set
+			'extreme'	extreme_set
+			'snake'		load_boss_survival_snake
+			'raiden'	load_boss_survival_raiden
+			'return_select' load_select
+		};
+
+	} else if ($b:res_mode == d:DEMO_TEST) {
+		// 上野用ムービーテスト
+		chara select name -s {
+			'Opening demo'			mv_opening_demo
+			'Snake ELV UP'			mv_snake_elv_up
+			'Raiden Node Access'		mv_node_access
+			'Raiden ELV UP'			mv_raiden_elv_up
+			'Encount Vamp(No Gun)'		mv_encount_vamp_no_gun
+			'Encount Vamp(Gun)'		mv_encount_vamp_gun
+			'Encount Vamp(No Shave)'	mv_encount_vamp_no_shave
+			'Encount Vamp(Shave)'		mv_encount_vamp_shave
+			'Encount Fortune'		mv_encount_fortune
+			'Encount Petar'			mv_encount_petar
+			'Encount Olga'			mv_encount_olga
+			'vs Fortune(before)'		mv_vs_fortune_before
+			'vs Fortune(after)'		mv_vs_fortune_after
+			'vs Foatman(before)'		mv_vs_fatman_before
+			'vs Foatman(after)'		mv_vs_fatman_after
+			'Encount Ninja'			mv_encount_ninja
+			'in Hostage Room'		mv_in_hostage_room
+			'Encount Ames'			mv_encount_ames
+			'vs Harrier(Before)'		mv_vs_harrier_before
+			'vs Harrier(After)'		mv_vs_harrier_after
+			'Olga in front of EFloor'	mv_olga_in_front_of_EFloor
+			'Prez demo'			mv_Prez_demo
+			'Petar Molg'			mv_Petar_molg
+			'vs Vamp(before)'		mv_vs_vamp_before
+			'vs Vamp(after)'		mv_vs_vamp_after
+			'Emma (1)'			mv_emma_1
+			'Emma (2)'			mv_emma_2
+			'Emma (3)'			mv_emma_3
+			'Emma Card 5'			mv_emma_card_5
+			'Emma L prop'			mv_emma_L_prop
+			'Vamp Sniping'			mv_vamp_snaiping
+			'AG_start_up'			mv_ag_start_up
+			'Tube (1)'			mv_tube
+			'Katana'			mv_katana
+			'Tengu'				mv_tengu
+			'AG Fortune'			mv_ag_fortune
+			'vs RAY'			mv_vs_ray
+			'Raise the AG'			mv_raise_the_ag
+			'Ending'			mv_ending
+			'return_select' load_select
+		};
+	} else if ($b:res_mode == d:BOSS_CHECK) {
+		// 大森用ボス難易度調整用
+		chara select name -s {
+			'vs FORTUNE VE'			mv_vs_fortune_ve
+			'vs FORTUNE EA'			mv_vs_fortune_ea
+			'vs FORTUNE NO'			mv_vs_fortune_no
+			'vs FORTUNE HA'			mv_vs_fortune_ha
+			'vs FORTUNE VH'			mv_vs_fortune_vh
+			'vs FATMAN VE'			mv_vs_fatman_ve
+			'vs FATMAN EA'			mv_vs_fatman_ea
+			'vs FATMAN NO'			mv_vs_fatman_no
+			'vs FATMAN HA'			mv_vs_fatman_ha
+			'vs FATMAN VH'			mv_vs_fatman_vh
+			'vs HARRIER VE'			mv_vs_harrier_ve
+			'vs HARRIER EA'			mv_vs_harrier_ea
+			'vs HARRIER NO'			mv_vs_harrier_no
+			'vs HARRIER HA'			mv_vs_harrier_ha
+			'vs HARRIER VH'			mv_vs_harrier_vh
+			'vs VAMP VE'			mv_vs_vamp_ve
+			'vs VAMP EA'			mv_vs_vamp_ea
+			'vs VAMP NO'			mv_vs_vamp_no
+			'vs VAMP HA'			mv_vs_vamp_ha
+			'vs VAMP VH'			mv_vs_vamp_vh
+			'vs RAY VE'			mv_vs_ray_ve
+			'vs RAY EA'			mv_vs_ray_ea
+			'vs RAY NO'			mv_vs_ray_no
+			'vs RAY HA'			mv_vs_ray_ha
+			'vs RAY VH'			mv_vs_ray_vh
+			'vs SOLIDUS VE'			mv_vs_solidus_ve
+			'vs SOLIDUS EA'			mv_vs_solidus_ea
+			'vs SOLIDUS NO'			mv_vs_solidus_no
+			'vs SOLIDUS HA'			mv_vs_solidus_ha
+			'vs SOLIDUS VH'			mv_vs_solidus_vh
+			'return_select' load_select
+		};
+	} else if ($b:res_mode == d:BOMB_TEST1) {
+		// RMC カウントゼロテスト
+		// Ａ脚海底へ急げ
+		// いけるステージ：シェル1の中央棟以外全て
+		chara select name -s {
+			'A prop Roof'		mv_count_test1_a_roof
+			'A prop'		mv_count_test1_a
+			'AB Bridge'		mv_count_test1_ab
+			'B prop'		mv_count_test1_b
+			'BC Bridge'		mv_count_test1_bc
+			'C prop'		mv_count_test1_c
+			'CD Bridge'		mv_count_test1_cd
+			'D prop'		mv_count_test1_d
+			'DE Bridge'		mv_count_test1_de
+			'E prop'		mv_count_test1_e
+			'Heriport'		mv_count_test1_heriport
+			'EF Bridge'		mv_count_test1_ef
+			'F prop'		mv_count_test1_f
+			'FA Bridge'		mv_count_test1_fa
+			'return_select' 	load_select
+		};
+	} else if ($b:res_mode == d:BOMB_TEST2) {
+		// RMC カウントゼロテスト
+		// ヘリポートへ急げ
+		// いけるステージ：シェル1の中央棟以外全て
+		chara select name -s {
+			'A prop Roof'		mv_count_test2_a_roof
+			'A prop'		mv_count_test2_a
+			'AB Bridge'		mv_count_test2_ab
+			'B prop'		mv_count_test2_b
+			'BC Bridge'		mv_count_test2_bc
+			'C prop'		mv_count_test2_c
+			'CD Bridge'		mv_count_test2_cd
+			'D prop'		mv_count_test2_d
+			'DE Bridge'		mv_count_test2_de
+			'E prop'		mv_count_test2_e
+			'Heriport'		mv_count_test2_heriport
+			'EF Bridge'		mv_count_test2_ef
+			'F prop'		mv_count_test2_f
+			'FA Bridge'		mv_count_test2_fa
+			'return_select' 	load_select
+		};
+	} else if ($b:res_mode == d:BOMB_TEST3) {
+		// RMC カウントゼロテスト
+		// エマのもとへ急げ
+		// いけるステージ：
+		chara select name -s {
+			'E prop'		mv_count_test3_e
+			'EF Bridge'		mv_count_test3_ef
+			'Center Unit1F'		mv_count_test3_c1f
+			'return_select' 	load_select
+		};
+	} else if ($b:res_mode == d:MOVIE_TEST) {
+		chara select name -s {
+			'p010_06_m02'		mv_p010_06_m02
+			'p014_02_m01'		mv_p014_02_m01
+			'p014_04_m02'		mv_p014_04_m02
+			'p014_07_m03'		mv_p014_07_m03
+			'p049_04_m02'		mv_p049_04_m02
+			'p049_06_m03'		mv_p049_06_m03
+			'p049_09_m05'		mv_p049_09_m05
+			'p055_03_m01'		mv_p055_03_m01
+			'p059_02_m02'		mv_p059_02_m02
+			'p080_02_m01'		mv_p080_02_m01
+			'p080_06_m02'		mv_p080_06_m02
+			'p080_27_m11'		mv_p080_27_m11
+			'p010_02_m01'		mv_p010_02_m01
+			'p010_07_m03'		mv_p010_07_m03
+			'p010_08_m04'		mv_p010_08_m04
+			'p014_14_m04'		mv_p014_14_m04
+			'p036_09_m01'		mv_p036_09_m01
+			'p040_06_r02'		mv_p040_06_r02
+			'p049_03_m01'		mv_p049_03_m01
+			'p049_07_m04'		mv_p049_07_m04
+			'p050_03_m02'		mv_p050_03_m02
+			'p050_05_m03'		mv_p050_05_m03
+			'p058_05_m01'		mv_p058_05_m01
+			'p062_02_m01'		mv_p062_02_m01
+			'p062_04_m02'		mv_p062_04_m02
+			'p070_06_m01'		mv_p070_06_m01
+			'p070_11_m02'		mv_p070_11_m02
+			'p070_14_m03'		mv_p070_14_m03
+			'p070_19_m05'		mv_p070_19_m05
+			'p080_08_m03'		mv_p080_08_m03
+			'p080_10_m04'		mv_p080_10_m04
+			'p080_12_m05'		mv_p080_12_m05
+			'p080_15_m06'		mv_p080_15_m06
+			'p080_17_m07'		mv_p080_17_m07
+			'p080_20_m08'		mv_p080_20_m08
+			'p080_22_m09'		mv_p080_22_m09
+			'p080_24_m10'		mv_p080_24_m10
+			'p082_03_m01'		mv_p082_03_m01
+			'p082_08_m03'		mv_p082_08_m03
+			'p082_09_m04'		mv_p082_09_m04
+		}
+	}
+#endif
+
+}else{
+#if d:MGS2_SCN
+	if($f:rft_enter_codec_debug_mode_t){
+		@codec_debug_list_set_t
+	}else {
+print 'プラント編無線デバッグむきき'
+	#ifdef d:EU_TRIAL
+	#else
+//ＸＸＸＸＸＸＸＸＸ
+		@codec_debug_list_set_p
+	#endif
+	}
+#endif
+}
+
+proc movie_end_proc {
+	restart ;
+}

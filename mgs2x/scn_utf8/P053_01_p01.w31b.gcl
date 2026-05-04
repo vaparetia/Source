@@ -1,0 +1,950 @@
+/*
+	P053_01_p01.w31b.gcl
+	    人質部屋デモ用ステージ
+
+	2001/03/01 S.Hirano
+	$Id: P053_01_p01.w31b.gcl,v 1.41 2001/11/08 11:34:34 usr03635 Exp $
+
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+#define		DEMO_STAGE		1		// デモステージかどうかで起動するキャラを切り分ける
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME		d00a3
+#define		KMS_NAME0		w31b0
+#define		KMS_NAME3		w31b3
+
+#define		CEIL_NAME0		w31b0r
+#define		CEIL_NAME3		w31b3r
+
+#define		DOOR_NAME2		dr_lv4_00		//	スライドドア
+
+#define		LT2_NAME		w31b
+#define		LT2_NAME_24d		w24d
+
+#define		DOOR_NAME_ELV_1	elv_dr1			// エレベータ用１
+#define		DOOR_NAME_ELV_2	elv_dr2			// エレベータ用２
+
+// 水中用ディファイン
+#define	WATER_MODE			1		// 水中モード基本キャラ設定を使用するのに必要
+#define WATER_SURFACE		-6450	// 水面の高さ
+#define	WATER_CAMERA_ZONE	1		// 追従カメラが使用するゾーンのあるグループ番号(必要があれば定義する)
+#define	CAMERA_BUBBLE_NUM	9		// カメラ泡の個数(いらない場合は定義しない)
+#define	CAMERA_DUST_NUM		10		// カメラダストの個数(いらない場合は定義しない)
+
+
+// includes
+// ------------------------------------
+#include "5sec_bfr_demo.h"
+#include "demo_stdch.h"
+#include "demo_stdch2.h"
+#include "demo_vardef.h"
+#include "story.h"
+#include "sload.h"
+
+#include "p_force_cdc.ch"
+
+#if d:PLANT_DEMO_ALL_SKIP
+	#define		DEMO_SKIP_ENABLE 1
+#else
+	#define		DEMO_SKIP_ENABLE 0
+#endif
+
+#if d:MGS2_DEMO
+	#define     DEMO_STAGE_SET 1	// 実行するステージの選択
+									// 0 水中  1 電算室
+	#define     DEMO_WATER_EFFECT 0	// 水中ゆらぎのオン・オフ
+									// 0 オフ  1 オン
+#endif
+
+//###################################################################################
+//								ストーリーフラグ & デモ再生
+//###################################################################################
+// ＜↓↓↓同期↓↓↓＞
+if( d:ST:P062_05_R02エマとＡＩ５無線機デモ２終了 <= $w:p_story && \
+				$w:p_story < d:ST:P062_06_P02エマとＡＩ６ポリゴンデモ２開始) {
+	chara マップ シェル２中央棟Ｂ１ -h d:HZX_NAME,0 -l d:LT2_NAME_24d
+} else {
+	chara マップ シェル２中央棟Ｂ１ -h d:HZX_NAME,0 -l d:LT2_NAME
+}
+
+command マップ設定 シェル２中央棟Ｂ１ -set {
+
+// デモ環境かどうか。
+#if d:MGS2_DEMO
+
+// 不要プログラムの起動阻害
+#if d:DEMO_STAGE_SET
+	eval($s:d_num = P062_06_p02)
+#else
+	eval($s:d_num = hogehoge)
+#endif
+
+chara デモアクトデバッグ demodebug  -i t:p062_06_p02 -d 'p062_06_p02' -l   \
+		-p  ドアランプを青に変更 ドアランプを赤に変更
+
+#else
+
+
+// ゲームＧＣＬと共用で入ってくる部分なので、== で条件を見る。
+/*
+d:ST:P054_01_P01ピーター死体１ポリゴンデモ１開始 は廃止（010724）
+その代わり独自フラグでチェック。
+*/
+if($f:ピーター浮遊死体デモ見た == 0) {
+	print'd:ST:P054_01_P01ピーター死体１ポリゴンデモ１開始'
+
+	/* ピーターの死体が浮遊している */
+
+	// デモ特有の変数代入
+	eval($s:d_num = P054_01_p01)
+
+	@デモモデル差し替え処理
+	proc デモ再生_P054_01_p01 {
+		chara demo デモ再生 \
+			-i t:p054_01_p01 \
+			-p dummy_proc \
+			-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+			-next P054_01_p01終了
+	}
+
+	@デモ再生_P054_01_p01
+
+
+// ゲームＧＣＬと共用で入ってくる部分なので、== で条件を見る。
+} else if($w:p_story == d:ST:P062_01_P01エマとＡＩ１ポリゴンデモ１開始) {
+	print'd:ST:P062_01_P01エマとＡＩ１ポリゴンデモ１開始'
+	eval($w:p_story = d:ST:P062_01_P01エマとＡＩ１ポリゴンデモ１開始)
+
+	/* ライデン、エマにＭＯをわたす */
+
+	// デモ特有の変数代入
+	eval($s:d_num = P062_01_p01)
+
+	@デモモデル差し替え処理
+	proc デモ再生_P062_01_p01 {
+		chara demo デモ再生 \
+			-i t:p062_01_p01 \
+			-p ドアランプを青に変更 ドアランプを赤に変更 \
+			-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+			-next P062_01_p01終了
+	}
+
+	@デモ再生_P062_01_p01
+
+} else if( d:ST:P062_01_P01エマとＡＩ１ポリゴンデモ１終了 <= $w:p_story && \
+				$w:p_story < d:ST:P062_02_M01エマとＡＩ２ムービーデモ１開始) {
+	print'd:ST:P062_02_M01エマとＡＩ２ムービーデモ１開始'
+	eval($w:p_story = d:ST:P062_02_M01エマとＡＩ２ムービーデモ１開始)
+
+	/* エマがウイルスプログラムを作ったことを知る */
+
+	// デモ特有の変数代入
+	eval($s:d_num = P062_02_m01)
+
+	#if 1
+		//chara デバッグポーズ pause 'MOVIE_P062_02_m01' -p P062_02_m01終了
+		chara MOVIE再生 MOVIE_P062_02_m01 -file t:p062_02_m01 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc P062_02_m01終了
+	#else
+		/* 無線 */
+		/* P062_02_m01終了 */
+	#endif
+
+} else if( d:ST:P062_02_M01エマとＡＩ２ムービーデモ１終了 <= $w:p_story && \
+				$w:p_story < d:ST:P062_03_R01エマとＡＩ３無線機デモ１開始) {
+	print'd:ST:P062_03_R01エマとＡＩ３無線機デモ１開始'
+	eval($w:p_story = d:ST:P062_03_R01エマとＡＩ３無線機デモ１開始)
+
+	/* エマ体内通信　なぜアーセナル計画へ協力した？ */
+
+	// デモ特有の変数代入
+	eval($s:d_num = P062_03_r01)
+	@rt_P062_03_R01エマとＡＩ３無線機デモ１
+	/* P062_03_r01終了 */
+	/*
+	eval($w:p_story = d:ST:P062_03_R01エマとＡＩ３無線機デモ１終了)
+	restart
+	*/
+
+} else if( d:ST:P062_03_R01エマとＡＩ３無線機デモ１終了 <= $w:p_story && \
+				$w:p_story < d:ST:P062_04_M02エマとＡＩ４ムービーデモ２開始) {
+	print'd:ST:P062_04_M02エマとＡＩ４ムービーデモ２開始'
+	eval($w:p_story = d:ST:P062_04_M02エマとＡＩ４ムービーデモ２開始)
+
+	/* Ｙ２Ｋ問題の映像 */
+
+	// デモ特有の変数代入
+	eval($s:d_num = P062_04_m02)
+
+	#if 1
+		//chara デバッグポーズ pause 'MOVIE_P062_04_m02' -p P062_04_m02終了
+		chara MOVIE再生 MOVIE_P062_04_m02 -file t:p062_04_m02 -top 0, 32 -size 512, 320 -proc P062_04_m02終了
+	#else
+		/* 無線 */
+		/* P062_04_m02終了 */
+	#endif
+
+} else if( d:ST:P062_04_M02エマとＡＩ４ムービーデモ２終了 <= $w:p_story && \
+				$w:p_story < d:ST:P062_05_R02エマとＡＩ５無線機デモ２開始) {
+	print'd:ST:P062_05_R02エマとＡＩ５無線機デモ２開始'
+	eval($w:p_story = d:ST:P062_05_R02エマとＡＩ５無線機デモ２開始)
+
+	/* エマ体内通信　電算室へ向かおう… */
+
+	// デモ特有の変数代入
+	eval($s:d_num = P062_05_r02)
+	@rt_P062_05_R02エマとＡＩ５無線機デモ２
+	/* P062_05_r02終了 */
+	/*
+	eval($w:p_story = d:ST:P062_05_R02エマとＡＩ５無線機デモ２終了)
+	restart
+	*/
+
+// ＜↑↑↑同期↑↑↑＞
+} else if( d:ST:P062_05_R02エマとＡＩ５無線機デモ２終了 <= $w:p_story && \
+				$w:p_story < d:ST:P062_06_P02エマとＡＩ６ポリゴンデモ２開始) {
+	print'd:ST:P062_06_P02エマとＡＩ６ポリゴンデモ２開始'
+	eval($w:p_story = d:ST:P062_06_P02エマとＡＩ６ポリゴンデモ２開始)
+
+	/* 電算室のオウム */
+
+	// デモ特有の変数代入
+	eval($s:d_num = P062_06_p02)
+
+	@デモモデル差し替え処理
+	proc デモ再生_P062_06_p02 {
+		chara demo デモ再生 \
+			-i t:p062_06_p02 \
+			-p dummy_proc \
+			-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+			-next P062_06_p02終了
+	}
+
+	@デモ再生_P062_06_p02
+
+} else if( d:ST:P062_06_P02エマとＡＩ６ポリゴンデモ２終了 <= $w:p_story && \
+				$w:p_story < d:ST:P062_07_P03エマとＡＩ７ポリゴンデモ３開始) {
+	print'd:ST:P062_07_P03エマとＡＩ７ポリゴンデモ３開始'
+	eval($w:p_story = d:ST:P062_07_P03エマとＡＩ７ポリゴンデモ３開始)
+
+	/* これから進んでゆく水中のコースを見せる */
+
+	// デモ特有の変数代入
+	eval($s:d_num = P062_07_p03)
+
+	@デモモデル差し替え処理
+	proc デモ再生_P062_07_p03 {
+		chara demo デモ再生 \
+			-i t:p062_07_p03 \
+			-p dummy_proc \
+			-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+			-next P062_07_p03終了
+	}
+
+	@デモ再生_P062_07_p03
+
+} else if( d:ST:P062_07_P03エマとＡＩ７ポリゴンデモ３終了 <= $w:p_story && \
+				$w:p_story < d:ST:P062_08_P04エマとＡＩ８ポリゴンデモ４開始) {
+	print'd:ST:P062_08_P04エマとＡＩ８ポリゴンデモ４開始'
+	eval($w:p_story = d:ST:P062_08_P04エマとＡＩ８ポリゴンデモ４開始)
+
+	/* エマのヌリバシ（髪飾りにしている）ネタ */
+
+	// デモ特有の変数代入
+	eval($s:d_num = P062_08_p04)
+
+	@デモモデル差し替え処理
+	proc デモ再生_P062_08_p04 {
+		chara demo デモ再生 \
+			-i t:p062_08_p04 \
+			-p dummy_proc \
+			-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+			-next P062_08_p04終了
+	}
+
+	@デモ再生_P062_08_p04
+
+
+// デモの時以外は、以下を通過する。
+} else {
+
+	// このフラグが立っていると、親（ゲームの）GCLの方で必要なキャラが起動する。
+	@ゲームステージへ戻る
+
+}
+
+#endif
+
+// デモ仕様のセット
+	@常駐キャラ設定						// stdch.hで定義
+	if($s:d_num != not_demo){
+		// 共通して使用するもの
+		chara デモキャンセルチェック デモキャンセル \
+			-p demo_cancel
+
+		// 無線ではシネマスクリーン起動しない
+		if(($s:d_num != P062_03_r01) || ($s:d_num != P062_05_r02)){
+				@シネマスクリーンセット
+		}
+
+		// 電算機室オウムデモでのみ使用。
+		if($s:d_num == P062_06_p02){
+			@w24dのフォグセット
+			@電算室ステージモデル表示
+			@アーセナルランプセット
+			@ロッカー設置
+//			@鳥篭
+		} else {
+			// 水中時のフォグコントローラでは、デモからフォグが制御できないので切る。
+			// 010818 田中(信)
+			if($s:d_num != P062_07_p03){
+				@w31bのフォグセット
+			}
+print 'デモ仕様_000'
+			@水密ドアセット
+print 'デモ仕様_001'
+//			@ドアセット
+print 'デモ仕様_002'
+			@エレベータセット
+print 'デモ仕様_003'
+			@シェル２中央棟Ｂ１天井セット
+print 'デモ仕様_004'
+#if d:MGS2_DEMO
+	if(d:DEMO_WATER_EFFECT == 1) {
+		@デモ水中モード基本キャラ設定
+	}else{		
+		@水中モード基本キャラ設定
+	}
+#else
+			//@水中セットデモ
+			if($s:d_num == P062_01_p01) {
+				@デモ水中モード基本キャラ設定
+			}else{
+				@水中モード基本キャラ設定
+			}
+#endif
+print 'デモ仕様_005'
+			@機雷セット // デモで映らなければコメントアウト。
+print 'デモ仕様_006'
+			@ステージモデル表示
+			@デモドアランプ設定
+		}
+	}
+
+} // < 「command マップ設定 シェル２中央棟Ｂ１」 の閉じカッコ
+
+// ====================================
+// 初期マップ表示
+// ====================================
+	command マップ表示 -show シェル２中央棟Ｂ１
+
+
+//###################################################################################
+//									デモのみ仕様各種
+//###################################################################################
+// ダミープロック
+proc dummy_proc {}
+
+// デモキャンセル
+proc demo_cancel {
+	command StreamStopAll
+}
+
+// リスタート
+proc restart_proc {
+	restart
+}
+
+// デモ終了時プロック
+proc P054_01_p01終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+	eval($f:ピーター浮遊死体デモ見た = 1)
+	print 'P054_01_P01ピーター死体１ポリゴンデモ１終了'
+
+	chara delay ディレイ \
+		-time 1 \
+		-exec{
+			// ゲームへ
+			@ゲームステージへ戻る
+			load 'w31b' -r 'r_plt0'
+		}
+}
+
+proc P062_01_p01終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+	#if d:DEMO_SKIP_ENABLE
+		eval($w:p_story = d:ST:P062_02_M01エマとＡＩ２ムービーデモ１終了)
+		print '$w:p_story = d:ST:P062_02_M01エマとＡＩ２ムービーデモ１終了'
+	#else
+		eval($w:p_story = d:ST:P062_01_P01エマとＡＩ１ポリゴンデモ１終了)
+		print '$w:p_story = d:ST:P062_01_P01エマとＡＩ１ポリゴンデモ１終了'
+	#endif
+
+	chara delay ディレイ \
+		-time 1 \
+		-exec{
+			restart
+		}
+}
+
+proc P062_02_m01終了 {
+	@デモ終了時シネマスクリーンオフ
+	eval($w:p_story = d:ST:P062_02_M01エマとＡＩ２ムービーデモ１終了)
+	restart
+}
+
+proc P062_04_m02終了 {
+	@デモ終了時シネマスクリーンオフ
+	eval($w:p_story = d:ST:P062_04_M02エマとＡＩ４ムービーデモ２終了)
+	restart
+}
+
+proc P062_06_p02終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+	#if d:DEMO_SKIP_ENABLE
+		eval($w:p_story = d:ST:P062_08_P04エマとＡＩ８ポリゴンデモ４終了)
+		print '$w:p_story = d:ST:P062_08_P04エマとＡＩ８ポリゴンデモ４終了'
+	#else
+		eval($w:p_story = d:ST:P062_06_P02エマとＡＩ６ポリゴンデモ２終了)
+		print '$w:p_story = d:ST:P062_06_P02エマとＡＩ６ポリゴンデモ２終了'
+	#endif
+
+	chara delay ディレイ \
+		-time 1 \
+		-exec{
+			restart
+		}
+}
+
+proc P062_07_p03終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+	#if d:DEMO_SKIP_ENABLE
+		eval($w:p_story = d:ST:P062_08_P04エマとＡＩ８ポリゴンデモ４終了)
+		print '$w:p_story = d:ST:P062_08_P04エマとＡＩ８ポリゴンデモ４終了'
+	#else
+		eval($w:p_story = d:ST:P062_07_P03エマとＡＩ７ポリゴンデモ３終了)
+		print '$w:p_story = d:ST:P062_07_P03エマとＡＩ７ポリゴンデモ３終了'
+	#endif
+
+	chara delay ディレイ \
+		-time 1 \
+		-exec{
+			restart
+		}
+}
+
+proc P062_08_p04終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+	eval($w:p_story = d:ST:P062_08_P04エマとＡＩ８ポリゴンデモ４終了)
+	print '$w:p_story = d:ST:P062_08_P04エマとＡＩ８ポリゴンデモ４終了'
+
+	chara delay ディレイ \
+		-time 1 \
+		-exec{
+			// ゲームへ
+			@ゲームステージへ戻る
+// ↓これだと現ステージ名などがきちんと記録されないため、修正します。2001.10.22 吉池
+//			load "w31b" -r 'r_plt0'
+			@mv_demo_w31b_0
+		}
+}
+
+
+
+// シネマスクリーン
+proc シネマスクリーンセット {
+	chara シネマスクリーン シネマ \
+		-top d:CINEMA_BELT_UPPER \
+		-bottom d:CINEMA_BELT_LOWER \
+		-ftime 60	//デフォルト値（ゼロは駄目）
+	mesg シネマスクリーン シネマ フェードアウト 1
+}
+
+// 水密ドア
+proc 水密ドアセット {
+	//	右はしの水密ドア
+	chara プットオブジェ 右はしの水密ドア \
+		-m demo_w00_sdr_r \
+		-r 0,3072,0 \
+		-p 12125,-10500,-222500 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+
+#if 0
+	// 右端対面水密ドア
+	chara プットオブジェ 右端対面水密ドア \
+		-m demo_w00_sdr_r \
+		-r 0,1024,0 \
+		-p 7375,-10500,(-222500+1000) \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+
+	// 左端対面水密ドア
+	chara プットオブジェ 左端対面水密ドア \
+		-m demo_w00_sdr_r \
+		-r 0,3072,0 \
+		-p -7375,-10500,(-222500+1000) \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+
+	//	左はし
+	chara プットオブジェ 左はし \
+		-m demo_w00_sdr_r \
+		-r 0,1024,0 \
+		-p -12125,-10500,-221000 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+#endif
+}
+
+// ドア
+proc ドアセット {
+	chara プットオブジェ ヴァンプ戦ドア \
+		-m d:DOOR_NAME2 \
+		-r 0,0,0 \
+		-p -9250,-6250,-232375 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+}
+
+// エレベーター
+proc エレベータセット {
+	chara プットオブジェ エレベーター -m elv_2 -r 0,0,0 -p 0,-4000,-180000 -s 100,100,100 -l d:LT2_NAME
+	chara プットオブジェ エレベーター天井 -m elv_2r -r 0,0,0 -p 0,-4000,-180000 -s 100,100,100 -l d:LT2_NAME
+}
+
+// 天井
+proc シェル２中央棟Ｂ１天井セット {
+print 'シェル２中央棟Ｂ１天井セット_000'
+	chara プットオブジェ １ \
+		-m d:CEIL_NAME0 \
+		-r 0,0,0 \
+		-p 0,0,0 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+
+#if 0
+print 'シェル２中央棟Ｂ１天井セット_001'
+	chara プットオブジェ ２ \
+		-m d:CEIL_NAME1 \
+		-r 0,0,0 \
+		-p 0,0,0 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+
+print 'シェル２中央棟Ｂ１天井セット_002'
+	chara プットオブジェ 水没部分天井 \
+		-m d:CEIL_NAME2 \
+		-r 0,0,0 \
+		-p 0,0,0 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+#endif
+
+print 'シェル２中央棟Ｂ１天井セット_003'
+	chara プットオブジェ 南側階段天井 \
+		-m d:CEIL_NAME3 \
+		-r 0,0,0 \
+		-p 0,0,0 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+
+#if 0
+print 'シェル２中央棟Ｂ１天井セット_004'
+	chara プットオブジェ シェル２中央棟Ｂ１息継ぎ \
+		-m d:CEIL_NAME4 \
+		-r 0,0,0 \
+		-p 0,0,0 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+print 'シェル２中央棟Ｂ１天井セット_005'
+#endif
+}
+
+// 水中セット
+proc 水中セットデモ {
+	command 新プラグイン水中 \
+	-z 1
+	command 新水中設定 \
+		-horizon -6500 \
+		-motion rai_swim \
+		-flag d:WATER_FLAG_AUTO_ROTATE
+
+	command 水位設定 -lv -6500
+/*
+	chara 水中カメラ ゆらぎマン \
+		-col 128 128 160 \
+		-warp 2
+*/
+ 	chara カメラ泡 泡ぶくマン -n 16
+	chara カメラダスト ダストマン -n 1
+
+}
+
+// 機雷
+proc 機雷セット {
+/*
+	chara 水中機雷 機雷:01 \
+		-position 3000 -9000 -251000 \
+		-rotate 0 0 0
+*/
+	chara 水中機雷 機雷:02 \
+		-position 4750 -9000 -243000 \
+		-rotate 0 0 0
+
+	chara 水中機雷 機雷:03 \
+		-position 9000 -7500 -228000 \
+		-rotate 0 0 0
+
+	chara 水中機雷 機雷:03 \
+		-position 9000 -9700 (-228000 + 2500 ) \
+		-rotate 0 0 0
+}
+
+
+proc ステージモデル表示 {
+	chara プットオブジェ モデル０ \
+		-m d:KMS_NAME0 -r 0,0,0 \
+		-p 0,0,0 -s 100,100,100 \
+		-l d:LT2_NAME
+	chara プットオブジェ モデル３ \
+		-m d:KMS_NAME3 -r 0,0,0 \
+		-p 0,0,0 -s 100,100,100 \
+		-l d:LT2_NAME
+}
+
+proc 電算室ステージモデル表示 {
+	// まずは電算機ステージの平行光と環境光をセット
+	@w24dの平行光環境光
+
+	// ステージ本体
+	chara プットオブジェ w24d0   -m w24d0 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME_24d
+	chara プットオブジェ w24d1_a -m w24d1_a -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME_24d
+	chara プットオブジェ w24d1_b -m w24d1_b -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME_24d
+	chara プットオブジェ w24d2   -m w24d2 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME_24d
+	chara プットオブジェ w24d2_wall -m w24d2_wall -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME_24d
+
+	// 天井
+	chara プットオブジェ w24d0r -m w24d0r -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME_24d
+	chara プットオブジェ w24d1r -m w24d1r -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME_24d
+	chara プットオブジェ w24d2r -m w24d2r -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME_24d
+
+	// ものをセットし終えたら、w31bの平行光と環境光に戻す。
+	@w31bの平行光環境光
+}
+
+proc 鳥篭 {
+	// まずは電算機ステージの平行光と環境光をセット
+	@w24dの平行光環境光
+	#if d:DEBUG_PRINT
+		print 'bird_cage'
+	#endif
+
+	// オウム modified by Okuta
+	chara オウム オウム１ \
+		-pos  -500, -14700, -59600 \
+		-yrot 0 \
+		-hp   50 \
+		-vox \
+		t:vc120131, t:vc120132, t:vc120133, t:vc120134, t:vc120135, \
+		t:vc120136, t:vc120137, t:vc120138, t:vc120139, t:vc120140, \
+		t:vc120141, t:vc120142, t:vc120143, t:vc120144, t:vc120145  \
+
+		-flagvox \
+		0, 0, 0, 0, 0, \
+		0, 0, 0, 0, 0, \
+		0, 0, 0, 0, 0  \
+
+		-len_vox \
+		t:vc120131_len, t:vc120132_len, t:vc120133_len, t:vc120134_len, t:vc120135_len, \
+		t:vc120136_len, t:vc120137_len, t:vc120138_len, t:vc120139_len, t:vc120140_len, \
+		t:vc120141_len, t:vc120142_len, t:vc120143_len, t:vc120144_len, t:vc120145_len
+	// ものをセットし終えたら、w31bの平行光と環境光に戻す。
+	@w31bの平行光環境光
+}
+
+proc w24dの平行光環境光 {
+	chara 環境光 amb \
+		 -c 38 48 48
+
+	chara 平行光 para \
+		 -c 58 63 68 \
+		 -p 0 -4000 -3000	// 原点からこの位置に向かって光が射す
+}
+
+proc w31bの平行光環境光 {
+	chara 環境光 amb \
+		 -c 22 40 35
+
+	chara 平行光 para \
+		 -c 86 97 102 \
+		 -p 756 -4820 -1088	// 原点からこの位置に向かって光が射す
+}
+
+// フォグ
+proc w24dのフォグセット {
+	chara フォグ 霧\
+		-c 65, 50, 50 \
+		-n 1000 \
+		-f 30000
+}
+
+proc w31bのフォグセット {
+	chara フォグ 霧\
+		-c 40, 39, 28 \
+		-n 15000 \
+		-f 40000
+}
+
+//#define		SD_LAMP_SHIFT_1  1750	// ＸかＺ方向のシフト量１
+//#define		SD_LAMP_SHIFT_Y  2325	// Ｙ方向のシフト量
+//#define		SD_LAMP_SHIFT_2   130	// ＸかＺ方向のシフト量２
+
+proc デモドアランプ設定 {
+//		chara ドアランプ ドアランプ1 \
+//			-r 2048 \
+//			-p ((-9250+1500) - d:SD_LAMP_SHIFT_1) (-6250 + d:SD_LAMP_SHIFT_Y) (-232375 - d:SD_LAMP_SHIFT_2)
+//
+		chara ドアランプ ドアランプ2 \
+			-r 0 \
+			-p ((-9250+1500) - d:SD_LAMP_SHIFT_1) (-6250 + d:SD_LAMP_SHIFT_Y) (-232375 + d:SD_LAMP_SHIFT_2)
+}	
+
+proc ドアランプを青に変更 {
+	mesg ドアランプ ドアランプ2 青
+}
+
+proc ドアランプを赤に変更 {
+	mesg ドアランプ ドアランプ2 赤
+}
+
+proc アーセナルランプセット {
+	chara 汎用アニメポリゴン 大エレベータ \
+		//-tex node_scr_awake_alp \
+		-tex w24d_lamp_alp \
+		-mode 1 \
+		-divi 1, 1\
+		-n_ply 2 \
+			-color 255 32 16 255 \
+			-init 0 \
+			-pos \
+				-2030,-14180,-65745 \
+				-2030,-14150,-65745 \
+				-1857,-14180,-65745 \
+				-1857,-14150,-65745 \
+			-color 255 32 16 255 \
+			-init 0 \
+			-pos \
+				2030,-14180,-65745 \
+				2030,-14150,-65745 \
+				1857,-14180,-65745 \
+				1857,-14150,-65745
+	@大エレベータランプＯＮ
+}
+
+proc 大エレベータランプＯＮ {
+	mesg 汎用アニメポリゴン 大エレベータ ＡＬＰ変更 0 1 255
+	mesg 汎用アニメポリゴン 大エレベータ ＡＬＰ変更 1 1 255
+	chara delay delay -t 2 -p 大エレベータランプＯＦＦ
+}
+
+proc 大エレベータランプＯＦＦ {
+	mesg 汎用アニメポリゴン 大エレベータ ＡＬＰ変更 0 120 0
+	mesg 汎用アニメポリゴン 大エレベータ ＡＬＰ変更 1 120 0
+	chara delay delay -t 124 -p 大エレベータランプＯＮ
+}
+
+proc ロッカー設置 {
+	@w24dの平行光環境光
+
+	#if d:DEBUG_PRINT
+		print 'w24d_locker_set'
+	#endif
+
+	chara ロッカー管理 管理人さん -n 6
+	command ロッカーモーション -motion locker
+
+	// 左側上から１
+	chara ロッカー ロッカー:01 \
+		-kms neo_locker_door \
+		-seno 4 \
+		-sefloor 4 \
+		-p -8375,-16000,(-52500+50) \
+		-r 0,1024,0 \
+		-s 0 \
+		-flag 0x0001 \
+		-load_state 1
+
+	// 左側上から２
+	chara ロッカー ロッカー:02 \
+		-kms neo_locker_door \
+		-seno 4 \
+		-sefloor 4 \
+		-p -8375,-16000,(-51500+50) \
+		-r 0,1024,0 \
+		-s 0 \
+		-flag 0x0001 \
+		-load_state 1
+
+	// 左側上から３
+	chara ロッカー ロッカー:03 \
+		-kms neo_locker_door \
+		-seno 4 \
+		-sefloor 4 \
+		-p -8375,-16000,(-50500+50) \
+		-r 0,1024,0 \
+		-s 0 \
+		-flag 0x0001 \
+		-load_state 1
+
+	// 左側上から４
+	chara ロッカー ロッカー:04 \
+			-kms neo_locker_door \
+			-seno 4 \
+			-sefloor 4 \
+			-p -8375,-16000,(-49500+50) \
+			-r 0,1024,0 \
+			-s 0 \
+			-flag 0x0001 \
+			-load_state 1
+
+	// 右側上
+	chara ロッカー ロッカー:05 \
+		-kms neo_locker_door \
+		-seno 4 \
+		-sefloor 4 \
+		-p 8375,-16000,(-52500-50) \
+		-r 0,3072,0 \
+		-s 0 \
+		-flag 0x0001 \
+		-load_state 1
+
+	// 右側下
+	chara ロッカー ロッカー:06 \
+		-kms neo_locker_door \
+		-seno 4 \
+		-sefloor 4 \
+		-p 8375,-16000,(-51500-50) \
+		-r 0,3072,0 \
+		-s 0 \
+		-flag 0x0001 \
+		-load_state 1
+
+	@w31bの平行光環境光
+
+}
+
+
+
+// もともとはstdproc.hに定義されている「水中モード基本キャラ設定」を呼んでいたが、
+// 水中カメラが水中から出たときによけいなエフェクトをかけてしまうので、必要な部分だけ、
+// デモで呼び出すようにした。
+// 基本的にはstdproc.hの「水中モード基本キャラ設定」のコピー
+// 水中カメラのみをコメントアウト
+// 010903 田中(信)
+proc デモ水中モード基本キャラ設定 {
+#if d:DEBUG_PRINT
+	print 'demo water_mode_std_chara_set'
+	print 'demo water_level'
+	print d:WATER_SURFACE
+#endif
+
+#ifdef d:STAGE_W11A
+	// 水位設定
+	command 水位設定 -lv d:WATER_SURFACE -s d:se_code:SD_A_RICOCH08
+#elifdef d:STAGE_W11B
+	// 水位設定
+	command 水位設定 -lv d:WATER_SURFACE -s d:se_code:SD_A_RICOCH08
+#else
+	// 水位設定
+	command 水位設定 -lv d:WATER_SURFACE -s d:se_code:SD_A_RICOCH06
+#endif
+
+
+	// 水中プラグイン設定
+#ifdef d:WATER_CAMERA_ZONE
+	command 新プラグイン水中 -z d:WATER_CAMERA_ZONE
+#else
+	command 新プラグイン水中
+#endif
+
+	// 水位、モーション等を設定
+#ifdef d:WATER_ELUDE_IN
+	command 新水中設定 \
+		-horizon d:WATER_SURFACE \
+		-motion rai_swim \
+		-elude2water d:モーションリスト:non_drop_fall_treadwater \
+		-dead2water d:モーションリスト:non_drop_fall_treadwater_down \
+		-flag d:WATER_FLAG_NO_FLOOR
+#else
+	command 新水中設定 \
+		-horizon d:WATER_SURFACE \
+		-motion rai_swim \
+		-flag d:WATER_FLAG_AUTO_ROTATE
+#endif
+
+	// 以下エフェクト各種
+	// 水中モード時画面が揺らぐ
+	//chara 水中カメラ ゆらぎマン -col 128 128 160 -warp 2
+	chara フレーム退避 水中フレーム退避
+	chara ゆがみ泡 歪み気泡マン
+//	chara 水中カメラ ゆらぎマン -col 128 128 136 -warp 2
+
+	// カメラ前に出てくる泡
+#ifdef d:CAMERA_BUBBLE_NUM
+	chara カメラ泡 泡ぶくマン -n d:CAMERA_BUBBLE_NUM	// 512*n
+#endif
+
+#ifdef d:STAGE_W11A
+	command 泡色変更 0x60806620
+#elifdef d:STAGE_W11B
+	command 泡色変更 0x60806620
+#endif
+
+
+	// カメラ前に出てくるダスト
+#ifdef d:CAMERA_DUST_NUM
+	chara カメラダスト ダストマン -n d:CAMERA_DUST_NUM		// 512*n
+#endif
+
+//	@水中カメラ環境音変更 d:WATER_SURFACE
+
+
+#ifndef d:STAGE_W11A
+#ifndef d:STAGE_W11B
+	@息継ぎポイントスポットライト背景設定
+	command トラップ切り替え -trap puddle -switch 0
+#endif
+#endif
+
+
+	// エマフラグが立つのを待つため１フレーム遅らせる
+	// ステージによってメッセージのオン・オフを細かく切り分けなければならない関係上
+	// かなり入り組んだ書き方になってしまいました。
+	// 後でソース見る人ごめんなさい
+#ifndef d:STAGE_W11A
+#ifndef d:STAGE_W11B
+#ifndef d:DEMO_STAGE
+	chara delay 水中エフェクトオフディレイ -time 1 -exec {
+		if( $f:エマと一緒に水の中 == 0 ) {
+			// w31bのビーターデモ後は再びオンにしている
+			mesg カメラ泡     泡ぶくマン オフ
+			mesg カメラダスト ダストマン オフ
+		}
+	}
+#endif
+#endif
+#endif
+
+}

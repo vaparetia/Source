@@ -1,0 +1,127 @@
+//
+//	r_plt10.src
+//	ローポリ劇場常駐データセット追加１
+//	
+//	2002/09/12	S.Mukaide
+//	$Id: r_plt10.src,v 1.1 2002/09/18 11:46:18 usr03379 Exp $
+
+block .nocache
+
+block 		.resident
+
+include		keepfont.h
+
+//	全ステージ共通データ
+#define		NO_BIS		//	ビジネスマンなし
+//#define		NO_OL		//	ＯＬなし
+//#define		NO_ENEMY	//	ハイテク兵なし
+#include	"low_mdl.h"
+
+//	テクスチャパック（EVMライデン、EVMフォーチュン）
+pack_all rai_for_mh_mt.tri \
+	human/rai_def/rai_def_mh_mt.dar	\
+	human/for_def/for_def_mh_mt.dar	\
+	human/for_def/for_hair_def_mh.dar
+
+//	EVMライデン
+human		rai_def/rai_def_mh_mt.evm
+
+//	EVMフォーチュン（マント無し）
+human	for_def/for_def_mh_mt.evm
+human	for_def/for_hair_def_mh.evm
+human	for_coat/for_coat_bounding.kms
+
+//	テクスチャパック（KMSフォーチュン、KMS忍者ライデン、EVM忍者ライデン）
+pack_all for_nin_sh_mt.tri \
+	human/for_def/for_def_sh_mt.dar	\
+	human/for_def/for_mag.dar	\
+	human/rai_nin/rai_nin_sh_mt.dar	\		//	本体
+	human/rai_nin/rai_nin_mh_mt.dar	\		//	本体
+//	human/rai_nin/rai_nin_shadow.dar \		//	テクスチャ無い
+	human/rai_nin/rai_nin_face_open.dar		//	オープンフェイス
+
+//	KMSフォーチュン（マント無し）
+human	for_def/for_def_sh_mt.kms
+human	for_def/for_mag.kms
+
+//	テクスチャパック（KMSタキシード、EVMタキシード、KMSハイクオリティＭＧＳ１、EVMハイクオリティＭＧＳ１、EVMオタコンのいろいろ）
+pack_all txd_oss_nin_sh_mt.tri \
+		human/sna_txd/sna_txd_sh_mt.dar		\		//	本体
+		human/sna_txd/sna_txd_mh_mt.dar		\		//	本体
+//		human/sna_txd/sna_txd_bounding.dar	\		//	テクスチャ無い
+		human/sna_oss/sna_oss_sh_mt.dar		\		//	本体
+		human/sna_oss/sna_oss_mh_mt.dar			\	//	本体
+//		human/sna_oss/sna_oss_shadow.dar	\		//	テクスチャ無い
+		human/otc_def/otc_dummy.dar			\		//	バウンディングボックス
+		human/otc_def/otc_glasses_mt.dar	\		//	眼鏡
+		human/otc_def/otc_shadow.dar				//	影用
+
+//	テクスチャパック（KMSタキシードのすそ、EVMオタコン）
+pack_all txd_oss_otc_mh_mt.tri \
+	human/sna_txd/sna_txd_suso_mh_mt.dar	\	//	すそ
+	human/otc_def/otc_def_mh_mt.dar			\	//	本体
+	human/otc_def/otc_hair_mh.dar			\	//	髪の毛
+	human/otc_def/otc_jaket_suso_mh.dar			//	すそ
+
+//	KMSタキシードスネーク
+human	sna_txd/sna_txd_sh_mt.kms		//	本体
+human	sna_txd/sna_txd_suso_mh_mt.evm	//	すそ
+human	sna_txd/sna_txd_bounding.kms	//	バウンディングボックス
+
+//	EVMタキシードスネーク
+human	sna_txd/sna_txd_mh_mt.evm		//	本体
+
+//	KMSハイクオリティＭＧＳ１スネーク
+human	sna_oss/sna_oss_sh_mt.kms		//	本体
+
+//	EVMハイクオリティＭＧＳ１スネーク
+human	sna_oss/sna_oss_mh_mt.evm		//	本体
+human	sna_oss/sna_oss_shadow.kms		//	影用
+
+//	KMS忍者ライデン
+human	rai_nin/rai_nin_sh_mt.kms		//	本体
+human	rai_nin/rai_nin_shadow.kms		//	影用
+human	rai_nin/rai_nin_face_open.kms	//	オープンフェイス
+
+//	EVM忍者ライデン
+human	rai_nin/rai_nin_mh_mt.evm		//	本体
+
+//	オタコン
+human	otc_def/otc_def_mh_mt.evm		//	本体
+human	otc_def/otc_hair_mh.evm			//	髪の毛
+human	otc_def/otc_jaket_suso_mh.evm	//	すそ
+human	otc_def/otc_dummy.kms			//	バウンディングボックス
+human	otc_def/otc_glasses_mt.kms		//	眼鏡
+human	otc_def/otc_shadow.kms			//	影用
+
+#if 0
+//	テクスチャパック（KMSメリル）
+pack_all mrl_sh_mt.tri \
+	human/mrl_def/mrl_def_sh_mt.dar \		//	本体
+	human/mrl_def/mrl_dummy.dar \			//	バウンディングボックス
+	human/mrl_def/mrl_de_grip.dar			//	デザートイーグルのグリップモデル
+
+//	KMSメリル
+human	mrl_def/mrl_def_sh_mt.kms		//	本体
+human	mrl_def/mrl_def_hair_mh.evm		//	髪の毛
+human	mrl_def/mrl_dummy.kms			//	バウンディングボックス
+human	mrl_def/mrl_de_grip.kms			//	デザートイーグルのグリップモデル
+
+//	EVMメリル
+human	mrl_def/mrl_def_mh_mt.evm		//	本体
+human	mrl_def/mrl_def_hair_mh.evm		//	髪の毛
+human	mrl_def/mrl_dummy.kms			//	バウンディングボックス
+human	mrl_def/mrl_waist_mag.kms		//	左腰のマグポーチ＆マグパック
+human	mrl_def/mrl_waist_pack.kms 		//	左腰のマグポーチ＆マグパック
+
+//	オルガメリル
+human	mrl_def/mrl_fc_def_mh_mt.evm		//	本体
+#endif
+
+
+#ifdef MGS2_XBOX_1 // menuicon.hでも記述しているので注意！
+pack_all	'-s' menu.tri effect/font/font_alp_ovl.bmp effect/font/debug_font_alp_ovl.bmp effect/font/font_mini_alp_ovl.bmp effect/sys_icon/cd_err_alp_ovl.bmp
+#endif
+block .cache
+
+

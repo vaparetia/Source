@@ -1,0 +1,275 @@
+/*
+	P063_01_P01.w25d.gcl
+	    海上デモ用ステージ／ゲームステージのw32a相当分
+
+	2001/07/16 Y.Matsuhana         
+	$Id: P063_01_P01.w25d.gcl,v 1.6 2001/08/22 14:11:41 usr03635 Exp $                      
+
+	
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+#define		DEMO_STAGE		1		// デモステージかどうかで起動するキャラを切り分ける
+
+#define		PLAYER		ライデン
+
+// include
+// ------------------------------------
+#include "5sec_bfr_demo.h"
+#include "demo_stdch.h"
+#include "demo_stdch2.h"
+#include "demo_vardef.h"
+#include "story.h"
+#include "sload.h"
+#include "enevoice.h"
+#include "p_force_cdc.ch"
+#include "sea_surface.h"
+
+#include "../source/user/morita/emma/include/emma_flag.h"
+#include "w25_kamome.gcl"
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME		w25d
+#define		KMS_NAME0		w25d0
+#define		KMS_NAME1		w25d1
+#define		KMS_NAME2		w25cd_17a
+#define		KMS_NAME3		w25cd_18a
+#define		KMS_NAME4		w25cd_19a
+#define		KMS_NAME5		w25cd_20a
+#define		KMS_NAME6		w25cd_21a
+#define		KMS_NAME7		w25cd_24a
+#define		KMS_NAME8		w25cd_25a
+#define		KMS_NAME9		w25cd_31a
+#define		KMS_NAMEA		w25cd_32a
+#define		KMS_NAMEB		w25cd_32b
+#define		KMS_NAMEC		w25cd_32c
+#define		KMS_NAMED		w25cd_crane
+#define		KMS_NAMEE		w25cd_gh
+#define		KMS_NAMEF		w25cd_i
+#define		KMS_NAMEG		w25cd_ij
+#define		KMS_NAMEH		w25cd_jk
+#define		KMS_NAMEI		w25cd_k
+#define		KMS_NAMEJ		w25cd_l
+#define		KMS_NAMEK		w25cd_other00
+#define		KMS_NAMEL		w25cd_other01
+#define		KMS_NAMEM		w25cd_other02
+#define		LT2_NAME		w25d
+#define		KMS_NAME_SEA		sea
+#define	DOOR_NAME			w25c_dr00
+#define	DOOR_NAME_LOAD			w25c_dr00
+
+// マップ設定
+// ------------------------------------
+chara マップ タイトロープ２ 	-k d:KMS_NAME0 \
+				-k d:KMS_NAME1 \
+				-k d:KMS_NAME2 \
+				-k d:KMS_NAME3 \
+				-k d:KMS_NAME4 \
+				-k d:KMS_NAME5 \
+				-k d:KMS_NAME6 \
+				-k d:KMS_NAME7 \
+				-k d:KMS_NAME8 \
+				-k d:KMS_NAME9 \
+				-k d:KMS_NAMEA \
+				-k d:KMS_NAMEB \
+				-k d:KMS_NAMEC \
+				-k d:KMS_NAMED \
+				-k d:KMS_NAMEE \
+				-k d:KMS_NAMEF \
+				-k d:KMS_NAMEG \
+				-k d:KMS_NAMEH \
+				-k d:KMS_NAMEI \
+				-k d:KMS_NAMEJ \
+				-k d:KMS_NAMEK \
+				-k d:KMS_NAMEL \
+				-k d:KMS_NAMEM \
+				-h d:HZX_NAME,0 -l d:LT2_NAME
+
+/* 絶対ここ！　場所も変えない！ */
+eval($s:d_num = co_game_demo_stage)
+/* 以上！ */
+
+#if d:PLANT_DEMO_ALL_SKIP
+	#define		DEMO_SKIP_ENABLE 1
+#else
+	#define		DEMO_SKIP_ENABLE 0
+#endif
+command マップ表示 -show タイトロープ２
+
+//###################################################################################
+//								ストーリーフラグ & デモ再生
+//###################################################################################
+command マップ設定 タイトロープ２ -set {
+	// デモ環境かどうか。
+	#if d:MGS2_DEMO
+		// 不要プログラムの起動阻害
+		eval($s:d_num = P036_04_p03) ;
+
+chara デモアクトデバッグ demodebug  -i t:p063_01_p01 -d 'p063_01_p01'  \
+			-p dummy_proc
+// デバッグモード向きの記述ではないのでコメントアウト 010815 田中(信)
+//chara デモアクトデバッグ demodebug  -i t:p063_01_p01 -d 'p063_01_p01'  \
+//			-i t:data_dummy_raiden \
+//			-d 'data_dummy_raiden' \
+//			-l -p dummy_proc
+	#else
+		// ゲームＧＣＬと共用で入ってくる部分なので、== で条件を見る。
+		print d:ST:P063_01_P01カード五１ポリゴンデモ１開始 ;
+		print $w:p_story ;
+		if($w:p_story == d:ST:P063_01_P01カード五１ポリゴンデモ１開始) {
+			print'd:ST:P063_01_P01カード五１ポリゴンデモ１開始'
+			/* エマからカード５をもらう */
+			eval($s:d_num = P063_01_p01)
+			// polydemo_**.h の最初のデモの時には必ず呼ぶこと。レーダー明示的にオフさせる。
+			@デモではレーダー不要
+			@デモモデル差し替え処理
+			chara demo デモ再生 \		// Y.Matsuhana 2001.7.10 一部変更
+				-i t:p063_01_p01 \
+//				-i t:data_dummy_raiden \
+				-p dummy_proc \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next P063_01_p01終了
+		} else {
+			// デモ以外の場合こちらを通る
+			print 'Error: Story Flag: P063_01_p01 '
+			@ゲームステージへ戻る
+		}
+	#endif
+	// デモ仕様のセット
+	// 共通して使用するもの
+	@常駐キャラ設定						// stdch.hで定義
+	chara デモキャンセルチェック デモキャンセル -p demo_cancel
+	@シネマスクリーンセット
+	@demo_ステージモデルセット
+	@プラントステージでの汎用空セット 夕 w25d
+	@demo_海面設置
+	#if 1
+		@フォグ設定
+	#else
+		@demo_フォグ設定
+	#endif
+	@demo_ドア設置
+}
+
+// 初期マップ表示
+// ゲームgclの方で実施。
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+//###################################################################################
+//									デモのみ仕様各種
+//###################################################################################
+// ダミープロック
+	proc dummy_proc {
+	}
+// デモキャンセル
+	proc demo_cancel {
+		command StreamStopAll
+	}
+// リスタート
+	proc restart_proc {
+		restart
+	}
+// デモ終了時プロック
+	proc P063_01_p01終了 {
+		@デモ終了時シネマスクリーンオフ
+		mesg デモキャンセルチェック デモキャンセル kill
+		eval($w:p_story = d:ST:P063_01_P01カード五１ポリゴンデモ１終了)
+		print '$w:p_story = d:ST:P063_01_P01カード五１ポリゴンデモ１終了'
+		chara delay ディレイ \
+			-time 1 \ 
+			-exec{
+				// ゲームへ
+				@ゲームステージへ戻る
+				load "" -r 'r_plt0'
+				@mv_w25c_w28a_0 ;
+			}
+	}
+// シネマスクリーン
+	proc シネマスクリーンセット {
+		chara シネマスクリーン シネマ \
+			-top d:CINEMA_BELT_UPPER \
+			-bottom d:CINEMA_BELT_LOWER \
+			-ftime 60	//デフォルト値（ゼロは駄目）
+		mesg シネマスクリーン シネマ フェードアウト 1
+	}
+	// ドア
+	// ------------------------------------
+	proc demo_ドア設置 {
+		chara プットオブジェ 中央棟へのドア \
+			-m d:DOOR_NAME_LOAD \
+			-r 0,1024,0 \
+			-p 19125,-1500,-234250 \
+			-s 100,100,100 \
+			-l d:LT2_NAME
+
+		chara プットオブジェ Ｌ脚ドア \
+			-m d:DOOR_NAME \
+			-r 0,3072,0 \
+			-p -8875,0,-231500 \
+			-s 100,100,100 \
+			-l d:LT2_NAME
+	}
+
+	// フォグ
+	// ------------------------------------
+
+	// エフェクト関係
+	// -----------------------------------
+	proc demo_エフェクト設定 {
+			chara ＯＦＦ制御 off_man
+			mesg ＯＦＦ制御 off_man ボディシャドウＯＦＦ
+	}
+
+// 各マップ別設定
+// ------------------------------------
+// Ｌ脚
+	// ステージモデル自体
+	proc demo_ステージモデルセット {
+		chara プットオブジェ Ｌ脚南壁 \
+			-m w25d1 \	// 2001.7.10 Y.Matsuhana 最終モデル納品のため一部変更
+			-r 0,0,0 \
+			-p 0,0,0 \
+			-s 100,100,100 \
+			-l d:LT2_NAME
+	}
+	
+// 海面設置
+	proc demo_海面設置 {
+		#if d:DEBUG_PRINT
+			print 'w25c_sea_set'
+		#endif
+
+		@プラント海面セット 夕 w25c 1
+	}
+
+
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// 全マップ共通
+
+	// フォグ
+	// ------------------------------------
+	proc フォグ設定 {
+		#if d:DEBUG_PRINT
+			print 'fog_set'
+		#endif
+		chara フォグ 霧\
+			-c  143, 100, 50 \
+			-n -16000 \
+			-f 250000 
+	}
+	proc demo_フォグ設定 {
+		#if d:DEBUG_PRINT
+			print 'demo_fog_set'
+		#endif
+		@プラントステージでのフォグセット 夕 0
+	}

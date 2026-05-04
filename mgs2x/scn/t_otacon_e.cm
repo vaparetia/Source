@@ -1,0 +1,9048 @@
+//
+//	t_otacon_e.cm
+//	タンカー編オタコン無線会話の会話文
+//
+//	2000/11/23	T.Fukushima
+//	$Id: t_otacon_e.cm,v 1.32 2002/09/02 07:04:56 usr01098 Exp $
+
+//★場所ごとの説明 d//e
+//○船尾看板（w00a）d//e
+//・水密扉近く：水密扉開け方 h//e
+//＠連打は？ //e
+resource TO_甲板水密扉__e{
+オタコン_000: {
+Snake, go through that door
+into the ship's interior.
+}
+/*スネーク、そこの扉を開けて
+船内に入ってくれ。
+*/
+
+オタコン_001: {
+Push the Action button down in
+front of the door and wait until
+the door opens before letting go.
+}
+/*その水密扉を開けるには、扉の前で
+＃｛△、アクション｝＃ボタンを押してそのままドアが
+開くまで押しっぱなしにすればいい。
+*/
+
+オタコン_002: {
+If you need to open the door faster,
+hit the Action button repeatedly
+while you turn the handle.
+}//<ページ数変更>
+オタコン_002_1: {
+Make sure you keep doing
+it until the door is open.
+}
+/*ハンドルを回している間、
+＃｛△、アクション｝＃ボタンを連打すれば早く開けられる。
+途中で手を放してしまわないようにね。
+*/
+
+}//d
+
+
+//・開かない扉近く h//e
+resource TO_甲板開かない水密扉__e{
+オタコン_000: {
+Snake, it looks like that door
+can't be opened from the deck.
+}//<ページ数変更>
+オタコン_000_1: {
+You can infiltrate the ship
+through other doors.
+}
+/*スネーク、そこの扉は甲板側からは
+開かないみたいだよ。他にも扉がある
+から、そっちから船内に入ってくれ。
+*/
+
+}//d
+
+//・救命艇近く h//e
+resource TO_救命艇近く１__e {
+オタコン_000: {
+I see a lifeboat. That's a fully
+enclosed, fire-resistant model,
+equipped with its own oxygen pump.
+}
+/*救命艇があるね。
+全閉囲型の空気自給式耐火救命艇だ。
+*/
+}
+
+//一回目のみ t//e
+resource TO_救命艇近く２__e {
+オタコン_000: {
+Those have a water-based cooling
+system and self-contained air supply
+on board.
+}//<ページ数変更>
+オタコン_000_1: {
+This means that even
+if the boat is sealed,
+}//<ページ数変更>
+オタコン_000_2: {
+there would still be air available
+for the crew and engine operation.
+}
+/*散水冷却装置と自蔵式空気維持装置を
+装備しているから全ての入口を密閉して
+も乗員と機関に充分な空気を供給出来る。
+*/
+
+オタコン_001: {
+It automatically rights
+itself if it's overturned,
+}//<ページ数変更>
+オタコン_001_1: {
+and can withstand contact with
+fire for a significant period of
+time.
+}
+/*転覆しても自動的に復帰できるし、
+海上で炎に包まれても大丈夫なように
+出来てるんだ。
+*/
+}
+
+resource TO_救命艇近く３__e {
+オタコン_000: {
+But you won't be able
+to use that lifeboat.
+}//<ページ数変更>
+オタコン_000_1: {
+It's too noticeable, for one thing,
+and it just doesn't have the kind
+of speed we need.
+}
+/*でもその救命艇は使えない。
+速度も出ないし、第一、目立ち過ぎる
+からね。
+*/
+
+}//d
+
+
+
+//甲板死体捨てられる場所 h//e
+//＠死体捨て方アクション //e
+resource TO_死体捨てられる場所近く１__e {
+//ns
+オタコン_000: {
+It looks like that part of
+the railing flares out.
+}//<ページ数変更>
+オタコン_000_1: {
+Once you take out someone, drag
+the body there and throw it over.
+}
+/*そこの手すりは開くみたいだよ。
+倒した敵をそこまで引きずっていけば、
+船の外に放り出せるはずだ。
+*/
+}
+
+resource TO_死体捨てられる場所近く２__e {
+オタコン_000: {
+It's a bad idea to leave the body
+around. You wouldn't want to
+alert the enemy of your presence.
+}
+/*倒した敵をそのままにしておくのは
+マズイ。仲間が倒れてるのを見つけたら
+敵は当然警戒するからね。
+*/
+
+}//d
+
+
+//・嘔吐直後。h //e
+resource TO_嘔吐直後__e {
+//ns
+スネーク_000: {
+mmmMMble...
+}
+/*うぅぅうむ……。*/
+
+オタコン_001: {
+Seasick, Snake?
+}
+/*なんだいスネーク、船酔いかい？*/
+
+スネーク_002: {
+I don't get sea -- bleeech...
+}
+/*いや、そんなことは、ぶごふぁはへぇへぶぉ……。*/
+
+オタコン_003: {
+Oh well, it'll get better
+once you're off the deck.
+}//<ページ数変更>
+オタコン_003_1: {
+You could also try taking
+some Pentazemin.
+}
+/*やれやれ。船内に入ればおさまるよ。
+ジアゼパムを使ってもいいかもしれない。
+*/
+
+スネーク_004: {
+Pentazemin doesn't work for
+seasickness... At least Naomi
+didn't say any -- blecch...
+}
+/*ジアゼパムに船酔いを止める
+作用なんかあるのか？
+ナオミはそんなことは……。
+*/
+
+オタコン_005: {
+Trust me. And it's not like
+you have anything to lose.
+}
+/*まあ、騙されたと思って使ってみなよ。
+*/
+//ne
+}//d
+
+//ジアゼパム服用船揺れ解除後 ジアゼパム会話聞いている場合のみ h //e
+resource TO_ジアゼパム使用後船が揺れない状態__e {
+スネーク_000: {
+Otacon, I took the Pentazemin and
+you're right -- the seasickness is
+gone!
+}
+/*オタコン、お前の言う通りジアゼパムを
+飲んだら船揺れが止まったぞ。
+*/
+
+オタコン_001: {
+Wow! Really!?
+}
+/*え！？ホントに！？*/
+
+スネーク_002: {
+What do you mean, "Really?"
+You said...
+}
+/*ホントにってお前……。
+*/
+
+オタコン_003: {
+Drugs are mostly about placebo
+effect. If you believe it's effective,
+it is.
+}//<ページ数変更>
+オタコン_003_1: {
+You're more naive than I thought.
+}
+/*まぁ、効くと思って使えば効く。
+薬なんてそんなもんさ。
+しかし君って以外と単純なんだね。
+*/
+
+スネーク_004: {
+...
+}
+/*……。*/
+
+}//d
+
+//・二階の敵は主観攻撃で倒せ h//e
+resource TO_甲板二階の敵は主観攻撃__e {
+オタコン_000: {
+Snake, switch to First Person View
+and look at the upper decks.
+}//<ページ数変更>
+オタコン_000_1: {
+See the sentries? Take them out
+in First Person View before they
+see you.
+}
+/*スネーク、船橋の上の階を主観で見るんだ。敵兵が見回ってる。見つかる前に
+主観攻撃で倒したほうが良い。
+*/
+
+//主観攻撃説明へ t //e
+}//d
+
+
+//○居住区１F南 通路(w01a) d //e
+//・ロッカー近く：ロッカー t//e
+resource TO_ロッカー近く１__e {
+オタコン_000: {
+See those lockers? It's a good
+place to hide yourself if you're
+in a pinch.
+}
+/*ロッカーがあるね。
+敵に見つかりそうになったら
+ロッカーの中に隠れるのもいいだろう。
+*/
+}
+
+resource TO_ロッカー近く２外__e {
+オタコン_000: {
+Push the Action button near the
+locker to open the door. Walk
+into it for a quick concealment.
+}
+/*ロッカーは近くで＃｛△、アクション｝＃ボタンを押せば
+開けられる。扉を開けて中に入れば
+隠れることが出来るよ。
+*/
+}
+
+
+resource TO_ロッカー近く２中__e {
+オタコン_000: {
+Push the Action button once
+more to get out of the locker.
+}
+/*ロッカーから出るには、
+もう一度＃｛△、アクション｝＃ボタンを押せばいい。
+*/
+
+//ns
+オタコン_001: {
+You can see out from
+the slit in the door.
+}//<ページ数変更>
+オタコン_001_1: {
+Make sure you check the area using
+First Person View before you go out.
+}
+/*中に入ってもスリットから外が見える。
+外に出る時は、まわりを主観でよく
+確かめるんだ。
+*/
+//ne
+}
+
+
+resource TO_ロッカー近く３__e {
+オタコン_000: {
+You can also hide enemies you've
+knocked out in the locker.
+}//<ページ数変更>
+オタコン_000_1: {
+Just open the locker, then
+drag the body to the locker.
+}
+/*ロッカーの中に倒した敵を隠すことも
+出来る。やり方はロッカーを開けて
+敵をそこまで引きずっていけばいい。
+*/
+
+}//d
+
+//・ロッカー盾 t //e
+resource TO_ロッカードア盾__e {
+オタコン_000: {
+If you open the locker, you can
+use the door as a cover during
+an exchange of gunfire.
+}
+/*ロッカーを開ければ、そのドアを
+盾にして敵の銃撃を防ぐことも出来る。
+*/
+
+オタコン_001: {
+But of course, this is a pretty
+flimsy door -- there are limits to
+how many bullets it can withstand.
+}//<ページ数変更>
+オタコン_001_1: {
+Don't count on it too much, okay?
+}
+/*でも所詮ロッカーだから銃弾を防ぐにも
+限度が有る。当てにし過ぎちゃダメだ。
+いいね。
+*/
+
+}//d
+
+
+//・ロッカーの中状態（１回目のみ）h /e
+resource TO_ロッカーの中__e {
+スネーク_000: {
+This reminds me of
+when we first met.
+}
+/*初めて会った時のこと思い出すな。
+*/
+
+オタコン_001: {
+I was the one inside the locker
+that time. We're equal now, huh?
+}
+/*あの時、ロッカーに入ってたのは
+僕の方だったね……。
+*/
+
+スネーク_002: {
+Not unless I wet my pants.
+}
+/*まぁ、俺はパンツを濡らしたりは
+してないがな。*/
+
+オタコン_003: {
+That's a low blow, Snake!
+}
+/*言わないでくれよ、そのことは！*/
+
+}//d
+
+
+//・蒸気パイプ近く：h //e
+resource TO_蒸気パイプ近く__e {
+オタコン_000: {
+Snake, those pipes you see
+along the wall and ceiling are
+steam conduits.
+}//<ページ数変更>
+オタコン_000_1: {
+They're thin enough to
+penetrate with gunfire.
+}
+/*スネーク、壁や天井にあるパイプは
+中に蒸気が流れてるんだ。薄いから銃で
+撃ったら穴が開いて蒸気が吹き出す。
+*/
+
+オタコン_001: {
+Don't touch the steam -- one
+of those blasts from the hole
+will burn your skin off.
+}//<ページ数変更>
+オタコン_001_1: {
+You may be able to use it as
+a trap of some sort, though.
+}
+/*蒸気は熱いから触らないように
+気をつけてくれ。でも、うまくやれば
+トラップに使えるかもしれないね。
+*/
+
+}//d
+
+//・足跡エリア：足跡がつく h //e
+resource TO_足跡__e {
+オタコン_000: {
+Snake, watch out for the floor
+there. It's wet from the rain.
+}//<ページ数変更>
+オタコン_000_1: {
+You'll leave tracks if
+you just walk on it.
+}
+/*スネーク、そこの床を見てくれ。
+吹き込んだ雨で濡れてるから、そのまま
+歩いたら足跡がついてしまう。
+*/
+
+オタコン_001: {
+If someone finds your prints,
+they may decide to raise alarm.
+}//<ページ数変更>
+オタコン_001_1: {
+Crawl instead and you
+won't leave any traces.
+}
+/*足跡が敵に見つかると追跡されたりして
+厄介なことになる。足跡をつけないよう
+にするにはホフクすればいい。
+*/
+//＠ホフクすれば足跡つかない //e
+
+}//d
+
+//・ロッカーえっちなピンナップ前、スネ前かがみ状態：h //e
+
+resource TO_前かがみ__e {
+オタコン_000: {
+What do you think you're doing,
+Snake? You don't have enough
+to keep you busy?
+}//<ページ数変更>
+オタコン_000_1: {
+Try to remember the
+mission, if you can.
+}
+/*何してるんだい、スネーク……。
+相変わらず元気だね、君は。
+任務のことも忘れないようにしてくれよ。
+*/
+
+}//d
+
+resource TO_居住区一階南開かない扉__e {
+オタコン_000: {
+Snake, that door is probably
+busted. Try the other ones.
+}
+/*スネーク、その扉は壊れてるみたいだ。
+他へ回ってくれ。
+*/
+
+}//d
+
+//○居住区１F北リフレッシュルーム(w01f) d //e
+//・エンジンルームへの階段近く h //e
+resource TO_エンジンルームへの階段近く__e  {
+オタコン_000: {
+Snake, the holds are
+straight ahead, 
+}//<ページ数変更>
+オタコン_000_1: {
+but right now, you need to
+get to the bridge, on top of
+the superstructure. Go up.
+}
+/*スネーク、その先は船倉だけど、
+今は船橋最上部の操舵室に行く方が
+先決だ。まず上へ向かってくれ。
+*/
+
+}//e
+
+// ↓製品版でも使う。
+resource TO_エンジンルームへの階段近く体験版__e {
+オタコン_000: {
+Snake, that door is
+probably busted. 
+}//<ページ数変更>
+オタコン_000_1: {
+Right now, you need to get
+to the bridge, on top of the
+superstructure. Go up.
+}
+/*スネーク、そこの扉は開きそうもない。
+目的は船橋最上階の操舵室だ。
+上に向かってくれ。
+*/
+
+}//d
+
+
+//・テレビ：船倉の様子が映っている h //e
+resource TO_テレビ１__e {
+オタコン_000: {
+Look at the TV over there.
+It's showing the hold.
+}
+/*そこのＴＶを見て。
+船倉の様子が映ってる。
+*/
+}
+
+
+resource TO_テレビ２__e {
+//一回目のみ t //e
+スネーク_000: {
+So that's...
+}
+/*ではこれが……。*/
+
+オタコン_001: {
+The new Metal Gear.
+}
+/*新型メタルギアだ。*/
+
+スネーク_002: {
+Why are they broadcasting this?
+}
+/*なぜ中継を？*/
+
+//ＴＶ中継へ t //e
+
+}//d
+
+resource TO_テレビ中継__e {
+
+オタコン_000: {
+They probably want to keep a record
+of this exercise -- and maybe give a
+little presentation?
+}
+/*演習の記録と……
+プレゼン、ってところかな？
+*/
+
+スネーク_001: {
+Presentation?
+}
+/*プレゼン？*/
+
+//ns
+オタコン_002: {
+That ship's been transmitting
+a live video feed via military
+satellite uplink for a while now.
+}
+/*さっきからその船は軍事データリンクを
+通して映像を発信してるんだ。
+*/
+
+スネーク_003: {
+So there's some brass out there,
+smacking their lips over this little
+home movie.
+}
+/*この「映画」を見てほくそ笑んでる
+奴等がどこかにいるということか。
+*/
+
+オタコン_004: {
+I've been trying to pinpoint the
+receiving location, but I haven't
+had much luck.
+}//<ページ数変更>
+オタコン_004_1: {
+There's a heavy duty firewall
+in the way. I'll try some more,
+though.
+}
+/*配信先を突き止めようとしてるんだけど、防壁が何重にも張ってあって上手く
+いかない。もうちょっとやってみるけど。
+*/
+
+スネーク_005: {
+Wherever it is, it must be a warm,
+dry office with hot coffee on tap.
+}
+/*どこであれ、きっとエアコンの効いた
+小奇麗な部屋に違いない。
+*/
+
+オタコン_006: {
+A far cry from that tanker, huh?
+}//<ページ数変更>
+オタコン_006_1: {
+That's what happens when
+the battlefield has a Revolution
+in Military Affairs.
+}
+/*その船とは大違いのね。
+これも戦場の情報革命という奴さ。
+*/
+
+//neＸＸＸ
+}//d
+
+
+
+
+//テレビ２回目 製品版のみ h //e
+resource TO_テレビ２回目__e {
+オタコン_000: {
+Snake, how long are you going
+to stand around watching TV?
+Get back to the mission.
+}
+/*スネーク、いつまでテレビを
+見てるんだい？作戦に戻ってくれ。
+*/
+
+}//d
+
+
+//・リフレッシュルームについて h //e
+resource TO_リフレッシュルーム１__e {
+オタコン_000: {
+That must be the crew lounge.
+The tanker's crewmen would
+relax here when they're off-shift.
+}
+/*そこはリフレッシュ・ルームみたいだね。
+本来、タンカーの乗組員が休み時間を
+くつろぐ場所だ。
+*/
+}
+
+
+resource TO_リフレッシュルーム２__e {
+オタコン_000: {
+There's a lot of stuff there.
+Make sure you don't move
+it around too much.
+}
+/*そのへん、いろんな物がおいてあるけど、
+散らかさないように気をつけた方が
+いい。
+*/
+
+オタコン_001: {
+Someone may notice that
+it's been tampered with.
+}//<ページ数変更>
+オタコン_001_1: {
+Leave no traces -- that's common
+sense when infiltrating a target,
+right?
+}
+/*敵に異状を悟られたらマズイ。
+痕跡を残さないのが潜入の基本だろ？
+*/
+
+}//d
+
+
+//○居住区２F通路(w01b) d //e
+//・オルガ戦前 h //e
+resource TO_二階通路くぼみ__e {
+オタコン_000: {
+The hallway's pretty narrow, but
+there is that alcove to the side.
+}//<ページ数変更>
+オタコン_000_1: {
+If you're about to run into someone,
+you can always hide in there and let
+them pass.
+}
+/*細い廊下だね。でも廊下の脇に＃Ｔ｛くぼみ｝＃が
+ある。敵と鉢合わせしたら、そこに
+逃げ込めばやり過ごせるんじゃないかな。
+*/
+
+}//d
+
+resource TO_２Ｆ水密扉近くオルガ戦前__e {
+オタコン_000: {
+Snake, that door opens
+out onto the deck.
+}
+/*スネーク、その扉の外は甲板だ。
+*/
+
+オタコン_001: {
+You still have to get to the bridge
+to find out where this transport
+is headed. Go up.
+}
+/*目的はあくまでも操舵室に行って
+その偽装タンカーの行き先を
+調べることだ。上に向かってくれ。
+*/
+
+}//d
+
+resource TO_２Ｆ水密扉近くオルガ戦後__e {
+オタコン_000: {
+Ok, now infiltrate the holds and
+get those photographs of the new
+Metal Gear. Head downstairs.
+}
+/*次は船倉に行って新型メタルギアの
+写真を撮ってくれ。下に向かうんだ。
+*/
+
+}//d
+
+
+//○居住区３F通路(w01c) d //e
+resource TO_監視カメラ１__e {
+オタコン_000: {
+Snake, there's a surveillance
+camera in place.
+}//<ページ数変更>
+オタコン_000_1: {
+Once you're in its field of view,
+an alarm will go off. You can't
+afford to be seen.
+}
+/*スネーク、監視カメラが設置されてる。
+監視カメラの視界に入ったら警報を
+鳴らされてしまう。見つかっちゃダメだ。
+*/
+}
+
+
+resource TO_監視カメラ２__e {
+オタコン_000: {
+Wait for the camera to point
+the other way, then run past
+it.
+}//<ページ数変更>
+オタコン_000_1: {
+There's also a blind spot right
+beneath the camera. Use it to
+buy some time.
+}
+/*監視カメラが別の方向を向いてるうちに
+走り抜けてくれ。あとカメラの真下は
+死角になってる。それも利用するんだ。
+*/
+}
+
+
+resource TO_監視カメラ３__e {
+オタコン_000: {
+You can also use the chaff
+grenade to set up some
+electronic interference.
+}//<ページ数変更>
+オタコン_000_1: {
+The camera will be
+ineffective for a while.
+}
+/*チャフ・グレネードを使って電子妨害を
+仕掛けるのもいいね。そうすれば
+しばらく監視カメラを無効に出来る。
+*/
+
+}//d
+
+
+
+//○居住区４F厨房(w01d) h //e
+//・食堂について t //e
+resource TO_食堂１__e {
+オタコン_000: {
+That must be the mess hall.
+}
+/*そこは食堂だね。*/
+}
+
+
+//一回目のみ t //e
+resource TO_食堂２__e {
+スネーク_000: {
+It's pretty small considering
+the size of the ship...
+}
+/*船の大きさに比べると小さいな……。
+*/
+
+オタコン_001: {
+I guess modern tankers are so
+automated that you only need
+a crew of about twenty.
+}
+/*今のタンカーは自動化が進んでるから
+乗組員は２０人くらいなんだ。
+*/
+
+オタコン_002: {
+That's not a lot to feed.
+}
+/*だから食堂もそれくらいの大きさで
+充分なのさ。*/
+}
+
+
+resource TO_食堂３__e {
+//e
+オタコン_000: {
+There's a lot of things there,
+but make sure you don't disturb
+anything and leave traces.
+}//<ページ数変更>
+オタコン_000_1: {
+The enemy might notice.
+}
+/*色々なものがあるけど
+散らかさない方が良い。
+痕跡を残すと敵に気づかれるからね。
+*/
+
+}//d
+
+
+
+//・倉庫について h //e
+resource TO_倉庫__e {
+オタコン_000: {
+Snake, that's the pantry --
+where they keep the food
+supplies.
+}
+/*スネーク、そこは倉庫だ。
+料理の材料とかを置いておく
+ところだね。
+*/
+
+オタコン_001: {
+Hm, lots of cardboard boxes. You
+could probably use one to blend
+in and avoid being discovered.
+}
+/*ダンボールが一杯積んである……。
+まわりにとけ込めれば上手く敵の目を
+誤魔化せるんじゃないかな？
+*/
+
+}//d
+//＠まわりのダンボールに合わせる仕様？ //e
+
+
+
+//・海兵隊員死体近く h //e
+resource TO_食堂死体__e {
+//一回目のみ t //e
+オタコン_000: {
+So he was about to have dinner...
+}
+/*その人、食事をとろうとしてたのかもね。*/
+
+スネーク_001: {
+And got a bullet in the head
+instead. Poor bastard.
+}
+/*飯のかわりに食らったのは鉛弾、
+というわけか……。
+*/
+
+}//d
+
+
+//○艦橋(w01e) d //e
+//・タンカーについて。自動操縦 h //e
+resource TO_自動操縦__e {
+オタコン_000: {
+This is the bridge -- but it's not
+just a place where you steer the
+ship.
+}
+/*そこが操舵室だ。
+と、言っても舵を取るだけの
+部屋じゃない。
+*/
+
+オタコン_001: {
+In a modern tanker,
+navigational, engine
+control,
+}//<ページ数変更>
+オタコン_001_1: {
+communication and all the other major
+operational functions are consolidated
+in the bridge.
+}
+/*現代のタンカーでは運航操船機能だけじゃ
+なく機関制御とか無線とかの主要機能も
+そこに集約されてるんだ。
+*/
+
+オタコン_002: {
+The ship is auto-piloted via
+a global positioning satellite
+system.
+}//<ページ数変更>
+オタコン_002_1: {
+This is a precision instrument
+we're talking about here, so it's
+probably best to leave it alone.
+}
+/*舵は航海衛星方式を用いた自動操縦に
+なってる。精密機器だから下手に
+触らない方がいいね。
+*/
+
+}//d
+
+
+/*
+resource TO_舵__e {
+オタコン_000: {
+君の目の前にあるのが舵輪だ。
+その船を運転するための舵だよ。
+でも触らない方がいいね。
+}
+/* 廃止されている */
+
+}//d
+*/
+
+
+//○オルガ戦後(w00c) d //e
+//・オルガ死体近く h //e
+resource TO_オルガ死体__e {
+オタコン_000: {
+She's not dead, is she?
+}
+/*……その人、死んじゃいないよね。*/
+
+スネーク_001: {
+No, just knocked out.
+}
+/*ああ。麻酔で眠っているだけだ。*/
+
+オタコン_002: {
+Good.
+}
+/*そうか。*/
+
+スネーク_003: {
+Looks like a little angel,
+doesn't she?
+}
+/*寝顔はかわいいものだな。
+*/
+
+オタコン_004: {
+What's gotten into you?
+}
+/*……何か変なこと考えてない？*/
+
+スネーク_005: {
+Nothing.
+}
+/*いや。*/
+
+オタコン_006: {
+Sleeping Beauty may have been
+awakened by Prince Charming's
+kiss,
+}//<ページ数変更>
+オタコン_006_1: {
+but you'd better not try it here.
+}
+/*確かに眠り姫は王子様のキスで目覚める
+ものだけど、彼女にはこのまま眠って
+おいてもらった方が良さそうだね。
+*/
+
+スネーク_007: {
+I'm with you. Besides,
+I've had enough of tomboys.
+}
+/*そうだな。戦場でジャジャ馬の相手を
+するのはもうごめんだ。
+*/
+
+}//d
+
+//・オルガ死体撃った h //e
+resource TO_オルガ死体撃った__e {
+オタコン_000: {
+What are you doing? 
+}//<ページ数変更>
+オタコン_000_1: {
+How could you shoot someone
+who's unconscious! What are
+you, some kind of a monster!?
+}
+/*何てことするんだ！
+倒れてる人を撃つなんて！
+この人でなし！！
+*/
+
+}//d
+
+//・マスト最上部 h //e
+resource TO_マスト最上部__e {
+オタコン_000: {
+Snake, I know you're
+into high places,
+}//<ページ数変更>
+オタコン_000_1: {
+but do you think maybe you
+can head down into the hold
+sometime this year?
+}
+/*スネーク、君が高い所が好きなのは
+分かったから、気が済んだらさっさと
+下りて船倉に向かってくれ。
+*/
+
+オタコン_001: {
+You're here to take those photos
+of Metal Gear, remember?
+}
+/*目的は船倉に行ってメタルギアの写真を
+撮ることだ。忘れないでくれよ。
+*/
+
+}//d
+
+//○エンジンルーム(w02a) d //e
+//・赤外線センサー強制ＣＡＬＬ h //e
+resource TO_赤外線強制ＣＡＬＬ最初__e {
+オタコン_000: {
+Snake, wait! Don't move!
+}
+/*スネーク、待って！
+そのまま進んじゃいけない！*/
+}
+
+
+resource TO_赤外線強制ＣＡＬＬ通り抜け__e {
+//＊通り抜けようとした場合 t //e
+スネーク_000: {
+What?
+}
+/*なに？*/
+
+オタコン_001: {
+Look at the walls on
+both sides of the hall.
+}
+/*その通路の両側を見るんだ。
+*/
+
+スネーク_002: {
+I see something --
+infrared sensors!?
+}
+/*装置が設置されてる……。
+赤外線センサーか！？
+*/
+}
+
+
+//＊ちょっと立ち止まった場合 t //e
+resource TO_赤外線強制ＣＡＬＬ立ち止まり__e {
+スネーク_000: {
+I see it. Some kind of device
+on both sides of the hall...
+}//<ページ数変更>
+スネーク_000_1: {
+...infrared sensors?
+}
+/*ああ。この通路の両側の機械……。
+赤外線センサーか？
+*/
+}
+
+
+resource TO_赤外線強制ＣＡＬＬ２__e {
+//e
+オタコン_000: {
+Right.
+And they're linked to --
+}
+/*ああ。そしてそのセンサーに
+つながってるのは……。*/
+
+スネーク_001: {
+Let me guess. Semtex.
+}
+/*セムテックス……。*/
+オタコン_002: {
+Exactly.
+Plastic explosives.
+}
+/*
+Plastic explosives 'R' Us.
+そう、プラスティック爆弾だ。*/
+}
+
+
+//デモ見てる場合のみ t //e
+resource TO_赤外線強制ＣＡＬＬデモ見てた__e {
+スネーク_000: {
+So this is what they
+were talking about.
+}
+/*奴等が仕掛けたと言っていたのは、
+これのことか……。
+*/
+オタコン_001: {
+Looks like it.
+}
+/*みたいだね。*/
+}
+
+
+resource TO_赤外線強制ＣＡＬＬ３__e {
+//e
+オタコン_000: {
+If you trip the sensors...
+}
+/*もしセンサーにひっかかったら……。*/
+
+スネーク_001: {
+I'll be sleeping with the fishes
+along with this entire ship.
+}
+/*この船ごと海の藻くずだな。
+*/
+
+オタコン_002: {
+That sounds about right.
+}
+/*その通り。*/
+
+}//d
+
+resource TO_赤外線強制ＣＡＬＬ機関室既に赤外線を見ている場合__e {
+オタコン_000: {
+Snake, there's another set
+of infrared sensors in place.
+}//<ページ数変更>
+オタコン_000_1: {
+If you touch that, the explosives
+will detonate and that ship will
+be pulverized.
+}
+/*スネーク、そこにも赤外線センサーが
+セットされてるよ！赤外線に触れたら
+爆弾が爆発してその船は沈んでしまう。
+*/
+
+}//d
+
+resource TO_赤外線機関室通れない__e {
+スネーク_000: {
+I'm not in the mood to go
+sleep with the fishes, but...
+}//<ページ数変更>
+スネーク_000_1: {
+There are too many sensors. Looks
+like I'll have to find another way.
+}
+/*海水浴を楽しむ気はないが……。
+センサーの数が多すぎるな。赤外線に
+触れずに通り抜けるのは無理のようだ。
+*/
+
+オタコン_001: {
+No need to worry.
+There's a way through.
+}
+/*大丈夫。方法はある。
+*/
+
+}//d
+
+resource TO_赤外線制御装置破壊方法__e {
+オタコン_000: {
+Take a close look --
+}//<ページ数変更>
+オタコン_000_1: {
+do you see the thing with
+blinking green light right
+next to the explosives?
+}
+/*よく見てくれ。爆弾のすぐ近くに
+緑色に点滅するランプのついた
+装置があるだろ？
+*/
+
+オタコン_001: {
+That's the control unit
+for the sensors.
+}
+オタコン_001_1: {
+Destroy that and the
+sensors stop functioning.
+}
+/*それがセンサーの制御装置だ。
+それを壊せば赤外線センサーは
+機能を停止する。
+*/
+
+オタコン_002: {
+You can't get in close enough to
+touch it, so you'll have to shoot
+it out.
+}
+/*近づくことは出来ないから、
+銃で制御装置を撃って破壊するんだ。
+*/
+
+}//d
+
+//＊ＵＳＰ持っていない場合 h //e
+resource TO_赤外線ＵＳＰ持ってない__e {
+オタコン_000: {
+But your M9's knockout rounds
+won't work. Find a gun somewhere.
+}
+/*でも、君の持ってるＭ９の麻酔弾じゃ
+壊せないと思う。どこかで銃を探すんだ。
+*/
+
+}//d
+
+//＊ＵＳＰ持っている場合 h //e
+resource TO_赤外線ＵＳＰ持ってる__e {
+オタコン_000: {
+But the M9's knockout rounds won't
+work. The USP you picked up should
+do the trick. Use that gun.
+}
+/*Ｍ９の麻酔弾じゃ壊せないだろう。
+でもさっき手に入れたＵＳＰなら
+大丈夫だ。ＵＳＰを使うんだ。
+*/
+
+}//d
+
+resource TO_赤外線爆弾撃つな１__e {
+オタコン_000: {
+The actual explosive device is
+the one with a blinking orange
+light on it.
+}//<ページ数変更>
+オタコン_000_1: {
+Don't even think about
+shooting that.
+}
+/*オレンジ色に点滅するランプが
+ついてるのが爆弾だ。
+爆弾は絶対撃ってはいけない。
+*/
+
+オタコン_001: {
+Any significant impact will set off
+the detonators, which is not good.
+}
+/*爆弾に衝撃が加わると起爆装置が作動
+して爆発する仕組みになってるみたい
+だからね。
+*/
+
+}
+
+
+resource TO_赤外線爆弾撃つな２__e {
+オタコン_000: {
+Just aim for the green lights
+and take out the control unit.
+}
+/*緑色のランプがついた制御装置だけを
+撃つんだ。いいね。
+*/
+
+}//d
+
+
+resource TO_赤外線制御装置探せ__e {
+オタコン_000: {
+Looks like there are
+several control units.
+}//<ページ数変更>
+オタコン_000_1: {
+Unless you take out all of them,
+you won't be able to get through.
+}
+/*制御装置はいくつか置いてあるようだ。
+全て壊さないと通り抜けることは
+出来ないだろう。
+*/
+
+オタコン_001: {
+Once you've destroyed a control
+unit, the IR beam should shut off.
+}//<ページ数変更>
+オタコン_001_1: {
+If the beam is intact, that means
+there's a control unit you haven't
+managed to take out.
+}
+/*制御装置を破壊すれば赤外線は消える。
+赤外線が残っているということは破壊
+されていない制御装置があるってことだ。
+*/
+
+オタコン_002: {
+You need to destroy every
+single control unit.
+}
+/*制御装置を全部破壊するんだ。
+*/
+
+}//d
+
+resource TO_赤外線主観で狙え__e {
+オタコン_000: {
+Use the First Person View Attack
+to target and destroy only the
+control unit.
+}
+/*主観攻撃でよく狙って、
+制御装置だけを壊してくれ。
+*/
+
+オタコン_001: {
+You should be able to target the
+partly concealed unit by climbing
+on top of objects,
+}//<ページ数変更>
+オタコン_001_1: {
+crawling or stretching.
+}
+/*死角にある制御装置も物の上に乗ったり、
+ホフクしたり伸び上がったりすれば
+撃てるはずだ。
+*/
+
+}//d
+
+
+resource TO_赤外線くぐり抜ける版__e {
+オタコン_000: {
+Hm, there aren't that
+many infrared beams.
+}//<ページ数変更>
+オタコン_000_1: {
+Maybe you can get past those
+without setting off the explosives.
+}
+/*赤外線の本数はそんなに多くないね。
+それくらいなら赤外線に触れないように
+抜けられるんじゃないか？
+*/
+
+}//d
+
+resource TO_赤外線見方タバコ__e {
+オタコン_000: {
+If you need to see exactly where
+the beams are, you can use the
+usual method.
+}
+/*どこに赤外線が走ってるかを見るには
+いつもの方法を使えば良い。
+*/
+}
+
+
+resource TO_赤外線見方消火器__e {
+//消火器の場合 t //e
+オタコン_000: {
+There's a fire extinguisher
+over there.
+}//<ページ数変更>
+オタコン_000_1: {
+Break it open and try scattering
+some of the extinguishing chemicals.
+}
+/*脇に消火器が置いてあるね。
+それを壊して消火剤をまいて
+みるのも良いかもしれない。
+*/
+}
+
+
+resource TO_赤外線見方粉袋__e {
+//粉袋の場合 t //e
+オタコン_000: {
+There's a bag of extinguisher
+compounds for fires.
+}//<ページ数変更>
+オタコン_000_1: {
+Maybe you can shoot the bag and
+scatter some of the chemicals.
+}
+/*消火剤の袋がおいてあるね。
+それを撃って消火剤をまき散らして
+みるのも良いかもしれない。
+*/
+
+}//d
+
+
+//・以降ＳＥＮＤ h //e
+resource TO_赤外線さわるな__e {
+オタコン_000: {
+If you trigger the sensor,
+the explosives will detonate.
+}//<ページ数変更>
+オタコン_000_1: {
+Don't ever make contact
+with the beams. This is
+very important.
+}
+/*センサーに引っかかったら爆弾が爆発
+する。絶対に赤外線に触れちゃダメだ。
+いいね。
+*/
+
+}//d
+
+resource TO_赤外線制御装置撃て__e {
+オタコン_000: {
+Aim carefully and take out
+just the control unit from
+the infrared sensors.
+}//<ページ数変更>
+オタコン_000_1: {
+Use the First Person
+View for accuracy.
+}
+/*赤外線センサーの制御装置だけを
+銃で撃って破壊するんだ。
+主観攻撃でよく狙ってくれ。
+*/
+
+オタコン_001: {
+The control unit is the one
+with the green light.
+}
+/*制御装置は緑色のランプがついた
+機械だよ。
+*/
+
+}//d
+
+
+resource TO_赤外線セムテックス__e {
+オタコン_000: {
+The plastic explosive
+is probably Semtex.
+}
+/*そのプラスティック爆弾は
+セムテックスだ。
+*/
+
+オタコン_001: {
+It was developed in the former
+Czechoslovakia. As easy to use
+as C4, and just as powerful.
+}
+/*旧チェコスロバキアで開発された
+プラスティック爆弾で、Ｃ４と同じく
+扱いやすいが、強力な爆発力を持ってる。
+*/
+
+オタコン_002: {
+The composition is a mix of RDX and
+PETN, with a detonation velocity of
+over 26,000 feet per second,
+}//<ページ数変更>
+オタコン_002_1: {
+with temperatures reaching up
+to 3000 degrees Fahrenheit.
+}
+/*組成はＲＤＸとＰＥＴＮ。
+爆速は毎秒８０００ｍを超え、
+燃焼温度は華氏３０００度以上になる。
+*/
+
+オタコン_003: {
+It was probably the explosive used
+in the Pan Am 103 bombing over
+Lockerbie in 1988.
+}
+/*１９８８年スコットランド上空で
+起こったパンナム１０３便の爆破テロに
+使われたとも言われてるね。
+*/
+
+スネーク_004: {
+If this much Semtex goes off at
+the same time, the tanker will
+disappear in two seconds flat.
+}
+/*これだけのセムテックスが
+一度に爆発したら、この船くらい
+ひとたまりもないな。
+*/
+
+オタコン_005: {
+Make sure it doesn't go off, then.
+Don't trip the sensor, don't touch
+the Semtex.
+}
+/*絶対に爆発させないようにね。
+センサーに触れても、セムテックスに
+衝撃を与えてもダメだ。
+*/
+
+スネーク_006: {
+Are they planning to take Metal
+Gear, and then sink the ship...?
+}
+/*奴等はメタルギアを奪って、
+この船を沈めるつもりなのか……？
+*/
+
+}//d
+
+
+//・エンジンルームでは聴力が低い  h //e
+resource TO_エンジンルーム聴力低い__e {
+オタコン_000: {
+That's the engine room.
+You can see the tanker's
+engine in the middle there.
+}
+/*そこは機関室だ。真ん中にあるのが
+その船のエンジンだよ。
+*/
+
+オタコン_001: {
+The engine noise is pretty loud,
+but that means the enemy's hearing
+will be hampered too.
+}
+/*エンジンの音が随分うるさいけど、
+その分、敵も物音が聞こえにくいはずだ。
+*/
+
+}//d
+
+//・エンジンについて h //e
+resource TO_エンジンルームエンジン__e {
+オタコン_000: {
+The reason the ship's drive
+section is in the aft area
+}//<ページ数変更>
+オタコン_000_1: {
+is so that more oil tanks can
+be fitted into the middle part.
+}//<ページ数変更>
+オタコン_000_2: {
+A shortened propeller
+axle is another benefit.
+}
+/*機関が船尾にあるのは、船体中央部の
+空間を油タンクに出来るからだ。
+プロペラ軸も短くて済むしね。
+*/
+
+オタコン_001: {
+The simplification of the drive
+structure means a greater emphasis
+can be placed on hull strength.
+}
+/*構造がシンプルになるから、その分
+船体の強度を高められるということさ。
+*/
+
+}//d
+
+
+//・レイブン影近く h //e
+resource TO_レイブン影正体前__e {
+オタコン_000: {
+Snake, that shadow -- it's --
+}
+/*スネーク、あの影は……？*/
+
+スネーク_001: {
+It's him, no doubt about it.
+}
+/*奴だ。間違いない。*/
+
+オタコン_002: {
+But Raven was -- you know,
+out in Shadow Moses...
+}
+/*だけどレイブンはシャドーモセスで
+君が……。
+*/
+
+スネーク_003: {
+I know. Maybe it's the
+last of his nine lives,
+}//<ページ数変更>
+スネーク_003_1: {
+or maybe his Maker decided
+to give him another chance...
+}
+/*ああ。シャーマンのマジックか。
+それとも奴の神が奇跡でも
+起こしたか……？
+*/
+
+オタコン_004: {
+You're not serious, are you?
+}
+/*本気で言ってるのかい？*/
+
+スネーク_005: {
+Maybe I am,
+maybe I'm not.
+}//<ページ数変更>
+スネーク_005_1: {
+Either way, we'll find
+out soon enough.
+}
+/*さあな。いずれにせよ、
+行ってみればわかることだ。
+*/
+
+}//d
+
+//二回目以降
+resource TO_レイブン影正体前_二回目以降__e {
+オタコン_000: {
+Snake, watch your step, okay...?
+}
+/*スネーク、気をつけてくれよ……。*/
+
+}//d
+
+//没！ＸＸＸＸＸＸＸＸＸＸｘ
+resource TO_レイブン影正体後__e {
+//ns
+オタコン_000: {
+Hey, that's a McFarlane
+action figure!
+}
+/*それ、マクファーレン・トイズの
+アクションフィギュアだよ！！
+*/
+
+スネーク_001: {
+What!?
+}
+/*なに？*/
+
+オタコン_002: {
+Detailing that even fools the eyes
+of Solid Snake!
+}//<ページ数変更>
+オタコン_002_1: {
+Even the most discriminating
+collector can't do better than
+this.
+}
+/*スネークも騙される程精巧な
+ディテール！まさにマニアも
+納得のスグレモノだ！
+*/
+
+オタコン_003: {
+Better get yours today!
+}
+/*これはもう絶対に買い！だね！！*/
+
+オタコン_004: {
+詳しくは 
+Go to Mcfarlane Toys' web site
+for more information!
+}
+/*
+Go to www.mcfarlane.com for more information!
+Go to www.spawn.com for more information!
+*/
+/*http://＃｛ＷＷＷ、ダブルダブルダブル｝＃＃｛．、ドット｝＃＃｛ＭＣＦＡＲＬＡＮＥ、マクファーレン｝＃＃｛．、ドット｝＃＃｛ＣＯＭ、コム｝＃
+を見てくれ！
+*/
+
+スネーク_005: {
+H...hey, Hal! Who the hell are
+you talking to!!?
+}
+/*オタコン。
+……誰に言ってるんだ？
+*/
+//ne
+
+}//d
+
+
+//・奈落に落ちたら死ぬ h //e
+resource TO_奈落エルード__e {
+オタコン_000: {
+Snake, if you fall from there, even
+you won't make it. You can't fall,
+no matter what. OK?
+}
+/*スネーク、そこから落ちたら、
+いくら君でも助からない。
+絶対、落ちたらダメだ。いいね。
+*/
+
+}//d
+
+//＠エルード自殺は出来る？//e
+
+
+//・開かないロッカー h //e
+resource TO_開かないロッカー__e {
+オタコン_000: {
+It doesn't look like you can open
+that locker. It must be locked or
+something.
+}//<ページ数変更>
+オタコン_000_1: {
+Try another one if you
+really need to use a locker.
+}
+/*そのロッカーは開かないみたいだ。
+鍵でもかかってるんだろう。ロッカーを
+使いたいんなら他のを探すしかないね。
+*/
+
+}//d
+
+
+
+
+//○長廊下(w03a) d //e
+//・ライト撃つと消える。h //e
+resource TO_長廊下ライト__e {
+オタコン_000: {
+Shoot out the lights to
+darken the corridor.
+}//<ページ数変更>
+オタコン_000_1: {
+The enemy will have a
+harder time finding you.
+}
+/*電灯を銃で撃って壊せば明かりを
+消すことが出来る。暗くなるけど、
+敵も君が見にくくなるはずだ。
+*/
+
+}//d
+
+//・長廊下暗い注意 h //e
+resource TO_長廊下ライトつけろ__e {
+オタコン_000: {
+Snake, use the flashlight
+in dark places like this.
+}
+/*スネーク、暗いところではライトを
+つけるといい。
+*/
+
+オタコン_001: {
+Your USP is equipped
+with a flashlight.
+}//<ページ数変更>
+オタコン_001_1: {
+All you have to do is select the gun
+and aim it with the Weapon button,
+and the light will go on.
+}
+/*君のＵＳＰにはフラッシュライトが装備
+されてる。ＵＳＰを装備して＃｛□、武器｝＃ボタン
+で構えれば、その間ライトがつくよ。
+*/
+
+オタコン_002: {
+Not that I need to tell you this,
+}//<ページ数変更>
+オタコン_002_1: {
+but the light will turn you
+into a better target if there
+are enemies nearby.
+}//<ページ数変更>
+オタコン_002_2: {
+Be careful.
+}
+/*でも、ライトをつければ当然敵に
+見つかりやすくなるから気をつけてくれ。
+*/
+
+}//d
+
+//・敵は暗視ゴーグルをつけている h //e
+resource TO_長廊下敵暗視ゴーグル__e {
+オタコン_000: {
+Snake, the enemy is wearing
+night-vision goggles.
+}//<ページ数変更>
+オタコン_000_1: {
+Don't count on darkness
+for cover.
+}
+/*スネーク、敵は暗視ゴーグルを装備
+している。暗闇も見通してくるはずだ。
+気をつけて。
+*/
+
+}//d
+
+//＠ゴーグル兵出現条件
+
+//・開かない水密扉近く h //e
+resource TO_長廊下開かない扉__e {
+オタコン_000: {
+That door probably can't be
+opened. Try heading north.
+}
+/*そこの扉は開かないみたいだ。
+北の方に進んでくれ。
+*/
+
+}//d
+
+
+//○長廊下東(w03b) d //e
+//・開かなくなった扉 h //e
+resource TO_長廊下東ロック扉__e {
+オタコン_000: {
+Snake, looks like that door
+was locked from outside.
+}//<ページ数変更>
+オタコン_000_1: {
+You have nowhere to go
+but ahead. Head south.
+}
+/*スネーク、その扉は外側からロック
+されたみたいだ。先に進むしかない。
+南に向かってくれ。
+*/
+
+}//d
+
+
+//・開かない水密扉近く h //e
+resource TO_長廊下東開かない扉__e {
+オタコン_000: {
+Doesn't look as though you can open
+that door. Just keep heading south.
+}
+/*そこの扉は開かないみたいだ。
+そのまま南に進んでくれ。
+*/
+
+}//d
+
+
+//○第一船倉(w04a) d //e
+//・はしご近く：はしごの上り下り方法 h //e
+resource TO_はしご__e {
+オタコン_000: {
+Snake, face the ladder and push
+the Action button to grab onto
+the ladder.
+}
+/*スネーク、ハシゴにつかまるには
+ハシゴに向かって＃｛△、アクション｝＃ボタンを押すんだ。
+*/
+
+オタコン_001: {
+Push the Action button again at
+the top or the foot of the ladder
+to let go.
+}
+/*ハシゴから離れたくなったら、
+ハシゴの一番上か一番下でもう一度
+＃｛△、アクション｝＃ボタンを押せばいい。
+*/
+
+オタコン_002: {
+Remember, while you're going up or
+down a ladder, you won't be able to
+use any weapons.
+}
+/*ただ、ハシゴを上り下りしてる間は
+武器は使えないから、気をつけてくれ。
+*/
+//＠はしご中は無敵？
+}//d
+
+//・プロジェクタ：プロジェクタについての注意 h //e
+resource TO_プロジェクタ１__e {
+オタコン_000: {
+Snake, you see that
+projector there?
+}//<ページ数変更>
+オタコン_000_1: {
+See what comes up if you turn it
+onto the screen in front of you.
+}
+/*スネーク、そこにプロジェクタが
+あるだろ。それで前にあるスクリーンに
+映像を映してるんだ。
+*/
+}
+
+
+//・一回目のみ t //e　　（二回目？）
+resource TO_プロジェクタ２__e {
+オタコン_000: {
+I'm guessing there isn't enough space
+for all the Marines in that farthest hold
+where Metal Gear is.
+}
+/*メタルギアのある一番奥の船倉に
+海兵隊員が入りきらないからだろう。
+*/
+}
+
+
+//・リフレッシュ室ＴＶ前会話聞いてない場合のみ t //e
+resource TO_プロジェクタ３__e {
+オタコン_000: {
+So they're broadcasting
+the live proceedings --
+}
+/*だから中継してる映像を利用して……。*/
+
+スネーク_000: {
+Why risk broadcasting
+in the first place?
+}
+/*そもそも、なぜ中継を？
+*/
+//・ＴＶ会話へ t //e
+}
+
+
+resource TO_プロジェクタ４__e {
+//e
+オタコン_000: {
+Don't cut across in front of
+the projector, or the enemy
+may spot your shadow.
+}
+/*不用意にプロジェクタの前を横切ったら
+スクリーンに影が映って敵に見つかって
+しまう。気をつけてくれ。
+*/
+
+オタコン_001: {
+Crawl across if you need to
+move in front of the projector.
+}
+/*プロジェクタの前はホフクして進むんだ。
+*/
+
+}//d
+
+
+
+
+//・鳴り床：鳴り床注意 h //e
+resource TO_鳴り床__e {
+オタコン_000: {
+Snake, you can't walk on that
+floor without causing a racket.
+}//<ページ数変更>
+オタコン_000_1: {
+You'll be in trouble if
+someone hears you.
+}
+/*スネーク、そこの床は歩くと音が
+鳴ってしまうみたいだ。
+足音を聞かれたら厄介なことになる。
+*/
+}
+
+
+
+resource TO_鳴り床２__e {
+#ifdef d:XBOX
+オタコン_000: {
+To move more quietly, try crawling,
+or walk slower by moving the left
+thumbstick a little bit at a time.
+}
+#else
+オタコン_000: {
+To move more quietly, try crawling,
+or walk slower by pushing the left
+analog stick a little bit at a time.
+}
+#endif
+/*足音を立てないように進むには、
+ホフクするか、左スティックの倒し方を
+少しだけにしてゆっくり歩けばいい。
+*/
+
+}//d
+
+//・一階：船倉兵の動きについて h //e
+resource TO_船倉兵__e {
+オタコン_000: {
+If someone notices something and
+starts walking towards you, take
+him out quickly or get out of there.
+}
+/*もしも気づかれて海兵隊員が近づいて
+来たら、見つかる前に素早く倒すか、
+逃げるかするんだ。
+*/
+
+オタコン_001: {
+It really would be suicide to
+take on that many Marines.
+}//<ページ数変更>
+オタコン_001_1: {
+You can't afford to be discovered --
+trust me on this one.
+}
+/*あの人数の海兵隊はとても相手に
+出来ない。絶対に見つかっちゃダメだ。
+いいね。
+*/
+//＠船倉兵は追ってくる一人を倒せばいい？
+
+}//d
+
+//・ハッチはアクションボタンで開く h //e
+resource TO_船倉地下ハッチ__e {
+オタコン_000: {
+Snake, look at that hatch over
+there. It probably connects to
+a below-deck network of ducts.
+}
+/*スネーク、そこにハッチがある。
+多分下層のダクトに通じてるんだ。
+*/
+
+オタコン_001: {
+Face the hatch and push
+the Action button to open
+it.
+}
+/*ハッチを開けるには、ハッチに向かって
+＃｛△、アクション｝＃ボタンを押せばいい。
+*/
+
+}//d
+
+//・ハッチ下：ホフクでダクトに入れる h //e
+//
+resource TO_船倉ハッチ下__e {
+オタコン_000: {
+I think it's an entrance into
+the ducts. There's just enough
+room for you to crawl in.
+}
+/*そこはダクトの入口になってる
+みたいだね。
+ホフクすれば中に入れるはずだ。
+*/
+
+オタコン_001: {
+It could be safer for you down there
+than above deck. But don't let that
+relax you.
+}
+/*ダクトの中を進むのは上を行くより
+安全かもしれないな。
+でも気は抜かないでくれ。
+*/
+
+}//d
+
+
+//・長廊下からのドア近く h //e
+resource TO_船倉ロックドア__e {
+オタコン_000: {
+Snake, that door is locked from
+the other side. There's no way
+back now. Keep moving.
+}
+/*スネーク、そこのドアは外からロック
+されてる。もう後戻りは出来ない。
+先に進むんだ。
+*/
+
+}//d
+
+//・地下小部屋：物音立てると死ぬ h //e
+resource TO_船倉地下小部屋__e {
+オタコン_000: {
+Snake, they'll find you if you make
+any loud noises, even inside that
+duct.
+}
+/*スネーク、ダクトの中にいても、
+大きな音を立てたら見つかってしまうと
+思う。
+*/
+//＠ダクト内で発砲で死亡？
+
+オタコン_001: {
+There's no way you can
+take on that many of them.
+}
+/*あの人数に囲まれたら、
+いくら君でもどうしようもない。
+*/
+
+オタコン_002: {
+Don't even think about firing
+a gun, okay? Please?
+}
+/*絶対に銃を撃ったりしちゃダメだ。
+いいね。
+*/
+
+}//d
+
+
+//・ＴＶ兵近く：ＴＶ兵について h //e
+resource TO_船倉ＴＶ兵__e {
+//
+オタコン_000: {
+Oh, so he was broadcasting
+all this stuff.
+}
+/*映像はその兵隊が中継してたんだね。
+*/
+//ＴＶ会話聞いていない場合、ＴＶ会話へ t //e
+
+}//d
+
+//・消防ポール上側近く：下り方。一度下りたら上れない h //e
+resource TO_ポール上__e {
+オタコン_000: {
+Snake, you can use that pole to
+get down to the level below.
+}
+/*スネーク、そこにあるポールをつたえば
+下の階に下りられるはずだ。
+*/
+
+オタコン_001: {
+Face the pole and push the Action
+button to grab a hold of the pole.
+}
+/*ポールにつかまるにはポールの方を向いて＃｛△、アクション｝＃ボタンを押せばいい。*/
+
+オタコン_002: {
+But once you slide down, you
+won't be able to go back up.
+}//<ページ数変更>
+オタコン_002_1: {
+Make sure you're finished with
+this floor before going down.
+}
+/*でも一度下りたら、もう上には上がれ
+ないだろう。下りるのはその階でしたい
+ことを全部終えてからの方がいいね。
+*/
+
+}//d
+
+//・消防ポール下側近く：下からは上れません h //e
+resource TO_ポール下__e {
+オタコン_000: {
+Snake, you're not going to be
+able to climb back up that thing.
+}//<ページ数変更>
+オタコン_000_1: {
+You should forget about
+going up to that level.
+}
+/*スネーク、そのポール、下からは
+上れないそうにない。上の階に行くのは
+諦めたほうがいいね。
+*/
+
+}//d
+
+
+//・電送機近く：電送機について h //e
+resource TO_電送機__e {
+オタコン_000: {
+Snake, that workstation is the
+transfer point between the tanker's
+intranet and the outside world.
+}//<ページ数変更>
+オタコン_000_1: {
+Use it to send those pictures over.
+}
+/*スネーク、そこにあるコンピュータが
+外に繋がってるＷＳだ。
+それを使って写真をこっちに送ってくれ。
+*/
+
+オタコン_001: {
+All you have to do is face the
+computer and push the Action
+button,
+}//<ページ数変更>
+オタコン_001_1: {
+and the photos will be sent. 
+}
+/*写真を送信する時は、そのＷＳの前に
+立って＃｛△、アクション｝＃ボタンを押すだけでいい。
+*/
+
+オタコン_002: {
+Hope you took a good one!
+}
+/*いい写真を頼むよ！*/
+
+}//d
+
+//・二回目のみ h //e
+resource TO_電送機説明__e {
+オタコン_000: {
+That workstation is hooked up
+to the greater military network;
+}//<ページ数変更>
+オタコン_000_1: {
+the speech in the holds is being
+relayed out through that machine.
+}//<ページ数変更>
+オタコン_000_2: {
+We'll be making use of it too.
+}
+/*そのＷＳは軍事ネットワークに
+繋がってる。演説の映像もそこから送信
+されているんだ。それを僕らは利用する。
+*/
+
+オタコン_001: {
+I managed to get in through
+an Army IC router in Ohio.
+}
+/*僕はオハイオにある陸軍のインター
+ネット・コントローラ・ルーターから
+軍事ネットワークに侵入した。
+*/
+
+オタコン_002: {
+All I had to do from there was
+use the Link-16 to remotely
+install a few drivers＃−
+}//<ページ数変更>
+オタコン_002_1: {
+and an application onto
+that workstation.
+}//<ページ数変更>
+オタコン_002_2: {
+So your camera can talk
+to their computer now.
+}
+/*そこからリンク１６経由でそのＷＳに
+写真を送信するためのアプリケーション
+をリモート・インストールしたのさ。
+*/
+
+オタコン_003: {
+Hey, even military networks use
+products based on commercial
+technology.
+}//<ページ数変更>
+オタコン_003_1: {
+Nothing too unfamiliar there.
+}
+/*なに、軍事ネットワークは基本的に
+民生品ベースの技術を応用してるからね。
+軽いもんだよ。
+*/
+
+オタコン_004: {
+Besides, I cut myself a back
+door when I still had access.
+}//<ページ数変更>
+オタコン_004_1: {
+I had a lot of access privileges
+while we were developing REX.
+}
+/*それにあらかじめバックドアも仕掛けて
+あったんだ。ＲＥＸを作ってた時に
+陸軍のネットにはアクセス出来たから。
+*/
+
+オタコン_005: {
+Hey, are you listening?
+}
+/*ねぇ話聞いてる？*/
+
+スネーク_000: {
+Oh, ah, yeah...
+}
+/*あ、ああ……。*/
+
+オタコン_006: {
+Really? Anyway, the program will
+compress, encrypt and packetize
+the photo's image data.
+}//<ページ数変更>
+オタコン_006_1: {
+I used BATON for encryption,
+by the way.
+}
+/*本当に？で、そのアプリは写真のデータ
+を圧縮・暗号化・分割して送信する。
+暗号化にはＢＡＴＯＮを使ったよ。
+*/
+
+オタコン_007: {
+And the beauty of it is -- the packets
+are disguised to look like the TADIL-J
+message format.
+}//<ページ数変更>
+オタコン_007_1: {
+Get it? It's the standard Tactical
+Digital Information Link message
+format,
+}//<ページ数変更>
+オタコン_007_2: {
+and the packets will be sent out
+cloaked by their own speech
+broadcast.
+}
+/*パケットは＃｛戦術デジタル情報リンク、ＴＡＤＩＬ｝＃
+Ｊメッセージフォーマットに偽装され、
+演説の画像に紛れて送信されるんだ。
+*/
+
+
+オタコン_008: {
+Tell me that isn't brilliant!
+}
+/*どう？わかった？*/
+
+スネーク_001: {
+...
+}
+/*……。*/
+
+オタコン_009: {
+Want me to go over it again?
+}
+/*もう一回説明しようか？*/
+
+スネーク_002: {
+No, once was enough.
+}
+/*いや、もう充分だ。*/
+
+}//d
+
+
+//・カメラ使い方 h //e
+resource TO_カメラ使い方１__e {
+オタコン_000: {
+Snake, use the camera to take
+photos of the new Metal Gear
+prototype.
+}
+/*スネーク、カメラで新型メタルギアの
+写真を撮ってくれ。
+*/
+}
+
+
+//＠カメラの仕様ボタンは固定？ //e
+//没ＸＸＸＸＸＸＸＸＸＸＸＸｘ
+resource TO_カメラ使い方２__e {
+オタコン_000: {
+The camera's pretty easy to use.
+}//<ページ数変更>
+オタコン_000_1: {
+Zoom in with the <circle> button,
+out with the <X> button, and record
+an image with the <square> button.
+}
+/*カメラの使い方は簡単だよ。○ボタンで
+ズームアップ、×ボタンでズームバック、
+□ボタンで写真を撮る。
+*/
+}
+
+
+//保険 t //e
+resource TO_カメラ使い方３__e {
+オタコン_000: {
+Look at the Item Window to check
+the camera's instructions again.
+}
+/*カメラの使い方はアイテムウィンドウの
+説明を見ればわかるよ。
+*/
+}
+
+
+//没ＸＸＸＸＸＸＸＸ
+resource TO_カメラ使い方４__e {
+オタコン_000: {
+But don't forget that you need
+the MEMORY CARD (PlayStation&@R2)
+to record a photo image.
+}
+/*ただ注意してくれ。
+写真を保存するには"PlayStation2"専用
+メモリーカード(8MB)が必要なんだ。
+*/
+}
+
+
+//没ＸＸＸＸＸＸＸＸ
+resource TO_カメラ使い方５__e {
+オタコン_000: {
+Make sure the MEMORY CARD
+(PlayStation&@R2) is in the MEMORY
+CARD slot.
+}
+/*
+ちゃんと"PlayStation2"専用メモリー
+カード(8MB)をＭＥＭＯＲＹ ＣＡＲＤ
+差込口にセットしておいてくれ。
+*/
+
+}//d
+
+
+resource TO_写真電送せよ__e {
+オタコン_000: {
+Once you've got the photos,
+}//<ページ数変更>
+オタコン_000_1: {
+use the workstation in the
+southeast end of that room
+to send them over to me.
+}
+/*写真が撮れたら、その部屋の南東にある
+ＷＳを使ってこっちに送ってほしい。
+*/
+
+オタコン_001: {
+But if they aren't what we need,
+I'm going to have to ask you to
+take another set.
+}
+/*でも写真が良くなかったら
+撮り直してもらうからね。
+*/
+
+}//d
+
+//★デフォルト会話。ストーリーフラグ関連。d //e
+//●スタート＜フラグ＜船内に入った d //e
+//○船尾看板（W00a）d //e
+//・左右の扉から船内に入れ h //e
+resource TO_甲板船内入れ__e {
+オタコン_000: {
+Snake, you need to get to the
+bridge on the top level of the
+infrastructure.
+}//<ページ数変更>
+オタコン_000_1: {
+First, find a door that leads
+into the tanker's interior and
+infiltrate the ship.
+}
+/*スネーク、目標は船橋最上階の操舵室だ。
+まずは船の中に潜入してくれ。
+船内に入れる扉を探すんだ。
+*/
+
+}//d
+
+//・メタルギアの写真を公開する。製品版のみ h //e
+resource TO_写真公開する１__e {
+オタコン_000: {
+When the photos are in, we'll put
+them online and blow this whole
+thing wide open on the Web.
+}
+/*新型メタルギアの写真を撮ったら、
+僕らのウェブサイトに置いて
+インターネット上で公開するんだ。
+*/
+}
+
+
+//一回目のみ t //e  （二回目？）
+resource TO_写真公開する２__e {
+スネーク_000: {
+Don't you think that the
+authorities will just shut
+us down?
+}
+/*すぐ当局に削除されてしまうんじゃ
+ないのか？
+*/
+
+オタコン_001: {
+Probably.
+But it won't matter --
+}//<ページ数変更>
+オタコン_001_1: {
+there'll be mirror sites spawning
+within minutes after those images
+go up.
+}//<ページ数変更>
+オタコン_001_2: {
+We won't even have to ask; people
+will be grabbing the pictures. There's
+no way anyone can stop it.
+}
+/*大丈夫。公開した途端、すぐにミラーが
+作られるよ。頼まなくても、勝手にね。
+第三者が根絶することなんて出来ない。
+*/
+
+オタコン_002: {
+Information has a life of its own,
+and as long as it lasts, it'll keep
+existing --
+}//<ページ数変更>
+オタコン_002_1: {
+even if it has to change
+its form or location.
+}
+/*情報はそれ自体に命を持ってるんだ。
+その命が尽きないうちは形や場所を
+変えて生き続ける。
+*/
+
+
+スネーク_003: {
+Life?
+}
+/*命？*/
+
+オタコン_004: {
+Yeah -- the desire of people to
+learn. The demand for data.
+}
+/*人がそれを知りたいと思う欲求。
+つまり需要だ。
+*/
+
+スネーク_005: {
+That's called idle
+curiosity in my book.
+}
+/*下世話な興味か。
+*/
+
+オタコン_006: {
+Everyone's got some of that.
+And sometimes, it can pave the
+way for truth. That's what I believe.
+}
+/*下世話でない人間なんていないさ。
+だからそれが真実を導くこともある。
+僕はそう信じてる。
+*/
+
+}//d
+
+
+//・新型メタルギアについて h //e
+resource TO_新型メタルギア１の１__e {
+オタコン_000: {
+According to intelligence,
+}//<ページ数変更>
+オタコン_000_1: {
+this new model was designed to
+combat all the clone models of Metal
+Gear floating around in the world.
+}
+/*情報によると、新型メタルギアは
+世界中に拡散したメタルギアの亜種に
+対抗するためのものらしい。
+*/
+}
+
+
+resource TO_新型メタルギア１の２__e {
+オタコン_001: {
+Ocelot sold the Metal Gear specs
+to anyone with hard cash after he
+survived Shadow Moses --
+}
+/*シャドーモセス事件の後、生き残った
+オセロットがメタルギアの技術情報を
+世界中にばらまいたよね。
+*/
+
+スネーク_002: {
+And raked in enough money to
+buy a decent-sized country in
+the process.
+}
+/*それで奴は国が一つ買えるくらいの金を
+手に入れた。
+*/
+
+オタコン_003: {
+But was that -- was money
+really Ocelot's end objective?
+}
+/*……でも思うんだけど、オセロットの
+目的って本当に金だけだったのかな？
+*/
+
+スネーク_004: {
+You think he had a deeper plan?
+}
+/*他に何か目論んでいたと……？*/
+
+オタコン_005: {
+I do.
+Nothing definite,
+}//<ページ数変更>
+オタコン_005_1: {
+but acquiring a large sum of money
+is always a good starting point for
+another project.
+}
+/*うん。わからないけど何となく……。
+金を手に入れるのは何かを始めるには
+一番手ごろな手段だしね。
+*/
+
+スネーク_006: {
+Hmm...
+}
+/*……。
+*/
+
+オタコン_007: {
+Anyway, every country that paid off
+Ocelot is racing to produce its own
+bipedal tank --
+}//<ページ数変更>
+オタコン_007_1: {
+one that can launch the so-called
+"invisible nuclear warhead."
+}
+/*まあそれはともかく情報を得た各国は
+「見えない核弾頭」を発射する核搭載
+二足歩行戦車の開発に着手し始めている。
+*/
+オタコン_008: {
+If the whole world has a Metal Gear,
+the military dominance of the U.S.
+will disappear.
+}
+/*世界中がメタルギアを持つように
+なったら合衆国の軍事的優位性は
+一気に崩れてしまう。
+*/
+
+オタコン_009: {
+In a world where Metal Gear
+has become commonplace,
+}//<ページ数変更>
+オタコン_009_1: {
+the only way to regain the upper
+hand is to possess a weapon even
+more powerful than Metal Gear.
+}
+/*メタルギアが標準になった世界で「唯一
+の超大国」としての優位を保つには、
+メタルギアを超える兵器を持つしかない。
+*/
+
+スネーク_010: {
+And that means a new Metal Gear.
+}
+/*そのための新型メタルギアか。*/
+
+オタコン_011: {
+Exactly.
+The arms race must go on.
+}
+/*そう。
+目には目を、ってわけさ。*/
+
+}//dＸＸＸ
+
+
+resource TO_新型メタルギア２の１__e {
+オタコン_000: {
+The Metal Gear that the tanker is
+transporting is being developed
+under Marine Corps jurisdiction. 
+}
+/*その偽装タンカーに積まれた
+新型メタルギアは海兵隊の主導で
+開発が進められている。
+*/
+
+オタコン_001: {
+But -- I've also heard a rumor
+that the Navy is working on its
+own Metal Gear.
+}
+/*だけど……別のメタルギアが海軍で
+作られてるって噂もあるんだ。
+*/
+
+}
+
+
+resource TO_新型メタルギア２の２__e {
+スネーク_000: {
+Any more info on
+the Navy's model?
+}
+/*そっちの方の情報は？*/
+
+オタコン_001: {
+I tried to hack some out, but
+security was too tight.
+}
+/*いや、それが全然。ガードが固くて。
+*/
+
+オタコン_002: {
+There's a lot of money being
+allocated -- that's for sure.
+}//<ページ数変更>
+オタコン_002_1: {
+But every one of my investigations
+takes me to one name, then hits a
+brick wall.
+}
+/*巨額の金が動いてることは確かなんだよ。だけど、全ての調査はある名前に
+ぶつかって止まってしまうんだ。
+*/
+
+オタコン_003: {
+The name is "The Patriots."
+}
+/*『＃｛愛国者達、パトリオッツ｝＃』っていうね。*/
+
+スネーク_004: {
+Who are they?
+}
+/*何者だ？*/
+
+オタコン_005: {
+I wish I knew. I have no idea
+if this is an individual, or an
+organization, even.
+}
+/*それが全くわからないんだ。
+個人なのか、団体なのかさえ……。
+*/
+
+オタコン_006: {
+But once we expose the presence
+of this Marine Corps Metal Gear to
+the world,
+}//<ページ数変更>
+オタコン_006_1: {
+maybe that will shake the
+"Patriots" out of the tree.
+}
+/*でも、海兵隊の新型メタルギアの存在を
+世間にぶちまければ、そっちにも
+揺さ振りをかけることが出来ると思う。
+*/
+
+オタコン_007: {
+This mission is partly
+about that too.
+}
+/*今回の作戦にはそういう意味もあるんだ。
+*/
+
+}//d
+
+
+//●船内に入った＜フラグ＜カモフ発見 d //e
+//○船尾看板（W00a）d //e
+//・さっさと船内に戻れ h //e
+resource TO_船内に戻れ__e {
+オタコン_000: {
+Snake, you need to get to
+the bridge on top of the
+superstructure.
+}//<ページ数変更>
+オタコン_000_1: {
+Get back inside the ship
+and head upstairs.
+}
+/*スネーク、目標は船橋最上階の操舵室だ。
+船内に戻って、上に向かってくれ。
+*/
+
+}//d
+
+
+//○居住区１F南 通路(W01a) d //e
+//・奥に進め。目標はまず艦橋 t //e
+resource TO_奥に進め__e {
+オタコン_000: {
+There are stairs in the North
+block that will take you up.
+Head north for now.
+}
+/*北のブロックに上へ行く階段がある。
+北に進んでくれ。
+*/
+
+}//d
+
+//・上に行け。目標はまず艦橋 h //e
+resource TO_艦橋に行け１__e {
+オタコン_000: {
+Snake, go to the bridge first and
+find out where this ship is headed.
+}
+/*スネーク、まず操舵室に行って
+その船の行き先を調べるんだ。
+*/
+}
+
+
+resource TO_艦橋に行け２__e {
+オタコン_000: {
+The bridge is on the top level.
+Go up.
+}
+/*操舵室は最上階だ。
+上に向かってくれ。
+*/
+
+}//d
+
+
+//●カモフ発見＜フラグ＜オルガ戦 d //e
+//○艦橋(w01e) d //e
+//・カサッカについてのウンチク h //e
+resource TO_カサッカうんちく__e {
+オタコン_000: {
+So that's the Ka-60 Kasatka --
+}//<ページ数変更>
+オタコン_000_1: {
+a multipurpose military helicopter
+built by Kamov, the Russian
+aerospace firm.
+}
+/*さっきのヘリはＫａ−６０カサッカだね。
+ロシアのカモフ設計局で作られた軍用の
+多目的ヘリコプターだ。
+*/
+
+オタコン_001: {
+It adapts to a variety of missions:
+}//<ページ数変更>
+オタコン_001_1: {
+troop and weapons transport,
+MedEvac, target marking for
+attack choppers,
+}//<ページ数変更>
+オタコン_001_2: {
+even all-weather surveillance
+missions.
+}
+/*歩兵・武器弾薬の輸送、負傷兵の後送、
+攻撃ヘリのためのターゲット補足、
+全天候偵察等、様々な任務に対応できる。
+*/
+
+オタコン_002: {
+It uses Fenestron-type tail rotors.
+That's what makes the distinct
+rotor sound that you picked up.
+}
+/*フェネトロン式テイルローターを
+採用してるから、君も聞いた通りの
+独特のローター音がするんだ。
+*/
+
+オタコン_003: {
+It is a Russian helicopter, but we
+can't be sure that the hijackers
+are Russian military.
+}
+/*確かにロシア製のヘリだけど
+民間型のＫａ−６２も作られてるし、
+輸出モデルのＫａ−６４もある。
+*/
+
+オタコン_004: {
+After all, Kamov did make a
+civilian version, the Ka-62,
+}//<ページ数変更>
+オタコン_004_1: {
+and there's also the Ka-64,
+the export model.
+}
+/*だから彼らがロシア軍とは
+言い切れないね……。
+*/
+
+}//d
+
+
+//●オルガ戦＜フラグ＜オルガ戦終了 d //e
+//○艦橋外オルガ戦(w00b) d //e
+//逃げようとした場合 h //e
+resource TO_オルガ戦逃げられない１__e {
+オタコン_000: {
+Snake, are you trying to run away?
+I don't think she'll let you. You
+have to stand your ground here!
+}
+/*スネーク、逃げるのかい？
+でも相手が見逃してくれるとは思えない。
+ここは戦うしかないよ！
+*/
+}
+
+
+//スネーク不利の場合（オルガとスネークのライフ値から判断）t //e
+resource TO_オルガ戦逃げられないスネーク不利__e {
+オタコン_000: {
+Don't tell me you're
+getting discouraged!
+}//<ページ数変更>
+オタコン_000_1: {
+You're supposed to be great
+under pressure, remember?
+}
+/*分が悪いからって弱気になった？
+らしくないね。諦めちゃダメだ。
+*/
+}
+
+
+//スネーク有利の場合（オルガとスネークのライフ値から判断）t //e
+resource TO_オルガ戦逃げられないスネーク有利__e {
+オタコン_000: {
+She's almost done.
+Hang in there!
+}
+/*相手もかなり弱ってる。
+もう少しだ。がんばってくれ！*/
+
+}//d
+
+
+//・隠れながら撃て。 h //e
+resource TO_オルガ戦隠れながら撃て__e {
+オタコン_000: {
+Snake, you're not the only one
+with a gun. If you don't take
+cover, you'll get hurt.
+}//<ページ数変更>
+オタコン_000_1: {
+Hide behind something.
+}
+/*スネーク、相手も銃を持ってるんだ。
+無防備に体をさらしたら撃たれてしまう。
+遮蔽物に身を隠すんだ。
+*/
+
+オタコン_001: {
+She may be hiding too, but you
+have a clear shot whenever she
+decides to attack.
+}//<ページ数変更>
+オタコン_001_1: {
+Use the First Person View Attack!
+}
+/*向こうも隠れてるけど、攻撃をしかける
+時には物陰から出てくる。その一瞬を
+狙うんだ。主観攻撃を使って！
+*/
+
+}//d
+
+//・進めませんエリア h //e
+resource TO_オルガ戦立入禁止__e {
+オタコン_000: {
+Snake, if you go any further out,
+you'll be completely exposed to
+the enemy.
+}//<ページ数変更>
+オタコン_000_1: {
+Are you suicidal or something!?
+Get back!
+}
+/*スネーク、そこから前に出たら相手から
+丸見えだ。蜂の巣にされたいのかい！？
+戻って！！
+*/
+
+}//d
+
+//・主観攻撃、左右ステップ、背伸び h //e
+resource TO_オルガ戦主観攻撃１__e {
+オタコン_000: {
+Snake, she's shooting
+from concealment.
+}//<ページ数変更>
+オタコン_000_1: {
+You should use the First
+Person View Attack.
+}
+/*スネーク、相手は遮蔽物に隠れながら
+撃ってきてる。こっちも主観攻撃で
+狙うんだ。
+*/
+}
+
+
+resource TO_オルガ戦主観攻撃２__e {
+//＠Ｒ１ＯＲ主観ボタン？ //e
+#ifdef d:XBOX
+オタコン_000: {
+Push the First Person View button 
+to change to First Person View.
+}//<ページ数変更>
+#else
+オタコン_000: {
+Push the R1 button to change
+to First Person View.
+}//<ページ数変更>
+#endif
+オタコン_000_1: {
+Then use the Weapon button to
+raise the gun and you can attack
+from that viewpoint.
+}
+/*Ｒ１ボタンを押すと主観になる。
+この時に＃｛□、武器｝＃ボタンで武器を構えれば
+主観攻撃が出来るんだ。
+*/
+}
+
+
+resource TO_オルガ戦主観攻撃３__e {
+#ifdef d:XBOX
+オタコン_000: {
+Push the left step and right step 
+buttons while in First Person View 
+to strafe left and right.
+}
+#else
+オタコン_000: {
+Push the L2 and R2 buttons
+while in First Person View to
+strafe left and right.
+}
+#endif
+/*主観の時にＬ２ボタン、Ｒ２ボタンを
+押せば、主観のままそれぞれ左右に
+ステップする。
+*/
+}
+
+
+resource TO_オルガ戦主観攻撃４__e {
+#ifdef d:XBOX
+オタコン_000: {
+Push the left step and right step buttons 
+at the same time to stretch up on your 
+toes while still in First Person View.
+}//<ページ数変更>
+#else
+オタコン_000: {
+Push the L2 and R2 buttons at the
+same time to stretch up on your toes
+while still in First Person View.
+}//<ページ数変更>
+#endif
+オタコン_000_1: {
+These moves can be useful.
+}
+/*Ｌ２ボタンとＲ２ボタンを同時に押せば、
+主観のまま背伸びして上に伸び上がる
+ことが出来る。うまく使ってくれ。
+*/
+
+}//d
+
+
+//・ビハインド活用しろ h //e
+resource TO_オルガ戦ビハインド活用１__e {
+オタコン_000: {
+Snake, use the Corner View to watch
+for a chance to attack while hidden.
+}
+/*スネーク、ビハインドを使って、
+隠れながら相手の隙を見つけるんだ。
+*/
+}
+
+
+resource TO_オルガ戦ビハインド活用２の１__e {
+#ifdef d:XBOX
+オタコン_000: {
+Push the right step button or left step 
+button while in Corner View to take 
+quick looks out.
+}
+#else
+オタコン_000: {
+Push the R2 or L2 button while
+in Corner View to take quick
+looks out.
+}
+#endif
+/*ビハインドの状態でＲ２ボタン、
+Ｌ２ボタンを押すと覗き込みが
+出来る。
+*/
+}
+
+
+resource TO_オルガ戦ビハインド活用２の２__e {
+#ifdef d:XBOX
+オタコン_000: {
+You can also move the right thumbstick 
+while in Corner View to survey other 
+directions.
+}
+#else
+オタコン_000: {
+You can also move the right analog
+stick while in Corner View to survey
+other directions.
+}
+#endif
+/*ビハインドしながら右スティックを
+動かして、そっちの方を伺うのも有効だ。
+*/
+
+}
+
+
+
+resource TO_オルガ戦ビハインド活用３__e {
+オタコン_000: {
+If you have a weapon selected,
+}//<ページ数変更>
+オタコン_000_1: {
+push the Weapon button while
+in Corner View to jump out from
+concealment and aim your weapon.
+}
+/*武器を装備してるなら、ビハインド中に
+＃｛□、武器｝＃ボタンを押せば、遮蔽物から素早く
+飛び出して武器を構えることが出来る。
+*/
+}
+
+
+resource TO_オルガ戦ビハインド活用４__e {
+オタコン_000: {
+Your best opportunity will
+be when she tries to attack.
+Shoot before she does!
+}
+/*相手が攻撃してくる時がチャンスだ。
+撃たれる前に撃て！
+*/
+
+}//d
+
+//・中空障害物 h //e
+resource TO_オルガ戦中空障害物__e {
+オタコン_000: {
+If you use a First Person View
+Attack, you should be able to
+strike from between containers.
+}//<ページ数変更>
+オタコン_000_1: {
+You'll have an element of
+surprise on your side.
+}
+/*主観攻撃を使えばコンテナの隙間からも
+狙撃出来るはずだ。相手の不意をつける
+かもしれない。
+*/
+
+}//d
+
+//・グレネード注意。グレネード投げてから h //e
+resource TO_オルガ戦グレネード__e {
+オタコン_000: {
+Snake, she has grenades --
+you can't stay in one place.
+}//<ページ数変更>
+オタコン_000_1: {
+Keep moving around
+and you'll be safer!
+}
+/*スネーク、相手はグレネードを持ってる。
+ずっと同じ所に隠れていたら危ない。
+こまめに場所を変えるんだ！
+*/
+
+}//d
+
+
+//・何者？ h //e
+resource TO_オルガ戦何者__e {
+オタコン_000: {
+Who is she, anyway?
+}
+/*いったい何者なんだろう？*/
+
+スネーク_001: {
+That scout knife had Spetsnaz
+written all over it, but...
+}
+/*あのスカウトナイフを見る限り
+スペツナズのようでもあるが……。
+*/
+
+オタコン_002: {
+Spetsnaz? That's the special
+ops of the Soviet GRU. So she
+must be Russian...?
+}
+/*スペツナズ……旧＃｛ＧＲＵ。グルー｝＃の特殊部隊か。
+じゃあ、やっぱりロシアの？
+*/
+
+スネーク_003: {
+Who knows. All I'm sure of is that
+she shoots like a commando.
+}
+/*さあな。とりあえず確かなのは
+射撃の腕が良いということだけだ。
+*/
+
+オタコン_004: {
+Be careful.
+}
+/*気をつけて。*/
+
+}//d
+
+
+//●オルガ戦＜フラグ＜赤外線センサー発見 d //e
+//○エンジンルーム(w02a) d //e
+//・北西に行け h //e
+resource TO_エンジンルーム北西行け__e {
+オタコン_000: {
+Snake, there should be a door into
+the holds in the northwest section 
+of the engine room.
+}//<ページ数変更>
+オタコン_000_1: {
+Head west.
+}
+/*スネーク、その機関室の北西に
+船倉へ下りる階段があるはずだ。
+西に向かってくれ。
+*/
+
+}//d
+
+
+//・サイファーのウンチク h e//
+resource TO_サイファー__e {
+オタコン_000: {
+The Cypher's what it looks like --
+a flying surveillance saucer.
+}//<ページ数変更>
+オタコン_000_1: {
+It's an unmanned aerial vehicle
+used for ground and ocean
+surveillance,
+}//<ページ数変更>
+オタコン_000_2: {
+and it also assists
+in communication.
+}
+/*サイファーは見た通りの空飛ぶ
+円盤型偵察機だよ。陸上及び海上監視、
+通信支援に使われる無人機だ。
+*/
+
+オタコン_001: {
+It can take off and
+land vertically,
+}//<ページ数変更>
+オタコン_001_1: {
+and uses a ducted airstream from
+its rotors and the surrounding
+shroud to fly.
+}
+/*垂直離着陸が可能で、同軸回転翼と
+それを囲む環状シュラウドからの
+ダクテッド・エアストリームで飛ぶ。
+*/
+
+オタコン_002: {
+The one you saw was the type
+used by the Army, if I recall.
+}
+/*君が見たのは陸軍で採用されてる
+タイプのサイファーだったね。
+*/
+
+オタコン_003: {
+But I can't see the Army officially
+cooperating with a top-secret
+Marine Corps project...
+}
+/*でも海兵隊の極秘プロジェクトに
+陸軍が公式に協力するなんて
+考えにくい……。
+*/
+
+スネーク_004: {
+No. Which means that there's
+someone besides us and the
+Russians＃−
+}//<ページ数変更>
+スネーク_004_1: {
+that are interested in the
+new Metal Gear prototype...
+}
+/*ああ。俺達やロシア兵の他にも
+新型メタルギアに興味を持っている
+勢力があるってことだな……。
+*/
+
+オタコン_005: {
+Cyphers can stay airborne
+for about three hours,
+}//<ページ数変更>
+オタコン_005_1: {
+so there should be an Integrated
+Mobile Ground Station controlling
+its flight pattern＃−
+}//<ページ数変更>
+オタコン_005_2: {
+and output nearby --
+it's got to be on land.
+}
+/*サイファーの滞空時間は３時間位だから、
+そのすぐ近くに発進・管制をしてる統合
+モバイル地上ステーションがあるはずだ。
+*/
+
+オタコン_006: {
+I'll bet you anything it's
+disguised as a regular
+truck or something,
+}//<ページ数変更>
+オタコン_006_1: {
+driving along riverside.
+Let me check it out.
+}
+/*多分普通のトラックに偽装して
+リバーサイドを走ってるんだと思う。
+そっちの方も調べてみるよ。
+*/
+
+スネーク_007: {
+Good call.
+}
+/*頼む。*/
+//ＸＸＸ
+
+}//d 
+
+//・ゴルルコビッチについての説明 h //e
+resource TO_ゴルルコビッチ__e {
+オタコン_000: {
+Didn't think Gurlukovich was
+involved, of all people.
+}
+/*まさかゴルルコビッチが絡んでるとはね。
+*/
+
+スネーク_001: {
+Ocelot's former CO -- and a man
+with a private army of ex-Russian
+military and GRU soldiers.
+}//<ページ数変更>
+スネーク_001_1: {
+I don't like it.
+}
+/*旧ロシア軍やＧＲＵ上がりの私兵
+軍隊を抱えているオセロットの
+元上官、か……。
+*/
+
+オタコン_002: {
+And Liquid was planning to team up
+with that bunch at Shadow Moses.
+}
+/*シャドーモセスの時、リキッドは
+彼の部隊と合流して蜂起を継続しようと
+していた……。
+*/
+
+スネーク_003: {
+All he managed to do back then
+was to provide a toy or two.
+}//<ページ数変更>
+スネーク_003_1: {
+Looks like he's had enough
+of sponsoring insurrections.
+}
+/*あの時は結局、オモチャを一台提供した
+だけだったがな。どうやらスポンサー
+稼業は廃業したらしい。
+*/
+
+オタコン_004: {
+So this time, he's out here himself.
+I guess he's after Metal Gear?
+}
+/*今度はゴルルコビッチが自分で出てきた。
+やっぱり新型メタルギアを？*/
+
+スネーク_005: {
+History repeats itself.
+}//<ページ数変更>
+スネーク_005_1: {
+Metal Gear has enough strategic
+clout to upset the balance of
+military power overnight.
+}//<ページ数変更>
+スネーク_005_2: {
+He must be dreaming of Mother
+Russia's return to glory.
+}
+/*だろうな。メタルギアには軍事的パワー
+バランスを一気に覆すだけの戦略的価値
+がある。目指すはロシアの再興か。
+*/
+
+オタコン_006: {
+Like you said, history repeats
+itself. Some people never change.
+}
+/*あの時と同じだね。進歩の無い奴だ。
+*/
+
+スネーク_007: {
+Maybe it's the world that
+doesn't -- or won't -- change.
+}
+/*進歩してないのは現実の方かも
+しれんがな。
+*/
+
+オタコン_008: {
+Maybe. But we're fighting
+to upset the status quo too,
+aren't we?
+}//ＸＸＸ
+/*そうかもしれないね。だから僕らは
+それを変えるために戦ってる。
+そうだろ？
+*/
+}//d
+
+
+//・オルガについての会話 h //e
+resource TO_オルガ戦後オルガ__e {
+オタコン_000: {
+So who was that Olga person?
+}
+/*あのオルガって女の人、
+何者だったんだろう？*/
+
+スネーク_001: {
+Don't know. I'm guessing
+she's Gurlukovich's daughter.
+She said "nomads"...
+}
+/*さあな。ゴルルコビッチの娘らしいが。
+『国亡き民』、か……。
+*/
+
+オタコン_002: {
+Didn't she -- you know,
+look a little like Meryl?
+}
+/*……ちょっとメリルに似てたね？
+*/
+
+スネーク_003: {
+...I didn't notice.
+}
+/*……似てないさ。*/
+
+}//d
+
+
+//・ＥＥメールについて
+resource TO_ＥＥメール__e {
+オタコン_000: {
+Snake, I owe you an apology.
+The reason I didn't mention my
+sister was, well, because --
+}
+/*……スネーク、ごめん。
+妹のこと言えなかったのは……。
+*/
+
+スネーク_001: {
+Otacon, have I ever told you
+who gave me this bandanna?
+}
+/*オタコン、俺がこのバンダナを誰から
+貰ったか、話したことはあったか？
+*/
+
+オタコン_002: {
+No, but -- what's that
+got to do with this?
+}
+/*いや、ないけど……。
+どういうこと？
+*/
+
+スネーク_003: {
+It means you don't
+have to explain.
+}
+/*気にするなってことだ。*/
+
+オタコン_004: {
+...OK. Thanks, Snake.
+}
+/*……ありがとう。*/
+
+}//d
+
+//・ＵＳＰを手に入れたから敵を殺せるけど音がする h //e
+resource TO_ＵＳＰ注意１__e {
+オタコン_000: {
+Hey, Snake, you found a handgun.
+}
+/*スネーク、ハンドガンを手に入れたね。*/
+
+スネーク_001: {
+It's a decent one -- USP.
+}
+/*ああ。ＵＳＰだ。*/
+}
+
+
+//センサーＣＡＬＬ聞いている場合 t //e
+resource TO_ＵＳＰ注意センサー壊せる__e {
+オタコン_000: {
+That gun can take out the infrared
+sensors you just saw.
+}
+/*その銃なら、さっきあった
+赤外線センサーのトラップも
+破壊できるはずだ。
+*/
+}
+
+
+resource TO_ＵＳＰ注意２__e {
+オタコン_000: {
+The USP fires real bullets --
+not the knockout rounds the M9
+uses. You know that, right?
+}
+/*ＵＳＰが発射するのはＭ９で使ってる
+麻酔弾じゃない。実弾だ。
+わかってるよね。
+*/
+
+
+オタコン_001: {
+The USP isn't equipped
+with a suppressor, either.
+}//<ページ数変更>
+オタコン_001_1: {
+If you fire it when there
+are enemies nearby,
+they'll probably hear it.
+}
+/*
+あと、そのＵＳＰにサプレッサーは
+装備されてない。撃てば銃声がするから
+近くに敵が居たら気づかれると思う。
+*/
+
+オタコン_002: {
+Keep that in mind.
+}
+/*注意してくれ。*/
+
+オタコン_003: {
+Having the USP will make combat
+easier, but being undetected is
+still the best way to go. OK?
+}
+/*ＵＳＰがあれば戦闘が有利になるのは
+確かだけど、やっぱり敵に見つからない
+のが一番だ。いいね。
+*/
+
+}//d
+
+
+//○それ以外 d //e
+//・メタルギアは船倉。船倉へ行け。h //e
+resource TO_船倉へ向かえ１__e {
+オタコン_000: {
+Snake, Metal Gear is in the holds
+below the tanker's deck. Go down.
+}
+/*スネーク、メタルギアはタンカー下部の
+船倉だ。下に向かってくれ。
+*/
+
+}
+
+
+//赤外線ＣＡＬＬ聞いている場合 t //e
+resource TO_船倉へ向かえ２__e {
+オタコン_000: {
+That USP of yours should let you
+take out the infrared booby traps.
+}
+/*さっき手に入れたＵＳＰなら、
+赤外線センサーのトラップも
+壊せるはずだ。
+*/
+
+オタコン_001: {
+There's no way into the holds
+except past those sensors.
+}//<ページ数変更>
+オタコン_001_1: {
+Take out the trap and
+head further down.
+}
+/*船倉へ行くにはあのトラップを通過する
+以外に道はない。トラップをクリアして
+その先へ進んでくれ。
+*/
+
+}//d
+
+//●赤外線センサー破壊＜フラグ＜ハッチ閉鎖デモ d //e
+//○長廊下(w03a) d //e
+//・まっすぐ進んで船倉へ行け。 t //e
+resource TO_長廊下船倉へ向かえ１__e {
+オタコン_000: {
+Snake, the Metal Gear prototype
+is down in the holds.
+}
+/*スネーク、新型メタルギアは船倉にある。
+*/
+}
+
+
+//一回目のみ t //e  （二回目？）
+resource TO_長廊下船倉へ向かえ２__e {
+オタコン_000: {
+That corridor wraps
+around the holds.
+}//<ページ数変更>
+オタコン_000_1: {
+There are several doors into
+the holds from the corridor,
+}//<ページ数変更>
+オタコン_000_2: {
+but it looks like most
+of them are locked.
+}
+/*そこの廊下は船倉をぐるっと囲んで
+るんだ。船倉への扉は幾つかあるけど、
+ほとんど閉鎖されてる。
+*/
+}
+
+
+resource TO_長廊下船倉へ向かえ３__e {
+オタコン_000: {
+But I think the farthest
+door isn't locked yet.
+}
+/*でも、一番奥の扉はまだ閉じられて
+いないようだね。
+*/
+}
+
+
+//西通路 t //e
+resource TO_長廊下船倉へ向かえ４__e {
+オタコン_000: {
+You can get into the holds
+from the door at the end of
+that corridor. Head north.
+}
+/*その廊下の一番奥にある扉から
+船倉に侵入できる。北に向かってくれ。
+*/
+}
+
+
+//北通路 t //e
+resource TO_長廊下船倉へ向かえ５__e {
+オタコン_000: {
+You can get into the holds
+from the door at the end of
+that corridor. Head east.
+}
+/*その廊下の一番奥にある扉から
+船倉に入れる。東に向かってくれ。
+*/
+}
+
+
+//東通路 t //e
+resource TO_長廊下船倉へ向かえ６__e {
+オタコン_000: {
+You can get into the holds
+from the door at the end of
+that corridor. Head south.
+}
+/*その廊下の一番奥にある扉から
+船倉に入るんだ。南に向かってくれ。
+*/
+
+}//d 
+
+
+//○それ以外 d //e
+//・メタルギアは船倉。センサー地帯を抜けて船倉へ行け h //e
+resource TO_長廊下以外船倉へ向かえ__e {
+オタコン_000: {
+Snake, the Metal Gear
+prototype is in the holds.
+}
+/*スネーク、新型メタルギアは船倉だ。
+*/
+
+オタコン_001: {
+You took out the infrared
+sensor trap just now.
+}//<ページ数変更>
+オタコン_001_1: {
+Go through that section
+to reach the holds.
+}
+/*さっき赤外線センサーのトラップを
+壊したよね。船倉へ行くにはその先を
+進めばいい。
+*/
+
+}//d
+
+
+//●ハッチ閉鎖デモ＜フラグ＜オセロットと兵士デモ＝長廊下兵イベント d //e
+//○長廊下(w03a) d //e
+//・銃撃排除せよ h //e
+//没！ＸＸＸＸＸｘ
+resource TO_長廊下長廊下兵戦え__e {
+オタコン_000: {
+Looks like they plan to stop you
+from getting through. You've got
+no choice but to fight back.
+}//<ページ数変更>
+オタコン_000_1: {
+Use the First Person Attack mode!
+}
+/*敵も黙って君を通す気はないみたいだ。
+銃で応戦するしかない。
+主観攻撃を使って！
+*/
+
+}//d
+
+//・物陰に隠れろ h //e
+resource TO_長廊下廊下兵隠れろ__e {
+オタコン_000: {
+Snake, you can take cover behind
+objects. Get down and fight back
+from a safer spot!
+}
+/*スネーク、遮蔽物があるだろ。
+それに隠れながら応戦するんだ！
+*/
+
+}//d
+
+//●オセロットと兵士デモ＜フラグ＜船首メタルギア登場デモ d //e
+//・奥に進め。 h //e
+resource TO_船倉１２進め__e {
+オタコン_000: {
+Snake, the tanker's holds are
+divided into three separate
+blocks,
+}//<ページ数変更>
+オタコン_000_1: {
+and Metal Gear is in the farthest
+hold. You need to head north.
+}
+/*スネーク、船倉は三つのブロックに
+分かれている。新型メタルギアは一番
+奥のブロックだ。北に進んでくれ。
+*/
+
+オタコン_001: {
+You know the number you're
+up against. If you're spotted,
+there's no winning that fight.
+}//<ページ数変更>
+オタコン_001_1: {
+You have to stay out
+of their sight, okay?
+}
+/*相手はその人数だ。もし見つかったら
+どう考えても勝ち目はない。
+絶対に見つかったらダメだ。いいね。
+*/
+
+}//d
+
+
+//・演説が終わる前に写真を撮り終えろ h //e
+resource TO_船倉演説終わる前に１__e {
+オタコン_000: {
+Snake, take those pictures before
+the Commandant finishes his speech.
+It's the only chance we've got.
+}
+/*スネーク、チャンスは海兵隊司令官の
+演説が続いている間だけだ。演説が
+終わる前に写真を撮り終える必要がある。
+*/
+}
+
+
+//一回目のみ t //e 
+resource TO_船倉演説終わる前に２__e {
+オタコン_000: {
+As soon as he finishes up,
+the Marines will go back to
+their posts. 
+}
+/*演説が終わったら、
+海兵隊員達は持ち場に戻るだろう。
+*/
+
+オタコン_001: {
+That's way too many pairs of eyes
+watching out for Metal Gear.
+}//<ページ数変更>
+オタコン_001_1: {
+There's no way they'll let
+an intruder with a camera
+slip past.
+}
+/*あの人数で警備されたら、
+見つからずにメタルギアの写真を
+撮るなんて不可能だ。
+*/
+
+オタコン_002: {
+Do what you have to
+before that happens.
+}
+/*そうなる前に全てを片づけてくれ。
+*/
+}
+
+//時間がない場合 t //e
+resource TO_船倉演説終わる前に３__e {
+オタコン_000: {
+We're just about
+out of time. Hurry!
+}
+/*もう時間がない。急いで！*/
+
+}//d
+
+
+
+//・見つかると即死注意
+resource TO_船倉見つかると即死__e {
+オタコン_000: {
+You absolutely can't let
+anyone see you in there.
+}//<ページ数変更>
+オタコン_000_1: {
+There are too many Marines in
+there to handle, even for you.
+}
+/*そこでは絶対に見つかっちゃダメだ。
+その人数の海兵隊を相手にしたら、
+いくら君でも勝ち目がない。
+*/
+
+オタコン_001: {
+If they see you, you're dead.
+Caution's the keyword here.
+}
+/*見つかったら終わりだ。
+とにかく慎重に進んでくれ。
+*/
+
+}//d
+
+//・演説の内容についての解説 h //e
+resource TO_演説１__e {
+オタコン_000: {
+The Marine Corps' defining
+character is that of an emergency
+response team in crisis situations.
+}
+/*海兵隊は有事の際の緊急展開部隊としての性格が強い。
+*/
+
+オタコン_001: {
+But the Army's been steadily
+enlarging its own crisis response
+capabilities,
+}//<ページ数変更>
+オタコン_001_1: {
+building on the strength
+of their Medium Brigade.
+}
+/*でも最近陸軍がミディアム旅団を
+中心に緊急即応の能力を高めている。
+*/
+
+オタコン_002: {
+Analysis is that the Marine Corps
+sees this as an infringement on
+their own domain,
+}//<ページ数変更>
+オタコン_002_1: {
+and is more than
+a little alarmed.
+}
+/*海兵隊はそれに対し、自軍の権益を
+侵害されるという非常な危機感を
+持っているようだ。
+*/
+
+
+オタコン_003: {
+We both know that Metal Gear REX
+was being developed for deployment
+by the Army.
+}
+/*君も知ってる通りメタルギアＲＥＸは
+陸軍での採用を目的として開発されて
+いた。
+*/
+
+オタコン_004: {
+So it does make sense that the
+Marines are trying to compete with
+their own version of Metal Gear.
+}
+/*だから海兵隊が陸軍に対抗して独自の
+メタルギアを持とうとしてるというのは
+分からない話じゃないね。
+*/
+
+}//d
+
+resource TO_演説２__e {
+オタコン_000: {
+So the Commandant says the
+Navy is leaning on them, huh?
+}
+/*司令官が海軍からの圧力があるって
+言ってたね。
+*/
+
+オタコン_001: {
+I'm sure the Navy isn't happy about
+the new Metal Gear prototype being
+developed.
+}
+/*確かに海軍はその新型メタルギアの
+開発をおもしろく思ってないだろう。
+*/
+
+オタコン_002: {
+From what I can tell, the new
+model can make an approach,
+launch an attack,
+}//<ページ数変更>
+オタコン_002_1: {
+and execute takeoffs from the
+ocean without any support.
+}
+/*新型メタルギアは海からの接敵・攻撃・
+離脱という作戦行動を単独で可能にする
+兵器らしい。
+*/
+
+オタコン_003: {
+If the weapon makes it past the
+testing stage, it could render
+aircraft carriers,
+}//<ページ数変更>
+オタコン_003_1: {
+battleships, even
+submarines obsolete.
+}
+/*これが完成したら空母や戦艦は勿論、
+潜水艦までが戦略的意義を失ってしまう
+かもしれない。
+*/
+
+オタコン_004: {
+It's a matter of life or death for
+the Navy as an organization...
+}
+/*海軍にとっては死活問題だ。
+*/
+}
+
+
+
+//海軍メタルギアの話聞いている場合 t //e
+resource TO_演説２x__e {
+オタコン_000: {
+And if it's true that the Navy has
+its own Metal Gear in the works,
+}//<ページ数変更>
+オタコン_000_1: {
+that's another reason for
+them to get nervous.
+}
+/*まして海軍も別のメタルギアの開発を
+進めているとあったら尚更だね。
+*/
+}//d
+
+
+//没ＸＸＸＸＸＸＸＸＸＸＸ
+resource TO_演説３__e {
+オタコン_000: {
+海兵隊司令官の言ってた海軍作戦総長の
+話なら聞いたことがある。まだ僕が
+ＡＴ社に居た頃にね。
+}
+/**/
+
+オタコン_001: {
+ボーダ大将は自殺じゃなくて、
+殺されたんだっていう噂だ。
+}
+/**/
+
+オタコン_002: {
+しかもそれを仕組んだのは僕らの
+会社のベイカー社長とＤＡＲＰＡの
+アンダーソン局長だ、という話だった。
+}
+/**/
+
+オタコン_003: {
+ＤＡＲＰＡとＡＴ社が進めようとしていたメタルギア計画はアーセナルシップ
+計画と戦略的に重複する部分が多い。
+}
+/**/
+
+オタコン_004: {
+海軍のアーセナルシップ計画が進行中で
+ある限りメタルギア開発にＧＯサインは
+出ないような状況だったんだ。
+}
+/**/
+
+オタコン_005: {
+だけどアーセナルシップ計画は
+ボーダ大将の死によって打ち切りに
+なった。
+}
+/**/
+
+オタコン_006: {
+そしてその予算はＤＡＲＰＡに回されて、
+メタルギアＲＥＸの開発が始まり、
+それを受注したのがＡＴ社だ。
+}
+/**/
+
+オタコン_007: {
+変な噂が立つのも無理はないよね。
+}
+/**/
+
+オタコン_008: {
+本当のことは僕も知らない。
+だけどあの社長のことだから、ありうる
+ことなんじゃないかとは思ってた……。
+}
+/**/
+
+}//d
+
+resource TO_演説４__e {
+オタコン_000: {
+You heard the Commandant mention
+the NMD -- the National  Missile
+Defense program.
+}
+/*海兵隊司令官の言ってたＮＭＤって
+いうのは全米ミサイル防衛のことだ。
+*/
+
+オタコン_001: {
+It was conceptualized late last
+century as a defense network
+to detect and engage＃−
+}//<ページ数変更>
+オタコン_001_1: {
+enemy ICBM's launched at
+the continental United States.
+}
+/*合衆国本土に向かって発射された
+大陸間弾道弾を迎撃するっていう
+構想で前世紀末から開発されていた。
+*/
+
+
+オタコン_002: {
+But at the same time, it came
+under fire for contributing to
+nuclear proliferation. 
+}//<ページ数変更>
+オタコン_002_1: {
+The MIRV'ing of ballistic missiles
+and the increase in weapon
+lethality＃−
+}//<ページ数変更>
+オタコン_002_2: {
+were some of the byproducts
+of these defense R&D's.
+}
+/*でもそれは、核兵器の多弾頭化や
+高性能化を呼んで核軍拡を導く
+という強い批判を生んだんだ。
+*/
+
+オタコン_003: {
+There was a lot of opposition from
+the international community,
+}//<ページ数変更>
+オタコン_003_1: {
+on the grounds that the program
+violated the Anti-Ballistic Missile
+Treaty.
+}//<ページ数変更>
+オタコン_003_2: {
+Russia and China were especially
+vocal in their criticism.
+}
+/*弾道弾迎撃ミサイル制限条約に
+違反するとしてロシアや中国も強く
+反対した。
+*/
+
+オタコン_004: {
+Program deployment is a
+ways off, in any case.
+}//<ページ数変更>
+オタコン_004_1: {
+The military hasn't been able to
+come up with a good technology
+to discriminate＃−
+}//<ページ数変更>
+オタコン_004_2: {
+between actual targets
+and decoys.
+}//<ページ数変更>
+オタコン_004_3: {
+There are also other tech issues
+that have to be addressed.
+}
+/*他にも標的と囮の識別等の技術的問題が
+解決されずに実験が失敗を繰り返した
+事もあって未だ配備されてないんだ。
+*/
+
+}//d
+
+
+//●船首メタルギア登場デモ＜フラグ＜メタルギア強奪デモ d //e
+//○第三船倉(w04c) d //e
+//・メタルギアの写真をとれ。条件説明 h //e
+resource TO_船倉写真条件１__e {
+//一回目のみ t //e
+オタコン_000: {
+Ok, we're finally there.
+}
+/*ようやく辿り着いたね。*/
+
+スネーク_001: {
+So this is the new Metal Gear...
+}
+/*ああ。
+これが新型メタルギアか……。*/
+
+オタコン_002: {
+Yep. And we're going to show
+the whole world its baby pictures.
+}
+/*そうだ。その姿を世界中の人に
+見せてやるんだ。
+*/
+}
+
+
+resource TO_船倉写真条件２__e {
+オタコン_000: {
+Get the prototype on camera.
+}
+/*新型メタルギアをカメラに収めてくれ。*/
+}
+
+
+resource TO_船倉写真条件３__e {
+オタコン_000: {
+We need four images. 
+One from the front-right,
+the front, and the front-left,
+}
+/*必要な写真は４枚だ。まずメタルギアを
+それぞれ右斜め前、正面、左斜め前から
+撮ったのを１枚ずつ。
+*/
+
+オタコン_001: {
+and a closeup of the "MARINES"
+marking on the prototype.
+}
+/*それと、メタルギアに描いてある
+「ＭＡＲＩＮＥＳ」っていう海兵隊の
+マーキングのアップを１枚。
+*/
+}
+/**/
+//こいつは没ＸＸＸＸＸＸ
+resource TO_船倉写真条件４__e {
+オタコン_000: {
+You need the MEMORY CARD
+(PlayStation&@R2) to record those images,
+so make sure you have one ready.
+}
+/*
+写真を保存するには“PlayStation2”
+専用メモリーカード(8MB)が必要だから
+準備しておいてくれ。
+*/
+}
+
+
+resource TO_船倉写真条件５__e {
+オタコン_000: {
+Once you have the photos, use the
+workstation in the southeast end of
+the area to transmit them over to me.
+}//<ページ数変更>
+オタコン_000_1: {
+Send me something I can use!
+}
+/*写真が撮れたら、そのエリアの南東に
+あるＷＳを使ってこっちに送信するんだ。
+良い写真を頼むよ！
+*/
+
+}//d
+
+
+resource TO_船倉残り写真１__e {
+//0000は船倉写真条件の一部を使用
+//1000 t //e
+オタコン_000: {
+Ok, we're done with the
+image from the right.
+}//<ページ数変更>
+オタコン_000_1: {
+Three left to go -- one each from
+the front-left and front, and a closeup
+of the "MARINES" lettering.
+}//<ページ数変更>
+オタコン_000_2: {
+Good luck.
+}
+/*右からの写真はＯＫだ。
+あとは、左、前、「ＭＡＲＩＮＥＳ」の
+マーキングのアップ、の３枚だ。頼むよ。
+*/
+}
+
+
+resource TO_船倉残り写真２__e {
+//0100 t //e
+オタコン_000: {
+The picture from the left
+is perfect. There's three
+left to go.
+}//<ページ数変更>
+オタコン_000_1: {
+One each from the front-right and
+front, and a closeup of the "MARINES"
+lettering. Have fun.
+}
+/*左からの写真はこれでいい。あと３枚だ。
+右から、前から、「ＭＡＲＩＮＥＳ」の
+マーキングのアップ。よろしく。
+*/
+}
+
+
+resource TO_船倉残り写真３__e {
+//0010 t //e
+オタコン_000: {
+The front shot works.
+Three more and we're done.
+}//<ページ数変更>
+オタコン_000_1: {
+Take a picture from the front-right
+and front-left side, and a closeup
+of the "MARINES" lettering.
+}
+/*前からの写真はこれでいくよ。残りは
+３枚。右、左、「ＭＡＲＩＮＥＳ」の
+マーキングのアップだ。
+*/
+}
+
+
+resource TO_船倉残り写真４__e {
+//0001 t //e
+オタコン_000: {
+We're good on the image of the
+lettering. Three left to go --
+}//<ページ数変更>
+オタコン_000_1: {
+one each from the front-right,
+front-left, and the front of Metal
+Gear.
+}
+/*マーキングの写真はＯＫだ。必要な
+写真はあと３枚。メタルギアをそれぞれ
+右から、左から、前から撮ったものだ。
+*/
+}
+
+
+resource TO_船倉残り写真５__e {
+//1100 t //e
+オタコン_000: {
+I have the photos from the right
+and left. We still need two:
+}//<ページ数変更>
+オタコン_000_1: {
+One from the front and a closeup
+of the "MARINES" lettering.
+}
+/*右からと左からの写真はもらった。
+あと２枚、前からと「ＭＡＲＩＮＥＳ」
+のマーキングのアップを頼むよ。
+*/
+}
+
+
+//ＸＸＸあやし！ＸＸＸ
+resource TO_船倉残り写真６__e {
+//1010 t //e
+オタコン_000: {
+The photos from the right
+and front are good to go.
+We need two more.
+}//<ページ数変更>
+オタコン_000_1: {
+One from the front-left and
+a closeup of the "MARINES"
+lettering. Be careful.
+}
+/*右からと前からの写真はＯＫだ。
+あとは左からと「ＭＡＲＩＮＥＳ」の
+マーキングのアップの２枚だ。よろしく。
+*/
+}
+
+
+resource TO_船倉残り写真７__e {
+//1001 t //e
+オタコン_000: {
+We can use the photos of
+the right and the insignia,
+}//<ページ数変更>
+オタコン_000_1: {
+but we're still missing
+one from the front-left
+and the front.
+}
+/*右からのとマーキングの写真は合格だ。
+残り２枚、左からと前からのを撮って
+きてくれ。
+*/
+}
+
+
+resource TO_船倉残り写真８__e {
+//0101 t //e
+オタコン_000: {
+The photos from the left and the
+one of the lettering are great.
+}//<ページ数変更>
+オタコン_000_1: {
+The two we need are the ones
+from the front-right and the front.
+Good luck.
+}
+/*左からのとマーキングの写真はもらった
+のでいけると思う。あと必要なのは２枚。
+右からと前からのだ。頼むよ。
+*/
+}
+
+
+//ＸＸＸＸＸＸあやし！ＸＸＸ
+resource TO_船倉残り写真９__e {
+//0110 t //e
+オタコン_000: {
+The photos from the left and the
+front are good to go.  We have
+two left:
+}//<ページ数変更>
+オタコン_000_1: {
+One from the front-right and
+a closeup of the "MARINES"
+lettering.
+}
+/*左からのと前からの写真はＯＫだ。
+右からのと「ＭＡＲＩＮＥＳ」の
+マーキングのアップを撮ってきてほしい。
+*/
+}
+
+
+resource TO_船倉残り写真１０__e {
+//0011 t //e
+オタコン_000: {
+We already have the pictures
+from the front and the one of
+the lettering.
+}//<ページ数変更>
+オタコン_000_1: {
+Take two shots of Metal Gear from
+the front-right and the front-left.
+Send it over as soon as you can.
+}
+/*前からのとマーキングの写真は充分だ。
+残りは２枚。メタルギアを右からと
+左からそれぞれ撮って送ってくれ。
+*/
+}
+
+
+resource TO_船倉残り写真１１__e {
+//1110 t //e
+オタコン_000: {
+The photos from the right, front
+and left are ready to go up.
+}//<ページ数変更>
+オタコン_000_1: {
+The only one we need is a closeup
+of the "MARINES" lettering. We're
+almost there.
+}
+/*右、前、左からの写真はＯＫだ。
+残りは「ＭＡＲＩＮＥＳ」のマーキング
+のアップだけ。あとひと頑張りだ。
+*/
+}
+
+
+resource TO_船倉残り写真１２__e {
+//1101 t //e
+オタコン_000: {
+The photos from the right and the
+left and the one of the lettering
+look good.
+}//<ページ数変更>
+オタコン_000_1: {
+The only one we need is of Metal
+Gear from the front. Good luck.
+}
+/*右、左からのとマーキングの写真は
+もらったのでいける。あとはメタルギア
+を前から撮ったやつだけだ。頼むよ。
+*/
+}
+
+
+resource TO_船倉残り写真１３__e {
+//1011 t //e
+オタコン_000: {
+We're okay on the photos from
+the right, front and the one of
+the lettering.
+}//<ページ数変更>
+オタコン_000_1: {
+The only one we want is of Metal
+Gear from the front-left. I know
+you can do it.
+}
+/*右、前からのとマーキングの写真は終了。あとほしいのは、メタルギアを左から
+撮った写真だけだ。よろしく。
+*/
+}
+
+
+resource TO_船倉残り写真１４__e {
+//0111 t //e
+オタコン_000: {
+I have the photos from
+the left, front and the
+one of the lettering.
+}//<ページ数変更>
+オタコン_000_1: {
+The only one we still don't have
+is of Metal Gear from the front-right.
+That's the last one!
+}
+/*左、前からのとマーキングの写真は
+もらった。残るは１枚。メタルギアを
+右から撮ったやつだけだ。もう少しだよ！
+*/
+
+}//d
+
+//＠写真とノードの仕様、メモリーカード //e
+resource TO_電送装置アクセス時最初１__e {
+オタコン_000: {
+So, any Codec moments
+from you, Snake?
+}
+/*どうだい、スネーク、
+良い写真を送ってくれたかい？
+*/
+}
+
+
+resource TO_電送装置アクセス時最初２__e {
+オタコン_000: {
+Ok, I'm receiving the images...
+}
+/*よし、写真を送ってくれたね。*/
+}
+
+
+resource TO_電送装置アクセス時最初３__e {
+オタコン_000: {
+Looks like I have your photos
+now. Let's take a look...
+}
+/*写真を送ってくれたみたいだね。
+どれどれ……。
+*/
+
+}//d
+
+resource TO_電送装置アクセス時写真ない__e {
+オタコン_000: {
+Huh? You haven't taken
+a single photo.
+}//<ページ数変更>
+オタコン_000_1: {
+There's no point in using
+this terminal if you don't
+have anything to send.
+}
+/*ん？一枚も撮ってないじゃないか。
+写真を撮ってくれなきゃ、この端末を
+使っても意味が無いよ。
+*/
+//写真取り方説明へ t //e
+
+}//e
+
+resource TO_電送装置アクセス時メモリーカードない__e {
+オタコン_000: {
+Hey? You don't have the MEMORY
+CARD (PlayStation&@R2) in the MEMORY
+CARD slot.
+}
+/*あれ？"PlayStation2"専用メモリカード
+(8MB)がＭＥＭＯＲＹ ＣＡＲＤ差込口に
+セットされてみたいだ。
+*/
+
+オタコン_001: {
+You need to take the MEMORY CARD
+(PlayStation&@R2) that you recorded
+the photos on＃−
+}//<ページ数変更>
+オタコン_001_1: {
+and put it in the
+MEMORY CARD slot.
+}
+/*撮った写真が記録された"PlayStation2"
+専用メモリカード(8MB)をＭＥＭＯＲＹ 
+ＣＡＲＤ差込口にセットしてくれ。
+*/
+
+}//d
+
+resource TO_電送装置アクセス時写真あり１__e {
+//１枚目 t //e
+オタコン_000: {
+Ok, first up --
+}
+/* まず、一枚目は……。*/
+}
+
+
+resource TO_電送装置アクセス時写真あり２__e {
+オタコン_000: {
+The first image is --
+}
+/*最初の一枚は……。*/
+}
+
+
+resource TO_電送装置アクセス時写真あり３__e {
+オタコン_000: {
+The first one I'm seeing is --
+}
+/*一枚目は……。*/
+}
+
+
+resource TO_電送装置アクセス時写真あり４__e {
+//ランダム再生 t //e
+オタコン_000: {
+What's next?
+}
+/*次はどうかな……。*/
+}
+
+
+resource TO_電送装置アクセス時写真あり５__e {
+オタコン_000: {
+And the next one is --
+}
+/*その次は、と……。*/
+}
+
+
+resource TO_電送装置アクセス時写真あり６__e {
+オタコン_000: {
+The next one's --
+}
+/*で、次は……。*/
+}
+
+
+resource TO_電送装置アクセス時写真あり７__e {
+オタコン_000: {
+Ok, what am I seeing now...
+}
+/*その次はどうだろう……。*/
+}
+
+
+resource TO_電送装置アクセス時写真あり８__e {
+オタコン_000: {
+Next up is --
+}
+/*ええと、次は……。*/
+}
+
+
+resource TO_電送装置アクセス時写真あり９__e {
+オタコン_000: {
+The next image is --
+}
+/*さて、次は……*/
+}
+
+
+resource TO_電送装置アクセス時写真あり１０__e {
+//最後 t //e
+オタコン_000: {
+The last one is --
+}
+/*最後の一枚は……。*/
+}
+
+
+resource TO_電送装置アクセス時写真あり１１__e {
+オタコン_000: {
+OK, the last one's coming up.
+}
+/*これが最後か……。*/
+}
+
+
+resource TO_電送装置アクセス時写真あり１２__e {
+オタコン_000: {
+So, what's the last one
+gonna be...
+}
+/*ラストはどうかな……。
+*/
+
+}
+
+
+
+resource TO_電送装置アクセス時判定ＯＫ１__e {
+//右ＯＫ t //e
+オタコン_000: {
+Ok, that's good. The shot
+from the right is in the bag.
+}
+/*うん、ＯＫだ。
+右からの写真はこれでいい。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＯＫ２__e {
+//左ＯＫ t //e
+オタコン_000: {
+You're a pretty good photographer.
+We can definitely use this left shot.
+}
+/*良い写真だね。
+左からの写真はこれをもらうことに
+する。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＯＫ３__e {
+//前ＯＫ t //e
+オタコン_000: {
+Ok, this works. It's
+a great front view.
+}
+/*うん、これでいい。
+前からの写真はこれで充分だ。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＯＫ４__e {
+//マーキングＯＫ t //e
+オタコン_000: {
+This is great. The "MARINES"
+lettering shows up really well.
+}
+/*よく撮れてるね。
+「ＭＡＲＩＮＥＳ」のマーキングの
+写真はこれでいくことにする。
+*/
+
+}//d
+
+resource TO_電送装置アクセス時判定ＮＧ普通１__e {
+//全然ダメ ランダム再生 t //e
+オタコン_000: {
+Oh -- I don't think
+we can use this.
+}
+/*うーん……。
+この写真は使えないなぁ。*/
+}
+
+
+resource TO_電送装置アクセス時判定ＮＧ普通２__e {
+オタコン_000: {
+Sorry, but this doesn't work.
+I hate to ask, but can you try
+again?
+}
+/*こりゃダメだ。
+悪いけど撮り直してくれ。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＮＧ普通３__e {
+オタコン_000: {
+It's almost right, but not
+quite. We can't use this.
+}
+/*何かイマイチだなぁ。
+ちょっと使えない。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＮＧ普通４__e {
+オタコン_000: {
+I'm sorry -- you need
+to take another one.
+}
+/*ごめん。撮り直してくれ。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＮＧ普通５__e {
+オタコン_000: {
+Hmm. It needs to be a little more
+clear. What we need is top-notch
+quality here.
+}
+/*うぅむ。もう一つだね。
+もうちょっと良い写真が欲しいな。
+*/
+
+}//d
+
+//追加アドバイス h //e
+//＠判定できる？
+resource TO_電送装置アクセス時判定ＮＧ寄りすぎ１__e {
+オタコン_000: {
+You're too close. We need something
+that shows Metal Gear as a whole.
+}
+/*寄り過ぎなんだよね。
+もっと全体が分かるほうがいい。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＮＧ寄りすぎ２__e {
+オタコン_000: {
+I think you're too close to the
+target. Let's pull back and get
+the whole thing in the frame.
+}
+/*ちょっと寄り過ぎなんだ。
+もっと全体を写してくれ。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＮＧ寄りすぎ３__e {
+オタコン_000: {
+I can't tell what this is --
+the camera's too close to
+the object.
+}//<ページ数変更>
+オタコン_000_1: {
+You need to pull back
+and take another one.
+}
+/*カメラが近すぎて全体が
+よく分からないんだ。
+もう少し引いて撮ってくれ。
+*/
+
+}//d
+
+
+//追加アドバイス h //e
+//＠判定できる？
+resource TO_電送装置アクセス時判定ＮＧ引きすぎ１__e {
+オタコン_000: {
+You're too far away. Get
+in closer and try again.
+}
+/*引き過ぎなんだ。
+もっと近づいた写真を撮ってくれ。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＮＧ引きすぎ２__e {
+オタコン_000: {
+No one will be able to tell what
+this is because it's too far away.
+What we need is a closer look.
+}
+/*カメラが遠すぎてよくわからないんだ
+もう少し近づいたのが欲しい。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＮＧ引きすぎ３__e {
+オタコン_000: {
+This isn't close enough. You need
+to take another one from a shorter
+range.
+}
+/*遠すぎて何が何だかよくわからないな。
+もっと近くから撮った写真が良い。
+*/
+
+}//d
+
+resource TO_電送装置アクセス時判定ＮＧダブり右１__e {
+オタコン_000: {
+We already have a good
+photo from the right.
+}
+/*右からの写真はもうあるから
+いらないんだ。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＮＧダブり右２__e {
+オタコン_000: {
+We have the shot from the right
+covered already. You didn't need
+to take another one.
+}
+/*右からの写真は撮ってあるから
+これ以上必要ない。
+*/
+
+}//d
+
+resource TO_電送装置アクセス時判定ＮＧダブり左１__e {
+オタコン_000: {
+We don't need another
+one from the left.
+}
+/*左からの写真はもういらないんだ。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＮＧダブり左２__e {
+オタコン_000: {
+We can use the left shot you
+took earlier. You don't need
+to take another one.
+}
+/*左からの写真はさっきのを使うから
+もう撮らなくて良い。
+*/
+
+}//d
+
+resource TO_電送装置アクセス時判定ＮＧダブり前１__e {
+オタコン_000: {
+We don't need a shot from
+the front -- you took one
+already.
+}
+/*正面からの写真はもうあるからいいんだ。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＮＧダブり前２__e {
+オタコン_000: {
+The other photo of the front works.
+You don't need to take another one.
+}
+/*前からの写真はさっき撮ってくれたので
+充分だ。もう撮らなくていい。
+*/
+
+}//d
+
+resource TO_電送装置アクセス時判定ＮＧダブりＭＡＲＩＮＥＳ１__e {
+オタコン_000: {
+You already took a good
+one of the side lettering.
+}
+/*マーキングの写真はさっきのがあるから
+充分だ。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＮＧダブりＭＡＲＩＮＥＳ２__e {
+オタコン_000: {
+We only need one good
+shot of the lettering.
+}
+/*マーキングの写真は一枚あればいいんだ。
+*/
+
+}//d
+
+
+
+resource TO_電送装置アクセス時判定ＮＧとんでもない１__e {
+//とんでもないものを撮った場合 t //e
+オタコン_000: {
+...What is this? Snake, this
+isn't a game we're playing
+here.
+}
+/*……何コレ？
+スネーク、遊んでるんじゃないんだ。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＮＧとんでもない２__e {
+オタコン_000: {
+Snake, get serious, will you?
+We need those pictures.
+}
+/*スネーク……。
+もうちょっと真面目にやってくれ。
+頼むからさ。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＮＧとんでもない３__e {
+オタコン_000: {
+...You're on a mission
+here, remember?
+}
+/*……君、任務のこと忘れてない？
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＮＧとんでもない４__e {
+オタコン_000: {
+This is NOT what we came for.
+}//<ページ数変更>
+オタコン_000_1: {
+I can't believe you're clowning
+around at a time like this.
+Really...
+}
+/*全然違うじゃん。
+よくそんな余裕があるね。
+感心するよ、ホント……。
+*/
+
+}//d
+
+//司令官を撮った場合 t //e
+resource TO_電送装置アクセス時判定ＮＧ司令官１__e {
+オタコン_000: {
+Hey, this is the Marine Commandant.
+Are you a fan or something?
+}
+/*これ、海兵隊司令官じゃないか。
+君、彼のファンなのかい？
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＮＧ司令官２__e {
+オタコン_000: {
+The Commandant again...
+}//<ページ数変更>
+オタコン_000_1: {
+Look, if you like him so much,
+I'll print this out and make a
+panel out of it.
+}//<ページ数変更>
+オタコン_000_2: {
+Put it over your bed
+or something.
+}
+/*また司令官か……そんなに彼が好きなら、
+この写真、パネルにしてあげるよ。
+家にでも飾ってくれ。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＮＧ司令官３__e {
+オタコン_000: {
+Will you PLEASE stop sending me
+pictures of the Commandant?
+}
+/*司令官の写真を送ってくるのは
+もうやめてくれ……。
+*/
+
+}//d
+
+
+//兵士のケツ等 h //e
+resource TO_電送装置アクセス時判定ＮＧケツ１__e {
+オタコン_000: {
+...so, ah, this explains a lot.
+}//<ページ数変更>
+オタコン_000_1: {
+Not that there's anything wrong
+with keeping it to yourself --
+}//<ページ数変更>
+オタコン_000_2: {
+I mean, you know, it's your
+life and everything...
+}
+/*……君、そういう趣味があったんだ……。
+い、いや、個人の趣向だから、いろいろ
+あって良いと思うけど。うん……。
+*/
+
+オタコン_001: {
+But you're going to have to take
+those Metal Gear photos now.
+}
+/*でも、写真は撮り直しだ。いいね。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定ＮＧケツ２__e {
+//二回目以降 t //e
+オタコン_000: {
+More of these? Is that
+all you think about?
+}//<ページ数変更>
+オタコン_000_1: {
+Hey, what you like is your
+business, just get those
+Metal Gear pictures.
+}
+/*またこんなの撮って。
+やっぱり君は……。
+ま、まあそれはいいけど、撮り直しだ。
+*/
+
+}//d
+
+//大ウケ おもしろ写真 h //e
+resource TO_電送装置アクセス時判定ＮＧ大ウケ__e {
+オタコン_特例_空白字幕: 
+オタコン_000: {
+This is hilarious!
+This rules!
+}
+/*
+Ha ha ha ha ha ha ha!
+
+ぎゃっはっはっはっは！
+何だこりゃ！ひゃっひゃっひゃ！
+サイコー！！ひー！！！
+*/
+
+オタコン_001: {
+But we can't use it.
+Get the shots we need!
+}
+/*でもダメだ。これは使えないよ。
+と・り・な・お・し！
+*/
+
+}//d
+
+//謎 h //e
+resource TO_電送装置アクセス時判定ＮＧ謎__e {
+オタコン_000: {
+Ah! This is a -- !
+}
+/*うぉ！こ、これは……！！*/
+スネーク_001: {
+What?
+}
+/*どうした？*/
+
+オタコン_002: {
+Nothing, it's nothing...
+}
+/*い、いや何でもない。
+何でもないよ……。*/
+
+オタコン_003: {
+But this isn't a photo of
+Metal Gear anyway.
+}//<ページ数変更>
+オタコン_003_1: {
+Sorry, but you're going to have to
+go back and shoot another set.
+}
+/*で、でもこれはメタルギアの
+写真じゃないね。
+悪いけど、撮り直してくれ。
+*/
+
+オタコン_004: {
+I'll just make a backup
+of this one...
+}
+/*……保存しとこ。
+*/
+
+}//e
+
+
+//オルガの写真を撮った h //e
+resource TO_電送装置アクセス時判定ＮＧオルガ１__e {
+オタコン_000: {
+Hm? Isn't this that soldier
+on the deck? Olga?
+}
+/*ん？
+これはあのオルガとかいう人じゃないか。
+*/
+
+オタコン_001: {
+I can't believe you took a picture
+of her. All things considered...
+}
+/*ちゃっかりこんな写真撮ってなんて。
+さすがというか、何というか……。
+*/
+
+}//d
+
+
+//心霊写真 h //e
+resource TO_電送装置アクセス時判定ＮＧ心霊１__e {
+オタコン_000: {
+Ack! Don't send me creepy stuff
+like this! What if I get possessed
+or something!
+}
+/*うわぁ！変なもの送ってこないでくれ！
+呪われたらどうするんだ！！
+*/
+
+}//d
+
+
+resource TO_電送装置アクセス時判定ＮＧ心霊２__e {
+オタコン_000: {
+Yaagh! Another spooky photo!?
+I told you to stop, didn't I?
+}
+/*ひぃっまた何か写ってる！
+やめてくれって言っただろ！
+*/
+
+オタコン_001: {
+I need to go get some
+holy water or something...
+}
+/*お払いしてもらわなきゃ……。
+*/
+
+}//d
+
+resource TO_電送装置アクセス時判定ＮＧ心霊３__e {
+オタコン_000: {
+Stop it, okay!? Are you
+trying to freak me out?
+}
+/*もうやめてくれ！
+いやがらせか！？
+*/
+
+}//d
+
+
+//・全部ＯＫ //h e
+resource TO_電送装置アクセス時判定全部ＯＫ__e {
+オタコン_000: {
+Okay, now we have
+all the photos...
+}
+/*よし、これで全部の写真が揃った……。*/
+
+}//d
+
+
+//時間なくて諦める場合 h //e
+resource TO_電送装置アクセス時判定あきらめ１__e {
+オタコン_000: {
+Snake, the speech is
+about to wind up.
+}
+/*スネーク、もう演説が終わる。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定あきらめ２__e {
+オタコン_000: {
+We'll have to give up
+on the front view.
+}
+/*正面からの写真はあきらめる
+ことにする……。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定あきらめ３__e {
+オタコン_000: {
+We'll have to give up on
+the picture from the right.
+}
+/*右からの写真はあきらめる
+ことにする……。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定あきらめ４__e {
+オタコン_000: {
+We'll have to give up on
+the picture from the left.
+}
+/*左からの写真はあきらめる
+ことにする……。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定あきらめ５__e {
+オタコン_000: {
+We'll have to give up on the closeup
+of the "MARINES" lettering.
+}
+/*「ＭＡＲＩＮＥＳ」のマーキングの
+写真はあきらめることにする……。
+*/
+}
+
+
+resource TO_電送装置アクセス時判定あきらめ６__e {
+オタコン_000: {
+Forget the photos and
+get out of there now.
+}
+/*写真はもう充分だ。
+脱出してくれ。
+*/
+
+}//d
+
+resource TO_電送装置アクセス時判定セルゲイ__e {
+オタコン_000: {
+...
+}
+オタコン_001: {
+Didn't think Gurlukovich was
+involved, of all people.
+...
+}
+/*まさかゴルルコビッチが絡んでるとはね
+……。
+*/
+オタコン_002: {
+...
+}
+}//d
+
+//・戻るなと怒られる h //e
+resource TO_船倉戻るな１__e {
+オタコン_000: {
+Why are you turning around?
+Metal Gear is in the farthest
+hold, I told you.
+}
+/*なんで戻るんだい？
+メタルギアは一番奥の船倉だ。
+*/
+}
+
+
+resource TO_船倉戻るな２__e {
+//時間がない場合 h //e
+オタコン_000: {
+The Commandant is almost done
+with his speech. We're just about
+out of time -- hurry!
+}
+/*演説がもうすぐ終わる。
+時間がない。急いで！
+*/
+
+}//d
+
+//★デフォルト。ランダム（操作等ゲームの説明）基本的に序盤のみ、ある確率で発生 d //e
+
+//○仕様 d //e
+//・ルードの仕方。h //e
+resource TO_エルード１の１__e {
+//＊ムービー t //e
+オタコン_000: {
+Push the Action button near
+a scalable railing to hang off
+the other side.
+}
+/*乗り越えられる手すりの近くで
+＃｛△、アクション｝＃ボタンを押すと、その手すりの
+向こう側にぶらさがることが出来る。
+*/
+}
+
+
+resource TO_エルード１の２__e {
+//＊ムービー t //e
+オタコン_000: {
+This is called Hanging.
+}//<ページ数変更>
+オタコン_000_1: {
+You can use it to move around,
+hide, and even maneuver around
+an enemy's back.
+}
+/*これをエルードっていうんだ。
+移動だけじゃなく、隠れたり敵の背後を
+とったりするのにも使えるはずだ。
+*/
+}
+
+
+resource TO_エルード２の１__e {
+//＊ムービー t //e
+#ifdef d:XBOX
+オタコン_000: {
+You can move left and right while Hanging 
+by moving the left thumbstick or using 
+the left step and right step buttons.
+}
+#else
+オタコン_000: {
+You can move left and right while
+Hanging by moving the left analog
+stick or using the L2 and R2 buttons.
+}
+#endif
+/*
+You can move the left analog stick
+or use the L2 and R2 buttons to
+move left and right while hanging.
+エルード中は左スティックの左右か
+Ｌ２ボタン、Ｒ２ボタンで左右に
+移動出来る。
+*/
+}
+
+
+resource TO_エルード２の２__e {
+//＊ムービー t //e
+オタコン_000: {
+When you're ready to pull yourself
+up, just push the Action button again.
+}
+/*這い上がりたくなったら、
+もう一度＃｛△、アクション｝＃ボタンを押せばいい。
+*/
+}
+
+
+
+resource TO_エルード３の１__e {
+//＊ムービー t //e
+オタコン_000: {
+A Grip Gauge appears below
+the Life Gauge during Hanging.
+}
+/*あと、エルード中は＃｛ＬＩＦＥ、ライフ｝＃ゲージの
+下に＃｛握力、グリップ｝＃ゲージが表示されるんだ。
+*/
+
+オタコン_001: {
+The Grip Gauge indicates how
+tightly you are holding on,
+}//<ページ数変更>
+オタコン_001_1: {
+and steadily decreases as long
+as you are in Hanging mode.
+}
+/*＃｛握力、グリップ｝＃ゲージは君の握力を表していて、
+エルードしている間、少しずつ減って
+いく。
+*/
+}
+
+
+resource TO_エルード３の２__e {
+//＊ムービー t //e
+オタコン_000: {
+When the Grip Gauge goes to
+zero, you won't be able to hold
+on anymore.
+}//<ページ数変更>
+オタコン_000_1: {
+You need to hoist yourself
+up before you fall off.
+}
+/*＃｛握力、グリップ｝＃ゲージが無くなったら、つかまっていられなくなって下に落ちてしまう。
+そうなる前に這い上がった方がいいね。
+*/
+}
+
+
+resource TO_エルード４の１__e {
+//＠×か、ホフクか //e
+//＊ムービー t //e
+オタコン_000: {
+Push the Crawl button
+while Hanging to jump
+down straight below.
+}
+/*エルード中に＃｛×、ホフク｝＃ボタンを押すと、
+真下に飛び降りる。
+*/
+}
+
+
+resource TO_エルード４の２__e {
+//＊ムービー t //e
+オタコン_000: {
+If the ground is too far
+below, you'll lose some
+LIFE.
+}//<ページ数変更>
+オタコン_000_1: {
+In some places, you won't
+make it at all. Be careful
+of that.
+}
+/*でも高過ぎる所から落ちたら＃｛ＬＩＦＥ、ライフ｝＃が
+減るし、場所によっては助からないかも
+しれない。気をつけてくれ。
+*/
+
+//＠エルード自殺可能？ //e
+}//d
+
+
+//・段差上り（上れる場所近くでも発生）h //e
+//＊ムービー t //e
+resource TO_段差上り__e {
+オタコン_000: {
+If it's about waist-high, you'll be
+able to climb up or over things
+with the Action button.
+}//<ページ数変更>
+オタコン_000_1: {
+Keep that in mind.
+}
+/*腰くらいの高さのものなら、
+＃｛△、アクション｝＃ボタンを押せばよじ登ることが出来る。
+忘れないでくれ。
+*/
+
+}//d
+
+
+//・主観攻撃（左右ステップ、背伸び）h //e
+resource TO_主観攻撃１の１__e {
+//＊ムービー t //e
+オタコン_000: {
+Change to First Person View
+with a weapon selected.
+}//<ページ数変更>
+オタコン_000_1: {
+Once you aim your weapon with
+the Weapon button, you're ready
+to attack in First Person View.
+}
+/*武器を装備した状態で主観にして、
+＃｛□、武器｝＃ボタンで武器を構えれば、
+主観攻撃が出来る。
+*/
+}
+
+
+resource TO_主観攻撃１の２__e {
+//＊ムービー t //e
+オタコン_000: {
+Using the First Person Attack
+allows you to shoot high or low;
+}//<ページ数変更>
+オタコン_000_1: {
+you can aim for the enemy's
+head or even feet.
+}
+/*主観攻撃を使えば、上や下にも撃てるし、
+敵の足や頭を狙うことも出来るんだ。
+*/
+}
+
+
+resource TO_主観攻撃２の１__e {
+//＊ムービー t //e
+#ifdef d:XBOX
+オタコン_000: {
+The left step and right step buttons 
+let you strafe during First Person 
+Attacks.
+}//<ページ数変更>
+#else
+オタコン_000: {
+The L2 and R2 buttons let you
+strafe during First Person Attacks.
+}//<ページ数変更>
+#endif
+オタコン_000_1: {
+You can crouch, too,
+with the Crawl button.
+}
+/*主観攻撃中にもＬ２ボタン、
+Ｒ２ボタンで左右ステップしたり、
+＃｛×、ホフク｝＃ボタンでしゃがんだり出来る。
+*/
+}
+
+
+resource TO_主観攻撃２の２__e {
+//＊ムービー t //e
+オタコン_000: {
+Once you've mastered all the moves,
+you'll be able to do things like jump
+out from concealment,
+
+}//<ページ数変更>
+オタコン_000_1: {
+fire at a target, and then drop
+out of the enemy's view again.
+}
+/*うまく使えば、遮蔽物に隠れながら、
+相手の隙を見て飛び出して撃って
+また隠れるとか出来るはずだ。
+*/
+}//d
+
+//・銃を構えてゆっくりおろす h //e
+resource TO_銃を構えて下ろす１__e {
+オタコン_000: {
+You can aim the handgun
+with the Weapon button,
+}//<ページ数変更>
+オタコン_000_1: {
+then lower it without firing
+if you let go of the button
+slowly.
+}
+/*ハンドガンは＃｛□、武器｝＃ボタンで構えても、
+ゆっくり＃｛□、武器｝＃ボタンを離せば
+発砲せずに銃を下ろすことが出来る。
+*/
+}
+
+
+resource TO_銃を構えて下ろす２__e {
+オタコン_000: {
+It saves ammunition, and besides,
+it could be useful after you've
+disarmed an enemy at gunpoint.
+}
+/*弾を無駄に使わずに済むし、
+敵をホールドアップさせた後
+なんかでも役立つと思う。
+*/
+
+}//d
+//＠構え下ろしは拳銃だけ？ //e
+
+
+//・武器を構えてゆっくりおろす h //e
+resource TO_武器を構えて下ろす１__e {
+オタコン_000: {
+You can aim a weapon with
+the Weapon button,
+}//<ページ数変更>
+オタコン_000_1: {
+then lower it without using
+it if you let go of the button
+slowly.
+}
+/*武器は＃｛□、武器｝＃ボタンで構えても、
+ゆっくり＃｛□、武器｝＃ボタンを離せば
+攻撃せずに下ろすことが出来る。
+*/
+
+}//d
+//＠構え下ろしは拳銃だけ？ //e
+
+
+//・流血で見つかる h //e
+//＠敵の血痕に敵は反応しない //e
+resource TO_血痕見つかる__e {
+オタコン_000: {
+Snake, if you sustain damage from
+enemy attacks, it could increase
+your chances of capture.
+}//<ページ数変更>
+オタコン_000_1: {
+The bloodstains would
+lead them right to you.
+}
+/*スネークが敵の攻撃を受けたら血が
+飛び散る。血の跡が残るからそれが敵に
+見つかったら面倒なことになるだろう。
+*/
+
+オタコン_001: {
+That's another reason you should
+stay away from trouble as much
+as possible.
+}
+/*血を流すようなことは出来るだけ
+さけたほうがいい。
+*/
+
+}//d
+
+
+//・止血条件 h //e
+//＠流血止血仕様未満？回復は静止？ //e
+resource TO_流血止血条件出血状態__e {
+//血が出ている時 t //e
+オタコン_000: {
+Snake, are you bleeding!?
+}
+/*スネーク、出血してるのかい！？*/
+}
+
+
+resource TO_流血止血条件__e {
+オタコン_001: {
+If your Life Gauge is down to the
+point where it's red, the bleeding
+won't stop.
+}
+/*＃｛ＬＩＦＥ、ライフ｝＃ゲージが赤くなるまで減ると
+血が止まらなくなるんだ。
+*/
+
+オタコン_002: {
+As long as you're bleeding,
+your Life Gauge will keep
+dropping gradually.
+}//<ページ数変更>
+オタコン_002_1: {
+Besides that, the bloodstains
+could put the enemy on your
+trail.
+}
+/*出血してる間は＃｛ＬＩＦＥ、ライフ｝＃も少しずつ
+減っていくし、血痕を敵に見つけられて
+追跡されるかもしれない。
+*/
+
+オタコン_003: {
+The only way to stop the bleeding
+for good is to let your body recover
+until the Life Gauge is green.
+}//<ページ数変更>
+オタコン_003_1: {
+Rations are the best
+way to do that.
+}
+/*完全に血を止めるには＃｛ＬＩＦＥ、ライフ｝＃ゲージが
+緑色に戻るまで回復させるしかない。
+回復にはレーションが一番いいね。
+*/
+
+オタコン_004: {
+Try to crouch down or assume Crawl
+position and stay still while you're
+bleeding.
+}//<ページ数変更>
+オタコン_004_1: {
+Your LIFE will recover bit by bit.
+}
+/*でも出血してる間はしゃがむかホフク
+するかして、じっと止まっていれば
+少しずつ＃｛ＬＩＦＥ、ライフ｝＃が回復するんだ。
+*/
+
+オタコン_005: {
+I'd recommend that you stay in
+hiding until the bleeding stops,
+if possible.
+}
+/*血が止まるまでどこかで隠れているのも
+いいかもしれない。
+*/
+}
+
+
+resource TO_流血止血条件止血剤__e {
+オタコン_000: {
+You can also use the gel bandage
+to prevent further blood loss, but
+this is an emergency measure only.
+}//<ページ数変更>
+オタコン_000_1: {
+If you deselect it as your current
+equipment, you're back to square
+one. Keep that in mind.
+}
+/*止血剤を装備すれば血は止まるけど、
+あくまで応急処置だ。装備から外したら
+また出血してしまう。気をつけてくれ。
+*/
+
+//＠流血回復は静止か？ //e
+}//d
+
+
+
+//・部位ダメージの違い（麻酔の効き方）h //e
+resource TO_麻酔効き方__e {
+オタコン_000: {
+Snake, the M9's anaesthetic rounds
+have different effects depending
+on where it hits.
+}
+/*スネーク、Ｍ９の麻酔弾は、
+敵のどこに当たったかによって
+効き方が変わってくるんだ。
+*/
+
+オタコン_001: {
+If you manage to land them on the
+head or the heart area, the enemy
+will go down immediately.
+}//<ページ数変更>
+オタコン_001_1: {
+If it's hands or feet, it may take
+a while for the anaesthetic to
+take effect.
+}
+/*頭や心臓に当てれば敵はすぐに倒れるし、
+手や足だったら麻酔が効くまで
+少し時間がかかる。
+*/
+
+オタコン_002: {
+Try using the First Person View
+to aim with higher accuracy.
+}
+/*主観攻撃でよく狙った方がいいね。
+*/
+
+}//d
+
+
+
+//・転がり h //e
+resource TO_飛び込み前転__e {
+//＊ムービー t //e
+オタコン_000: {
+Push the Crawl button as you're
+running to go into a tumble and
+a forward roll.
+}
+/*走りながら＃｛×、ホフク｝＃ボタンを押すと
+飛び込み前転が出来る。
+*/
+
+オタコン_001: {
+Make good use of it -- maybe
+when you need to move from
+cover to cover quickly?
+}
+/*物陰から物陰に素早く移動したりする
+時とかにうまく使ってくれ。
+*/
+
+}//d
+
+
+//・そろそろ歩き h //e
+resource TO_そろそろ歩き__e {
+#ifdef d:XBOX
+オタコン_000: {
+If you move the left thumbstick at
+a smaller angle, you'll be able to
+walk more slowly and stealthily.
+}
+#else
+オタコン_000: {
+If you tilt the left analog stick at
+a smaller angle, you'll be able to
+walk more slowly and stealthily.
+}
+#endif
+/*左スティックの倒し具合を少しにすれば、
+忍び足で歩ける。
+*/
+
+オタコン_001: {
+Speed isn't everything.
+Try moving over noisy
+surfaces this way.
+}
+/*移動速度は遅くなるけど足音が
+しないから、歩くと音が鳴ってしまう
+床の上では役に立つはずだ。
+*/
+
+}//d
+
+
+//・死体は隠さなければいけない h //e
+resource TO_死体隠せ__e {
+オタコン_000: {
+Snake, don't just take out enemies
+and leave them there. That's a bad
+idea.
+}
+/*スネーク、敵を倒してもそれだけで
+安心しちゃダメだ。倒した敵を
+そのままにしておくのはマズイ。
+*/
+
+オタコン_001: {
+Finding their dead friends on
+the ground will probably make
+sentries raise an alarm.
+}
+/*倒れた仲間を敵が見つけたら、
+当然警戒態勢を強化するはずだからね。
+*/
+
+オタコン_002: {
+Once you've dealt with someone, put
+the body somewhere out of sight.
+}
+/*倒した敵の体はどこか人目につかない
+場所に隠した方がいい。
+*/
+
+}//d
+
+
+//・死体引きずり方法 h //e
+resource TO_死体引きずり方法１__e {
+オタコン_000: {
+Bodies can be moved to
+another location by dragging.
+}
+/*倒れた敵は引きずって
+移動させることが出来るんだ。
+*/
+}
+
+
+resource TO_死体引きずり方法２__e {
+//＊ムービー t //e
+オタコン_000: {
+First, make sure no weapon is
+selected. Then push the Weapon
+button near the body to grab it.
+}
+/*やり方は、倒れた敵の体の近くで、
+武器を装備せずに＃｛□、武器｝＃ボタンを押せば、
+敵の体を抱える。
+*/
+
+オタコン_001: {
+As long as you have a hold on the
+body, you'll be able to drag it.
+}//<ページ数変更>
+オタコン_001_1: {
+Let go of the Weapon
+button when you're done.
+}
+/*これで＃｛□、武器｝＃ボタンを押している間、
+敵を引きずることが出来る。
+離す時は＃｛□、武器｝＃ボタンを離せばいい。
+*/
+}
+
+resource TO_死体引きずり方法３__e {
+オタコン_000: {
+It's a bad idea to leave enemies
+where they've fallen.
+}//<ページ数変更>
+オタコン_000_1: {
+Hide the bodies to make
+sure no one sees them.
+}
+/*倒した敵をそのままにしておくのは
+マズイからね。人目につかない場所に
+隠すんだ。
+*/
+
+}//d
+
+
+
+//・死体硬直 h //e
+resource TO_死体硬直１__e {
+オタコン_000: {
+I recommend you hide the enemy's
+body as soon as you've taken them
+down.
+}
+/*スネーク、倒した敵の体は
+すぐ隠すようにした方が良い。
+*/
+}
+
+/*<vc014502>*/
+resource TO_死体硬直２__e {
+オタコン_000: {
+The tranquilized and unconscious
+enemies will wake up sooner or
+later.
+}//<ページ数変更>
+オタコン_000_1: {
+As for soldiers you've killed,
+the body will become too stiff
+to move in a short while.
+}
+/*眠ったり気絶したりしてる敵はすぐに
+起き上がってくるし、そうでない敵も
+しばらくすると硬直して動かせなくなる。
+*/
+
+オタコン_001: {
+Keep that in mind.
+}
+/*注意してくれ。*/
+}//d
+
+
+//・ロッカー死体隠し h //e
+resource TO_死体ロッカー隠し__e {
+//＊ムービー t //e
+オタコン_000: {
+You can also hide the
+enemy's body in a locker.
+}
+/*ロッカーの中に倒した敵の体を
+隠すことも出来る。
+*/
+
+オタコン_001: {
+All you have to do is open the
+locker and drag the body there.
+}
+/*やり方はロッカーを開けて、
+そこまで敵の体を引きずっていけばいい。
+*/
+
+}//d
+
+//・部位ダメージの違い（銃弾） h //e
+resource TO_部位ダメージ銃１__e {
+オタコン_000: {
+The handgun ammunition and other
+live rounds have different effects
+depending on where the bullet hits.
+}
+/*ハンドガンとかの弾は、
+敵の体のどこに当たるかによって、
+与えるダメージが違うんだ。
+*/
+
+オタコン_001: {
+If you hit the hand, the enemy
+won't be able to use it,
+}//<ページ数変更>
+オタコン_001_1: {
+and a round to the leg and feet
+will take away their mobility.
+}//<ページ数変更>
+オタコン_001_2: {
+If you manage to land them on the
+head or the heart area, the enemy
+will go down immediately.
+}
+/*手を撃てば敵は手が使えなくなるし、
+足を撃てば歩けなくなる。
+頭や心臓を狙えば一発で倒せるよ。
+*/
+}
+
+resource TO_部位ダメージ銃２__e {
+オタコン_000: {
+Destroy the radio on their right
+hip, to the back, to prevent the
+enemy from calling for backup.
+}//<ページ数変更>
+オタコン_000_1: {
+Use the First Person View when
+you need to aim accurately.
+}
+/*腰の右後ろにある無線機を撃って壊せば、
+敵が応援を呼ぶのを防ぐことも出来る。
+状況に応じて、主観攻撃でよく狙うんだ。
+*/
+}//d
+
+
+//・ビハインド覗き、ＬＲ移動 h //e
+resource TO_ビハインド覗き__e {
+//＊ムービー t //e
+#ifdef d:XBOX
+オタコン_000: {
+Push the left step or right step button 
+while in Corner View to move your head 
+and take a quick look in that direction.
+}
+#else
+オタコン_000: {
+Push the L2 or R2 button while in
+Corner View to move your head and
+take a quick look in that direction.
+}
+#endif
+/*ビハインドの時にＬ２ボタンもしくは
+Ｒ２ボタンを押すと物陰から頭を出して
+その方向を覗き込むことが出来る。
+*/
+
+オタコン_001: {
+You'll be able to see farther in
+Corner View, but there's a greater
+chance of being discovered.
+}//<ページ数変更>
+オタコン_001_1: {
+Keep that in mind.
+}
+/*ビハインドするより遠くまで見えるけど、
+頭を出すから敵に見つかりやすくなる。
+そこは気をつけてくれ。
+*/
+
+}//d
+
+//・ビハインド飛び出し（立ったまま、座ったまま） h //e
+resource TO_ビハインド飛び出し１__e {
+//＊ムービー t //e
+オタコン_000: {
+If you have a weapon selected
+while in Corner View,
+}//<ページ数変更>
+オタコン_000_1: {
+push the Weapon button to jump
+out of concealment and aim your
+weapon.
+}
+/*武器を装備してビハインドしている時に
+＃｛□、武器｝＃ボタンを押すと、物陰から素早く
+飛び出して武器を構えることが出来る。
+*/
+}
+
+
+resource TO_ビハインド飛び出し２__e {
+//＊ムービー t //e
+オタコン_000: {
+You can use this while you're
+standing or crouching. It should
+help during gunfights.
+}
+/*立ったままでも、しゃがんだ状態でも
+可能だ。銃撃戦の時にうまく使ってくれ。
+*/
+
+}//d
+
+//・ビハインド中右スティック h //e
+resource TO_ビハインド中右スティック__e {
+//＊ムービー t //e
+#ifdef d:XBOX
+オタコン_000: {
+Move the right thumbstick while in 
+Corner View to look in that direction.
+}
+#else
+オタコン_000: {
+Move the right analog stick
+while in Corner View to look
+in that direction.
+}
+#endif
+/*ビハインド中に右スティックを動かせば
+その方向を伺うことが出来る。
+*/
+#ifdef d:XBOX
+オタコン_001: {
+The difference between this and 
+using letf step and right step buttons
+}//<ページ数変更>
+#else
+オタコン_001: {
+The difference between this
+and using L2 and R2 buttons
+}//<ページ数変更>
+#endif
+オタコン_001_1: {
+is that you won't be exposing
+yourself to possible enemy fire.
+}//<ページ数変更>
+オタコン_001_2: {
+At the same time, because
+you are staying in the same
+position,
+}//<ページ数変更>
+オタコン_001_3: {
+your range of vision
+is more limited.
+}
+/*Ｌ２ボタン、Ｒ２ボタンの覗き込みと
+違って体を乗り出さないぶん安全だ。
+見える範囲は少なくなるけどね。
+*/
+
+}//d
+
+//・影が見つかること h //e
+resource TO_影伸び１__e {
+//＊ムービー t //e
+オタコン_000: {
+Snake, in some locations, the
+lighting makes your shadow
+longer and more noticeable.
+}
+/*スネーク、照明の具合によっては
+影が大きく伸びてしまう場所がある。
+そういう所では、影にも注意してくれ。
+*/
+}
+
+
+resource TO_影伸び２__e {
+オタコン_000: {
+The enemy might spot your shadow,
+so you'll want to watch out.
+}//<ページ数変更>
+オタコン_000_1: {
+Turns and corners are
+especially dangerous.
+}
+/*伸びた影を敵に見つけられてしまう
+ことがあるかもしれないからね。
+特に曲がり角では気をつけた方が良い。
+*/
+
+オタコン_001: {
+But the same holds for the enemy.
+If you spot someone's shadow ahead,
+you can avoid unnecessary risks.
+}
+/*でも、敵の影も同じように伸びるから、
+人影を見つけたら近づかないように
+すれば無用な危険をさけられるはずだ。
+*/
+
+}//d
+
+//・不審物で見つかる（壊れ物） h //e
+resource TO_不審物__e {
+//＊ムービー t //e
+オタコン_000: {
+Don't break things if you can help
+it. Any sign of infiltration will
+put the enemy on a lookout.
+}//<ページ数変更>
+オタコン_000_1: {
+Exercise caution.
+}
+/*物はあまり壊したりしない方がいい。
+潜入の痕跡を発見されると、当然敵に
+警戒されるからね。気をつけてくれ。
+*/
+
+}//d
+
+
+//・探索モード h //e
+resource TO_探索モード__e {
+オタコン_000: {
+Even if you've successfully thrown
+the enemy off your trail,
+}//<ページ数変更>
+オタコン_000_1: {
+don't ever relax your guard
+once you've been spotted.
+}
+/*一度見つかったら、例え逃げ切っても
+安心しちゃダメだ。
+*/
+
+オタコン_001: {
+They'll be looking for you,
+and security will be tighter.
+}//<ページ数変更>
+オタコン_001_1: {
+Don't underestimate what
+you're up against.
+}
+/*敵は君を探して警戒を強化するはず
+だからね。注意してくれ。
+*/
+//＠探索モード仕様 //e
+
+}//d
+
+//・クリアリング（初クリアリングは強制ＣＡＬＬ？） h //e
+resource TO_クリアリング１__e {
+//ＣＡＬＬ時 t //e
+オタコン_000: {
+Snake, get yourself out of sight
+now! Enemy search parties are
+on the way. It's a Clearing.
+}
+/*スネーク、早くどこかに隠れるんだ！
+敵は君を徹底的に探し出そうとしてる。
+クリアリングだ。
+*/
+}
+
+
+resource TO_クリアリング２__e {
+オタコン_000: {
+These aren't sentries
+you're dealing with;
+}//<ページ数変更>
+オタコン_000_1: {
+they're searching for you, and they
+know you don't want to be found.
+}
+/*敵が呼んだ増援部隊は一度侵入者を
+見失っても簡単にはあきらめない。君が
+隠れていそうな場所まで探しに来るんだ。
+*/
+
+オタコン_001: {
+You can't make some feeble
+attempt at concealment.
+}//<ページ数変更>
+オタコン_001_1: {
+Make sure you're completely hidden
+in some place they wouldn't think
+of searching.
+}
+/*中途半端な隠れ方じゃ見つかってしまう。
+どこか見つかりにくい場所に
+身を隠すんだ。いいね。
+*/
+//＠クリアリング仕様。見つかる条件。 //e
+
+}//d
+
+
+//・銃撃戦の戦い方 h //e
+resource TO_銃撃戦１__e {
+オタコン_000: {
+If you're spotted and it comes
+down to an exchange of gunfire,
+}//<ページ数変更>
+オタコン_000_1: {
+don't stand out in the
+open. Find cover ASAP.
+}
+/*万一、敵に見つかって銃撃戦になったら
+遮蔽物に隠れながら戦うんだ。無防備に
+体をさらしてはいけない。
+*/
+}
+
+
+//＊ムービー t //e
+resource TO_銃撃戦２__e {
+オタコン_000: {
+Strafe and stretch up from your
+concealed position to get a good
+shot on target
+}//<ページ数変更>
+オタコン_000_1: {
+while in First Person View.
+}
+/*隠れながら左右ステップや伸び上がりを
+使って主観攻撃で応戦してくれ。
+*/
+
+オタコン_001: {
+But if they come at you in droves,
+even you won't be able to fend
+them off.
+}//<ページ数変更>
+オタコン_001_1: {
+You need to avoid
+discovery at all costs.
+}
+/*でも一度に大勢で来られたら、
+いくら君でも太刀打ち出来ないだろう。
+見つからないのが一番だからね。
+*/
+
+}//d
+
+
+//・敵の無線連絡 h //e
+resource TO_敵の無線連絡１__e {
+//＊ムービー
+オタコン_000: {
+As soon as you're spotted by
+an enemy soldier, he'll call for
+backup on his radio.
+}//<ページ数変更>
+オタコン_000_1: {
+The search party that's going to
+show up as a result is a tough
+bunch.
+}
+/*敵は君を見つけると無線で仲間を呼ぶ。
+それでやって来る増援部隊はかなり
+手強いはずだ。
+*/
+}
+
+
+resource TO_敵の無線連絡２__e {
+//＊ムービー t //e
+オタコン_000: {
+For one thing, they have better
+equipment, like body armor.
+}//<ページ数変更>
+オタコン_000_1: {
+But the main thing is that they're
+highly trained in search-and-
+destroy types of activities.
+}
+/*＃｛防弾衣、ボディ・アーマー｝＃とか、一般の兵士よりも
+上の装備も持ってるし、何より彼らは
+戦闘馴れしている。
+*/
+
+オタコン_001: {
+They'll come as a team and attack
+as a team. Don't try to take them
+straight on.
+}
+/*チームで攻撃してくるから、
+いくら君でも一人でまともに
+やりあうのは危ないと思う。
+*/
+}
+
+
+resource TO_敵の無線連絡３の１__e {
+オタコン_000: {
+If you're spotted, you need to stop
+the sentry from calling for backup.
+}
+/*万一敵に見つかったら、
+仲間を呼ばれないようにした方が良いね。
+*/
+}
+
+
+resource TO_敵の無線連絡３の２__e {
+オタコン_000: {
+Take him down before he has
+the chance to use the radio.
+}
+/*無線で仲間を呼ぶ前にその敵を倒せば、
+増援部隊とは戦わずに済むはずだ。
+*/
+}
+
+
+
+resource TO_敵の無線連絡４__e {
+オタコン_000: {
+You can also break out the chaff
+grenade and interfere with the
+message transmission
+}//<ページ数変更>
+オタコン_000_1: {
+to prevent any alerts
+from being issued.
+}
+/*チャフ・グレネードを使って無線を
+妨害しても、敵が応援を呼ぶのを
+防げる。
+*/
+}
+
+
+resource TO_敵の無線連絡５__e {
+//＊ムービー t //e
+オタコン_000: {
+If you take out the radio,
+the sentry will have no way
+of calling for help.
+}
+/*無線機を壊せば敵は応援を呼べなくなる
+はずだ。
+*/
+
+オタコン_001: {
+Radios are worn behind the right
+hip. You should be able to target
+it in First Person View.
+}
+/*敵は無線機を腰の右後ろにつけてる。
+主観攻撃で狙えば撃ち抜けるだろう。
+*/
+}
+
+
+resource TO_敵の無線連絡６__e {
+オタコン_000: {
+If he does manage to call for backup,
+get yourself in deep hiding before
+they arrive.
+}
+/*もしも仲間を呼ばれてしまったら、
+増援部隊が到着する前に隠れた方が
+いいね。
+*/
+
+}//d
+
+
+//・増援部隊強い h //e
+resource TO_増援部隊__e {
+オタコン_000: {
+The reinforcements are
+all wearing body armor.
+}//<ページ数変更>
+オタコン_000_1: {
+It'll take several shots before
+the rounds do any damage to
+the protected regions of the body.
+}
+/*敵の増援部隊は＃｛防弾衣、ボディ・アーマー｝＃を着てる。
+＃｛防弾衣、ボディ・アーマー｝＃で守られてる部分は何発か当て
+なければダメージを与えられないんだ。
+*/
+
+オタコン_001: {
+But only a single head shot
+is needed. Aim well while
+attacking in First Person View.
+}
+/*でも頭を狙えば一発だ。
+主観攻撃で頭を狙ってくれ。
+*/
+
+}//d
+
+
+//・ヒドゥンポイントの説明 h //e
+resource TO_ヒドゥンポイント__e {
+オタコン_000: {
+You'll be less likely to
+be spotted in the dark.
+}//<ページ数変更>
+オタコン_000_1: {
+But this won't work during
+a Clearing, so I recommend
+you try something else.
+}
+/*暗がりにいれば、敵も君を見つけにくい
+はずだ。でもクリアリングの時は
+見つかってしまうから気をつけてくれよ。
+*/
+//＠ヒドゥンって暗いところで見つかる？ //e
+}
+/**/
+
+
+//・マガジン投げ(持ってる時のみ) h //e
+resource TO_マガジン投げ__e {
+//＊ムービー t //e
+オタコン_000: {
+Select the magazine and throw
+it using the Weapon button.
+}//<ページ数変更>
+オタコン_000_1: {
+The noise will draw enemy
+soldiers toward wherever
+the magazine lands.
+}
+/*マガジンは装備して＃｛□、武器｝＃ボタンで
+投げられるんだ。マガジンが床に落ちた
+時の音で敵をおびき寄せたり出来る。
+*/
+
+オタコン_001: {
+How strong you push the button
+determines how large a swing
+you take.
+}//<ページ数変更>
+オタコン_001_1: {
+Take aim using First Person View
+and try to land it where it will lure
+the enemy away.
+}
+/*＃｛□、武器｝＃ボタンを押す強さで投擲距離が変わる。
+主観攻撃で狙って、うまく敵を誘導
+出来るポイントへ落とすんだ。
+*/
+
+}//d
+
+resource TO_ホールドアップ__e {
+//＊ムービー t //e
+オタコン_000: {
+You can hold someone at gunpoint
+by getting behind his back with your
+gun ready.
+}//<ページ数変更>
+オタコン_000_1: {
+What you choose to do with a
+hostage making no resistance
+after that is up to you.
+}
+/*敵の後ろから銃を突き付ければ、敵を
+ホールドアップさせられる。その後、
+無抵抗の相手をどうするかは君次第だ。
+*/
+}//d
+
+
+//・懸垂で握力アップ後 ＣＡＬＬ？ h //e
+resource TO_懸垂握力アップ後__e {
+オタコン_000: {
+Congrats, Snake! Looks like those
+pull-ups were worth it. Your grip
+strength is up!
+}
+/*スネーク、おめでとう！
+懸垂で体を鍛えた甲斐があったね。
+握力が上がったよ！！
+*/
+
+}//d
+
+
+
+
+//○前からある仕様 d //e
+//・武器・アイテム装備方法 d //e
+resource TO_武器装備品装備法１__e {
+オタコン_000: {
+When you need to arm yourself with
+a weapon, push down on the R2
+button to enter the Weapon mode.
+}
+/*武器を装備するには、まず、
+Ｒ２ボタンを押しっぱなしにして
+武器モードにするんだ。
+*/
+
+オタコン_001: {
+You see those weapon icons?
+}//<ページ数変更>
+オタコン_001_1: {
+Select the one you want by moving
+the left analog stick up and down...
+}//<ページ数変更>
+オタコン_001_2: {
+and matching up the icon
+to the lower right spot.
+}
+/*武器のアイコンが表示されるだろ。
+その中から使いたい武器を左スティック
+の上下で選んで右下に合わせるんだ。
+*/
+
+オタコン_002: {
+If you have several weapons
+of the same type, they'll be
+displayed in a row.
+}
+/*同じ系統の武器をいくつか持っている
+時はアイコンが横に並んで表示される。
+*/
+
+オタコン_003: {
+Select the one you want by
+moving the left analog stick
+right and left
+}//<ページ数変更>
+オタコン_003_1: {
+and placing the icon
+to the far right spot.
+}
+/*その中から使いたい武器を
+左スティックの左右で一番右に
+合わせてくれ。
+*/
+
+オタコン_004: {
+Then let go of the R2 button to
+arm yourself with the weapon.
+}
+/*そこでＲ２ボタンを離せば、
+その武器を装備出来るってわけさ。
+*/
+
+オタコン_005: {
+If you need to know the finer points
+of using each of the weapons,
+}//<ページ数変更>
+オタコン_005_1: {
+just take a look at the
+guidance window.
+}
+/*それぞれの武器の詳しい使い方は
+ウィンドウの中の説明を読んでくれ。
+*/
+}
+
+
+resource TO_武器装備品装備法２__e {
+オタコン_000: {
+If it's items, like rations,
+that you need to select,
+}//<ページ数変更>
+オタコン_000_1: {
+just follow the same procedure,
+but with the L2 button.
+}
+/*レーションとかの装備品を
+装備したい時はＬ２ボタンで
+同じことをすればいい。
+*/
+
+}//d
+
+resource TO_武器装備品装備法従来型１__e {
+オタコン_000: {
+When you need to arm yourself with
+a weapon, hold down on the R2 button
+to enter the Weapon mode.
+}
+/*武器を装備するには、まず、
+Ｒ２ボタンを押しっぱなしにして
+武器モードにするんだ。
+*/
+
+オタコン_001: {
+You see those weapon icons?
+}//<ページ数変更>
+オタコン_001_1: {
+Select the one you want by moving
+the left analog stick up and down...
+}//<ページ数変更>
+オタコン_001_2: {
+and matching up the icon
+to the lower right spot.
+}
+/*武器のアイコンが表示されるだろ。
+その中から使いたい武器を左スティック
+の上下で選んで右下に合わせるんだ。
+*/
+
+オタコン_002: {
+Then let go of the R2 button to
+arm yourself with the weapon.
+}
+/*そこでＲ２ボタンを離せば、
+その武器を装備出来るってわけさ。
+*/
+
+オタコン_003: {
+If you need to know the finer points
+of using each of the weapons,
+}//<ページ数変更>
+オタコン_003_1: {
+just take a look at the
+guidance window.
+}
+/*それぞれの武器の詳しい使い方は
+ウィンドウの中の説明を読んでくれ。
+*/
+
+}
+/**/
+
+resource TO_武器装備品装備法従来型２__e {
+オタコン_000: {
+If it's items like rations
+that you need to select,
+}//<ページ数変更>
+オタコン_000_1: {
+just follow the same procedure,
+but with the L2 button.
+}
+/*レーションとかの装備品を
+装備したい時はＬ２ボタンで
+同じことをすればいい。
+*/
+
+}
+
+
+//・無線ＣＡＬＬ。一度も任意ＣＡＬＬ受信していない時 h //e
+resource TO_無線ＣＡＬＬ__e {
+オタコン_000: {
+Snake, when I have something
+urgent to tell you, I'll raise you
+on the Codec.
+}
+/*スネーク、僕の方から緊急に伝えたい
+ことがある場合はＣＡＬＬする。
+*/
+#ifdef d:XBOX
+オタコン_001: {
+When you see the CALL sign, hit
+the Codec button to receive,
+all right?
+}
+#else
+オタコン_001: {
+When you see the CALL sign, hit
+the SELECT button to receive,
+all right?
+}
+#endif
+/*ＣＡＬＬサインが出たら、
+ＳＥＬＥＣＴボタンを押して
+受信するんだ。いいね。
+*/
+
+}//d
+
+
+//・パンチ・キック h //e
+resource TO_パンチキック__e {
+//＊ムービー t //e
+オタコン_000: {
+Snake, once you get close enough
+for Close Quarters Combat, forget
+the weapons.
+}//<ページ数変更>
+オタコン_000_1: {
+Push the Punch button to take
+a swing; punching is an effective,
+noiseless way to take out enemies.
+}
+/*スネーク、接近戦になったら格闘だ。
+＃｛○、パンチ｝＃ボタンでパンチが出せる。
+音を立てずに攻撃出来るはずだ。
+*/
+
+オタコン_001: {
+Hit the Punch button repeatedly to
+unleash combo attacks and pummel
+the enemy.
+}//<ページ数変更>
+オタコン_001_1: {
+You can also use the
+First Person View.
+}
+/*＃｛○、パンチ｝＃ボタンを連打すれば＃｛連続技、コンボ｝＃になって
+敵を吹き飛ばせるし、主観攻撃も出来る。
+*/
+
+オタコン_002: {
+Of course, the biggest favor you
+can do yourself is to avoid getting
+in melee situations altogether.
+}
+/*でも一番いいのは、接近戦になるような
+局面はさけることだ。
+*/
+
+}//d
+
+//・投げ h //e
+resource TO_投げ__e {
+//＊ムービー t //e
+オタコン_000: {
+As long as you have
+no weapons selected,
+}//<ページ数変更>
+#ifdef d:XBOX
+オタコン_000_1: {
+you can throw an enemy with the 
+Weapon button and the left thumbstick.
+}//<ページ数変更>
+#else
+オタコン_000_1: {
+you can throw an enemy with
+the Weapon button and the left
+analog stick.
+}//<ページ数変更>
+#endif
+オタコン_000_2: {
+Just get in close and hit these
+controls at the same time. 
+}
+/*武器を装備していない時は投げ技が使え
+る。やり方は敵の近くで左スティックを
+入れながら＃｛□、武器｝＃ボタンを押せばいい。
+*/
+
+オタコン_001: {
+They'll be down on the ground
+afterwards, and you may even
+able to knock them unconscious.
+}
+/*敵を地面に倒せるし、うまくすれば
+気絶させることも出来るはずだ。
+*/
+
+}//d
+
+
+//・首絞め h //e
+resource TO_首締め１__e {
+//＊ムービー t //e
+オタコン_000: {
+The other attack option when
+you're unarmed is the chokehold.
+}
+/*スネーク、武器を装備していない時は、
+投げ技の他にも敵の首を絞めることが
+出来る。
+*/
+}
+
+
+resource TO_首締め２__e {
+オタコン_000: {
+Move in close to the enemy
+from behind and push the
+Weapon button
+}//<ページ数変更>
+#ifdef d:XBOX
+オタコン_000_1: {
+without moving the left thumbstick.
+}
+#else
+オタコン_000_1: {
+without moving the
+left analog stick.
+}
+#endif
+/*首を絞めるには、敵の後ろから
+近づいて左スティックを入れずに
+＃｛□、武器｝＃ボタンを押すんだ。
+*/
+
+オタコン_001: {
+Hit the Weapon button repeatedly
+to break the enemy's neck.
+}//<ページ数変更>
+オタコン_001_1: {
+Keep it pushed down if you want
+to move around and drag him away
+with you.
+}
+/*そのまま＃｛□、武器｝＃ボタンを連打すれば、
+敵を倒せる。押しっぱなしにすれば
+敵を引きずって移動することも出来る。
+*/
+}
+
+
+resource TO_首締め３__e {
+オタコン_000: {
+Remember, you can only
+do this from the back.
+}//<ページ数変更>
+オタコン_000_1: {
+You can't perform a chokehold
+while facing someone. Be careful.
+}
+/*でも気をつけてくれ。敵の正面からじゃ
+首は絞められない。首絞めを仕掛ける
+時は必ず相手の後ろに回りこむんだ。
+*/
+
+}//d
+
+
+//・壁コンコン h //e
+resource TO_張り付きコンコン１__e {
+//＊ムービー t //e
+#ifdef d:XBOX
+オタコン_000: {
+Move the left thumbstick toward
+the wall and keep it there to flatten
+yourself against the wall.
+}
+#else
+オタコン_000: {
+Move the left analog stick in the
+direction of a wall and keep it there
+to flatten yourself against the wall.
+}
+#endif
+/*壁の方向に向かって左スティックを
+押しっぱなしにすると、壁に張り付ける。
+*/
+}
+
+resource TO_張り付きコンコン２__e {
+//＊ムービー t //e
+オタコン_000: {
+Push the Punch button while in
+that position to knock on the
+wall and create a diversion.
+}
+/*壁に張り付いている時に＃｛○、パンチ｝＃ボタンを
+押せば、壁を叩いて物音を立てることが
+出来るんだ。
+*/
+}
+
+
+resource TO_張り付きコンコン３__e {
+//＊ムービー t //e
+オタコン_000: {
+If you plan carefully, you'll
+be able to lure sentries away
+from their posts.
+}
+/*うまくやれば持ち場から動こうとしない
+敵をおびき寄せたりすることも出来る
+はずだ。
+*/
+
+}//d
+
+
+
+//・普通のビハインド h //e
+resource TO_普通のビハインド１__e {
+//＊ムービー t //e
+オタコン_000: {
+When you're flattened against a
+surface behind a corner, you're
+in Corner View.
+}//<ページ数変更>
+オタコン_000_1: {
+You'll be able to survey the area
+without exposing yourself.
+}
+/*物陰の角に張り付くとビハインドモード
+になる。自分は隠れながら曲がり角の
+先とかを覗くことが出来るんだ。
+*/
+}
+
+
+resource TO_普通のビハインド２__e {
+//＊ムービー t //e
+#ifdef d:XBOX
+オタコン_000: {
+The Corner View lets you take a look
+ahead with the left step and right step 
+buttons,
+}//<ページ数変更>
+#else
+オタコン_000: {
+The Corner View lets you take a look
+ahead with the L2 and R2 buttons,
+}//<ページ数変更>
+#endif
+オタコン_000_1: {
+or you can jump out with
+your weapon ready.
+}
+/*ビハインドモードからはＬ２ボタン、
+Ｒ２ボタンで覗き込みをしたり、
+武器を構えて飛び出したり出来る。
+*/
+
+オタコン_001: {
+Take advantage of
+all the action.
+}
+/*うまく使ってくれ。
+*/
+
+}//d
+
+
+//・イントルード h //e
+resource TO_イントルード１__e {
+オタコン_000: {
+Use Crawl to get under
+desks and other objects.
+}//<ページ数変更>
+オタコン_000_1: {
+Once you're in enclosed space,
+you'll be in Intrusion View.
+}
+/*机の下とかにはホフクで潜り込める。
+そうやって狭い所に入り込んだ時は
+イントルードモードになるんだ。
+*/
+}
+
+
+resource TO_イントルード２__e {
+#ifdef d:XBOX
+オタコン_000: {
+In Intrusion View, you move forward
+by moving the left thumbstick Up, 
+back with Down,
+}//<ページ数変更>
+#else
+オタコン_000: {
+In Intrusion View, you move forward
+with the left analog stick Up, back
+with Down,
+}//<ページ数変更>
+#endif
+オタコン_000_1: {
+and left or right with the
+corresponding directions.
+}
+/*イントルードモードの時は
+左スティックの上で前進、下で後退、
+左右でその方向を向く。
+*/
+
+オタコン_001: {
+Use the First Person View button
+to take a look around or aim with
+precision.
+}
+/*主観ボタンを使えばまわりを見渡せるし、
+銃を撃つことも出来る。
+*/
+}
+
+
+resource TO_イントルード３__e {
+オタコン_000: {
+But if someone catches sight of
+you while you hide, you could be
+attacked.
+}//<ページ数変更>
+オタコン_000_1: {
+It's no guarantee against
+a Clearing either. 
+}
+/*でも隠れるところを敵に見られたら
+攻撃されることもあるし、クリアリング
+の時は見つかってしまうこともある。
+*/
+
+オタコン_001: {
+Entering Intrusion state doesn't
+mean you're absolutely safe.
+Keep that in mind.
+}
+/*イントルードに逃げ込めば
+安全ってわけじゃないってことだ。
+気をつけてくれ。
+*/
+
+}//d
+
+
+//・匍匐 h //e
+resource TO_ホフク１__e {
+//＊ムービー t //e
+オタコン_000: {
+Snake, push the Crawl button
+to crouch down.
+}//<ページ数変更>
+オタコン_000_1: {
+You'll definitely need it when
+you're taking cover behind low
+objects.
+}
+/*スネーク、＃｛×、ホフク｝＃ボタンを押すとしゃがむ
+ことが出来る。低い遮蔽物に隠れる時は
+しゃがまなきゃダメだ。
+*/
+}
+
+
+resource TO_ホフク２__e {
+//＊ムービー t //e
+#ifdef d:XBOX
+オタコン_000: {
+Move the left thumbstick while 
+you're crouching to crawl in
+that direction.
+}//<ページ数変更>
+#else
+オタコン_000: {
+Use the left analog stick while
+you're crouching to crawl in
+that direction.
+}//<ページ数変更>
+#endif
+オタコン_000_1: {
+Push the Crawl button
+again to stand up.
+}
+/*しゃがんでる時に左スティックを押すと、
+その方向にホフクする。立ち上がるには
+もう一度＃｛×、ホフク｝＃ボタンを押せばいい。
+*/
+}
+
+
+resource TO_ホフク３__e {
+//＊ムービー t //e
+オタコン_000: {
+Crawling is your best bet when you
+need to move silently, or get under
+something.
+}
+/*足音を立てたくない時や、机の下とかに
+潜り込みたい時はホフクすればいい。
+*/
+}
+
+
+resource TO_ホフク４__e {
+オタコン_000: {
+You can fire a handgun from
+prone position. It's a good
+stealth attack.
+}
+/*ハンドガンならホフクしながらでも
+撃つことが出来る。隠れながら攻撃
+したい時には役立つと思う。
+*/
+
+}//d
+
+//・アイテムボックス h //e
+resource TO_アイテムボックス１__e {
+オタコン_000: {
+Whenever you see an Item
+Box, you should acquire it.
+}//<ページ数変更>
+オタコン_000_1: {
+Take a closer look to
+see what the Item is.
+}
+/*アイテムボックスを見かけたら
+入手した方が良い。何のアイテムかは、
+よく見れば書いてあると思う。
+*/
+}
+
+
+resource TO_アイテムボックス２__e {
+//＊ムービー t //e
+オタコン_000: {
+When you take out an enemy, move
+his body out of the way and check
+for an Item Box.
+}//<ページ数変更>
+オタコン_000_1: {
+Don't leave it behind.
+}
+/*敵を倒して、その体を動かすと
+アイテムボックスを出すことがある。
+それを手に入れるのも忘れないようにね。
+*/
+
+}//d
+
+resource TO_アイテムボックス３__e {
+//＊ムービー t //e
+オタコン_000: {
+When you take out an enemy,
+an Item Box may appear.
+Don't leave it behind.
+}
+/*敵を倒すとアイテムボックスを
+出すことがある。それを手に入れるのも
+忘れないようにね。
+*/
+
+}//d
+
+
+
+//○その他 d //e
+//・隠密行動せよ。 h //e
+resource TO_発見されるな__e {
+オタコン_000: {
+Snake, don't let the
+enemy spot you.
+}//<ページ数変更>
+オタコン_000_1: {
+Once you've been discovered by a
+sentry, he'll call in reinforcements
+and there will be an attack.
+}
+/*スネーク、敵に見つからないように
+してくれよ。敵は君を見つけたら、
+当然仲間を呼んで攻撃してくる。
+*/
+
+オタコン_001: {
+Even you're no match for that
+level of organized assault.
+}//<ページ数変更>
+オタコン_001_1: {
+They have better weapons
+too, remember?
+}
+/*組織的に攻撃されたら、いくら君でも
+勝ち目はない。武装は向こうの方が
+上だしね。
+*/
+
+オタコン_002: {
+We aren't terrorists, okay?
+}//<ページ数変更>
+オタコン_002_1: {
+Avoid unnecessary confrontations
+and go for total stealth. All right?
+}
+/*僕らはテロリストじゃない。
+無用な戦闘はさけてくれ。
+あくまでも隠密行動だ。いいね。
+*/
+
+}//d
+
+
+
+//★デフォルト会話。当該アイテムを装備している時一回目のみ発生 d //e
+//武器 d //e
+//・Ｍ９ h //e
+resource TO_Ｍ９__e {
+オタコン_000: {
+What you're wielding right now
+is a converted Beretta M-92F,
+designed to fire tranquilizer rounds.
+}//<ページ数変更>
+オタコン_000_1: {
+A direct hit will knock
+the target unconscious.
+}
+/*君が装備してるのはベレッタＭ９２Ｆを
+改造した麻酔銃だ。命中すれば敵を
+眠らせることが出来るよ。
+*/
+
+
+オタコン_001: {
+Think of those rounds
+as tiny syringes.
+}
+/*麻酔弾は簡単に言えば小さな注射器
+みたいなものだ。
+*/
+
+オタコン_002: {
+The impact of the round causes
+the mixing of two chemicals in
+the shell.
+}//<ページ数変更>
+オタコン_002_1: {
+The resulting gas compresses
+a tiny piston＃−
+}//<ページ数変更>
+オタコン_002_2: {
+and injects the tranquilizer in the
+bullet's tip into the target's skin.
+}
+/*着弾時の慣性で薬品を混合してガスを
+発生させ、そのガスでピストンを押して、
+対象に麻酔を注入する仕組みになってる。
+*/
+
+オタコン_003: {
+The tranquilizer's effects are felt
+at different times depending on
+where the bullet lands.
+}
+/*麻酔弾は当たる場所によって、
+麻酔が効くまでの時間が
+変わってくるんだ。
+*/
+
+オタコン_004: {
+A head or heart shot will
+take effect immediately,
+}//<ページ数変更>
+オタコン_004_1: {
+but a round that hits somewhere
+like feet or hands will take a while.
+}//<ページ数変更>
+オタコン_004_2: {
+Use the First Person View
+Attack for maximum accuracy.
+}
+/*頭や心臓なら早いし手足なら時間が
+かかる。主観攻撃でうまく狙ってくれ。
+*/
+
+オタコン_005: {
+The gun is fitted with a suppressor,
+so there is no need to worry about
+alerting the enemy with the noise.
+}
+/*サプレッサー装備だから銃声で敵に
+見つかったりすることもないはずだ。
+*/
+
+オタコン_006: {
+But since it is a tranquilizer
+gun, the M9 has its limitations.
+}//<ページ数変更>
+オタコン_006_1: {
+All it can do is knock the enemy
+unconscious. Keep that in mind.
+}
+/*でもあくまでＭ９は麻酔銃だ。
+敵を眠らせるだけで倒せるわけじゃない。
+気をつけてくれ。
+*/
+
+}//d
+
+//・ＵＳＰ h //e
+resource TO_ＵＳＰ１__e {
+オタコン_000: {
+Snake, that handgun
+of yours is a USP.
+}
+/*スネーク、君が装備してるハンドガンは
+ＵＳＰだね。
+*/
+
+オタコン_001: {
+The USP comes in a variety of
+calibers, from a 9mm to a .45.
+}//<ページ数変更>
+オタコン_001_1: {
+Yours is a 9mm, with 15
+rounds per magazine.
+}
+/*ＵＳＰは９ｍｍとか４５口径とか色々な
+バリエントがあるんだけど、君のは
+口径９ｍｍ、装弾数１５発のモデルだ。
+*/
+
+}
+
+
+//製品版のみ t //e
+resource TO_ＵＳＰ２__e {
+オタコン_000: {
+It's also equipped with a flashlight
+for nighttime shooting.
+}//<ページ数変更>
+オタコン_000_1: {
+In the dark, select the USP
+and aim to turn on the light.
+}
+/*フラッシュライトもついてるね。
+暗いところでＵＳＰを装備して
+構えればライトがつくはずだ。
+*/
+}
+
+
+
+resource TO_ＵＳＰ３__e {
+オタコン_000: {
+Unlike the M9, the USP isn't
+suppressor-equipped.
+}//<ページ数変更>
+オタコン_000_1: {
+The gunshots may bring enemy
+reinforcements running, so be
+careful.
+}
+/*でもＭ９と違ってサプレッサーは
+付いてないから、発砲すれば当然
+銃声がする。撃つ時には注意してくれ。
+*/
+//ＸＸＸＸＸ //e
+
+}//d
+
+
+
+//・チャフ h //e
+resource TO_チャフ__e {
+オタコン_000: {
+Hey, you have a chaff grenade.
+}//<ページ数変更>
+オタコン_000_1: {
+You can use that to interfere
+with enemy radio communications...
+}//<ページ数変更>
+オタコン_000_2: {
+and electronic devices
+for a short time.
+}
+/*チャフ・グレネードを持ってるね。
+それを使えば少しの間、敵の無線や
+電子機器を妨害することが出来る。
+*/
+
+オタコン_001: {
+The chaff grenade is a weapon
+that disperses aluminum foil or
+metalcoated glass
+}//<ページ数変更>
+オタコン_001_1: {
+and plastic fibers to
+confuse the enemy radar.
+}
+/*チャフはアルミ箔とか金属コーティング
+したガラスやプラスティック繊維を散布
+してレーダーを妨害する電子戦兵器だ。
+*/
+
+オタコン_002: {
+What you have is a portable
+application of the chaff-
+launchers
+}//<ページ数変更>
+オタコン_002_1: {
+built into fighter planes.
+}
+/*君が持ってるのは戦闘機とかに
+搭載されるチャフ・ディスペンサーを
+携行用に小型化したものだね。
+*/
+
+オタコン_003: {
+When detonated, the grenade
+releases tiny chaff pieces
+}//<ページ数変更>
+オタコン_003_1: {
+as well as miniaturized active
+jammers using a small amount
+of explosives.
+}
+/*点火装置が発火すると微量の爆薬で
+多数のチャフ片と同時に
+＃｛小型妨害電波発信機、ミニ・アクティブ・ジャマー｝＃を散布する。
+*/
+
+オタコン_004: {
+The grenade can't create full-scale
+chaff corridors or chaff clouds,
+}//<ページ数変更>
+オタコン_004_1: {
+but will form a Radar Cross
+Section area large enough for
+single-personnel use.
+}
+/*大規模なチャフ＃｛回廊、コリドー｝＃やチャフ雲は作り出
+せないけど個人用としては充分な大きさ
+の＃｛レーダー有効反射面積、ＲＣＳ｝＃を形成出来る。
+*/
+
+オタコン_005: {
+This weapon is for electronic
+interference only, though.
+}//<ページ数変更>
+オタコン_005_1: {
+It has no effect on
+enemy personnel. 
+}
+/*でもあくまでも電子妨害用の手榴弾
+だから、それで敵を倒すことは出来ない。
+注意してくれ。
+*/
+
+}//d
+
+//・スタン h //e
+resource TO_スタン__e {
+オタコン_000: {
+The stun grenade in your equipment
+is for incapacitating enemies without
+killing them.
+}
+/*スタン・グレネードを装備してるね。
+それを使えば敵を殺さずに気絶させる
+ことが出来る。
+*/
+
+オタコン_001: {
+Stun grenades are non-lethal
+weapons that knock out enemy
+personnel
+}//<ページ数変更>
+オタコン_001_1: {
+with an intense flash of
+light and a burst of sound.
+}
+/*スタン・グレネードは強烈な光と音を
+発生させて人間を傷つけずに無力化する
+＃｛非殺傷兵器、ノン・リーサル・ウェポン｝＃だ。
+*/
+
+オタコン_002: {
+Once the grenade is airborne,
+a timed detonator ejects an
+internal cartridge＃−
+}//<ページ数変更>
+オタコン_002_1: {
+using a small amount
+of explosives.
+}
+/*投擲後、時限点火装置が作動すると、
+微量の火薬で内蔵のカートリッジが
+撃ち出される。
+*/
+
+オタコン_003: {
+The cartridge then explodes, and
+releases a flash rated at over a
+million candlepower,
+}//<ページ数変更>
+オタコン_003_1: {
+with an accompanying bang
+of over 200 decibels.
+}//<ページ数変更>
+オタコン_003_2: {
+The combinations of the flash and
+the bang temporarily overwhelms
+human sensory perceptions.
+}
+/*カートリッジは１００万カンデラ以上の
+閃光と２００デシベル以上の爆音を放出
+して爆発し、人間の感覚を失わせるんだ。
+*/
+
+オタコン_004: {
+There are no projectiles released,
+so it can only knock out enemies,
+not wound them. Keep that in mind.
+}
+/*体を傷つける破片は飛び散らないから、
+敵を気絶させるだけでダメージを
+負わせることは出来ない。注意してくれ。
+*/
+
+}//d
+
+//・マガジン h //e
+resource TO_マガジン__e {
+オタコン_000: {
+Snake, you have an empty magazine
+in your hand. Why are you still
+carrying that around?
+}
+/*スネーク、君が今持ってるのは、
+撃ち尽くした銃の弾倉だ。捨てずに
+取っておくなんて物持ちがいいね。
+*/
+//マガジン投げの説明 t //e
+
+}//d
+
+
+//装備 d //e
+//・軍用双眼鏡 h //e
+resource TO_双眼鏡__e {
+オタコン_000: {
+Good, you have a pair of binoculars.
+You'll be able to use them to survey
+enemy territory from a distance.
+}
+/*双眼鏡を装備してるね。
+それを使えば遠くから敵地を偵察出来る。
+*/
+
+オタコン_001: {
+They come with a zoom function
+and auto-focus, and have all the
+durability of military equipment.
+}//<ページ数変更>
+オタコン_001_1: {
+You won't have to worry
+about breakage with these.
+}
+/*ズーム機能もついてるし、フォーカスも
+オートだ。軍用品だから耐久性も問題
+ない。壊れたりする心配もないと思う。
+*/
+
+}//d
+
+//・レーション h //e
+resource TO_レーション__e {
+オタコン_000: {
+So you've got rations now.
+These are military food supplies,
+}//<ページ数変更>
+オタコン_000_1: {
+and allow you to recover
+some LIFE with use.
+}
+/*レーションを装備してるね。
+軍用の携帯糧食で、使うと＃｛ＬＩＦＥ、ライフ｝＃を
+ある程度回復するアイテムだ。
+*/
+
+オタコン_001: {
+If it is equipped in advance,
+}//<ページ数変更>
+オタコン_001_1: {
+the ration will automatically be
+used and LIFE will be regained
+when you receive damage.
+}
+/*装備しておけば＃｛ＬＩＦＥ、ライフ｝＃が無くなる
+瞬間、自動的に使って＃｛ＬＩＦＥ、ライフ｝＃を
+回復出来る。
+*/
+
+オタコン_002: {
+You can select it in the window and
+push the confirmation button to use
+the item on the spot.
+}
+/*ウィンドウで選んで＃｛○、決定｝＃ボタンを押せば、
+その場で使うことも出来る。
+*/
+
+オタコン_003: {
+Rations were designed to be
+carried and eaten on the field.
+}//<ページ数変更>
+オタコン_003_1: {
+They're all about functionality
+and calories.
+}
+/*レーションは初めから戦場で食べる
+ことを想定して作られた軍用携帯糧食だ。特に機能性とカロリーを重視してある。
+*/
+
+オタコン_004: {
+They use a special freeze-drying
+methods developed by NROC.
+}//<ページ数変更>
+オタコン_004_1: {
+They're compact, portable,
+and last for weeks.
+}
+/*＃｛米軍調理開発研究所、ＮＲＯＣ｝＃が開発した
+フリーズドライ方式を使っていて、小型
+軽量で日持ちもするように出来てるんだ。
+*/
+
+
+}//d
+
+
+//・軍用止血剤 h //e
+resource TO_止血剤１__e {
+オタコン_000: {
+You've picked up
+gel bandages, I see.
+}//<ページ数変更>
+オタコン_000_1: {
+When you're bleeding, select
+the bandage as an equipment
+to stop the blood.
+}
+/*止血剤を装備してるね。出血してる時に
+止血剤を使えば血を止められる。
+*/
+}
+
+//流血条件聞いてない場合 流血条件 t e//
+
+resource TO_止血剤２__e {
+オタコン_000: {
+The bandage is a type
+of alginate dressing.
+}//<ページ数変更>
+オタコン_000_1: {
+It's a highly absorbent pad
+that gels blood and other
+fluids on contact.
+}
+/*その止血剤はいわゆるアルギネート材
+だ。血液や体液を吸収してゲル化する
+アルギン酸繊維製の吸収パッドだよ。
+*/
+
+オタコン_001: {
+It releases calcium ions
+during absorption, hence
+the coagulating effect.
+}
+/*吸収する時にカルシウムイオンを
+放出するから止血効果が高いんだ。
+*/
+
+}//d
+
+
+//・軍用カメラ h //e
+resource TO_カメラ__e {
+オタコン_000: {
+OK, take out the digital camera.
+I want you to take a picture of
+the new Metal Gear.
+}
+/*デジタルカメラを装備してるね。
+それで新型メタルギアの写真を
+撮ってきてほしいんだ。
+*/
+
+オタコン_001: {
+But, don't forget; to save the
+pictures, you need a MEMORY
+CARD (PlayStation&@R2).
+}
+/*だけど注意してくれ。
+写真を記録するには“PlayStation2”
+専用メモリーカード(8MB)が必要なんだ。
+*/
+
+オタコン_002: {
+When you take pictures, don't
+forget to insert the MEMORY CARD
+(PlayStation&@R2)
+}//<ページ数変更>
+オタコン_002_1: {
+into the MEMORY CARD slot.
+}
+/*写真を撮る時は、忘れずにＭＥＭＯＲＹ 
+ＣＡＲＤ差込口へ“PlayStation2”専用
+メモリーカード(8MB)をセットしてくれ。
+*/
+
+オタコン_003: {
+You know, the camera has been
+an essential part of warfare for
+a while now.
+}//<ページ数変更>
+オタコン_003_1: {
+I heard that the Photo Corps
+of the US Army has been around
+for 100 years.
+}
+/*昔から戦場での偵察行動にカメラは
+必需品だっただろ。米軍の写真班は
+１００年前からあったって言うしね。
+*/
+
+
+}//d
+
+//・タバコ h //e
+resource TO_タバコ__e {
+オタコン_000: {
+Snake, are you smoking?
+You really should quit.
+}
+/*スネーク、煙草を吸ってるのかい？
+やめた方が良いと思うよ。
+*/
+
+オタコン_001: {
+First of all, it turns you into
+an instant target in the dark.
+}//<ページ数変更>
+オタコン_001_1: {
+As for what it means to your
+health, I won't even go there.
+}
+/*暗いところで吸えば火が目立って
+見つかりやすくなるし、何より健康に
+良くない。
+*/
+
+オタコン_002: {
+Remember what Naomi said
+about lung cancer rates?
+}//<ページ数変更>
+オタコン_002_1: {
+Everyone knows that it's
+a dangerous substance.
+}
+/*ナオミも肺癌の元だって言ってただろ。
+だいたい今時煙草なんて流行らない。
+*/
+
+スネーク_003: {
+So's war, and I've
+done that all my life.
+}
+/*悪いが流行には興味が無い。
+*/
+
+オタコン_004: {
+Well, you can screw up your own
+body if you like, but think about
+other people, okay?
+}
+/*ま、命を縮めるのは君の勝手だけど、
+人の迷惑になるようなことをしちゃ
+ダメだよ。
+*/
+
+スネーク_005: {
+This is the new kind that has
+almost no second-hand smoke.
+It won't bother anyone.
+}
+/*こいつは副流煙の出ない先折り煙草だ。
+他人に迷惑はかけんよ。
+*/
+
+オタコン_006: {
+Oh really? Didn't I see you
+toss the butt off the bridge?
+Littering, polluting...
+}
+/*そうかな？
+君、橋の上でポイ捨てしたろ？
+*/
+
+スネーク_007: {
+Ummm...
+}
+/*……。*/
+
+オタコン_008: {
+You have a long way
+to go, my friend.
+}
+/*まったく！
+*/
+
+}//d
+
+
+//・耳栓 h //e
+resource TO_耳栓__e {
+オタコン_000: {
+Snake, the equipment you've got
+there is a pair of earplugs.
+}
+/*スネーク、今君が装備してる装備品は
+耳栓だ。
+*/
+
+オタコン_001: {
+You usually have reduced hearing
+for a while after setting off a stun
+grenade,
+}//<ページ数変更>
+オタコン_001_1: {
+but not if you have those on.
+}
+/*普通、スタン・グレネードを使うと
+しばらく耳が聞こえにくくなるんだけど
+それをつけてれば大丈夫だ。
+*/
+
+オタコン_002: {
+But you won't hear too well as
+long as you have them on, either.
+}//<ページ数変更>
+オタコン_002_1: {
+Use them only with stun grenades.
+}
+/*でも普段より聞こえにくくなることは
+確かだから、スタンを使う時とか以外は
+つけない方が良いかもね。
+*/
+
+}//d
+
+//・ジアゼパム h //e
+resource TO_ジアゼパム__e {
+オタコン_000: {
+You have Pentazemin
+in your inventory.
+}//<ページ数変更>
+オタコン_000_1: {
+If you need to take some, select
+it in the Item Window and push
+the Enter button.
+}
+/*ジアゼパムを装備してるね。
+アイテムウィンドウで選んで
+＃｛○、決定｝＃ボタンを押せば使うことが出来る。
+*/
+
+オタコン_001: {
+Pentazemin is a mild tranquilizer
+used to treat clinical depression,
+}//<ページ数変更>
+オタコン_001_1: {
+obsessive-compulsive
+behavior, and anxiety.
+}
+/*ジアゼパムは鬱病とか自律神経失調症、不安神経症なんかの治療に使われる
+マイナー・トランキライザーだ。
+*/
+
+オタコン_002: {
+It belongs to the
+benzodiazepinate family,
+}//<ページ数変更>
+オタコン_002_1: {
+and along with its antidepressant
+and anti-anxiety qualities, it
+suppresses convulsions.
+}
+/*ベンゾジアゼピン系の抗不安薬で
+鎮静作用、抗鬱作用と同時に
+抗痙攣作用もある。
+*/
+
+オタコン_003: {
+Take it when you have a tough shot
+ahead with the sniper rifle and you
+need to minimize shakiness.
+}//<ページ数変更>
+オタコン_003_1: {
+But I guess you don't
+have one of those yet.
+}
+/*スナイパー・ライフルで精密狙撃を
+する時とかに手ぶれを抑えられるよ。
+でも持ってないんじゃ意味ないか……。
+*/
+
+オタコン_004: {
+Well... you can also try some
+if you're feeling really seasick.
+}
+/*そうだね。船酔いがひどいんだったら
+飲んでみると良いと思うよ。
+*/
+
+}//d
+
+//・ダンボール h //e
+resource TO_ダンボール__e {
+オタコン_000: {
+Using the old cardboard box trick,
+huh? Looks good on you, Snake.
+}//<ページ数変更>
+オタコン_000_1: {
+Camouflage is the best way to
+slip past enemy surveillance.
+}
+/*ダンボール箱をかぶってるね！
+スネークはやっぱりそうでなくっちゃ。
+うまく使って敵の目を誤魔化してくれ。
+*/
+
+オタコン_001: {
+But cardboard is just paper
+when it comes down to it.
+}//<ページ数変更>
+オタコン_001_1: {
+It won't withstand any
+serious assault for long.
+}
+/*でもダンボールは所詮紙だってことを
+忘れないでくれ。敵から何度も攻撃を
+受けたら当然破けてしまう。
+*/
+
+オタコン_002: {
+Don't rely on the trick too many
+times, either. And I recommend
+you keep it dry.
+}
+/*使い過ぎてもヘタってくるから
+気をつけてくれ。あまり濡らしたり
+しない方がいいんじゃないかな？
+*/
+
+}//d
+
+
+//追加分
+
+
+resource TO_オルガ戦見つからずに移動せよ__e {
+オタコン_000: {
+Snake, don't let her figure
+out your current position.
+}//<ページ数変更>
+オタコン_000_1: {
+Stay hidden behind objects
+while you move, and keep
+her in the dark.
+}
+/*スネーク、相手に君の位置を悟らせるな。
+物陰に隠れたまま移動すれば、相手は
+君を見失うはずだ。
+*/
+オタコン_001: {
+She'll lower her guard at some
+point. That's your opportunity.
+}
+/*必ず隙が出来る。そこを狙うんだ。
+*/
+
+}//d
+
+resource TO_オルガ戦幌は通らない__e {
+オタコン_000: {
+Snake, she's shooting at you
+from behind the tarpaulin.
+}//<ページ数変更>
+オタコン_000_1: {
+She can see you, but the tarp's
+completely blocking your view.
+}
+/*スネーク、相手は幌に隠れながら
+撃ってきてる。向こうからは
+君が見えるけど、君からは見えない。
+*/
+
+オタコン_001: {
+You haven't got a prayer like this.
+Do something about that tarp!
+}
+/*このままじゃ分が悪すぎる。
+その幌を何とかするんだ！
+*/
+
+}//d
+
+resource TO_オルガ戦ライト眩惑__e {
+オタコン_000: {
+Snake, get rid of that light!
+You can't see anything with
+that glare.
+}//<ページ数変更>
+オタコン_000_1: {
+Shoot it out or you're
+a sitting duck!
+}
+/*スネーク、そのライトはマズイ！
+光に眩惑されて相手が見えなくなる。
+ライトを消すんだ！
+*/
+
+}//d
+
+resource TO_オルガ戦ヘッドショット__e {
+オタコン_000: {
+The handgun's effects vary
+depending on where you
+manage to land a shot.
+}
+/*ハンドガンの弾は相手のどこに
+当たるかによって威力が変わって
+くるんだ。
+*/
+
+オタコン_001: {
+Aim for the head for the highest
+degree of damage. Use the First
+Person View to take aim.
+}
+/*頭を狙えばより大きなダメージを
+与えられる。主観攻撃でよく狙うんだ。
+*/
+
+}//d
+
+resource TO_Ｌ１ボタンロックオン__e {
+#ifdef d:XBOX
+オタコン_000: {
+Aim the gun and push the lock-on 
+button to automatically lock onto 
+the target.
+}
+#else
+オタコン_000: {
+Aim the gun and push the
+L1 button to automatically
+lock onto the target.
+}
+#endif
+/*銃を構えてＬ１ボタンを押すと
+敵に向かって自動的に照準を合わせる。
+*/
+
+オタコン_001: {
+You can use this feature from
+First Person View or from Top
+View as well.
+}
+/*＃｛俯瞰、フカン｝＃でも主観でも出来るから、
+有効に使ってくれ。
+*/
+
+}//d
+
+resource TO_階段魔人__e {
+オタコン_000: {
+Snake, they're waiting to ambush
+you on top of the stairs!
+}//<ページ数変更>
+オタコン_000_1: {
+There's no way you can make it up
+while being sniped from above.
+}
+/*スネーク、階段の上に敵が待ち伏せ
+してる！上から狙い撃ちされたら、
+とてもその階段を上るのは無理だ！
+*/
+
+オタコン_001: {
+You can't get up those stairs until
+you've shaken the enemy from your
+trail. Get out of there for now!
+}
+/*階段を上るには敵を振り切るしかない。
+とりあえず逃げるんだ！
+*/
+
+}//d
+
+
+resource TO_エラー__e {
+オタコン_000: {
+BUG
+}
+/*ばぐっち！*/
+}
+
+
+resource TO_debug1__e {
+オタコン_000: {
+debug1
+}
+/**/
+}
+
+
+//追加ファイル達
+resource TO_監視カメラ４__e {
+オタコン_000: {
+There's a blind spot right
+beneath the camera. Use
+it to buy some time.
+}
+/*あとカメラの真下は死角になってる。
+それも利用するんだ。
+*/
+}
+
+
+resource TO_操舵室デモ後オルガ戦前__e {
+オタコン_000: {
+Snake, is that shadow...?
+}
+/*スネーク、あの影は……？*/
+
+スネーク_001: {
+Who is that?
+...I'll check it out.
+}
+/*正体を調べる必要があるな。*/
+
+オタコン_002: {
+Watch yourself Snake.
+}
+/*気をつけてくれよ……。*/
+}
+
+
+//------------------------------
+//続・追加ファイル達
+//------------------------------
+resource TO_オルガ戦前__e {
+オタコン_000: {
+There's something about that
+soldier who was standing
+outside the infrastructure.
+}//<ページ数変更>
+オタコン_000_1: {
+I think you should check it out --
+use the hatch on the port side of
+the infrastructure
+}//<ページ数変更>
+オタコン_000_2: {
+to get out onto the
+navigational deck.
+}
+/*船橋の外にいた兵士……何か気になるな。
+調べておいた方がいい。船橋左舷の
+水密扉から航海甲板に出られるはずだ。
+*/
+オタコン_001: {
+That's where you need to go.
+}
+/*航海甲板に向かってくれ。*/
+}//d
+
+
+
+resource TO_銃撃戦飛び出し撃ち１__e {
+オタコン_000: {
+I don't think they're going to
+let you into the hold so easily.
+}
+/*敵も黙って君を船倉に入れる気は
+ないみたいだ。
+*/
+スネーク_001: {
+I'll have to stand my ground and
+fight. I can try a Jump-out shot
+from Corner View.
+}
+/*ああ。ここは戦うしかないようだ。
+ビハインドからの飛び出し撃ちを
+使ってみるか……。
+*/
+オタコン_002: {
+Good idea.
+}
+/*そうだね。*/
+}//d
+
+//二回目以降 t //e
+resource TO_銃撃戦飛び出し撃ち２__e {
+オタコン_000: {
+If you go with Jump-out shots,
+you can wait behind cover for
+the right time to get in a shot.
+}
+/*飛び出し撃ちを活用すれば、遮蔽物に
+隠れながら相手の隙をみて銃撃を加える
+ことが出来るだろう。
+*/
+オタコン_001: {
+Select your gun and flatten
+yourself against an object,
+then switch to Corner View.
+}
+/*やり方は、まず銃を装備してから
+遮蔽物に張り付いてビハインドカメラに
+する。
+*/
+オタコン_002: {
+Hit the Attack button to pop out
+and catch the enemy off guard.
+}//<ページ数変更>
+オタコン_002_1: {
+Let go of the Attack button
+to get back behind cover.
+}
+/*その状態から＃｛□、武器｝＃ボタンを押せば
+飛び出し撃ちができる。＃｛□、武器｝＃ボタンを
+離せば素早く遮蔽物の陰に戻る。
+*/
+オタコン_003: {
+Wait for a lull in the
+enemy fire to strike.
+}
+/*敵の弾幕が途切れる瞬間を
+見極めて攻撃に転じるんだ。*/
+}//d
+
+resource TO_タクティカルリロード１__e {
+オタコン_000: {
+Snake, what if you run out of
+ammunition during an exchange
+of fire?
+}//<ページ数変更>
+オタコン_000_1: {
+Leaves you suddenly
+vulnerable, doesn't it?
+}
+/*スネーク、撃ち合っている最中に弾が
+切れたら大きな隙を相手に見せることに
+なるんじゃないか？
+*/
+スネーク_001: {
+That wouldn't happen
+with Tactical Reload.
+}
+/*ああ。だがタクティカル・リロードを
+使えばそんなことにはならん。
+*/
+オタコン_002: {
+So change the magazine
+before it becomes empty.
+}//<ページ数変更>
+オタコン_002_1: {
+That way, you would never run
+out when you're actually facing
+the enemy.
+}
+/*敵の目の前で弾切れを起こす危険を
+回避するため、弾倉が空になる前に
+あらかじめ弾倉を交換しておく戦術だね。
+*/
+スネーク_003: {
+Exactly.
+}
+/*そうだ。*/
+}//d
+
+//二回目以降 t //e
+resource TO_タクティカルリロード２__e {
+オタコン_000: {
+To perform a Tactical Reload,
+unequip the gun, then equip it
+again.
+}
+/*タクティカル・リロードをするには
+銃を装備から外してからもう一度
+装備し直せばいい。
+*/
+オタコン_001: {
+The gun should now be loaded
+with a fresh magazine.
+}//<ページ数変更>
+#ifdef d:XBOX
+オタコン_001_1: {
+Use the quick change button --
+the weapon menu button -- for this one.
+}
+#else
+オタコン_001_1: {
+Use the quick change button --
+the R2 button -- for this one.
+}
+#endif
+/*それで新しい弾倉を装填した状態になる。Ｒ２ボタンを素早く押してクイック
+チェンジを使うといいだろう。
+*/
+}//d
+
+resource TO_グレネード注意__e {
+オタコン_000: {
+Snake, they've got grenades.
+If you see an incoming one,
+just get the hell out of there.
+}
+/*スネーク、敵はグレネードも装備して
+いる。グレネードを投げられたらすぐに
+逃げるんだ。
+*/
+}//d
+
+resource TO_全滅させなければ駄目__e {
+オタコン_000: {
+Snake, the enemy's serious
+about not letting you through.
+}//<ページ数変更>
+オタコン_000_1: {
+You have no choice but to take
+all of them out. Start firing.
+}
+/*スネーク、敵も必死みたいだ。
+そこを突破するには敵を全て倒すしか
+ないだろう。銃で応戦するんだ。
+*/
+}//d
+
+resource TO_プロジェクタ切替__e {
+オタコン_000: {
+There are two projectors
+in that cargo hold.
+}//<ページ数変更>
+オタコン_000_1: {
+It looks like the feed is
+being switched back and
+forth between them.
+}
+/*その船倉にはプロジェクタが二つある。映像は交互に切り替えられている
+みたいだ。
+*/
+オタコン_001: {
+The Marines would naturally be
+looking towards the projector
+that's currently in use.
+}
+/*海兵隊員達は当然映像の映っているプロジェクタの方に注目している。
+*/
+オタコン_002: {
+Which means that when the switch
+takes place, they'll change the
+direction of their focus too.
+}
+/*つまりプロジェクタが切り替わったら
+海兵隊員達の見ている方向もかわるって
+ことだ。
+*/
+オタコン_003: {
+Be on the lookout.
+If they see you, it's all over.
+}
+/*気をつけてくれ。
+見つかったら終わりだよ。
+*/
+}//d
+
+resource TO_かねきゃっち__e {
+オタコン_000: {
+After pushing the Crawl button
+in Hanging mode and falling,
+}//<ページ数変更>
+オタコン_000_1: {
+If you see a good handhold,
+try pushing the Action button.
+}
+/*エルードから×ボタンで落下している
+途中につかめそうな場所があったら
+△ボタンを押してみるといい。
+*/
+オタコン_001: {
+If you hit it just right, you
+should be able to grab on.
+}//<ページ数変更>
+オタコン_001_1: {
+It won't matter if your direction
+if off a little bit. Experiment with
+it.
+}
+/*うまくすればつかまることが出来る
+はずだ。多少方向がずれても大丈夫。
+いろいろ試してみてくれ。
+*/
+}//d
+
+resource TO_かねきっく__e {
+オタコン_000: {
+When you're springing up from
+Hanging mode with the Action
+button,
+}//<ページ数変更>
+オタコン_000_1: {
+you can use the momentum
+to knee someone.
+}
+/*エルードから△ボタンで這い上がる時、
+反動で近くにいる敵にひざを打ち込む
+ことが出来る。
+*/
+オタコン_001: {
+If you see an enemy walking
+near the railings, give it a try.
+}
+/*手すりのあたりを歩いている敵が
+いたら狙ってみるといい。
+*/
+}//d
+
+resource TO_インケン投げ__e {
+オタコン_000: {
+Select the grenade
+when you take a peek.
+}//<ページ数変更>
+オタコン_000_1: {
+You can then use the Weapon
+button to throw the grenade
+while taking cover behind objects.
+}
+/*覗き込みをしている時にグレネードを
+装備していれば＃｛□、武器｝＃ボタンで遮蔽物に隠れ
+ながらグレネードを投げることが出来る。
+*/
+}//d
+
+resource TO_ホールドアップアイテム搾取１__e {
+オタコン_000: {
+If you get lucky, you could seize
+an item from someone after you
+hold them up.
+}
+/*敵をホールドアップさせた後、
+うまくやればアイテムを奪うことが
+出来るだろう。
+*/
+}//d
+
+//ドッグタグホールドアップのみの場合 t //e
+
+resource TO_ホールドアップアイテム搾取２__e {
+オタコン_000: {
+There are some items you can only
+acquire from holdups. If you've got
+the time, try it out.
+}
+/*ホールドアップからしか手に入らない
+アイテムもあるみたいだ。余裕があれば
+試してみるといい。
+*/
+}//d
+
+resource TO_ドッグタグ取得後__e {
+オタコン_000: {
+Put your Thermal Goggles on and
+look at the enemy's neck area.
+}
+/*＃｛赤外線、サーマル｝＃ゴーグルで敵兵士の
+首のあたりをよく見てみるといい。
+*/
+オタコン_001: {
+You should be able to see
+if he has dog tags on.
+}
+/*ドッグタグを持っているかどうかが
+わかるはずだ。
+*/
+}//d
+
+
+
+
+//信管ヤバイよ！ＸＸＸＸＸＸＸｘｘ
+resource TO_グレネード__e {
+//vox t:vcXXXXXXX {
+オタコン_000: {
+I see you have the
+grenade equipped.
+}//<ページ数変更>
+オタコン_000_1: {
+It's an anti-personnel frag
+grenade -- throw it at the
+enemy
+}//<ページ数変更>
+オタコン_000_2: {
+and the blast and fragments
+will take the enemy out.
+}
+/*グレネードを装備してるね。
+投擲用の対人破片手榴弾だ。
+爆風と破片で敵を倒すことが出来る。
+*/
+オタコン_001: {
+Watch out -- pushing the Weapon
+button will pull out the pin.
+}//<ページ数変更>
+オタコン_001_1: {
+Release the Weapon
+button to toss it.
+}//<ページ数変更>
+オタコン_001_2: {
+The throwing distance depends
+on how hard you push the Weapon
+button.
+}
+/*□ボタンを押すと信管を抜いて構え、
+□ボタンを離すと投げる。□ボタンを
+押した時の強さで投擲距離が変わるよ。
+*/
+オタコン_002: {
+After pulling the pin, you'll
+have five seconds until the
+grenade explodes.
+}//<ページ数変更>
+オタコン_002_1: {
+Get familiar with changing the
+timing and throwing distance of
+the grenade before it goes off.
+}
+/*構えてから爆発するまで約５秒ある。
+爆発するまでの時間と投げる距離が
+変えられる点をうまく使いこなすんだ。
+*/
+//dv}//v
+}//d
+
+
+resource TO_赤外線ゴーグル１__e {
+//vox t:vcxxxxxxxxxx {
+オタコン_000: {
+You have the Thermal
+Goggles equipped huh?
+}//<ページ数変更>
+オタコン_000_1: {
+They provide night vision by using
+variances in heat distribution to
+create an image.
+}
+/*サーマル赤外線ゴーグルを使ってるね。
+赤外線ゴーグルは物体の熱分布を
+映像化する暗視装置だ。
+*/
+
+オタコン_001: {
+It uses a two dimensional solid
+state projection system to create
+high-res images
+}//<ページ数変更>
+オタコン_001_1: {
+at sixty fps in real-time.
+}
+/*二次元固体撮像素子方式を採用して
+高解像度、高感度で６０フレームの
+リアルタイム映像を実現している。
+*/
+//dv}//v
+}//d
+
+//ドッグタグもっている場合
+resource TO_赤外線ゴーグル２__e {
+//vox t:vcxxxxxxxxxx {
+オタコン_000: {
+By using the Thermal Goggles, you
+can take a look at the enemy's neck
+to see if they have dog tags or not.
+}
+/*サーマル赤外線ゴーグルで敵兵士の
+首もとを見てみればドッグタグを
+もってるかどうかわかるかもしれないな。
+*/
+//dv}//v
+}//d
+
+resource TO_Ｍ４__e {
+//vox t:vcxxxxxxxxxx {
+オタコン_000: {
+I see you have the M4 equipped.
+It's a standard issue assault
+carbine for SOCOM troops.
+}
+/*Ｍ４を持ってるね。
+＃｛米特殊作戦、ＵＳ．ＳＯＯＭ｝＃コマンドで正式採用されてる
+アサルトカービン銃だ。
+*/
+
+オタコン_001: {
+Like the M16A2, it uses 5.56mm
+cartridges, and can hold thirty
+per magazine.
+}
+/*Ｍ１６Ａ２と同じ５．５６ｍｍ弾を使う。
+装弾数は３０発だ
+*/
+オタコン_002: {
+It features a flat top upper
+receiver and a detachable
+carrying handle,
+}//<ページ数変更>
+オタコン_002_1: {
+and it can be configured
+to the specifications of
+the Special Forces.
+}
+/*フラットトップレシーバーと着脱式
+キャリングハンドルなど特殊部隊の
+要求に合わせた仕様になっている。
+*/
+//dv}//v
+}//d
+
+resource TO_生体センサー__e {
+//vox t:vcxxxxxxxxxx {
+オタコン_000: {
+You're using the Anti-personnel
+Sensor, I see.
+}//<ページ数変更>
+オタコン_000_1: {
+It measures the electromagnetic
+fields and heartbeat of life forms＃−
+}//<ページ数変更>
+オタコン_000_2: {
+and converts the data
+into vibrations.
+}
+/*生体センサーを使っているね。
+人間の鼓動や微弱な生体電磁波を
+検知して振動に変換するデバイスだ。
+*/
+オタコン_001: {
+If an enemy draws near,
+it will vibrate.
+}//<ページ数変更>
+オタコン_001_1: {
+The stronger the vibration,
+the closer the enemy is.
+}
+/*敵が接近すると振動して知らせてくれる。
+振動が強いほど敵が近くにいるって
+ことだ。
+*/
+オタコン_002: {
+But, remember, when using
+the Anti-personnel Sensor,
+}//<ページ数変更>
+オタコン_002_1: {
+you'll only be able to feel
+the vibrations coming from
+the sensor.
+}
+/*ただ、生体センサーを使ってる間は
+センサーが発生させる振動しか感じ取れ
+なくなるってことは覚えておいてくれ。
+*/
+//dv}//v
+}//d
+
+resource TO_機関室エルード__e {
+//vox t:vcXXXXXXXX {
+オタコン_000: {
+Snake, the engine room is
+full of solid structures --
+}//<ページ数変更>
+オタコン_000_1: {
+you could probably use them
+to get away when the enemy
+is chasing you.
+}
+/*スネーク、機関室は立体的な構造に
+なっている。それを利用すれば敵に
+追われても逃げられるかもしれない。
+*/
+
+オタコン_001: {
+Use the Hanging mode wisely.
+}
+/*エルードをうまく使うんだ。*/
+//dv}//v
+}//d
+
+resource TO_タンカーカメラうんちく１__e {
+//vox t:vcXXXXXXXX {
+オタコン_000: {
+I'll explain how
+to use the camera.
+}
+/*カメラの説明をしておこうか。*/
+
+オタコン_001: {
+That digital camera you have was
+specially made to take pictures of
+the prototype Metal Gear.
+}
+/*君が持ってるのは新型メタルギアの
+写真を撮るために作った特別製の
+デジタルカメラだ。
+*/
+
+オタコン_002: {
+When a picture is taken, the screen
+data is first stored in the camera's
+internal memory.
+}
+/*写真を撮るとその画像データはまず
+カメラ本体に内蔵されたメモリーの中に
+格納される。
+*/
+
+オタコン_003: {
+Then it's automatically processed
+through various algorithms to
+protect against tampering.
+}
+/*そこで電子的改竄を防ぐための
+色々な処理が自動的に行われるように
+なってるんだ。
+*/
+
+オタコン_004: {
+Each picture is electronically
+stamped and distinctively
+encrypted.
+}//<ページ数変更>
+オタコン_004_1: {
+So, in the off chance that someone
+alters the data during transmission,
+we'll know immediately.
+}
+/*電子透かしを埋め込んだり特製の暗号を
+かけたりね。だから万一転送途中で誰か
+にデータをいじられてもすぐにわかる。
+*/
+
+オタコン_005: {
+Oh -- there's a limit to the
+internal memory's capacity.
+}
+/*ただ、カメラの内蔵メモリーの容量には
+限界があるんだ。
+*/
+
+オタコン_006: {
+If the memory becomes full,
+overwrite the pictures you
+don't need anymore.
+}
+/*メモリーがいっぱいになったら、
+いらない写真に上書きするといい。
+*/
+//dv}//v
+}//d
+
+//場合１ t //e
+resource TO_タンカーカメラうんちく２__e {
+//vox t:vcxxxxxxxx {
+オタコン_000: {
+When you're ready to take a shot,
+}//<ページ数変更>
+#ifdef d:XBOX
+オタコン_000_1: {
+use the lock-on button and First Person 
+View buttons to move the cursor at the 
+bottom of the screen to the left or right.
+}
+#else
+オタコン_000_1: {
+use the L1 and R1 buttons to move
+the cursor at the bottom of the screen
+to the left or right.
+}
+#endif
+/*カメラを構えた状態でＬ１ボタン、
+Ｒ１ボタンを押すと画面下のカーソルを
+それぞれ左右に動かせる。
+*/
+//dv}//v
+}//d
+
+//場合２ t //e
+resource TO_タンカーカメラうんちく３__e {
+//vox t:vcxxxxxxxx {
+#ifdef d:XBOX
+オタコン_000: {
+When you're ready to take a shot, use 
+the lock-on button and First Person View 
+buttons to scroll left or right＃−
+}//<ページ数変更>
+#else 
+オタコン_000: {
+When you're ready to take a shot,
+use the L1 and R1 buttons to scroll
+left or right＃−
+}//<ページ数変更>
+#endif
+オタコン_000_1: {
+among the picture previews
+at the bottom of the screen.
+}
+/*カメラを構えた状態でＬ１ボタン、
+Ｒ１ボタンを押すと画面下の写真の
+プレビューをそれぞれ左右に動かせる。
+*/
+//dv}//v
+}//d
+
+resource TO_タンカーカメラうんちく４__e {
+//vox t:vcxxxxxxxx {
+オタコン_000: {
+Select an unwanted picture and
+the new shot will overwrite the
+selected picture.
+}
+/*いらない写真を選んでそのまま写真を
+撮れば、新しい写真をそこに上書き
+出来るっていう仕組みだ。
+*/
+//dv}//v
+}//d
+
+//第三船倉にいる場合 t //e
+resource TO_タンカーカメラうんちく５__e {
+//vox t:vcxxxxxxxx {
+オタコン_000: {
+Send the pictures to
+me when you're done.
+}
+/*写真を撮り終えたらこっちに
+転送してくれ。
+*/
+オタコン_001: {
+Press the Action button when
+you're in front of the workstation
+southeast from there,
+}//<ページ数変更>
+オタコン_001_1: {
+and the pictures will
+be sent to me.
+}//<ページ数変更>
+オタコン_001_2: {
+Get some good shots!
+}
+/*写真を転送する方法はそのエリアの
+南東にあるＷＳの前で＃｛△、アクション｝＃ボタンを
+押すだけだ。いい写真を頼むよ。
+*/
+//dv}//v
+}//d
+
+//・開かない水密扉近く h //e
+resource TO_長廊下北＿開かない扉__e {
+オタコン_000: {
+That door probably can't
+be opened. Head east.
+}
+/*そこの扉は開かないみたいだ。
+東の方に進んでくれ。
+*/
+
+}//d
+

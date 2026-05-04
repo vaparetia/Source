@@ -1,0 +1,107 @@
+//
+//	w01e.src
+//
+//	written by S.Hirano 1999.Oct
+//
+//	$Id: w01e.src,v 1.72 2001/08/26 07:42:25 usr04249 Exp $
+
+#define WN_W01E
+#define ENV
+
+// 常駐データ
+block .use r_tnk0
+
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include "t_common.h"
+#include "common.h"
+include		item_box_tank.h
+//include	a_effect.h
+#include	"c_effect.h"
+
+// キャラクタ
+
+
+// 撮影用マルチウエイトキャラモデル
+//human	sna_def/sna_mmt.evm
+
+// ビデオ撮影用スネーク顔表情
+//rmt		sna_rmt
+
+include		org_w01e.h
+include		ene_tank.h
+
+// 水密ドア開閉用モーション
+mtn			sna_hatch.mls
+mtn			hatch_door_sna.mls
+mtn			hatch_handle_sna.mls
+
+
+
+/*
+// 映り込ませ用に優先順位を上げるための処理
+//pack_all	aaaweapon.tri weapon/m92 weapon/usp weapon/aks goods/sling_test weapon/fms human/gbs_def weapon/scm weapon/mkr item/c_box item/cigarettes
+pack_all	aaaweapon.tri weapon/m92 weapon/usp item/c_box item/cigarettes weapon/aks weapon/fms
+pack_all	shitai.tri world/w01e/tnc_died_obj_mirror.dar
+
+weapon		m92
+weapon		usp
+weapon		aks
+//goods		sling_test
+//goods		weapon_test
+weapon		fms
+weapon		scm
+weapon		mkr
+weapon		cfr
+
+item		c_box
+item		cigarettes
+*/
+//ここまで
+
+meca		ir_sensor/irs_box.kms
+
+// タンカークルー
+world/w01e	tnc_died_obj.kms tnc_died_obj_mirror.kms
+
+// ワールド
+world		w01e
+world		w00
+lt2			w01e.lt2
+hazard		w01e.hzx
+
+// デバッグ用
+pack_all w01e_effects.tri goods/test_door effect/wave/wave07.bmp
+// 蒼い月
+
+pack_trnall trans_moon.tri effect/moon_w00
+
+//goods sling_test
+//goods test_door
+
+//E3用に仮。
+//meca	kacatka
+
+// 体験版用
+
+// リネーム
+rename		aks_sp.cv2	aks_sp_1.cv2
+
+// 窓雨
+//debug		mizutani/rain
+
+// 強制モーション
+mtn		sna_w01e.mls
+
+// パッドデモ
+rpd				w01e_paddemo.rpd
+rpd				w01e_paddemo_2.rpd
+
+human 			sna_def/sna_def_mh.evm
+
+// 振動データ
+// データ数が多すぎてロード時に落ちるステージが出たので、一時的にカット。010729（平野）
+// 振動ファイルは一つにまとまるようになったので組み込み。010803
+vib		demo

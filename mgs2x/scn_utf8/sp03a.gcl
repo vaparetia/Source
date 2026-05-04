@@ -1,0 +1,3044 @@
+/*
+	sp03a.gcl
+	ザコサバイバルステージ
+
+	2002/05/31 H.Yoshiike
+	$Id: sp03a.gcl,v 1.68 2002/10/02 09:21:31 usr03682 Exp $
+
+
+*/
+// モード
+
+// ------------------------------------
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_VR		1		// 共通プロック切り分け用
+// ステージ名
+#define		STAGE_SP03A		1		// 共通プロック切り分け用
+// 敵兵、ＮＰＣ状況（薬莢を呼び分けるのに必要）
+#define		ENE_P_GOL		1		// 都市迷彩ゴル兵
+#define		ENE_SHOT		1		// ショットガン兵
+#define		ENE_HIGH_TECH	1		// ハイテク兵
+#define		ENE_SHIELD		1		// 盾兵
+#define		ENE_TNG			1		// 天狗兵
+
+// ------------------------------------
+// 各種スイッチ用define
+// ------------------------------------
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+	#define		DEMO_DEBUG		0
+#else
+	#define		DEBUG_CHARA		1		// デバッグキャラ全体
+	#define		DEMO_DEBUG		0		// シナリオデモ作成中はこのフラグを立てるとよい
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			1		// USBキーボード
+
+
+// ------------------------------------
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME			sp03a
+#define		KMS_SP03A0			sp03a0		// ゲノラステージ、ゲノラvsゴルルゴンステージで使用
+#define		KMS_SP03A1			sp03a1		// ゴルルゴンステージ、ゲノラステージで使用
+#define		KMS_SP03A2			sp03a2		// ゲノラステージで使用
+#define		KMS_SP03A3			sp03a3		// ザコサバイバル、ゴルルゴンステージで使用
+#define		KMS_SP03A4			sp03a4		// ザコサバイバルで使用
+#define		KMS_BOX01		sp03a_box01
+#define		KMS_BOX02		sp03a_box02
+#define		KMS_BOX03		sp03a_box03
+#define		KMS_BOX04		sp03a_box04
+#define		KMS_BOX05		sp03a_box05
+#define		KMS_BOX06		sp03a_box06
+#define		KMS_BOX07		sp03a_box07
+#define		KMS_BOX08		sp03a_box08
+#define		KMS_BOX09		sp03a_box09
+#define		KMS_BOX10		sp03a_box10
+#define		KMS_BOX11		sp03a_box11
+#define		KMS_BOX12		sp03a_box12
+#define		KMS_BOX13		sp03a_box13
+#define		KMS_BOX01_SHDLESS		sp03a_box01_shdless
+#define		KMS_BOX02_SHDLESS		sp03a_box02_shdless
+#define		KMS_BOX03_SHDLESS		sp03a_box03_shdless
+#define		KMS_BOX04_SHDLESS		sp03a_box04_shdless
+#define		KMS_BOX05_SHDLESS		sp03a_box05_shdless
+#define		KMS_BOX06_SHDLESS		sp03a_box06_shdless
+#define		KMS_BOX07_SHDLESS		sp03a_box07_shdless
+#define		KMS_BOX08_SHDLESS		sp03a_box08_shdless
+#define		KMS_BOX09_SHDLESS		sp03a_box09_shdless
+#define		KMS_BOX10_SHDLESS		sp03a_box10_shdless
+#define		KMS_BOX11_SHDLESS		sp03a_box11_shdless
+#define		KMS_BOX12_SHDLESS		sp03a_box12_shdless
+#define		KMS_BOX13_SHDLESS		sp03a_box13_shdless
+
+#define		KMS_SP03A1_SHD			sp03a1_shd		// ゴルルゴン、メカゲノラステージで使用
+#define		KMS_SP03A1_SHD_BOX03	sp03a1_shd_box3	// ゴルルゴン、メカゲノラステージで使用
+#define		KMS_SP03A1_SHD_BOX09	sp03a1_shd_box9	// ゴルルゴン、メカゲノラステージで使用
+#define		KMS_SP03A4_SHD			sp03a4_shd		// ザコサバイバルで使用
+#define		KMS_BOX09_SHD			sp03a_box09_shd
+#define		KMS_BOX11_SHD			sp03a_box11_shd
+#define		KMS_BOX12_SHD			sp03a_box12_shd
+
+#define		KMS_FUTA				sp03a3_futa		// ゴルルゴンステージ用穴をふさぐふた
+
+// キャラクター関係
+#define		PLAYER		ライデン
+
+
+// ------------------------------------
+// ＶＲウィンドウのリソース等
+// ------------------------------------
+#define	SP03A_WINDOW_RES [VRMSG_J:VRM_VRT_sp03a] [VRMSG_E:VRM_VRT_sp03a] [VRMSG_G:VRM_VRT_sp03a] \	// 日、英、独
+						 [VRMSG_F:VRM_VRT_sp03a] [VRMSG_I:VRM_VRT_sp03a] [VRMSG_S:VRM_VRT_sp03a] \	// 仏、伊、西
+						 [VRMSG_K:VRM_VRT_sp03a] \															// 韓
+						 p:ＶＲステージ開始時処理		// 終了プロック
+
+
+// ------------------------------------
+// 敵兵関連
+// ------------------------------------
+// 敵兵共通ステータス
+// 長廊下兵用
+#define	ENE_NOM_STATUS_SP03A	d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:ENE_EQUIP_TYPE_NORMAL
+#define	ENE_OPT_STATUS_SP03A	d:ENE_STATUS_NORMAL (d:ENE_STST_FAINT_EXIT | d:ENE_STST_OPTCAMOUFLAGE) d:ENE_EQUIP_TYPE_NORMAL
+
+// 天狗兵装備
+#define	EQUIP_P90		2
+#define	EQUIP_BLADE		3
+
+
+// 長廊下兵守備ポイント＆攻撃タイプ
+/*
+STAND_R,	0 立ち右手攻撃
+SQUAT_R,	1 しゃがみ右手
+STAND_L,	2 立ち左手
+SQUAT_L,	3 しゃがみ左手
+STAND_BACK1	4 使用禁止
+SQUAT_WAIT,	5 使用禁止
+STAND_R_NARROW,	6 転がらない 右手攻撃
+STAND_L_NARROW,	7 転がらない 左手攻撃
+8 しゃがみと立ちのみ
+*/
+// ３Ｆの守備ポイント
+#define	D_POS_3F_01		-7500,	 6000	-22000	2	// ３Ｆ西側荷物の裏
+#define	D_POS_3F_02		-6500,	 6000	-20750	8	// ３Ｆ西側荷物の横
+#define	D_POS_3F_03		-4500,	 6000	-24750	8	// ３Ｆ西手すりの裏
+#define	D_POS_3F_04		-2500,	 6000	-25500	1	// ３Ｆ西１ｍ荷物の裏
+#define	D_POS_3F_05		-500,	 6000	-25500	0	// ３Ｆ中央２ｍ荷物の裏左
+#define	D_POS_3F_06		500,	 6000	-25500	2	// ３Ｆ中央２ｍ荷物の裏右
+#define	D_POS_3F_07		2500,	 6000	-25500	3	// ３Ｆ東１ｍ荷物の裏
+#define	D_POS_3F_08		4500,	 6000	-24750	8	// ３Ｆ東手すりの裏
+#define	D_POS_3F_09		6500,	 6000	-20750	8	// ３Ｆ東側荷物の横
+#define	D_POS_3F_10		7500,	 6000	-22000	0	// ３Ｆ東側荷物の裏
+#define	D_POS_3F_11		-6500,	 6000	-28000	2	// ３Ｆ西側出入り口左
+#define	D_POS_3F_12		-3500,	 6000	-28000	0	// ３Ｆ西側出入り口右
+#define	D_POS_3F_13		3500,	 6000	-28000	0	// ３Ｆ東側出入り口左
+#define	D_POS_3F_14		6500,	 6000	-28000	2	// ３Ｆ東側出入り口右
+// ２Ｆの守備ポイント
+#define	D_POS_2F_15		-6500,	 2000,	-27500	7	// ２Ｆ西の窓左
+#define	D_POS_2F_16		-5000,	 2000,	-27500	8	// ２Ｆ西の窓中央
+#define	D_POS_2F_17		-3500,	 2000,	-27500	6	// ２Ｆ西の窓右
+#define	D_POS_2F_18		3500,	 2000,	-27500	7	// ２Ｆ東の窓左
+#define	D_POS_2F_19		5000,	 2000,	-27500	8	// ２Ｆ東の窓中央
+#define	D_POS_2F_20		6500,	 2000,	-27500	6	// ２Ｆ東の窓右
+// １Ｆの守備ポイント
+#define	D_POS_1F_21		-1500,	 0,		-25000	0	// １Ｆ中央一番奥の壁の左
+#define	D_POS_1F_22		1500,	 0,		-25000	2	// １Ｆ中央一番奥の壁の右
+#define	D_POS_1F_23		-6500,	 0,		-21000	2	// １Ｆ西側2*2*2の箱の裏
+#define	D_POS_1F_24		5500,	 0,		-21500	0	// １Ｆ東側2*2*2の箱の裏(穴付近)
+#define	D_POS_1F_25		1500,	 0,		-21000	2	// １Ｆ中央1*2*1の箱の裏
+#define	D_POS_1F_26		-1500,	 0,		-20000	3	// １Ｆ中央1*1*1の箱の裏
+#define	D_POS_1F_27		500,	 0,		-18500	1	// １Ｆ中央2*1*2の左
+#define	D_POS_1F_28		1000,	 0,		-18500	8	// １Ｆ中央2*1*2の中央
+#define	D_POS_1F_29		1500,	 0,		-18500	3	// １Ｆ中央2*1*2の右
+#define	D_POS_1F_30		7500,	 0,		-18000	0	// １Ｆ東側1*1*2の箱の裏
+#define	D_POS_1F_31		-6500,	 0,		-16000	3	// １Ｆ西側前線1*1*1の箱の裏
+#define	D_POS_1F_32		-3500,	 0,		-17000	0	// １Ｆ西側前線2*2*2の箱の裏左
+#define	D_POS_1F_33		-2500,	 0,		-17000	2	// １Ｆ西側前線2*2*2の箱の裏右
+#define	D_POS_1F_34		3500,	 0,		-16000	0	// １Ｆ東側前線2*2*1の箱の裏左
+#define	D_POS_1F_35		4500,	 0,		-16000	2	// １Ｆ東側前線2*2*1の箱の裏右
+// プレイヤーエリアの守備ポイント
+#define	D_POS_1F_36		1500,	 0,		-12000	3	// プレイヤーエリア中央1*1*1の箱の裏
+#define	D_POS_1F_37		-3500,	 0,		-10000	0	// プレイヤーエリア中央1*2*1の箱の裏
+#define	D_POS_1F_38		-2000,	 0,		-10000	8	// プレイヤーエリア中央2*1*1の箱の裏
+#define	D_POS_1F_39		-500,	 0,		-10000	2	// プレイヤーエリア中央1*2*2の箱の裏
+#define	D_POS_1F_40		4500,	 0,		-11000	1	// プレイヤーエリア東側2*1*1の箱の裏左
+#define	D_POS_1F_41		5500,	 0,		-11000	8	// プレイヤーエリア東側2*1*1の箱の裏右
+#define	D_POS_1F_42		6500,	 0,		-12000	0	// プレイヤーエリア東側2*2*2の箱の裏
+// 追加したポイント
+#define	D_POS_1F_43		-4500,	 0,		-25600	8	// 柵つき穴左の後ろ
+#define	D_POS_1F_44		4500,	 0,		-25600	8	// 柵つき穴右の後ろ
+
+// 復活＆治療ポイント
+#define	R_POS_01		0,		 4000,	-28000	ザコサバイバル
+#define	R_POS_02		-9500,	 6000,	-23000	ザコサバイバル
+#define	R_POS_03		9500,	 6000,	-23000	ザコサバイバル
+#define	R_POS_04		0,		 0,		-36000	ザコサバイバル
+// 天狗兵特殊復活ポイント
+#define	R_POS_11		-9500,	 6000,	-23000
+#define	R_POS_12		9500,	 6000,	-23000
+#define	R_POS_13		0,		 18000,	-28000
+#define	R_POS_14		-10500,	 18000,	-25000
+#define	R_POS_15		10500,	 18000,	-25000
+
+// プレイヤーがここに近づかないように守るポイント
+#define	FINAL_POS_01	0 0 -30000
+
+
+
+// アイテムの設置ポイント
+#define	ITEM_POS_SP03A_01	-4000,	 750,	 -12500		// 01の箱の上
+#define	ITEM_POS_SP03A_02	-4000,	 0,		 -12500		// 01の箱の中
+#define	ITEM_POS_SP03A_03	-5500,	 0,		 -12500		// 01の箱の左
+#define	ITEM_POS_SP03A_04	-4000,	 0,		 -11500		// 01の箱の手前
+#define	ITEM_POS_SP03A_05	-2500,	 0,		 -12500		// 01の箱の右
+#define	ITEM_POS_SP03A_06	0,		 0,		 -12500		// 13の箱の中
+#define	ITEM_POS_SP03A_07	-1500,	 0,		 -12500		// 13の箱の左
+#define	ITEM_POS_SP03A_08	0,		 0,		 -11500		// 13の箱の手前
+#define	ITEM_POS_SP03A_09	1500,	 0,		 -12500		// 13の箱の右
+#define	ITEM_POS_SP03A_10	1500,	 750,	 -10500		// 02の箱の上
+#define	ITEM_POS_SP03A_11	1500,	 0,		 -10500		// 02の箱の中
+#define	ITEM_POS_SP03A_12	5000,	 750,	 -9500		// 03の箱の上
+#define	ITEM_POS_SP03A_13	5000,	 0,		 -9500		// 03の箱の中
+#define	ITEM_POS_SP03A_14	7000,	 1750,	 -10000		// 09の箱の上
+#define	ITEM_POS_SP03A_15	7000,	 0,		 -10000		// 09の箱の中
+#define	ITEM_POS_SP03A_16	5500,	 0,		 -10500		// 03の箱の裏
+#define	ITEM_POS_SP03A_17	5000,	 0,		 -8500		// 03の箱の手前
+#define	ITEM_POS_SP03A_18	7000,	 0,		 -8500		// 03の箱の手前
+#define	ITEM_POS_SP03A_19	-3500,	 1750,	 -8500		// 10の箱の上
+#define	ITEM_POS_SP03A_20	-3500,	 0,		 -8500		// 10の箱の中
+#define	ITEM_POS_SP03A_21	-2000,	 750,	 -8500		// 04の箱の上
+#define	ITEM_POS_SP03A_22	-2000,	 0,		 -8500		// 04の箱の中
+#define	ITEM_POS_SP03A_23	-500,	 1750,	 -8000		// 11の箱の上
+#define	ITEM_POS_SP03A_24	-500,	 0,		 -8000		// 11の箱の中
+#define	ITEM_POS_SP03A_25	-1500,	 0,		 -7500		// 04の箱の手前
+#define	ITEM_POS_SP03A_26	-7500,	 750,	 -4500		// 05の箱の上
+#define	ITEM_POS_SP03A_27	-7500,	 0,		 -4500		// 05の箱の中
+#define	ITEM_POS_SP03A_28	-6000,	 1750,	 -4000		// 12の箱の上
+#define	ITEM_POS_SP03A_29	-6000,	 0,		 -4000		// 12の箱の中
+#define	ITEM_POS_SP03A_30	-4000,	 750,	 -3500		// 06の箱の上
+#define	ITEM_POS_SP03A_31	-4000,	 0,		 -3500		// 06の箱の中
+#define	ITEM_POS_SP03A_32	-7500,	 0,		 -3500		// 05の箱の手前
+#define	ITEM_POS_SP03A_33	-4500,	 0,		 -4500		// 06の箱の裏
+#define	ITEM_POS_SP03A_34	-6000,	 0,		 -2500		// 12の箱の手前
+#define	ITEM_POS_SP03A_35	2500,	 750,	 -3000		// 07の箱の上
+#define	ITEM_POS_SP03A_36	2500,	 0,		 -3000		// 07の箱の中
+#define	ITEM_POS_SP03A_37	5000,	 750,	 -3000		// 08の箱の上
+#define	ITEM_POS_SP03A_38	5000,	 0,		 -3000		// 08の箱の中
+#define	ITEM_POS_SP03A_39	3500,	 0,		 -3000		// 08の箱の左
+#define	ITEM_POS_SP03A_40	2500,	 0,		 -1500		// 07の箱の手前
+#define	ITEM_POS_SP03A_41	5000,	 0,		 -1500		// 08の箱の手前
+#define	ITEM_POS_SP03A_42	-7500,	 0,		 -500		// ステージ南西
+#define	ITEM_POS_SP03A_43	7500,	 0,		 -500		// ステージ南東
+#define	ITEM_POS_SP03A_44	-4000,	 0,		 -2500		// 06の箱の手前
+
+// アイテム再発生フラグ用のenum
+enum ITEM_NO {
+	M9_01 = 0,
+	SOCOM_01,
+	USP_01,
+	AKS_01,
+	AKS_02,
+	M4_01,
+	M4_02,
+	PSG1_01,
+	PSG1_02,
+	PSG1_T_01,
+	RGB6_01,
+	STINGER_01,
+	DZP_01
+}
+
+
+// ゴルルゴン達のモーションリスト
+enum G_MTN {
+	gol_idle = 0,
+	gol_howl,
+	gol_appear_wall,
+	gol_disguise_discover,
+	gol_disguise_walk,
+	rai_disguise_capture,
+	gno_meca_toujyou,
+	gno_come,
+	gno_come_2,
+	gol_high_jump_start,
+	gol_high_jump_end,
+	gol_fight,
+	gno_fight
+}
+
+// ------------------------------------
+// include
+// ------------------------------------
+#include "rai_sp03a.mh"		// 強制モーションリスト
+#include "stdch.h"
+#include "enevoice.h"
+#include "a_stdproc.h"			// アナザーミッション設定ファイル
+#include "sload.h"
+#include "sound.h"
+#include "jump.h"
+#include "beyond.h"
+#include "fall.h"
+#include "item_info.h"
+#include "a_item_info.h"
+#include "ene_item.h"
+#include "vr_common.h"		// ＶＲステージ共通で使用するプロック
+#include "sdemo_sp03a.h"	// ザコサバイバルで使用するシナリオデモ用プロック
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+// ローカル変数
+$$b:プレイヤー番号 = 0;
+$$b:シナリオデモシーン番号 = 0;
+$$i:シナリオデモストリーム返り値 = 0;
+$$i:ゴルＸ = 0;
+$$i:ゴルＹ = 0;
+$$i:ゴルＺ = 0;
+$$i:壊れパーツフラグ = 0;
+$$f:クリアデモ発動中フラグ = 0;
+$$b:ストリームボリューム = 0x3F;
+
+dim $$f:アイテム再セットフラグ[15]
+command	配列セット $$f:アイテム再セットフラグ[0] {
+	0,	0,	0,	0,	0,
+	0,	0,	0,	0,	0,
+	0,	0,	0,	0,	0
+}
+
+
+// 次のリスタートからは初期化しないためフラグを立てる
+$f:A_一括初期化拒否フラグ = 1;
+
+
+
+
+
+// デバッグ用define(ステージワープ用)
+#ifndef	d:FIX_MODE
+//#define	STAGE_WARP_ON	1
+#endif
+#ifdef d:STAGE_WARP_ON
+#define	DEMO_DEBUG	1
+// デバッグ用のフラグ(行きたいステージのコメントをはずす)
+//$b:ステージ番号 = d:ZAKO_STAGE:T_G_SOLS_TEAM;	// 天狗戦からスタート
+//$b:ステージ番号 = d:ZAKO_STAGE:GURLUGON;		// ゴルルゴンからスタート
+//$b:ステージ番号 = d:ZAKO_STAGE:MECHGENOLA;		// メカゲノラからスタート
+//$b:ステージ番号 = d:ZAKO_STAGE:GENOLA;			// ゲノラからスタート
+
+$i:ザコサバイバルタイマー残り時間 = (60*60*10);
+
+$f:sp03a_ザコサバイバルゲームフラグ = 1;
+#endif
+
+
+
+
+
+// main
+if ( $f:sp03a_ザコサバイバルウィンドウ表示終了フラグ == 0 ) {
+	@全ミッション共通システム設定 ( d:VR_GOAL_ENEMY | d:VR_NO_OPEN_SE )
+	@ＶＲウィンドウ設定	d:SP03A_WINDOW_RES
+	// ＶＲウィンドウを表示する
+	mesg ＶＲウィンドウ ＶＲウィンドウ君 開く
+
+} else {
+	if ( $f:sp03a_ザコサバイバルゲームフラグ == 0 ) {
+	//-------------------------------------------------------------------
+	// タイトルテロップ部分
+	//-------------------------------------------------------------------
+		// このときは操作をさせない
+		command パッド操作 -release
+
+		switch ( $s:選択プレイヤー ) {
+			case ( ライデン ) {
+				$$b:プレイヤー番号 = 1;
+			}
+			case ( スネーク ) {
+				$$b:プレイヤー番号 = 0;
+			}
+			case ( 前作スネーク ) {
+				$$b:プレイヤー番号 = 2;
+			}
+			default {
+				#if d:DEBUG_PRINT
+					print 'WARNING!!!!!!!不正な値が入っています。$s:選択プレイヤー='$s:選択プレイヤー
+				#endif
+
+				command assert ( d:FALSE ) 'error  (scenario err) タイトルテロップ部分'
+			}
+		}
+
+		@サウンド設定
+		chara ザコラッシュテロップ表示 テロップ君 -m 0 -b $b:ステージ番号 -n ザコサバイバルスタート -p $$b:プレイヤー番号
+
+	} else {
+	//-------------------------------------------------------------------
+	// ゲーム部分
+	//-------------------------------------------------------------------
+		// メカゲノラ戦だけはライトファイルを差し替える
+		if ( $b:ステージ番号 == d:ZAKO_STAGE:MECHGENOLA ) {
+			$s:ＶＲライトファイル名 = vr_dark;
+		}
+
+		chara マップ ザコサバイバル -k null -h d:HZX_NAME,0 -l $s:ＶＲライトファイル名
+
+		if ( $b:ステージ番号 <= d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+			// ザコサバイバル用のアタリを追加
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 1
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 2
+			// 壊れＶＲオブジェ
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 6
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 7
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 8
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 9
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 10
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 11
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 12
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 13
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 14
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 15
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 16
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 17
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 18
+
+		} else if ( $b:ステージ番号 == d:ZAKO_STAGE:GURLUGON || $b:ステージ番号 == d:ZAKO_STAGE:MECHGENOLA ) {
+			// コルルゴン、メカゲノラステージ用のアタリを追加
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 3
+			// 壊れＶＲオブジェ
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 6
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 7
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 8
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 9
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 10
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 11
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 12
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 13
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 14
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 15
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 16
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 17
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 18
+			// ゴルルゴンステージはさらにアタリを追加
+			if ( $b:ステージ番号 == d:ZAKO_STAGE:GURLUGON ) {
+				command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 19
+			}
+
+		} else if ( $b:ステージ番号 == d:ZAKO_STAGE:GENOLA ) {
+			// ゲノラ用のアタリを追加
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 4
+			command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 18
+		}
+
+		command マップ設定 ザコサバイバル -set {
+			// ローカルの初期化
+			// ------------------------------------
+			@ローカル変数初期化		// ローカルで使用する変数で初期化をする場合はここで
+
+			if ( $b:ステージ番号 > d:ZAKO_STAGE:G_SOL_1 ) {
+				// テロップが出た後は前ステージのタイマーを引き継ぐ
+				$$i:ライデンタイム 				= $i:ザコサバイバルタイマー残り時間;
+				$$i:スネークタイム 				= $i:ザコサバイバルタイマー残り時間;
+				$$i:プリスキンタイム 			= $i:ザコサバイバルタイマー残り時間;
+				$$i:タキシードスネークタイム 	= $i:ザコサバイバルタイマー残り時間;
+				$$i:刀ライデンタイム 			= $i:ザコサバイバルタイマー残り時間;
+				$$i:前作スネークタイム			= $i:ザコサバイバルタイマー残り時間;
+			}
+
+			@全ミッション共通システム設定 ( d:VR_GOAL_ENEMY | d:VR_NO_OPEN_SE )
+
+			@レーダーオンオフチェック 0								// stdch.hで定義
+			@常駐キャラ設定											// stdch.hで定義
+
+			@ザコサバイバルステージ表示
+
+			@サウンド設定
+			@A_プレイヤー設定 sna_sp03a rai_sp03a					// a_stdproc.hで定義
+			@ＶＲエフェクト設置
+			@ＶＲ空設置
+
+	#ifndef d:E_TALES
+			@ＶＲウィンドウ設定	d:SP03A_WINDOW_RES
+	#else
+			@テイルズＶＲウィンドウセット＿ゴルルゴン戦中
+	#endif
+
+			// ザコサバイバル固有のクリア設定呼びわけ
+			// ------------------------------------
+			if ( $b:ステージ番号 <= d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+				@ＶＲポーズ設定
+			} else {
+	//	テイルズＥ以外では
+	#ifndef d:E_TALES
+				@ＶＲクリア設定 p:A_ミッションエンド p:A_ＲＥＴＲＹプロック
+	//	テイルズＥのときは
+	#else
+				@テイルズＥ用ＶＲクリア設定２
+	#endif
+			}
+
+			// ステージに引かれるライン
+			// ------------------------------------
+			@ザコサバイバル用アウトライン
+
+			// 設定値を変更する場合は以下のプロック内で設定
+			// ------------------------------------
+			@設定値変更				// 敵兵や的のパラメータをステージ限定で変える時はここで
+
+			// プレイヤーの設定
+			// ------------------------------------
+			@プラグイン設定			// プレイヤーのプラグインがいる時はここで
+			@ジャンプ設定
+
+			// 敵兵・的関係の設定
+			// ------------------------------------
+			@コマンダー設定
+			@シナリオデモキャラセット
+			if ( $b:ステージ番号 == d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+				@デモ用キャラ設置
+			}
+	#ifndef d:E_TALES
+			if ( $b:ステージ番号 == d:ZAKO_STAGE:GURLUGON || $b:ステージ番号 == d:ZAKO_STAGE:GENOLA ) {
+				@デモゴルルゴン設置
+			}
+	#endif
+
+			// ＢＧＭの設定(プレイヤー→敵兵→BGMの順で呼ぶ)
+			// ------------------------------------
+			@ＢＧＭ設定
+
+
+			// 光源、オブジェクト、カメラ関連の設定
+			// ------------------------------------
+			if ( $b:ステージ番号 <= d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+				@ＶＲフォグ設定 -10000 85000 -9000 75000 -9000 75000
+			} else if ( $b:ステージ番号 == d:ZAKO_STAGE:GURLUGON ) {
+				@ゴルルゴン戦フォグ設定
+			} else if ( $b:ステージ番号 == d:ZAKO_STAGE:MECHGENOLA ) {
+				@メカゲノラ戦フォグ設定
+			} else {
+				// ゲノラ戦は普通
+				@ＶＲフォグ設定 -10000 85000 -9000 75000 -9000 75000
+			}
+
+			@カメラセット					// chara カメラとベースのカメラを設定
+			@ザコサバイバルカメラ設定		// ステージ固有のカメラ設定がいる時はこのプロックで
+
+			if ( $b:ステージ番号 <= d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+				@ＶＲキャラ用ライト設置				// 必ず最後に設定
+			} else if ( $b:ステージ番号 == d:ZAKO_STAGE:GURLUGON ) {
+				@ゴルルゴン戦キャラ用ライト設置
+			} else if ( $b:ステージ番号 == d:ZAKO_STAGE:MECHGENOLA ) {
+				@メカゲノラ戦キャラ用ライト設置
+			} else {
+				// ゲノラ戦は普通
+				@ＶＲキャラ用ライト設置				// 必ず最後に設定
+			}
+
+			// アイテムの設定(キャラライトを反映させるためにここで設定)
+			// ------------------------------------
+	//	テイルズＥ以外では
+	#ifndef d:E_TALES
+			@アイテム設定
+	//	テイルズＥのときは
+	#else
+			@テイルズＥ用アイテム設定
+	#endif
+
+			if ( $b:ステージ番号 <= d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+				chara 六角フェード 六角フェード君 \
+					-time	60 \
+					-mode	0 \		//0:フェードin 1:フェードout
+					-col	0, 0, 0 \
+					-proc	ポーズ許可 \
+					-ex								//これがあるとロードのフェードより強くなります
+
+				@テロップ表示
+			} else {
+				// タイマーを表示
+				@ゲームスタート
+			}
+
+			#if d:DEBUG_CHARA
+				@デバッグキャラセット
+			#endif
+		}
+
+		//初期マップの表示
+		command マップ表示 -show ザコサバイバル
+
+	}
+
+	//	テイルズでは
+	#ifdef d:E_TALES
+		// 全てのセットが終わったところでフェードイン
+		@ステージ開始時処理\
+		d:LOAD_TYPE:NO_MOVE_TYPE 紙芝居 0 d:DEFAULT_M_TYPE
+	#endif
+}
+
+//-------------------------------------------------------------------------------------
+// 各proc設定
+//-------------------------------------------------------------------------------------
+//------------------------------------------------------------
+// ステージ開始時処理(このステージは空でＯＫ)
+//------------------------------------------------------------
+proc ＶＲステージ開始時処理 {
+	#if d:DEBUG_PRINT
+		print 'game_start!!!!!'
+	#endif
+
+	$f:sp03a_ザコサバイバルウィンドウ表示終了フラグ = 1;
+	chara delay リスタートディレイ -time 30 \
+		-exec {
+			restart -save 
+		}
+}
+
+// ------------------------------------
+// ステージのリスタート機構
+// ------------------------------------
+proc ザコサバイバルスタート {
+	$b:ステージ番号 = $b:ステージ番号 + 1;
+	$f:sp03a_ザコサバイバルゲームフラグ = 1;
+	$i:プレイヤー初期Ｘ位置 = 0 ;
+	$i:プレイヤー初期Ｙ位置 = 0 ;
+	$i:プレイヤー初期Ｚ位置 = 2000 ;
+	$i:プレイヤー初期方向 = 2048 ;
+
+	restart -save
+}
+
+proc テロップスタート {
+	command	ポーズリセット
+	$f:sp03a_ザコサバイバルゲームフラグ = 0;
+	restart -save
+}
+
+proc ゴルルゴンステージスタート {
+	$b:ステージ番号 = d:ZAKO_STAGE:GURLUGON;
+	$i:プレイヤー初期Ｘ位置 = 550 ;
+	$i:プレイヤー初期Ｙ位置 = 0 ;
+	$i:プレイヤー初期Ｚ位置 = -3250 ;
+	$i:プレイヤー初期方向 = 2048 ;
+
+	restart -save
+}
+
+proc メカゲノラステージスタート {
+	$b:ステージ番号 = d:ZAKO_STAGE:MECHGENOLA;
+	$i:プレイヤー初期Ｘ位置 = -500 ;
+	$i:プレイヤー初期Ｙ位置 = 0 ;
+	$i:プレイヤー初期Ｚ位置 = -6500 ;
+	$i:プレイヤー初期方向 = 2048 ;
+
+	restart -save
+}
+
+proc ゲノラステージスタート {
+	$b:ステージ番号 = d:ZAKO_STAGE:GENOLA;
+	$i:プレイヤー初期Ｘ位置 = -1500 ;
+	$i:プレイヤー初期Ｙ位置 = 0 ;
+	$i:プレイヤー初期Ｚ位置 = -11500 ;
+	$i:プレイヤー初期方向 = 2048 ;
+
+	restart -save
+}
+
+
+// ------------------------------------
+// クリア時の処理
+// ------------------------------------
+proc 敵兵全滅プロック {
+	if (`command ゲームオーバーチェック` == 0 ) {
+		// タイマーストップ & 引継ぎ
+		command ＶＲタイマーポーズ
+		$i:ザコサバイバルタイマー残り時間 = `%ＶＲゲットタイム`;
+		command varsave $i:ザコサバイバルタイマー残り時間
+
+		// すぐ操作を奪う
+		command パッド操作 -release
+
+		command セットサウンドコード -c d:SE_JOUCHUU_OFF
+		command 字幕制御 -disable
+		command メニュー設定 -menu off -gage off -radar off -pause off
+
+		if ( $b:ステージ番号 < d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+			// WINを表示
+			chara ザコラッシュテロップ表示 テロップ君 -m 3 -n テロップスタート
+			command	ポーズセット
+
+			chara 六角フェード 六角フェード君 \
+				-time	90 \
+				-mode	1 \		//0:フェードin 1:フェードout
+				-col	0, 0, 0 \
+				-ex								//これがあるとロードのフェードより強くなります
+
+		} else {
+			// クリア時にカメラアングルを変える
+			chara カメラ設定 クリア時カメラ \
+				-c 1 \	
+				-p -0,312,11317 -t -0,3411,-7396 \
+				-r -107,2048,0 -f 18968 \
+				-a 200 \
+				-i 1 -1 0 0 \
+				-s 1
+
+			@シナリオデモ開始処理
+			// ゴーグル系も解除
+			@プレイヤーアイテム追加解除
+			mesg ＶＲスクリーン ＶＲスクリーン君 非表示
+			command セットサウンドコード -c d:SNG_FOUTS_S
+			
+			switch ( $s:選択プレイヤー ) {
+				case ( ライデン ) {
+					@ゴルルゴン登場デモ
+				}
+				case ( スネーク ) {
+					@メカゲノラ登場デモ
+				}
+				case ( 前作スネーク ) {
+					@ゲノラ登場デモ
+				}
+
+			}
+		}
+	}
+}
+
+
+proc ザコサバイバルクリア時処理 {
+	#if d:DEBUG_PRINT 
+		print 'zakosava cleard!!'
+	#endif
+
+	command ＶＲステージクリア
+}
+
+proc ＶＲクリア時処理 {
+	#if d:DEBUG_PRINT 
+		print 'clear'
+	#endif
+
+	// 強制モーションを発動
+	@全ミッション共通クリアモーション発動 d:モーションリスト:non_mclr_2 0
+
+	// シナリオデモクリアのときはシネマスクリーンを消す
+	mesg シネマスクリーン シネマ フェードイン 0
+
+	// クリア時にカメラアングルを変える
+	switch ( $s:選択プレイヤー ) {
+		case ( 前作スネーク ) {
+			chara カメラ設定 クリア時カメラ \
+				-c 1 \	
+				-p 1907,3078,-4103 -t 726,2010,-8474 \
+				-r 151,2220,0 -f 4652 \
+				-a 200 \
+				-i 1 0 0 0 \
+				-s 1
+		}
+		default {
+			// 前作スネーク以外
+			chara カメラ設定 クリア時カメラ \
+				-c 1 \	
+				-p -8,7820,14531 -t -8,4915,4954 \
+				-r 192,2048,0 -f 10008 \
+				-a 200 \
+				-i 1 0 0 0 \
+				-s 1
+		}
+	}
+}
+
+
+// ------------------------------------
+// パラメータ系の変更
+// ------------------------------------
+// ローカル変数初期化
+// ------------------------------------
+proc ローカル変数初期化 {
+	#if d:DEBUG_PRINT 
+		print 'localvar_init'
+	#endif
+}
+// 設定値を変更
+// ------------------------------------
+proc 設定値変更 {
+	#if d:DEBUG_PRINT 
+		print 'status_set'
+	#endif
+
+	$w:敵潜入視力 = 30000;
+	$w:敵危険視力 = 30000;
+	$w:敵回避視力 = 30000;
+
+	// スティンガーの性能を上げる
+	command スティンガー性能 \
+		-life 360 \
+		-s 0,-250 ,0
+	
+
+	if ( $b:ステージ番号 == d:ZAKO_STAGE:G_SOL_1 ) {
+		switch ( $s:選択プレイヤー ) {
+			case ( ライデン ) {
+				$w:体力最大 = 100;
+				$w:体力 = 100;
+				$w:武器最大数Ｒ[ d:武器:ブレード ] = 1;
+				$w:武器弾数Ｒ[ d:武器:ブレード ] = 1;
+				$w:武器最大数Ｒ[ d:武器:凍結スプレー ] = 1;
+				$w:武器弾数Ｒ[ d:武器:凍結スプレー ] = 1;
+				command	ゴルキャップあり
+				$w:アイテム最大数Ｒ[ d:アイテム:ゴル兵制服 ] = 1;
+				$w:アイテム数Ｒ[ d:アイテム:ゴル兵制服 ] = 1;
+			}
+			case ( スネーク ) {
+				$w:体力最大 = 100;
+				$w:体力 = 100;
+				$w:武器最大数Ｒ[ d:武器:凍結スプレー ] = 1;
+				$w:武器弾数Ｒ[ d:武器:凍結スプレー ] = 1;
+			}
+			case ( 前作スネーク ) {
+				$w:体力最大 = 100;
+				$w:体力 = 100;
+				$w:武器最大数Ｒ[ d:武器:凍結スプレー ] = 1;
+				$w:武器弾数Ｒ[ d:武器:凍結スプレー ] = 1;
+			}
+			default {
+				#if d:DEBUG_PRINT
+					print 'WARNING!!!!!!!不正な値が入っています。$s:選択プレイヤー='$s:選択プレイヤー
+				#endif
+
+				command assert ( d:FALSE ) 'error  (scenario err) 設定値変更'
+			}
+		}
+	}
+	// ライデンは刀を持っているので、いつでもこのフラグを管理する
+	switch ( $s:選択プレイヤー ) {
+		case ( ライデン ) {
+			$w:プレイヤーフラグ = ( $w:プレイヤーフラグ & ~(d:PL_START_STATE_BLADE_OUT) );	// 刀はしまっている
+			$w:プレイヤーフラグ = ( $w:プレイヤーフラグ & ~(d:PL_START_STATE_BLADE_INV) );	// 峰うちじゃない
+		}
+	}
+
+	$w:武器 = d:武器:素手;
+	$w:アイテム = d:アイテム:素手;
+}
+
+
+// ------------------------------------
+// ステージ表示に関する設定
+//-------------------------------------
+proc ザコサバイバルステージ表示 {
+	#if d:DEBUG_PRINT
+		print 'stage_object_set'
+	#endif
+
+	if ( $b:ステージ番号 <= d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+		// ザコサバイバルステージ
+		chara ＶＲオブジェ ゲノラを隠す床			-m d:KMS_SP03A3		 -r 0 0 0 -p 0 0 0 -l $s:ＶＲライトファイル名 
+		chara ＶＲオブジェ ゴルルゴンを隠す壁		-m d:KMS_SP03A4		 -r 0 0 0 -p 0 0 0 -l $s:ＶＲライトファイル名
+		@ザコサバイバル用オブジェ設置
+		chara ＶＲオブジェ ゴルルゴンを隠す壁の影	-m d:KMS_SP03A4_SHD	 -r 0 0 0 -p 0 0 0 -l $s:ＶＲライトファイル名
+
+		if ( $s:選択プレイヤー != 前作スネーク ) {
+			chara ＶＲオブジェ 外壁				-m d:KMS_SP03A1				 -r 0 0 0 -p 0 0 0 -l $s:ＶＲライトファイル名
+			chara ＶＲオブジェ 外壁の影			-m d:KMS_SP03A1_SHD			 -r 0 0 0 -p 0 4 -2 -l $s:ＶＲライトファイル名
+			chara ＶＲオブジェ 箱03への影			-m d:KMS_SP03A1_SHD_BOX03	 -r 0 0 0 -p 0 8 0 -l $s:ＶＲライトファイル名
+			chara ＶＲオブジェ 箱09への影			-m d:KMS_SP03A1_SHD_BOX09	 -r 0 0 0 -p 0 8 0 -l $s:ＶＲライトファイル名
+			mesg ＶＲオブジェ 外壁 off
+			mesg ＶＲオブジェ 外壁の影 off
+			mesg ＶＲオブジェ 箱03への影 off
+			mesg ＶＲオブジェ 箱09への影 off
+
+		} else {
+			chara ＶＲオブジェ ゲノラ床			-m d:KMS_SP03A0				 -r 0 0 0 -p 0 0 0 -l $s:ＶＲライトファイル名
+			chara ＶＲオブジェ 外壁				-m d:KMS_SP03A1				 -r 0 0 0 -p 0 0 0 -l $s:ＶＲライトファイル名
+			chara ＶＲオブジェ 外壁の影			-m d:KMS_SP03A2				 -r 0 0 0 -p 0 0 0 -l $s:ＶＲライトファイル名
+
+			mesg ＶＲオブジェ ゲノラ床 off
+			mesg ＶＲオブジェ 外壁 off
+			mesg ＶＲオブジェ 外壁の影 off
+		}
+
+		
+
+
+	} else if ( $b:ステージ番号 == d:ZAKO_STAGE:GURLUGON ) {
+		// ゴルルゴンステージ
+		chara ＶＲオブジェ ゲノラを隠す床		-m d:KMS_SP03A3				 -r 0 0 0 -p 0 0 0 -l $s:ＶＲライトファイル名
+		chara ＶＲオブジェ 外壁				-m d:KMS_SP03A1				 -r 0 0 0 -p 0 0 0 -l $s:ＶＲライトファイル名
+		@ザコサバイバル用オブジェ設置
+		chara ＶＲオブジェ ふた				-m d:KMS_FUTA				 -r 0 0 0 -p 0 0 0 -l $s:ＶＲライトファイル名
+		chara ＶＲオブジェ 外壁の影			-m d:KMS_SP03A1_SHD			 -r 0 0 0 -p 0 0 0 -l $s:ＶＲライトファイル名
+		chara ＶＲオブジェ 箱03への影			-m d:KMS_SP03A1_SHD_BOX03	 -r 0 0 0 -p 0 0 0 -l $s:ＶＲライトファイル名
+		chara ＶＲオブジェ 箱09への影			-m d:KMS_SP03A1_SHD_BOX09	 -r 0 0 0 -p 0 0 0 -l $s:ＶＲライトファイル名
+
+		// デモ用
+		chara ＶＲオブジェ デモ用外壁の影		-m d:KMS_SP03A1_SHD			 -r 0 0 0 -p 0 4 -2 -l $s:ＶＲライトファイル名
+		mesg ＶＲオブジェ デモ用外壁の影 off
+		chara ＶＲオブジェ デモ用箱03への影			-m d:KMS_SP03A1_SHD_BOX03	 -r 0 0 0 -p 0 10 0 -l $s:ＶＲライトファイル名
+		mesg ＶＲオブジェ デモ用箱03への影 off
+		chara ＶＲオブジェ デモ用箱09への影			-m d:KMS_SP03A1_SHD_BOX09	 -r 0 0 0 -p 0 8 0 -l $s:ＶＲライトファイル名
+		mesg ＶＲオブジェ デモ用箱09への影 off
+
+	} else if ( $b:ステージ番号 == d:ZAKO_STAGE:MECHGENOLA ) {
+		// メカゲノラステージ
+		chara ＶＲオブジェ ゲノラを隠す床		-m d:KMS_SP03A3				 -r 0 0 0 -p 0 0 0 -l $s:ＶＲライトファイル名
+		chara ＶＲオブジェ 外壁				-m d:KMS_SP03A1				 -r 0 0 0 -p 0 0 0 -l $s:ＶＲライトファイル名
+		@ザコサバイバル用オブジェ設置_影なし
+
+	} else if ( $b:ステージ番号 == d:ZAKO_STAGE:GENOLA ) {
+		// ゲノラステージ
+		chara ＶＲオブジェ メインの床	 			-m d:KMS_SP03A0	 -r 0 0 0 -p 0 0 0 -l $s:ＶＲライトファイル名
+		chara ＶＲオブジェ 外壁			 			-m d:KMS_SP03A1	 -r 0 0 0 -p 0 0 0 -l $s:ＶＲライトファイル名
+		chara ＶＲオブジェ ゴルルゴンを隠す壁		-m d:KMS_SP03A2	 -r 0 0 0 -p 0 0 0 -l $s:ＶＲライトファイル名
+		chara ＶＲオブジェ 箱:13 					-m d:KMS_BOX13 	 -r 0,0,0 -p 0,0,0 -l $s:ＶＲライトファイル名 \
+													-e ＶＲオブジェ破壊時処理
+		chara ＶＲオブジェ デモ箱:13 				-m d:KMS_BOX13 	 -r 0,0,0 -p 0,4,0 -l $s:ＶＲライトファイル名
+													
+		mesg ＶＲオブジェ デモ箱:13 off
+	}
+}
+
+proc ザコサバイバル用オブジェ設置 {
+	#if d:DEBUG_PRINT
+		print 'vr_object_set'
+	#endif
+
+	command foreach -argc 2 -repeat 13 \
+		-data { \
+				{ 箱:04, d:KMS_BOX04 } \
+				{ 箱:09, d:KMS_BOX09 } \
+				{ 箱:12, d:KMS_BOX12 } \
+				{ 箱:01, d:KMS_BOX01 } \
+				{ 箱:02, d:KMS_BOX02 } \
+				{ 箱:03, d:KMS_BOX03 } \
+				{ 箱:05, d:KMS_BOX05 } \
+				{ 箱:06, d:KMS_BOX06 } \
+				{ 箱:07, d:KMS_BOX07 } \
+				{ 箱:08, d:KMS_BOX08 } \
+				{ 箱:10, d:KMS_BOX10 } \
+				{ 箱:11, d:KMS_BOX11 } \
+				{ 箱:13, d:KMS_BOX13 } \
+			} \
+		-exec { \
+				if ( $b:ステージ番号 <= d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+					chara ＶＲオブジェ $1 \
+						-m $2 -r 0,0,0 -p 0,0,0 \
+						-l $s:ＶＲライトファイル名 \
+						-e ＶＲオブジェ破壊時処理
+				} else {
+					chara ＶＲオブジェ $1 \
+						-m $2 -r 0,0,0 -p 0,0,0 \
+						-l $s:ＶＲライトファイル名 \
+						-f d:PUT_VROBJ_STATUS_TARGET \
+						-e ＶＲオブジェ破壊時処理
+				}
+			}
+	chara ＶＲオブジェ 箱影:09 -m d:KMS_BOX09_SHD -r 0,0,0 -p 0,0,0 -l $s:ＶＲライトファイル名
+	chara ＶＲオブジェ 箱影:11 -m d:KMS_BOX11_SHD -r 0,0,0 -p 0,0,0 -l $s:ＶＲライトファイル名
+	chara ＶＲオブジェ 箱影:12 -m d:KMS_BOX12_SHD -r 0,0,0 -p 0,0,0 -l $s:ＶＲライトファイル名
+
+
+	// デモ用の箱
+	command foreach -argc 2 -repeat 13 \
+		-data { \
+				{ デモ箱:04, d:KMS_BOX04 } \
+				{ デモ箱:09, d:KMS_BOX09 } \
+				{ デモ箱:12, d:KMS_BOX12 } \
+				{ デモ箱:01, d:KMS_BOX01 } \
+				{ デモ箱:02, d:KMS_BOX02 } \
+				{ デモ箱:03, d:KMS_BOX03 } \
+				{ デモ箱:05, d:KMS_BOX05 } \
+				{ デモ箱:06, d:KMS_BOX06 } \
+				{ デモ箱:07, d:KMS_BOX07 } \
+				{ デモ箱:08, d:KMS_BOX08 } \
+				{ デモ箱:10, d:KMS_BOX10 } \
+				{ デモ箱:11, d:KMS_BOX11 } \
+				{ デモ箱:13, d:KMS_BOX13 } \
+			} \
+		-exec { \
+				chara ＶＲオブジェ $1 \
+					-m $2 -r 0,0,0 -p 0,8,0 \
+					-l $s:ＶＲライトファイル名
+
+				mesg ＶＲオブジェ $1 off
+			}
+
+	chara ＶＲオブジェ デモ箱影:09 -m d:KMS_BOX09_SHD -r 0,0,0 -p 0,8,0 -l $s:ＶＲライトファイル名
+	chara ＶＲオブジェ デモ箱影:11 -m d:KMS_BOX11_SHD -r 0,0,0 -p 0,8,0 -l $s:ＶＲライトファイル名
+	chara ＶＲオブジェ デモ箱影:12 -m d:KMS_BOX12_SHD -r 0,0,0 -p 0,8,0 -l $s:ＶＲライトファイル名
+	mesg ＶＲオブジェ デモ箱影 off
+}
+
+proc ザコサバイバル用オブジェ設置_影なし {
+	#if d:DEBUG_PRINT
+		print 'vr_object_set'
+	#endif
+
+	command foreach -argc 2 -repeat 13 \
+		-data { \
+				{ 箱:04, d:KMS_BOX04_SHDLESS } \
+				{ 箱:09, d:KMS_BOX09_SHDLESS } \
+				{ 箱:12, d:KMS_BOX12_SHDLESS } \
+				{ 箱:01, d:KMS_BOX01_SHDLESS } \
+				{ 箱:02, d:KMS_BOX02_SHDLESS } \
+				{ 箱:03, d:KMS_BOX03_SHDLESS } \
+				{ 箱:05, d:KMS_BOX05_SHDLESS } \
+				{ 箱:06, d:KMS_BOX06_SHDLESS } \
+				{ 箱:07, d:KMS_BOX07_SHDLESS } \
+				{ 箱:08, d:KMS_BOX08_SHDLESS } \
+				{ 箱:10, d:KMS_BOX10_SHDLESS } \
+				{ 箱:11, d:KMS_BOX11_SHDLESS } \
+				{ 箱:13, d:KMS_BOX13_SHDLESS } \
+			} \
+		-exec { \
+				if ( $b:ステージ番号 <= d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+					chara ＶＲオブジェ $1 \
+						-m $2 -r 0,0,0 -p 0,0,0 \
+						-l $s:ＶＲライトファイル名 \
+						-f d:PUT_VROBJ_STATUS_SPOTDRAW \
+						-e ＶＲオブジェ破壊時処理
+				} else {
+					chara ＶＲオブジェ $1 \
+						-m $2 -r 0,0,0 -p 0,0,0 \
+						-l $s:ＶＲライトファイル名 \
+						-f (d:PUT_VROBJ_STATUS_TARGET | d:PUT_VROBJ_STATUS_SPOTDRAW) \
+						-e ＶＲオブジェ破壊時処理
+				}
+			}
+}
+
+proc ＶＲオブジェ破壊時処理 {
+	#if d:DEBUG_PRINT
+		print 'vr_object broken $1='$1
+	#endif
+
+	switch ( $1 ) {
+		case ( 箱:01 ) {
+			command 追加ＨＺＸグループ削除 -hzx_id 0 -add_id 6
+			mesg ステージアウトライン 箱ライン:01 非表示
+			mesg フェードオブジェ 箱トンボ:01 フェードアウト
+			mesg フェードオブジェ アウトライン箱:01 フェードアウト
+			mesg ＶＲオブジェ デモ箱:01 kill
+		}
+		case ( 箱:02 ) {
+			command 追加ＨＺＸグループ削除 -hzx_id 0 -add_id 7
+			mesg ステージアウトライン 箱ライン:02 非表示
+			mesg フェードオブジェ 箱トンボ:02 フェードアウト
+			mesg ＶＲオブジェ デモ箱:02 kill
+		}
+		case ( 箱:03 ) {
+			command 追加ＨＺＸグループ削除 -hzx_id 0 -add_id 8
+			mesg ＶＲオブジェ 箱03への影 crumble
+			mesg ＶＲオブジェ 箱影:09 crumble
+			mesg ステージアウトライン 箱ライン:03 非表示
+			mesg フェードオブジェ 箱トンボ:03 フェードアウト
+			mesg ＶＲオブジェ デモ箱:03 kill
+			mesg ＶＲオブジェ デモ用箱03への影 kill
+			mesg ＶＲオブジェ デモ箱影:09 kill
+		}
+		case ( 箱:04 ) {
+			command 追加ＨＺＸグループ削除 -hzx_id 0 -add_id 9
+			mesg ＶＲオブジェ 箱影:11 crumble
+			mesg ステージアウトライン 箱ライン:04 非表示
+			mesg ＶＲオブジェ デモ箱:04 kill
+			mesg ＶＲオブジェ デモ箱影:11 kill
+		}
+		case ( 箱:05 ) {
+			command 追加ＨＺＸグループ削除 -hzx_id 0 -add_id 10
+			mesg ＶＲオブジェ 箱影:12 crumble
+			mesg ステージアウトライン 箱ライン:05 非表示
+			mesg フェードオブジェ 箱トンボ:05 フェードアウト
+			mesg ＶＲオブジェ デモ箱:05 kill
+			mesg ＶＲオブジェ デモ箱影:12 kill
+		}
+		case ( 箱:06 ) {
+			command 追加ＨＺＸグループ削除 -hzx_id 0 -add_id 11
+			mesg ステージアウトライン 箱ライン:06 非表示
+			mesg フェードオブジェ 箱トンボ:06 フェードアウト
+			mesg ＶＲオブジェ デモ箱:06 kill
+		}
+		case ( 箱:07 ) {
+			command 追加ＨＺＸグループ削除 -hzx_id 0 -add_id 12
+			mesg ステージアウトライン 箱ライン:07 非表示
+			mesg フェードオブジェ 箱トンボ:07 フェードアウト
+			mesg ＶＲオブジェ デモ箱:07 kill
+		}
+		case ( 箱:08 ) {
+			command 追加ＨＺＸグループ削除 -hzx_id 0 -add_id 13
+			mesg ステージアウトライン 箱ライン:08 非表示
+			mesg フェードオブジェ 箱トンボ:08 フェードアウト
+			mesg ＶＲオブジェ デモ箱:08 kill
+		}
+		case ( 箱:09 ) {
+			command 追加ＨＺＸグループ削除 -hzx_id 0 -add_id 14
+			mesg ＶＲオブジェ 箱09への影 crumble
+			mesg ＶＲオブジェ 箱影:09 crumble
+			command トラップ切り替え -trap ca003 -switch 0
+			command トラップ切り替え -trap ca007 -switch 0
+			mesg ステージアウトライン 箱ライン:09 非表示
+			mesg フェードオブジェ 箱トンボ:09 フェードアウト
+			mesg ＶＲオブジェ デモ箱:09 kill
+			mesg ＶＲオブジェ デモ用箱09への影 kill
+			mesg ＶＲオブジェ デモ箱影:09 kill
+		}
+		case ( 箱:10 ) {
+			command 追加ＨＺＸグループ削除 -hzx_id 0 -add_id 15
+			command トラップ切り替え -trap ca005 -switch 0
+			mesg ステージアウトライン 箱ライン:10 非表示
+			mesg フェードオブジェ 箱トンボ:10 フェードアウト
+			mesg ＶＲオブジェ デモ箱:10 kill
+		}
+		case ( 箱:11 ) {
+			command 追加ＨＺＸグループ削除 -hzx_id 0 -add_id 16
+			mesg ＶＲオブジェ 箱影:11 crumble
+			command トラップ切り替え -trap ca006 -switch 0
+			mesg ステージアウトライン 箱ライン:11 非表示
+			mesg フェードオブジェ 箱トンボ:11 フェードアウト
+			mesg ＶＲオブジェ デモ箱:11 kill
+			mesg ＶＲオブジェ デモ箱影:11 kill
+		}
+		case ( 箱:12 ) {
+			command 追加ＨＺＸグループ削除 -hzx_id 0 -add_id 17
+			mesg ＶＲオブジェ 箱影:12 crumble
+			command トラップ切り替え -trap ca002 -switch 0
+			command トラップ切り替え -trap ca004 -switch 0
+			mesg ステージアウトライン 箱ライン:12 非表示
+			mesg フェードオブジェ 箱トンボ:12 フェードアウト
+			mesg ＶＲオブジェ デモ箱:12 kill
+			mesg ＶＲオブジェ デモ箱影:12 kill
+		}
+		case ( 箱:13 ) {
+			command 追加ＨＺＸグループ削除 -hzx_id 0 -add_id 18
+			mesg ステージアウトライン 箱ライン:13 非表示
+			mesg フェードオブジェ 箱トンボ:13 フェードアウト
+			mesg ＶＲオブジェ デモ箱:13 kill
+		}
+	}
+}
+
+proc ザコサバイバル用アウトライン {
+	#if d:DEBUG_PRINT
+		print 'vr_outline set'
+	#endif
+
+	if ( $b:ステージ番号 <= d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+		// ザコサバイバルステージ
+		command foreach -argc 2 -repeat 14 \
+			-data { \
+					{ zako_outline ステージ全体ライン } \
+					{ sp03a_box01 箱ライン:01 } \
+					{ sp03a_box02 箱ライン:02 } \
+					{ sp03a_box03 箱ライン:03 } \
+					{ sp03a_box04 箱ライン:04 } \
+					{ sp03a_box05 箱ライン:05 } \
+					{ sp03a_box06 箱ライン:06 } \
+					{ sp03a_box07 箱ライン:07 } \
+					{ sp03a_box08 箱ライン:08 } \
+					{ sp03a_box09 箱ライン:09 } \
+					{ sp03a_box10 箱ライン:10 } \
+					{ sp03a_box11 箱ライン:11 } \
+					{ sp03a_box12 箱ライン:12 } \
+					{ sp03a_box13 箱ライン:13 } \
+			} \
+			-exec { \
+					chara ステージアウトライン $2 -file $1 -a_color 100 100 100 128
+			}
+
+		command foreach -argc 2 -repeat 3 \
+			-data { \
+					{ grg_outline ゴルルゴンステージライン } \
+					{ mgr_outline メカゲノラステージライン } \
+					{ gnr_outline ゲノラステージライン } \
+			} \
+			-exec { \
+					chara ステージアウトライン $2 -file $1 -a_color 100 100 100 128
+					mesg ステージアウトライン $2 非表示
+			}
+
+		command foreach -argc 2 -repeat 14 \
+			-data { \
+					{ sp03a3_tonbo ステージトンボ:01 } \
+					{ sp03a4_tonbo ステージトンボ:02 } \
+					{ sp03a_box01_tonbo 箱トンボ:01 } \
+					{ sp03a_box02_tonbo 箱トンボ:02 } \
+					{ sp03a_box03_tonbo 箱トンボ:03 } \
+					{ sp03a_box05_tonbo 箱トンボ:05 } \
+					{ sp03a_box06_tonbo 箱トンボ:06 } \
+					{ sp03a_box07_tonbo 箱トンボ:07 } \
+					{ sp03a_box08_tonbo 箱トンボ:08 } \
+					{ sp03a_box09_tonbo 箱トンボ:09 } \
+					{ sp03a_box10_tonbo 箱トンボ:10 } \
+					{ sp03a_box11_tonbo 箱トンボ:11 } \
+					{ sp03a_box12_tonbo 箱トンボ:12 } \
+					{ sp03a_box13_tonbo 箱トンボ:13 } \
+			} \
+			-exec { \
+				chara フェードオブジェ $2 \
+					-pos 0, 0, 0 \
+					-rgb 80 80 80 \	/*最も明るくなったときの値*/
+					-time 90 \			/*最も明るくなるまでの時間*/
+					-kms $1
+			}
+
+		chara フェードオブジェ アウトライン \
+			-pos 0, 0, 0 \
+			-rgb 160, 160, 160 \	/*最も明るくなったときの値*/
+			-time 45 \			/*最も明るくなるまでの時間*/
+			-kms sp03a3_line
+
+		chara フェードオブジェ アウトライン箱:01 \
+			-pos 0, 0, 0 \
+			-rgb 160, 160, 160 \	/*最も明るくなったときの値*/
+			-time 45 \			/*最も明るくなるまでの時間*/
+			-kms sp03a_box01_line
+
+	} else if ( $b:ステージ番号 == d:ZAKO_STAGE:GURLUGON ) {
+		// ゴルルゴンステージ
+		command foreach -argc 2 -repeat 14 \
+			-data { \
+					{ grg_outline ステージ全体ライン } \
+					{ sp03a_box01 箱ライン:01 } \
+					{ sp03a_box02 箱ライン:02 } \
+					{ sp03a_box03 箱ライン:03 } \
+					{ sp03a_box04 箱ライン:04 } \
+					{ sp03a_box05 箱ライン:05 } \
+					{ sp03a_box06 箱ライン:06 } \
+					{ sp03a_box07 箱ライン:07 } \
+					{ sp03a_box08 箱ライン:08 } \
+					{ sp03a_box09 箱ライン:09 } \
+					{ sp03a_box10 箱ライン:10 } \
+					{ sp03a_box11 箱ライン:11 } \
+					{ sp03a_box12 箱ライン:12 } \
+					{ sp03a_box13 箱ライン:13 } \
+			} \
+			-exec { \
+					chara ステージアウトライン $2 -file $1 -a_color 100 100 100 128
+			}
+
+		command foreach -argc 2 -repeat 14 \
+			-data { \
+					{ sp03a3_tonbo ステージトンボ:01 } \
+					{ sp03a1_tonbo ステージトンボ:02 } \
+					{ sp03a_box01_tonbo 箱トンボ:01 } \
+					{ sp03a_box02_tonbo 箱トンボ:02 } \
+					{ sp03a_box03_tonbo 箱トンボ:03 } \
+					{ sp03a_box05_tonbo 箱トンボ:05 } \
+					{ sp03a_box06_tonbo 箱トンボ:06 } \
+					{ sp03a_box07_tonbo 箱トンボ:07 } \
+					{ sp03a_box08_tonbo 箱トンボ:08 } \
+					{ sp03a_box09_tonbo 箱トンボ:09 } \
+					{ sp03a_box10_tonbo 箱トンボ:10 } \
+					{ sp03a_box11_tonbo 箱トンボ:11 } \
+					{ sp03a_box12_tonbo 箱トンボ:12 } \
+					{ sp03a_box13_tonbo 箱トンボ:13 } \
+			} \
+			-exec { \
+				chara フェードオブジェ $2 \
+					-pos 0, 0, 0 \
+					-rgb 80 80 80 \	/*最も明るくなったときの値*/
+					-time 90 \			/*最も明るくなるまでの時間*/
+					-kms $1
+			}
+
+		chara フェードオブジェ アウトライン \
+			-pos 0, 0, 0 \
+			-rgb 160, 160, 160 \	/*最も明るくなったときの値*/
+			-time 45 \			/*最も明るくなるまでの時間*/
+			-kms sp03a3_line
+
+		chara フェードオブジェ アウトライン箱:01 \
+			-pos 0, 0, 0 \
+			-rgb 160, 160, 160 \	/*最も明るくなったときの値*/
+			-time 45 \			/*最も明るくなるまでの時間*/
+			-kms sp03a_box01_line
+
+	} else if ( $b:ステージ番号 == d:ZAKO_STAGE:MECHGENOLA ) {
+		// メカゲノラステージ
+		command foreach -argc 2 -repeat 14 \
+			-data { \
+					{ mgr_outline ステージ全体ライン } \
+					{ sp03a_box01 箱ライン:01 } \
+					{ sp03a_box02 箱ライン:02 } \
+					{ sp03a_box03 箱ライン:03 } \
+					{ sp03a_box04 箱ライン:04 } \
+					{ sp03a_box05 箱ライン:05 } \
+					{ sp03a_box06 箱ライン:06 } \
+					{ sp03a_box07 箱ライン:07 } \
+					{ sp03a_box08 箱ライン:08 } \
+					{ sp03a_box09 箱ライン:09 } \
+					{ sp03a_box10 箱ライン:10 } \
+					{ sp03a_box11 箱ライン:11 } \
+					{ sp03a_box12 箱ライン:12 } \
+					{ sp03a_box13 箱ライン:13 } \
+			} \
+			-exec { \
+					chara ステージアウトライン $2 -file $1 -a_color 100 100 100 128
+			}
+
+		command foreach -argc 2 -repeat 14 \
+			-data { \
+					{ sp03a3_tonbo ステージトンボ:01 } \
+					{ sp03a1_tonbo ステージトンボ:02 } \
+					{ sp03a_box01_tonbo 箱トンボ:01 } \
+					{ sp03a_box02_tonbo 箱トンボ:02 } \
+					{ sp03a_box03_tonbo 箱トンボ:03 } \
+					{ sp03a_box05_tonbo 箱トンボ:05 } \
+					{ sp03a_box06_tonbo 箱トンボ:06 } \
+					{ sp03a_box07_tonbo 箱トンボ:07 } \
+					{ sp03a_box08_tonbo 箱トンボ:08 } \
+					{ sp03a_box09_tonbo 箱トンボ:09 } \
+					{ sp03a_box10_tonbo 箱トンボ:10 } \
+					{ sp03a_box11_tonbo 箱トンボ:11 } \
+					{ sp03a_box12_tonbo 箱トンボ:12 } \
+					{ sp03a_box13_tonbo 箱トンボ:13 } \
+			} \
+			-exec { \
+				chara フェードオブジェ $2 \
+					-pos 0, 0, 0 \
+					-rgb 80 80 80 \	/*最も明るくなったときの値*/
+					-time 90 \			/*最も明るくなるまでの時間*/
+					-kms $1
+			}
+
+		chara フェードオブジェ アウトライン \
+			-pos 0, 0, 0 \
+			-rgb 160, 160, 160 \	/*最も明るくなったときの値*/
+			-time 45 \			/*最も明るくなるまでの時間*/
+			-kms sp03a3_line
+
+		chara フェードオブジェ アウトライン箱:01 \
+			-pos 0, 0, 0 \
+			-rgb 160, 160, 160 \	/*最も明るくなったときの値*/
+			-time 45 \			/*最も明るくなるまでの時間*/
+			-kms sp03a_box01_line
+
+	} else if ( $b:ステージ番号 == d:ZAKO_STAGE:GENOLA ) {
+		// ゲノラステージ
+		command foreach -argc 2 -repeat 2 \
+			-data { \
+					{ gnr_outline ステージ全体ライン } \
+					{ sp03a_box13 箱ライン:13 } \
+			} \
+			-exec { \
+					chara ステージアウトライン $2 -file $1 -a_color 100 100 100 128
+			}
+
+		command foreach -argc 2 -repeat 2 \
+			-data { \
+					{ sp03a0 対決ステージライン } \
+					{ gnr_outline2 ステージ全体ライン壁なし } \
+			} \
+			-exec { \
+					chara ステージアウトライン $2 -file $1 -a_color 100 100 100 128
+					mesg ステージアウトライン $2 非表示
+			}
+
+		command foreach -argc 2 -repeat 3 \
+			-data { \
+					{ sp03a0_tonbo ステージトンボ:01 } \
+					{ sp03a1_tonbo ステージトンボ:02 } \
+					{ sp03a_box13_tonbo 箱トンボ:13 } \
+			} \
+			-exec { \
+				chara フェードオブジェ $2 \
+					-pos 0, 0, 0 \
+					-rgb 80 80 80 \	/*最も明るくなったときの値*/
+					-time 90 \			/*最も明るくなるまでの時間*/
+					-kms $1
+			}
+
+		chara フェードオブジェ アウトライン \
+			-pos 0, 0, 0 \
+			-rgb 160, 160, 160 \	/*最も明るくなったときの値*/
+			-time 45 \			/*最も明るくなるまでの時間*/
+			-kms sp03a0_line
+
+	}
+
+}
+
+
+// ------------------------------------
+// プレイヤーに関する設定
+//-------------------------------------
+// プラグインプログラム
+// ------------------------------------
+proc プラグイン設定 {
+	#if d:DEBUG_PRINT
+		print 'plugin_set'
+	#endif
+
+	command プラグイン自動ジャンプ
+	command プラグイン落下
+	if ( $s:選択プレイヤー == ライデン ) {
+		if ( $b:ステージ番号 == d:ZAKO_STAGE:GURLUGON ) {
+			// ゴルルゴンステージではプラグインがぶつかるので、使用不可
+			command	不可装備設定 -weapon d:武器:ブレード
+		} else {
+			command プラグインブレード -m rai_blade
+		}
+	}
+
+	if ( $b:ステージ番号 == d:ZAKO_STAGE:GURLUGON ) {
+		// ゴルルゴンが行う
+		command プラグイン影縛り
+	}
+
+}
+//-------------------------------------
+// 台登り
+// ------------------------------------
+proc ジャンプ設定 {
+	#if d:DEBUG_PRINT
+		print 'jump_set'
+	#endif
+
+	trap ky001 d:PLAYER \
+		-mask 入る \
+		-exec {
+			@ジャンプ発動 ky001 1000 10
+		}
+}
+
+
+// ------------------------------------
+// 敵兵や的の処理
+// ------------------------------------
+// 敵兵に関する設定
+//-------------------------------------
+// ザコサバイバル専用共通プロック
+proc ザコサバイバル兵_ゴル兵 $:p_名前 $:p_ルート $:p_ステータス $:p_拡張ステータス $:p_装備 $:p_拡張フラグ {
+	#if d:DEBUG_PRINT
+		print 'zako_soldier_gol_set'
+	#endif
+
+	chara 長廊下兵 $:p_名前 \
+		-r $:p_ルート \
+		-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+		-l $w:敵標準体力 -f $w:敵標準気絶 \
+		-s $:p_ステータス \
+		-k $:p_拡張ステータス \
+		-e $:p_装備 \
+		-v $:p_拡張フラグ \
+		-t 0
+
+}
+
+proc ザコサバイバル兵_天狗兵 $:p_名前 $:p_ルート $:p_ステータス $:p_拡張ステータス $:p_タイプ {
+	#if d:DEBUG_PRINT
+		print 'zako_soldier_gol_set'
+	#endif
+
+	chara 天狗兵Ｂ $:p_名前 \
+		-k $:p_拡張ステータス \ /*警備兵と共通*/
+		-r $:p_ルート \
+		-s $:p_ステータス \
+		-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+		-l $w:敵標準体力 -f $w:敵標準気絶 \
+		-type $:p_タイプ
+}
+
+
+
+
+
+/////////////////////////////////////////////
+// ザコサバイバル-ライデンのセット
+// 後衛で拠点防衛する兵士のセット（ライデン）
+proc 後衛兵セット_ライデン {
+	#if d:DEBUG_PRINT 
+		print 'watcher_set'
+	#endif
+
+	switch ( $b:ステージ番号 ) {
+		case ( d:ZAKO_STAGE:G_SOL_1 ) {
+			@ザコサバイバル兵_ゴル兵 敵兵:01 0 d:ENE_NOM_STATUS_SP03A 0
+		}
+		case ( d:ZAKO_STAGE:G_SOLS_TEAM ) {
+			@ザコサバイバル兵_ゴル兵 敵兵:01 1 d:ENE_NOM_STATUS_SP03A d:アナザーダーク 
+			@ザコサバイバル兵_ゴル兵 敵兵:02 2 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+			@ザコサバイバル兵_ゴル兵 敵兵:03 3 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+			@ザコサバイバル兵_ゴル兵 敵兵:04 4 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+		}
+		case ( d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+			#if d:DEMO_DEBUG
+				// シナリオデモ作成用
+				@ザコサバイバル兵_ゴル兵 敵兵:01 7 d:ENE_NOM_STATUS_SP03A 0
+			#else
+				// 本番用
+				@ザコサバイバル兵_ゴル兵 敵兵:01 7 d:ENE_NOM_STATUS_SP03A 0
+				@ザコサバイバル兵_ゴル兵 敵兵:02 8 d:ENE_NOM_STATUS_SP03A 0
+				@ザコサバイバル兵_ゴル兵 敵兵:03 9 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+				@ザコサバイバル兵_ゴル兵 敵兵:04 10 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+				@ザコサバイバル兵_ゴル兵 敵兵:05 11 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+			#endif
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!不正な値が入っています。$b:ステージ番号='$b:ステージ番号
+			#endif
+
+			command assert ( d:FALSE ) 'stage no error  (scenario err) 後衛兵セット_ライデン'
+			
+		}
+	}
+}
+
+// 後衛兵用のコマンダー（ライデン用）
+proc 後衛兵コマンダー_ライデン {
+	#if d:DEBUG_PRINT 
+		print 'watcher_com_set'
+	#endif
+
+	switch ( $b:ステージ番号 ) {
+		case ( d:ZAKO_STAGE:G_SOL_1 ) {
+			chara 長廊下コマンダー wccomm \
+				-e { 後衛兵セット_ライデン } \
+				-defense \
+					d:D_POS_1F_33 \
+					d:D_POS_1F_29 \
+					d:D_POS_1F_25 \
+					d:D_POS_1F_26 \
+					d:D_POS_1F_32 \
+					d:D_POS_1F_34 \
+					d:D_POS_1F_35 \
+					d:D_POS_1F_43 \
+					d:D_POS_1F_21 \
+					d:D_POS_1F_22 \
+					d:D_POS_1F_23 \
+					d:D_POS_1F_24 \
+					d:D_POS_1F_27 \
+					d:D_POS_1F_28 \
+					d:D_POS_1F_30 \
+					d:D_POS_1F_31 \
+				-type	0 \
+				-final	d:FINAL_POS_01
+
+		}
+		case ( d:ZAKO_STAGE:G_SOLS_TEAM ) {
+			chara 長廊下コマンダー wccomm \
+				-e { 後衛兵セット_ライデン } \
+				-defense \
+					d:D_POS_3F_02 \
+					d:D_POS_2F_19 \
+					d:D_POS_1F_26 \
+					d:D_POS_1F_34 \
+					d:D_POS_3F_03 \
+					d:D_POS_3F_08 \
+					d:D_POS_3F_09 \
+					d:D_POS_2F_16 \
+					d:D_POS_1F_23 \
+					d:D_POS_1F_24 \
+					d:D_POS_1F_25 \
+					d:D_POS_1F_28 \
+					d:D_POS_1F_31 \
+					d:D_POS_1F_32 \
+					d:D_POS_1F_33 \
+					d:D_POS_1F_35 \
+				-type	0 \
+				-final	d:FINAL_POS_01
+		}
+		case ( d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+			chara 長廊下コマンダー wccomm \
+				-e { 後衛兵セット_ライデン  } \
+				-defense \
+					d:D_POS_2F_16 \
+					d:D_POS_3F_08 \
+					d:D_POS_1F_33 \
+					d:D_POS_1F_25 \
+					d:D_POS_1F_34 \
+					d:D_POS_3F_01 \
+					d:D_POS_3F_03 \
+					d:D_POS_3F_10 \
+					d:D_POS_2F_19 \
+					d:D_POS_1F_43 \
+					d:D_POS_1F_24 \
+					d:D_POS_1F_26 \
+					d:D_POS_1F_28 \
+					d:D_POS_1F_31 \
+					d:D_POS_1F_36 \
+					d:D_POS_1F_37 \
+				-type	0 \
+				-final	d:FINAL_POS_01 \
+				#if d:DEMO_DEBUG
+					-k 0	// シナリオデモ作成用
+				#else
+					-k 3	// 本番用
+				#endif
+
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!不正な値が入っています。$b:ステージ番号='$b:ステージ番号
+			#endif
+
+			command assert ( d:FALSE ) 'stage no error  (scenario err) 後衛兵コマンダー_ライデン'
+		}
+	}
+}
+
+// 前衛で突撃してくる兵士のセット（ライデン）
+proc 前衛兵セット_ライデン {
+	#if d:DEBUG_PRINT 
+		print 'attacker_set'
+	#endif
+	switch ( $b:ステージ番号 ) {
+		case ( d:ZAKO_STAGE:G_SOL_1 ) {
+		}
+		case ( d:ZAKO_STAGE:G_SOLS_TEAM ) {
+			@A_拡張攻撃兵 敵兵:11 5 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:ENE_EQUIP_TYPE_SHIELD
+			@A_拡張攻撃兵 敵兵:12 6 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:ENE_EQUIP_TYPE_SHIELD
+		}
+		case ( d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+			#if d:DEMO_DEBUG
+				// シナリオデモ作成用
+				@ザコサバイバル兵_天狗兵 敵兵:01 12 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:EQUIP_BLADE
+			#else
+				// 本番用
+				@ザコサバイバル兵_天狗兵 敵兵:01 12 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:EQUIP_BLADE
+				@ザコサバイバル兵_天狗兵 敵兵:02 13 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:EQUIP_P90
+			#endif
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!不正な値が入っています。$b:ステージ番号='$b:ステージ番号
+			#endif
+
+			command assert ( d:FALSE ) 'stage no error  (scenario err) 前衛兵セット_ライデン'
+			
+		}
+	}
+
+}
+
+// 前衛兵用のコマンダー（ライデン用）
+proc 前衛兵コマンダー_ライデン {
+	#if d:DEBUG_PRINT 
+		print 'attacker_com_set'
+	#endif
+
+	switch ( $b:ステージ番号 ) {
+		case ( d:ZAKO_STAGE:G_SOL_1 ) {
+		}
+		case ( d:ZAKO_STAGE:G_SOLS_TEAM ) {
+			chara 攻撃コマンダー atcomm -e { 前衛兵セット_ライデン }
+		}
+		case ( d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+			chara 天狗兵コマンダー tng_com \
+				-e { 前衛兵セット_ライデン } \
+				-type 1	\ //0でw42用 1でw44w45用
+				-res d:R_POS_11 d:R_POS_12 d:R_POS_13 d:R_POS_14 d:R_POS_15 \
+				-mode d:TNG_COM_MULTITEX_AUTO \
+				-warp re001 \	/*強制移動トラップ名前*/
+				#if d:DEMO_DEBUG
+					-k 0	// シナリオデモ作成用
+				#else
+					-k 4	// 本番用
+				#endif
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!不正な値が入っています。$b:ステージ番号='$b:ステージ番号
+			#endif
+
+			command assert ( d:FALSE ) 'stage no error  (scenario err) 前衛兵コマンダー_ライデン'
+		}
+	}
+}
+
+
+
+
+
+/////////////////////////////////////////////
+// ザコサバイバル-スネークのセット
+// 後衛で拠点防衛する兵士のセット（スネーク）
+proc 後衛兵セット_スネーク {
+	#if d:DEBUG_PRINT 
+		print 'watcher_set'
+	#endif
+
+	switch ( $b:ステージ番号 ) {
+		case ( d:ZAKO_STAGE:G_SOL_1 ) {
+			@ザコサバイバル兵_ゴル兵 敵兵:01 14 d:ENE_NOM_STATUS_SP03A 0
+		}
+		case ( d:ZAKO_STAGE:G_SOLS_TEAM ) {
+			@ザコサバイバル兵_ゴル兵 敵兵:01 15 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+			@ザコサバイバル兵_ゴル兵 敵兵:02 16 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+			@ザコサバイバル兵_ゴル兵 敵兵:03 17 d:ENE_NOM_STATUS_SP03A 0
+			@ザコサバイバル兵_ゴル兵 敵兵:04 18 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+			@ザコサバイバル兵_ゴル兵 敵兵:05 19 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+		}
+		case ( d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+			#if d:DEMO_DEBUG
+				// シナリオデモ作成用
+				@ザコサバイバル兵_ゴル兵 敵兵:01 23 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+			#else
+				// 本番用
+				@ザコサバイバル兵_ゴル兵 敵兵:01 23 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+				@ザコサバイバル兵_ゴル兵 敵兵:02 24 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+				@ザコサバイバル兵_ゴル兵 敵兵:03 25 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+				@ザコサバイバル兵_ゴル兵 敵兵:04 26 d:ENE_NOM_STATUS_SP03A 0
+				@ザコサバイバル兵_ゴル兵 敵兵:05 27 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+				@ザコサバイバル兵_ゴル兵 敵兵:06 28 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+			#endif
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!不正な値が入っています。$b:ステージ番号='$b:ステージ番号
+			#endif
+
+			command assert ( d:FALSE ) 'stage no error  (scenario err) 後衛兵セット_スネーク'
+			
+		}
+	}
+}
+
+// 後衛兵用のコマンダー（スネーク用）
+proc 後衛兵コマンダー_スネーク {
+	#if d:DEBUG_PRINT 
+		print 'watcher_com_set'
+	#endif
+
+	switch ( $b:ステージ番号 ) {
+		case ( d:ZAKO_STAGE:G_SOL_1 ) {
+			chara 長廊下コマンダー wccomm \
+				-e { 後衛兵セット_スネーク } \
+				-defense \
+					d:D_POS_1F_29 \
+					d:D_POS_1F_33 \
+					d:D_POS_1F_32 \
+					d:D_POS_1F_26 \
+					d:D_POS_1F_27 \
+					d:D_POS_1F_34 \
+					d:D_POS_1F_35 \
+					d:D_POS_1F_24 \
+					d:D_POS_1F_23 \
+					d:D_POS_1F_30 \
+					d:D_POS_1F_31 \
+					d:D_POS_1F_43 \
+					d:D_POS_1F_21 \
+					d:D_POS_1F_22 \
+					d:D_POS_1F_25 \
+					d:D_POS_1F_28 \
+				-type	0 \
+				-final	d:FINAL_POS_01
+
+		}
+		case ( d:ZAKO_STAGE:G_SOLS_TEAM ) {
+			chara 長廊下コマンダー wccomm \
+				-e { 後衛兵セット_スネーク } \
+				-defense \
+					d:D_POS_3F_10 \
+					d:D_POS_2F_16 \
+					d:D_POS_1F_24 \
+					d:D_POS_1F_26 \
+					d:D_POS_1F_32 \
+					d:D_POS_3F_01 \
+					d:D_POS_1F_25 \
+					d:D_POS_2F_20 \
+					d:D_POS_1F_28 \
+					d:D_POS_1F_34 \
+					d:D_POS_3F_03 \
+					d:D_POS_1F_31 \
+					d:D_POS_3F_08 \
+					d:D_POS_1F_43 \
+					d:D_POS_1F_23 \
+					d:D_POS_1F_30 \
+				-type	0 \
+				-final	d:FINAL_POS_01
+		}
+		case ( d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+			chara 長廊下コマンダー wccomm \
+				-e { 後衛兵セット_スネーク  } \
+				-defense \
+					d:D_POS_3F_04 \
+					d:D_POS_2F_19 \
+					d:D_POS_3F_10 \
+					d:D_POS_1F_30 \
+					d:D_POS_1F_32 \
+					d:D_POS_1F_25 \
+					d:D_POS_3F_01 \
+					d:D_POS_2F_15 \
+					d:D_POS_1F_39 \
+					d:D_POS_1F_31 \
+					d:D_POS_1F_34 \
+					d:D_POS_1F_24 \
+					d:D_POS_3F_08 \
+					d:D_POS_1F_27 \
+					d:D_POS_1F_23 \
+					d:D_POS_1F_40 \
+				-type	0 \
+				-final	d:FINAL_POS_01 \
+				#if d:DEMO_DEBUG
+					-k 0 // シナリオデモ作成用
+				#else
+					-k 5 // 本番用
+				#endif
+
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!不正な値が入っています。$b:ステージ番号='$b:ステージ番号
+			#endif
+
+			command assert ( d:FALSE ) 'stage no error  (scenario err) 後衛兵コマンダー_スネーク'
+		}
+	}
+}
+
+// 前衛で突撃してくる兵士のセット（スネーク）
+proc 前衛兵セット_スネーク {
+	#if d:DEBUG_PRINT 
+		print 'attacker_set'
+	#endif
+	switch ( $b:ステージ番号 ) {
+		case ( d:ZAKO_STAGE:G_SOL_1 ) {
+		}
+		case ( d:ZAKO_STAGE:G_SOLS_TEAM ) {
+			@A_拡張攻撃兵 敵兵:11 20 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:ENE_EQUIP_TYPE_SHIELD
+			@A_拡張攻撃兵 敵兵:12 21 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:ENE_EQUIP_TYPE_SHOTGUN
+			@A_拡張攻撃兵 敵兵:13 22 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:ENE_EQUIP_TYPE_HITECH_1
+		}
+		case ( d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+			#if d:DEMO_DEBUG
+				// シナリオデモ作成用
+				@ザコサバイバル兵_天狗兵 敵兵:01 29 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:EQUIP_BLADE
+			#else
+				// 本番用
+				@ザコサバイバル兵_天狗兵 敵兵:01 29 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:EQUIP_BLADE
+				@ザコサバイバル兵_天狗兵 敵兵:02 30 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:EQUIP_BLADE
+				@ザコサバイバル兵_天狗兵 敵兵:03 31 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:EQUIP_P90
+			#endif
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!不正な値が入っています。$b:ステージ番号='$b:ステージ番号
+			#endif
+
+			command assert ( d:FALSE ) 'stage no error  (scenario err) 前衛兵セット_スネーク'
+			
+		}
+	}
+}
+
+// 前衛兵用のコマンダー（スネーク用）
+proc 前衛兵コマンダー_スネーク {
+	#if d:DEBUG_PRINT 
+		print 'attacker_com_set'
+	#endif
+
+	switch ( $b:ステージ番号 ) {
+		case ( d:ZAKO_STAGE:G_SOL_1 ) {
+		}
+		case ( d:ZAKO_STAGE:G_SOLS_TEAM ) {
+			chara 攻撃コマンダー atcomm -e { 前衛兵セット_スネーク }
+		}
+		case ( d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+			chara 天狗兵コマンダー tng_com \
+				-e { 前衛兵セット_スネーク } \
+				-type 1	\ //0でw42用 1でw44w45用
+				-res d:R_POS_11 d:R_POS_12 d:R_POS_13 d:R_POS_14 d:R_POS_15 \
+				-mode d:TNG_COM_MULTITEX_AUTO \
+				-warp re001 \	/*強制移動トラップ名前*/
+				#if d:DEMO_DEBUG
+					-k 0 // シナリオデモ作成用
+				#else
+					-k 4 // 本番用
+				#endif
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!不正な値が入っています。$b:ステージ番号='$b:ステージ番号
+			#endif
+
+			command assert ( d:FALSE ) 'stage no error  (scenario err) 前衛兵コマンダー_スネーク'
+		}
+	}
+}
+
+
+
+
+
+/////////////////////////////////////////////
+// ザコサバイバル-前作スネークのセット
+// 後衛で拠点防衛する兵士のセット（前作スネーク）
+proc 後衛兵セット_前作スネーク {
+	#if d:DEBUG_PRINT 
+		print 'watcher_set'
+	#endif
+
+	switch ( $b:ステージ番号 ) {
+		case ( d:ZAKO_STAGE:G_SOL_1 ) {
+			@ザコサバイバル兵_ゴル兵 敵兵:01 32 d:ENE_OPT_STATUS_SP03A d:アナザーダーク
+		}
+		case ( d:ZAKO_STAGE:G_SOLS_TEAM ) {
+			@ザコサバイバル兵_ゴル兵 敵兵:01 33 d:ENE_OPT_STATUS_SP03A d:アナザーダーク
+			@ザコサバイバル兵_ゴル兵 敵兵:02 34 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+			@ザコサバイバル兵_ゴル兵 敵兵:03 35 d:ENE_OPT_STATUS_SP03A 0
+			@ザコサバイバル兵_ゴル兵 敵兵:04 36 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+			@ザコサバイバル兵_ゴル兵 敵兵:05 37 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+		}
+		case ( d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+			#if d:DEMO_DEBUG
+				// シナリオデモ作成用
+				@ザコサバイバル兵_ゴル兵 敵兵:01 42 d:ENE_OPT_STATUS_SP03A d:アナザーダーク
+			#else
+				// 本番用
+				@ザコサバイバル兵_ゴル兵 敵兵:01 42 d:ENE_OPT_STATUS_SP03A d:アナザーダーク
+				@ザコサバイバル兵_ゴル兵 敵兵:02 43 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+				@ザコサバイバル兵_ゴル兵 敵兵:03 44 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+				@ザコサバイバル兵_ゴル兵 敵兵:04 45 d:ENE_OPT_STATUS_SP03A 0
+				@ザコサバイバル兵_ゴル兵 敵兵:05 46 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+				@ザコサバイバル兵_ゴル兵 敵兵:06 47 d:ENE_NOM_STATUS_SP03A d:アナザーダーク
+			#endif
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!不正な値が入っています。$b:ステージ番号='$b:ステージ番号
+			#endif
+
+			command assert ( d:FALSE ) 'stage no error  (scenario err) 後衛兵セット_前作スネーク'
+			
+		}
+	}
+}
+
+// 後衛兵用のコマンダー（前作スネーク用）
+proc 後衛兵コマンダー_前作スネーク {
+	#if d:DEBUG_PRINT 
+		print 'watcher_com_set'
+	#endif
+
+	switch ( $b:ステージ番号 ) {
+		case ( d:ZAKO_STAGE:G_SOL_1 ) {
+			chara 長廊下コマンダー wccomm \
+				-e { 後衛兵セット_前作スネーク } \
+				-defense \
+					d:D_POS_1F_21 \
+					d:D_POS_1F_22 \
+					d:D_POS_1F_23 \
+					d:D_POS_1F_25 \
+					d:D_POS_1F_26 \
+					d:D_POS_1F_27 \
+					d:D_POS_1F_28 \
+					d:D_POS_1F_29 \
+					d:D_POS_1F_30 \
+					d:D_POS_1F_31 \
+					d:D_POS_1F_32 \
+					d:D_POS_1F_33 \
+					d:D_POS_1F_34 \
+					d:D_POS_1F_35 \
+					d:D_POS_2F_16 \
+					d:D_POS_2F_19 \
+				-type	0 \
+				-final	d:FINAL_POS_01 \
+				-status d:DEF_COM_ST_RNDPOS
+
+		}
+		case ( d:ZAKO_STAGE:G_SOLS_TEAM ) {
+			chara 長廊下コマンダー wccomm \
+				-e { 後衛兵セット_前作スネーク } \
+				-defense \
+					d:D_POS_3F_03 \
+					d:D_POS_3F_05 \
+					d:D_POS_3F_07 \
+					d:D_POS_3F_10 \
+					d:D_POS_2F_16 \
+					d:D_POS_2F_17 \
+					d:D_POS_2F_18 \
+					d:D_POS_1F_22 \
+					d:D_POS_1F_23 \
+					d:D_POS_1F_25 \
+					d:D_POS_1F_26 \
+					d:D_POS_1F_28 \
+					d:D_POS_1F_30 \
+					d:D_POS_1F_31 \
+					d:D_POS_1F_33 \
+					d:D_POS_1F_35 \
+				-type	0 \
+				-final	d:FINAL_POS_01 \
+				-status d:DEF_COM_ST_RNDPOS
+
+		}
+		case ( d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+			chara 長廊下コマンダー wccomm \
+				-e { 後衛兵セット_前作スネーク  } \
+				-defense \
+					d:D_POS_3F_01 \
+					d:D_POS_3F_04 \
+					d:D_POS_3F_06 \
+					d:D_POS_3F_08 \
+					d:D_POS_3F_10 \
+					d:D_POS_2F_17 \
+					d:D_POS_2F_19 \
+					d:D_POS_1F_22 \
+					d:D_POS_1F_23 \
+					d:D_POS_1F_25 \
+					d:D_POS_1F_27 \
+					d:D_POS_1F_31 \
+					d:D_POS_1F_32 \
+					d:D_POS_1F_35 \
+					d:D_POS_1F_37 \
+					d:D_POS_1F_41 \
+				-type	0 \
+				-final	d:FINAL_POS_01 \
+				-status d:DEF_COM_ST_RNDPOS \
+				#if d:DEMO_DEBUG
+					-k 0			// シナリオデモ作成用
+				#else
+					-k 6			// 本番用
+				#endif
+
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!不正な値が入っています。$b:ステージ番号='$b:ステージ番号
+			#endif
+
+			command assert ( d:FALSE ) 'stage no error  (scenario err) 後衛兵コマンダー_前作スネーク'
+		}
+	}
+}
+
+// 前衛で突撃してくる兵士のセット（前作スネーク）
+proc 前衛兵セット_前作スネーク {
+	#if d:DEBUG_PRINT 
+		print 'attacker_set'
+	#endif
+	switch ( $b:ステージ番号 ) {
+		case ( d:ZAKO_STAGE:G_SOL_1 ) {
+		}
+		case ( d:ZAKO_STAGE:G_SOLS_TEAM ) {
+			@A_拡張攻撃兵 敵兵:11 38 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:ENE_EQUIP_TYPE_SHIELD
+			@A_拡張攻撃兵 敵兵:12 39 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:ENE_EQUIP_TYPE_SHOTGUN
+			@A_拡張攻撃兵 敵兵:13 40 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:ENE_EQUIP_TYPE_HITECH_1
+			@A_拡張攻撃兵 敵兵:14 41 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:ENE_EQUIP_TYPE_SHOTGUN
+		}
+		case ( d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+			#if d:DEMO_DEBUG
+				// シナリオデモ作成用
+				@ザコサバイバル兵_天狗兵 敵兵:01 48 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:EQUIP_BLADE
+			#else
+				// 本番用
+				@ザコサバイバル兵_天狗兵 敵兵:01 48 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:EQUIP_BLADE
+				@ザコサバイバル兵_天狗兵 敵兵:02 49 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:EQUIP_BLADE
+				@ザコサバイバル兵_天狗兵 敵兵:03 50 d:ENE_STATUS_NORMAL d:ENE_STST_FAINT_EXIT d:EQUIP_P90
+			#endif
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!不正な値が入っています。$b:ステージ番号='$b:ステージ番号
+			#endif
+
+			command assert ( d:FALSE ) 'stage no error  (scenario err) 前衛兵セット_前作スネーク'
+			
+		}
+	}
+
+}
+
+// 前衛兵用のコマンダー（前作スネーク用）
+proc 前衛兵コマンダー_前作スネーク {
+	#if d:DEBUG_PRINT 
+		print 'attacker_com_set'
+	#endif
+
+	switch ( $b:ステージ番号 ) {
+		case ( d:ZAKO_STAGE:G_SOL_1 ) {
+		}
+		case ( d:ZAKO_STAGE:G_SOLS_TEAM ) {
+			chara 攻撃コマンダー atcomm -e { 前衛兵セット_前作スネーク }
+		}
+		case ( d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+			chara 天狗兵コマンダー tng_com \
+				-e { 前衛兵セット_前作スネーク } \
+				-type 1	\ //0でw42用 1でw44w45用
+				-res d:R_POS_11 d:R_POS_12 d:R_POS_13 d:R_POS_14 d:R_POS_15 \
+				-mode d:TNG_COM_MULTITEX_AUTO \
+				-warp re001 \	/*強制移動トラップ名前*/
+				#if d:DEMO_DEBUG
+					-k 0	// シナリオデモ作成用
+				#else
+					-k 6	// 本番用
+				#endif
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!不正な値が入っています。$b:ステージ番号='$b:ステージ番号
+			#endif
+
+			command assert ( d:FALSE ) 'stage no error  (scenario err) 前衛兵コマンダー_前作スネーク'
+		}
+	}
+}
+
+
+
+
+/////////////////////////////////////////////////////////////////
+// 各兵士のコマンダー
+proc 後衛兵コマンダー {
+	#if d:DEBUG_PRINT
+		print 'wccomm_set'
+	#endif
+
+	switch ( $s:選択プレイヤー ) {
+		case ( ライデン ) {
+			@後衛兵コマンダー_ライデン
+		}
+		case ( スネーク ) {
+			@後衛兵コマンダー_スネーク
+		}
+		case ( 前作スネーク ) {
+			@後衛兵コマンダー_前作スネーク
+		}
+	}
+}
+
+proc 前衛兵コマンダー {
+	#if d:DEBUG_PRINT
+		print 'atcomm_set'
+	#endif
+
+	switch ( $s:選択プレイヤー ) {
+		case ( ライデン ) {
+			@前衛兵コマンダー_ライデン
+		}
+		case ( スネーク ) {
+			@前衛兵コマンダー_スネーク
+		}
+		case ( 前作スネーク ) {
+			@前衛兵コマンダー_前作スネーク
+		}
+	}
+}
+
+proc コマンダー設定 {
+	#if d:DEBUG_PRINT
+		print 'commander_set'
+	#endif
+
+	command 敵兵メモリーオールリセット
+
+	switch ( $b:ステージ番号 ) {
+		case ( d:ZAKO_STAGE:G_SOL_1 ) {
+			chara コマンダー 敵兵セット \
+				-a 後衛兵コマンダー \
+				-d ザコサバイバル \
+				-r d:R_POS_01 d:R_POS_02 d:R_POS_03 d:R_POS_04 \
+				-c d:R_POS_01 d:R_POS_02 d:R_POS_03 d:R_POS_04 \
+				-v [ene_plant_voice:01] \
+				-z $i:敵標準麻酔持続 \
+				-h $i:標準警戒時間 \
+				-o $i:敵標準気絶持続 \
+				-s (d:ENE_STAGE_VR_ANOTHER) \
+				-b 0 \
+				-m d:ALERT_MODE_KIKEN
+		}
+		case ( d:ZAKO_STAGE:G_SOLS_TEAM ) {
+			chara コマンダー 敵兵セット \
+				-w 前衛兵コマンダー \
+				-a 後衛兵コマンダー \
+				-d ザコサバイバル \
+				-r d:R_POS_01 d:R_POS_02 d:R_POS_03 d:R_POS_04 \
+				-c d:R_POS_01 d:R_POS_02 d:R_POS_03 d:R_POS_04 \
+				-v [ene_plant_voice:01] \
+				-z $i:敵標準麻酔持続 \
+				-h $i:標準警戒時間 \
+				-o $i:敵標準気絶持続 \
+				-s (d:ENE_STAGE_VR_ANOTHER) \
+				-b 0 \
+				-m d:ALERT_MODE_KIKEN
+		}
+		case ( d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+			chara コマンダー 敵兵セット \
+				-w 前衛兵コマンダー \
+				-a 後衛兵コマンダー \
+				-d ザコサバイバル \
+				-r d:R_POS_01 d:R_POS_02 d:R_POS_03 d:R_POS_04 \
+				-c d:R_POS_01 d:R_POS_02 d:R_POS_03 d:R_POS_04 \
+				-v [ene_plant_voice:01] \
+				-z $i:敵標準麻酔持続 \
+				-h $i:標準警戒時間 \
+				-o $i:敵標準気絶持続 \
+				-s (d:ENE_STAGE_VR_ANOTHER) \
+				#if d:DEMO_DEBUG
+					-b 0 \		// シナリオデモ作成用
+				#else
+					-b 255 \	// 本番用
+				#endif
+				-m d:ALERT_MODE_KIKEN
+
+				switch ( $s:選択プレイヤー ) {
+					case ( ライデン ) {
+						command ＶＲ敵兵追加 7;
+					}
+					case ( スネーク ) {
+						command ＶＲ敵兵追加 9;
+					}
+					case ( 前作スネーク ) {
+						command ＶＲ敵兵追加 12;
+					}
+				}
+		}
+		case ( d:ZAKO_STAGE:GURLUGON ) {
+			// ゴルルルゴンはここに入れる
+			chara ゴルルゴン ゴルルゴン -s d:GLL_STATUS_FIGHT -p 0,0,-21000 -m 1 \
+										-e ザコサバイバルクリア時処理 -g ライデン変装時デモ発動 -c 雑誌反応時デモ発動
+		}
+		case ( d:ZAKO_STAGE:MECHGENOLA ) {
+			// メカゲノラはここに入れる
+			chara ゴルルゴン メカゲノラ -s d:GLL_STATUS_FIGHT -p 0,0,-21000 -m 2 -l 24000 \
+										-e ザコサバイバルクリア時処理 -c チャフ攻撃時デモ発動
+			chara スポットライト投影モデル 投影モデル -m d:KMS_SP03A3 -p 0 10 0
+		}
+		case ( d:ZAKO_STAGE:GENOLA ) {
+			// ゲノラはここに入れる
+			chara ゴルルゴン ゲノラ -s d:GLL_STATUS_FIGHT -p 0,-10000,-19000 -m 0 \
+									-e ザコサバイバルクリア時処理 -c たらい落下時デモ発動
+		}
+		default {
+			#if d:DEBUG_PRINT
+				print 'WARNING!!!!!!!不正な値が入っています。$b:ステージ番号='$b:ステージ番号
+			#endif
+
+			command assert ( d:FALSE ) 'stage no error  (scenario err) コマンダー設定'
+		}
+	}
+
+	mesg コマンダー 敵兵セット 危険レベル減らないプレイヤ発見済み
+}
+
+
+proc デモ用キャラ設置 {
+	#if d:DEBUG_PRINT 
+		print 'demo_chara_set'
+	#endif
+
+	switch ( $s:選択プレイヤー ) {
+		case ( ライデン ) {
+			chara プットモーションモデル デモゴルルゴン \
+				-pos 0 0 -38000 \
+				-dir 0 \
+				-kms gll_def \
+				-mar gll_sp03a \
+				-number d:G_MTN:gol_idle \
+				-item aks_sp_gll 6 \
+				-status ( d:PUT_MOT_WAIT | d:PUT_MOT_INVISIBLE | d:PUT_MOT_10SCALE | d:PUT_MOT_SHADOW | d:PUT_MOT_PAD_VIBRATION )
+		}
+		case ( スネーク ) {
+			chara プットモーションモデル デモメカゲノラ \
+				-pos 0 0 -21000 \
+				-dir 0 \
+				-kms gno_meca_mt \
+				-mar gll_sp03a \
+				-number d:G_MTN:gno_meca_toujyou \
+				-item fms_4gno 6 \
+				-status ( d:PUT_MOT_WAIT | d:PUT_MOT_INVISIBLE | d:PUT_MOT_10SCALE )
+
+			chara オブジェクト分解 オブジェクト分解君 -name デモメカゲノラ -time 90 120
+
+		}
+		case ( 前作スネーク ) {
+			chara プットモーションモデル デモゲノラ \
+				-pos -1500,-10000,-21000 \
+				-dir 0 \
+				-kms gno_def \
+				-mar gll_sp03a \
+				-number d:G_MTN:gno_come_2 \
+				-item fms_4gno 6 \
+				-status ( d:PUT_MOT_WAIT | d:PUT_MOT_INVISIBLE | d:PUT_MOT_10SCALE | d:PUT_MOT_SHADOW | d:PUT_MOT_PAD_VIBRATION )
+
+		}
+	}
+
+}
+
+proc デモゴルルゴン設置 {
+	#if d:DEBUG_PRINT 
+		print 'demo_gur_set'
+	#endif
+
+	switch ( $s:選択プレイヤー ) {
+		case ( ライデン ) {
+			chara プットモーションモデル デモゴルルゴン \
+				-pos 0,0,-21000 \
+				-dir 0 \
+				-kms gll_def \
+				-mar gll_sp03a \
+				-number d:G_MTN:gol_idle \
+				-item aks_sp_gll 6 \
+				-status ( d:PUT_MOT_WAIT | d:PUT_MOT_INVISIBLE | d:PUT_MOT_10SCALE | d:PUT_MOT_SHADOW | d:PUT_MOT_PAD_VIBRATION )
+
+			chara プットモーションモデル デモライデン \
+				-pos 0,0,0 \
+				-dir 0 \
+				-kms rai_gbs_vsg_mt \
+				-mar gll_sp03a \
+				-number d:G_MTN:rai_disguise_capture \
+				-item aks 6 \
+				-world デモゴルルゴン 10 -100,-1050,125	 -1104,1832,1013 \
+				-status ( d:PUT_MOT_WAIT | d:PUT_MOT_INVISIBLE )
+		}
+		case ( 前作スネーク ) {
+			chara プットモーションモデル デモゴルルゴン \
+				-pos -4000 0 -46000 \
+				-dir 0 \
+				-kms gll_def \
+				-mar gll_sp03a \
+				-number d:G_MTN:gol_idle \
+				-item aks_sp_gll 6 \
+				-status ( d:PUT_MOT_WAIT | d:PUT_MOT_INVISIBLE | d:PUT_MOT_10SCALE | d:PUT_MOT_SHADOW )
+
+			chara プットモーションモデル デモメカゲノラ \
+				-pos -6500 -10000 -21000 \
+				-dir 1024 \
+				-kms gno_meca_mt \
+				-mar gll_sp03a \
+				-number d:G_MTN:gno_meca_toujyou \
+				-item fms_4gno 6 \
+				-status ( d:PUT_MOT_WAIT | d:PUT_MOT_INVISIBLE | d:PUT_MOT_10SCALE | d:PUT_MOT_SHADOW )
+
+			chara オブジェクト分解 オブジェクト分解君 -name デモメカゲノラ -time 90 120
+
+			chara プットモーションモデル デモゲノラ \
+				-pos 0,-10000,-19000 \
+				-dir 0 \
+				-kms gno_def \
+				-mar gll_sp03a \
+				-number d:G_MTN:gol_idle \
+				-item fms_4gno 6 \
+				-status ( d:PUT_MOT_WAIT | d:PUT_MOT_INVISIBLE | d:PUT_MOT_10SCALE | d:PUT_MOT_SHADOW )
+
+			#if d:DEMO_DEBUG
+				// シナリオデモ作成用
+				chara ダミーターゲット君 ゴルルゴン的 -p -4000 0 -50000 -s 2000 1000 4000 -e ゲノラ対ゴルルゴンデモ発動
+			#else
+				// 本番用
+				chara ダミーターゲット君 ゴルルゴン的 -p -2000 4000 -50000 -s 2000 1000 4000 -e ゲノラ対ゴルルゴンデモ発動
+			#endif
+
+			chara	ＶＲ移動的 メカゲノラターゲット \
+					-flag ( d:VR_TRG_HEX | d:VR_TRG_HIDESTART | d:VR_TRG_CIRCLE ) \
+					-route 51 0 \
+					-dir 0 1024 \
+					-kouten	256 2048 32000 \
+					-v	240 180 \
+					-c ゲノラ対メカゲノラデモ発動
+
+			chara パッドデモ 張り付きパッドデモ１ -file sp03a_paddemo_01
+			chara パッドデモ 張り付きパッドデモ２ -file sp03a_paddemo_02
+		}
+	}
+}
+
+
+// ------------------------------------
+// ＢＧＭの設定
+// ------------------------------------
+proc ＢＧＭ設定 {
+	#if d:DEBUG_PRINT 
+		print 'bgm_set'
+	#endif
+
+	chara ＢＧＭマネージャー ＢＧＭマネ
+}
+
+
+// ------------------------------------
+// 光源の設定
+// ------------------------------------
+proc ゴルルゴン戦フォグ設定 {
+	chara フォグ 霧 -c 10, 15, 17 -n -500 -f 48000
+}
+
+proc メカゲノラ戦フォグ設定 {
+	chara フォグ 霧 -c 20, 30, 35 -n -500 -f 90000
+}
+
+proc ゴルルゴン戦キャラ用ライト設置 {
+	chara 環境光 環境光源 -c 66 83 80
+	chara 平行光 平行光源 -c 126 131 98 -p -1500 3879 -600
+}
+
+proc メカゲノラ戦キャラ用ライト設置 {
+	chara 環境光 環境光源 -c 34 51 48
+	chara 平行光 平行光源 -c 86 91 58 -p -3139 3879 299
+}
+
+
+// ------------------------------------
+// アイテムの設定
+// ------------------------------------
+// 再発生が必要な時は以下のプロックの中を記述する
+// ------------------------------------
+proc アイテム取得時番号設定 $:ボックス名 {
+	#if d:DEBUG_PRINT
+		print 'item_no_set'
+	#endif
+
+	switch ( $:ボックス名 ) {
+		case ( Ｍ９弾:01 ) {
+			$$f:アイテム再セットフラグ[d:ITEM_NO:M9_01] = 0;
+		}
+		case ( ソコム弾:01 ) {
+			$$f:アイテム再セットフラグ[d:ITEM_NO:SOCOM_01] = 0;
+		}
+		case ( Ｍ４弾:01 ) {
+			$$f:アイテム再セットフラグ[d:ITEM_NO:M4_01] = 0;
+		}
+		case ( Ｍ４弾:02 ) {
+			$$f:アイテム再セットフラグ[d:ITEM_NO:M4_02] = 0;
+		}
+		case ( ＡＫＳ弾:01 ) {
+			$$f:アイテム再セットフラグ[d:ITEM_NO:AKS_01] = 0;
+		}
+		case ( ＡＫＳ弾:02 ) {
+			$$f:アイテム再セットフラグ[d:ITEM_NO:AKS_02] = 0;
+		}
+		case ( ＰＳＧ１弾:01 ) {
+			$$f:アイテム再セットフラグ[d:ITEM_NO:PSG1_01] = 0;
+		}
+		case ( ＰＳＧ１弾:02 ) {
+			$$f:アイテム再セットフラグ[d:ITEM_NO:PSG1_02] = 0;
+		}
+		case ( ＲＧＢ６弾:01 ) {
+			$$f:アイテム再セットフラグ[d:ITEM_NO:RGB6_01] = 0;
+		}
+		case ( スティンガー弾:01 ) {
+			$$f:アイテム再セットフラグ[d:ITEM_NO:STINGER_01] = 0;
+		}
+		case ( ジアゼパム:01 ) {
+			$$f:アイテム再セットフラグ[d:ITEM_NO:DZP_01] = 0;
+		}
+	}
+
+}
+
+// アイテムの再発生で使用する共通プロック
+#define WEAPON_BOX	0
+#define ITEM_BOX	1
+proc A_アイテム再発生	 $:武器アイテムフラグ $:p_アイテム番号 $:p_再発生開始数 $:p_再セットフラグ番号 \
+						 $:p_アイテムプロック $:p_名前 $:p_アイテムＸ $:p_アイテムＹ $:p_アイテムＺ \
+{
+	switch ( $:武器アイテムフラグ ) {
+		case ( d:WEAPON_BOX ) {
+			if( ($w:武器弾数Ｒ[$:p_アイテム番号] <= $:p_再発生開始数 ) \
+				&& (`command カメラ視界チェック -camera 0x01 \
+						-bound ($:p_アイテムＸ-1000) ($:p_アイテムＹ) 		($:p_アイテムＺ-1000) \
+						       ($:p_アイテムＸ+1000) ($:p_アイテムＹ+1000)	($:p_アイテムＺ+1000)` == 0)){
+
+				if ( $$f:アイテム再セットフラグ[$:p_再セットフラグ番号] == 0) {
+					call $:p_アイテムプロック $:p_名前 $:p_アイテムＸ $:p_アイテムＹ $:p_アイテムＺ 0
+					$$f:アイテム再セットフラグ[$:p_再セットフラグ番号] = 1;
+				}
+			}
+		}
+		case ( d:ITEM_BOX ) {
+			if( ($w:アイテム数Ｒ[$:p_アイテム番号] <= $:p_再発生開始数 ) \
+				&& (`command カメラ視界チェック -camera 0x01 \
+						-bound ($:p_アイテムＸ-1000) ($:p_アイテムＹ) 		($:p_アイテムＺ-1000) \
+						       ($:p_アイテムＸ+1000) ($:p_アイテムＹ+1000)	($:p_アイテムＺ+1000)` == 0)){
+
+				if ( $$f:アイテム再セットフラグ[$:p_再セットフラグ番号] == 0) {
+					call $:p_アイテムプロック $:p_名前 $:p_アイテムＸ $:p_アイテムＹ $:p_アイテムＺ 0
+					$$f:アイテム再セットフラグ[$:p_再セットフラグ番号] = 1;
+				}
+			}
+		}
+	}
+}
+
+// アイテムの設置
+// ------------------------------------
+proc アイテム設定 {
+	#if d:DEBUG_PRINT 
+		print 'item_set'
+	#endif
+
+//	@アイテム再セットチェック $b:w22a_取得ロード回数[d:I_NO:RGB6]
+//	if ($f:再セットフラグ) {
+		// 本体を持っていたときは自動的に弾になる
+//		@ＲＧＢ６_初期設置 ＲＧＢ６本体 45875 0 -39375 0 ＲＧＢ６弾薬	// Ａ倉庫
+//	}
+
+	if ( $s:選択プレイヤー == ライデン ) {
+		// ライデンのアイテム配置
+		switch ( $b:ステージ番号 ) {
+			case ( d:ZAKO_STAGE:G_SOL_1 ) {
+				@Ｍ９_初期設置 Ｍ９本体 d:ITEM_POS_SP03A_40 0 なし
+				@ソコム_初期設置 ソコム本体 d:ITEM_POS_SP03A_25 0 なし
+				@グレネード_初期設置 グレネード:01 d:ITEM_POS_SP03A_04 0
+				@A_スタン_初期設置 スタン:01 d:ITEM_POS_SP03A_17 0 10
+				@レーション_初期設置 レーション:01 d:ITEM_POS_SP03A_28 0
+			}
+			case ( d:ZAKO_STAGE:G_SOLS_TEAM ) {
+				// 前の繰越
+				@Ｍ９_初期設置 Ｍ９本体 d:ITEM_POS_SP03A_40 0 なし
+				@ソコム_初期設置 ソコム本体 d:ITEM_POS_SP03A_25 0 なし
+				// 再発生しないもの
+				@ＡＫＳ_初期設置 ＡＫＳ本体 d:ITEM_POS_SP03A_07 0 なし
+				@ＰＳＧ１－Ｔ_初期設置 ＰＳＧ１－Ｔ本体 d:ITEM_POS_SP03A_32 0 なし
+				@Ｃ４_初期設置 Ｃ４:01 d:ITEM_POS_SP03A_03 0
+				@クレイモア_初期設置 クレイモア:02 d:ITEM_POS_SP03A_17 0
+				@レーション_初期設置 レーション:01 d:ITEM_POS_SP03A_14 0
+				@ジアゼパム_初期設置 ジアゼパム:01 d:ITEM_POS_SP03A_42 0
+
+				// 再発生するもの
+				@弾薬_Ｍ９_初期設置 Ｍ９弾:01 d:ITEM_POS_SP03A_34 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:M9_01] = 1;
+				@弾薬_ソコム_初期設置 ソコム弾:01 d:ITEM_POS_SP03A_41 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:SOCOM_01] = 1;
+				trap ev001 d:PLAYER \
+					-mask いる \
+					-exec {
+						@A_アイテム再発生	 d:WEAPON_BOX d:武器:Ｍ９ 0 d:ITEM_NO:M9_01 \
+											 p:弾薬_Ｍ９_初期設置 Ｍ９弾:01 d:ITEM_POS_SP03A_34
+
+						@A_アイテム再発生	 d:WEAPON_BOX d:武器:ソコム 0 d:ITEM_NO:SOCOM_01 \
+											 p:弾薬_ソコム_初期設置 ソコム弾:01 d:ITEM_POS_SP03A_41
+					}
+			}
+			case ( d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+				// 前の繰越
+				@Ｍ９_初期設置 Ｍ９本体 d:ITEM_POS_SP03A_40 0 なし
+				@ソコム_初期設置 ソコム本体 d:ITEM_POS_SP03A_25 0 なし
+				@ＡＫＳ_初期設置 ＡＫＳ本体 d:ITEM_POS_SP03A_07 0 ＡＫＳ弾薬
+				@ＰＳＧ１－Ｔ_初期設置 ＰＳＧ１－Ｔ本体 d:ITEM_POS_SP03A_32 0 ＰＳＧ１－Ｔ弾薬
+				// 再発生しないもの
+				@ＰＳＧ１_初期設置 ＰＳＧ１本体 d:ITEM_POS_SP03A_18 0 なし
+				@ＲＧＢ６_初期設置 ＲＧＢ６本体 d:ITEM_POS_SP03A_03 0 なし	
+				@Ｃ４_初期設置 Ｃ４:01 d:ITEM_POS_SP03A_10 0
+				@クレイモア_初期設置 クレイモア:02 d:ITEM_POS_SP03A_04 0
+				@レーション_初期設置 レーション:01 d:ITEM_POS_SP03A_09 0
+				@ジアゼパム_初期設置 ジアゼパム:01 d:ITEM_POS_SP03A_17 0
+
+				// 再発生するもの
+				@弾薬_Ｍ９_初期設置 Ｍ９弾:01 d:ITEM_POS_SP03A_34 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:M9_01] = 1;
+				@弾薬_ソコム_初期設置 ソコム弾:01 d:ITEM_POS_SP03A_41 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:SOCOM_01] = 1;
+				trap ev001 d:PLAYER \
+					-mask いる \
+					-exec {
+						@A_アイテム再発生	 d:WEAPON_BOX d:武器:Ｍ９ 0 d:ITEM_NO:M9_01 \
+											 p:弾薬_Ｍ９_初期設置 Ｍ９弾:01 d:ITEM_POS_SP03A_34
+
+						@A_アイテム再発生	 d:WEAPON_BOX d:武器:ソコム 0 d:ITEM_NO:SOCOM_01 \
+											 p:弾薬_ソコム_初期設置 ソコム弾:01 d:ITEM_POS_SP03A_41
+					}
+			}
+			case ( d:ZAKO_STAGE:GURLUGON ) {
+				// 前の繰越
+				@ＡＫＳ_初期設置 ＡＫＳ本体 d:ITEM_POS_SP03A_07 0 なし
+				@ＰＳＧ１_初期設置 ＰＳＧ１本体 d:ITEM_POS_SP03A_18 0 なし
+				@ＲＧＢ６_初期設置 ＲＧＢ６本体 d:ITEM_POS_SP03A_03 0 なし	
+				// 再発生しないもの
+				@スティンガー_初期設置 スティンガー本体 d:ITEM_POS_SP03A_25 0 なし	
+				@レーション_初期設置 レーション:01 d:ITEM_POS_SP03A_15 0
+				@雑誌_初期設置 雑誌:01 d:ITEM_POS_SP03A_24 0
+
+				// 再発生するもの
+				@弾薬_ＡＫＳ_初期設置 ＡＫＳ弾:01 d:ITEM_POS_SP03A_17 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:AKS_01] = 1;
+				@弾薬_ＡＫＳ_初期設置 ＡＫＳ弾:02 d:ITEM_POS_SP03A_41 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:AKS_02] = 1;
+				@弾薬_ＰＳＧ１_初期設置 ＰＳＧ１弾:01 d:ITEM_POS_SP03A_44 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:PSG1_01] = 1;
+				@弾薬_ＰＳＧ１_初期設置 ＰＳＧ１弾:02 d:ITEM_POS_SP03A_29 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:PSG1_02] = 1;
+				@弾薬_ＲＧＢ６_初期設置 ＲＧＢ６弾:01 d:ITEM_POS_SP03A_04 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:RGB6_01] = 1;
+				@弾薬_スティンガー_初期設置 スティンガー弾:01 d:ITEM_POS_SP03A_08 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:STINGER_01] = 1;
+				@ジアゼパム_初期設置 ジアゼパム:01 d:ITEM_POS_SP03A_34 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:DZP_01] = 1;
+				trap ev001 d:PLAYER \
+					-mask いる \
+					-exec {
+						@A_アイテム再発生	 d:WEAPON_BOX d:武器:ＡＫＳ 29 d:ITEM_NO:AKS_01 \
+											 p:弾薬_ＡＫＳ_初期設置 ＡＫＳ弾:01 d:ITEM_POS_SP03A_17
+
+						@A_アイテム再発生	 d:WEAPON_BOX d:武器:ＡＫＳ 29 d:ITEM_NO:AKS_02 \
+											 p:弾薬_ＡＫＳ_初期設置 ＡＫＳ弾:02 d:ITEM_POS_SP03A_41
+
+						@A_アイテム再発生	 d:WEAPON_BOX d:武器:ＰＳＧ１ 19 d:ITEM_NO:PSG1_01 \
+											 p:弾薬_ＰＳＧ１_初期設置 ＰＳＧ１弾:01 d:ITEM_POS_SP03A_44
+
+						@A_アイテム再発生	 d:WEAPON_BOX d:武器:ＰＳＧ１ 19 d:ITEM_NO:PSG1_02 \
+											 p:弾薬_ＰＳＧ１_初期設置 ＰＳＧ１弾:02 d:ITEM_POS_SP03A_29
+
+						@A_アイテム再発生	 d:WEAPON_BOX d:武器:ＲＧＢ６ 0 d:ITEM_NO:RGB6_01 \
+											 p:弾薬_ＲＧＢ６_初期設置 ＲＧＢ６弾:01 d:ITEM_POS_SP03A_04
+
+						@A_アイテム再発生	 d:WEAPON_BOX d:武器:スティンガー 9 d:ITEM_NO:STINGER_01 \
+											 p:弾薬_スティンガー_初期設置 スティンガー弾:01 d:ITEM_POS_SP03A_08
+
+						@A_アイテム再発生	 d:ITEM_BOX d:アイテム:ジアゼパム 4 d:ITEM_NO:DZP_01 \
+											 p:ジアゼパム_初期設置 ジアゼパム:01 d:ITEM_POS_SP03A_34
+					}
+			}
+		}
+		
+	} else if ( $s:選択プレイヤー == スネーク ) {
+		switch ( $b:ステージ番号 ) {
+			case ( d:ZAKO_STAGE:G_SOL_1 ) {
+				@Ｍ９_初期設置 Ｍ９本体 d:ITEM_POS_SP03A_25 0 なし
+				@A_ＵＳＰ_初期設置 ＵＳＰ本体 d:ITEM_POS_SP03A_17 0 なし 16
+				@グレネード_初期設置 グレネード:01 d:ITEM_POS_SP03A_40 0
+				@A_スタン_初期設置 スタン:01 d:ITEM_POS_SP03A_08 0 7
+				@レーション_初期設置 レーション:01 d:ITEM_POS_SP03A_01 0
+			}
+			case ( d:ZAKO_STAGE:G_SOLS_TEAM ) {
+				// 前の繰越
+				@Ｍ９_初期設置 Ｍ９本体 d:ITEM_POS_SP03A_25 0 なし
+				@A_ＵＳＰ_初期設置 ＵＳＰ本体 d:ITEM_POS_SP03A_17 0 なし 16
+				// 再発生しないもの
+				@Ｍ４_初期設置 Ｍ４本体 d:ITEM_POS_SP03A_03 0 なし
+				@ＰＳＧ１－Ｔ_初期設置 ＰＳＧ１－Ｔ本体 d:ITEM_POS_SP03A_41 0 なし
+				@Ｃ４_初期設置 Ｃ４:01 d:ITEM_POS_SP03A_44 0
+				@クレイモア_初期設置 クレイモア:02 d:ITEM_POS_SP03A_37 0
+				@ジアゼパム_初期設置 ジアゼパム:01 d:ITEM_POS_SP03A_40 0
+
+				// 再発生するもの
+				@弾薬_Ｍ９_初期設置 Ｍ９弾:01 d:ITEM_POS_SP03A_08 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:M9_01] = 1;
+				@弾薬_ＵＳＰ_初期設置 ＵＳＰ弾:01 d:ITEM_POS_SP03A_18 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:USP_01] = 1;
+
+				trap ev001 d:PLAYER \
+					-mask いる \
+					-exec {
+						@A_アイテム再発生	 d:WEAPON_BOX d:武器:Ｍ９ 0 d:ITEM_NO:M9_01 \
+											 p:弾薬_Ｍ９_初期設置 Ｍ９弾:01 d:ITEM_POS_SP03A_08
+
+						@A_アイテム再発生	 d:WEAPON_BOX d:武器:ＵＳＰ 0 d:ITEM_NO:USP_01 \
+											 p:弾薬_ＵＳＰ_初期設置 ＵＳＰ弾:01 d:ITEM_POS_SP03A_18
+					}
+			}
+			case ( d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+				// 前の繰越
+				@Ｍ９_初期設置 Ｍ９本体 d:ITEM_POS_SP03A_25 0 なし
+				@A_ＵＳＰ_初期設置 ＵＳＰ本体 d:ITEM_POS_SP03A_17 0 なし 16
+				@Ｍ４_初期設置 Ｍ４本体 d:ITEM_POS_SP03A_03 0 Ｍ４弾薬
+				@ＰＳＧ１－Ｔ_初期設置 ＰＳＧ１－Ｔ本体 d:ITEM_POS_SP03A_41 0 ＰＳＧ１－Ｔ弾薬
+				// 再発生しないもの
+				@ＰＳＧ１_初期設置 ＰＳＧ１本体 d:ITEM_POS_SP03A_42 0 なし
+				@ＲＧＢ６_初期設置 ＲＧＢ６本体 d:ITEM_POS_SP03A_09 0 なし	
+				@Ｃ４_初期設置 Ｃ４:01 d:ITEM_POS_SP03A_07 0
+				@クレイモア_初期設置 クレイモア:02 d:ITEM_POS_SP03A_10 0
+				@レーション_初期設置 レーション:01 d:ITEM_POS_SP03A_28 0
+				@ジアゼパム_初期設置 ジアゼパム:01 d:ITEM_POS_SP03A_14 0
+
+				// 再発生するもの
+				@弾薬_Ｍ９_初期設置 Ｍ９弾:01 d:ITEM_POS_SP03A_08 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:M9_01] = 1;
+				@弾薬_ＵＳＰ_初期設置 ＵＳＰ弾:01 d:ITEM_POS_SP03A_18 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:USP_01] = 1;
+
+				trap ev001 d:PLAYER \
+					-mask いる \
+					-exec {
+						@A_アイテム再発生	 d:WEAPON_BOX d:武器:Ｍ９ 0 d:ITEM_NO:M9_01 \
+											 p:弾薬_Ｍ９_初期設置 Ｍ９弾:01 d:ITEM_POS_SP03A_08
+
+						@A_アイテム再発生	 d:WEAPON_BOX d:武器:ＵＳＰ 0 d:ITEM_NO:USP_01 \
+											 p:弾薬_ＵＳＰ_初期設置 ＵＳＰ弾:01 d:ITEM_POS_SP03A_18
+					}
+			}
+			case ( d:ZAKO_STAGE:MECHGENOLA ) {
+				// 前の繰越
+				@Ｍ４_初期設置 Ｍ４本体 d:ITEM_POS_SP03A_03 0 Ｍ４弾薬
+				// 再発生しないもの
+				@スティンガー_初期設置 スティンガー本体 d:ITEM_POS_SP03A_41 0 なし	
+				@レーション_初期設置 レーション:01 d:ITEM_POS_SP03A_29 0
+				@A_チャフ_初期設置 チャフ:01 d:ITEM_POS_SP03A_20 0 5
+				@弾薬_ＰＳＧ１_初期設置 ＰＳＧ１弾:01 d:ITEM_POS_SP03A_43 0
+				@ジアゼパム_初期設置 ジアゼパム:01 d:ITEM_POS_SP03A_40 0
+
+				// 再発生するもの
+				@弾薬_Ｍ４_初期設置 Ｍ４弾:01 d:ITEM_POS_SP03A_08 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:M4_01] = 1;
+				@弾薬_Ｍ４_初期設置 Ｍ４弾:02 d:ITEM_POS_SP03A_44 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:M4_02] = 1;
+				@弾薬_スティンガー_初期設置 スティンガー弾:01 d:ITEM_POS_SP03A_17 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:STINGER_01] = 1;
+				trap ev001 d:PLAYER \
+					-mask いる \
+					-exec {
+						@A_アイテム再発生	 d:WEAPON_BOX d:武器:Ｍ４ 29 d:ITEM_NO:M4_01 \
+											 p:弾薬_Ｍ４_初期設置 Ｍ４弾:01 d:ITEM_POS_SP03A_08
+
+						@A_アイテム再発生	 d:WEAPON_BOX d:武器:Ｍ４ 29 d:ITEM_NO:M4_02 \
+											 p:弾薬_Ｍ４_初期設置 Ｍ４弾:02 d:ITEM_POS_SP03A_44
+											 
+						@A_アイテム再発生	 d:WEAPON_BOX d:武器:スティンガー 9 d:ITEM_NO:STINGER_01 \
+											 p:弾薬_スティンガー_初期設置 スティンガー弾:01 d:ITEM_POS_SP03A_17
+					}
+			}
+		}
+	} else if ( $s:選択プレイヤー == 前作スネーク ) {
+		switch ( $b:ステージ番号 ) {
+			case ( d:ZAKO_STAGE:G_SOL_1 ) {
+				@Ｍ９_初期設置 Ｍ９本体 d:ITEM_POS_SP03A_44 0 なし
+				@A_ＵＳＰ_初期設置 ＵＳＰ本体 d:ITEM_POS_SP03A_18 0 なし 16
+				@グレネード_初期設置 グレネード:01 d:ITEM_POS_SP03A_39 0
+				@A_スタン_初期設置 スタン:01 d:ITEM_POS_SP03A_28 0 5
+				@サーマルゴーグル_初期設置 赤外線 d:ITEM_POS_SP03A_16 0
+			}
+			case ( d:ZAKO_STAGE:G_SOLS_TEAM ) {
+				// 前の繰越
+				@Ｍ９_初期設置 Ｍ９本体 d:ITEM_POS_SP03A_44 0 なし
+				@A_ＵＳＰ_初期設置 ＵＳＰ本体 d:ITEM_POS_SP03A_18 0 なし 16
+				// 再発生しないもの
+				@Ｍ４_初期設置 Ｍ４本体 d:ITEM_POS_SP03A_09 0 なし
+				@ＰＳＧ１－Ｔ_初期設置 ＰＳＧ１－Ｔ本体 d:ITEM_POS_SP03A_16 0 なし
+				@Ｃ４_初期設置 Ｃ４:01 d:ITEM_POS_SP03A_37 0
+				@クレイモア_初期設置 クレイモア:02 d:ITEM_POS_SP03A_01 0
+				@ジアゼパム_初期設置 ジアゼパム:01 d:ITEM_POS_SP03A_42 0
+				@レーション_初期設置 レーション:01 d:ITEM_POS_SP03A_23 0
+				@弾薬_Ｍ９_初期設置 Ｍ９弾:01 d:ITEM_POS_SP03A_33 0
+				@弾薬_ＵＳＰ_初期設置 ＵＳＰ弾:01 d:ITEM_POS_SP03A_43 0
+			}
+			case ( d:ZAKO_STAGE:T_G_SOLS_TEAM ) {
+				// 前の繰越
+				@Ｍ９_初期設置 Ｍ９本体 d:ITEM_POS_SP03A_44 0 なし
+				@A_ＵＳＰ_初期設置 ＵＳＰ本体 d:ITEM_POS_SP03A_18 0 なし 16
+				@Ｍ４_初期設置 Ｍ４本体 d:ITEM_POS_SP03A_09 0 Ｍ４弾薬
+				@ＰＳＧ１－Ｔ_初期設置 ＰＳＧ１－Ｔ本体 d:ITEM_POS_SP03A_16 0 ＰＳＧ１－Ｔ弾薬
+				// 再発生しないもの
+				@ＰＳＧ１_初期設置 ＰＳＧ１本体 d:ITEM_POS_SP03A_28 0 なし
+				@ＲＧＢ６_初期設置 ＲＧＢ６本体 d:ITEM_POS_SP03A_19 0 なし	
+				@Ｃ４_初期設置 Ｃ４:01 d:ITEM_POS_SP03A_33 0
+				@クレイモア_初期設置 クレイモア:02 d:ITEM_POS_SP03A_37 0
+				@弾薬_Ｍ９_初期設置 Ｍ９弾:01 d:ITEM_POS_SP03A_05 0
+				@弾薬_ＵＳＰ_初期設置 ＵＳＰ弾:01 d:ITEM_POS_SP03A_43 0
+			}
+			case ( d:ZAKO_STAGE:GENOLA ) {
+				// 前の繰越
+				@Ｍ４_初期設置 Ｍ４本体 d:ITEM_POS_SP03A_07 0 Ｍ４弾薬	
+				$$f:アイテム再セットフラグ[d:ITEM_NO:M4_01] = 1;
+				// 再発生しないもの
+				@スティンガー_初期設置 スティンガー本体 d:ITEM_POS_SP03A_09 0 なし	
+
+				// 再発生するもの
+				@弾薬_Ｍ４_初期設置 Ｍ４弾:01 d:ITEM_POS_SP03A_05 0
+				$$f:アイテム再セットフラグ[d:ITEM_NO:STINGER_01] = 1;
+
+				trap ev001 d:PLAYER \
+					-mask いる \
+					-exec {
+						@A_アイテム再発生	 d:WEAPON_BOX d:武器:Ｍ４ 29 d:ITEM_NO:M4_01 \
+											 p:弾薬_Ｍ４_初期設置 Ｍ４弾:01 d:ITEM_POS_SP03A_05 0
+					}
+			}
+		}
+	}
+		
+
+}
+
+
+// ------------------------------------
+// カメラ関係の設定 
+// ------------------------------------
+// ステージカメラ設定 
+// ------------------------------------
+proc カメラセット {
+	#if d:DEBUG_PRINT
+		print 'chara_camera & stage_camera_set'
+	#endif
+
+	chara カメラ ステージカメラ		-c 0 -l 3 -p 0 
+	chara カメラ メインカメラ		-c 0 -l 2 -p 40
+	chara カメラ サブカメラ			-c 0 -l 2 -p 20
+	chara カメラ サブカメラ２		-c 0 -l 2 -p 10
+	#if d:DEMO_DEBUG
+		chara カメラ クリア時カメラ		-c 0 -l 1 -p 10
+	#else
+		chara カメラ クリア時カメラ		-c 0 -l 0 -p 10
+	#endif
+
+	// デフォルトカメラ
+	chara カメラ設定 ステージカメラ \
+		-c 0 \	
+		-b d:CAM_MIN,2000,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+		-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+		-r 258,2048,0 \
+		-f 8000 \
+		-a 200 \
+		-i 2 2 0 0 \
+		-s 1
+}
+// ステージ固有のカメラ設定 
+// ------------------------------------
+proc ザコサバイバルカメラ設定 {
+	#if d:DEBUG_PRINT
+		print 'stage_camera_set'
+	#endif
+
+	// ベースとなるカメラ
+	trap ca001 d:PLAYER \
+		-mask ？ \
+		-camera \
+		-exec {
+			if ( $b:ステージ番号 == d:ZAKO_STAGE:GENOLA ) {
+				// ゲノラステージはリミットをかける
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b -5000,5250,d:CAM_MIN	 5000,d:CAM_MAX,-3754 \
+					-l -5000,2500,d:CAM_MIN	 5000,d:CAM_MAX,-11802 \
+					-r 215,2048,0 \
+					-f 8500 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			} else {
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b -5000,2000,d:CAM_MIN	 5000,d:CAM_MAX,d:CAM_MAX \
+					-l -5000,1500,d:CAM_MIN	 5000,d:CAM_MAX,d:CAM_MAX \
+					-r 300,2048,0 \
+					-f 8000 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+		}
+
+	// 左側の２ｍ箱の裏
+	trap ca002 d:PLAYER \
+		-mask ＊ \
+		-camera \
+		-exec {
+			@CS_スムーズカメラ降順 $6 -5500 -7000 500 300
+			$i:補完ＲＸ = $i:CS_結果１;
+
+			chara カメラ設定 サブカメラ \
+				-c 0 \	
+				-b -5000,2000,d:CAM_MIN	 5000,d:CAM_MAX,d:CAM_MAX \
+				-l -5000,1500,d:CAM_MIN	 5000,d:CAM_MAX,d:CAM_MAX \
+				-r $i:補完ＲＸ,2048,0 \
+				-f 8000 \
+				-a 200 \
+				-i 3 3 0 0 \
+				-z d:CAMERA_NO_CUSHION \
+				-s $3
+		}
+
+	// 右側の２ｍ箱の裏
+	trap ca003 d:PLAYER \
+		-mask ＊ \
+		-camera \
+		-exec {
+			@CS_スムーズカメラ降順 $4 6000 4500 500 300
+			$i:補完ＲＸ = $i:CS_結果１;
+
+			chara カメラ設定 サブカメラ \
+				-c 0 \	
+				-b -5000,2000,d:CAM_MIN	 5000,d:CAM_MAX,d:CAM_MAX \
+				-l -5000,1500,d:CAM_MIN	 5000,d:CAM_MAX,d:CAM_MAX \
+				-r $i:補完ＲＸ,2048,0 \
+				-f 8000 \
+				-a 200 \
+				-i 3 3 0 0 \
+				-z d:CAMERA_NO_CUSHION \
+				-s $3
+		}
+		
+	//////////////
+	// 匍匐カメラ
+	//////////////
+	// 左側の２ｍ箱の裏
+	trap ca004 d:PLAYER \
+		-mask ？ \
+		-state d:TRP_STATE_SQUAT d:TRP_STATE_GROUND \
+		-camera \
+		-exec {
+			chara カメラ設定 サブカメラ２ \
+				-c 0 \	
+				-b -5000,2000,d:CAM_MIN	 5000,d:CAM_MAX,d:CAM_MAX \
+				-l -5000,1500,d:CAM_MIN	 5000,d:CAM_MAX,d:CAM_MAX \
+				-r 825,2048,0 \
+				-f 8000 \
+				-a 200 \
+				-i 3 3 0 0 \
+				-z d:CAMERA_NO_CUSHION \
+				-s $3
+		}
+
+	// 中央左の２ｍ箱の裏
+	trap ca005 d:PLAYER \
+		-mask ？ \
+		-state d:TRP_STATE_SQUAT d:TRP_STATE_GROUND \
+		-camera \
+		-exec {
+			chara カメラ設定 サブカメラ２ \
+				-c 0 \	
+				-b -5000,2000,d:CAM_MIN	 5000,d:CAM_MAX,d:CAM_MAX \
+				-l -5000,1500,d:CAM_MIN	 5000,d:CAM_MAX,d:CAM_MAX \
+				-r 825,2048,0 \
+				-f 8000 \
+				-a 200 \
+				-i 3 3 0 0 \
+				-z d:CAMERA_NO_CUSHION \
+				-s $3
+		}
+
+	// 中央右の２ｍ箱の裏
+	trap ca006 d:PLAYER \
+		-mask ？ \
+		-state d:TRP_STATE_SQUAT d:TRP_STATE_GROUND \
+		-camera \
+		-exec {
+			chara カメラ設定 サブカメラ２ \
+				-c 0 \	
+				-b -5000,2000,d:CAM_MIN	 5000,d:CAM_MAX,d:CAM_MAX \
+				-l -5000,1500,d:CAM_MIN	 5000,d:CAM_MAX,d:CAM_MAX \
+				-r 825,2048,0 \
+				-f 8000 \
+				-a 200 \
+				-i 3 3 0 0 \
+				-z d:CAMERA_NO_CUSHION \
+				-s $3
+		}
+
+	// 右側の２ｍ箱の裏
+	trap ca007 d:PLAYER \
+		-mask ？ \
+		-state d:TRP_STATE_SQUAT d:TRP_STATE_GROUND \
+		-camera \
+		-exec {
+			chara カメラ設定 サブカメラ２ \
+				-c 0 \	
+				-b -5000,2000,d:CAM_MIN	 5000,d:CAM_MAX,d:CAM_MAX \
+				-l -5000,1500,d:CAM_MIN	 5000,d:CAM_MAX,d:CAM_MAX \
+				-r 825,2048,0 \
+				-f 8000 \
+				-a 200 \
+				-i 3 3 0 0 \
+				-z d:CAMERA_NO_CUSHION \
+				-s $3
+		}
+
+}
+
+
+
+// ザコサバイバルで必要な追加プロック
+proc テロップ表示 {
+	#if d:DEBUG_PRINT
+		print 'telop_start!!!!!'
+	#endif
+	chara ザコラッシュテロップ表示 テロップ君 -m 1 -n ゲームスタート
+
+	// 一瞬操作が止まってしまうためdelayでパッドをキャンセルする
+	chara delay パッドキャンセルディレイ -time 30 \
+		-exec {
+			command パッド操作 -cancel
+		}
+
+}
+
+proc ポーズ許可 {
+	#if d:DEBUG_PRINT
+		print 'pause_on!!!!!'
+	#endif
+	command メニュー設定 -pause on
+}
+
+proc ゲームスタート {
+	#if d:DEBUG_PRINT
+		print 'game_start!!!!!'
+	#endif
+
+	command パッド操作 -cancel
+
+	// タイマーを表示
+	mesg ＶＲスクリーン ＶＲスクリーン君 表示
+
+	// ゲームオーバー関連処理を有効にするためにフラグを立てる
+	$f:ロードチェックＯＮフラグ = 1
+
+	// メニューを表示する
+	command メニュー設定 -menu on -gage on -radar on -subwin on -radio on -pause on
+	// 敵兵等の動作開始
+	command ＶＲステージスタート
+}
+
+
+
+
+
+
+
+
+
+
+
+
+// -----------------------------------------------------------------------------------
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------
+proc デバッグキャラセット {
+	#if d:DEBUG_PRINT
+		print 'debug_chara_set'
+	#endif
+
+	#if d:CHARA_CAMERA
+		chara キャラカメラ 敵兵カメラ \
+			-c d:TARGET_CHARA \
+			-s -920,610,200 \
+			-r -200,1024,0 
+	#endif
+
+	#if d:SCREENSHOT
+		chara スクリーンショット shot
+	#endif
+
+	#if d:USB_KEY
+		chara USBキーボード実行 test \
+			-e d:KBD_ESC {	
+			} \
+			-e d:KBD_1 {	
+				$b:ステージ番号 = 1;
+				restart -s;
+			} \
+			-e d:KBD_2 {	
+				$b:ステージ番号 = 2;
+				restart -s;
+			} \
+			-e d:KBD_3 {	
+				$b:ステージ番号 = 3;
+				restart -s;
+			} \
+			-e d:KBD_4 {	
+				@ゴルルゴンステージスタート
+			} \
+			-e d:KBD_5 {	
+				@メカゲノラステージスタート
+			} \
+			-e d:KBD_6 {	
+				@ゲノラステージスタート
+			} \
+			-e d:KBD_7 {	
+				$b:ステージ番号 = 7;
+				restart -s;
+			} \
+	#endif
+}

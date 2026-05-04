@@ -1,0 +1,211 @@
+/*
+	w25a.gcl                     
+	    ＤＧ連絡橋
+
+	2000/11/30 Y.Matsuhana         
+	$Id: w25a.boss.gcl,v 1.7 2002/07/18 12:23:57 usr03682 Exp $                      
+	
+*/
+
+//-----------------------------------------------------
+// 各gclで必要なdefine
+// ------------------------------------
+// モード（ボスラッシュのファイルには必ず必要）
+#define	BOSS_MODE 1		// 共通プロック切り分け用
+
+// include
+// ------------------------------------
+#include	"w25a.gcl"	// 元のファイルをincludeする
+
+// マップ設定は各boss.gclで、必要のないものは削ってＯＫです。
+// ------------------------------------
+	// 不具合防止のためNULLライトの設定は最初で行う
+	chara マップ 破壊前兆弾当たり専用 	-k d:NULL_KMS_NAME -h d:HZX_NAME,4 -l d:NULL_LT2_NAME
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 6
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 7
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 8
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 9
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 10
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 11
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 12
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 13
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 14
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 15
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 16
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 17
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 18
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 19
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 20
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 21
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 22
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 23
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 24
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 25
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 26
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 27
+	command 追加ＨＺＸグループ登録 -hzx_id 4 -add_id 29		// サブスタンスからＨＩ連絡橋を追加しました。2002.07.18 by 吉池
+
+	chara マップ 破壊後兆弾当たり専用 	-k d:NULL_KMS_NAME -h d:HZX_NAME,5 -l d:NULL_LT2_NAME
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 6
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 7
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 8
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 9
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 10
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 11
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 12
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 13
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 14
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 15
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 16
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 17
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 18
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 19
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 20
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 21
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 22
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 23
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 24
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 25
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 26
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 27
+	command 追加ＨＺＸグループ登録 -hzx_id 5 -add_id 29		// サブスタンスからＨＩ連絡橋を追加しました。2002.07.18 by 吉池
+
+	// レンズフレア当たり用
+	command 追加ＨＺＸグループ登録 -hzx_id 8 -add_id 0
+	command 追加ＨＺＸグループ登録 -hzx_id 8 -add_id 1
+
+	chara マップ ＤＧ連絡橋1F \
+					-k d:KMS_NAME1 \
+					-k d:KMS_NAME2 \
+					-k d:KMS_NAME3 \
+					-k d:KMS_NAME4 \
+					-k d:KMS_NAME5 \
+					-k d:KMS_NAME6 \
+					-k d:KMS_NAME7 \
+					-k d:KMS_NAME8 \
+					-k d:KMS_NAME9 \
+					-k d:KMS_NAMEA \
+					-k d:KMS_NAMEB \
+					-k d:KMS_NAMEC \
+					-k d:KMS_NAMED \
+					-k d:KMS_NAMEE \
+					-k d:KMS_NAMEF \
+					-k d:KMS_NAMEG \
+					-k d:KMS_NAMEH \
+					-k d:KMS_NAMEI \
+					-k d:KMS_NAMEJ \
+					-k d:KMS_NAMEK \
+					-k d:KMS_NAMEL \
+					-k d:KMS_NAMEM \
+					-k d:KMS_NAMEN \
+					-k d:KMS_NAMEO \
+					-k d:KMS_NAMEP \
+					-h d:HZX_NAME,0 -l d:LT2_NAME
+	chara マップ ＤＧ連絡橋B1	-k d:KMS_NAME0 \
+					-h d:HZX_NAME,1 -l d:LT2_NAME
+	chara マップ ＤＧ連絡橋1F破壊前 -k d:KMS_NAME0_BEFORE \
+					-k d:KMS_NAME1_BEFORE \
+					-h d:HZX_NAME,2 -l d:LT2_NAME
+	chara マップ ＤＧ連絡橋1F破壊後 -k d:KMS_NAME0_AFTER \
+					-k d:KMS_NAME1_AFTER \
+					-h d:HZX_NAME,3 -l d:LT2_NAME
+
+
+	chara マップ接合 ＤＧ連絡橋接合基本	ＤＧ連絡橋1F ＤＧ連絡橋B1
+	chara マップ接合 ＤＧ連絡橋接合破壊前	ＤＧ連絡橋1F ＤＧ連絡橋1F破壊前
+	chara マップ接合 ＤＧ連絡橋接合破壊後	ＤＧ連絡橋1F ＤＧ連絡橋1F破壊後
+	chara マップ接合 破壊前兆弾当たり専用1F	ＤＧ連絡橋1F 破壊前兆弾当たり専用
+	chara マップ接合 破壊前兆弾当たり専用B1	ＤＧ連絡橋B1 破壊前兆弾当たり専用
+	chara マップ接合 破壊後兆弾当たり専用1F	ＤＧ連絡橋1F 破壊後兆弾当たり専用
+	chara マップ接合 破壊後兆弾当たり専用B1	ＤＧ連絡橋B1 破壊後兆弾当たり専用
+
+	/* 上下層でマップ分けしていたが、あまり効果が無いので常に両方のマップをONしてます。 */
+	mesg マップ接合 ＤＧ連絡橋接合基本 on
+
+	if ( $b:w25a_ステージ状態 == 1 ) {
+		// Ｄ脚、Ｇ脚の入り口が破壊された状態
+		chara プットオブジェ ステージマップ -m d:KMS_ENT_D_1 -r 0 0 0 -p 0 0 0 -l d:LT2_NAME -s 100 100 100 -f 0
+		chara プットオブジェ ステージマップ -m d:KMS_ENT_G_1 -r 0 0 0 -p 0 0 0 -l d:LT2_NAME -s 100 100 100 -f 0
+		chara プットオブジェ ステージマップ -m d:KMS_ENT_P_1 -r 0 0 0 -p 0 0 0 -l d:LT2_NAME -s 100 100 100 -f 0
+		mesg マップ接合 ＤＧ連絡橋接合破壊前 on
+		mesg マップ接合 ＤＧ連絡橋接合破壊後 off
+		mesg マップ接合 破壊前兆弾当たり専用1F off
+		mesg マップ接合 破壊前兆弾当たり専用B1 off
+		mesg マップ接合 破壊後兆弾当たり専用1F on
+		mesg マップ接合 破壊後兆弾当たり専用B1 on
+		// レンズフレア
+		command 追加ＨＺＸグループ登録 -hzx_id 8 -add_id 5
+
+		command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 2
+	} else if ( $b:w25a_ステージ状態 == 2 ) {
+		// Ｄ脚、Ｇ脚の入り口が破壊、さらに上層の一部が崩落した状態
+		chara プットオブジェ ステージマップ -m d:KMS_ENT_D_1 -r 0 0 0 -p 0 0 0 -l d:LT2_NAME -s 100 100 100 -f 0
+		chara プットオブジェ ステージマップ -m d:KMS_ENT_G_1 -r 0 0 0 -p 0 0 0 -l d:LT2_NAME -s 100 100 100 -f 0
+		chara プットオブジェ ステージマップ -m d:KMS_ENT_P_1 -r 0 0 0 -p 0 0 0 -l d:LT2_NAME -s 100 100 100 -f 0
+		mesg マップ接合 ＤＧ連絡橋接合破壊前 off
+		mesg マップ接合 ＤＧ連絡橋接合破壊後 on
+		mesg マップ接合 破壊前兆弾当たり専用1F off
+		mesg マップ接合 破壊前兆弾当たり専用B1 off
+		mesg マップ接合 破壊後兆弾当たり専用1F on
+		mesg マップ接合 破壊後兆弾当たり専用B1 on
+		// レンズフレア
+		command 追加ＨＺＸグループ登録 -hzx_id 8 -add_id 5
+
+		command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 3
+		command トラップ削除 -name by003	// 破壊された柵部分のエルード禁止
+
+	}
+	// ハリアー戦プレイ回数
+	// ノーマルモード以下なら10回コンティニューしたら、レーダーを強制的にONにしてあげる(救済対策)
+	if ( $w:ゲーム設定  <= d:LEVEL_NORMAL ) {
+		if ( $f:ハリアー戦中 ) {
+			eval($w:w25a_ハリアー戦プレイ回数 = $w:w25a_ハリアー戦プレイ回数 + 1)
+			if($w:w25a_ハリアー戦プレイ回数 < 10) {
+				command varsave $w:w25a_ハリアー戦プレイ回数
+			} else if($w:w25a_ハリアー戦プレイ回数 >= 10) {
+				// レーダーＯＮ
+				eval($f:w18a_ノードフラグ = 1)
+			}
+		}
+	}
+
+	// ステージ状態によらない共通設定
+	// ------------------------------
+	command マップ設定 ＤＧ連絡橋1F ＤＧ連絡橋B1 -set {
+		@サウンド設定		// データは最初に呼ぶ
+		@カメラ設定
+		@レーダー設定
+		@シネマスクリーン設定
+		@常駐キャラ設定
+		@ボスラッシュ開始時キャラ設定
+		@レーダー拡大設定
+		@ドア設置
+		@空と海面設置
+		// @w25a狙撃イベントアイテム補給	/* 意味が無いため削除(2001.10.8) */
+		@フォグ設定
+		@トラップ設定
+		@ロード設定
+		@w25a_ビヨンド設定
+		@w25a_自動ジャンプ設定
+		// プレイヤー設定の変わりに呼ぶ（X Y Z 方向 姿勢）mlsファイル(snake) mlsファイル(raiden)
+		@ボスラッシュプレイヤー設定 2012 -1000 -145107 2048 d:FA_END_STAND sna_w25a rai_w25a
+		@w25a専用赤外線設定
+		@キャラ用ライト設置		// マップ設定の最後に呼ぶ
+		@w25a専用赤外線破壊設定;
+		@Ｇ脚ドア破壊
+		@ハリアー戦前アイテムセット		/* スティンガー等 */
+		@ハリアーセット;
+		@プラグイン設定
+		@落下死設定
+		#if d:DEBUG_MODE
+			@デバッグキャラセット
+		#endif
+	}
+	command マップ表示 -show ＤＧ連絡橋1F
+	if ( $w:w25a_特殊ゲームオーバー == 1 ) {
+		@セムテックス爆発ゲームオーバー
+	} else {
+		@ステージ進入時処理
+	}
+
+//-----------------------------------------------------

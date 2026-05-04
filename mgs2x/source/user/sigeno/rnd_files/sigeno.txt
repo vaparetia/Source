@@ -1,0 +1,134 @@
+user/sigeno以下のファイルの解説です。
+attacker:攻撃兵いろいろ
+
+approach.c	威嚇射撃後の突入
+at_act.c	モーション管理関数
+at_act.h	at_act.c が使用する関数のextern宣言
+at_act.x	at_act.c 内の関数のextern宣言
+at_enum.h	atthink.c系のソースで使用するenum宣言
+at_thk.h	atthink.c系のソースで使用する各種defineと構造体定義
+ataction.c	モーション管理関数
+atanes.c	麻酔で眠り中の処理
+atcomm.c	攻撃兵統括プログラム「攻撃コマンダー」
+atprepro.c	攻撃兵 思考前処理
+atress.c	死亡後再発生処理
+atress.x	atress.c　のextern宣言
+attacker.c	攻撃兵　本体
+attacker.h	各種defineと構造体定義
+atthink.c	攻撃兵 危険モード思考
+atthink.x	atthink.c のextern宣言
+check_at.c	戦闘中に使用する各種状況検査関数 
+discovery_at.c	何かに遭遇した場合の処理
+fromkore.x	user/korekado/内プログラムのextern宣言
+intrude.c	イントルードモード対応思考
+makefile
+pbreak_at.c	部分ダメージ時処理
+rescue.c	行動不能兵の救助処理
+safecheck.c	安全地帯リスト作成（現在は変換ツール内に移行）
+sig_conv.c	各種便利関数
+sig_conv.x	sig_conv.c　のextern宣言
+sig_init.c	敵兵共通初期化処理（現在未使用）
+sigavoact.c	回避モード中 モーション管理
+sigavoid.c	回避モード中 思考
+sigavoid.x	sigavoid.c　のextern宣言
+symmetry.c	対称展開配置処理
+threat.c	威嚇処理思考
+viewprim.c	デバッグ用表示
+viewprim2.c	デバッグ用表示
+
+conv:便利関数
+conv_act.c	汎用モーション管理
+conv_act.x	
+conv_view.c	デバッグ用表示
+dogtagmng.c	取得済みドッグタグ管理
+hang_act.c	首しめ攻撃（没）
+makefile
+pad_pos.c	デバッグ用　パッド読み取り
+padproc.c	デバッグ用
+poscheck.c	デバッグ用
+routeview.c	デバッグ用
+safecheck.c	安全地帯情報デバッグ用
+setjump.c	天狗兵 ジャンプ位置設定（没）
+thkview.c	デバッグ用
+zoneviewer.c	デバッグ用
+
+defender:拠点防衛型兵
+def_enum.h	長廊下兵の使用する各種enum
+defcomm.c	長廊下兵　統括司令官
+defender.c	長廊下兵　本体
+defender.h	長廊下兵　各種宣言
+defthink.c	長廊下　防衛時思考
+eve_a.h		長廊下　構造体
+eve_w32.h	エマ狙撃兵 構造体
+makefile
+w25def.c	タイトロープ兵　本体
+w32com.c	エマ狙撃兵　司令官
+w32def.c	エマ狙撃兵　本体
+w32think.c	エマ狙撃兵　戦闘思考
+
+demo：デモ人形及び付随物
+
+demo_eye.c	目テクスチャ切り替え
+demo_spray.c	主観デモ中のC4冷却スプレー
+doll.c		デモ人形１　呼び捨て型
+facedemo.c	デモシーン用　目パチ
+gunspin.c	オセロットの銃回しシーン用モーション再生（高さ設定を厳密に行う）
+lockercp.c	ロッカーから倒れる死体
+makefile
+putmodel.c	デモ人形２　ステージに置きっぱなし
+rad_point.c	レーダー光点反応場所設定
+route3d.c	多間接モデルをモーション無しで形状設定してルート巡回させる
+routemdl.c	人体モデルをルート巡回させる
+sinktank.c	沈没タンカー用 プリシェード対応 モデル拡大モーション再生キャラ
+
+device:　監視カメラなどの監視装置系（現在は里吉さん担当に移行 名残ディレクトリ）
+camera.h
+cypher.c
+eyecheck.c
+eyecheck.h
+guncam.c
+makefile
+satoyoshi.h
+sv_camera.c
+tmp_inc.h
+
+dispray: レーダーと時間表示（レーダーはuser/kiraに移行）
+radar.c　
+radsize.h
+radsprite.c
+radsprite.h
+timer.c		時間制限イベント用タイマー表示
+timer2.c	ボスサバイバル用経過時間表示
+vuradar.dsm
+vuradar.vu1
+
+effect:　敵兵付随効果
+demohand.c	デモシーン用フィンガーサイン
+eyeanim.c	目パチ制御
+handanim.c	ゲーム中用フィンガーサイン
+makefile
+mouth.c		口頂点アニメ	
+mouth.h
+sysmouth.c	口頂点アニメ制御
+
+equip：敵兵装備品
+blurpoint.c	ハイテク兵 天狗兵 頭部残光エフェクト
+makefile
+shield.c	盾
+sig_grd.c	手榴弾
+tng_ktn.c	刀
+
+tng:天狗兵
+tng.h		天狗兵共通宣言
+tng_a.c		巡回天狗本体
+tng_a.h		巡回天狗 defineと構造体定義
+tng_act.c	天狗モーション管理
+tng_b.c		防衛天狗本体
+tng_enum.h	防衛天狗 enum
+tng_pad.c	天狗モーション管理
+tngcom.c	天狗司令官
+tngdefthink.c	天狗　防衛思考
+tngthink.c	天狗追跡思考
+tngthink.x	天狗追跡思考のextern宣言
+
+

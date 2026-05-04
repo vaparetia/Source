@@ -1,0 +1,271 @@
+//
+//	P001_01_p01.w10a.src
+//
+//	written by S.Hirano 01/03/05
+//
+//	$Id: P001_01_p01.w10a.src,v 1.54 2002/06/20 07:18:59 usr02774 Exp $
+
+
+block .use r_plt1
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+//include		common.h
+
+// 不要エフェクト切り分け定義
+#define EFFECT_CUSTUM
+
+//#define	E_GLASS_DANKON			// グラス系弾痕
+//#define	E_KOGETUKI				// 壁への焦げ付き
+//#define	E_FOOTSTAMP				// 足跡
+//#define	E_ENEMY					// 敵兵系
+//#define	E_ENEMY_LIGHT			// 敵兵ライト
+//#define	E_SLING					// スリング
+//#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+//#define	E_MANHATTAN_LIGHT		// マンハッタンライト
+//#define	E_C4BOMB				// Ｃ４爆弾、赤外線センサー
+//#define	E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷
+//#define	E_CROSS_FADE_LIGHT		// クロスフェード（甲板のライトで使用）
+//#define	E_CHARA_DENTOU			// chara 懐中電灯、フォーチュン戦
+#define	E_WATER					// 水関係
+#define	E_CHARA_HAMON			// chara 波紋
+#define	E_BROKEN_OBJECT			// 壊れ物
+//#define	E_BROKEN_PAPEROBJECT	// 壊れ物紙
+//#define	E_BROKEN_PLATE			// 壊れ物皿
+#define	E_HIMATU				// 水飛沫
+//#define	E_CHARA_MADOAME			// chara 窓雨
+#define	E_STEAM					// 粉 & 水蒸気
+#define	E_POWDER				// 小麦粉
+#define	E_SKY_NORMAL			// 空
+//#define	E_LINEAR_GUN			// リニアガン
+#define	E_TENKYUU				// 天球ドーム
+#define	E_SUN					// 太陽
+#define	E_DOOR_LUMP				// ドアランプ
+#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、
+								// ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+#define	ENV						// 天球
+#define MORNING_SKY
+#define DAY_SKY
+//#define EVENING_SKY
+
+#include	"c_effect.h"
+
+// キャラクタ
+// ARKMS は他のキャラクタよりも先に記述するのが安全。
+arkms	nyp_def_epa.kls
+
+// 警官隊（オープニング専用になった）
+pack_all	nyp_def123.tri \
+			human/nyp_def/nyp_def1.dar
+			human/nyp_def/nyp_def2.dar
+			human/nyp_def/nyp_def3.dar
+human	nyp_def/nyp_def1.kms
+human	nyp_def/nyp_def2.kms
+human	nyp_def/nyp_def3.kms
+
+human	nyp_def/nyp_def4_mt.kms // これだけマルチテクスチャ（黒人デカ）
+
+// ワールド
+// プラント全景分
+// world		w10a/w10a_plant/w10a_plant00.kms
+world		w10c
+
+// ベラザノ橋（スケール１００倍。w10a_8のみ１０倍で表示）
+world		w10a/w10a_bridge // 6
+pack_all	w10a_norm_res.tri \
+			world/w10a/w10a_land \ // 5,8
+			world/w10a/w10a_land2/land_low // 1,2,3,4,7
+world		w10a/w10a_land
+world		w10a/w10a_land2/land_low
+/*
+pack_all	w10a_1234.tri \
+			world/w10a/w10a_land/w10a_1.dar \
+			world/w10a/w10a_land/w10a_2.dar \
+			world/w10a/w10a_land/w10a_3.dar \
+			world/w10a/w10a_land/w10a_4.dar
+world		w10a/w10a_land/w10a_1.kms
+world		w10a/w10a_land/w10a_2.kms
+world		w10a/w10a_land/w10a_3.kms
+world		w10a/w10a_land/w10a_4.kms
+*/
+// 海中モデル
+pack_all under_water.tri \
+		world/w10b/w10b_01.dar \
+		world/w10b/w10b_02.dar \
+		world/w10b/w10b_03.dar \
+		world/w10b/w10b_04.dar \
+		world/w10b/w10b_05.dar \
+		world/w10b/w10b_06.dar \
+		world/w10b/w10b_07.dar \
+		world/w10b/w10b_08.dar \
+		world/w10b/w10b_1.dar \
+		world/w10b/w10b_2.dar
+world	w10b/w10b_01.kms
+world	w10b/w10b_02.kms
+world	w10b/w10b_03.kms
+world	w10b/w10b_04.kms
+world	w10b/w10b_05.kms
+world	w10b/w10b_06.kms
+world	w10b/w10b_07.kms
+world	w10b/w10b_08.kms
+world	w10b/w10b_1.kms
+world	w10b/w10b_2.kms
+
+// ライト
+// 通常用
+lt2			w10a.lt2
+// ベラザノ橋用スケールかけライト
+lt2			w10a_scale100.lt2
+// プラント全景用ライト
+lt2			w10c_plant.lt2
+
+// プラント全景用ライト・朝
+lt2			w12a.lt2
+// プラント全景用ライト・昼
+lt2			w10c_day.lt2
+// プラント全景用ライト・夜
+lt2			w32b.lt2
+
+hazard		d00a3.hzx
+
+// 海面(MIPMAP)
+//debug	takabe/mipmap_tri/w10a_sea.tri 古いやつ。
+#ifndef MGS2_XBOX_1
+mipmap w10a/w10a_sea.tri //本番用
+mipmap w10c/w10c_oil_sea.tri
+mipmap plant_sea/plant_sea_m.tri
+#else
+pack_mip w10a_sea.tri \
+	effect/sea_mipmap/w10a_sea03_256_alp_ovl.bmp \
+	effect/sea_mipmap/w10a_sea03_128_alp_ovl.bmp \
+	effect/sea_mipmap/w10a_sea03_64_alp_ovl.bmp \
+	effect/sea_mipmap/w10a_sea03_32_alp_ovl.bmp 
+pack_mip w10c_oil_sea.tri \
+	effect/sea_mipmap/w10c_oil_sea_256_alp_ovl.bmp \
+	effect/sea_mipmap/w10c_oil_sea_128_alp_ovl.bmp \
+	effect/sea_mipmap/w10c_oil_sea_64_alp_ovl.bmp \
+	effect/sea_mipmap/w10c_oil_sea_32_alp_ovl.bmp 
+pack_mip plant_sea_m.tri \
+	mipmap/plant_sea_m/oil_sea_m_256_alp_ovl.bmp \
+	mipmap/plant_sea_m/oil_sea_m_128_alp_ovl.bmp \
+	mipmap/plant_sea_m/oil_sea_m_64_alp_ovl.bmp \
+	mipmap/plant_sea_m/oil_sea_m_32_alp_ovl.bmp 
+#endif
+
+// 空用
+world		w10a/w10a_sky
+
+pack_all	sky.tri \
+	world/w60a/sky/w60a_sky_wall1.dar \
+	world/w60a/sky/w60a_sky_wall2.dar
+
+world	w60a/sky/w60a_sky_wall1.kms
+world	w60a/sky/w60a_sky_wall2.kms
+
+
+// ぼんぼり
+pack_trnall	hirano.tri \
+	effect/bonbori/rcm_l_msk.bmp \
+	effect/bonbori/rcm_l_alp.bmp \
+	effect/bonbori/svc_bonbori_r.bmp \
+	effect/bonbori/svc_bonbori_y.bmp \
+	effect/bonbori/w_bonbori.bmp
+
+// テロップ用テクスチャ
+#ifdef MGS2_LANG_ENGLISH
+// 英語
+pack_all	terop.tri \
+			menu/staffroll/sht_plt/eng/sr04e_alp_ovl.bmp \
+			menu/staffroll/sht_plt/eng/sr05e_alp_ovl.bmp \
+			menu/staffroll/sht_plt/eng/sr06e_alp_ovl.bmp \
+			menu/staffroll/sht_plt/eng/sr10e_alp_ovl.bmp \
+			menu/staffroll/sht_plt/eng/sr11e_alp_ovl.bmp \
+			menu/staffroll/sht_plt/eng/sr18e_alp_ovl.bmp \
+			menu/staffroll/sht_plt/eng/sr09e_alp_ovl.bmp \
+			menu/staffroll/sht_plt/eng/sr07e_alp_ovl.bmp \
+			menu/staffroll/sht_plt/eng/sr08e_alp_ovl.bmp \
+			menu/staffroll/sht_plt/eng/sr12e_alp_ovl.bmp \
+			menu/staffroll/sht_plt/eng/sr13e_alp_ovl.bmp \
+			menu/staffroll/sht_plt/eng/sr14e_alp_ovl.bmp \
+			2D/demo_telop/eng/berrazano_alp_ovl.bmp \ // ベラザノ橋
+			2D/demo_telop/eng/bigshell_alp_ovl.bmp \  // 海洋除染施設ビッグシェル
+			2D/demo_telop/title_logo_blue_alp_ovl.bmp
+#else
+// 日本語
+pack_all	terop.tri \
+			menu/staffroll/sht_plt/jpn/sr04j_alp_ovl.bmp \
+			menu/staffroll/sht_plt/jpn/sr05j_alp_ovl.bmp \
+			menu/staffroll/sht_plt/jpn/sr06j_alp_ovl.bmp \
+			menu/staffroll/sht_plt/jpn/sr10j_alp_ovl.bmp \
+			menu/staffroll/sht_plt/jpn/sr11j_alp_ovl.bmp \
+			menu/staffroll/sht_plt/jpn/sr18j_alp_ovl.bmp \
+			menu/staffroll/sht_plt/jpn/sr09j_alp_ovl.bmp \
+			menu/staffroll/sht_plt/jpn/sr07j_alp_ovl.bmp \
+			menu/staffroll/sht_plt/jpn/sr08j_alp_ovl.bmp \
+			menu/staffroll/sht_plt/jpn/sr12j_alp_ovl.bmp \
+			menu/staffroll/sht_plt/jpn/sr13j_alp_ovl.bmp \
+			menu/staffroll/sht_plt/jpn/sr14j_alp_ovl.bmp \
+			2D/demo_telop/jpn/berrazano_alp_ovl.bmp \ // ベラザノ橋
+			2D/demo_telop/jpn/bigshell_alp_ovl.bmp \  // 海洋除染施設ビッグシェル
+			2D/demo_telop/title_logo_blue_alp_ovl.bmp
+#endif
+
+// スタッフロール
+pack_all	staff.tri \
+			menu/staffroll/sht/eng \
+			menu/staffroll/sht/jpn \
+			debug/shibata/staffroll/alpha03_alp_ovl.bmp
+
+//お魚(できればＴＲＩをまとめたほうがいい？  記述確認してください)
+pack_all fish.tri \
+		goods/dust/wtd_dead_fish/wtd_dead_fish_01.dar \
+		goods/dust/wtd_dead_fish/wtd_dead_fish_02.dar \
+		goods/dust/wtd_dead_fish/wtd_dead_fish_03.dar
+goods	dust/wtd_dead_fish/wtd_dead_fish_01.kms
+goods	dust/wtd_dead_fish/wtd_dead_fish_02.kms
+goods	dust/wtd_dead_fish/wtd_dead_fish_03.kms
+
+// 主観ゴーグル
+effect		scr_effect/raiden_gogle_lenz.kms
+
+// リネーム
+
+/* mgdemo added ----from here (Mon May 14 17:00:34 2001) ---- */
+goods	demo_dummy/demo_dummy.kms
+goods	demo_goods/rev_scope.kms
+item	sougan/sougan.kms
+
+pack_all meca_hh60h.tri \
+	meca/hh60h/hh60h.dar \
+	meca/hh60h/hh60h_eff_trot.dar \
+	meca/hh60h/hh60h_eff_mrot.dar \
+	meca/hh60h/hh60h_canopy_mt.dar
+
+meca	hh60h/hh60h.kms
+meca	hh60h/hh60h_eff_trot.kms
+meca	hh60h/hh60h_eff_mrot.kms
+meca	hh60h/hh60h_canopy_mt.kms
+/* mgdemo added ----from here (Wed Jul 25 16:44:48 2001) ---- */
+human	rai_diver/rai_fin_r_mh.evm
+human	rai_diver/rai_fin_l_mh.evm
+/* mgdemo added ----upto here ---- */
+
+// テックスリネーム
+texrename w10c_24a.kms w10c_cntw04.bmp w10c_cntw04_x.bmp
+texrename w10c_13a.kms w13a_w01.bmp w13a_w01_x.bmp
+/* mgdemo added ----from here (Thu Aug 23 14:08:24 2001) ---- */
+vib	demo/P001_01_p01_rai_01.vib
+vib	demo/P001_01_p01_rai_02.vib
+vib	demo/P001_01_p01_rai_03.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Sat Aug 25 16:32:56 2001) ---- */
+human	rai_def/rai_hair_mh_mt.evm
+human	rai_def/rai_hair_bounding.kms
+human	rai_def/rai_def_mt.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Sun Sep  2 19:20:36 2001) ---- */
+pack_trnall trn.tri effect/splash/splash05_alp.bmp
+/* mgdemo added ----upto here ---- */

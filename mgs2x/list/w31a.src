@@ -1,0 +1,114 @@
+//
+//	w31a.src	
+//	シェル２中央棟１Ｆ-大統領イベント時
+//
+//	written by H.Yoshiike 2000.Nov
+//
+//	$Id: w31a.src,v 1.29 2001/09/06 14:14:16 usr04549 Exp $
+
+#define WN_W31A
+
+block .use r_plt0
+block .nocache
+block .cache
+
+#include	"w31a_game.h"
+
+// キャラクタ 
+// ライデン
+human		rai_def/rai_def_mh_mt.evm
+// オセロット
+human	rev_plant/rev_plant_mh_mt.evm
+pack_all rev_etc.tri \
+		human/rev_def/rev_def_shadow.dar \
+		human/rev_coat/rev_hair_fix.dar \
+		human/rev_coat/rev_coat_bounding.dar
+human	rev_def/rev_def_shadow.kms
+human	rev_coat/rev_hair_fix.kms
+human	rev_coat/rev_coat_bounding.kms
+
+// 細々した物をまとめる
+pack_all obj_etc.tri \
+		human/jam_def/jam_def.dar \
+		weapon/saa/saa_lefthand.dar \
+		item/mo_disk/mo_disk.dar \
+		item/item_security_card_lv4/security_card_lv4.dar \
+		weapon/usp/usp_sub.dar
+human	jam_def/jam_def.kms
+weapon	saa/saa_lefthand.kms
+item	mo_disk/mo_disk.kms
+item	item_security_card_lv4/security_card_lv4.kms
+weapon	usp/usp_sub.kms
+
+// リアル影投影モデル
+world	w31a/w31a_kage/w31ak.kms
+
+// エフェクト（トランス）
+pack_trnall trn.tri effect/smoke/smoke_lp1_alp.bmp
+
+/* mgdemo added ----from here (Wed Jul 25 21:12:24 2001) ---- */
+goods	demo_dummy/demo_dummy.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Thu Jul 26 18:15:17 2001) ---- */
+human	jam_def/jam_def_addhand_mh_mt.evm
+human	rai_def/rai_def_addhand_mh_mt.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Aug  6 14:12:43 2001) ---- */
+goods	demo_org_plant_goods/demo_org_plant_hlst.kms
+goods	demo_org_plant_goods/demo_org_plant_radio.kms
+goods	demo_org_plant_goods/demo_org_plant_ssk.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Aug  6 15:16:13 2001) ---- */
+human	jam_def/jam_blood_sh.kms
+/* mgdemo added ----upto here ---- */
+
+// テロップ
+#ifdef MGS2_LANG_ENGLISH
+// 英語
+pack_all	staff.tri \
+		2D/demo_telop/eng/sr14j_alp_ovl.bmp \
+		2D/demo_telop/eng/sr14j_bg_alp_ovl.bmp
+
+#else
+// 日本語
+pack_all	staff.tri \
+		2D/demo_telop/jpn/sr14j_alp_ovl.bmp \
+		2D/demo_telop/jpn/sr14j_bg_alp_ovl.bmp
+
+#endif
+
+/* mgdemo added ----from here (Wed Aug 15 22:31:49 2001) ---- */
+vib	demo/P049_01_p01_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Wed Aug 15 22:37:16 2001) ---- */
+vib	demo/P049_11_p02_rai_09.vib
+vib	demo/P049_11_p02_rai_08.vib
+vib	demo/P049_11_p02_rai_07.vib
+vib	demo/P049_11_p02_rai_06.vib
+vib	demo/P049_11_p02_rai_05.vib
+vib	demo/P049_11_p02_rai_04.vib
+vib	demo/P049_11_p02_rai_03.vib
+vib	demo/P049_11_p02_rai_02.vib
+vib	demo/P049_11_p02_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Aug 17 20:16:06 2001) ---- */
+pack_trnall trn.tri effect/bakuha/bombsphere01_alp.bmp
+pack_trnall trn.tri effect/bakuha/bombsphere03_alp.bmp
+pack_trnall trn.tri effect/bakuha/bombsphere04_alp.bmp
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Wed Aug 22 14:30:59 2001) ---- */
+vib	demo/P047_01_p01_rai_02.vib
+vib	demo/P047_01_p01_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Wed Aug 22 14:37:11 2001) ---- */
+vib	demo/P047_03_p02_rai_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Aug 28 17:09:15 2001) ---- */
+vib	demo/P048_01_p01_effect_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Aug 28 17:10:53 2001) ---- */
+vib	demo/P048_01_p01_effect_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Aug 28 17:12:26 2001) ---- */
+vib	demo/P048_01_p01_effect_01.vib
+/* mgdemo added ----upto here ---- */

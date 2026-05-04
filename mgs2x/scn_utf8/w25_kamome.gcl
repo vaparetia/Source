@@ -1,0 +1,485 @@
+/*
+    w25_kamome.gcl
+    2001/05/25 Masafumi Okuta
+    $id$
+*/
+//	 5000,-2750,-162000 
+//	 4750,-1750,-163500 
+//	 3500, -500,-161000 
+//	{ 5125,-2625,-161000 1024,3072,0 } \
+//	{ 4450,-1750,-163500 0,   0,0 } \
+//	{ 3200, -500,-161000 0,   0,0 } \
+
+// かもめ	
+// ---------------------
+proc w25aカモメ配置 {
+	chara ターゲットトラップ 監視 \
+//	    -map  ＤＧ連絡橋1F \
+	    -trap ev007 \		// この中を弾丸が通過した場合、カモメが飛び立つ
+	    -proc w25弾監視
+
+	chara かもめマネージャ  かもめ管理 \
+	// モデルデータ名
+	-datamdl kmo_noalp, kmo_low, kmo_low, kmo_low \ 
+
+	// 平均速度
+	-zspeed 50 \
+
+	// 基本ルーチン
+	-base d:KMNG_BASE_BARDY \	// 基本状態:敏感
+
+	// 消去する高さ
+	-eraseh -40500 \
+
+	-wdmgproc rp_かもめ殺しやがった /* 無線対応 */ \	
+
+	-name \
+		Kamome00, Kamome01, Kamome02, Kamome03, Kamome04, \
+		Kamome05, Kamome06, Kamome07, Kamome08, Kamome09, \
+		Kamome10, Kamome11, Kamome12, Kamome13, Kamome14, \
+		Kamome15, Kamome16, Kamome17, Kamome18, Kamome19, \
+
+	-linepos \
+	        2950,  0, -155000, 2950, 0, -145250, \
+		-9415, 2650, -163250, -9415, 2650, -163248, \
+	    
+        -farea \
+	       -5000, 3000, -155000,    0, 5000, -140000,   /* フリー南 */ \
+	        4500, -1791, -163200, 5000, -1790, -162700, /* 邪魔カモメ */ \
+	        4400, -1791, -163200, 5100, -1790, -162700, /* 邪魔カモメ */ \
+
+	-unitpos \	/* 位置指定用番号 0～32*/
+		(d:KMM_IPOS_LINE | 0x00), (d:KMM_IPOS_LINE | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+		(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+		(d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), \
+		(d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_LINE | 0x01), \
+
+	-yrot /* 初期Y方向 */ \
+		0, 0, 0, 0, 0, \
+		0, 0, 0, 0, 0, \
+		4096 - 500, 500, 644, 711, 804, \
+		4096 - 256, 400, 544, 811, 904, \
+
+	-traparea \
+		ev003, ev004 \
+
+	-areadata \
+		1000,  1470, -141000, 4000, 2230, -148000, /* 狙撃邪魔カモメ用 */ \ 
+	        -8000, 2500, -155000, 8000, 7000, -140000, /* フリー南 */ \
+		22500, -750, -158500, 11000, 6700, -150500 /* 散開用 */ \
+
+	-indexarea \
+	(d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), \
+	(d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), \
+	(d:KMM_FLYA_TRAP  | 0x01), (d:KMM_FLYA_TRAP  | 0x01), (d:KMM_FLYA_TRAP  | 0x01), (d:KMM_FLYA_TRAP  | 0x01), (d:KMM_FLYA_TRAP  | 0x01), \
+	(d:KMM_FLYA_TRAP  | 0x01), (d:KMM_FLYA_TRAP  | 0x01), (d:KMM_FLYA_TRAP  | 0x01), (d:KMM_FLYA_TRAP  | 0x01), (d:KMM_FLYA_TRAP  | 0x01), \
+
+	-mot \
+	d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, \  
+	d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, \  
+
+	-routine \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST
+
+	// 邪魔カモメ
+	eval( $i:カモメ拡散カウンタ = 0)
+	eval( $i:自由カモメ集合カウンタ = 600)
+	chara プロック連続実行 Ｃ４狙撃妨害カモメ -proc w25妨害かもめ 
+
+	// 自由飛行
+	eval($i:カモメ着地カウンタ = 600);
+	chara プロック連続実行 かもめ自由飛行 -proc w25aかもめ自由飛行管理
+}
+/*------------- 自由飛行 -------------*/
+proc w25aかもめ自由飛行管理{ // 連続呼びでw25aのかもめ自由飛行を監視
+    // かもめの自由着陸管理
+    if ( $i:カモメ着地カウンタ > 0 ){
+        eval( $i:カモメ着地カウンタ = $i:カモメ着地カウンタ - 1 )
+	if ( $i:カモメ着地カウンタ == 0 ){
+	    eval( $i:カモメ着地点 = $i:カモメ着地点 + `command rand 3`)		// 着地する線を決める
+	    eval( $i:カモメ着地点 = $i:カモメ着地点 % 3) 				
+  	    eval( $i:カモメ着地数 = `command rand 2` + 1)		// 着地するかもめの数を決める
+  	    eval( $i:カモメ着地カウンタ = `command rand 1200` + 1000 )	// 次の着地命令発行までの間隔を決める
+
+	    if ( $i:カモメ着地点 == 0 ){
+		mesg かもめマネージャ かもめ管理 指定球内搾取線着地 $i:カモメ着地数, 0, 6000, -150000, 10000, \
+							2950, 0, -155000, 2950, 0, -145250, 1000, 3000, 360
+	    }else if ( $i:カモメ着地点 == 1 ){
+		mesg かもめマネージャ かもめ管理 指定球内搾取線着地 $i:カモメ着地数, 0, 6000, -150000, 10000, \
+							-2950, 0, -155400, -2950, 0, -153500, 1000, 3000, 360
+	    }else if ( $i:カモメ着地点 == 2 ){
+		mesg かもめマネージャ かもめ管理 指定球内搾取線着地 $i:カモメ着地数, 0, 6000, -150000, 10000, \
+							300, 1350, -146200, 600, 1350, -145800, 1000, 3000, 360
+	    }
+	}
+    }
+}
+
+// Ｃ４狙撃を妨害するカモメ
+proc w25妨害かもめ{ 
+
+    // 散開していたカモメを集合    
+    if ( $i:カモメ拡散カウンタ > 0 ){
+        eval( $i:カモメ拡散カウンタ = $i:カモメ拡散カウンタ - 1 )
+	if ( $i:カモメ拡散カウンタ == 0 ){
+	    mesg かもめマネージャ かもめ管理 指定トラップ内搾取エリア着地 10, ev005, ev003, 400, 400, 1200, 1500, 240
+	}
+    }
+#if 1
+    // 自由かもめから集合するかもめ
+    if ( $i:自由カモメ集合カウンタ > 0 ){
+        eval( $i:自由カモメ集合カウンタ = $i:自由カモメ集合カウンタ - 1 )
+	if ( $i:自由カモメ集合カウンタ == 0 ){
+	    mesg かもめマネージャ かもめ管理 指定トラップ内搾取エリア着地 2, ev005, ev003, 400, 400, 1200, 1500, 240
+	    eval( $i:自由カモメ集合カウンタ = 600)
+	}
+    }
+#endif    
+}
+
+proc w25弾監視{
+    // 逃げる
+    if ( $1 >= 1 && $1 <= 4){
+	mesg かもめマネージャ かもめ管理 指定球内緊急散開 4750, -1750, -163800, 4000, ev004, 75, 30
+	mesg かもめマネージャ かもめ管理 指定球内緊急離陸 4750, -1750, -163800, 4000, ev004, 75, 30
+
+        eval( $i:カモメ拡散カウンタ = 1200 )	
+	eval( $i:自由カモメ集合カウンタ = 600)
+    }
+}
+#define KMM_ESC_AREA_X1	(-8000)
+#define KMM_ESC_AREA_Y1	(8000)
+#define KMM_ESC_AREA_Z1	(-160000)
+#define KMM_ESC_AREA_X2	(8000)
+#define KMM_ESC_AREA_Y2	(12000)
+#define KMM_ESC_AREA_Z2	(-140000)
+proc セムテックス爆発散開かもめ{
+
+    chara delay KMREACT02 -time  1 -exec { 
+	mesg かもめマネージャ かもめ管理 指定エリア内緊急離陸  -10000, -5000,-166750, 10000, 5000,-140750,	   \
+	                                                       d:KMM_ESC_AREA_X1, d:KMM_ESC_AREA_Y1, d:KMM_ESC_AREA_Z1,  \
+	                                                       d:KMM_ESC_AREA_X2, d:KMM_ESC_AREA_Y2, d:KMM_ESC_AREA_Z2,  \
+	                                                       80, 10
+    }
+    chara delay KMREACT02 -time  1 -exec { 
+	mesg かもめマネージャ かもめ管理 指定エリア内緊急散開  -10000, -5000,-166750, 10000, 5000,-140750,	   \
+	                                                       d:KMM_ESC_AREA_X1, d:KMM_ESC_AREA_Y1, d:KMM_ESC_AREA_Z1,  \
+	                                                       d:KMM_ESC_AREA_X2, d:KMM_ESC_AREA_Y2, d:KMM_ESC_AREA_Z2,  \
+	                                                       80, 10
+    }
+
+}
+
+//------------------------------------------- w25b
+
+proc w25bカモメ配置 {
+	chara かもめマネージャ  かもめ管理 \
+	-name \
+		Kamome00, Kamome01, Kamome02, Kamome03, Kamome04, \
+		Kamome05, Kamome06, Kamome07, Kamome08, Kamome09, \
+		Kamome10, Kamome11, Kamome12, Kamome13, Kamome14, \
+		Kamome15, Kamome16, Kamome17, Kamome18, Kamome19, \
+		Kamome20, Kamome21, Kamome22, Kamome23, Kamome24, \
+	-unitpos \	/* 位置指定用番号 0～32*/
+		(d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), \
+		(d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), \
+		(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+		(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+		(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+	-zspeed \
+		60 \
+
+	// 消去する高さ
+	-eraseh -40500 \
+
+	-wdmgproc rp_かもめ殺しやがった /* 無線対応 */ \	
+
+	-linepos \
+		3500 1750 -164000 3500 1750 -162000 \
+		3500 1750 -162000 1000 1750 -162000 \
+	    
+        -farea \
+		18000,  1470, -202000, 38000, 4030, -191000, /*  */ \ 
+		30000,  1000, -188000, 40000,  1000, -181000, /*  */ \ 
+	-traparea \
+		ev006 \
+
+	-areadata \
+		18000,  1470, -198000, 38000, 4030, -187000, /*  */ \ 
+
+	-indexarea \
+	(d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), \
+	(d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+
+	-mot \
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING  \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+
+	-routine \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING
+
+	mesg かもめマネージャ かもめ管理 全かもめ飛行 0
+	mesg かもめマネージャ かもめ管理 エルード時反応距離 1
+
+	//	北側エルードトラップ
+	trap by015s d:PLAYER \
+		-mask ？ \
+		-exec {
+			//	トラップに入ったら監視開始
+		 	if ($3 == 入る) {
+			    chara プロック連続実行 エルード監視人 -proc エルード監視
+				//	出たら終了
+			} else {
+	  		    mesg プロック連続実行 エルード監視人 kill
+			}
+		}
+
+	eval( $i:エルード監視カウンタ = 0 );
+	eval($i:カモメ着地カウンタ = 600);
+	chara プロック連続実行 かもめ自由飛行 -proc w25bかもめ自由飛行管理
+}
+
+proc エルード監視 {
+    if ( $i:エルード監視カウンタ == 0) { 
+	if ( (`%プレイヤー状態取得` & d:PFLAG_ELUDING) ){
+	    //	エルードを邪魔する
+	    mesg かもめマネージャ かもめ管理 エルード妨害線指定 ev006 \
+		35000, -3000, -191686, 38237, -3000, -193516 \
+		650 100 300 500 60
+	    eval( $i:エルード監視カウンタ = 500);
+	}
+    }else{
+	eval( $i:エルード監視カウンタ = $i:エルード監視カウンタ - 1 );
+    }
+
+    // エルード終了
+    if ( ($i:前の状態 & d:PFLAG_ELUDING) ) { 
+	if ( (`%プレイヤー状態取得` & d:PFLAG_ELUDING) == 0){
+	    mesg かもめマネージャ かもめ管理 全かもめ飛行 90
+	}
+    }	
+    eval ( $i:前の状態 = `command プレイヤー状態取得`);
+}
+
+/*------------- 自由飛行 -------------*/
+proc w25bかもめ自由飛行管理{ // 連続呼びでw25bのかもめ自由飛行を監視
+    // かもめの自由着陸管理
+    if ( $i:カモメ着地カウンタ > 0 ){
+        eval( $i:カモメ着地カウンタ = $i:カモメ着地カウンタ - 1 )
+	if ( $i:カモメ着地カウンタ == 0 ){
+	    eval( $i:カモメ着地点 = $i:カモメ着地点 + `command rand 2`)		// 着地する線を決める
+	    eval( $i:カモメ着地点 = $i:カモメ着地点 % 2) 				
+  	    eval( $i:カモメ着地数 = `command rand 2` + 3)		// 着地するかもめの数を決める
+  	    eval( $i:カモメ着地カウンタ = `command rand 500` + 500 )	// 次の着地命令発行までの間隔を決める
+
+	    if ( $i:カモメ着地点 == 0 ){
+		mesg かもめマネージャ かもめ管理 指定球内搾取線着地 $i:カモメ着地数, 19000, 1500, -191500, 7000, 20218, 1000, -192826, 29706, 1000, -198286, 1000, 3000, 360
+	    }else if ( $i:カモメ着地点 == 1 ){
+		mesg かもめマネージャ かもめ管理 指定球内搾取線着地 $i:カモメ着地数, 19000, 1500, -191500, 7000, 24884, 1000, -193380, 30714, 1000, -196727, 1000, 3000, 360
+	    }
+	}
+    }
+}
+
+//------------------------------------------- w25c
+
+proc w25cカモメ配置 {
+	chara かもめマネージャ  かもめ管理 \
+	-name \
+		Kamome00, Kamome01, Kamome02, Kamome03, Kamome04, \
+//		Kamome05, Kamome06, Kamome07, Kamome08, Kamome09, \
+//		Kamome10, Kamome11, Kamome12, Kamome13, Kamome14, \
+//		Kamome15, Kamome16, Kamome17, Kamome18, Kamome19  \
+	-zspeed 50 \
+
+	// 消去する高さ
+	-eraseh -40500 \
+
+	-wdmgproc rp_かもめ殺しやがった /* 無線対応 */ \	
+
+	-unitpos \	/* 位置指定用番号 0～32*/
+		(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+//		(d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), \
+//		(d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), \
+//		(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+
+	-linepos \
+		3500 1750 -164000 3500 1750 -162000 \
+		3500 1750 -162000 1000 1750 -162000 \
+	    
+        -farea /* 初期位置 */\
+		30000,  2070, -250000, 45000, 4030, -230000, /* 狙撃邪魔カモメ用 */ \ 
+		55000,  4070, -245000, 65000, 5030, -230000, /* 狙撃邪魔カモメ用 */ \ 
+
+//        -farea /* 初期位置 */\
+//		42000,  -1000, -190000, 61000, 4030, -195000,  \ 
+//		68000,  -1000, -193000, 72000, 4030, -200000,  \ 
+//		64000,  -1000, -227000, 71000, 4030, -223000,  \ 
+
+	-traparea /* 飛行エリア */ \
+		km001, km002, km003 \
+
+
+	-areadata /* 飛行エリア */ \
+		30000,  2070, -250000, 46000, 4030, -230000, /* 狙撃邪魔カモメ用 */ \ 
+		55000,  4070, -245000, 65000, 5030, -230000, /* 狙撃邪魔カモメ用 */ \ 
+
+//	-areadata \
+//		13966,  1470, -194000, 40000, 4030, -183000, /* 狙撃邪魔カモメ用 */ \ 
+
+	-indexarea \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+//	(d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), \
+//	(d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02), \
+//	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+
+	-mot \
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+//	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+//	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+//	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING  \  
+
+	-routine \
+//	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+//	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+//	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING 
+
+	mesg かもめマネージャ かもめ管理 全かもめ飛行 0
+
+	@w25cかもめ監視
+}
+
+proc w25cかもめ監視{
+	trap km001s d:PLAYER \
+		-mask ？ \
+		-exec {
+			//	トラップに入った
+		 	if ($3 == 入る) {
+				mesg かもめマネージャ かもめ管理 トラップ内エリア変更 km002 km001 360
+			}
+		}
+	trap km002s d:PLAYER \
+		-mask ？ \
+		-exec {
+			//	トラップに入った
+		 	if ($3 == 入る) {
+				mesg かもめマネージャ かもめ管理 トラップ内エリア変更 km001 km002 360
+				mesg かもめマネージャ かもめ管理 トラップ内エリア変更 km003 km002 360
+			}
+		}
+	trap km003s d:PLAYER \
+		-mask ？ \
+		-exec {
+			//	トラップに入った
+		 	if ($3 == 入る) {
+				mesg かもめマネージャ かもめ管理 トラップ内エリア変更 km002 km003 360
+			}
+		}
+}
+
+
+
+//------------------------------------------- w25d
+
+proc w25dカモメ配置 {
+	chara かもめマネージャ  かもめ管理 \
+	-name \
+		Kamome00, Kamome01, Kamome02, Kamome03, Kamome04, \
+		Kamome05, Kamome06, Kamome07, Kamome08, Kamome09, \
+		Kamome10, Kamome11, Kamome12, Kamome13, Kamome14, \
+		Kamome15, Kamome16, Kamome17, Kamome18, Kamome19  \
+	-zspeed 50 \
+
+	// 消去する高さ
+	-eraseh -40500 \
+
+	-wdmgproc rp_かもめ殺しやがった /* 無線対応 */ \	
+
+	-unitpos \	/* 位置指定用番号 0～32*/
+		(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+		(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+		(d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), \
+		(d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), \
+		(d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), \
+		(d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), \
+
+        -farea /* 初期位置 */\
+		30000,  2070, -250000, 45000, 4030, -230000, /* 狙撃邪魔カモメ用 */ \ 
+		55000,  4070, -245000, 65000, 5030, -230000, /* 狙撃邪魔カモメ用 */ \ 
+		45000,  5070, -250000, 58000, 6030, -240000, /* 狙撃邪魔カモメ用 */ \ 
+
+	-areadata /* 飛行エリア */ \
+		30000,  2070, -250000, 46000, 4030, -230000, /* 狙撃邪魔カモメ用 */ \ 
+		55000,  4070, -245000, 65000, 5030, -230000, /* 狙撃邪魔カモメ用 */ \ 
+		45000,  5070, -250000, 58000, 6030, -240000, /* 狙撃邪魔カモメ用 */ \ 
+
+	-indexarea \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), \
+	(d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), \
+	(d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02), \
+	(d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02), (d:KMM_FLYA_BOUND | 0x02), \
+
+	-mot \
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING  \  
+
+	-routine \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING 
+
+	mesg かもめマネージャ かもめ管理 全かもめ飛行 0
+#if 0
+	eval( $i:エルード監視カウンタ = 0 );
+	eval($i:カモメ着地カウンタ = 600);
+	chara プロック連続実行 かもめ自由飛行 -proc w25dかもめ自由飛行管理
+#endif
+}
+
+/*------------- 自由飛行 -------------*/
+proc w25dかもめ自由飛行管理{ // 連続呼びでw25dのかもめ自由飛行を監視
+    // かもめの自由着陸管理
+    if ( $i:カモメ着地カウンタ > 0 ){
+        eval( $i:カモメ着地カウンタ = $i:カモメ着地カウンタ - 1 )
+	if ( $i:カモメ着地カウンタ == 0 ){
+	    eval( $i:カモメ着地点 = $i:カモメ着地点 + `command rand 2`)		// 着地する線を決める
+	    eval( $i:カモメ着地点 = $i:カモメ着地点 % 2) 				
+  	    eval( $i:カモメ着地数 = `command rand 2` + 3)		// 着地するかもめの数を決める
+  	    eval( $i:カモメ着地カウンタ = `command rand 500` + 500 )	// 次の着地命令発行までの間隔を決める
+
+	    if ( $i:カモメ着地点 == 0 ){
+		mesg かもめマネージャ かもめ管理 指定球内搾取線着地 $i:カモメ着地数, 37500, 3000, -240000, 10000, \
+							32100, -500, -241000, 40000, -500, -241000, 1000, 3000, 360
+	    }else if ( $i:カモメ着地点 == 1 ){
+		mesg かもめマネージャ かもめ管理 指定球内搾取線着地 $i:カモメ着地数, 56500, 3000, -240000, 10000, \
+							59430, -1990, -230000, 59430, -1990, -250410, 1000, 3000, 360
+	    }
+	}
+    }
+}
+

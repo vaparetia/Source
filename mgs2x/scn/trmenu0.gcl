@@ -1,0 +1,449 @@
+/*
+	trmenu0.gcl
+	    ＶＲ体験版メニュー
+	2002/05/30 Y.Korekado
+	$Id: trmenu0.gcl,v 1.23 2002/07/05 08:11:54 usr01749 Exp $
+*/
+
+#include "varinit.h"
+#include "mksload.h"
+
+//chara サウンドマネージャー ＳＤマネ -pak 0
+
+/******************************************************************/
+/* リソース */
+/******************************************************************/
+proc resident_clear {
+	/* 常駐ディレクトリ情報クリア（2001．9.4 園山追加） */
+	dim $i:常駐ディレクトリ[ 4 ]
+	eval ( $i:常駐ディレクトリ[ 0 ] = 0 )
+	eval ( $i:常駐ディレクトリ[ 1 ] = 0 )
+	eval ( $i:常駐ディレクトリ[ 2 ] = 0 )
+	eval ( $i:常駐ディレクトリ[ 3 ] = 0 )
+	command varsave $i:常駐ディレクトリ[ 0 ]
+	command varsave $i:常駐ディレクトリ[ 1 ]
+	command varsave $i:常駐ディレクトリ[ 2 ]
+	command varsave $i:常駐ディレクトリ[ 3 ]
+}
+
+resource オプションの説明日本語 {
+VIB:
+	'バイブレーション（振動）のＯＮ／ＯＦＦを設定します',
+BLD:
+	'血の表示のＯＮ／ＯＦＦを設定します',
+SND:
+	'ステレオ／モノラルの選択をします',
+CAP:
+	'字幕のＯＮ／ＯＦＦを設定します',
+OWN:
+	'主観操作のタイプを設定します',
+ITEM:
+	'アイテム表示のタイプを設定します',
+QUICK:
+	'クイックチェンジのタイプを設定します',
+CLRADJ:
+	'明度調整画面を表示します',
+EXIT:
+	'前画面へ戻ります',
+COLORADJ:
+	'モニター本体の明るさ設定を調整して、|'
+	'赤色のラインより下のグレースケールが|'
+	'見えなくなるようにすると、モニターの|'
+	'明るさがこのゲームを遊ぶのに最も適し|'
+	'た状態になります。'
+};
+
+resource レーダーの説明日本語 {
+RAD_TYPE1:
+	'初心者用レーダー イントルード時も表示します',
+RAD_TYPE2:
+	'標準レーダー イントルード時は非表示にします'
+RAD_OFF:
+	'レーダーをＯＦＦにします'
+}
+
+resource クイックチェンジの説明日本語 {
+unequip:
+	'選択した武器・装備品を装備/解除します'
+
+previous:
+	'前に装備していた武器・装備品と入れかえます'
+}
+
+
+resource オプションの説明英語 {
+VIB:
+	'Turn the vibration ON / OFF.',
+// RADはダミーデータ
+BLD:
+	'Turn blood display ON / OFF.',
+SND:
+	'Select STEREO / MONAURAL sound.',
+CAP:
+	'Turn the captions ON / OFF.',
+OWN:
+	'Select First Person View control type.',
+ITEM:
+	'Select item display type.',
+QUICK:
+	'Select quick change type.',
+CLRADJ:
+	'Display color adjustment screen.',
+EXIT:
+	'Return to previous screen.',
+COLORADJ:
+	'Adjust the monitor brightness|'
+	'so that the gray scale under|'
+	'the red line is no longer seen|'
+	'to obtain optimal brightness|'
+	'for this game.'
+};
+
+resource レーダーの説明英語 {
+RAD_TYPE1:
+	'Radar appears even during Intrusion View.',
+RAD_TYPE2:
+	'Radar does not appear during Intrusion View.'
+RAD_OFF:
+	'Radar will not appear at all.'
+}
+
+resource クイックチェンジの説明英語 {
+unequip:
+	'Equip/unequip selected weapon/item.'
+
+previous:
+	'Switch between currently and previously equipped|'
+	'weapon/item.'
+}
+
+
+resource オプションの説明フランス語 {
+VIB:
+	'Mettre la vibration sur ON / OFF.'
+// RADはダミーデータ
+BLD:
+	{Mettre l'affichage du sang sur ON / OFF.}
+SND:
+	'Choisir entre le son STEREO et MONO.'
+CAP:
+	'Mettre les sous-titres sur ON / OFF.'
+OWN:
+	{Choisir l'Observation &`a la premi&`ere personne.}
+ITEM:
+	{Choisir l'affichage des objets.}
+QUICK:
+	'Choisir les changements rapides.'
+CLRADJ:
+	{Afficher l'&'ecran de r&'eglage des couleurs.}
+EXIT:
+	{Retourner dans l'&'ecran pr&'ec&'edent.}
+COLORADJ:
+	{Afin d'obtenir la luminosit&'e|
+	 optimale pour ce jeu, r&'eglez la|
+	 luminosit&'e du moniteur de mani&`ere|
+	 &`a rendre invisible l'&'echelle de gris|
+	 situ&'ee sous la ligne rouge.}
+};
+
+resource レーダーの説明フランス語 {
+RAD_TYPE1:
+	{Le radar s'affiche m&^eme en Point de vue d'intrusion.}
+RAD_TYPE2:
+	{Le radar ne s'affiche pas en Point de vue d'intrusion.}
+RAD_OFF:
+	{Le radar ne s'affiche pas du tout.}
+}
+
+resource クイックチェンジの説明フランス語 {
+unequip:
+	{Equiper/Ne pas &'equiper une arme/un outil.}
+
+previous:
+	{Alterner des armes/des outils pr&'ealablement &'equip&'es.}
+}
+
+
+resource オプションの説明ドイツ語 {
+VIB:
+	'Vibration EIN / AUS.'
+// RADはダミーデータ
+BLD:
+	'Blutanzeige EIN / AUS.'
+SND:
+	'W&~ahlen Sie STEREO / MONO.'
+CAP:
+	'Untertitel EIN / AUS.'
+OWN:
+	'Beobachtungsperspektive w&~ahlen.'
+ITEM:
+	'Displaytyp w&~ahlen.'
+QUICK:
+	'Schnellwechseltyp w&~ahlen.'
+CLRADJ:
+	'Farbregulierungsbildschirm einblenden.'
+EXIT:
+	'Zur&~uck zum vorigen Bildschirm.'
+COLORADJ:
+	'F&~ur optimale Helligkeit die|'
+	'Monitorhelligkeit so|'
+	'einstellen, da&~s die Graustufe|'
+	'unter der roten Linie nicht|'
+	'mehr sichtbar ist.'
+};
+
+resource レーダーの説明ドイツ語 {
+RAD_TYPE1:
+	'Radar erscheint auch in der Eindringperspektive.'
+RAD_TYPE2:
+	'Radar erscheint nicht in der Eindringperspektive.'
+RAD_OFF:
+	'Radar erscheint &~uberhaupt nicht.'
+}
+
+resource クイックチェンジの説明ドイツ語 {
+unequip:
+	'Nenme/Gebe die ausgew&~ahelten Waffen/Gegenst&~ande.'
+
+previous:
+	'Wechsle zwischen momentaner und vohergehender|'
+	'Ausr&~ustung an Waffen/Gegenst&~ande.'
+}
+
+
+resource オプションの説明イタリア語 {
+VIB:
+	'Attiva / disattiva la vibrazione.'
+// RADはダミーデータ
+BLD:
+	'Attiva / disattiva la visualizzazione del sangue.'
+SND:
+	'Seleziona sonoro in STEREO / MONO.'
+CAP:
+	'Attiva / disattiva le didascalie.'
+OWN:
+	'Seleziona tipo di controllo in Visuale Soggettiva.'
+ITEM:
+	'Seleziona tipo di visualizzazione oggetti.'
+QUICK:
+	'Seleziona tipo di cambio rapido.'
+CLRADJ:
+	'Visualizza schermata di regolazione colore.'
+EXIT:
+	'Torna alla schermata precedente.'
+COLORADJ:
+	'Regola luminosit&`a del monitor|'
+	'in modo da rendere invisibile la|'
+	'scala di grigi sotto la linea rossa|'
+	'ed ottenere la luminosit&`a ottimale|'
+	'per questo gioco.'
+};
+
+resource レーダーの説明イタリア語 {
+RAD_TYPE1:
+	'Il radar appare anche nella Visuale Incursione.'
+RAD_TYPE2:
+	'Il radar non appare nella Visuale Incursione.'
+RAD_OFF:
+	'Il radar non appare mai.'
+}
+
+resource クイックチェンジの説明イタリア語 {
+unequip:
+	'Equipaggiamento/senza equipaggiamento arma/articolo|'
+	'selezionati.'
+
+previous:
+	'Cambia tra corrente e precedente arma/articolo|'
+	'selezionati.'
+}
+
+
+resource オプションの説明スペイン語 {
+VIB:
+	{ACTIVAR / DESACTIVAR la funci&'on vibratoria.}
+// RADはダミーデータ
+BLD:
+	'Jugar CON / SIN Sangre.'
+SND:
+	{Selecciona sonido EST&'EREO / MONO.}
+CAP:
+	'Jugar CON / SIN anotaciones.'
+OWN:
+	'Selecciona el tipo de control para la Visi&\'on Primera|'
+	'Persona.'
+ITEM:
+	{Selecciona la forma de visualizaci&'on del objeto.}
+QUICK:
+	{Selecciona el tipo de cambio r&'apido.}
+CLRADJ:
+	'Muestra la pantalla de ajuste del color.'
+EXIT:
+	'Volver a la pantalla anterior.'
+COLORADJ:
+	'Ajusta el brillo de la pantalla. Cuando|'
+	'la escala de color gris que aparece|'
+	'bajo la l&\'inea roja se deje de ver,|'
+	'el brillo ser&\'a el &\'optimo durante el|'
+	'juego.'
+};
+
+resource レーダーの説明スペイン語 {
+RAD_TYPE1:
+	{El radar aparece incluso durante la Visi&'on Intrusi&'on.}
+RAD_TYPE2:
+	{El radar no aparece durante la Visi&'on Intrusi&'on.}
+RAD_OFF:
+	'El radar no aparece nunca.'
+}
+
+resource クイックチェンジの説明スペイン語 {
+unequip:
+	'Equipar/desactivar arma/objet seleccionada.'
+
+previous:
+	'Cambiar entre el arma/objeto seleccionado ahora|'
+	'y el anterior.'
+}
+
+command ローカルリソース設定 \
+	-string オプションの説明日本語 		[オプションの説明日本語:*] \
+			オプションの説明英語 		[オプションの説明英語:*] \
+			オプションの説明フランス語 	[オプションの説明フランス語:*] \
+			オプションの説明ドイツ語	[オプションの説明ドイツ語:*] \
+			オプションの説明スペイン語 	[オプションの説明スペイン語:*] \
+			オプションの説明イタリア語 	[オプションの説明イタリア語:*] \
+			レーダーの説明日本語	[レーダーの説明日本語:*] \
+			レーダーの説明英語		[レーダーの説明英語:*] \
+			レーダーの説明フランス語[レーダーの説明フランス語:*] \
+			レーダーの説明ドイツ語	[レーダーの説明ドイツ語:*] \
+			レーダーの説明スペイン語[レーダーの説明スペイン語:*] \
+			レーダーの説明イタリア語[レーダーの説明イタリア語:*] \
+			クイックチェンジの説明日本語	[クイックチェンジの説明日本語:*] \
+			クイックチェンジの説明英語		[クイックチェンジの説明英語:*] \
+			クイックチェンジの説明フランス語[クイックチェンジの説明フランス語:*] \
+			クイックチェンジの説明ドイツ語	[クイックチェンジの説明ドイツ語:*] \
+			クイックチェンジの説明スペイン語[クイックチェンジの説明スペイン語:*] \
+			クイックチェンジの説明イタリア語[クイックチェンジの説明イタリア語:*] 
+
+/******************************************************************/
+//	初期セットキャラ
+/******************************************************************/
+chara 2Dレイアウトドライバ ２ＤＬＤ
+
+chara ＶＲ体験版タイトル ＶＲ体験版タイトル \
+	-new_game  ＮＥＷ \
+	-load_game ＬＯＡＤ \
+	-save_game ＳＡＶＥ \
+	-options   ＯＰＴＩＯＮＳ \
+	-exit      ＥＸＩＴ
+
+mesg ＶＲ体験版タイトル ＶＲ体験版タイトル 表示 0
+
+chara ノード画面フレームアニメーション体験版 ノードフレーム \
+	-d frame 
+
+proc ＮＥＷ {
+#if d:DEBUG_PRINT 
+	print 'new'
+#endif
+	command 変数初期化
+	eval( $b:ＶＲ体験版ステージ番号 = 0 ) ;
+	@resident_clear ;
+	command ミッションズデータ初期化
+	@mv_trmenu_1 ;
+}
+
+proc ＬＯＡＤ {
+#if d:DEBUG_PRINT 
+	print 'load'
+#endif
+	chara ロードゲーム画面マネージャー ロード画面 \
+		-d save_load \
+		-p ロードゲーム終了 \
+		-b tnkicon \
+		-m d:SAVE_LOAD_MODE_VR
+}
+
+proc ＳＡＶＥ {
+#if d:DEBUG_PRINT 
+	print 'save'
+#endif
+}
+
+proc ＯＰＴＩＯＮＳ {
+	@sel_option ;
+#if d:DEBUG_PRINT 
+	print 'options'
+#endif
+}
+
+proc ＥＸＩＴ {
+#if d:DEBUG_PRINT 
+	print 'exit'
+#endif
+    command reboot;
+}
+
+/***************************************************************************************************/
+// オプション
+/***************************************************************************************************/
+
+proc sel_option {
+	chara オプション画面マネージャー オプション画面 \
+		-d node_menu \
+		-p オプション終了プロシージャー \
+		-b バックグラウンド \
+		-n 	2 \
+		-l 	7 1 \ //先頭がデフォルトの言語に設定されています。(字幕OFF時の言語)
+		-r 	オプションの説明英語 		レーダーの説明英語 			クイックチェンジの説明英語 		 \
+			オプションの説明フランス語 	レーダーの説明フランス語	クイックチェンジの説明フランス語 \
+			オプションの説明ドイツ語 	レーダーの説明ドイツ語 		クイックチェンジの説明ドイツ語 	 \
+			オプションの説明スペイン語 	レーダーの説明スペイン語 	クイックチェンジの説明スペイン語 \
+			オプションの説明イタリア語 	レーダーの説明イタリア語 	クイックチェンジの説明イタリア語 \
+			0 0 0 \ //韓国語
+			オプションの説明日本語 		レーダーの説明日本語 		クイックチェンジの説明日本語 	 		
+}
+
+proc オプション終了プロシージャー {
+	mesg ＶＲ体験版タイトル ＶＲ体験版タイトル 表示 3
+#ifdef d:EU
+//	command 字幕言語設定
+#endif
+
+}
+
+proc ロードゲーム終了 $:返り値 {
+	if( $:返り値 == 1 ) {
+print '1korekorkeorkoekroekrokrkoe' $w:言語 
+		command store_loadedvar
+print '2korekorkeorkoekroekrokrkoe' $w:言語 
+		eval( $b:ＶＲ体験版ステージ番号 = 0 ) ;
+		@resident_clear;
+print '3korekorkeorkoekroekrokrkoe' $w:言語 
+		@mv_trmenu_1 ;
+	} else {
+		mesg ＶＲ体験版タイトル ＶＲ体験版タイトル 表示 2
+	}
+}
+
+#include "loadgame.rsc"
+#include "mcwarning.rsc"
+#include "stagename_e.h"
+
+command ローカルリソース設定 \
+    -string ロードゲームリソース日本語 		[ロードゲームリソース日本語:*] \
+            ロードゲームリソース英語 		[ロードゲームリソース英語:*] \
+            ロードゲームリソースフランス語 	[ロードゲームリソースフランス語:*] \
+            ロードゲームリソースドイツ語 	[ロードゲームリソースドイツ語:*] \
+            ロードゲームリソーススペイン語 	[ロードゲームリソーススペイン語:*] \
+            ロードゲームリソースイタリア語 	[ロードゲームリソースイタリア語:*] \
+			ステージ名 [ステージ名:*] \
+			難易度名 [難易度名:*] \
+			メモリーカード警告メッセージ日本語 		[メモリーカード警告メッセージ日本語:*] \
+			メモリーカード警告メッセージ英語 		[メモリーカード警告メッセージ英語:*] \
+			メモリーカード警告メッセージフランス語 	[メモリーカード警告メッセージフランス語:*] \
+			メモリーカード警告メッセージドイツ語 	[メモリーカード警告メッセージドイツ語:*] \
+			メモリーカード警告メッセージスペイン語 	[メモリーカード警告メッセージスペイン語:*] \
+			メモリーカード警告メッセージイタリア語 	[メモリーカード警告メッセージイタリア語:*] 
+

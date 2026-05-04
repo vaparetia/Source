@@ -1,0 +1,104 @@
+ハリアーエフェクトのテクスチャリスト
+
+
+＜筋雲＞
+	harrier_wing_smoke.c
+	void *NewHarrierWingSmoke( FVECTOR *pos, int *flg )
+	->> smoke_lp1_alp.bmp
+
+＜ライト＞
+	harrier_light.c
+	void *NewHarrierLight( FVECTOR *pos )
+	->> svc_bonbori_r.bmp
+
+＜機銃＞
+	弾
+	harrier_vulcan.c
+	void *NewHarrierVulcan( FMATRIX *mat )
+	->> drop01_msk.bmp
+
+	マズルフラッシュ
+	harrier_vulcan_fire.c
+	void *NewHarrierVulcanFire( FVECTOR *pos, FVECTOR *vec, int *flag )
+	->> flare0_msk.bmp
+
+＜ロケットミサイル＞
+	ポッド煙
+	harrier_pod_smoke.c
+	void *NewHarrierPodSmoke( FVECTOR *position, FVECTOR *vector, FMATRIX *mat )
+	->> bombgas6_alp.bmp
+
+	ミサイル煙
+	harrier_missile_smoke.c
+	void *NewHarrierMissileSmokeLine( FVECTOR *pos, FVECTOR *vec, char *flag )
+	->> smoke_lp3_alp.bmp
+
+	ミサイル炎
+	harrier_missile_fire.c
+	void *NewHarrierMissileFire( FVECTOR *pos, FVECTOR *vec, char *flag )
+	->> drop01_msk.bmp
+
+	ミサイル着弾
+	exp_smoke.c
+	void *NewExplosionSmoke( FVECTOR* center )
+	->> bombgas1_alp.bmp
+
+	runnning_smoke.c
+	void *NewRunningSmoke( FVECTOR* hit_pos, FVECTOR* n_vector, FVECTOR* bullet_vec )
+	->> bombgas6_alp.bmp
+
+＜クラスター爆弾＞
+	分裂煙
+	harrier_claster_smoke.c
+	void *NewHarrierClasterSmoke( FVECTOR *position, FVECTOR *vector )
+	->> bombgas6_alp.bmp
+
+	着弾煙
+	harrier_clasterunit_smoke.c
+	void *NewHarrierClasterUnitSmoke( FVECTOR *position )
+	->> bombgas6_alp.bmp, cgr_frg1_cm.kms
+
+	着弾火花
+	harrier_claster_spark.c
+	void *NewHarrierClasterSpark( FVECTOR *pos )
+	->> flare0_msk.bmp
+
+＜アムラーム＞
+	アムラーム煙
+	harrier_missile_smoke2.c
+	void *NewHarrierMissileSmokeLine( FVECTOR *pos, FVECTOR *vec, char *flag )
+	->> smoke_lp3_alp.bmp
+
+	アムラーム炎
+	harrier_missile_fire2.c
+	void *NewHarrierMissileFire( FVECTOR *pos, FVECTOR *vec, char *flag )
+	->> flare0_msk.bmp
+
+	アムラーム着弾
+	e3_missile_exp.c
+	void NewHarrierMisileExplosionE3( FVECTOR *point, FVECTOR *normal, FVECTOR *direction )
+	->> bombgas1_alp.bmp, bombgas6_alp.bmp, cgr_frg1_cm.kms
+
+＜フレア＞
+	本体
+	harrier_flare.c
+	void *NewHarrierFlare( FVECTOR *pos )
+	->> svc_bonbori_r.bmp
+
+＜バーニア＞
+	バーニア
+	harrier_vernier.c
+	void *NewHarrierVernier( FVECTOR *pos, FVECTOR *vec, char *flag )
+	->> flare0_msk.bmp
+
+	巻き上げ煙
+	harrier_vernier_smoke.c
+	void *NewHarrierVernierSmoke( FVECTOR* center, int *flag )
+	->> bombgas6_alp.bmp
+
+
+
+				
+
+
+

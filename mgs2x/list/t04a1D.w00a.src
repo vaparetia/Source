@@ -1,0 +1,164 @@
+//
+//	t04a1D.w00a.src	
+//
+//	written by S.Hirano 2000.Aug
+//
+//	$Id: t04a1D.w00a.src,v 1.30 2002/07/29 02:11:19 usr04098 Exp $
+
+// デファイン
+
+
+block .use r_tnk0
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+include		common.h
+include		a_effect.h
+//include		c_effect.h
+
+// キャラクタ 
+// スネーク常駐化にともない、コメントアウト(00.10.17）
+// include		snake_demo.h
+// cvd			human/sna_skl/sna_skl3.cvd
+
+//高波用
+option makexti6 -l 128
+pack_all	wave.tri effect/wave/wave06.bmp effect/wave/wave09_alp_ovl.bmp
+option makexti6
+
+// タンカー部分モデル
+
+
+world		w00a
+
+//ワイヤー／旗 頂点アニメーション
+
+
+cvd	world/w00/w00_vfg.cv2 vn
+cvd	world/w00/w00_vw1.cv2 vn
+cvd	world/w00/w00_vw2.cv2 vn
+cvd	world/w00/w00_vw3.cv2 vn
+cvd	world/w00/w00_vw4.cv2 vn
+cvd	world/w00/w00_vw5.cv2 vn
+cvd	world/w00/w00_vw6.cv2 vn
+
+// ほかタンカー関係共通部分。
+world		w00
+world		w01e/w01e.kms
+world		w01e/w01er.kms
+world		w00c/w00c.kms
+
+// タンカークルー死体とその映り込み
+pack_all	shitai.tri 	world/w01e/tnc_died_obj_mirror.dar \
+						world/w01e/tnc_died_obj.dar
+
+// そのモデル
+
+world	w01e/tnc_died_obj.kms
+world	w01e/tnc_died_obj_mirror.kms
+
+// 水密ドア
+goods	demo_w00_sdr
+
+// 窓雨
+debug	mizutani/rain
+//effect	rain
+
+// ライトファイル（基本ステージ用）
+lt2			t04a1D.lt2
+
+
+// ライトファイル（個別オブジェ用）
+lt2			w00a.lt2
+lt2			t04a1D_w01e.lt2
+lt2			w01e.lt2
+lt2			w00c.lt2
+
+
+// ライトファイル（スケールかけたモデル用）
+
+// ハザード
+hazard		d00a.hzx
+
+// 小物類
+
+
+
+//水飛沫エフェクトで使用するCV2等
+
+
+cvd	human/sna_skl/sna_skl3.cvd vn
+
+//振動データ
+// データ数が多すぎてロード時に落ちるステージが出たので、一時的にカット。010729（平野）
+// 振動ファイルは一つにまとまるようになったので組み込み。010803
+vib		demo
+
+// カサッカ統合
+pack_all	kacatka_itgt.tri \
+	meca/kacatka/kck_504.dar \
+	meca/kacatka/kck_503.dar
+// カサッカのモデル
+meca	kacatka/kck_504.kms
+meca	kacatka/kck_503.kms
+
+// PAL版ではカサッカローターは別モデル
+#ifdef MGS2_VMODE_PAL
+meca	kacatka_pal/kck_trot.kms
+meca	kacatka_pal/kck_mrot.kms
+#else
+meca	kacatka/kck_trot.kms
+meca	kacatka/kck_mrot.kms
+#endif
+
+// カサッカローター他
+meca	kacatka
+
+//ゴルルコ装備（追加小林）
+human gbs_def/gbs_hlst.kms
+//human gbs_def/gbs_knif.kms
+//human gbs_def/gbs_mag.kms
+human gbs_def/gbs_bp.kms
+item	radio/rad.kms
+weapon ssk/ssk_mt.kms
+weapon ssk/ssk_inv_mt.kms
+goods flashlight/tnr_frashlight.kms
+weapon aks/aks_sp.kms
+item gbs_nv_goggle/gbs_nvg2.kms
+human gbs_def/gbs_sling.kms
+item gbs_nv_goggle/gbs_nvg1.kms
+human gbs_def/gbs_kanagu.kms
+weapon aks/aks_amo.kms 
+
+// ロープアニメ（追加小林）
+anm	w00a_fastlope/fastlope01.xsi
+anm	w00a_fastlope/fastlope02.xsi
+anm	w00a_fastlope/fastlope03.xsi
+
+// デバッグ用（実験終了次第外すよう、心がけること）
+# Add Demo Model List by mgdemo. by t04a1D.w00a/test.lst
+human	tnc_def/tnc_def_blood.kms
+human	gbs_demo/gbs_def_mt.kms
+goods	demo_rev_scope/demo_rev_scope.kms
+human	sna_def/sna_def_mh.evm
+//weapon	m92_sna/m92_sna_sub.kms
+# End Demo Model List.
+# Add Demo Model List by mgdemo. by t04a1D.w00a/test.lst
+goods	demo_dummy/demo_dummy.kms
+# End Demo Model List.
+# Add Demo Model List by mgdemo. by t04a1D.w00a/t04a1D.lst
+
+# End Demo Model List.
+
+// ローポリ劇場用追加モデル
+weapon m92_sna_1piece/m92_sna_1piece.kms
+
+#ifdef MGS2_XBOX_1
+pack_trnall	effect.tri \
+	effect/cloud/w00_sky_add.bmp /* XBOXの「thunder_flash.c」でのみ使用 */
+#endif
+
+rename		ssk_mt.kms ssk.kms
+// 常駐でも同じリネームしているか？
+//rename		m92_sna_sub.kms m92_sub.kms

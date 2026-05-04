@@ -1,0 +1,293 @@
+//
+//	t12a4D.w04c.src	
+//
+//	written by Y.Matsuhana 1999.Dec
+//
+//	$Id: t12a4D.w04c.src,v 1.48 2001/09/25 06:10:41 usr10748 Exp $
+
+
+block .use r_tnk0
+block .nocache
+block .cache
+
+
+// 各ステージ共通要素
+include		common.h
+
+//水面用パック
+pack_all	water_sur.tri \
+			effect/env/w04c_envmap_alp_ovl.bmp
+//			debug/matsuhana/dbg_water/water_add_bld080_ovl.bmp
+
+include		c_effect.h
+
+// ワールド
+goods		null
+
+// 船倉本体＋レイのコックピット＋コクピットエフェクト
+// ＋カメラ
+pack_all	w04_hold.tri \
+			world/door/w04_dr.dar \
+			world/w02a/w02a1/w02a_chain.dar \
+			world/w04a_break/w04a1_brk.dar \
+			meca/ray_cockpit/ray_cockpit.dar \
+			effect/ray_display \
+			goods/field_camera/field_camera_base.dar \
+			goods/field_camera/field_camera_head.dar
+
+world		door/w04_dr.kms
+world		w02a/w02a1/w02a_chain.kms
+world		w04a_break/w04a1_brk.kms
+meca		ray_cockpit/ray_cockpit.kms
+effect		ray_display/raycp_cover.kms
+goods		field_camera/field_camera_base.kms
+goods		field_camera/field_camera_head.kms
+
+// 壊れ船倉パターン
+pack_all zzz_w04c_brks_1.tri \
+		world/w04c_break/w04c1_brk0.dar \
+		world/w04c_break/w04c1_brk1.dar
+pack_all zzz_w04c_brks_2.tri \
+		world/w04c_break/w04c1_brk2.dar \
+		world/w04c_break/w04c1_brk3.dar \
+		world/w04c_break/w04c1_brk4.dar
+world		w04c_break/w04c1_brk0.kms
+world		w04c_break/w04c1_brk1.kms
+world		w04c_break/w04c1_brk2.kms
+world		w04c_break/w04c1_brk3.kms
+world		w04c_break/w04c1_brk4.kms
+
+world		w04c_break
+//include		w04c_break.h
+
+//可動レイ
+pack_all	ray_and_ckpt.tri \
+			meca/ray/ray_def_mt.dar \
+			meca/ray/ray_canopy_mt.dar
+meca	ray/ray_def_mt.kms
+meca	ray/ray_canopy_mt.kms
+
+/*
+// レイのコックピット＋コクピットエフェクト
+pack_all	ckpt_and_ckpt_efct.tri \
+			meca/ray_cockpit/ray_cockpit.dar \
+			effect/ray_display
+meca		ray_cockpit/ray_cockpit.kms
+effect		ray_display/raycp_cover.kms
+*/
+
+// ライト
+lt2		t12a4D.lt2
+
+// ハザード
+hazard	d00a3.hzx
+
+// カートリッジ（GCLでstdch.hをインクルードしている場合必要）
+//pack_all	weapon_cm.tri \
+//			weapon/usp/usp_emb.dar \
+//			weapon/fms/fms_emb.dar
+//weapon	usp/usp_emb.kms
+//weapon	fms/fms_emb.kms
+
+
+// スネーク
+human	sna_def/sna_def_mh.evm
+
+//ゴルルコ兵
+pack_all gbs_gba.tri \
+		human/gbs_def/gbs_def.dar \
+		human/gba_def/gba_def_mt.dar			//ゴルルコ重装備兵
+human	gbs_def/gbs_def.kms
+human	gba_def/gba_def_mt.kms			//ゴルルコ重装備兵
+
+
+// デバッグ・臨時用（爆発サンプル）
+item		shield/shl_frg1.kms
+//item        c_box/cbx_a_frg1_cm.kms
+//weapon      chaff_grenade/cgr_frg1_cm.kms
+
+//デモダミー
+goods	demo_dummy/demo_dummy.kms
+
+//爆破エフェクト
+pack_all trn.tri effect/bonbori/rcm_l_msk.bmp \
+                 effect/bakuha/bombpowder7_msk.bmp \
+                 effect/bakuha/bombgas2_alp.bmp
+
+//ゴルルコ＋スネーク＋海兵隊＋セルゲイの武器装備＋ハイポリＭ４＆Ｍ２０３
+pack_all	gbs_sna_mari_crg_eqp.tri \
+			human/gbs_def/gbs_hlst.dar \
+//			human/gbs_def/gbs_knif.dar \
+			human/gbs_def/gbs_mag.dar \
+			human/gbs_def/gbs_bp.dar \
+			item/radio/rad.dar \
+			goods/flashlight/tnr_frashlight.dar \
+			weapon/aks/aks_sp.dar \
+			item/gbs_nv_goggle/gbs_nvg2.dar \
+			human/gbs_def/gbs_sling.dar \
+			item/gbs_nv_goggle/gbs_nvg1.dar \
+			human/gbs_def/gbs_kanagu.dar \
+			weapon/aks/aks_amo.dar \
+//			weapon/usp/usp_sub.dar \
+//			weapon/usp/usp_amo.dar \
+//			weapon/m92_sna/m92_sna_sub.dar \
+			weapon/m4/m4a_nm.dar \
+			weapon/m4/m4b_gl.dar \
+			weapon/m92/m92.dar \
+			weapon/m4/m4a_shld.dar \
+			human/crg_def/crg_hlst.dar \
+			human/crg_def/crg_skn.dar \
+			human/crg_def/crg_waist_parts00.dar \
+			human/crg_def/crg_waist_parts01.dar \
+			goods/demo_m4_grn_usm/demo_m4_grn_usm.dar
+human	gbs_def/gbs_hlst.kms
+//human	gbs_def/gbs_knif.kms
+human	gbs_def/gbs_mag.kms
+human	gbs_def/gbs_bp.kms
+item	radio/rad.kms
+weapon	ssk/ssk_mt.kms
+weapon	ssk/ssk_inv_mt.kms
+goods	flashlight/tnr_frashlight.kms
+weapon	aks/aks_sp.kms
+item	gbs_nv_goggle/gbs_nvg2.kms
+human	gbs_def/gbs_sling.kms
+item	gbs_nv_goggle/gbs_nvg1.kms
+human	gbs_def/gbs_kanagu.kms
+weapon	aks/aks_amo.kms 
+//weapon	usp/usp_sub.kms
+//weapon	usp/usp_amo.kms
+//weapon	m92_sna/m92_sna_sub.kms
+weapon	m4/m4a_nm.kms
+weapon	m4/m4b_gl.kms
+weapon	m92/m92.kms
+weapon	m4/m4a_shld.kms
+human	us_parts/obj_helmet_def_s.kms 
+human	crg_def/crg_hlst.kms
+human	crg_def/crg_skn.kms
+human	crg_def/crg_waist_parts00.kms
+human	crg_def/crg_waist_parts01.kms
+goods	demo_m4_grn_usm/demo_m4_grn_usm.kms
+
+//セルゲイの装備品
+/*
+human crg_def/crg_hlst.kms0
+human crg_def/crg_skn.kms
+human crg_def/crg_waist_parts00.kms
+human crg_def/crg_waist_parts01.kms
+*/
+
+/*
+//カメラ
+pack_all	field_camera.tri \
+			goods/field_camera/field_camera_base.dar \
+			goods/field_camera/field_camera_head.dar
+goods	field_camera/field_camera_base.kms
+goods	field_camera/field_camera_head.kms
+*/
+
+//海兵隊着せ替え
+arkms	w04a_us_def_2.kls
+rename  w04a_us_def_2.kms w04a_us_def.kms
+
+//海兵隊（黒人）
+//human	us_parts/us_def_5.kms
+
+//レイ口臭（水カッターできるまで）
+debug	kimura/ray_test/test_ray_kousyuu_area.kms
+
+/*
+//Ｍ４グレネード付（ハイポリ）
+goods	demo_m4_grn_usm/demo_m4_grn_usm.kms
+*/
+
+// リネーム
+rename		ssk_mt.kms ssk.kms
+
+/* mgdemo added ----from here (Wed Feb 21 11:45:50 2001) ---- */
+meca	ray_w04c1/raycp_canopy2_t12a1d_mt.kms
+meca	ray_w04c1/raycp_canopy1_t12a1d_mt.kms
+meca	ray_w04c1/raycp_t12a1d.kms
+//human	us_parts/us_def_5_s.kms
+human	crg_def/crg_wet_mh_mt.evm
+human	sco_scott/sco_hat.kms
+human	sco_scott/sco_def.evm
+weapon	saa/saa.kms
+human	rev_liq/rev_liq_addhand_mh_mt.evm
+human	rev_liq/rev_liq_boundhing.kms
+human	rev_liq/rev_hair_liq_mh.evm
+//レイ目エフェクト
+pack_trnall trn.tri effect/ray_effect/ray_eye_blur_alp.bmp
+pack_trnall trn.tri effect/ray_effect/ray_eye_bonbori_alp.bmp
+
+//グレネード弾類
+goods	demo_m4_grn_usm/demo_m4_grn_emb.kms
+goods	demo_m4_grn_usm/demo_m4_grn_bul.kms
+goods	demo_m4_grn_usm/demo_m4_grn_cartridge.kms
+
+// 常駐部でも同じリネームしているか？
+//rename		m92_sna_sub.kms m92_sub.kms
+// 振動データ
+// データ数が多すぎてロード時に落ちるステージが出たので、一時的にカット。010729（平野）
+// 振動ファイルは一つにまとまるようになったので組み込み。010803
+vib		demo
+
+//振動・t12a4D
+// 振動はdemoフォルダすべてを取り込むので個別取り込みは必要ない。
+// mgdemoが加えたと思われるので、コメントアウト。解除の予定はなし。010803
+/*
+vib	demo/t12a4D_sna_climb.vib
+vib	demo/t12a4D_sna_down.vib
+vib	demo/t12a4D_bang.vib
+*/
+
+//Ｍ４グレネード付きのバレル
+goods	demo_m4_grn_usm/demo_m4_grn_barel_usm.kms
+//振動・t12a5D
+// 振動はdemoフォルダすべてを取り込むので個別取り込みは必要ない。
+// mgdemoが加えたと思われるので、コメントアウト。解除の予定はなし。010803
+/*
+vib	demo/t12a5D_grenade.vib
+vib	demo/t12a5D_rey_drink.vib
+vib	demo/t12a5D_rey_kick.vib
+vib	demo/t12a5D_rey_step01.vib
+vib	demo/t12a5D_rey_step02.vib
+vib	demo/t12a5D_rey_step03.vib
+vib	demo/t12a5D_rey_stretch.vib
+vib	demo/t12a5D_rey_water.vib
+vib	demo/t12a5D_sna_down.vib
+vib	demo/t12a5D_sna_wakeup.vib
+vib	demo/t14a1D_us_push.vib
+*/
+
+/* mgdemo added ----from here (Mon Apr 16 13:44:09 2001) ---- */
+pack_trnall trn.tri effect/blood/blood_1c_msk.bmp
+pack_trnall trn.tri	effect/blood/blood_2bw_alp.bmp	//	(田中修平追加)
+// コバ�つ媛� マズルフラッシュ用
+pack_trnall koba4.tri \
+		effect/blood/chi01_msk.bmp \
+        effect/weapon_effect/socom_f_msk.bmp \
+		effect/weapon_effect/muzzlefrash_01_alp.bmp
+/* mgdemo added ----from here (Wed Jun 13 17:28:26 2001) ---- */
+item	c_box/cbx_a_frg1_cm.kms
+
+//振動t12a5D
+// 振動はdemoフォルダすべてを取り込むので個別取り込みは必要ない。
+// mgdemoが加えたと思われるので、コメントアウト。解除の予定はなし。010803
+/*
+vib	demo/t12a5D_sna_down.vib
+vib	demo/t12a5D_rey_water.vib
+vib	demo/t12a5D_rey_drink.vib
+vib	demo/t12a5D_rey_step03.vib
+vib	demo/t12a5D_sna_wakeup.vib
+vib	demo/t12a5D_rey_kick.vib
+vib	demo/t12a5D_grenade.vib
+vib	demo/t12a5D_rey_step02.vib
+vib	demo/t12a5D_rey_step01.vib
+vib	demo/t12a5D_rey_stretch.vib
+*/
+/* mgdemo added ----from here (Sun Sep  2 22:01:27 2001) ---- */
+pack_trnall trn.tri effect/splash/splash05_alp.bmp
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Sep 21 15:50:22 2001) ---- */
+goods	demo_usp/demo_usp_supressor.kms
+/* mgdemo added ----upto here ---- */

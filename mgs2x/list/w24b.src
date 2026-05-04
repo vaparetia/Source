@@ -1,0 +1,125 @@
+//
+//	w24b.src
+//
+//	written by H.Yoshiike 2000.Nov
+//
+//	$Id: w24b.src,v 1.39 2002/09/11 12:03:18 usr03682 Exp $
+
+// 常駐データ
+block .use r_plt0
+
+block .nocache
+block .cache
+
+#define WN_W24B
+
+
+// 各ステージ共通要素
+#include	"p_common.h"
+#include	"common.h"
+
+//エフェクト関係
+#define	EFFECT_CUSTUM
+
+#define	E_GLASS_DANKON			// グラス系弾痕
+#define	E_KOGETUKI				// 壁への焦げ付き
+#define	E_ENEMY					// 敵兵系
+#define	E_SLING					// スリング
+#define	E_ENEMY_LIGHT			// 敵兵ライト
+//#define	E_STEAM					// 粉 & 水蒸気（敵兵スタングレネード用に用意）
+//#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫（敵兵スタングレネード用に用意）
+#define	E_C4BOMB				// Ｃ４爆弾、赤外線センサー
+#define	E_WATER_MINE			// クロスフェード（甲板のライトで使用）＆ 水中機雷
+#define	E_CROSS_FADE_LIGHT		// クロスフェード（甲板のライトで使用）
+#define	E_BROKEN_OBJECT			// 壊れ物
+#define	E_BROKEN_PAPEROBJECT	// 壊れ物紙
+#define	E_BROKEN_PLATE			// 壊れ物皿
+#define	E_DOOR_LUMP				// ドアランプ
+#define	NODE_LAMP				// ノードディスプレイランプ
+#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+
+#include	"c_effect.h"
+//include		wp_plant.h
+
+
+// キャラクタ
+#define		ENE_T_GOL		//プラント中央棟（警備兵：タンカーゴル兵　アタッカー：タンカーゴル兵）
+#define		ENE_ATTACKER	//攻撃兵
+#define		ENE_MAR '-DDEL_TNG=DUMMY -DEL_WALKMAN=DUMMY'	//デリートするモーションファイル
+#include	"ene_plant.h"
+//include		raiden.h
+//human		rai_def
+//cvd		human/rai_def
+
+
+//後で切る！！！！！！
+human		sna_def
+
+// 強制モーション
+mtn		rai_w24b.mls
+mtn		sna_locker.mls		// ロッカー開閉モーション
+mtn		locker.mls			// ロッカー扉開閉モーション
+
+// 網膜センサーデモ人形用モーション
+mtn		gbs_sensor.mls
+
+// 網膜センサーのぞきこみパッドデモ
+rpd		w24b_eyesensor.rpd
+
+//網膜センサー振動
+vib		program/biometrix.vib
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+option makexti6 -l 1024 -f PAL8
+pack_all	w24b2.tri world/w24b/w24b2
+pack_all	w24b3.tri world/w24b
+pack_all	w24b_door.tri	world/elevator/elv_2 world/door/w02a_l_dr.dar world/door/w01f_dr.dar
+option makexti6
+
+world		w24b
+world		elevator/elv_2
+//world		door/w24b_dr01.kms	//ノード端末部屋
+//world		door/w24b_dr02.kms	//人質部屋ドア
+world		door/dr_free.kms	//	共通ドア
+
+
+lt2			w24b.lt2
+hazard		w24b.hzx
+
+// オブジェクト
+//pack_all	object.tri goods/locker/neo_locker_door.dar
+
+goods		locker/neo_locker_door.kms
+
+//壊れ物
+pack_all        allcm_cm.tri \
+                        world/w01f/goods/book_hahen.dar \
+                        goods/bottle/btl_piece.dar
+goods   glass plant_bottle bottle/btl_piece.kms
+goods   plant_book
+world/w01f/goods	book_hahen.kms	book_naka.kms
+
+
+//草
+world	w01f/goods/tree_00.kms
+world	w01f/goods/tree_01.kms
+
+
+
+// アイテム
+itembox
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+//エレベータ振動
+vib       etc/core_ele_01.vib
+vib       etc/core_ele_02.vib
+vib       etc/core_ele_03.vib
+
+
+// リネーム

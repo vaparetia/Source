@@ -1,0 +1,602 @@
+#!/usr/bin/perl
+
+require "config.pl" ;
+require "prnt.pl" ;
+require "cgi.pl" ;
+
+$| = 1 ;
+
+
+while( 1 )
+{
+    select( undef, undef, undef, 0.5 ) ;
+
+    open( POOL, "ls -t $postdir |" ) ;
+    foreach $files ( <POOL> )
+    {
+        chop $files ;
+
+	print "Got $files\n" ;
+
+	next if ( &cgi'decode_in( "$postdir/$files" ) ) ;
+
+        &com_setup_all() ;
+
+      BRANCH:
+	{
+	    &com_finished()  , last BRANCH if ( $cgi'tags{'method'} eq "完了" ) ;
+            &com_unneedable(), last BRANCH if ( $cgi'tags{'method'} eq "ボツ" ) ;
+	    &com_runtime()   , last BRANCH if ( $cgi'tags{'change'} eq "echo/" ) ;
+            &com_renew_bbs() ;
+        }
+
+	print "Finished $files\n" ;
+
+	unlink( "$postdir/$files" ) ;
+    }
+    close( POOL ) ;
+}
+
+
+exit(0) ;
+print "($debug)" ;
+print "[$cgi'args]" ;
+
+
+
+#
+#Command
+#
+#
+# BBSの内容を変更する
+sub com_setup_all()
+{
+    $now = substr( localtime, 4) ;
+
+    $cgi'tags{'files'} =~ s/^[\t ]+// ;
+    $cgi'tags{'from'}  =~ s/^[ ]*([^ ]+).*/$1/ ;
+    $cgi'tags{'to'}    =~ s/^[ ]*([^ ]+).*/$1/ ;
+    $cgi'tags{'to'} = "なし" if ( $cgi'tags{'to'} eq "" ) ;
+
+    $logfile = $now ;
+    $logfile =~ s/[ ]+[0-9]+ [0-9]+:[0-9]+:[0-9]+ // ;
+    $logfile = $logdir."/Neo".$logfile ;
+
+    $backup = $now ;
+    $backup =~ s/[ ]+[0-9]+:[0-9]+:[0-9]+// ;
+    $backup .= $backup ;
+    $backup =~ s/^[ a-zA-Z]+ [0-9]+// ;
+    $backup =~ s/ [0-9]+$// ;
+    $backup =~ s/ //g ;
+}
+
+
+# BBSの内容を変更する
+sub com_renew_bbs()
+{
+    &change_bbs() ;
+    &awake_listup() ;
+}
+
+#ランタイムに更新
+sub com_runtime()
+{
+    local $i ;
+
+#create new BBS file
+    foreach $i ( split( / +/, $cgi'tags{'files'} ) )
+    {
+        &make_msg( $i ) ;
+        &make_entry( $i ) ;
+        &make_runtime( $i ) ;
+    }
+
+    &send_ipmsg( $cgi'tags{'from'}, $cgi'tags{'send_ip'}, $cgi'tags{'to'}, $cgi'tags{'comment'} ) ;
+
+    &awake_listup() ;
+}
+
+#「完了」コマンド
+sub com_finished()
+{
+    $cgi'tags{'comment'} = "[完了]" ;
+    &change_bbs() ;
+    &awake_listup() ;
+}
+
+#「ボツ」コマンド
+sub com_unneedable()
+{
+    $cgi'tags{'comment'} = "[ボツ]" ;
+    &change_bbs() ;
+    &awake_listup() ;
+}
+
+
+#
+# Subroutines 
+#
+#
+sub get_destinate()
+{
+    local ( $file ) = @_ ;
+
+    if ( $cgi'tags{'destinate'} !~ m/\/$/ )
+    {
+        return $cgi'tags{'destinate'} ;
+    }
+    return $cgi'tags{'destinate'}.$file ;
+}
+
+sub get_directory()
+{
+    local ( $file ) = @_ ;
+    local $dir ;
+
+    $dir = &get_destinate( $file ) ;
+    $dir =~ s/\/[^\/]+$// ;
+    return $dir ;
+}
+
+sub change_bbs()
+{
+    local $file ;
+    local $date, $comment ;
+    local $dir, $bbs ;
+
+    foreach $file ( split( / +/, $cgi'tags{'files'} ) )
+    {
+        $dst = &get_destinate( $file ) ;
+        next if ( !-e "$bbsdir/$dst" ) ;
+
+	$comment = &make_comment( $dst ) ;
+	$date = $now ;
+	$date =~ s/ /+/g ;
+
+        open( BBS, "$bbsdir/$dst" ) ;
+	if ( $line = <BBS> )
+        {
+	    $line =~ s/<TD>[A-Z].* [0-9]+:[0-9]+:[0-9]+ [0-9]+<\/TD>/<TD>$now<\/TD>/ ;
+	    $line =~ s/pdate=[^&]+&/pdate=$date&/ ;
+	    $line =~ s/pcomment=[^&]+&/pcomment=$comment&/ ;
+	    $line =~ s/ptype=[^&]+&/ptype=$cgi'tags{'type'}&/ ;
+	    $line =~ s/pstyle=[^&]+&/pstyle=$cgi'tags{'style'}&/ ;
+            seek( BBS, 0, 2 );
+	    print BBS $line ;
+        }
+        close BBS ;
+        &make_bbstime( $line, $dst ) ;
+    }
+}
+
+#ホストの名前を得る（mutsuのhttpサーバは、名前の環境変数が来ない）
+sub get_host()
+{
+    local $host  ;
+
+    return "allup" if ( !($host = $ENV{'REMOTE_ADDR'}) ) ;
+
+    open( NSLOOKUP, "nslookup $ENV{'REMOTE_ADDR'} | grep Name |" ) ;
+    chop( $host=<NSLOOKUP> ) ;
+    close( NSLOOKUP ) ;
+    $host =~ s/^Name:[ ]+// ;
+
+    return $host ;
+}
+
+#コメントを作る（基本的にはランタイムから更新する時のみ通る）
+sub make_msg()
+{
+    local ( $file ) = @_ ;
+    local $tmp, $filename = $file, $comment, @comm, $image ;
+    local $bbs ;
+
+    #コメントの1行を切り取る
+    @comm = split( '\n', $cgi'tags{'comment'}) ;
+    chop( $comment = $comm[0] ) ;
+
+    $dst = &get_destinate( $file ) ;
+
+    $filename = $dst ;
+    $filename =~ s/.*\/([^\/]+)$/$1/ ;
+    $image = $dst, $image =~ s/\.(pic|bmp)// if ( $file =~ m/(bmp|pic)$/ ) ;
+
+    $href = "pdate=$now&fname=&fdate=&fhost=&fcmnt=&tmp_fix=Fix&fix=submit&icmnt=text" ;
+    $href =~ s/ /+/g ;
+    foreach ( "locate", "style", "send_fix", "reason", "type", "to", "destinate", "from" )
+    {
+	$href .= "&p$_=$cgi'raw{$_}" ;
+    }
+    $href .= "&pcomment=".&make_comment( $dst ) ;
+    $href .= "&phost=".&get_host() ;
+    $href .= "&pstrcode=".&strcode( $dst ) ;
+    $href .= "&pfiles=$filename&file=$dst" ;
+
+    $tagname = $now."0" ;
+    $tagname =~ s/ //g ;
+    $tagname =~ s/:/0/g ;
+
+    $msg  = "<TR><TD><A HREF=/cgi-bin/bbs.cgi?html/bbs.html&_tag_pend&_tag_nstart&$tagname=text>▼</A></TD>" ;
+    $msg .= "<TD><IMG SRC=/runtime/images/rtm.gif></TD>" ;
+    $msg .= "<TD><A HREF=/cgi-bin/prnt.cgi?1&html/profile.html&bbs=_tag_pend&image=$image&".$href."> $filename </A></TD>" ;
+    $msg .= "<TD>&lt; $cgi'tags{'reason'}/$cgi'tags{'type'} &gt;</TD>" ;
+    $msg .= "<TD>[From: $cgi'tags{'from'}][To: $cgi'tags{'to'}]</TD><TD>$now</TD></TR>" ;
+    $msg .= "<TR><TD></TD><TD></TD><TD></TD><TD COLSPAN=3>" ;
+    $msg .= "<INPUT TYPE=_tag_$tagname SIZE=40 VALUE=\'$comment \'></TD></TR>\n" ;
+
+    $bbs = &get_directory( $file ) ;
+    &fork( "mkdir -p $bbsdir/$bbs" ) if ( not -e "$bbsdir/$bbs" ) ;
+
+    &make_bbstime( $msg, $dst ) ;
+
+    open( BBS, "> $bbsdir/$dst" ) ;
+    print BBS $msg ;
+    close( BBS ) ;
+}
+
+
+
+sub make_bbstime()
+{
+    local ( $content, $fname ) = @_ ;
+    local $file, $num ;
+
+#既にファイルか１００個以上であれば消す
+    open( LS, "ls -t $bbstime/*  | sed -e 's/:.*\$//' |" ) ;
+    for( $num=0 ; $file=<LS> ; $num++ )
+    {
+	$file =~ s/[\n\r]*$// ;
+	open( DUP, "grep -H 'file=$fname>' $file |" ) ;
+	unlink( $file ) if ( <DUP> || $num>=100 ) ;
+        close( DUP ) ;
+    }
+    close( LS ) ;
+
+#新しいものを作る
+    $file = "$bbstime/bbs" ;
+    for ( $num=0 ; -e $file.sprintf( ".%04d", $num ) ; $num++ ){}
+    $file .= sprintf( ".%04d", $num ) ;
+
+    open( BBT, "> $file" ) ;
+    print BBT $content ;
+    close( BBT ) ;
+}
+
+
+
+
+sub make_entry()
+{
+    local $entry ;
+    local $file, $num ;
+
+#エントリーの内容を作成する
+    $entry  = "<OPTION>" ;
+    $entry .= "[$cgi'tags{'from'}:$cgi'tags{'to'}]" ;
+    $entry .= "[$now]" ;
+    $entry .= $dst ;
+    $entry .= "</OPTION>\n" ;
+
+#既にファイルがあれば消す
+    open( DUPLICATE, "grep -H '$dst<' $entrydir/*  | sed -e 's/:.*\$//' |" ) ;
+    foreach( <DUPLICATE> ) { chop ; unlink }
+    close( DUPLICATE ) ;
+
+#新しいものを作る
+    $file = "$entrydir/entry" ;
+    for ( $num=0 ; -e $file.sprintf( ".%04d", $num ) ; $num++ ){}
+    $file .= sprintf( ".%04d", $num ) ;
+    open( ENT, "> $file" ) ;
+    print ENT $entry ;
+    close( ENT ) ;
+}
+
+
+
+#ファイルをコピーする
+sub make_runtime
+{
+    local ( $file ) = @_ ;
+
+    $src = $cgi'tags{'locate'}.$file ;
+    return if ( not -e $src ) ;
+
+#Append to entry file specifing the file unfixed.  Log 
+    &append( $logfile, "$now $cgi'tags{'from'}は、マシン[$ENV{'REMOTE_ADDR'}]から$dstをRTに更新 \n" );
+
+#Create Icon Gif
+    &make_icon( $dst ) if ( $dst =~ m/(bmp|pic)$/ ) ;
+
+#strcode list
+    &fork( "echo `strcode $dst | head -1 | sed -e 's/^ //'` '=> $runtime_dir/$dst' >> $strpool" ) ;
+
+#Copy the file to Runtime
+    $bkp = "$backup_dir/$dst" ;
+    $dst = "$runtime_dir/$dst" ;
+    &backup( $dst, $bkp ) ;
+    &fork( "cp $src $dst" ) ;
+    foreach ( keys %comb )
+    {
+        next if ( $dst !~ m/$_$/ ) ;
+
+        $dst =~ s/$_$/$comb{$_}/ ;
+        $bkp =~ s/$_$/$comb{$_}/ ;
+        $src =~ s/$_$/$comb{$_}/ ;
+        &backup( $dst, $bkp ) ;
+        &fork( "cp $src $dst" ) ;
+        last ;
+    }
+}
+
+
+#ビットマップ用のアイコンを生成する
+sub make_icon()
+{
+    local ( $dst_n ) = @_ ;
+    local $dst_d = "" ;
+
+    if ( $dst =~ /\// )
+    {
+	$dst_d = $dst ;
+	$dst_d =~ s/\/([^\/]*)$// ;
+	&fork( "mkdir -p $icon_dir/$dst_d" ) ;
+    }
+    $dst_n =~ s/.*\/([^\/]*)$/$1/ ;
+    $dst_n =~ s/\.(pic|bmp)// ;
+    &fork( "$texconv -l$icon_dir/$dst_d/ $src > /dev/null" ) ;
+    &fork( "/usr/X11R6/bin/convert -geometry 128x128 $icon_dir/$dst_d/$dst_n.bmp $icon_dir/$dst_d/$dst_n.gif " ) ;
+    &fork( "/usr/X11R6/bin/convert -geometry 32x32 $icon_dir/$dst_d/$dst_n.bmp $icon_dir/$dst_d/$dst_n.32.gif " ) ;
+    &fork( "alphtex $icon_dir/$dst_d/$dst_n.bmp" ) ;
+    &fork( "/usr/X11R6/bin/convert -geometry 128x128 $icon_dir/$dst_d/$dst_n.bmp $icon_dir/$dst_d/$dst_n.alp.gif > /dev/null" ) ;
+#&fork( "rm -f $icon_dir/$dst_d/*.bmp" ) ;
+
+}
+
+
+#BBSに既にある場合コメントを取ってくる
+sub get_old_comment()
+{
+    local ( $file ) = @_ ;
+
+    open( IN, "$bbsdir/$file" ) ;
+    $_ = <IN> ;
+    close IN  ;
+
+    s/.*&pcomment=([^&]+)&.*/$1/ ;
+
+    return $_ ;
+}
+
+#BBS用にコメントを生成する
+sub make_comment()
+{
+    local ( $dst ) = @_ ;
+    local $comment ;
+    local %name_tag, $name ;
+    local $old_comment ;
+
+
+    $old_comment = &cgi'unpack( &get_old_comment( $dst ) ) ;
+    $comment = "[更新:$now]" ;
+  SWITCH:
+    for ( $cgi'tags{'style'} )
+    {
+	/debug/     && do { %name_tag = ()                              , last SWITCH } ;
+	/goods/     && do { %name_tag = ("spec_memo1" => "位置X",
+					 "spec_memo2" => "位置Y",
+					 "spec_memo3" => "位置Z",
+					 "spec_memo4" => "回転X",
+					 "spec_memo5" => "回転Y",
+					 "spec_memo6" => "回転Z",
+					 "spec_memo7" => "中心",
+					 "spec_memo8" => "OFS詳細"     ), last SWITCH } ;
+	/human_man/ && do { %name_tag = ("spec_memo1" => "Humanタイプ",
+					 "spec_memo2" => "モデル",
+					 "spec_memo3" => "LOD"         ), last SWITCH } ;
+	/human_etc/ && do { %name_tag = ("spec_memo1" => "Humanタイプ",
+					 "spec_memo2" => "モデル",
+					 "spec_memo3" => "LOD"         ), last SWITCH } ;
+	/human_obj/ && do { %name_tag = ("spec_memo1" => "Humanタイプ",
+					 "spec_memo2" => "位置X",
+					 "spec_memo3" => "位置Y",
+					 "spec_memo4" => "位置Z",
+					 "spec_memo5" => "回転X",
+					 "spec_memo6" => "回転Y",
+					 "spec_memo7" => "回転Z",
+					 "spec_memo8" => "OFS詳細"     ), last SWITCH } ;
+	/item/      && do { %name_tag = ("spec_memo1" => "位置X",
+					 "spec_memo2" => "位置Y",
+					 "spec_memo3" => "位置Z",
+					 "spec_memo4" => "回転X",
+					 "spec_memo5" => "回転Y",
+					 "spec_memo6" => "回転Z",
+					 "spec_memo7" => "中心",
+					 "spec_memo8" => "OFS詳細"     ), last SWITCH } ;
+	/lt2/       && do { %name_tag = ("spec_memo1" => "フォグR",
+					 "spec_memo2" => "フォグG",
+					 "spec_memo3" => "フォグB",
+					 "spec_memo4" => "フォグNear",
+					 "spec_memo5" => "フォグFar",
+					 "spec_memo6" => "キャラ平行X",
+					 "spec_memo7" => "キャラ平行Y",
+					 "spec_memo8" => "キャラ平行Z",
+					 "spec_memo9" => "キャラ平行R",
+					 "spec_memoA" => "キャラ平行G",
+					 "spec_memoB" => "キャラ平行B",
+					 "spec_memoC" => "キャラ環境R",
+					 "spec_memoD" => "キャラ環境G",
+					 "spec_memoE" => "キャラ環境B" ), last SWITCH } ;
+	/meca/      && do { %name_tag = ("spec_memo1" => "位置X",
+					 "spec_memo2" => "位置Y",
+					 "spec_memo3" => "位置Z",
+					 "spec_memo4" => "回転X",
+					 "spec_memo5" => "回転Y",
+					 "spec_memo6" => "回転Z",
+					 "spec_memo8" => "OFS詳細"     ), last SWITCH } ;
+	/weapon/    && do { %name_tag = ("spec_memo1" => "位置X",
+					 "spec_memo2" => "位置Y",
+					 "spec_memo3" => "位置Z",
+					 "spec_memo4" => "回転X",
+					 "spec_memo5" => "回転Y",
+					 "spec_memo6" => "回転Z",
+					 "spec_memo7" => "中心",
+					 "spec_memo8" => "OFS詳細"     ), last SWITCH } ;
+	/world_stg/ && do { %name_tag = ("spec_memo1" => "Worldタイプ",
+					 "spec_memo2" => "ライト名",
+					 "spec_memo3" => "原点X",
+					 "spec_memo4" => "原点Y",
+					 "spec_memo5" => "原点Z",
+					 "spec_memo6" => "回転X",
+					 "spec_memo7" => "回転Y",
+					 "spec_memo8" => "回転Z"       ), last SWITCH } ;
+	/world_obj/ && do { %name_tag = ("spec_memo1" => "Worldタイプ",
+					 "spec_memo2" => "位置X",
+					 "spec_memo3" => "位置Y",
+					 "spec_memo4" => "位置Z",
+					 "spec_memo5" => "回転X",
+					 "spec_memo6" => "回転Y",
+					 "spec_memo7" => "回転Z",
+					 "spec_memo8" => "中心",
+					 "spec_memo9" => "OFS詳細"     ), last SWITCH } ;
+	/world_dor/ && do { %name_tag = ("spec_memo1" => "Worldタイプ",
+					 "spec_memo2" => "位置X",
+					 "spec_memo3" => "位置Y",
+					 "spec_memo4" => "位置Z",
+					 "spec_memo5" => "回転X",
+					 "spec_memo6" => "回転Y",
+					 "spec_memo7" => "回転Z",
+					 "spec_memo8" => "中心",
+					 "spec_memo9" => "OFS詳細"     ), last SWITCH } ;
+	/world_cpt/ && do { %name_tag = ("spec_memo1" => "Worldタイプ" ), last SWITCH } ;
+	undef( %name_tag ) ;
+    }
+
+    foreach ( keys( %cgi'tags ) )
+    {
+	if ( $name_tag{$_} )
+	{
+	    $name = substr( $old_comment, index( $old_comment, $name_tag{$_} ) ) ;
+	    $name = substr( $name, 0, index( $name, "\n" ) ) ;
+            $name =~ s/^[^:]+:([^\]]*)\].*/$1/ ;
+	    $comment .= "[$name_tag{$_}:$cgi'tags{$_}]" if ( $cgi'tags{$_} ne $name && $cgi'tags{$_} ne "" ) ;
+        }
+    }
+    $comment .= "\n".$cgi'tags{'comment'}."\n--\n".$old_comment ;
+
+    return &cgi'pack( $comment ) ;
+}
+
+
+#
+# Ordinary Subroutine Sets
+#
+#
+sub awake_listup
+{
+    local $pool ;
+
+    $pool =  $cgi'tags{'destinate'} ;
+    $pool =~ s/^([^\/]+)\/.*/$1/ ;
+    &fork( "touch $msgdir/pool/$pool" ) ;
+}
+
+sub send_ipmsg
+{
+    local ( $from, $to1, $to2, $content ) = @_ ;
+
+    return if ( $to1 eq "送らない" ) ;
+    return if ( $msg_name{$to1} eq "" && $msg_name{$to2} eq "" ) ;
+
+    $content = substr( $content, 0, index( $content, "--" ) ) ;
+    open( IPSEND, "| $nkf -s | $mailmsg -d -u$usrlst_dir/mgs2user.lst -a$usrlst_dir/mgs2user.ali $msg_name{$to1} $msg_name{$to2}" ) ;
+    print IPSEND "$from: $cgi'tags{'files'}\n $content" ;
+    close( IPSEND ) ; 
+}
+
+
+
+sub backup
+{
+    local ( $src, $dst ) = @_ ;
+
+    if ( -e $src )
+    {
+        open( LS, "ls -c $dst.bk* |" ) ;
+        $ls = <LS> ;
+        $ls = <LS> ;
+        $ls = <LS> ;
+        while( <LS> )
+        {
+	    chop ;
+	    unlink( $_ ) ;
+        }
+        &copy( $src, $dst ) ;
+    }
+}
+
+sub copy
+{
+    local ($src, $dst) = @_ ;
+    local $i, $dir ;
+
+    $dir = $dst ;
+    $dir =~ s/[\/][^\/]*$// ;
+    &fork( "mkdir -p $dir" ) if ( !-e $dir ) ;
+
+    $i = 0 ;
+    do
+    {
+        $num = sprintf( "%02d", $i++ ) ;
+    }
+    while( -e "$dst.bk$backup.$num" ) ;
+
+    &fork( "cp $src $dst.bk$backup.$num" ) if ( !-d $src ) ;
+    &fork( "cp -r $src $dst.bk$backup.$num" ) if (  -d $src ) ;
+}
+
+
+sub append
+{
+    local ($in,$literal) = @_ ;
+    open( INOUT, ">>$in" ) ;
+    print INOUT $literal ;
+    close INOUT ;
+}
+
+sub fork
+{
+    local $pid ;
+    unless ( $pid = fork )
+    {
+	exec( $_[0] ) ;
+	exit 0 ;
+    }
+    waitpid( $pid, 0 ) ;
+
+    return $? ;
+}
+
+sub strcode()
+{
+    local ( $string ) = @_ ;
+    local $len, $BITLEN = 24 ;
+    local $c, $id, $mask ;
+
+    #拡張子
+    $string =~ s/\.[^\.]*$// ;
+    $string =~ s/[^\/]+\///g ;
+
+    $id  = 0 ;
+    $len = length( $string )-1 ;
+    $mask = ( 1 << $BITLEN ) - 1;
+
+    foreach $i (0..$len)
+    {
+        $c = substr( $string, $i,1 ) ;
+        $id = ( $id << 5 ) | ($id >> ($BITLEN-5) ) ;
+        $id += ord($c) ;
+        $id &= $mask ;
+    }
+    $id = 1 if ( $id == 0 ) ;
+    return $id ;
+}

@@ -1,0 +1,10406 @@
+/*
+	sload.h
+	    ステージロード用ヘッダファイル
+
+	1999/09/03 Y.Matsuhana
+	$Id: sload.h,v 1.732 2002/09/18 11:54:06 usr03379 Exp $
+
+
+*/
+
+// ファイルが二重呼びされたときの対処
+#ifndef d:SLOAD_H
+#define SLOAD_H	1
+
+#include "sound.h"
+#include "a_sload.h"
+
+// ロード時に呼ばれるプロック群
+//---------------------------------------------
+// ストーリー依存状況チェック
+// ストーリー進行によって変化するものをまとめて管理する
+// 敵兵関連はvardefにまとめてあります。
+#define		OK_VAR_SAVE		0
+#define		NO_VAR_SAVE		1
+
+proc ストーリー依存状況チェック {
+	#if d:DEBUG_PRINT
+		print 'story_check'
+	#endif
+
+	// varsaveするしない関係
+	if ( ($w:p_story >= d:ST:P024_01_R01爆弾解体センサーＢ入手１無線デモ１終了 && \
+			$w:p_story < d:ST:P027_01_R01爆弾解体後昇降機ホール１無線デモ１終了) || \
+		 ($w:p_story >= d:ST:P031_01_P01フォーチュン戦終了１ポリゴンデモ１終了 && \
+			$w:p_story < d:ST:P032_01_P01ファットマン登場１ポリゴンデモ１開始)	|| \
+		 ($w:p_story >= d:ST:P069_04_R02ヴァンプ狙撃終了４無線機デモ２開始 && \
+			$w:p_story < d:ST:P070_01_P01ＡＧ起動１ポリゴンデモ１開始) ) {
+
+		eval( $f:NO_VARSAVEフラグ = d:NO_VAR_SAVE );
+
+	} else {
+		eval( $f:NO_VARSAVEフラグ = d:OK_VAR_SAVE );
+	}
+
+	// スカルキャップあるなし
+	if ( $w:p_story >= d:ST:P036_01_P01忍者登場１ポリゴンデモ１開始 && \
+		$w:p_story < d:ST:P041_01_G01エイムズ死亡後１ゲーム１終了 ) {
+		command	ゴルキャップあり
+	} else if ( $w:p_story >= d:ST:P041_01_G01エイムズ死亡後１ゲーム１終了 ) {
+		command	ゴルキャップなし
+	}
+}
+
+
+// ロード回数カウント
+proc グローバルロード $:現ステージ名 $:ロード先ステージ名 {
+	#if d:DEBUG_PRINT
+		print 'global_load'
+		print '前ステージ名='$s:前ステージ名'  現在のステージ名='$s:現在のステージ名
+		print 'ロード先のステージ名' $:ロード先ステージ名
+	#endif
+
+	// 同じステージ間を行き来する場合はインクリメントしない
+	if ($s:前ステージ名 != $:ロード先ステージ名 && $s:現在のステージ名 != $:ロード先ステージ名) {
+		eval( $w:グローバルロード回数 = ((( $w:グローバルロード回数 + 1 ) | 0x80 ) & 0x00ff) );
+		/* このカウンターは 128 から 255 でループする。*/
+		/* アイテム側は０で初期化されているので
+		   必ず最初はセットされるようになる。 */
+	}
+
+	eval( $s:前ステージ名 = $:現ステージ名 );
+	eval( $s:現在のステージ名 = $:ロード先ステージ名 );
+
+	// 敵兵の情報を更新(プログラムが完全対応するまでマスクする)
+	command 敵兵メモリー更新 \
+		$:現ステージ名 \
+		$i:ステージプレイ時間 \
+		$w:グローバルロード回数
+
+	#if d:DEBUG_PRINT
+		print 'global_load_count='$w:グローバルロード回数
+	#endif
+}
+
+// アイテム再セットかどうかの判定
+#define	ITEM_SET		0
+#define	NO_ITEM_SET		1
+
+proc アイテム再セットチェック $:アイテム番号 {
+	// アイテムの再セットの可否判断を行う
+	// 基本的には”再セットロード回数”を上回るステージ間移動を
+	// 行っていれば、再セットする。(ただし同一ステージの往復はカウントしない）
+	#if d:DEBUG_PRINT
+		print 'item_set_check'
+		print $:アイテム番号
+	#endif
+	if ( $:アイテム番号 < 128 ) {
+		// 初期値(0)の時は再セット
+		eval( $f:再セットフラグ = d:TRUE );
+	} else if ((( $w:グローバルロード回数 - $:アイテム番号 + 128 ) & 0x7f ) >= $b:再セットロード回数 ) {
+		eval( $f:再セットフラグ = d:TRUE );
+	} else {
+		eval( $f:再セットフラグ = d:FALSE );
+	}
+
+	return $f:再セットフラグ
+}
+
+// 指定された難易度以下で再セットチェックをかける
+proc アイテム再セットチェック（難易度対応） $:アイテム番号 {
+	// アイテムの再セットの可否判断を行う
+	// 基本的には”再セットロード回数”を上回るステージ間移動を
+	// 行っていれば、再セットする。(ただし同一ステージの往復はカウントしない）
+	#if d:DEBUG_PRINT
+		print 'item_set_check'
+		print $:アイテム番号
+	#endif
+
+	#ifdef d:JAPANESE
+	// 日本語版ではすべての
+		if ( $:アイテム番号 < 128 ) {
+			// 初期値(0)の時は再セット
+			eval( $f:再セットフラグ = d:TRUE );
+		} else if ((( $w:グローバルロード回数 - $:アイテム番号 + 128 ) & 0x7f ) >= $b:再セットロード回数 ) {
+			eval( $f:再セットフラグ = d:TRUE );
+		} else {
+			eval( $f:再セットフラグ = d:FALSE );
+		}
+	#else
+	// 英語版ではノーマル以上再セットを一切行わない
+		if ( $w:ゲーム設定 >= d:LEVEL_NORMAL ) {
+			if ( $:アイテム番号 < 128 ) {
+				// 初期値(0)の時は初期セット
+				eval( $f:再セットフラグ = d:TRUE );
+			} else {
+				eval( $f:再セットフラグ = d:FALSE );
+			}
+		} else {
+			if ( $:アイテム番号 < 128 ) {
+				// 初期値(0)の時は再セット
+				eval( $f:再セットフラグ = d:TRUE );
+			} else if ((( $w:グローバルロード回数 - $:アイテム番号 + 128 ) & 0x7f ) >= $b:再セットロード回数 ) {
+				eval( $f:再セットフラグ = d:TRUE );
+			} else {
+				eval( $f:再セットフラグ = d:FALSE );
+			}
+		}
+
+	#endif
+
+	return $f:再セットフラグ
+}
+
+
+proc アイテム再セットチェック（１回のみ） $:アイテム番号 {
+	// アイテムの再セットの可否判断を行う
+	// 一回きりしか置かないアイテムはこちらでチェックする
+	// 取ったら最後、2度とセットしない。
+	#if d:DEBUG_PRINT
+		print 'item_set_check 2'
+		print $:アイテム番号
+	#endif
+	if ( $:アイテム番号 < 128 ) {
+		// 初期値(0)の時は再セット
+		eval( $f:再セットフラグ = d:TRUE );
+	} else {
+		eval( $f:再セットフラグ = d:FALSE );
+	}
+
+	return $f:再セットフラグ
+}
+
+
+// 壊れ物再セットかどうかの判定
+proc 壊れ物再セットチェック $:壊れ物番号 {
+	#if d:DEBUG_PRINT
+		print 'bkobj_set_check'
+	#endif
+
+	if ( $:壊れ物番号 < 128 ) {
+		// 初期値(0)の時は再セット
+		eval( $f:再セットフラグ = d:TRUE );
+
+/*		if ($:壊れ物番号 == d:NO_ITEM_SET) {
+			eval( $f:再セットフラグ = d:FALSE )
+		} else {
+			// 初期値(0)の時は再セット
+			eval( $f:再セットフラグ = d:TRUE )
+		}
+*/
+	} else if ((( $w:グローバルロード回数 - $:壊れ物番号 + 128 ) & 0x7f ) >= $b:再セットロード回数 ) {
+		eval( $f:再セットフラグ = d:TRUE );
+	} else {
+		eval( $f:再セットフラグ = d:FALSE );
+	}
+
+	return $f:再セットフラグ
+}
+
+// 監視カメラ、ガンカメラが再セットかどうかの判定
+proc カメラ再セットチェック $:壊れ物番号 {
+	#if d:DEBUG_PRINT
+		print 'camera_set_check'
+	#endif
+
+	if ( $:壊れ物番号 < 128 ) {
+		// 初期値(0)の時は再セット
+		eval( $f:再セットフラグ = d:TRUE );
+
+	} else if ((( $w:グローバルロード回数 - $:壊れ物番号 + 128 ) & 0x7f ) >= $b:カメラ系再セットロード回数 ) {
+		eval( $f:再セットフラグ = d:TRUE );
+	} else {
+		eval( $f:再セットフラグ = d:FALSE );
+	}
+
+	return $f:再セットフラグ
+}
+
+// サイファーが再セットかどうかの判定
+proc サイファー再セットチェック $:壊れ物番号 {
+	#if d:DEBUG_PRINT
+		print 'sypher_set_check'
+	#endif
+
+	if ( $:壊れ物番号 < 128 ) {
+		// 初期値(0)の時は再セット
+		eval( $f:再セットフラグ = d:TRUE );
+
+	} else if ((( $w:グローバルロード回数 - $:壊れ物番号 + 128 ) & 0x7f ) >= $b:敵系再セットロード回数 ) {
+		eval( $f:再セットフラグ = d:TRUE );
+	} else {
+		eval( $f:再セットフラグ = d:FALSE );
+	}
+
+	return $f:再セットフラグ
+}
+
+
+
+
+//=============================================
+//ステージロード関数
+//=============================================
+// コンセプトマップ
+//---------------------------------------------
+proc mv_init_c50a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = 12000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 16000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 8000 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	load "c50a" ;
+}
+
+
+
+
+// ---以下、製品用---
+// 常駐選択用
+//---------------------------------------------
+#define	RES_SELECT		0
+#define	RES_SNAKE		1
+#define	RES_RAIDEN		2
+#define	RES_NAKEDRAIDEN	3
+#define	SNAKE_STAGE		4
+#define	SNAKE_STORY		5
+#define	RAIDEN_STAGE	6
+#define	RAIDEN_STORY	7
+#define	DEMO_TEST		8		/* 期間限定:最終的には外します */
+#define	BOMB_TEST1		9		/* 期間限定:最終的には外します */
+#define	BOMB_TEST2		10		/* 期間限定:最終的には外します */
+#define	BOMB_TEST3		11		/* 期間限定:最終的には外します */
+#define	BOSS_CHECK		12		/* 期間限定:最終的には外します */
+#define	MOVIE_TEST		13		/* 期間限定:最終的には外します */
+#define BOSS_SURVIVAL	14
+#define	ANOTHER_MISSION	15
+#define	TANKER_STAGE_SNAKE_ANOTHER	16	/*	爆弾解体用とします */
+#define	TANKER_STAGE_RAIDEN_ANOTHER	17	/*	爆弾解体用とします */
+#define	PLANT_STAGE_SNAKE_ANOTHER	18	/*	爆弾解体用とします */
+#define	PLANT_STAGE_RAIDEN_ANOTHER	19	/*	爆弾解体用とします */
+// 以下ミッション選択用（上から続いてます）
+enum MISSIONS {
+	PLAYER_SELECT	=	20,
+	SELECT,
+	VR_SELECT,
+	SNEAKING_SELECT,
+	SNEAKING_STAGE_SELECT,
+	WEAPON_SELECT,
+	WEAPON_HANDGUN_SELECT,
+	WEAPON_MACHINEGUN_SELECT,
+	WEAPON_TRAPS_SELECT,
+	WEAPON_PSG1_SELECT,
+	WEAPON_GRANADE_SELECT,
+	WEAPON_STINGER_SELECT,
+	WEAPON_NIKITA_SELECT,
+	WEAPON_BLADE_SELECT,
+	VARIETY_SELECT,
+	FIRST_PERSON_VIEW_SELECT,
+	ALT_SELECT,
+	TALE_STAGE_SELECT,
+	BOMB_SELECT,
+	ELIM_SELECT,
+	HOLD_SELECT,
+	ESCAPE_SELECT,
+	PHOTO_SELECT,
+	ALT_STAGE_SELECT,
+	SNAKE_TALES_SELECT
+}
+
+
+proc load_select {
+	eval($b:res_mode = d:RES_SELECT);
+	load 'select'
+}
+
+proc load_res_snake {
+	eval($b:res_mode = d:RES_SNAKE);
+	load 'select' -resident 'r_tnk0'
+}
+
+proc load_res_raiden {
+	eval($b:res_mode = d:RES_RAIDEN);
+	load 'select' -resident 'r_plt0'
+}
+
+proc snake_stage_select {
+	eval($b:res_mode = d:SNAKE_STAGE);
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc snake_story_select {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_NORMAL タンカー編 d:SNAKE_STORY
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc raiden_stage_select {
+	eval($b:res_mode = d:RAIDEN_STAGE);
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc raiden_story_select {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_NORMAL プラント編 d:RAIDEN_STORY
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc load_res_nakedraiden {
+	eval($b:res_mode = d:RES_NAKEDRAIDEN);
+	load 'select' -resident 'r_plt0'
+}
+
+//-----------------------------------
+// 以下アナザーミッション専用セレクト
+proc mission_player_select {
+	eval($b:res_mode = d:MISSIONS:PLAYER_SELECT);
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+//---------------
+// キャラ選択
+proc load_raiden {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_NORMAL プラント編 d:RAIDEN_STORY
+	eval( $s:選択プレイヤー = ライデン );
+	@アナザーミッション用プレイヤー武器装備初期化
+	eval($b:res_mode = d:MISSIONS:SELECT);
+	load 'select' -resident 'r_vr_r'
+}
+
+proc load_raiden_photo {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_NORMAL プラント編 d:RAIDEN_STORY
+	eval( $s:選択プレイヤー = ライデン );
+	@アナザーミッション用プレイヤー武器装備初期化
+	eval($b:res_mode = d:MISSIONS:SELECT);
+	load 'select' -resident 'r_vr_rp'
+}
+
+proc load_snake {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_NORMAL プラント編 d:RAIDEN_STORY
+	eval( $s:選択プレイヤー = スネーク );
+	@アナザーミッション用プレイヤー武器装備初期化
+	eval($b:res_mode = d:MISSIONS:SELECT);
+	load 'select' -resident 'r_vr_s'
+}
+
+proc load_snake_photo {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_NORMAL プラント編 d:RAIDEN_STORY
+	eval( $s:選択プレイヤー = スネーク );
+	@アナザーミッション用プレイヤー武器装備初期化
+	eval($b:res_mode = d:MISSIONS:SELECT);
+	load 'select' -resident 'r_vr_sp'
+}
+
+proc load_pliskin {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_NORMAL プラント編 d:RAIDEN_STORY
+	eval( $s:選択プレイヤー = プリスキン );
+	@アナザーミッション用プレイヤー武器装備初期化
+	eval($b:res_mode = d:MISSIONS:SELECT);
+	load 'select' -resident 'r_vr_p'
+}
+
+proc load_tuxedo {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_NORMAL プラント編 d:RAIDEN_STORY
+	eval( $s:選択プレイヤー = タキシードスネーク );
+	@アナザーミッション用プレイヤー武器装備初期化
+	eval($b:res_mode = d:MISSIONS:SELECT);
+	load 'select' -resident 'r_vr_t'
+}
+
+proc load_blade {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_NORMAL プラント編 d:RAIDEN_STORY
+	eval( $s:選択プレイヤー = 刀ライデン );
+	@アナザーミッション用プレイヤー武器装備初期化
+	eval($b:res_mode = d:MISSIONS:SELECT);
+	load 'select' -resident 'r_vr_b'
+}
+
+proc load_mgs1 {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_NORMAL プラント編 d:RAIDEN_STORY
+	eval( $s:選択プレイヤー = 前作スネーク );
+	@アナザーミッション用プレイヤー武器装備初期化
+	eval($b:res_mode = d:MISSIONS:SELECT);
+	load 'select' -resident 'r_vr_1'
+}
+
+proc load_x_raiden {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_NORMAL プラント編 d:RAIDEN_STORY
+	eval( $s:選択プレイヤー = 裸ライデン );
+	@アナザーミッション用プレイヤー武器装備初期化
+	eval($b:res_mode = d:MISSIONS:SELECT);
+	load 'select' -resident 'r_vr_x'
+}
+
+
+//---------------
+// ミッションの各ミッションセレクト
+proc select_vr_missions {
+	eval($b:res_mode = d:MISSIONS:VR_SELECT);
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc select_alt_missions {
+	eval($b:res_mode = d:MISSIONS:ALT_SELECT);
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc select_alt_stage {
+	eval($b:res_mode = d:MISSIONS:ALT_STAGE_SELECT);
+	eval( $b:ミッション番号 = d:MISSION:爆弾解体 );
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc select_tale_stage {
+	eval($b:res_mode = d:MISSIONS:TALE_STAGE_SELECT);
+	eval( $b:ミッション番号 = d:MISSION:スネークテイルズ );
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+//---------------
+// ＶＲミッションのセレクト
+proc select_sneaking {
+	eval($b:res_mode = d:MISSIONS:SNEAKING_SELECT);
+	eval( $b:ミッション番号 = d:MISSION:スニーキング );
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc select_weapon {
+	eval($b:res_mode = d:MISSIONS:WEAPON_SELECT);
+	eval( $b:ミッション番号 = d:MISSION:武器訓練 );
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc select_variety {
+	eval($b:res_mode = d:MISSIONS:VARIETY_SELECT);
+	eval( $b:ミッション番号 = d:MISSION:バラエティ );
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc select_first_person_view {
+	eval($b:res_mode = d:MISSIONS:FIRST_PERSON_VIEW_SELECT);
+	$b:ミッション番号 = d:MISSION:主観モード;
+	$b:主観モード番号 = 1;
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+//---------------
+// ＶＲスニーキングミッションの武器セレクト
+proc select_sneaking_no_weapon {
+	$b:res_mode = d:MISSIONS:SNEAKING_STAGE_SELECT;
+	$b:モード番号 = d:SNEAKING:SNEAKING;
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc select_sneaking_handgun {
+	$b:res_mode = d:MISSIONS:SNEAKING_STAGE_SELECT;
+	$b:モード番号 = d:SNEAKING:ELIMINATE_ALL;
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+
+//---------------
+// ウエポンミッションの武器セレクト
+proc select_weapon_handgun {
+	$b:res_mode = d:MISSIONS:WEAPON_HANDGUN_SELECT;
+	$b:モード番号 = d:WEAPON:HANDGUN;
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc select_weapon_machinegun {
+	$b:res_mode = d:MISSIONS:WEAPON_MACHINEGUN_SELECT;
+	$b:モード番号 = d:WEAPON:ASSAULT_RIFLE;
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc select_weapon_traps {
+	$b:res_mode = d:MISSIONS:WEAPON_TRAPS_SELECT;
+	$b:モード番号 = d:WEAPON:C4;
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc select_weapon_psg1 {
+	$b:res_mode = d:MISSIONS:WEAPON_PSG1_SELECT;
+	$b:モード番号 = d:WEAPON:PSG1;
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc select_weapon_granade {
+	$b:res_mode = d:MISSIONS:WEAPON_GRANADE_SELECT;
+	$b:モード番号 = d:WEAPON:GRENADE;
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc select_weapon_stinger {
+	$b:res_mode = d:MISSIONS:WEAPON_STINGER_SELECT;
+	$b:モード番号 = d:WEAPON:STINGER;
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc select_weapon_nikita {
+	$b:res_mode = d:MISSIONS:WEAPON_NIKITA_SELECT;
+	$b:モード番号 = d:WEAPON:NIKITA;
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc select_weapon_blade {
+	$b:res_mode = d:MISSIONS:WEAPON_BLADE_SELECT;
+	$b:モード番号 = d:WEAPON:BLADE;
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+
+//---------------
+//	オルタナティブミッションの各セレクト
+proc select_bomb_mission {
+	eval( $b:ミッション番号 = d:MISSION:爆弾解体 );
+	eval($b:res_mode = d:MISSIONS:BOMB_SELECT);
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc select_elim_mission {
+	eval( $b:ミッション番号 = d:MISSION:敵兵排除 );
+	eval($b:res_mode = d:MISSIONS:ELIM_SELECT);
+	//	発見即ゲームオーバーを外す（念のため）
+	eval($w:コンフィグ設定 = $w:コンフィグ設定 & ~d:CONFIG_END_IF_FOUND);
+	//	プレイヤーのパラメータセット
+	@アナザー用プレイヤーパラメータ設定	/*	a_varinit.hで定義	*/
+	//	レーダーはオン
+	@アナザー用レーダーオン／オフ 1		/*	a_varinit.hで定義	*/
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc select_hold_mission {
+	eval( $b:ミッション番号 = d:MISSION:武装解除 );
+	eval($b:res_mode = d:MISSIONS:HOLD_SELECT);
+	//	発見即ゲームオーバー
+	eval($w:コンフィグ設定 = $w:コンフィグ設定 | d:CONFIG_END_IF_FOUND);
+	//	プレイヤーのパラメータセット(発見即ゲームオーバーだが念のため)
+	@アナザー用プレイヤーパラメータ設定	/*	a_varinit.hで定義	*/
+	//	レーダーはオン
+	@アナザー用レーダーオン／オフ 1		/*	a_varinit.hで定義	*/
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc select_escape_mission {
+	eval( $b:ミッション番号 = d:MISSION:エスケープ );
+	eval($b:res_mode = d:MISSIONS:ESCAPE_SELECT);
+	//	プレイヤーのパラメータセット(発見即ゲームオーバーだが念のため)
+	@アナザー用プレイヤーパラメータ設定	/*	a_varinit.hで定義	*/
+	//	レーダーはオン
+	@アナザー用レーダーオン／オフ 1		/*	a_varinit.hで定義	*/
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc select_photo_mission {
+	eval( $b:ミッション番号 = d:MISSION:写真撮影 );
+	eval($b:res_mode = d:MISSIONS:PHOTO_SELECT);
+	//	発見即ゲームオーバー
+	eval($w:コンフィグ設定 = $w:コンフィグ設定 | d:CONFIG_END_IF_FOUND);
+
+	//	プレイヤーのパラメータセット
+	@アナザー用プレイヤーパラメータ設定	/*	a_varinit.hで定義	*/
+	//	レーダーはオン
+	@アナザー用レーダーオン／オフ 1		/*	a_varinit.hで定義	*/
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+//---------------
+//	スネークテイルズ用の各セレクト
+proc snake_tales_select {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_NORMAL プラント編 d:RAIDEN_STORY
+	@アナザーミッション用プレイヤー武器装備初期化
+	eval( $b:ミッション番号 = d:MISSION:スネークテイルズ );
+	eval($b:res_mode = d:MISSIONS:SNAKE_TALES_SELECT);
+	load 'select'
+}
+
+
+//---------------
+//	主観モード用コンフィグプロック
+proc own_view_mode_off {
+	eval( $b:主観モード番号 = 0 );
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+
+}
+
+proc own_view_mode_on_1 {
+	eval( $b:主観モード番号 = 1 );
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+
+}
+
+proc own_view_mode_on_2 {
+	eval( $b:主観モード番号 = 2 );
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+
+}
+
+//---------------
+//	時間帯コンフィグプロック
+proc set_morning {
+	$b:ＶＲ起動時間帯 = d:VR_TIME:デバッグ;
+	$b:現在時刻 = 6;
+	$f:デバッグ用フル装備フラグ = 1;
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+
+}
+
+proc set_evening {
+	$b:ＶＲ起動時間帯 = d:VR_TIME:デバッグ;
+	$b:現在時刻 = 17;
+	$f:デバッグ用フル装備フラグ = 1;
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+
+}
+
+proc set_night {
+	$b:ＶＲ起動時間帯 = d:VR_TIME:デバッグ;
+	$b:現在時刻 = 22;
+	$f:デバッグ用フル装備フラグ = 1;
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+
+}
+// アナザーミッション用セレクトここまで
+//----------------------------------------
+
+
+
+
+
+// アナザーミッション用セレクトここまで
+//----------------------------------------
+
+
+
+
+// コンフィグ用
+//---------------------------------------------
+// ストーリーフラグ更新
+
+
+proc vs_orga {
+
+	eval($w:t_story = d:ST_T05a1Dオルガ戦前ポリゴンデモ終了)
+	eval($f:w01eへ２回目以降 = 1)
+
+
+	command 配列セット $w:武器弾数[0] {
+		1,				/* 素手 */
+		46,				/* Ｍ９ */
+		-1,				/* ＵＳＰ */
+		-1,			/* ソコム */
+		-1,			/* ＰＳＧ−１ */
+		-1,			/* ＲＧＢ６ */
+		-1,			/* ニキータ */
+		-1,			/* スティンガー */
+		-1,			/* クレイモア */
+		-1,			/* Ｃ４ */
+		4,				/* チャフ */
+		4,				/* スタン */
+		-1,				/* マイク */
+		-1,				/* ブレード */
+		-1,				/* 凍結スプレー */
+		-1,			/* ＡＫ */
+		-1,				/* 空マガジン */
+		-1,			/* グレネード */
+		-1,			/* Ｍ４ */
+		-1,			/* ＰＳＧ１−Ｔ */
+		-1,				/* 特殊マイク */
+		-1,			/* 雑誌 */
+	}
+
+
+	command 配列セット $w:アイテム数[0] {
+		1,				/* 素手 */
+		5,				/* レーション */
+		0,				/* ダミー双眼鏡 */
+		0,				/* 風邪薬 */
+		5,				/* 止血剤 */
+		5,				/* ジアゼパム */
+		0,				/* ゴル兵制服 */
+		0,				/* 防弾チョッキ */
+		0,				/* ステルス */
+		0,				/* 地雷探知器 */
+		0,				/* センサーＡ */
+		0,				/* センサーＢ */
+		0,				/* 暗視ゴーグル */
+		0,				/* サーマルゴーグル */
+		0,				/* 双眼鏡 */
+		1,				/* デジタルカメラ */
+		1,				/* ダンボールＡ */
+		1,				/* たばこ */
+		0,				/* カード */
+		0,				/* 髭剃り */
+		0,				/* 携帯電話 */
+		1,				/* タンカー編カメラ */
+		0,				/* ダンボールＢ */
+		0,				/* ダンボールＣ */
+		1,				/* 濡れダンボール */
+		1,				/* 振動センサー */
+		0,				/* ダンボールＤ */
+		0,				/* ダンボールＥ */
+		0,				/* 無駄毛処理器 */
+		0,				/* ソコムサプレッサ */
+		0,				/* ＡＫサプレッサ */
+		0,				/* ダミータンカー編カメラ */
+		0,				/* 無限バンダナ */
+		0,				/* ドッグタグ */
+		0,				/* ＭＯディスク */
+		0,				/* ＵＳＰサプレッサ */
+		0,				/* 無限カツラ */
+		0,				/* カツラＡ */
+		0,				/* カツラＢ */
+		0, 				/* カツラＣ */
+		0,				/* カツラＤ	*/
+
+	}
+
+	@mv_w01e_w00b_0
+
+}
+
+proc mv_story_set_afterorga {
+
+	eval($w:t_story = d:ST_T06b1Rオルガ戦勝利後無線機デモ終了)
+	eval($f:w01eへ２回目以降 = 1)
+	eval($w:アイテム数[d:武器:ＵＳＰ] = 1);
+
+
+
+	command 配列セット $w:武器弾数[0] {
+		1,				/* 素手 */
+		46,				/* Ｍ９ */
+		0,				/* ＵＳＰ */
+		-1,			/* ソコム */
+		-1,			/* ＰＳＧ−１ */
+		-1,			/* ＲＧＢ６ */
+		-1,			/* ニキータ */
+		-1,			/* スティンガー */
+		-1,			/* クレイモア */
+		-1,			/* Ｃ４ */
+		4,				/* チャフ */
+		4,				/* スタン */
+		-1,				/* マイク */
+		-1,				/* ブレード */
+		-1,				/* 凍結スプレー */
+		-1,			/* ＡＫ */
+		-1,				/* 空マガジン */
+		-1,			/* グレネード */
+		-1,			/* Ｍ４ */
+		-1,			/* ＰＳＧ１−Ｔ */
+		-1,				/* 特殊マイク */
+		-1,			/* 雑誌 */
+	}
+
+
+	command 配列セット $w:アイテム数[0] {
+		1,				/* 素手 */
+		5,				/* レーション */
+		0,				/* ダミー双眼鏡 */
+		0,				/* 風邪薬 */
+		5,				/* 止血剤 */
+		5,				/* ジアゼパム */
+		0,				/* ゴル兵制服 */
+		0,				/* 防弾チョッキ */
+		0,				/* ステルス */
+		0,				/* 地雷探知器 */
+		0,				/* センサーＡ */
+		0,				/* センサーＢ */
+		0,				/* 暗視ゴーグル */
+		0,				/* サーマルゴーグル */
+		0,				/* 双眼鏡 */
+		1,				/* デジタルカメラ */
+		1,				/* ダンボールＡ */
+		1,				/* たばこ */
+		0,				/* カード */
+		0,				/* 髭剃り */
+		0,				/* 携帯電話 */
+		1,				/* タンカー編カメラ */
+		0,				/* ダンボールＢ */
+		0,				/* ダンボールＣ */
+		1,				/* 濡れダンボール */
+		1,				/* 振動センサー */
+		0,				/* ダンボールＤ */
+		0,				/* ダンボールＥ */
+		0,				/* 無駄毛処理器 */
+		0,				/* ソコムサプレッサ */
+		0,				/* ＡＫサプレッサ */
+		0,				/* ダミータンカー編カメラ */
+		0,				/* 無限バンダナ */
+		0,				/* ドッグタグ */
+		0,				/* ＭＯディスク */
+		0,				/* ＵＳＰサプレッサ */
+		0,				/* 無限カツラ */
+		0,				/* カツラＡ */
+		0,				/* カツラＢ */
+		0, 				/* カツラＣ */
+		0,				/* カツラＤ	*/
+
+	}
+
+	@mv_w00b_w00c_0
+
+}
+
+
+proc mv_story_corridor {
+
+	eval($w:t_story = d:ST_T06a1Dオルガ戦勝利後ポリゴンデモ終了)
+	eval($w:アイテム数[d:武器:ＵＳＰ] = 1);
+
+
+
+	command 配列セット $w:武器弾数[0] {
+		1,				/* 素手 */
+		46,				/* Ｍ９ */
+		46,				/* ＵＳＰ */
+		-1,			/* ソコム */
+		-1,			/* ＰＳＧ−１ */
+		-1,			/* ＲＧＢ６ */
+		-1,			/* ニキータ */
+		-1,			/* スティンガー */
+		-1,			/* クレイモア */
+		-1,			/* Ｃ４ */
+		4,				/* チャフ */
+		4,				/* スタン */
+		-1,				/* マイク */
+		-1,				/* ブレード */
+		-1,				/* 凍結スプレー */
+		-1,			/* ＡＫ */
+		-1,				/* 空マガジン */
+		-1,			/* グレネード */
+		-1,			/* Ｍ４ */
+		-1,			/* ＰＳＧ１−Ｔ */
+		-1,				/* 特殊マイク */
+		-1,			/* 雑誌 */
+	}
+
+
+	command 配列セット $w:アイテム数[0] {
+		1,				/* 素手 */
+		5,				/* レーション */
+		0,				/* ダミー双眼鏡 */
+		0,				/* 風邪薬 */
+		5,				/* 止血剤 */
+		5,				/* ジアゼパム */
+		0,				/* ゴル兵制服 */
+		0,				/* 防弾チョッキ */
+		0,				/* ステルス */
+		0,				/* 地雷探知器 */
+		0,				/* センサーＡ */
+		0,				/* センサーＢ */
+		0,				/* 暗視ゴーグル */
+		1,				/* サーマルゴーグル */
+		0,				/* 双眼鏡 */
+		1,				/* デジタルカメラ */
+		25,				/* ダンボールＡ */
+		1,				/* たばこ */
+		0,				/* カード */
+		0,				/* 髭剃り */
+		0,				/* 携帯電話 */
+		1,				/* タンカー編カメラ */
+		0,				/* ダンボールＢ */
+		0,				/* ダンボールＣ */
+		20,				/* 濡れダンボール */
+		1,				/* 振動センサー */
+		0,				/* ダンボールＤ */
+		0,				/* ダンボールＥ */
+		0,				/* 無駄毛処理器 */
+		0,				/* ソコムサプレッサ */
+		0,				/* ＡＫサプレッサ */
+		0,				/* ダミータンカー編カメラ */
+		0,				/* 無限バンダナ */
+		0,				/* ドッグタグ */
+		0,				/* ＭＯディスク */
+		0,				/* ＵＳＰサプレッサ */
+		0,				/* 無限カツラ */
+		0,				/* カツラＡ */
+		0,				/* カツラＢ */
+		0, 				/* カツラＣ */
+		0,				/* カツラＤ	*/
+
+	}
+
+	@mv_w02a3_w03a_0
+
+
+}
+
+
+proc mv_story_hold {
+
+	eval($w:t_story = d:ST_T10b1R船倉無線機デモ２終了)
+	eval($w:アイテム数[d:武器:ＵＳＰ] = 1);
+
+
+
+	command 配列セット $w:武器弾数[0] {
+		1,				/* 素手 */
+		46,				/* Ｍ９ */
+		46,				/* ＵＳＰ */
+		-1,			/* ソコム */
+		-1,			/* ＰＳＧ−１ */
+		-1,			/* ＲＧＢ６ */
+		-1,			/* ニキータ */
+		-1,			/* スティンガー */
+		-1,			/* クレイモア */
+		-1,			/* Ｃ４ */
+		4,				/* チャフ */
+		4,				/* スタン */
+		-1,				/* マイク */
+		-1,				/* ブレード */
+		-1,				/* 凍結スプレー */
+		-1,			/* ＡＫ */
+		-1,				/* 空マガジン */
+		-1,			/* グレネード */
+		-1,			/* Ｍ４ */
+		-1,			/* ＰＳＧ１−Ｔ */
+		-1,				/* 特殊マイク */
+		-1,			/* 雑誌 */
+	}
+
+
+	command 配列セット $w:アイテム数[0] {
+		1,				/* 素手 */
+		5,				/* レーション */
+		1,				/* ダミー双眼鏡 */
+		0,				/* 風邪薬 */
+		5,				/* 止血剤 */
+		5,				/* ジアゼパム */
+		0,				/* ゴル兵制服 */
+		0,				/* 防弾チョッキ */
+		0,				/* ステルス */
+		0,				/* 地雷探知器 */
+		0,				/* センサーＡ */
+		0,				/* センサーＢ */
+		0,				/* 暗視ゴーグル */
+		1,				/* サーマルゴーグル */
+		0,				/* 双眼鏡 */
+		1,				/* デジタルカメラ */
+		25,				/* ダンボールＡ */
+		1,				/* たばこ */
+		0,				/* カード */
+		0,				/* 髭剃り */
+		0,				/* 携帯電話 */
+		1,				/* タンカー編カメラ */
+		0,				/* ダンボールＢ */
+		0,				/* ダンボールＣ */
+		20,				/* 濡れダンボール */
+		1,				/* 振動センサー */
+		0,				/* ダンボールＤ */
+		0,				/* ダンボールＥ */
+		0,				/* 無駄毛処理器 */
+		0,				/* ソコムサプレッサ */
+		0,				/* ＡＫサプレッサ */
+		0,				/* ダミータンカー編カメラ */
+		0,				/* 無限バンダナ */
+		0,				/* ドッグタグ */
+		0,				/* ＭＯディスク */
+		0,				/* ＵＳＰサプレッサ */
+		0,				/* 無限カツラ */
+		0,				/* カツラＡ */
+		0,				/* カツラＢ */
+		0, 				/* カツラＣ */
+		0,				/* カツラＤ	*/
+
+	}
+
+	@mv_w03b_w04a_demo
+
+
+}
+
+
+
+proc mv_story_set_bombstart {
+	eval ( $w:p_story = d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了 );
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc mv_story_set_b_sensor_get {
+	eval ( $w:p_story = d:ST:P024_01_R01爆弾解体センサーＢ入手１無線デモ１終了 );
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc mv_story_set_vs_fortune_end {
+	eval ( $w:p_story = d:ST:P031_01_P01フォーチュン戦終了１ポリゴンデモ１終了 );
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc mv_story_set_ninjademo_end {
+	eval ( $w:p_story = d:ST:P036_13_R04忍者登場１３無線デモ４終了 );
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 2);
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+
+
+proc mv_story_set_ames_died {
+	eval ( $w:p_story = d:ST:P041_02_R01エイムズ死亡後２無線デモ１終了 );
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 3);
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+// プラント編ストーリごとのセレクト
+// 共通処理
+proc 爆弾解体イベント終了した処理 {
+	eval($b:Ｃ４爆弾処理数 = $b:Ｃ４爆弾設置数)
+	eval($f:w12a_爆弾処理完了  = 1)
+	eval($f:w12b_爆弾処理完了  = 1)
+	eval($f:w14a_爆弾処理完了  = 1)
+	eval($f:w16b_爆弾処理完了  = 1)
+	eval($f:w18a_爆弾処理完了1 = 1)
+	eval($f:w18a_爆弾処理完了2 = 1)
+	eval($f:w18a_爆弾処理完了3 = 1)
+	eval($f:w20a_爆弾処理完了  = 1)
+	eval($f:w20b_爆弾処理完了  = 1)
+	eval($f:w22a_爆弾処理完了  = 1)
+}
+
+// オープニングデモ終了後海底ドックから
+proc load_plant_start {
+	eval ( $w:p_story = d:ST:P001_01_P01オープニング潜入１ポリゴンデモ１開始 );
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 0);
+
+	@mv_P001_01_P01_0
+}
+
+proc load_dock_demo_start {
+	eval ( $w:p_story = d:ST:P001_01_P01オープニング潜入１ポリゴンデモ１開始 );
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 0);
+
+	@mv_P001_01_P02_0
+}
+
+proc load_snake_demo_end {
+	eval ( $w:p_story = d:ST:P003_02_R02スネーク昇降機上昇２無線デモ１終了 );
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 0);
+
+	@mv_init_w11a0_0
+}
+
+proc load_title_demo_end {
+	eval ( $w:p_story = d:ST:P005_05_R02ライデン昇降機上昇５無線デモ２終了 );
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 0);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:髭剃り] = 1);
+
+	@mv_w11a2_w12a_0
+}
+
+proc load_before_vamp_demo {
+	eval ( $w:p_story = d:ST:Ａ脚出たところでＳＥＡＬＳ無線傍受終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 0);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:髭剃り] = 1);
+
+	@mv_w13a_w14a_0
+}
+
+proc load_after_vamp_demo {
+	eval ( $w:p_story = d:ST:P010_10_P05ヴァンプ遭遇１０ポリゴンデモ５終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 0);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+
+	@mv_demo_w14a_0
+}
+
+proc load_after_fortune_demo_w15a {
+	eval( $w:p_story = d:ST:P012_02_R01フォーチュン遭遇２無線デモ１終了 );
+
+	eval($s:エリア = d012p01);
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 0);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+
+	@mv_w14a_w15a_0
+
+}
+
+proc load_peter_sdemo {
+	eval ( $w:p_story = d:ST:P014_06_I01ピーター遭遇６インタラクティブ主観デモ１開始 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 0);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+
+	@mv_demo1_w16a_0
+}
+
+proc load_bomb_event_start {
+	eval ( $w:p_story = d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+
+	@mv_demo3_w16a_0
+}
+
+proc load_bomb_event_2_left_w16b {
+	eval ( $w:p_story = d:ST:P016_01_R1爆弾解体半分解体１無線デモ１終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+
+	eval($b:Ｃ４爆弾処理数 = $b:Ｃ４爆弾設置数 - 2)
+	eval($f:w12a_爆弾処理完了  = 1)
+	eval($f:w12b_爆弾処理完了  = 0)
+	eval($f:w14a_爆弾処理完了  = 1)
+	eval($f:w16b_爆弾処理完了  = 0)
+	eval($f:w18a_爆弾処理完了1 = 1)
+	eval($f:w18a_爆弾処理完了2 = 1)
+	eval($f:w18a_爆弾処理完了3 = 1)
+	eval($f:w20a_爆弾処理完了  = 1)
+	eval($f:w20b_爆弾処理完了  = 1)
+	eval($f:w22a_爆弾処理完了  = 1)
+
+	@mv_w17a_w16a_0
+}
+
+proc load_bomb_event_1_left_w12b {
+	eval ( $w:p_story = d:ST:P022_01_R01爆弾解体最後から二つ目１無線デモ１終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+
+	eval($b:Ｃ４爆弾処理数 = $b:Ｃ４爆弾設置数 - 1)
+	eval($f:w12a_爆弾処理完了  = 1)
+	eval($f:w12b_爆弾処理完了  = 0)
+	eval($f:w14a_爆弾処理完了  = 1)
+	eval($f:w16b_爆弾処理完了  = 1)
+	eval($f:w18a_爆弾処理完了1 = 1)
+	eval($f:w18a_爆弾処理完了2 = 1)
+	eval($f:w18a_爆弾処理完了3 = 1)
+	eval($f:w20a_爆弾処理完了  = 1)
+	eval($f:w20b_爆弾処理完了  = 1)
+	eval($f:w22a_爆弾処理完了  = 1)
+
+	@mv_w23a_w12b0_0
+}
+
+proc load_b_sensor_event_start {
+	eval ( $w:p_story = d:ST:P024_01_R01爆弾解体センサーＢ入手１無線デモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+
+	@mv_w15a_w16a_0		// 仮
+}
+
+proc load_before_deep_sea_dock {
+	eval ( $w:p_story = d:ST:P024_01_R01爆弾解体センサーＢ入手１無線デモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+
+	@mv_w12b0_w12a_0
+}
+
+proc load_vs_fortune {
+	eval ( $w:p_story = d:ST:P029_01フォーチュン戦開始 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_w11b_w11c_0
+}
+
+proc load_after_vs_fortune {
+	eval ( $w:p_story = d:ST:P031_01_P01フォーチュン戦終了１ポリゴンデモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_w11c_w12a_0
+}
+
+proc load_before_vs_fatman {
+	eval ( $w:p_story = d:ST:P031_01_P01フォーチュン戦終了１ポリゴンデモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_w20a1_w20b_0
+}
+
+proc load_vs_fatman {
+	eval ( $w:p_story = d:ST:P032_01_P01ファットマン登場１ポリゴンデモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_demo2_w20b_0
+}
+
+proc load_after_vs_fatman {
+	eval ( $w:p_story = d:ST:P034_01_P01ファットマン死亡１ポリゴンデモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_demo3_w20b_0
+}
+
+proc load_after_ninja_demo {
+	eval ( $w:p_story = d:ST:P036_13_R04忍者登場１３無線デモ４終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 2);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+
+	@mv_demo4_w20b_0
+}
+
+
+
+proc mv_story_biometrix {
+	eval ( $w:p_story = d:ST:P037_01_R01スネークの遺体１無線デモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	//eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 2);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	//eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+
+	@mv_w24a_w24b_0
+}
+
+
+proc hostage_1st {
+	eval($f:人質デバッグ操作 = 0)
+	eval($w:プラント編クリア回数 = 0)
+	@hostage_common
+}
+
+
+proc hostage_2nd {
+	eval($f:人質デバッグ操作 = 0)
+	eval($w:プラント編クリア回数 = 1)
+	@hostage_common
+}
+
+proc hostage_beauties {
+	eval($f:人質デバッグ操作 = 1)
+	eval($w:プラント編クリア回数 = 1)
+	eval($b:現在時刻 = 0)
+	@hostage_common
+}
+
+
+proc hostage_old_beauties {
+	eval($f:人質デバッグ操作 = 1)
+	eval($w:プラント編クリア回数 = 1)
+	eval($b:現在時刻 = 22)
+	@hostage_common
+}
+
+proc hostage_beasts {
+	eval($f:人質デバッグ操作 = 1)
+	eval($w:プラント編クリア回数 = 1)
+	eval($b:現在時刻 = 13)
+	@hostage_common
+
+}
+
+proc hostage_common {
+	eval($w:p_story = d:ST:P039_01_P01人質部屋潜入１ポリゴンデモ１開始)
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	//eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 2);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	//eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+
+#if 0
+	@mv_w24a_w24b_0
+#else
+	load "d036p03" -r 'r_plt0'
+#endif
+}
+
+
+
+
+proc load_ames_demo_end {
+	eval ( $w:p_story = d:ST:P041_02_R01エイムズ死亡後２無線デモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 3);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	@mv_caution_w24b
+}
+
+
+
+
+proc load_after_ames_w12b {
+	eval ( $w:p_story = d:ST:P041_02_R01エイムズ死亡後２無線デモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 3);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	@mv_w23a_w12b0_0
+}
+
+proc load_after_ames_w16b {
+	eval ( $w:p_story = d:ST:P041_02_R01エイムズ死亡後２無線デモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 3);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	@mv_w17a_w16a_0
+}
+
+proc load_psg1_event {
+	eval ( $w:p_story = d:ST:P041_02_R01エイムズ死亡後２無線デモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 3);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+
+	@mv_w18a_w25a_0
+}
+
+proc load_vs_harrier {
+	eval ( $w:p_story = d:ST:P045_01_P01ハリアー登場１ポリゴンデモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 3);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval( $b:w25a_ステージ状態 = 1 ) ;
+
+	@mv_w18a_w25a_1
+}
+
+proc load_vs_harrier_end {
+	eval ( $w:p_story = d:ST:P046_02_R01ハリアー戦勝利２無線デモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 3);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+
+	@mv_w25a_w25b_0
+}
+
+proc load_tightrope_L {
+	eval ( $w:p_story = d:ST:P046_02_R01ハリアー戦勝利２無線デモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 3);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+
+	@mv_w25b_w25c_0
+}
+
+proc load_tightrope_L2 {
+	eval ( $w:p_story = d:ST:P046_02_R01ハリアー戦勝利２無線デモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 3);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+
+	@mv_w25b_w25c_1
+}
+
+proc load_shell2_in {
+	eval ( $w:p_story = d:ST:P046_02_R01ハリアー戦勝利２無線デモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 3);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+
+	@mv_w25c_w31a_0
+}
+
+proc load_nikita_event_start {
+	eval ( $w:p_story = d:ST:P047_05_R01電撃床前オルガ５無線デモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 3);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+
+	@mv_w31b_w31a_0
+}
+
+proc load_nikita_event_end {
+	eval ( $w:p_story = d:ST:P048_01_P01電源パネル破壊１ポリゴンデモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 3);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+
+	@mv_w25c_w31a_0
+}
+
+proc load_prez_demo_end {
+	eval ( $w:p_story = d:ST:P049_11_P02大統領１１ポリゴンデモ２終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 4);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+
+	@mv_w25c_w31a_0
+}
+
+proc load_water_stage_start {
+	eval ( $w:p_story = d:ST:P050_06_R03タンカー編整理６無線機デモ３終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 4);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+
+	@mv_w31a_w31b_0
+}
+
+
+proc load_vs_vamp {
+	eval ( $w:p_story = d:ST:P055_04_P03ヴァンプ戦前４ポリゴンデモ３終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 4);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+
+	eval( $f:ピーター浮遊死体デモ見た = 1 ) ;
+	eval( $f:w31b_左の水密ドアを開けました = 1 ) ;
+
+	@mv_w31b_w31c0_0
+}
+
+proc load_vs_vamp_end {
+	eval ( $w:p_story = d:ST:P057_02_R01ヴァンプ戦終了２無線機デモ１終了 );
+	@爆弾解体イベント終了した処理
+	eval( $f:デモ直後フラグ = 1 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 4);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+
+	eval( $f:ピーター浮遊死体デモ見た = 1 ) ;
+	eval( $f:w31b_左の水密ドアを開けました = 1 ) ;
+
+	@mv_w31b_w31c0_0
+}
+
+proc load_emma_find_demo_end {
+	eval ( $w:p_story = d:ST:P058_08_P04エマ救出８ポリゴンデモ４終了 );
+	@爆弾解体イベント終了した処理
+	eval( $f:デモ直後フラグ = 1 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 4);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+	eval( $f:エマ存在フラグ = 1 );
+
+	eval( $f:ピーター浮遊死体デモ見た = 1 ) ;
+	eval( $f:w31b_左の水密ドアを開けました = 1 ) ;
+
+	@mv_w31b_w31c0_0
+}
+
+proc load_emma_ai_demo_end {
+	eval ( $w:p_story = d:ST:P062_08_P04エマとＡＩ８ポリゴンデモ４終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 4);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+	eval( $f:エマ存在フラグ = 1 );
+
+	eval( $f:ピーター浮遊死体デモ見た = 1 ) ;
+	eval( $f:w31b_左の水密ドアを開けました = 1 ) ;
+
+	@mv_w31c0_w31b_0
+}
+
+proc load_emma_event_start {
+	eval ( $w:p_story = d:ST:P062_08_P04エマとＡＩ８ポリゴンデモ４終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 4);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+	eval( $s:登場ポイント = sp_w31b_w31a_0 ) ;
+	eval( $f:エマ存在フラグ = 1 );
+	eval( $f:夕方フラグ = 1 ) ;
+	eval( $f:ピーター浮遊死体デモ見た = 1 ) ;
+	eval( $f:w31b_左の水密ドアを開けました = 1 ) ;
+
+	@mv_w31b_w31a_0
+}
+
+proc load_emma_event_kl_bridge {
+	eval ( $w:p_story = d:ST:P062_08_P04エマとＡＩ８ポリゴンデモ４終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 4);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+	eval( $s:登場ポイント = sp_w31a_w25c_0 ) ;
+	eval( $s:エマ存在ステージ = w25d ) ;
+	eval( $f:エマ存在フラグ = 1 );
+	eval( $f:夕方フラグ = 1 ) ;
+	eval( $f:ピーター浮遊死体デモ見た = 1 ) ;
+	eval( $f:w31b_左の水密ドアを開けました = 1 ) ;
+
+	@mv_w31a_w25c_0
+}
+
+proc load_emma_event_l_prop {
+	eval ( $w:p_story = d:ST:P063_01_P01カード五１ポリゴンデモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+	eval( $s:登場ポイント = sp_w25c_w28a_0 ) ;
+	eval( $s:エマ存在ステージ = w28a ) ;
+	eval( $f:エマ存在フラグ = 1 );
+	eval( $f:夕方フラグ = 1 ) ;
+	eval( $f:ピーター浮遊死体デモ見た = 1 ) ;
+	eval( $f:w31b_左の水密ドアを開けました = 1 ) ;
+
+	@mv_w25c_w28a_0
+}
+
+proc load_sniping_event_start {
+	eval ( $w:p_story = d:ST:P065_06_R02Ｌ脚エマ６無線機デモ２終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+	@mv_w28a_w32a_0
+}
+
+proc load_sniping_event_end {
+	eval ( $w:p_story = d:ST:P069_02_R01ヴァンプ狙撃終了２無線機デモ１終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+	@mv_w32a_w20a2_0
+}
+
+proc load_arsenal_event_start {
+//	eval ( $w:p_story = d:ST:P069_04_R02ヴァンプ狙撃終了４無線機デモ２終了 );
+	eval ( $w:p_story = d:ST:P070_11_M02ＡＧ起動１１ムービーデモ２開始 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+//	@mv_w24d_w41a_0
+	@mv_init_wmovie_0
+}
+
+proc load_after_goumon_w41a {
+	eval($w:p_story =  d:ST:P070_23_R04ＡＧ起動２３無線機デモ４終了)
+	@爆弾解体イベント終了した処理
+	//	プレイヤー初期位置を代入
+	eval($i:プレイヤー初期Ｘ位置 = -2000)
+	eval($i:プレイヤー初期Ｚ位置 = -3400)
+	//	リスタートかけてゲームに戻る
+	eval ($f:w41a_主観デモ完全終了フラグ = d:TRUE)
+	eval ($s:登場ポイント = 拷問直後)
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+
+	//	武器アイテムを取り上げる
+	command	武器アイテム取られ
+
+	load "w41a" -resident 'r_plt2' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+proc load_arsenal_w43a {
+	eval($w:p_story = d:ST:P072_01_R01大佐混乱１無線機デモ１終了)
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+	//	武器アイテムを取り上げる
+	command	武器アイテム取られ
+
+	@mv_w42a_w43a_0
+}
+
+proc load_meet_snake_w43a {
+	eval($w:p_story = d:ST:P073_05_S01通路Ａ５シナリオデモ１終了)
+	@爆弾解体イベント終了した処理
+
+	//	再登場位置を代入
+	eval ($s:登場ポイント = 刀説明デモ終了後)
+	eval( $i:プレイヤー初期Ｘ位置 =  34250 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 =   4000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -77000 ) ;
+//	eval( $i:プレイヤー初期Ｚ位置 = -88000 ) ;
+	eval( $i:プレイヤー初期方向   =      0 ) ;
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+	eval ($w:プレイヤーフラグ = $w:プレイヤーフラグ | 0x0002 )
+	eval ($w:武器 = d:武器:ブレード)
+
+	load "w43a" -resident 'r_plt0' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+proc load_vs_tengu_B_w44a_VeryEasy {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_VERYEASY プラント編 $b:res_mode
+	eval ( $w:p_story = d:ST:P074_03_P02通路Ａ刀後３ポリゴンデモ２終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９]         = $w:武器最大数Ｒ[d:武器:Ｍ９]         );
+	eval($w:武器弾数Ｒ[d:武器:ソコム]       = $w:武器最大数Ｒ[d:武器:ソコム]       );
+	eval($w:武器弾数Ｒ[d:武器:マガジン]     = $w:武器最大数Ｒ[d:武器:マガジン]     );
+	eval($w:武器弾数Ｒ[d:武器:スタン]       = $w:武器最大数Ｒ[d:武器:スタン]       );
+	eval($w:武器弾数Ｒ[d:武器:チャフ]       = $w:武器最大数Ｒ[d:武器:チャフ]       );
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = $w:武器最大数Ｒ[d:武器:凍結スプレー] );
+	eval($w:武器弾数Ｒ[d:武器:雑誌]         = $w:武器最大数Ｒ[d:武器:雑誌]         );
+	eval($w:武器弾数Ｒ[d:武器:クレイモア]   = $w:武器最大数Ｒ[d:武器:クレイモア]   );
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４]         = $w:武器最大数Ｒ[d:武器:Ｍ４]         );
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４]         = $w:武器最大数Ｒ[d:武器:Ｃ４]         );
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ]       = $w:武器最大数Ｒ[d:武器:ＡＫＳ]       );
+	eval($w:武器弾数Ｒ[d:武器:マイク]       = $w:武器最大数Ｒ[d:武器:マイク]       );
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク]   = $w:武器最大数Ｒ[d:武器:特殊マイク]   );
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１]     = $w:武器最大数Ｒ[d:武器:ＰＳＧ１]     );
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = $w:武器最大数Ｒ[d:武器:ＰＳＧ１−Ｔ] );
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６]     = $w:武器最大数Ｒ[d:武器:ＲＧＢ６]     );
+	eval($w:武器弾数Ｒ[d:武器:グレネード]   = $w:武器最大数Ｒ[d:武器:グレネード]   );
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = $w:武器最大数Ｒ[d:武器:スティンガー] );
+	eval($w:武器弾数Ｒ[d:武器:ニキータ]     = $w:武器最大数Ｒ[d:武器:ニキータ]     );
+	eval($w:武器弾数Ｒ[d:武器:ブレード]     = $w:武器最大数Ｒ[d:武器:ブレード]     );
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード]           = $w:アイテム最大数Ｒ[d:アイテム:カード]           );
+	eval($w:アイテム数Ｒ[d:アイテム:レーション]       = $w:アイテム最大数Ｒ[d:アイテム:レーション]       );
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = $w:アイテム最大数Ｒ[d:アイテム:サーマルゴーグル] );
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤]           = $w:アイテム最大数Ｒ[d:アイテム:止血剤]           );
+	eval($w:アイテム数Ｒ[d:アイテム:煙草]             = $w:アイテム最大数Ｒ[d:アイテム:煙草]             );
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ]       = $w:アイテム最大数Ｒ[d:アイテム:センサーＡ]       );
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ]       = $w:アイテム最大数Ｒ[d:アイテム:センサーＢ]       );
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = $w:アイテム最大数Ｒ[d:アイテム:ソコムサプレッサ] );
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール]       = $w:アイテム最大数Ｒ[d:アイテム:ダンボール]       );
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ]     = $w:アイテム最大数Ｒ[d:アイテム:ダンボールＢ]     );
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ]     = $w:アイテム最大数Ｒ[d:アイテム:ダンボールＣ]     );
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ]     = $w:アイテム最大数Ｒ[d:アイテム:ダンボールＤ]     );
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ]     = $w:アイテム最大数Ｒ[d:アイテム:ダンボールＥ]     );
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器]       = $w:アイテム最大数Ｒ[d:アイテム:地雷探知器]       );
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ]         = $w:アイテム最大数Ｒ[d:アイテム:デジカメ]         );
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服]       = $w:アイテム最大数Ｒ[d:アイテム:ゴル兵制服]       );
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話]         = $w:アイテム最大数Ｒ[d:アイテム:携帯電話]         );
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム]       = $w:アイテム最大数Ｒ[d:アイテム:ジアゼパム]       );
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク]     = $w:アイテム最大数Ｒ[d:アイテム:ＭＯディスク]     );
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ]   = $w:アイテム最大数Ｒ[d:アイテム:ＡＫサプレッサ]   );
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル]     = $w:アイテム最大数Ｒ[d:アイテム:暗視ゴーグル]     );
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ]     = $w:アイテム最大数Ｒ[d:アイテム:防弾チョッキ]     );
+
+	@mv_w43a_w44a_0
+}
+
+proc load_vs_tengu_B_w44a_Normal {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_NORMAL プラント編 $b:res_mode
+	eval ( $w:p_story = d:ST:P074_03_P02通路Ａ刀後３ポリゴンデモ２終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９]         = $w:武器最大数Ｒ[d:武器:Ｍ９]         );
+	eval($w:武器弾数Ｒ[d:武器:ソコム]       = $w:武器最大数Ｒ[d:武器:ソコム]       );
+	eval($w:武器弾数Ｒ[d:武器:マガジン]     = $w:武器最大数Ｒ[d:武器:マガジン]     );
+	eval($w:武器弾数Ｒ[d:武器:スタン]       = $w:武器最大数Ｒ[d:武器:スタン]       );
+	eval($w:武器弾数Ｒ[d:武器:チャフ]       = $w:武器最大数Ｒ[d:武器:チャフ]       );
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = $w:武器最大数Ｒ[d:武器:凍結スプレー] );
+	eval($w:武器弾数Ｒ[d:武器:雑誌]         = $w:武器最大数Ｒ[d:武器:雑誌]         );
+	eval($w:武器弾数Ｒ[d:武器:クレイモア]   = $w:武器最大数Ｒ[d:武器:クレイモア]   );
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４]         = $w:武器最大数Ｒ[d:武器:Ｍ４]         );
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４]         = $w:武器最大数Ｒ[d:武器:Ｃ４]         );
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ]       = $w:武器最大数Ｒ[d:武器:ＡＫＳ]       );
+	eval($w:武器弾数Ｒ[d:武器:マイク]       = $w:武器最大数Ｒ[d:武器:マイク]       );
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク]   = $w:武器最大数Ｒ[d:武器:特殊マイク]   );
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１]     = $w:武器最大数Ｒ[d:武器:ＰＳＧ１]     );
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = $w:武器最大数Ｒ[d:武器:ＰＳＧ１−Ｔ] );
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６]     = $w:武器最大数Ｒ[d:武器:ＲＧＢ６]     );
+	eval($w:武器弾数Ｒ[d:武器:グレネード]   = $w:武器最大数Ｒ[d:武器:グレネード]   );
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = $w:武器最大数Ｒ[d:武器:スティンガー] );
+	eval($w:武器弾数Ｒ[d:武器:ニキータ]     = $w:武器最大数Ｒ[d:武器:ニキータ]     );
+	eval($w:武器弾数Ｒ[d:武器:ブレード]     = $w:武器最大数Ｒ[d:武器:ブレード]     );
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード]           = $w:アイテム最大数Ｒ[d:アイテム:カード]           );
+	eval($w:アイテム数Ｒ[d:アイテム:レーション]       = $w:アイテム最大数Ｒ[d:アイテム:レーション]       );
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = $w:アイテム最大数Ｒ[d:アイテム:サーマルゴーグル] );
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤]           = $w:アイテム最大数Ｒ[d:アイテム:止血剤]           );
+	eval($w:アイテム数Ｒ[d:アイテム:煙草]             = $w:アイテム最大数Ｒ[d:アイテム:煙草]             );
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ]       = $w:アイテム最大数Ｒ[d:アイテム:センサーＡ]       );
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ]       = $w:アイテム最大数Ｒ[d:アイテム:センサーＢ]       );
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = $w:アイテム最大数Ｒ[d:アイテム:ソコムサプレッサ] );
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール]       = $w:アイテム最大数Ｒ[d:アイテム:ダンボール]       );
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ]     = $w:アイテム最大数Ｒ[d:アイテム:ダンボールＢ]     );
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ]     = $w:アイテム最大数Ｒ[d:アイテム:ダンボールＣ]     );
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ]     = $w:アイテム最大数Ｒ[d:アイテム:ダンボールＤ]     );
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ]     = $w:アイテム最大数Ｒ[d:アイテム:ダンボールＥ]     );
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器]       = $w:アイテム最大数Ｒ[d:アイテム:地雷探知器]       );
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ]         = $w:アイテム最大数Ｒ[d:アイテム:デジカメ]         );
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服]       = $w:アイテム最大数Ｒ[d:アイテム:ゴル兵制服]       );
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話]         = $w:アイテム最大数Ｒ[d:アイテム:携帯電話]         );
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム]       = $w:アイテム最大数Ｒ[d:アイテム:ジアゼパム]       );
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク]     = $w:アイテム最大数Ｒ[d:アイテム:ＭＯディスク]     );
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ]   = $w:アイテム最大数Ｒ[d:アイテム:ＡＫサプレッサ]   );
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル]     = $w:アイテム最大数Ｒ[d:アイテム:暗視ゴーグル]     );
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ]     = $w:アイテム最大数Ｒ[d:アイテム:防弾チョッキ]     );
+
+	@mv_w43a_w44a_0
+}
+
+proc load_vs_tengu_B_w44a_Extreme {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_EXTREME プラント編 $b:res_mode
+	eval ( $w:p_story = d:ST:P074_03_P02通路Ａ刀後３ポリゴンデモ２終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９]         = $w:武器最大数Ｒ[d:武器:Ｍ９]         );
+	eval($w:武器弾数Ｒ[d:武器:ソコム]       = $w:武器最大数Ｒ[d:武器:ソコム]       );
+	eval($w:武器弾数Ｒ[d:武器:マガジン]     = $w:武器最大数Ｒ[d:武器:マガジン]     );
+	eval($w:武器弾数Ｒ[d:武器:スタン]       = $w:武器最大数Ｒ[d:武器:スタン]       );
+	eval($w:武器弾数Ｒ[d:武器:チャフ]       = $w:武器最大数Ｒ[d:武器:チャフ]       );
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = $w:武器最大数Ｒ[d:武器:凍結スプレー] );
+	eval($w:武器弾数Ｒ[d:武器:雑誌]         = $w:武器最大数Ｒ[d:武器:雑誌]         );
+	eval($w:武器弾数Ｒ[d:武器:クレイモア]   = $w:武器最大数Ｒ[d:武器:クレイモア]   );
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４]         = $w:武器最大数Ｒ[d:武器:Ｍ４]         );
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４]         = $w:武器最大数Ｒ[d:武器:Ｃ４]         );
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ]       = $w:武器最大数Ｒ[d:武器:ＡＫＳ]       );
+	eval($w:武器弾数Ｒ[d:武器:マイク]       = $w:武器最大数Ｒ[d:武器:マイク]       );
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク]   = $w:武器最大数Ｒ[d:武器:特殊マイク]   );
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１]     = $w:武器最大数Ｒ[d:武器:ＰＳＧ１]     );
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = $w:武器最大数Ｒ[d:武器:ＰＳＧ１−Ｔ] );
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６]     = $w:武器最大数Ｒ[d:武器:ＲＧＢ６]     );
+	eval($w:武器弾数Ｒ[d:武器:グレネード]   = $w:武器最大数Ｒ[d:武器:グレネード]   );
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = $w:武器最大数Ｒ[d:武器:スティンガー] );
+	eval($w:武器弾数Ｒ[d:武器:ニキータ]     = $w:武器最大数Ｒ[d:武器:ニキータ]     );
+	eval($w:武器弾数Ｒ[d:武器:ブレード]     = $w:武器最大数Ｒ[d:武器:ブレード]     );
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード]           = $w:アイテム最大数Ｒ[d:アイテム:カード]           );
+	eval($w:アイテム数Ｒ[d:アイテム:レーション]       = $w:アイテム最大数Ｒ[d:アイテム:レーション]       );
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = $w:アイテム最大数Ｒ[d:アイテム:サーマルゴーグル] );
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤]           = $w:アイテム最大数Ｒ[d:アイテム:止血剤]           );
+	eval($w:アイテム数Ｒ[d:アイテム:煙草]             = $w:アイテム最大数Ｒ[d:アイテム:煙草]             );
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ]       = $w:アイテム最大数Ｒ[d:アイテム:センサーＡ]       );
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ]       = $w:アイテム最大数Ｒ[d:アイテム:センサーＢ]       );
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = $w:アイテム最大数Ｒ[d:アイテム:ソコムサプレッサ] );
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール]       = $w:アイテム最大数Ｒ[d:アイテム:ダンボール]       );
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ]     = $w:アイテム最大数Ｒ[d:アイテム:ダンボールＢ]     );
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ]     = $w:アイテム最大数Ｒ[d:アイテム:ダンボールＣ]     );
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ]     = $w:アイテム最大数Ｒ[d:アイテム:ダンボールＤ]     );
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ]     = $w:アイテム最大数Ｒ[d:アイテム:ダンボールＥ]     );
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器]       = $w:アイテム最大数Ｒ[d:アイテム:地雷探知器]       );
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ]         = $w:アイテム最大数Ｒ[d:アイテム:デジカメ]         );
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服]       = $w:アイテム最大数Ｒ[d:アイテム:ゴル兵制服]       );
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話]         = $w:アイテム最大数Ｒ[d:アイテム:携帯電話]         );
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム]       = $w:アイテム最大数Ｒ[d:アイテム:ジアゼパム]       );
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク]     = $w:アイテム最大数Ｒ[d:アイテム:ＭＯディスク]     );
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ]   = $w:アイテム最大数Ｒ[d:アイテム:ＡＫサプレッサ]   );
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル]     = $w:アイテム最大数Ｒ[d:アイテム:暗視ゴーグル]     );
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ]     = $w:アイテム最大数Ｒ[d:アイテム:防弾チョッキ]     );
+
+	@mv_w43a_w44a_0
+}
+
+proc load_vs_tengu_B_w44a_ExtremeHalf {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_EXTREME プラント編 $b:res_mode
+	eval ( $w:p_story = d:ST:P074_03_P02通路Ａ刀後３ポリゴンデモ２終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９]         = $w:武器最大数Ｒ[d:武器:Ｍ９]         /2);
+	eval($w:武器弾数Ｒ[d:武器:ソコム]       = $w:武器最大数Ｒ[d:武器:ソコム]       /2);
+	eval($w:武器弾数Ｒ[d:武器:マガジン]     = $w:武器最大数Ｒ[d:武器:マガジン]     /2);
+	eval($w:武器弾数Ｒ[d:武器:スタン]       = $w:武器最大数Ｒ[d:武器:スタン]       /2);
+	eval($w:武器弾数Ｒ[d:武器:チャフ]       = $w:武器最大数Ｒ[d:武器:チャフ]       /2);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = $w:武器最大数Ｒ[d:武器:凍結スプレー] );
+	eval($w:武器弾数Ｒ[d:武器:雑誌]         = $w:武器最大数Ｒ[d:武器:雑誌]         /2);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア]   = $w:武器最大数Ｒ[d:武器:クレイモア]   /2);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４]         = $w:武器最大数Ｒ[d:武器:Ｍ４]         /2);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４]         = $w:武器最大数Ｒ[d:武器:Ｃ４]         /2);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ]       = $w:武器最大数Ｒ[d:武器:ＡＫＳ]       /2);
+	eval($w:武器弾数Ｒ[d:武器:マイク]       = $w:武器最大数Ｒ[d:武器:マイク]       );
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク]   = $w:武器最大数Ｒ[d:武器:特殊マイク]   );
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１]     = $w:武器最大数Ｒ[d:武器:ＰＳＧ１]     /2);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = $w:武器最大数Ｒ[d:武器:ＰＳＧ１−Ｔ] /2);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６]     = $w:武器最大数Ｒ[d:武器:ＲＧＢ６]     /2);
+	eval($w:武器弾数Ｒ[d:武器:グレネード]   = $w:武器最大数Ｒ[d:武器:グレネード]   /2);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = $w:武器最大数Ｒ[d:武器:スティンガー] /2);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ]     = $w:武器最大数Ｒ[d:武器:ニキータ]     /2);
+	eval($w:武器弾数Ｒ[d:武器:ブレード]     = $w:武器最大数Ｒ[d:武器:ブレード]     );
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード]           = $w:アイテム最大数Ｒ[d:アイテム:カード]           );
+	eval($w:アイテム数Ｒ[d:アイテム:レーション]       = $w:アイテム最大数Ｒ[d:アイテム:レーション]       /2);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = $w:アイテム最大数Ｒ[d:アイテム:サーマルゴーグル] );
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤]           = $w:アイテム最大数Ｒ[d:アイテム:止血剤]           );
+	eval($w:アイテム数Ｒ[d:アイテム:煙草]             = $w:アイテム最大数Ｒ[d:アイテム:煙草]             );
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ]       = $w:アイテム最大数Ｒ[d:アイテム:センサーＡ]       );
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ]       = $w:アイテム最大数Ｒ[d:アイテム:センサーＢ]       );
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = $w:アイテム最大数Ｒ[d:アイテム:ソコムサプレッサ] );
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール]       = $w:アイテム最大数Ｒ[d:アイテム:ダンボール]       /2);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ]     = $w:アイテム最大数Ｒ[d:アイテム:ダンボールＢ]     /2);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ]     = $w:アイテム最大数Ｒ[d:アイテム:ダンボールＣ]     /2);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ]     = $w:アイテム最大数Ｒ[d:アイテム:ダンボールＤ]     /2);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ]     = $w:アイテム最大数Ｒ[d:アイテム:ダンボールＥ]     /2);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器]       = $w:アイテム最大数Ｒ[d:アイテム:地雷探知器]       );
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ]         = $w:アイテム最大数Ｒ[d:アイテム:デジカメ]         );
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服]       = $w:アイテム最大数Ｒ[d:アイテム:ゴル兵制服]       );
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話]         = $w:アイテム最大数Ｒ[d:アイテム:携帯電話]         );
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム]       = $w:アイテム最大数Ｒ[d:アイテム:ジアゼパム]       /2);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク]     = $w:アイテム最大数Ｒ[d:アイテム:ＭＯディスク]     );
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ]   = $w:アイテム最大数Ｒ[d:アイテム:ＡＫサプレッサ]   );
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル]     = $w:アイテム最大数Ｒ[d:アイテム:暗視ゴーグル]     );
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ]     = $w:アイテム最大数Ｒ[d:アイテム:防弾チョッキ]     );
+
+	@mv_w43a_w44a_0
+}
+
+proc load_arsenal_w45a {
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+	@mv_w44a_w45a_0
+}
+
+proc load_VS_TENG_w45a {
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+
+	//	天狗兵登場フラグを立てる
+	eval ($f:w45a_天狗兵登場フラグ = d:TRUE)
+	//	登場ポイントを変更
+	eval($s:登場ポイント = 天狗兵降下デモ終了後)
+	//	登場位置を再代入
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -149250 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	//	ストーリーフラグを立てる
+	eval($w:p_story = d:ST:P077_02_P01天狗兵降下ラッシュポリゴンデモ１終了)
+	load "w45a" -no_save $f:NO_VARSAVEフラグ ;
+
+}
+
+proc load_arsenal_event {
+	eval ( $w:p_story = d:ST:P080_04_I01ＡＧ浮上４インタラクティブ主観デモ１開始 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+	@mv_w46a_w51a_0
+}
+
+
+proc load_arsenal_demo {
+	eval ( $w:p_story = d:ST:P080_05_P03ＡＧ浮上５ポリゴンデモ３開始 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+	@mv_w46a_w51a_0
+}
+
+
+proc load_vs_ray {
+	eval ( $w:p_story = d:ST:P079_03_P02ＲＡＹ戦前３ポリゴンデモ２終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+	@mv_init_VSMETAL
+}
+
+proc load_vs_solidus {
+	eval ( $w:p_story = d:ST:P080_28_P12ＡＧ浮上２８ポリゴンデモ１２終了 );
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_init_w61a_0
+}
+
+// ヨーロピアンエクストリーム
+proc start_e_extreme {
+
+	eval( $w:クリア回数 = 0 );
+	eval( $w:タンカー編クリア回数 = 0 );
+	eval( $w:プラント編クリア回数 = 0 );
+	eval( $w:クリア後フラグ = 0 );
+
+	eval( $f:タンカーデジカメ取得済み = 0 );
+	eval($f:プラントデジカメ取得済み = 0 );
+	eval($f:タンカー無限バンダナ取得済み = 0 );
+	eval($f:タンカーステルス迷彩取得済み = 0 );
+	eval($f:プラント無限カツラ取得済み = 0 );
+	eval($f:プラントステルス迷彩取得済み = 0 );
+	eval($f:プラント腕力カツラ取得済み = 0 );
+	eval($f:プラントＯ２カツラ取得済み = 0 );
+
+	command ドッグタグゼロクリア
+	//@resident_clear
+
+	@製品版初期設定 d:LEVEL_E_EXTREME タンカー編
+
+	load "d00t" -resident 'r_tnk0'
+}
+
+// 難易度設定
+// タンカー編
+proc config_veryeasy_t {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_VERYEASY タンカー編 $b:res_mode
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc config_easy_t {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_EASY タンカー編 $b:res_mode
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc config_normal_t {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_NORMAL タンカー編 $b:res_mode
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc config_hard_t {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_HARD タンカー編 $b:res_mode
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc config_veryhard_t {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_EXTREME タンカー編 $b:res_mode
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc config_e_extreme_t {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_E_EXTREME タンカー編 $b:res_mode
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc config_debug_t {
+	//@プレイヤーコンフィグ用初期設定 d:LEVEL_EXTREME タンカー編 $b:res_mode
+	@プレイヤーフル装備
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+
+// プラント編
+proc config_veryeasy_p {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_VERYEASY プラント編 $b:res_mode
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc config_easy_p {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_EASY プラント編 $b:res_mode
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc config_normal_p {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_NORMAL プラント編 $b:res_mode
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc config_hard_p {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_HARD プラント編 $b:res_mode
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc config_veryhard_p {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_EXTREME プラント編 $b:res_mode
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc config_e_extreme_p {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_E_EXTREME プラント編 $b:res_mode
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc config_debug_p {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_EXTREME プラント編 $b:res_mode
+	@プレイヤーフル装備
+	eval($f:w11a_ノードフラグ = 1);
+	eval($f:w12b_ノードフラグ = 1);
+	eval($f:w14a_ノードフラグ = 1);
+	eval($f:w16a_ノードフラグ = 1);
+	eval($f:w18a_ノードフラグ = 1);
+	eval($f:w20a_ノードフラグ = 1);
+	eval($f:w22a_ノードフラグ = 1);
+	eval($f:w24a_ノードフラグ = 1);
+	eval($f:w24b_ノードフラグ = 1);
+	eval($f:w24c_ノードフラグ = 1);
+	eval($f:w24d_ノードフラグ = 1);
+	eval($f:w31a_ノードフラグ = 1);
+	eval($f:w31b_ノードフラグ = 1);
+	eval($f:w31c_ノードフラグ = 1);
+	eval($f:w41a_ノードフラグ = 1);
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc config_card5_p {
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc config_fullitem_p {
+	@プレイヤーフル装備
+	eval( $w:アイテム数[d:アイテム:ドッグタグ] = 0 ) ;
+	$f:デバッグ用フル装備フラグ = 1;
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc config_fullitem_p_normal {
+	@プレイヤーフル装備（ノーマル）
+	eval( $w:アイテム数[d:アイテム:ドッグタグ] = 0 ) ;
+	$f:デバッグ用フル装備フラグ = 1;
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc config_end_if_found {
+
+	eval($w:コンフィグ設定 = $w:コンフィグ設定 | d:CONFIG_END_IF_FOUND)
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+proc config_not_end_if_found {
+
+	eval($w:コンフィグ設定 = $w:コンフィグ設定 & ~d:CONFIG_END_IF_FOUND)
+
+	chara delay リスタートディレイ \
+		-time 30 \
+		-exec {
+			restart -save
+		}
+}
+
+
+// ゲームスタート用
+//---------------------------------------------
+proc trialgame_start_veryeasy {
+	@体験版初期設定 d:LEVEL_VERYEASY
+	@mv_init_w00a_1
+}
+
+proc trialgame_start_easy {
+	@体験版初期設定 d:LEVEL_EASY
+	@mv_init_w00a_1
+}
+
+proc trialgame_start_normal {
+	@体験版初期設定 d:LEVEL_NORMAL
+	@mv_init_w00a_1
+}
+
+proc trialgame_start_hard {
+	@体験版初期設定 d:LEVEL_HARD
+	@mv_init_w00a_1
+}
+
+proc trialgame_start_veryhard {
+	@体験版初期設定 d:LEVEL_EXTREME
+	@mv_init_w00a_1
+}
+
+
+// タイトル
+//---------------------------------------------
+proc mv_init_title_0 {
+#if d:体験版
+	eval($f:w00b_体験版_to_be_con = 0)
+#endif
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 66000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 16000 ) ;
+	load "title" ;
+}
+
+proc mv_init_n_title_0 {
+	load "n_title" -resident 'r_title' -change scenerio;
+}
+
+proc mv_init_special_0 {
+	load "special" ;
+}
+
+
+// タンカー編
+//---------------------------------------------
+// 甲板
+proc mv_init_w00a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:船尾甲板 );
+	@グローバルロード title w00a
+	eval( $i:プレイヤー初期Ｘ位置 = 4839 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 16224 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $s:登場ポイント = タンカー編パッドデモスタート ) ;
+	load "w00a" ;
+}
+
+proc mv_init_w00a_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:船尾甲板 );
+	@グローバルロード title w00a
+	eval( $i:プレイヤー初期Ｘ位置 = 6406 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 16224 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $s:登場ポイント = タンカー編スタート ) ;
+	load "w00a" ;
+}
+
+
+//左舷甲板→居住区１階
+proc mv_w00a_w01a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋一階居住区 );
+	@グローバルロード w00a w01a
+	eval( $i:プレイヤー初期Ｘ位置 = -8750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 1400 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -4050 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 左舷甲板からロード ) ;
+
+#ifdef d:SE_EXP_STOP
+	print 'ＳＥ停止'
+	command セットサウンドコード -c d:SE_EXP_STOP	//拡張ＳＥ停止
+#else
+#endif
+
+	chara delay ディレイ \
+		-time 1 \
+		-exec{
+			load "w01a" ;
+		}
+
+}
+
+//右舷甲板→居住区１階
+proc mv_w00a_w01a_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋一階居住区 );
+	@グローバルロード w00a w01a
+	eval( $i:プレイヤー初期Ｘ位置 = 10450 ) ;
+//	eval( $i:プレイヤー初期Ｘ位置 = 8750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 1400 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -5750 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 右舷甲板からロード ) ;
+	load "w01a" ;
+}
+
+
+//左舷甲板→居住区２階
+proc mv_w00a_w01b_2 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋二階居住区 );
+	eval( $i:プレイヤー初期Ｘ位置 = -11100 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 3000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -9750 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	load "w01b" ;
+}
+
+
+//右舷甲板→居住区２階
+proc mv_w00a_w01b_3 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋二階居住区 );
+	@グローバルロード w00a w01b
+	eval( $i:プレイヤー初期Ｘ位置 = 12800 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 3000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -9750 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 右舷甲板からロード ) ;
+
+#ifdef d:SE_EXP_STOP
+	print 'ＳＥ停止'
+	command セットサウンドコード -c d:SE_EXP_STOP	//拡張ＳＥ停止
+#else
+#endif
+
+	chara delay ディレイ \
+		-time 1 \
+		-exec{
+			load "w01b" ;
+		}
+}
+
+// 居住区三階西 → 居住区二階
+proc mv_w01c_w01b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋二階居住区 );
+	@グローバルロード w01c w01b
+	eval( $i:プレイヤー初期Ｘ位置 = -11250 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 7000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -12450 ) ;
+
+	eval( $i:プレイヤー初期方向 = 0 )
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 居住区三階左舷からロード ) ;
+	load "w01b" ;
+}
+
+// 居住区三階東 → 居住区二階
+proc mv_w01c_w01b_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋二階居住区 );
+	eval( $i:プレイヤー初期Ｘ位置 = 11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 3000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -10750 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 )
+	load "w01b" ;
+}
+
+// 居住区三階西 → ブリッジ外
+proc mv_w01c_w01a_0x {
+	eval( $w:現ステージ番号 = d:ステージ名:船尾甲板 );
+	eval( $i:プレイヤー初期Ｘ位置 = -11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 7000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -8000 ) ;
+	load "w00a" ;
+}
+
+// 居住区三階東 → ブリッジ外
+proc mv_w01c_w01a_1x {
+	eval( $w:現ステージ番号 = d:ステージ名:船尾甲板 );
+	eval( $i:プレイヤー初期Ｘ位置 = 11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 7000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -8000 ) ;
+	load "w00a" ;
+}
+
+// 居住区三階 → 居住区四階
+proc mv_w01c_w01d_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋四階居住区 );
+	@グローバルロード w01c w01d
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $s:登場ポイント = w01cから来た ) ;
+	eval( $i:プレイヤー初期Ｘ位置 = 500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 9000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -17000 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 )
+	load "w01d" ;
+}
+
+// 居住区四階 → 居住区三階
+proc mv_w01d_w01c_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋三階居住区 );
+	@グローバルロード w01d w01c
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $s:登場ポイント = w01dから来た ) ;
+	eval( $i:プレイヤー初期Ｘ位置 = 450 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 7000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -16500 ) ;
+	eval( $i:プレイヤー初期方向 = 0 )
+	load "w01c" ;
+}
+
+// 居住区四階 → 居住区五階
+proc mv_w01d_w01e_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋五階操舵室 );
+	@グローバルロード w01d w01e
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $s:登場ポイント = w01dから来た ) ;
+	eval( $i:プレイヤー初期Ｘ位置 = 1500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 13451 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -14000 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 )
+	load "w01e" ;
+}
+
+// デモデバッグ再生用
+proc mv_init_w01e_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋五階操舵室 );
+	eval($w:t_story = d:ST_操舵室無線機デモ終了)
+	load "w01e" ;
+}
+
+// 居住区四階 → 居住区五階 （カモフ発見デモ終了後)
+proc mv_w01d_w01e_demo {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋五階操舵室 );
+	@グローバルロード w01d w01e
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $s:登場ポイント = デモから来た ) ;
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 13100 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -19776 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 )
+	load "w01e" ;
+}
+
+// 居住区四階西 → ブリッジ外
+proc mv_w01d_w01a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:船尾甲板 );
+	eval( $i:プレイヤー初期Ｘ位置 = -11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 7000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -8000 ) ;
+	load "w00a" ;
+}
+
+// 居住区四階東 → ブリッジ外
+proc mv_w01d_w01a_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:船尾甲板 );
+	eval( $i:プレイヤー初期Ｘ位置 = 11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 7000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -8000 ) ;
+	load "w00a" ;
+}
+
+// 居住区五階 → 居住区四階
+proc mv_w01e_w01d_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋四階居住区 );
+	@グローバルロード w01e w01d
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $s:登場ポイント = w01eから来た ) ;
+	eval( $i:プレイヤー初期Ｘ位置 = 1500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 12000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -12000 ) ;
+	eval( $i:プレイヤー初期方向 = 0 )
+
+	command セットサウンドコード -c d:SE_EXP_STOP	//拡張ＳＥ停止
+	print '**********************SE_EXP_STOP***************************'
+
+	chara delay ディレイ \
+		-time 1 \
+		-exec{
+			load "w01d" ;
+		}
+}
+
+// 居住区五階 → オルガ戦前ポリデモステージ
+proc mv_w01e_w00b_1 {
+print 'load "d00a5" '
+	@グローバルロード w01e w00b
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $s:登場ポイント = w01eから来た ) ;
+
+	command セットサウンドコード -c d:SE_EXP_STOP	//拡張ＳＥ停止
+	print '**********************SE_EXP_STOP***************************'
+
+	chara delay ディレイ \
+		-time 1 \
+		-exec{
+			load "d05t" ;
+		}
+print 'load "d00a5" end'
+}
+
+// オルガ戦前ポリデモステージ → オルガ戦ステージ
+proc mv_w01e_w00b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:航海甲板ウィング );
+print 'load "w00b"'
+	@グローバルロード w01e w00b
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $s:登場ポイント = w01eから来た ) ;
+	eval( $i:プレイヤー初期Ｘ位置 = -7450 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 =  12000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -15500 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 )
+
+	eval($f:global_polygon_demo = 1)	//ポリデモじゃないけど、
+
+	load "w00b" ;
+
+print 'load "w00bend"'
+}
+
+// オルガ戦ステージ → オルガ戦後ステージ
+proc mv_w00b_w00c_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:航海甲板ウィング );
+	@グローバルロード w00b w00c
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $s:登場ポイント = w00bから来た ) ;
+	eval( $i:プレイヤー初期Ｘ位置 = -14788 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 =  13750 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -16237 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 )
+
+	print '体力を最大にー！！！！！！！！！！！！！！！！！！！！！！'
+	print '体力は'$w:体力'になりました。'
+	eval($w:体力 = $w:体力最大)
+	load "w00c" ;
+}
+
+// 居住区五階 → オルガ戦後ステージ左舷
+proc mv_w01e_w00c_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:航海甲板ウィング );
+	@グローバルロード w01e w00c
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $s:登場ポイント = w01e左舷から来た ) ;
+	eval( $i:プレイヤー初期Ｘ位置 = -5500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 =  12500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -16000 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 )
+
+	command セットサウンドコード -c d:SE_EXP_STOP	//拡張ＳＥ停止
+	print '**********************SE_EXP_STOP***************************'
+
+	chara delay ディレイ \
+		-time 1 \
+		-exec{
+			load "w00c" ;
+		}
+}
+
+// 居住区五階 → オルガ戦後ステージ右舷
+proc mv_w01e_w00c_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:航海甲板ウィング );
+	@グローバルロード w01e w00c
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $s:登場ポイント = w01e右舷から来た ) ;
+	eval( $i:プレイヤー初期Ｘ位置 = 5500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 =  12500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -16000 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 )
+
+	command セットサウンドコード -c d:SE_EXP_STOP	//拡張ＳＥ停止
+	print '**********************SE_EXP_STOP***************************'
+
+	chara delay ディレイ \
+		-time 1 \
+		-exec{
+			load "w00c" ;
+		}
+}
+
+// オルガ戦後ステージ → 居住区五階左舷
+proc mv_w00c_w01e_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋五階操舵室 );
+	@グローバルロード w00c w01e
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $s:登場ポイント = w00c左舷から来た ) ;
+//	eval( $i:プレイヤー初期Ｘ位置 = -4750 ) ;
+	eval( $i:プレイヤー初期Ｘ位置 = -6450 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 13451 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -16250 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 )
+
+	command セットサウンドコード -c d:SE_EXP_STOP	//拡張ＳＥ停止
+	print '**********************SE_EXP_STOP***************************'
+
+	chara delay ディレイ \
+		-time 1 \
+		-exec{
+			load "w01e" ;
+		}
+}
+
+// オルガ戦後ステージ → 居住区五階右舷
+proc mv_w00c_w01e_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋五階操舵室 );
+	@グローバルロード w00c w01e
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $s:登場ポイント = w00c右舷から来た ) ;
+	eval( $i:プレイヤー初期Ｘ位置 = 6450 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 13451 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -16250 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 )
+
+	eval( $f:global_右水密ドア開くイベント = 1 )
+
+	command セットサウンドコード -c d:SE_EXP_STOP	//拡張ＳＥ停止
+	print '**********************SE_EXP_STOP***************************'
+
+	chara delay ディレイ \
+		-time 1 \
+		-exec{
+			load "w01e" ;
+		}
+}
+
+
+
+// w01a.gcl
+//-------------------------------------------
+// 居住区一階左舷 → 左舷甲板
+proc mv_w01a_w00a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:船尾甲板 );
+	@グローバルロード w01a w00a
+	eval( $i:プレイヤー初期Ｘ位置 = -8750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+//	eval( $i:プレイヤー初期Ｚ位置 = -4500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -5500 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $s:登場ポイント = 甲板左舷１Ｆ ) ;
+	load "w00a" ;
+}
+
+// 居住区一階右舷 → 右舷甲板
+proc mv_w01a_w00a_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:船尾甲板 );
+	@グローバルロード w01a w00a
+	eval( $i:プレイヤー初期Ｘ位置 = 8750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -4500 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $s:登場ポイント = 甲板右舷１Ｆ ) ;
+	load "w00a" ;
+}
+
+// 居住区一階左舷南 → 居住区一階左舷北
+proc mv_w01a_w01f_0x {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋一階リフレッシュルーム );
+	@グローバルロード w01a w01f
+	eval( $i:プレイヤー初期Ｘ位置 = -10750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+//	eval( $i:プレイヤー初期Ｚ位置 = -12250 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -10550 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 居住区一階左舷からロード ) ;
+	load "w01f" ;
+}
+
+// 居住区一階右舷南 → 居住区一階右舷北
+proc mv_w01a_w01f_1x {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋一階リフレッシュルーム );
+	@グローバルロード w01a w01f
+	eval( $i:プレイヤー初期Ｘ位置 = 10750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -10550 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 居住区一階右舷からロード ) ;
+	load "w01f" ;
+}
+
+
+// w01f.gcl
+//-------------------------------------------
+// 居住区一階左舷北 → 居住区一階左舷南
+proc mv_w01f_w01a_0x {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋一階居住区 );
+	@グローバルロード w01f w01a
+	eval( $i:プレイヤー初期Ｘ位置 = -10750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -11700 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = リフレッシュルーム左舷からロード ) ;
+	load "w01a" ;
+}
+
+// 居住区一階右舷北 → 居住区一階右舷南
+proc mv_w01f_w01a_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋一階居住区 );
+	@グローバルロード w01f w01a
+	eval( $i:プレイヤー初期Ｘ位置 = 10750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -11700 ) ;
+	eval( $i:プレイヤー初期方向 = 0 )
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = リフレッシュルーム右舷からロード ) ;
+	load "w01a" ;
+}
+
+// 居住区一階中央階段左 → 居住区二階左舷
+proc mv_w01f_w01b_0x {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋二階居住区 );
+	@グローバルロード w01f w01b
+	eval( $i:プレイヤー初期Ｘ位置 = -3500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 3000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -9000 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 居住区一階中央階段左からロード ) ;
+	load "w01b" ;
+}
+
+// 居住区一階中央階段右 → 居住区二階右舷
+proc mv_w01f_w01b_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋二階居住区 );
+	@グローバルロード w01f w01b
+	eval( $i:プレイヤー初期Ｘ位置 = 3500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 3000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -9000 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 居住区一階中央階段右からロード ) ;
+	load "w01b" ;
+}
+
+// 居住区右舷地下一階 → エンジンルーム右舷
+proc mv_w01f_w02a0_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:機関室 );
+	@グローバルロード w01f w02a
+	eval( $i:プレイヤー初期Ｘ位置 = (9800+1500) ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -5000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -11000 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = リフレッシュルーム右舷地下からロード ) ;
+	load "w02a" ;
+}
+
+// 居住区左舷地下一階 → エンジンルーム左舷
+proc mv_w01f_w02a3_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:機関室 );
+	@グローバルロード w01f w02a
+	eval( $i:プレイヤー初期Ｘ位置 = (-9800-1500) ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -5000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -11000 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = リフレッシュルーム左舷地下からロード ) ;
+	eval( $f:w02a_ドア修理イベント = 1 )
+	load "w02a" ;
+}
+
+// w01b.gcl
+//-------------------------------------------
+// 居住区二階左舷 → 居住区一階中央階段左
+proc mv_w01b_w01f_0x {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋一階リフレッシュルーム );
+	@グローバルロード w01b w01f
+	eval( $i:プレイヤー初期Ｘ位置 = -4400 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 3000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -8750 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 居住区二階左からロード ) ;
+	load "w01f" ;
+}
+
+// 居住区二階右舷 → 居住区一階中央階段右
+proc mv_w01b_w01f_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋一階リフレッシュルーム );
+	@グローバルロード w01b w01f
+//	eval( $i:プレイヤー初期Ｘ位置 = 2700 ) ;
+	eval( $i:プレイヤー初期Ｘ位置 = 4400 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 3000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -8750 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 居住区二階右からロード ) ;
+	load "w01f" ;
+}
+
+// 居住区二階左舷 → 左舷甲板
+proc mv_w01b_w00a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:船尾甲板 );
+	@グローバルロード w01b w00a
+	eval( $i:プレイヤー初期Ｘ位置 = -10000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 3000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -9750 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $s:登場ポイント = 甲板左舷２Ｆ ) ;
+	load "w00a" ;
+}
+
+// 居住区二階右舷 → 右舷甲板
+proc mv_w01b_w00a_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:船尾甲板 );
+	@グローバルロード w01b w00a
+	eval( $i:プレイヤー初期Ｘ位置 = 10000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 3000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -9750 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $s:登場ポイント = 甲板右舷２Ｆ ) ;
+	load "w00a" ;
+}
+
+// 居住区二階左舷 → 居住区三階左舷
+proc mv_w01b_w01c_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋三階居住区 );
+	@グローバルロード w01b w01c
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $s:登場ポイント = w01bから来た三階左舷 ) ;
+	eval( $i:プレイヤー初期Ｘ位置 = -11224 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 6660 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -13622 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	load "w01c" ;
+}
+
+// 居住区二階右舷 → 居住区三階右舷
+proc mv_w01b_w01c_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋三階居住区 );
+	@グローバルロード w01b w01c
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $i:プレイヤー初期Ｘ位置 = 11250 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 6000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -14625 ) ;
+	eval( $s:登場ポイント = w01bから来た三階右舷 ) ;
+	load "w01c" ;
+}
+
+
+// w02a.gcl
+//-------------------------------------------
+// エンジンルーム右舷 → 居住区右舷地下一階
+proc mv_w02a0_w01f_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋一階リフレッシュルーム );
+	@グローバルロード w02a w01f
+	eval( $i:プレイヤー初期Ｘ位置 = (11550-2250) ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -5000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -11250 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $s:登場ポイント = エンジンルーム右舷からロード ) ;
+	load "w01f" ;
+}
+
+// エンジンルーム左舷 → 居住区左舷地下一階
+proc mv_w02a3_w01f_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:船橋一階リフレッシュルーム );
+	@グローバルロード w02a w01f
+	eval( $i:プレイヤー初期Ｘ位置 = (-11550+2250) ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -5000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -11250 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $s:登場ポイント = エンジンルーム左舷からロード ) ;
+	eval( $f:w02a_ドア修理イベント = 1 )
+	load "w01f" ;
+}
+
+// エンジンルーム北側 → 長廊下
+proc mv_w02a3_w03a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:第二甲板左舷 );
+	@グローバルロード w02a w03a
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $i:プレイヤー初期Ｘ位置 = -16750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -5000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -31500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $s:登場ポイント = 左舷最後尾 ) ;
+	load "w03a" ;
+}
+
+// w03a.gcl
+//-------------------------------------------
+// 長廊下 → エンジンルーム北側
+proc mv_w03a_w02a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:機関室 );
+	@グローバルロード w03a w02a
+	eval( $i:プレイヤー初期Ｘ位置 = -16750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -5000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = (-31250-2000) ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $s:登場ポイント = エンジンルーム左舷から ) ;
+	load "w02a" ;
+}
+
+// 左舷長廊下(w03a) → 右舷長廊下
+proc mv_w03a_w03b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:第二甲板右舷 );
+	@グローバルロード w03a w03b
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $i:プレイヤー初期Ｘ位置 =   10500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 =   -5000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -127000 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $s:登場ポイント = 中央長廊下 ) ;
+	load "w03b" ;
+}
+
+// w03b.gcl
+//-------------------------------------------
+// 右舷長廊下(w03b) → 左舷長廊下
+proc mv_w03b_w03a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:第二甲板左舷 );
+	@グローバルロード w03b w03a
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $i:プレイヤー初期Ｘ位置 =    12500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 =   -5000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -127000 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $s:登場ポイント = 中央長廊下 ) ;
+	load "w03a" ;
+}
+
+// 船倉
+proc mv_w03a_w04a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:第一船倉 );
+	@グローバルロード w03a w04a
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $i:プレイヤー初期Ｘ位置 = 12000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -5000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 2250 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 水密ドア ) ;
+	load "w04a" ;
+}
+
+
+proc 船倉ロードカウンタ加算 {
+
+	if($b:船倉ロード回数カウンタ < 10){
+		eval($b:船倉ロード回数カウンタ = $b:船倉ロード回数カウンタ + 1)
+	}
+
+}
+
+//第一船倉
+//デバッグロード
+proc mv_init_w04a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:第一船倉 );
+	eval( $w:t_story = d:ST_T10b1R船倉無線機デモ２終了 )
+	eval( $i:プレイヤー初期Ｘ位置 = 10000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -5000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -1250 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 1);
+	eval( $s:登場ポイント = 演説デモ後スタート ) ;
+	load "w04a" ;
+}
+
+//船倉見下ろしデモからスタート
+proc mv_init_w04a_1 {
+	eval($w:t_story = d:ST_T10a1D船倉兵士を見るポリゴンデモ開始-1)
+	eval($s:d_num = t10a1D)
+	eval( $f:ロードチェックＯＮフラグ = 1);
+	load "d10t" ;
+//	load "w04a" ;
+}
+
+//演説デモ後スタート
+proc mv_w03b_w04a_demo {
+	eval( $w:現ステージ番号 = d:ステージ名:第一船倉 );
+	eval( $i:プレイヤー初期Ｘ位置 = 10000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -5000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -1250 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 1);
+	eval( $s:登場ポイント = 演説デモ後スタート ) ;
+	load "w04a" ;
+}
+
+#define 船倉セーブする	1
+
+//	１Ｆ東
+proc mv_w04a_w04b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:第二船倉 );
+	@グローバルロード w04a w04b
+	eval( $i:プレイヤー初期Ｘ位置 = 8000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -17000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 南東１Ｆ ) ;
+
+	@船倉ロードカウンタ加算
+
+	if($w:ゲーム設定 <= d:LEVEL_NORMAL && !$f:w04b_セーブした){
+		eval($f:w04b_セーブした = 1)
+		load "w04b";
+	}else{
+		load "w04b" -no_save;
+	}
+}
+
+
+//１Ｆ西
+proc mv_w04a_w04b_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:第二船倉 );
+	@グローバルロード w04a w04b
+	eval( $i:プレイヤー初期Ｘ位置 = -8000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -17000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 南西１Ｆ ) ;
+
+	@船倉ロードカウンタ加算
+
+	if($w:ゲーム設定 <= d:LEVEL_NORMAL && !$f:w04b_セーブした){
+		eval($f:w04b_セーブした = 1)
+		load "w04b";
+	}else{
+		load "w04b" -no_save;
+	}
+}
+
+//２Ｆ東
+proc mv_w04a_w04b_2 {
+	eval( $w:現ステージ番号 = d:ステージ名:第二船倉 );
+	@グローバルロード w04a w04b
+	eval( $i:プレイヤー初期Ｘ位置 = 11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -9000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 南東２Ｆ ) ;
+
+	@船倉ロードカウンタ加算
+
+	if($w:ゲーム設定 <= d:LEVEL_NORMAL && !$f:w04b_セーブした){
+		eval($f:w04b_セーブした = 1)
+		load "w04b";
+	}else{
+		load "w04b" -no_save;
+	}
+}
+
+//２Ｆ西
+proc mv_w04a_w04b_3 {
+	eval( $w:現ステージ番号 = d:ステージ名:第二船倉 );
+	@グローバルロード w04a w04b
+	eval( $i:プレイヤー初期Ｘ位置 = -11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -9000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 南西２Ｆ ) ;
+
+	@船倉ロードカウンタ加算
+
+	if($w:ゲーム設定 <= d:LEVEL_NORMAL && !$f:w04b_セーブした){
+		eval($f:w04b_セーブした = 1)
+		load "w04b";
+	}else{
+		load "w04b" -no_save;
+	}
+}
+
+
+//第二船倉
+//	デバッグロード
+proc mv_init_w04b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:第二船倉 );
+	eval( $i:プレイヤー初期Ｘ位置 = 8000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -17000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 1);
+	eval( $s:登場ポイント = 東１Ｆ ) ;
+
+	if(!$f:w04b_セーブした){
+		eval($f:w04b_セーブした = 1)
+		load "w04b";
+	}else{
+		load "w04b" -no_save;
+	}
+}
+
+	//１Ｆ南東
+proc mv_w04b_w04a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:第一船倉 );
+	@グローバルロード w04b w04a
+	eval( $i:プレイヤー初期Ｘ位置 = 8000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -17000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -29000 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 東１Ｆ ) ;
+
+	@船倉ロードカウンタ加算
+
+	load "w04a" -no_save;
+}
+
+	//１Ｆ南西
+proc mv_w04b_w04a_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:第一船倉 );
+	@グローバルロード w04b w04a
+	eval( $i:プレイヤー初期Ｘ位置 = -8000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -17000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -29000 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 西１Ｆ ) ;
+
+	@船倉ロードカウンタ加算
+
+	load "w04a" -no_save;
+}
+
+	//２Ｆ南東
+proc mv_w04b_w04a_2 {
+	eval( $w:現ステージ番号 = d:ステージ名:第一船倉 );
+	@グローバルロード w04b w04a
+	eval( $i:プレイヤー初期Ｘ位置 = 11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -9000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -29000 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 東２Ｆ ) ;
+
+	@船倉ロードカウンタ加算
+
+	load "w04a" -no_save;
+}
+
+	//２Ｆ南西
+proc mv_w04b_w04a_3 {
+	eval( $w:現ステージ番号 = d:ステージ名:第一船倉 );
+	@グローバルロード w04b w04a
+	eval( $i:プレイヤー初期Ｘ位置 = -11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -9000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -29000 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 西２Ｆ ) ;
+
+	@船倉ロードカウンタ加算
+
+	load "w04a" -no_save;
+
+}
+
+	//１Ｆ北東
+proc mv_w04b_d11t_0 {
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 東１Ｆ ) ;
+#if d:船倉セーブする
+	load "d11t";
+#else
+	load "d11t" -no_save;
+#endif
+}
+
+proc mv_w04b_w04c_demo0 {
+	eval( $w:現ステージ番号 = d:ステージ名:第三船倉 );
+	eval( $i:プレイヤー初期Ｘ位置 = 8000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -17000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -1250 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 1);
+	eval( $s:登場ポイント = デモ後 ) ;
+
+	load "w04c";
+}
+
+
+proc mv_w04b_w04c_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:第三船倉 );
+	@グローバルロード w04b w04c
+	eval( $i:プレイヤー初期Ｘ位置 = 8000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -17000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 東１Ｆ ) ;
+
+	@船倉ロードカウンタ加算
+
+	load "w04c" -no_save;
+}
+
+	//１Ｆ北西
+proc mv_w04b_d11t_1 {
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 西１Ｆ ) ;
+#if d:船倉セーブする
+	load "d11t";
+#else
+	load "d11t" -no_save;
+#endif
+}
+
+proc mv_w04b_w04c_demo1 {
+	eval( $w:現ステージ番号 = d:ステージ名:第三船倉 );
+	eval( $i:プレイヤー初期Ｘ位置 = -8000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -17000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -1250 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 1);
+	eval( $s:登場ポイント = デモ後 ) ;
+	load "w04c";
+}
+
+
+proc mv_w04b_w04c_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:第三船倉 );
+	@グローバルロード w04b w04c
+	eval( $i:プレイヤー初期Ｘ位置 = -8000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -17000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 西１Ｆ ) ;
+
+	@船倉ロードカウンタ加算
+
+	load "w04c" -no_save;
+}
+
+	//２Ｆ北東
+proc mv_w04b_d11t_2 {
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 東２Ｆ ) ;
+#if d:船倉セーブする
+	load "d11t";
+#else
+	load "d11t" -no_save;
+#endif
+}
+
+
+proc mv_w04b_w04c_demo2 {
+	eval( $w:現ステージ番号 = d:ステージ名:第三船倉 );
+	eval( $i:プレイヤー初期Ｘ位置 = 11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -9000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -1250 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 1);
+	eval( $s:登場ポイント = デモ後 ) ;
+	load "w04c" ;
+}
+
+
+proc mv_w04b_w04c_2 {
+	eval( $w:現ステージ番号 = d:ステージ名:第三船倉 );
+	@グローバルロード w04b w04c
+	eval( $i:プレイヤー初期Ｘ位置 = 11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -9000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 東２Ｆ ) ;
+
+	@船倉ロードカウンタ加算
+
+	load "w04c" -no_save;
+}
+
+	//２Ｆ北西
+proc mv_w04b_d11t_3 {
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 西２Ｆ ) ;
+#if d:船倉セーブする
+	load "d11t";
+#else
+	load "d11t" -no_save;
+#endif
+}
+
+
+proc mv_w04b_w04c_demo3 {
+	eval( $w:現ステージ番号 = d:ステージ名:第三船倉 );
+	eval( $i:プレイヤー初期Ｘ位置 = -11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -9000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -1250 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 1);
+	eval( $s:登場ポイント = デモ後 ) ;
+	load "w04c" ;
+}
+
+proc mv_w04b_w04c_3 {
+	eval( $w:現ステージ番号 = d:ステージ名:第三船倉 );
+	@グローバルロード w04b w04c
+	eval( $i:プレイヤー初期Ｘ位置 = -11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -9000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 西２Ｆ ) ;
+
+	@船倉ロードカウンタ加算
+
+	load "w04c" -no_save;
+}
+
+	//地下
+proc mv_w04b_d11t_4 {
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = ダクト ) ;
+#if d:船倉セーブする
+	load "d11t";
+#else
+	load "d11t" -no_save;
+#endif
+}
+
+proc mv_w04b_w04c_demo4 {
+	eval( $w:現ステージ番号 = d:ステージ名:第三船倉 );
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -17500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -19500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 1);
+	eval( $s:登場ポイント = デモ後 ) ;
+	load "w04c";
+}
+
+proc mv_w04b_w04c_4 {
+	eval( $w:現ステージ番号 = d:ステージ名:第三船倉 );
+	@グローバルロード w04b w04c
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -17500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -18500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = ダクト ) ;
+
+	@船倉ロードカウンタ加算
+
+	load "w04c" -no_save;
+}
+
+
+
+
+
+
+//第三船倉
+	//デバッグロード
+proc mv_init_w04c_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:第三船倉 );
+	eval( $w:t_story = d:ST_T11a1D船首メタルギア登場ポリゴンデモ終了 )
+	eval( $i:プレイヤー初期Ｘ位置 = 8000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -17000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 1);
+	load "w04c" ;
+}
+
+	//１Ｆ南東（通路内に出現します）
+proc mv_w04c_w04b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:第二船倉 );
+	@グローバルロード w04c w04b
+	eval( $i:プレイヤー初期Ｘ位置 = 8000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -17000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -29000 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 北東１Ｆ ) ;
+
+	@船倉ロードカウンタ加算
+
+	load "w04b" -no_save;
+}
+
+	//１Ｆ南西
+proc mv_w04c_w04b_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:第二船倉 );
+	@グローバルロード w04c w04b
+	eval( $i:プレイヤー初期Ｘ位置 = -8000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -17000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -29000 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 北西１Ｆ ) ;
+
+	@船倉ロードカウンタ加算
+
+	load "w04b" -no_save;
+}
+
+	//２Ｆ南東
+proc mv_w04c_w04b_2 {
+	eval( $w:現ステージ番号 = d:ステージ名:第二船倉 );
+	@グローバルロード w04c w04b
+	eval( $i:プレイヤー初期Ｘ位置 = 11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -9000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -29000 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 北東２Ｆ ) ;
+
+	@船倉ロードカウンタ加算
+
+	load "w04b" -no_save;
+}
+
+	//２Ｆ南西
+proc mv_w04c_w04b_3 {
+	eval( $w:現ステージ番号 = d:ステージ名:第二船倉 );
+	@グローバルロード w04c w04b
+	eval( $i:プレイヤー初期Ｘ位置 = -11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -9000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -29000 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = 北西２Ｆ ) ;
+
+	@船倉ロードカウンタ加算
+
+	load "w04b" -no_save;
+}
+
+	//地下
+proc mv_w04c_w04b_4 {
+	eval( $w:現ステージ番号 = d:ステージ名:第二船倉 );
+	@グローバルロード w04c w04b
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -17500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -45000 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = ダクト ) ;
+
+	@船倉ロードカウンタ加算
+
+	load "w04b" -no_save;
+
+}
+
+
+
+
+
+
+
+
+#if 1
+// プラント編
+//---------------------------------------------
+// デモ呼び出しデバッグ用
+proc mv_plant_demos_0 {
+	chara select name -s {
+		'P001_01_p01' mv_P001_01_P01_0
+		'P001_01_p02' mv_P001_01_P02_0
+		'P001_03_P02' mv_P001_03_P02_0
+		'P003_01_p01' mv_P003_01_p01_0
+		'P004_01_P01' mv_P004_01_P01_0
+		'P005_01_P01' mv_P005_01_P01_0
+		'P005_04_P03' mv_P005_04_P03_0
+		'P010_01_p01g' mv_P010_01_p01_0
+		'P010_01_p01n' mv_P010_01_p01_1
+		'P010_01_p02' mv_P010_01_p02_0
+		'P010_03_p02' mv_P010_03_p02_0
+		'P010_05_p03' mv_P010_05_p03_0
+		'P010_09_P04a' mv_P010_09_P04_0
+		'P010_09_P04b' mv_P010_09_P04_1
+		'P010_10_P05' mv_P010_10_P05_0
+		'P012_01_P01' mv_P012_01_P01_0
+		'P014_01_P01' mv_P014_01_P01_0
+		'P014_03_P02' mv_P014_03_P02_0
+		'P014_10_P03' mv_P014_10_P03_0
+		'P014_11_P04' mv_P014_11_P04_0
+		'P014_12_p05' mv_P014_12_p05_0
+		'P014_13_P06' mv_P014_13_P06_0
+		'P014_15_P07' mv_P014_15_P07_0
+		'P021_01_p01' mv_P021_01_p01_0
+		'P028_01_p01' mv_P028_01_p01_0
+		'P031_01_p01' mv_P031_01_p01_0
+		'P032_01_p01' mv_P032_01_p01_0
+		'P034_01_p01' mv_P034_01_p01_0
+		'P036_01_p01' mv_P036_01_p01_0
+		'P036_02_p02' mv_P036_02_p02_0
+		'P036_04_p03' mv_P036_04_p03_0
+		'P036_05_p04' mv_P036_05_p04_0
+		'P036_06_p05' mv_P036_06_p05_0
+		'P036_07_p06' mv_P036_07_p06_0
+		'P036_11_p07' mv_P036_11_p07_0
+		'P036_12_p08' mv_P036_12_p08_0
+		'P039_01_p01' mv_P039_01_p01_0
+		'P040_01_p01' mv_P040_01_p01_0
+		'P040_03_p02' mv_P040_03_p02_0
+		'P040_05_p03' mv_P040_05_p03_0
+		'P040_07_p04' mv_P040_07_p04_0
+		'P040_09_p05' mv_P040_09_p05_0
+		'P045_01_p01' mv_P045_01_p01_0
+		'P046_01_P01' mv_P046_01_P01_0
+		'P047_01_p01' mv_P047_01_p01_0
+		'P047_03_p02' mv_P047_03_p02_0
+		'P048_01_p01' mv_P048_01_p01_0
+		'P049_01_p01' mv_P049_01_p01_0
+		'P049_11_p02' mv_P049_11_p02_0
+		'P054_01_P01' mv_P054_01_P01_0
+		'P055_01_P01' mv_P055_01_P01_0
+		'P055_02_P02' mv_P055_02_P02_0
+		'P055_04_P03' mv_P055_04_P03_0
+		'P057_01_P01' mv_P057_01_P01_0
+		'P058_01_P01' mv_P058_01_P01_0
+		'P058_03_P02' mv_P058_03_P02_0
+		'P058_06_P03' mv_P058_06_P03_0
+		'P058_08_P04' mv_P058_08_P04_0
+		'P059_01_P01' mv_P059_01_P01_0
+		'P062_01_P01' mv_P062_01_P01_0
+		'P062_06_P02' mv_P062_06_P02_0
+		'P062_07_P03' mv_P062_07_P03_0
+		'P062_08_P04' mv_P062_08_P04_0
+		'P063_01_P01' mv_P063_01_P01_0
+		'P065_01_P01' mv_P065_01_P01_0
+		'P065_03_P02' mv_P065_03_P02_0
+		'P065_04_P03' mv_P065_04_P03_0
+		'P065_05_P04' mv_P065_05_P04_0
+		'P067_01_R01' mv_P067_01_R01_0
+		'P068_01_P01' mv_P068_01_P01_0x
+		'P069_01_P01' mv_P069_01_P01_0
+		'P070_01_P01' mv_P070_01_P01_0
+		'P070_02_P02' mv_P070_02_P02_0
+		'P070_03_P03' mv_P070_03_P03_0
+		'P070_04_P04' mv_P070_04_P04_0
+		'P070_05_P05' mv_P070_05_P05_0
+		'P070_07_P06' mv_P070_07_P06_0
+		'P070_08_P07' mv_P070_08_P07_0
+		'P070_09_P08' mv_P070_09_P08_0
+		'P070_09b_P09' mv_P070_09b_P09_0
+		'P070_13_P09' mv_P070_13_P09_0
+		'P070_16_P10' mv_P070_16_P10_0
+		'P070_17_P11' mv_P070_17_P11_0
+		'P070_21_P12' mv_P070_21_P12_0
+		'P073_02_P01' mv_P073_02_P01_0
+		'P073_04_P02' mv_P073_04_P02_0
+		'P074_01_P01' mv_P074_01_P01_0
+		'P074_03_P02' mv_P074_03_P02_0
+		'P077_02_P01' mv_P077_02_P01_0
+		'P078_01_P01' mv_P078_01_P01_0
+		'P079_01_P01' mv_P079_01_P01_0
+		'P079_03_P02' mv_P079_03_P02_0
+		'P080_01_P01' mv_P080_01_P01_0
+		'P080_03_P02' mv_P080_03_P02_0
+		'P080_05_P03' mv_P080_05_P03_0
+		'P080_07_P04' mv_P080_07_P04_0
+		'P080_09_P05' mv_P080_09_P05_0
+		'P080_11_P06' mv_P080_11_P06_0
+		'P080_13_P07' mv_P080_13_P07_0
+		'P080_13_P08' mv_P080_13_P07_1
+		'P080_14_P08' mv_P080_14_P08_0
+		'P080_16_P09' mv_P080_16_P09_0
+		'P080_18_P10' mv_P080_18_P10_0
+		'P080_26_P11' mv_P080_26_P11_0
+		'P080_28_P12' mv_P080_28_P12_0
+		'P082_01_P01' mv_P082_01_P01_0
+		'P082_02_P02' mv_P082_02_P02_0
+		'P082_04_P03' mv_P082_04_P03_0
+		'back' back_to
+	}
+}
+
+/* プラント編デモ */
+proc mv_P001_01_P01_0 {
+	eval($w:p_story = d:ST:P001_01_P01オープニング潜入１ポリゴンデモ１開始)
+	load "d001p01" -resident 'r_plt1';
+}
+
+proc mv_P001_01_P02_0 {
+	@ストーリー依存状況チェック
+	eval($w:p_story = d:ST:P001_01_P02オープニング潜入１ポリゴンデモ２開始-1)
+	load "d001p02" -resident 'r_plt1' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+proc mv_P001_03_P02_0 {
+	@ストーリー依存状況チェック
+	eval($w:p_story = d:ST:P001_03_P02オープニング潜入３ポリゴンデモ２開始-1)
+	load "d001p02" -resident 'r_plt1' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+proc mv_P014_10_P03_0 {
+	eval($w:p_story = d:ST:P014_10_P03ピーター遭遇１０ポリゴンデモ３開始)
+//	load "d001p01" ;
+//	load "d014p01" ;
+// 実行ステージが変わりました。田中(信) 010809
+//	load "d001p01" ;
+// 実行ステージが更に変わりました。田中(信) 010826
+	load "d005p03"
+}
+
+proc mv_P003_01_p01_0 {
+	@ストーリー依存状況チェック
+	eval($w:p_story = d:ST:P003_01_P01スネーク昇降機上昇１ポリゴンデモ１開始)
+	load "d001p02" -resident 'r_plt1' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+proc mv_P004_01_P01_0 {
+	@ストーリー依存状況チェック
+	eval($w:p_story = d:ST:P004_01_P01ノード初接続１ポリゴンデモ１開始)
+	eval($f:ノードフラグ = $f:w11a_ノードフラグ);
+	load "d001p02" -resident 'r_plt1' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+proc mv_P005_01_P01_0 {
+	eval($w:p_story = d:ST:P005_01_P01ライデン昇降機上昇１ポリゴンデモ１開始)
+//	load "d003p01" ;
+	load "d005p01" ;
+}
+
+proc mv_P005_04_P03_0 {
+	eval($w:p_story = d:ST:P005_04_P03ライデン昇降機上昇４ポリゴンデモ３開始-1)
+//	load "d003p01" ;
+//	load "d005p01" ;
+// 実行ステージが変わりました。田中(信) 010809
+//	load "d001p01"
+// 実行ステージが更に変わりました。田中(信) 010826
+	load "d005p03"
+}
+
+proc mv_P014_01_P01_0 {
+	eval($w:p_story = d:ST:P014_01_P01ピーター遭遇１ポリゴンデモ１開始)
+	load "d014p01" ;
+}
+
+proc mv_P014_03_P02_0 {
+	eval($w:p_story = d:ST:P014_03_P02ピーター遭遇３ポリゴンデモ２開始-1)
+	load "d014p01" ;
+}
+
+proc mv_P014_11_P04_0 {
+	eval($w:p_story = d:ST:P014_11_P04ピーター遭遇１１ポリゴンデモ４開始-1)
+	load "d014p01" ;
+}
+
+proc mv_P014_13_P06_0 {
+	eval($w:p_story = d:ST:P014_13_P06ピーター遭遇１３ポリゴンデモ６開始-1)
+	load "d014p01" ;
+}
+
+proc mv_P014_15_P07_0 {
+	eval($w:p_story = d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７開始-1)
+	load "d014p01" ;
+}
+
+proc mv_P021_01_p01_0 {
+	// 注意
+	// 以下の代入は、d021p01 で"P021_01_p01" デモを再生する場合必須。
+	eval($f:w20b_オルガデモフラグ = 0)
+	// そして以下はいらない（このストーリーフラグは廃止したので）
+	//eval($w:p_story = d:ST:P021_01_P01爆弾解体オルガ登場１ポリゴンデモ１開始-1)
+	load "d021p01" ;
+}
+
+proc mv_P032_01_p01_0 {
+	// 注意
+	// 以下ふたつの代入は、d021p01 で"P021_01_p01" 以外の
+	// デモを再生する場合必須。
+	eval($f:w20b_オルガデモフラグ = 1)
+	eval($f:d021p01_爆弾解体オルガ登場２無線デモ１開始 = 1)
+	eval($w:p_story = d:ST:P032_01_P01ファットマン登場１ポリゴンデモ１開始)
+	load "d021p01" ;
+}
+
+proc mv_P034_01_p01_0 {
+	// 注意
+	// 以下ふたつの代入は、d021p01 で"P021_01_p01" 以外の
+	// デモを再生する場合必須。
+	eval($f:w20b_オルガデモフラグ = 1)
+	eval($f:d021p01_爆弾解体オルガ登場２無線デモ１開始 = 1)
+	eval($w:p_story = d:ST:P034_01_P01ファットマン死亡１ポリゴンデモ１開始)
+	load "d021p01" ;
+}
+
+proc mv_P036_01_p01_0 {
+	// 注意
+	// 以下ふたつの代入は、d021p01 で"P021_01_p01" 以外の
+	// デモを再生する場合必須。
+	eval($f:w20b_オルガデモフラグ = 1)
+	eval($f:d021p01_爆弾解体オルガ登場２無線デモ１開始 = 1)
+	eval($w:p_story = d:ST:P036_01_P01忍者登場１ポリゴンデモ１開始)
+	load "d021p01" ;
+}
+
+proc mv_P036_02_p02_0 {
+	// 注意
+	// 以下ふたつの代入は、d021p01 で"P021_01_p01" 以外の
+	// デモを再生する場合必須。
+	eval($f:w20b_オルガデモフラグ = 1)
+	eval($f:d021p01_爆弾解体オルガ登場２無線デモ１開始 = 1)
+	eval($w:p_story = d:ST:P036_02_P02忍者登場２ポリゴンデモ２開始-1)
+	load "d021p01" ;
+}
+
+proc mv_P010_01_p01_0 {
+	// 銃ありのデモ
+	eval($w:武器 = d:武器:Ｍ９)
+	eval($w:p_story = d:ST:P010_01_P01ヴァンプ遭遇１ポリゴンデモ１開始)
+	load 'd010p01'
+}
+
+proc mv_P010_01_p01_1 {
+	// 銃なしのデモ
+	eval($w:p_story = d:ST:P010_01_P01ヴァンプ遭遇１ポリゴンデモ１開始)
+	load 'd010p01'
+}
+
+proc mv_P010_01_p02_0 {
+	eval($w:p_story = d:ST:P010_01_P02ヴァンプ遭遇１ポリゴンデモ２開始-1)
+	load 'd010p01'
+}
+
+proc mv_P010_03_p02_0 {
+	eval($w:p_story = d:ST:P010_03_P02ヴァンプ遭遇３ポリゴンデモ２開始-1)
+	load 'd010p01'
+}
+
+proc mv_P010_05_p03_0 {
+	eval($w:p_story = d:ST:P010_05_P03ヴァンプ遭遇５ポリゴンデモ３開始-1)
+	load 'd010p01'
+}
+
+proc mv_P010_09_P04_0 {
+print '髭剃り無しのデモ_P010_09_P04A'
+	eval($w:アイテム最大数Ｒ[d:アイテム:髭剃り] = 0)
+	eval($w:p_story = d:ST:P010_09_P04ヴァンプ遭遇９ポリゴンデモ４開始-1)
+	load 'd010p01'
+}
+
+proc mv_P010_09_P04_1 {
+print '髭剃り無しのデモ_P010_09_P04B'
+	eval($w:アイテム最大数Ｒ[d:アイテム:髭剃り] = 1)
+	eval($w:p_story = d:ST:P010_09_P04ヴァンプ遭遇９ポリゴンデモ４開始-1)
+	load 'd010p01'
+}
+
+proc mv_P010_10_P05_0 {
+	eval($w:p_story = d:ST:P010_10_P05ヴァンプ遭遇１０ポリゴンデモ５開始-1)
+	load 'd010p01'
+}
+
+proc mv_P012_01_P01_0 {
+	eval($w:p_story = d:ST:P012_01_P01フォーチュン遭遇１ポリゴンデモ１開始-1)
+	load 'd012p01'
+}
+
+
+proc mv_P014_12_p05_0 {
+	eval($w:p_story = d:ST:P014_12_P05ピーター遭遇１２ポリゴンデモ５開始-1)
+#if 0
+	// 登場ポイントはどちらかを（どっちでもいい）セットしてやること。
+	eval( $s:登場ポイント = sp_w17a_w18a_0 )
+	load 'w18a'
+#else
+	load 'd014p01'
+#endif
+}
+
+proc mv_P028_01_p01_0 {
+	eval($w:p_story = d:ST:P028_01_P01爆弾解体後フォーチュン再登場１ポリゴンデモ１開始)
+	eval( $s:登場ポイント = sp_w11b_w11c_0 )
+	load 'w11c'
+}
+
+proc mv_P031_01_p01_0 {
+	eval($w:p_story = d:ST:P031_01_P01フォーチュン戦終了１ポリゴンデモ１開始)
+	eval( $s:登場ポイント = sp_w11b_w11c_0 )
+	load 'w11c'
+}
+
+proc mv_P036_04_p03_0 {
+	eval($w:p_story = d:ST:P036_04_P03忍者登場４ポリゴンデモ３開始)
+	load 'd036p03'
+}
+
+proc mv_P036_05_p04_0 {
+	// 注意
+	// 以下ふたつの代入は、d021p01 で"P021_01_p01" 以外の
+	// デモを再生する場合必須。
+	eval($f:w20b_オルガデモフラグ = 1)
+	eval($f:d021p01_爆弾解体オルガ登場２無線デモ１開始 = 1)
+	eval($w:p_story = d:ST:P036_05_P04忍者登場５ポリゴンデモ４開始-1)
+	load 'd021p01'
+}
+
+proc mv_P036_06_p05_0 {
+	// 注意
+	// 以下ふたつの代入は、d021p01 で"P021_01_p01" 以外の
+	// デモを再生する場合必須。
+	eval($f:w20b_オルガデモフラグ = 1)
+	eval($f:d021p01_爆弾解体オルガ登場２無線デモ１開始 = 1)
+	eval($w:p_story = d:ST:P036_06_P05忍者登場６ポリゴンデモ５開始)
+	load 'd036p05'
+}
+
+proc mv_P036_07_p06_0 {
+	// 注意
+	// 以下ふたつの代入は、d021p01 で"P021_01_p01" 以外の
+	// デモを再生する場合必須。
+	eval($f:w20b_オルガデモフラグ = 1)
+	eval($f:d021p01_爆弾解体オルガ登場２無線デモ１開始 = 1)
+	eval($w:p_story = d:ST:P036_07_P06忍者登場７ポリゴンデモ６開始-1)
+	#if 1
+		load 'd021p01'
+	#else
+		load 'w24b'
+	#endif
+}
+
+proc mv_P036_11_p07_0 {
+	// 注意
+	// 以下ふたつの代入は、d021p01 で"P021_01_p01" 以外の
+	// デモを再生する場合必須。
+	eval($f:w20b_オルガデモフラグ = 1)
+	eval($f:d021p01_爆弾解体オルガ登場２無線デモ１開始 = 1)
+	eval($w:p_story = d:ST:P036_11_P07忍者登場１１ポリゴンデモ７開始)
+	load 'd021p01'
+}
+
+proc mv_P036_12_p08_0 {
+	// 注意
+	// 以下ふたつの代入は、d021p01 で"P021_01_p01" 以外の
+	// デモを再生する場合必須。
+	eval($f:w20b_オルガデモフラグ = 1)
+	eval($f:d021p01_爆弾解体オルガ登場２無線デモ１開始 = 1)
+	eval($w:p_story = d:ST:P036_12_P08忍者登場１２ポリゴンデモ８開始-1)
+	load 'd021p01'
+}
+
+proc mv_P039_01_p01_0 {
+	eval($w:p_story = d:ST:P039_01_P01人質部屋潜入１ポリゴンデモ１開始)
+	load 'd036p03'
+}
+
+proc mv_P040_01_p01_0 {
+	eval($w:p_story = d:ST:P040_01_P01エイムズ発見１ポリゴンデモ１開始)
+	load 'd036p03'
+}
+
+proc mv_P040_03_p02_0 {
+	eval($w:p_story = d:ST:P040_03_P02エイムズ発見３ポリゴンデモ２開始-1)
+	load 'd036p03'
+}
+
+proc mv_P040_05_p03_0 {
+	eval($w:p_story = d:ST:P040_05_P03エイムズ発見５ポリゴンデモ３開始)
+	load 'd036p03'
+}
+
+proc mv_P040_07_p04_0 {
+	eval($w:p_story = d:ST:P040_07_P04エイムズ発見７ポリゴンデモ４開始-1)
+	load 'd036p03'
+}
+
+proc mv_P040_09_p05_0 {
+	eval($w:p_story = d:ST:P040_09_P05エイムズ発見９ポリゴンデモ５開始)
+	load 'd036p03'
+}
+
+proc mv_P045_01_p01_0 {
+	eval($w:p_story = d:ST:P045_01_P01ハリアー登場１ポリゴンデモ１開始)
+	load 'd045p01'
+}
+
+proc mv_P046_01_P01_0 {
+#if 1
+	eval($w:p_story = d:ST:P046_01_P01ハリアー戦勝利１ポリゴンデモ１開始)
+	load 'd046p01'
+#else
+	eval($w:p_story = d:ST:P046_01_P01ハリアー戦勝利１ポリゴンデモ１開始-1)
+	load 'd045p01'
+#endif
+}
+
+proc mv_P047_01_p01_0 {
+//	eval($w:p_story = d:ST:P047_01_P01電撃床前オルガ１ポリゴンデモ１開始-1)
+//	load 'd047p01'
+	eval($w:p_story = d:ST:P047_01_P01電撃床前オルガ１ポリゴンデモ１開始)
+	load 'w31a'
+}
+
+proc mv_P047_03_p02_0 {
+//	eval($w:p_story = d:ST:P047_03_P02電撃床前オルガ３ポリゴンデモ２開始-1)
+//	load 'd047p01'
+	eval($w:p_story = d:ST:P047_03_P02電撃床前オルガ３ポリゴンデモ２開始)
+	load 'w31a'
+}
+
+proc mv_P048_01_p01_0 {
+//	eval($w:p_story = d:ST:P048_01_P01電源パネル破壊１ポリゴンデモ１開始-1)
+//	load 'd047p01'
+	eval($w:p_story = d:ST:P048_01_P01電源パネル破壊１ポリゴンデモ１開始)
+	load 'w31a'
+}
+
+proc mv_P049_01_p01_0 {
+//	eval($w:p_story = d:ST:P049_01_P01大統領１ポリゴンデモ１開始-1)
+//	load 'd047p01'
+	eval($w:p_story = d:ST:P049_01_P01大統領１ポリゴンデモ１開始)
+	load 'w31a'
+}
+
+proc mv_P049_11_p02_0 {
+	eval($w:p_story = d:ST:P049_11_P02大統領１１ポリゴンデモ２開始-1)
+//	load 'd047p01'
+	load 'w31a'
+}
+
+proc mv_P054_01_P01_0 {
+	//eval( $i:プレイヤー初期Ｘ位置 = 5500 ) ;
+	//eval( $i:プレイヤー初期Ｘ位置 = 7500 ) ;
+	eval( $i:プレイヤー初期Ｘ位置 = 6900 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -9500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -222000 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $s:登場ポイント = ピーターデモ後 ) ;
+	eval( $f:ピーター浮遊死体デモ見た = 0 ) ;
+
+	// ゴル兵服対応 010814 田中(信)追加
+	@ストーリー依存状況チェック
+	if($w:アイテム == d:アイテム:ゴル兵制服){
+		load 'd053p01' -r 'r_plt5' -no_save $f:NO_VARSAVEフラグ ;
+	} else {
+		load 'd053p01' -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+proc mv_P055_01_P01_0 {
+	if ( $w:p_story < d:ST:P055_01_P01ヴァンプ戦前１ポリゴンデモ１開始 ) {
+		eval( $w:p_story = d:ST:P055_01_P01ヴァンプ戦前１ポリゴンデモ１開始 );
+	}
+
+	@ストーリー依存状況チェック
+	if($w:アイテム == d:アイテム:ゴル兵制服){
+		load 'd055p01' -r 'r_plt5' -no_save $f:NO_VARSAVEフラグ ;
+	} else {
+		load 'd055p01' -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+proc mv_P055_02_P02_0 {
+	eval($w:p_story = d:ST:P055_02_P02ヴァンプ戦前２ポリゴンデモ２開始-1)
+	eval($f:ノードフラグ = $f:w31c_ノードフラグ);
+	eval($f:w31c_ノードフラグ = 1);
+	load 'd055p01'
+}
+
+proc mv_P055_04_P03_0 {
+	eval($w:p_story = d:ST:P055_04_P03ヴァンプ戦前４ポリゴンデモ３開始-1)
+	eval($f:ノードフラグ = $f:w31c_ノードフラグ);
+	eval($f:w31c_ノードフラグ = 1);
+	load 'd055p01'
+}
+
+proc mv_P057_01_P01_0 {
+	eval($w:p_story = d:ST:P057_01_P01ヴァンプ戦終了１ポリゴンデモ１開始)
+//	eval($f:ノードフラグ = $f:w31c_ノードフラグ);
+//	eval($f:w31c_ノードフラグ = 1);
+//	command varsave
+	load 'd055p01'
+}
+
+proc mv_P058_01_P01_0 {
+	eval($w:p_story = d:ST:P058_01_P01エマ救出１ポリゴンデモ１開始)
+	eval($f:ノードフラグ = $f:w31c_ノードフラグ);
+	eval($f:w31c_ノードフラグ = 1);
+	load 'd055p01'
+}
+
+proc mv_P058_03_P02_0 {
+	eval($w:p_story = d:ST:P058_03_P02エマ救出３ポリゴンデモ２開始-1)
+	eval($f:ノードフラグ = $f:w31c_ノードフラグ);
+	eval($f:w31c_ノードフラグ = 1);
+	load 'd055p01'
+}
+
+proc mv_P058_06_P03_0 {
+	eval($w:p_story = d:ST:P058_06_P03エマ救出６ポリゴンデモ３開始-1)
+	eval($f:ノードフラグ = $f:w31c_ノードフラグ);
+	eval($f:w31c_ノードフラグ = 1);
+	load 'd055p01'
+}
+
+proc mv_P058_08_P04_0 {
+	eval($w:p_story = d:ST:P058_08_P04エマ救出８ポリゴンデモ４開始-1)
+	eval($f:ノードフラグ = $f:w31c_ノードフラグ);
+	eval($f:w31c_ノードフラグ = 1);
+	load 'd055p01'
+}
+
+proc mv_P059_01_P01_0 {
+	eval($w:p_story = d:ST:P059_01_P01エマ休憩１ポリゴンデモ１開始)
+	eval($f:ノードフラグ = $f:w31c_ノードフラグ);
+	eval($f:w31c_ノードフラグ = 1);
+	load 'd055p01'
+}
+
+proc mv_P062_01_P01_0 {
+#if 0
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -4000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -254000 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w31a_w31b_0 ) ;
+#else
+	eval( $i:プレイヤー初期Ｘ位置 = -8500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -6389 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -228284 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = ポリデモ全て終了 ) ;
+#endif
+	eval($w:p_story = d:ST:P062_01_P01エマとＡＩ１ポリゴンデモ１開始)
+	eval( $f:ピーター浮遊死体デモ見た = 1 )
+
+	// ゴル兵服対応 010814 田中(信)追加
+	@ストーリー依存状況チェック
+	if($w:アイテム == d:アイテム:ゴル兵制服){
+		load 'd053p01' -r 'r_plt5' -no_save $f:NO_VARSAVEフラグ ;
+	} else {
+		load 'd053p01' -no_save $f:NO_VARSAVEフラグ ;
+	}
+//	load 'w31b'
+}
+
+proc mv_P062_06_P02_0 {
+	eval($w:p_story = d:ST:P062_06_P02エマとＡＩ６ポリゴンデモ２開始-1)
+	load 'd053p01'
+}
+
+proc mv_P062_07_P03_0 {
+	eval($w:p_story = d:ST:P062_07_P03エマとＡＩ７ポリゴンデモ３開始-1)
+	load 'd053p01'
+}
+
+proc mv_P062_08_P04_0 {
+	eval($w:p_story = d:ST:P062_08_P04エマとＡＩ８ポリゴンデモ４開始-1)
+	load 'd053p01'
+}
+
+proc mv_P063_01_P01_0 {
+	eval($w:p_story = d:ST:P063_01_P01カード五１ポリゴンデモ１開始)
+	load 'd063p01' // 時刻が「夕」なので、w25d（w25cは「昼」）
+}
+
+proc mv_P065_01_P01_0 {
+	eval($w:p_story = d:ST:P065_01_P01エマＬ脚１ポリゴンデモ１開始)
+	load 'w28a'
+}
+
+proc mv_P065_03_P02_0 {
+	eval($w:p_story = d:ST:P065_03_P02エマＬ脚３ポリゴンデモ２開始)
+	load 'd065p02'
+}
+
+proc mv_P065_04_P03_0 {
+	eval($w:p_story = d:ST:P065_04_P03Ｌ脚エマ４ポリゴンデモ３開始-1)
+	load 'd065p02'
+}
+
+proc mv_P065_05_P04_0 {
+	eval($w:p_story = d:ST:P065_05_P04Ｌ脚エマ５ポリゴンデモ４開始-1)
+	load 'd065p02'
+}
+
+proc mv_P067_01_R01_0 {
+	eval($w:p_story = d:ST:P067_01_R01エマ狙撃１無線機デモ１開始)
+	load 'w32a'
+}
+
+proc mv_P068_01_P01_0x {
+	eval($w:p_story = d:ST:P068_01_P01ヴァンプ狙撃前１ポリゴンデモ１開始)
+	load 'w32b'
+}
+
+proc mv_P069_01_P01_0 {
+	eval($w:p_story = d:ST:P069_01_P01ヴァンプ狙撃終了１ポリゴンデモ１開始)
+	load 'w32b'
+}
+
+proc mv_P070_01_P01_0 {
+	eval($w:p_story = d:ST:P070_01_P01ＡＧ起動１ポリゴンデモ１開始)
+
+	// ゴル兵服対応 010814 田中(信)追加
+	@ストーリー依存状況チェック
+	if($w:アイテム == d:アイテム:ゴル兵制服){
+		load 'd070p01' -r 'r_plt5' -no_save $f:NO_VARSAVEフラグ ;
+	} else {
+		load 'd070p01' -no_save $f:NO_VARSAVEフラグ ;
+	}
+//	load 'd070p01'
+}
+
+proc mv_P070_02_P02_0 {
+	eval($w:p_story = d:ST:P070_02_P02ＡＧ起動２ポリゴンデモ２開始-1)
+	load 'd070p01'
+}
+
+proc mv_P070_03_P03_0 {
+	eval($w:p_story = d:ST:P070_03_P03ＡＧ起動３ポリゴンデモ３開始-1)
+	load 'd070p01'
+}
+
+proc mv_P070_04_P04_0 {
+	eval($w:p_story = d:ST:P070_04_P04ＡＧ起動４ポリゴンデモ４開始-1)
+	load 'd070p01'
+}
+
+proc mv_P070_05_P05_0 {
+	eval($w:p_story = d:ST:P070_05_P05ＡＧ起動５ポリゴンデモ５開始-1)
+	load 'd070p01'
+}
+
+proc mv_P070_07_P06_0 {
+	eval($w:p_story = d:ST:P070_07_P06ＡＧ起動７ポリゴンデモ６開始-1)
+	load 'd070p01'
+}
+
+proc mv_P070_08_P07_0 {
+	eval($w:p_story = d:ST:P070_08_P07ＡＧ起動８ポリゴンデモ７開始-1)
+	//load 'd070p01'
+	//load 'd001p01'
+	load 'd005p03'
+}
+
+proc mv_P070_09_P08_0 {
+	eval($w:p_story = d:ST:P070_09_P08ＡＧ起動９ポリゴンデモ８開始-1)
+	load 'd070p01'
+}
+
+proc mv_P070_09b_P09_0 {
+	eval($w:p_story = d:ST:P070_09b_P09ＡＧ起動９ｂポリゴンデモ９開始)
+	load 'd070p09'
+}
+
+proc mv_P070_13_P09_0 {
+	eval($w:p_story = d:ST:P070_13_P09ＡＧ起動１３ポリゴンデモ９開始)
+	load 'd070px9'
+}
+
+proc mv_P070_16_P10_0 {
+	eval($w:p_story = d:ST:P070_16_P10ＡＧ起動１６ポリゴンデモ１０開始-1)
+	load 'd070px9'
+}
+
+proc mv_P070_17_P11_0 {
+	eval($w:p_story = d:ST:P070_17_P11ＡＧ起動１７ポリゴンデモ１１開始-1)
+	load 'd070px9'
+}
+
+proc mv_P070_21_P12_0 {
+	eval($w:p_story = d:ST:P070_21_P12ＡＧ起動２１ポリゴンデモ１２開始)
+	load 'w42a'
+}
+
+proc mv_P073_02_P01_0 {
+	eval($w:p_story = d:ST:P073_02_P01通路Ａ２ポリゴンデモ１開始)
+	load 'w43a'
+}
+
+proc mv_P073_04_P02_0 {
+	eval($w:p_story = d:ST:P073_04_P02通路Ａ４ポリゴンデモ２開始-1)
+	load 'w43a'
+}
+
+proc mv_P074_01_P01_0 {
+	eval($w:p_story = d:ST:P074_01_P01通路Ａ刀後１ポリゴンデモ１開始)
+	load 'w43a'
+}
+
+proc mv_P074_03_P02_0 {
+	eval($w:p_story = d:ST:P074_03_P02通路Ａ刀後３ポリゴンデモ２開始-1)
+	load 'w43a'
+}
+
+proc mv_P077_02_P01_0 {
+	eval($w:p_story = d:ST:P077_02_P01天狗兵降下ラッシュポリゴンデモ１開始)
+	load 'w45a'
+}
+
+proc mv_P078_01_P01_0 {
+	eval($w:p_story = d:ST:P078_01_P01ＡＧフォーチュン登場１ポリゴンデモ１開始)
+	load 'd078p01'
+}
+
+proc mv_P079_01_P01_0 {
+	eval($w:p_story = d:ST:P079_01_P01ＲＡＹ戦前１ポリゴンデモ１開始)
+// 平野変更（010731）
+//	load 'w46a'
+	load "d080p01"
+}
+
+proc mv_P079_03_P02_0 {
+	eval($w:p_story = d:ST:P079_03_P02ＲＡＹ戦前３ポリゴンデモ２開始)
+// 平野変更（010731）
+//	load 'w46a'
+	load "d080p01"
+}
+
+proc mv_P080_01_P01_0 {
+	eval($w:p_story = d:ST:P080_01_P01ＡＧ浮上１ポリゴンデモ１開始)
+//	load 'w46a'
+	load "d080p01"
+}
+
+proc mv_P080_03_P02_0 {
+	eval($w:p_story = d:ST:P080_03_P02ＡＧ浮上３ポリゴンデモ２開始-1)
+//	load 'w46a'
+	load "d080p01"
+}
+
+proc mv_P080_05_P03_0 {
+	eval($w:p_story = d:ST:P080_05_P03ＡＧ浮上５ポリゴンデモ３開始)
+	load 'w51a'
+}
+
+proc mv_P080_07_P04_0 {
+	eval($w:p_story = d:ST:P080_07_P04ＡＧ浮上７ポリゴンデモ４開始)
+	load 'w51a'
+}
+
+proc mv_P080_09_P05_0 {
+	eval($w:p_story = d:ST:P080_09_P05ＡＧ浮上９ポリゴンデモ５開始)
+	load 'w51a'
+}
+
+proc mv_P080_11_P06_0 {
+	if ( $w:p_story < d:ST:P080_11_P06ＡＧ浮上１１ポリゴンデモ６開始 ) {
+		eval( $w:p_story = d:ST:P080_11_P06ＡＧ浮上１１ポリゴンデモ６開始 );
+	}
+
+	@ストーリー依存状況チェック
+	load 'd080p06' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+proc mv_P080_13_P07_0 {
+	eval($w:p_story = d:ST:P080_13_P07ＡＧ浮上１３ポリゴンデモ７開始)
+	load 'd080p06'
+}
+
+proc mv_P080_13_P07_1 {
+	if ( $w:p_story < d:ST:P080_13_P08ＡＧ浮上１３ｂポリゴンデモ７ｂ開始 ) {
+		eval( $w:p_story = d:ST:P080_13_P08ＡＧ浮上１３ｂポリゴンデモ７ｂ開始 )
+	}
+
+	@ストーリー依存状況チェック
+	load 'd080p07' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+proc mv_P080_14_P08_0 {
+	if ( $w:p_story < d:ST:P080_14_P08ＡＧ浮上１４ポリゴンデモ８開始 ) {
+		eval( $w:p_story = d:ST:P080_14_P08ＡＧ浮上１４ポリゴンデモ８開始 )
+	}
+
+	@ストーリー依存状況チェック
+	load 'd080p08' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+proc mv_P080_16_P09_0 {
+	eval($w:p_story = d:ST:P080_16_P09ＡＧ浮上１６ポリゴンデモ９開始)
+	load 'd080p08'
+}
+
+proc mv_P080_18_P10_0 {
+	eval($w:p_story = d:ST:P080_18_P10ＡＧ浮上１８ポリゴンデモ１０開始)
+	load 'd080p08'
+}
+
+proc mv_P080_26_P11_0 {
+	eval($w:p_story = d:ST:P080_26_P11ＡＧ浮上２６ポリゴンデモ１１開始)
+	load 'd080p08'
+}
+
+proc mv_P080_28_P12_0 {
+	eval($w:p_story = d:ST:P080_28_P12ＡＧ浮上２８ポリゴンデモ１２開始)
+	load 'd080p08'
+}
+
+proc mv_P082_01_P01_0 {
+	if ( $w:p_story < d:ST:P082_01_P01エンディング１ポリゴンデモ１開始 ) {
+		eval( $w:p_story = d:ST:P082_01_P01エンディング１ポリゴンデモ１開始 )
+	}
+
+	@ストーリー依存状況チェック
+	load 'd082p01' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+proc mv_P082_02_P02_0 {
+	eval($w:p_story = d:ST:P082_02_P02エンディング２ポリゴンデモ２開始)
+	load 'd082p01'
+}
+
+proc mv_P082_04_P03_0 {
+	eval($w:p_story = d:ST:P082_04_P03エンディング４ポリゴンデモ３開始)
+	load 'd082p01'
+}
+
+#else
+#endif
+
+
+
+// ゲームステージ呼び出し用
+// w11a.gcl
+//-------------------------------------------
+// ゲームスタート時
+proc mv_init_w11a0_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ａ脚底部海底ドック );
+	@ストーリー依存状況チェック
+	@グローバルロード title w11a
+	eval( $i:プレイヤー初期Ｘ位置 = -17600 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -46000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 21300 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $b:プレイヤー初期姿勢 = d:FA_END_SQUAT ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_init_w11a0_0 ) ;
+	load "w11a" -resident 'r_plt1' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// P001_04_R02オープニング潜入４無線デモ２終了　の後にゲームステージへのロード。
+proc mv_demo_w11a0_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ａ脚底部海底ドック );
+	@ストーリー依存状況チェック
+	@グローバルロード title w11a
+	eval( $i:プレイヤー初期Ｘ位置 = -17600 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -46000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 21300 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $b:プレイヤー初期姿勢 = d:FA_END_SQUAT ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_init_w11a0_0 ) ;
+	restart -s
+}
+
+// 潜入プール→Ａ脚屋上
+proc mv_w11a2_w12a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ａ脚屋上 );
+	@ストーリー依存状況チェック
+	@グローバルロード w11a w12a
+	eval( $i:プレイヤー初期Ｘ位置 = 3500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 5000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -9000 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w11a2_w12a_0 ) ;
+	load "w12a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+// w11b.gcl
+//-------------------------------------------
+// フォーチュン戦開始位置へ
+proc mv_w11b_w11c_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ａ脚底部海底ドック );
+	@ストーリー依存状況チェック
+//	@グローバルロード w11b w11c			// フォーチュン戦は同一ステージ扱いとする
+//	eval( $i:プレイヤー初期Ｘ位置 = -1554 ) ;
+//	eval( $i:プレイヤー初期Ｙ位置 = -45000 ) ;
+//	eval( $i:プレイヤー初期Ｚ位置 = 3625 ) ;
+	eval( $i:プレイヤー初期Ｘ位置 = -1935 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -45000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 3640 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $b:プレイヤー初期姿勢 = 1) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w11b_w11c_0 ) ;
+	load "w11c" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// 潜入プール→Ａ脚屋上
+proc mv_w11b_w12a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ａ脚屋上 );
+	@ストーリー依存状況チェック
+	@グローバルロード w11a w12a
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -20000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -12250 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w11b_w12a_0 ) ;
+	load "w12c" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+// w11c.gcl
+//-------------------------------------------
+// フォーチュン戦後
+// 潜入プール→Ａ脚屋上
+proc mv_w11c_w12a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ａ脚屋上 );
+	@ストーリー依存状況チェック
+	@グローバルロード w11a w12a
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -20000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -12250 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w11c_w12a_0 ) ;
+	// フォーチュン戦後は体力最大に
+	eval ( $w:体力 = $w:体力最大 );
+	load "w12c" -no_save d:OK_VAR_SAVE ;		// ここで必ず varsave
+}
+
+
+
+// w12a.gcl
+//-------------------------------------------
+// Ａ脚屋上→潜入プール
+proc mv_w12a_w11b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ａ脚底部海底ドック );
+	@ストーリー依存状況チェック
+	@グローバルロード w12a w11a
+	eval( $i:プレイヤー初期Ｘ位置 = 750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -35000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -11500 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $b:プレイヤー初期姿勢 = 0) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w12a_w11b_0 ) ;
+	load "w11b" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+// Ａ脚屋上左→Ａ脚１Ｆ左
+proc mv_w12a_w12b0_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ａ脚ポンプ室 );
+	@ストーリー依存状況チェック
+	@グローバルロード w12a w12b
+	eval( $i:プレイヤー初期Ｘ位置 = -8000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 5000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -9750 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w12a_w12b0_0 ) ;
+	load "w12b" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// Ａ脚屋上右→Ａ脚１Ｆ右
+proc mv_w12a_w12b0_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ａ脚ポンプ室 );
+	@ストーリー依存状況チェック
+	@グローバルロード w12a w12b
+	eval( $i:プレイヤー初期Ｘ位置 = 8000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 5000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -9750 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w12a_w12b0_1 ) ;
+	load "w12b" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+// w12b.gcl
+//-------------------------------------------
+// Ａ脚１Ｆ左→Ａ脚屋上左
+proc mv_w12b0_w12a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ａ脚屋上 );
+	@ストーリー依存状況チェック
+	@グローバルロード w12b w12a
+	eval( $i:プレイヤー初期Ｘ位置 = -8000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 5000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -8500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w12b0_w12a_0 ) ;
+
+	//	ピーターと会うまでは朝なので"a"に飛ばす
+	if ($w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了) {
+		load "w12a" -no_save $f:NO_VARSAVEフラグ ;
+	//	ピーターと会ったあとは昼なので"c"に飛ばす
+	} else {
+		load "w12c" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+// Ａ脚１Ｆ右→Ａ脚屋上右
+proc mv_w12b0_w12a_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ａ脚屋上 );
+	@ストーリー依存状況チェック
+	@グローバルロード w12b w12a
+	eval( $i:プレイヤー初期Ｘ位置 = 8000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 5000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -8500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w12b0_w12a_1 ) ;
+
+	//	ピーターと会うまでは朝なので"a"に飛ばす
+	if ($w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了) {
+		load "w12a" -no_save $f:NO_VARSAVEフラグ ;
+	//	ピーターと会ったあとは昼なので"c"に飛ばす
+	} else {
+		load "w12c" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+
+// Ａ脚１Ｆ左→ＡＢ連絡橋
+proc mv_w12b0_w13a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＡＢ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w12b w13a
+	eval( $i:プレイヤー初期Ｘ位置 = 21000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -6500 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w12b0_w13a_0 ) ;
+
+	//	ピーターと会うまでは朝なので"a"に飛ばす
+	if ($w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了) {
+		load "w13a" -no_save $f:NO_VARSAVEフラグ ;
+	//	ピーターと会ったあとは昼なので"b"に飛ばす
+	} else {
+		load "w13b" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+// Ａ脚１Ｆ右→ＦＡ連絡橋
+proc mv_w12b0_w23a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＦＡ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w12b w23a
+	eval( $i:プレイヤー初期Ｘ位置 = -21000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -6500 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $b:プレイヤー初期姿勢 = 0) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w12b0_w23a_0 ) ;
+
+	//	ピーターと会うまでは朝なので"a"に飛ばす
+	if ($w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了) {
+		load "w23a" -no_save $f:NO_VARSAVEフラグ ;
+	//	ピーターと会ったあとは昼なので"b"に飛ばす
+	} else {
+		load "w23b" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+
+// w13a.gcl
+//-------------------------------------------
+// ＡＢ連絡橋→Ａ脚１Ｆ
+proc mv_w13a_w12b0_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ａ脚ポンプ室 );
+	@ストーリー依存状況チェック
+	@グローバルロード w13a w12b
+	eval( $i:プレイヤー初期Ｘ位置 = -6625 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -11125 ) ;
+	eval( $i:プレイヤー初期方向 = 683 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w13a_w12b0_0 ) ;
+	load "w12b" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// ＡＢ連絡橋→Ｂ脚
+proc mv_w13a_w14a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｂ脚変電室 );
+	@ストーリー依存状況チェック
+	@グローバルロード w13a w14a
+	eval( $i:プレイヤー初期Ｘ位置 = -43500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -19250 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w13a_w14a_0 ) ;
+	//	ピーター遭遇デモ前ならば潜入モードなので
+	if ($w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了) {
+		command セットサウンドコード -c d:SNG_FOUTS_S		//ＢＧＭフェードアウト
+	}
+
+	load "w14a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+// w14a.gcl
+//-------------------------------------------
+
+// ヴァンプ遭遇デモ→Ｂ脚
+proc mv_demo_w14a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｂ脚変電室 );
+	@ストーリー依存状況チェック
+	eval( $i:プレイヤー初期Ｘ位置 = -51060 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -24968 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_demo_w14a_0 ) ;
+	load "w14a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// Ｂ脚→ＡＢ連絡橋
+proc mv_w14a_w13a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＡＢ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w14a w13a
+	eval( $i:プレイヤー初期Ｘ位置 = -19250 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 6000 ) ;
+	eval( $i:プレイヤー初期方向 = 1326 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w14a_w13a_0 ) ;
+
+	//	ピーターと会うまでは朝なので"a"に飛ばす
+	if ($w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了) {
+		load "w13a" -no_save $f:NO_VARSAVEフラグ ;
+	//	ピーターと会ったあとは昼なので"b"に飛ばす
+	} else {
+		load "w13b" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+// Ｂ脚→ＢＣ連絡橋
+proc mv_w14a_w15a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＢＣ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w14a w15a
+	eval( $i:プレイヤー初期Ｘ位置 = -54750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -42125 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w14a_w15a_0 ) ;
+
+	//	ピーターと会うまでは朝なので"a"に飛ばす
+	if ($w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了) {
+		load "w15a" -no_save $f:NO_VARSAVEフラグ ;
+	//	ピーターと会ったあとは昼なので"b"に飛ばす
+	} else {
+		load "w15b" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+
+
+// w15a.gcl
+//-------------------------------------------
+// ＢＣ連絡橋→Ｂ脚１Ｆ上
+proc mv_w15a_w16a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｃ脚食堂 );
+	@ストーリー依存状況チェック
+	@グローバルロード w15a w16a
+	eval( $i:プレイヤー初期Ｘ位置 = -56000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -75750 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w15a_w16a_0 ) ;
+	//	このときは敵がいないので
+	if(    ($w:p_story == d:ST:P023_01_R01爆弾解体最後の一つ１無線デモ１終了) \
+		|| (($w:p_story == d:ST:P022_01_R01爆弾解体最後から二つ目１無線デモ１終了) && ($f:w16b_爆弾処理完了 == 0))) {
+		command セットサウンドコード -c d:SNG_FOUTS_S		//ＢＧＭフェードアウト
+	}
+	//	デモまでは"a"に飛ばす
+	if ($w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了) {
+		load "w16a" -no_save $f:NO_VARSAVEフラグ ;
+	//	デモ後は"b"に飛ばす
+	} else {
+		load "w16b" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+// コンセプト（ＢＣ連絡橋→Ｂ脚１Ｆ上）
+proc mv_init_c16a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = -54500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -75000 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w15a_w16a_0 ) ;
+	load "c16a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// ＢＣ連絡橋→シェル１中央棟１Ｆ
+proc mv_w15a_w24a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル１中央棟１Ｆ );
+	@ストーリー依存状況チェック
+	@グローバルロード w15a w24a
+	eval( $i:プレイヤー初期Ｘ位置 = -18000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -1500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -55000 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w15a_w24a_0 ) ;
+	load "w24a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// ＢＣ連絡橋→Ｂ脚
+proc mv_w15a_w14a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｂ脚変電室 );
+	@ストーリー依存状況チェック
+	@グローバルロード w15a w14a
+	eval( $i:プレイヤー初期Ｘ位置 = -54750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -44250 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w15a_w14a_0 ) ;
+	load "w14a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+
+// w16a.gcl
+//-------------------------------------------
+
+// ピーター遭遇デモ１→Ｃ脚
+proc mv_demo1_w16a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｃ脚食堂 );
+	@ストーリー依存状況チェック
+	eval( $i:プレイヤー初期Ｘ位置 = -50500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -102375 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_demo1_w16a_0 ) ;
+	load "w16a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// ピーター遭遇デモ２→Ｃ脚
+proc mv_demo2_w16a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｃ脚食堂 );
+	@ストーリー依存状況チェック
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_demo2_w16a_0 ) ;
+	load "w16a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// ピーター遭遇デモ３→Ｃ脚
+proc mv_demo3_w16a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｃ脚食堂 );
+	@ストーリー依存状況チェック
+	eval( $i:プレイヤー初期Ｘ位置 = -48500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -102500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_demo3_w16a_0 ) ;
+	load "w16b" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// Ｃ脚→ＢＣ連絡橋
+proc mv_w16a_w15a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＢＣ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w16a w15a
+	eval( $i:プレイヤー初期Ｘ位置 = -56000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -77500 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w16a_w15a_0 ) ;
+
+	//	ピーターと会うまでは朝なので"a"に飛ばす
+	if ($w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了) {
+		load "w15a" -no_save $f:NO_VARSAVEフラグ ;
+	//	ピーターと会ったあとは昼なので"b"に飛ばす
+	} else {
+		load "w15b" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+// Ｃ脚→ＣＤ連絡橋
+proc mv_w16a_w17a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＣＤ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w16a w17a
+	eval( $i:プレイヤー初期Ｘ位置 = -17500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -5000 ) ;
+	eval( $i:プレイヤー初期方向 = 722 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w16a_w17a_0 ) ;
+	load "w17a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+
+// w17a.gcl
+//-------------------------------------------
+proc mv_w17a_w16a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｃ脚食堂 );
+	@ストーリー依存状況チェック
+	@グローバルロード w17a w16a
+	eval( $i:プレイヤー初期Ｘ位置 = -42000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -100250 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w17a_w16a_0 ) ;
+	if(    ($w:p_story == d:ST:P023_01_R01爆弾解体最後の一つ１無線デモ１終了) \
+		|| (($w:p_story == d:ST:P022_01_R01爆弾解体最後から二つ目１無線デモ１終了) && ($f:w16b_爆弾処理完了 == 0))) {
+		command セットサウンドコード -c d:SNG_FOUTS_S		//ＢＧＭフェードアウト
+	}
+	load "w16b" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// ＣＤ連絡橋→Ｄ脚
+proc mv_w17a_w18a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｄ脚第一沈殿池 );
+	@ストーリー依存状況チェック
+	@グローバルロード w17a w18a
+	eval( $i:プレイヤー初期Ｘ位置 = -11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -110500 ) ;
+	eval( $i:プレイヤー初期方向 = 1746 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w17a_w18a_0 ) ;
+	load "w18a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// ＣＤ連絡橋→Ｄ脚
+proc mv_init_c18a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = -10500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -113500 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w17a_w18a_0 ) ;
+	load "c18a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+
+
+// w18a.gcl
+//-------------------------------------------
+// Ｄ脚１Ｆ→ＤＥ連絡橋
+proc mv_w18a_w19a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＤＥ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w18a w19a
+	eval( $i:プレイヤー初期Ｘ位置 = -17000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 3250 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w18a_w19a_0 ) ;
+	load "w19a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// Ｄ脚Ｂ１→ＤＥ連絡橋
+proc mv_w18a_w19a_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＤＥ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w18a w19a
+	eval( $i:プレイヤー初期Ｘ位置 = -17000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -4500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 3250 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w18a_w19a_1 ) ;
+	load "w19a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// Ｄ脚→ＣＤ連絡橋
+proc mv_w18a_w17a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＣＤ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w18a w17a
+	eval( $i:プレイヤー初期Ｘ位置 = 17500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 3000 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w18a_w17a_0 ) ;
+	load "w17a" -no_save $f:NO_VARSAVEフラグ ;
+}
+// Ｄ脚Ｂ１→ＤＥ連絡橋
+proc mv_w18a_w25a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＤＧ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w18a w25a
+	eval( $i:プレイヤー初期Ｘ位置 = -2000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -133000 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w18a_w25a_0 ) ;
+	load "w25a" -no_save $f:NO_VARSAVEフラグ ;
+}
+proc mv_w18a_w25a_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＤＧ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w18a w25a
+	eval( $w:p_story = d:ST:P045_01_P01ハリアー登場１ポリゴンデモ１終了 ) ;
+	eval( $i:プレイヤー初期Ｘ位置 =  2012 );
+	eval( $i:プレイヤー初期Ｙ位置 = -1000 );
+	eval( $i:プレイヤー初期Ｚ位置 = -145107 );
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w18a_w25a_0 ) ;
+	eval( $w:p_story = d:ST:P045_01_P01ハリアー登場１ポリゴンデモ１終了 ) ;	/* 2001.7.2 Y.Matsuhana */
+	eval( $f:ハリアー戦中 = 1 ) ;	/* 2001.7.2 Y.Matsuhana */
+	load "w25a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// ヴァンプ遭遇デモ→Ｂ脚
+proc mv_demo_w25a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＤＧ連絡橋 );
+	eval( $i:プレイヤー初期Ｘ位置 = -79 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 1550 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -137163 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_demo_w25a_0 ) ;
+	load "w25a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+
+// w19a.gcl
+//-------------------------------------------
+// ＤＥ連絡橋→Ｄ脚１Ｆ
+proc mv_w19a_w18a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｄ脚第一沈殿池 );
+	@ストーリー依存状況チェック
+	@グローバルロード w19a w18a
+	eval( $i:プレイヤー初期Ｘ位置 = 11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -110500 ) ;
+	eval( $i:プレイヤー初期方向 = 2350 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w19a_w18a_0 ) ;
+	load "w18a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// ＤＥ連絡橋→Ｄ脚Ｂ１
+proc mv_w19a_w18a_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｄ脚第一沈殿池 );
+	@ストーリー依存状況チェック
+	@グローバルロード w19a w18a
+	eval( $i:プレイヤー初期Ｘ位置 = 11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -4000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -110500 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w19a_w18a_1 ) ;
+	load "w18a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// ＤＥ連絡橋→Ｅ脚１Ｆ
+proc mv_w19a_w20a0_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｅ脚集配場 );
+	@ストーリー依存状況チェック
+	@グローバルロード w19a w20a
+	eval( $i:プレイヤー初期Ｘ位置 = 43625 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -100125 ) ;
+	eval( $i:プレイヤー初期方向 = 721 ) ;
+	eval( $b:プレイヤー初期姿勢 = d:FA_END_STAND ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w19a_w20a0_0 ) ;
+	load "w20a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+
+// w20a.gcl
+//-------------------------------------------
+// Ｅ脚１Ｆ→ＤＥ連絡橋
+proc mv_w20a0_w19a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＤＥ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w20a w19a
+	eval( $i:プレイヤー初期Ｘ位置 = 19000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -4750 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w20a0_w19a_0 ) ;
+	load "w19a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// Ｅ脚１Ｆ→ＥＦ連絡橋
+proc mv_w20a0_w21a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＥＦ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w20a w21a
+	eval( $i:プレイヤー初期Ｘ位置 = 60250 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -77500 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w20a0_w21a_0 ) ;
+
+	//	狙撃イベントまでは昼なので"a"に飛ばす
+	if ($w:p_story < d:ST:P069_04_R02ヴァンプ狙撃終了４無線機デモ２終了) {
+		load "w21a" -no_save $f:NO_VARSAVEフラグ ;
+	//	狙撃イベント後は夕なので"b"に飛ばす
+	} else {
+		load "w21b" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+// Ｅ脚２Ｆ→ヘリポート
+proc mv_w20a1_w20b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｅ脚ヘリポート );
+	@ストーリー依存状況チェック
+	@グローバルロード w20a w20b
+	eval( $i:プレイヤー初期Ｘ位置 =  62000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 =   4500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -90250 ) ;
+	eval( $i:プレイヤー初期方向   =   1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w20a1_w20b_0 ) ;
+
+	if($w:p_story < d:ST:P031_01_P01フォーチュン戦終了１ポリゴンデモ１終了) {
+		load "w20b" -no_save $f:NO_VARSAVEフラグ ;
+	} else if($w:p_story < d:ST:P036_13_R04忍者登場１３無線デモ４終了) {
+		load "w20c" -no_save $f:NO_VARSAVEフラグ ;
+	} else {
+		load "w20d" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+// Ｅ脚１Ｆ→Ａ脚１Ｆ（ダンボール移動）
+proc mv_w20a_w12b0_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ａ脚ポンプ室 );
+	@ストーリー依存状況チェック
+	@グローバルロード w20a w12b
+	eval( $i:プレイヤー初期Ｘ位置 = -10250 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -1500 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w20a_w12b0_0 ) ;
+	load "w12b" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// Ｅ脚１Ｆ→Ｂ脚（ダンボール移動）
+proc mv_w20a_w14a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｂ脚変電室 );
+	@ストーリー依存状況チェック
+	@グローバルロード w20a w14a
+	eval( $i:プレイヤー初期Ｘ位置 = -48500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -41000 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w20a_w14a_0 ) ;
+	load "w14a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// Ｅ脚１Ｆ→Ｃ脚（ダンボール移動）
+proc mv_w20a_w16a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｃ脚食堂 );
+	@ストーリー依存状況チェック
+	@グローバルロード w20a w16a
+	eval( $i:プレイヤー初期Ｘ位置 = -65750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -92750 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w20a_w16a_0 ) ;
+	//	このときは敵がいないので
+	if(    ($w:p_story == d:ST:P023_01_R01爆弾解体最後の一つ１無線デモ１終了) \
+		|| (($w:p_story == d:ST:P022_01_R01爆弾解体最後から二つ目１無線デモ１終了) && ($f:w16b_爆弾処理完了 == 0))) {
+		command セットサウンドコード -c d:SNG_FOUTS_S		//ＢＧＭフェードアウト
+	}
+	load "w16b" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// Ｅ脚１Ｆ→Ｆ脚Ｂ１(マクファーレンダンボールで移動)
+proc mv_w20a_w22a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｆ脚倉庫 );
+	@ストーリー依存状況チェック
+	@グローバルロード w20a w22a
+	eval( $i:プレイヤー初期Ｘ位置 = 60000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -3000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -26000 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w20a_w22a_0 ) ;
+	load "w22a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+// w20b.gcl
+//-------------------------------------------
+
+// オルガ遭遇デモ→ヘリポート
+proc mv_demo1_w20b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｅ脚ヘリポート );
+	@ストーリー依存状況チェック
+	eval( $i:プレイヤー初期Ｘ位置 =  56500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 =  10000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -78750 ) ;
+	eval( $i:プレイヤー初期方向   =      0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_demo1_w20b_0 ) ;
+	load "w20b" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// ファットマン登場デモ→ヘリポート
+proc mv_demo2_w20b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｅ脚ヘリポート );
+	@ストーリー依存状況チェック
+	eval( $i:プレイヤー初期Ｘ位置 =   56500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 =   11500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -101000 ) ;
+	eval( $i:プレイヤー初期方向   =      0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_demo2_w20b_0 ) ;
+	load "w20c" -resident 'r_plt3' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// ファットマン死亡→ヘリポート
+proc mv_demo3_w20b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｅ脚ヘリポート );
+	@ストーリー依存状況チェック
+	eval( $i:プレイヤー初期Ｘ位置 =   54750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 =   11500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -103000 ) ;
+	eval( $i:プレイヤー初期方向   =    3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_demo3_w20b_0 ) ;
+	load "w20c" -resident 'r_plt3' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// 忍者遭遇→ヘリポート
+proc mv_demo4_w20b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｅ脚ヘリポート );
+	@ストーリー依存状況チェック
+	eval( $i:プレイヤー初期Ｘ位置 =  42000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 =   5500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -96000 ) ;
+	eval( $i:プレイヤー初期方向   =   2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_demo4_w20b_0 ) ;
+	load "w20d" -resident 'r_plt0' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// ヘリポート→Ｅ脚２Ｆ
+proc mv_w20b_w20a1_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｅ脚集配場 );
+	@ストーリー依存状況チェック
+	@グローバルロード w20b w20a
+	eval( $i:プレイヤー初期Ｘ位置 = 63500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 4500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -90250 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $b:プレイヤー初期姿勢 = d:FA_END_STAND ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w20b_w20a1_0 ) ;
+	load "w20a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+// w21a.gcl
+//-------------------------------------------
+// ＥＦ連絡橋→Ｅ脚１Ｆ
+proc mv_w21a_w20a0_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｅ脚集配場 );
+	@ストーリー依存状況チェック
+	@グローバルロード w21a w20a
+	eval( $i:プレイヤー初期Ｘ位置 = 60000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -76000 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $b:プレイヤー初期姿勢 = d:FA_END_STAND ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w21a_w20a0_0 ) ;
+	load "w20a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// ＥＦ連絡橋→Ｆ脚１Ｆ
+proc mv_w21a_w22a0g_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｆ脚倉庫 );
+	@ストーリー依存状況チェック
+	@グローバルロード w21a w22a
+	eval( $i:プレイヤー初期Ｘ位置 = 57750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -44500 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w21a_w22a0g_0 ) ;
+	load "w22a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// ＥＦ連絡橋→中央棟１Ｆ
+proc mv_w21a_w24a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル１中央棟１Ｆ );
+	@ストーリー依存状況チェック
+	@グローバルロード w21a w24a
+	eval( $i:プレイヤー初期Ｘ位置 = 20000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -1500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -55000 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w21a_w24a_0 ) ;
+
+/*
+	if ($w:p_story < d:ST:P069_04_R02ヴァンプ狙撃終了４無線機デモ２終了) {
+	//	狙撃イベントまでは通常ゲーム
+		load "w24a" -no_save $f:NO_VARSAVEフラグ ;
+	} else {
+	//	狙撃イベント後はデモステージ
+		load "d070p01" -no_save $f:NO_VARSAVEフラグ ;
+	}
+*/
+		load "w24a" -no_save $f:NO_VARSAVEフラグ ;
+
+}
+
+// w22a.gcl
+//-------------------------------------------
+// Ｆ脚１Ｆ→ＦＡ連絡橋１Ｆ
+proc mv_w22a0h_w23a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＦＡ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w22a w23a
+	eval( $i:プレイヤー初期Ｘ位置 = 18750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 8250 ) ;
+	eval( $i:プレイヤー初期方向 = 2769 ) ;
+	eval( $b:プレイヤー初期姿勢 = 0) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w22a0h_w23a_0 ) ;
+
+	//	ピーターと会うまでは朝なので"a"に飛ばす
+	if ($w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了) {
+		load "w23a" -no_save $f:NO_VARSAVEフラグ ;
+	//	ピーターと会ったあとは昼なので"b"に飛ばす
+	} else {
+		load "w23b" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+// Ｆ脚Ｂ１→ＦＡ連絡橋Ｂ１
+proc mv_w22a1c_w23a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＦＡ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w22a w23a
+	eval( $i:プレイヤー初期Ｘ位置 = 21250 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -4500 ) ;
+//	eval( $i:プレイヤー初期Ｚ位置 = -375 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -1250 ) ;
+	eval( $i:プレイヤー初期方向 = 3793 ) ;
+	eval( $b:プレイヤー初期姿勢 = 0) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w22a1c_w23a_0 ) ;
+
+	//	ピーターと会うまでは朝なので"a"に飛ばす
+	if ($w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了) {
+		load "w23a" -no_save $f:NO_VARSAVEフラグ ;
+	//	ピーターと会ったあとは昼なので"b"に飛ばす
+	} else {
+		load "w23b" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+// Ｆ脚１Ｆ→ＥＦ連絡橋右
+proc mv_w22a0g_w21a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＥＦ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w22a w21a
+	eval( $i:プレイヤー初期Ｘ位置 = 57750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -42500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w22a0g_w21a_0 ) ;
+
+	//	狙撃イベントまでは昼なので"a"に飛ばす
+	if ($w:p_story < d:ST:P069_04_R02ヴァンプ狙撃終了４無線機デモ２終了) {
+		load "w21a" -no_save $f:NO_VARSAVEフラグ ;
+	//	狙撃イベント後は夕なので"b"に飛ばす
+	} else {
+		load "w21b" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+
+// w23a.gcl
+//-------------------------------------------
+// ＦＡ連絡橋→Ａ脚１Ｆ
+proc mv_w23a_w12b0_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ａ脚ポンプ室 );
+	@ストーリー依存状況チェック
+	@グローバルロード w23a w12b
+	eval( $i:プレイヤー初期Ｘ位置 = 6625 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -11125 ) ;
+	eval( $i:プレイヤー初期方向 = 3413 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w23a_w12b0_0 ) ;
+	load "w12b" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// ＦＡ連絡橋→Ｆ脚１Ｆ
+proc mv_w23a_w22a0h_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｆ脚倉庫 );
+	@ストーリー依存状況チェック
+	@ストーリー依存状況チェック
+	@グローバルロード w23a w22a
+	eval( $i:プレイヤー初期Ｘ位置 = 44000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -17500 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w23a_w22a0h_0 ) ;
+	load "w22a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// ＦＡ連絡橋→Ｆ脚Ｂ１
+proc mv_w23a_w22a1c_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｆ脚倉庫 );
+	@ストーリー依存状況チェック
+	@グローバルロード w23a w22a
+	eval( $i:プレイヤー初期Ｘ位置 = 44250 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -5000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -23500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w23a_w22a1c_0 ) ;
+	load "w22a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+// w24a.gcl
+//-------------------------------------------
+// 中央棟１Ｆ→ＢＣ連絡橋
+proc mv_w24a_w15a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＢＣ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w24a w15a
+	eval( $i:プレイヤー初期Ｘ位置 = -16250 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -1500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -55000 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w24a_w15a_0 ) ;
+
+	//	ピーターと会うまでは朝なので"a"に飛ばす
+	if ($w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了) {
+		load "w15a" -no_save $f:NO_VARSAVEフラグ ;
+	//	ピーターと会ったあとは昼なので"b"に飛ばす
+	} else {
+		load "w15b" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+// 中央棟１Ｆ→ＥＦ連絡橋
+proc mv_w24a_w21a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＥＦ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w24a w21a
+	eval( $i:プレイヤー初期Ｘ位置 = 17750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -1500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -55000 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w24a_w21a_0 ) ;
+
+	//	狙撃イベントまでは昼なので"a"に飛ばす
+	if ($w:p_story < d:ST:P069_04_R02ヴァンプ狙撃終了４無線機デモ２終了) {
+		load "w21a" -no_save $f:NO_VARSAVEフラグ ;
+	//	狙撃イベント後は夕なので"b"に飛ばす
+	} else {
+		load "w21b" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+// シェル１中央棟１Ｆ→シェル１中央棟Ｂ1
+proc mv_w24a_w24b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル１中央棟Ｂ１ );
+	@ストーリー依存状況チェック
+	@グローバルロード w24a w24b
+	eval( $i:プレイヤー初期Ｘ位置 = -1276 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -4500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -74247 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w24a_w24b_0 ) ;
+	load "w24b" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// シェル１中央棟１Ｆ→シェル１中央棟Ｂ３
+proc mv_w24a_w24d_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル１中央棟Ｂ２電算室 );
+	@ストーリー依存状況チェック
+	@グローバルロード w24a w24b
+	eval( $i:プレイヤー初期Ｘ位置 = -1276 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -12000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -74247 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w24a_w24d_0 ) ;
+	load "w24d" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+// w24b.gcl
+//-------------------------------------------
+// シェル１中央棟Ｂ１→シェル１中央棟１Ｆ
+proc mv_w24b_w24a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル１中央棟１Ｆ );
+	@ストーリー依存状況チェック
+	@グローバルロード w24b w24a
+	eval( $i:プレイヤー初期Ｘ位置 = -1276 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -74247 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w24b_w24a_0 ) ;
+	load "w24a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// シェル１中央棟Ｂ１→人質部屋
+proc mv_w24b_w24c_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル１中央棟Ｂ１集会場 );
+	@ストーリー依存状況チェック
+	@グローバルロード w24b w24c
+	eval( $i:プレイヤー初期Ｘ位置 = -2250 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -4500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -66250 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w24b_w24c_0 ) ;
+	load "w24c" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+// シェル１中央棟Ｂ１→シェル１中央棟Ｂ３
+proc mv_w24b_w24d_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル１中央棟Ｂ２電算室 );
+	@ストーリー依存状況チェック
+	@グローバルロード w24b w24d
+	eval( $i:プレイヤー初期Ｘ位置 = -750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -12000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -74250 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w24b_w24d_0 ) ;
+	load "w24d" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+
+// w24c.gcl
+//-------------------------------------------
+// 人質部屋→シェル1中央棟Ｂ１(_0はIDバッティングを起こしたため_1から）
+proc mv_w24b_w24c_demo_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル１中央棟Ｂ１集会場 );
+	@ストーリー依存状況チェック
+	@グローバルロード w24b w24c
+	eval( $i:プレイヤー初期Ｘ位置 = 5500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -8500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -63750 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 1);
+	eval( $s:登場ポイント = 人質部屋侵入デモ後スタート ) ;
+	load "w24c"  -r 'r_plt0' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+proc mv_demo_w24c_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル１中央棟Ｂ１集会場 );
+	eval( $i:プレイヤー初期Ｘ位置 = -4000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -8500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -49500 ) ;
+	eval( $i:プレイヤー初期方向 = 2100 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 1);
+	eval( $s:登場ポイント = 盗聴イベント ) ;
+	load "w24e"  -r 'r_plt0' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+proc mv_demo_w24c_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル１中央棟Ｂ１集会場 );
+	eval( $i:プレイヤー初期Ｘ位置 = -4500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -8500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -49500 ) ;
+	//eval( $i:プレイヤー初期方向 = 2300 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 1);
+	eval( $s:登場ポイント = オセロット接近イベント ) ;
+	load "w24e"  -r 'r_plt0' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+proc mv_w24c_w24b_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル１中央棟Ｂ１ );
+	@ストーリー依存状況チェック
+	@グローバルロード w24c w24b
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -4500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -66250 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w24c_w24b_0 ) ;
+	load "w24b" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+proc mv_caution_w24b {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル１中央棟Ｂ１ );
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -4500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -66250 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w24c_w24b_0 ) ;
+
+	eval($w:p_story = d:ST:P040_09_P05エイムズ発見９ポリゴンデモ５終了)
+
+	load "w24b" -r 'r_plt0' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+
+
+
+// w24d.gcl
+//-------------------------------------------
+// シェル1中央棟Ｂ３→シェル1中央棟Ｂ１
+proc mv_w24d_w24b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル１中央棟Ｂ１ );
+	@ストーリー依存状況チェック
+	@グローバルロード w24d w24b
+	eval( $i:プレイヤー初期Ｘ位置 = -1276 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -4500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -74247 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w24d_w24b_0 ) ;
+	load "w24b" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// シェル1中央棟Ｂ３→シェル1中央棟１Ｆ
+proc mv_w24d_w24a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル１中央棟１Ｆ );
+	@ストーリー依存状況チェック
+	@グローバルロード w24d w24a
+	eval( $i:プレイヤー初期Ｘ位置 = -1276 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -74247 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w24d_w24a_0 ) ;
+	load "w24a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// シェル1中央棟Ｂ３→アーセナルギア拷問部屋
+proc mv_w24d_w41a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:アーセナルギア胃 );
+	@ストーリー依存状況チェック
+	@グローバルロード w24d w41a
+	eval( $i:プレイヤー初期Ｘ位置 = -2000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -3000 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w24d_w41a_0 ) ;
+	// 独房イベント前は体力最大に
+	eval ( $w:体力 = $w:体力最大 );
+	// アラートモードを潜入に戻す
+	eval ($w:スタートアラートモード = d:ALERT_MODE_SENNYU);
+
+	//	デバッグ用
+	eval($w:武器 = d:武器:ソコム);
+	eval($w:アイテム = d:アイテム:レーション);
+
+	load "w41a" -resident 'r_plt2' -no_save $f:NO_VARSAVEフラグ ;
+//	load "w41a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// w25a.gcl
+//-------------------------------------------
+// ＤＧ連絡橋(崩壊前)→ＤＧ連絡橋(崩壊後)
+proc mv_w25a_w25b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＤＧ連絡橋〜ＬＧ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w25a w25b
+	eval( $i:プレイヤー初期Ｘ位置 = 2070 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 244 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -144360 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w25a_w25b_0 ) ;
+	// ハリアー戦後は体力最大に
+	eval ( $w:体力 = $w:体力最大 );
+
+	if ( $w:アイテム == d:アイテム:ゴル兵制服 ) {
+		// 常駐データをもとへ戻す
+		load "w25b" -no_save $f:NO_VARSAVEフラグ -r 'r_plt0';
+	} else {
+		load "w25b" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+// ＤＧ連絡橋(崩壊前)→Ｄ脚
+proc mv_w25a_w18a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｄ脚第一沈殿池 );
+	@ストーリー依存状況チェック
+	@グローバルロード w25a w18a
+	eval( $i:プレイヤー初期Ｘ位置 = -2250 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -135000 ) ;
+	eval( $i:プレイヤー初期方向 = 512 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w25a_w18a_0 ) ;
+	load "w18a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// w25b.gcl
+//-------------------------------------------
+// ＤＧ連絡橋(崩壊後)→ＧＬ連絡橋(崩壊後)
+proc mv_w25b_w25c_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｌ脚外周〜ＫＬ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w25b w25c
+	eval( $i:プレイヤー初期Ｘ位置 = 41500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -195000 ) ;
+	eval( $i:プレイヤー初期方向 = 512 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w25b_w25c_0 ) ;
+	load "w25c" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+proc mv_w25b_w25c_1 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｌ脚外周〜ＫＬ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w25b w25c
+	eval( $i:プレイヤー初期Ｘ位置 = 58790 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 1062 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -226515 ) ;
+	eval( $i:プレイヤー初期方向 = 2262 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w25b_w25c_1 ) ;
+	load "w25c" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// w25c.gcl
+//-------------------------------------------
+// ＫＬ連絡橋→タイトロープ１
+proc mv_w25c_w25b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＤＧ連絡橋〜ＬＧ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w25c w25b
+	eval( $i:プレイヤー初期Ｘ位置 = 41000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -3000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -196125 ) ;
+	eval( $i:プレイヤー初期方向 = 3584 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w25c_w25b_0 ) ;
+	load "w25b" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// ＫＬ連絡橋→シェル２中央棟１Ｆ
+proc mv_w25c_w31a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル２中央棟１Ｆ空気清浄室 );
+	@ストーリー依存状況チェック
+	@グローバルロード w25c w31a
+	eval( $i:プレイヤー初期Ｘ位置 = 20000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -235000 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $b:プレイヤー初期姿勢 = d:FA_END_STAND ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w25c_w31a_0 ) ;
+	if ( $f:夕方フラグ ) {
+		load "w31d" -no_save $f:NO_VARSAVEフラグ ;
+	} else {
+		load "w31a" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+
+// w25d.gcl
+//-------------------------------------------
+// ＫＬ連絡橋→シェル２中央棟１Ｆ
+/*  廃止して mv_w25c_w31a_0 へ統合
+proc mv_w25d_w31a_0 {
+	@ストーリー依存状況チェック
+	@グローバルロード w25d w31a
+	eval( $i:プレイヤー初期Ｘ位置 = 20000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -235000 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $b:プレイヤー初期姿勢 = d:FA_END_STAND ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w25d_w31a_0 ) ;
+	load "w31d" -no_save $f:NO_VARSAVEフラグ ;
+}
+*/
+
+//
+proc mv_w25c_w28a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｌ脚汚水処理場 );
+	@ストーリー依存状況チェック
+	@グローバルロード w25c w28a
+	eval( $i:プレイヤー初期Ｘ位置 = 48750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -224500 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w25c_w28a_0 ) ;
+	load "w28a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+proc mv_w25d_d063p01_0 {
+	if ( $w:アイテム == d:アイテム:ゴル兵制服 ) {
+		/* キャップなし */
+		load "d063p01" -r 'r_plt5'
+	} else {
+		load "d063p01"
+	}
+}
+
+
+
+// w28a.gcl
+//-------------------------------------------
+// Ｌ脚→海上
+proc mv_w28a_w32a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｌ脚下部オイルフェンス);
+	@ストーリー依存状況チェック
+	@グローバルロード w28a w32a
+	eval( $i:プレイヤー初期Ｘ位置 = 52000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -38500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -205000 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $b:プレイヤー初期姿勢 = d:FA_END_STAND ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w28a_w32a_0 ) ;
+	eval ($f:デモ再生フラグ = 1)
+	eval( $f:エマ存在フラグ = 0 );
+	load "w32a" -r 'r_plt0' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// Ｌ脚→ＫＬ連絡橋
+proc mv_w28a_w25c_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＫＬ連絡橋 );
+	@ストーリー依存状況チェック
+	@グローバルロード w28a w25c
+	eval( $i:プレイヤー初期Ｘ位置 = 48750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -222000 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w28a_w25c_0 ) ;
+	load "w25d" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+
+// w31a.gcl
+//-------------------------------------------
+// シェル２中央棟１Ｆ→ＫＬ連絡橋
+proc mv_w31a_w25c_0 {
+	@ストーリー依存状況チェック
+	@グローバルロード w31a w25c
+	eval( $i:プレイヤー初期Ｘ位置 = 18000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -1500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -235000 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w31a_w25c_0 ) ;
+	if ( $f:夕方フラグ == 0 ) {
+		eval( $w:現ステージ番号 = d:ステージ名:Ｌ脚外周〜ＫＬ連絡橋 );
+		load "w25c" -no_save $f:NO_VARSAVEフラグ ;
+	} else {
+		eval( $w:現ステージ番号 = d:ステージ名:ＫＬ連絡橋 );
+		load "w25d" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+/* 廃止：w31a から w25d へはつながりません
+proc mv_w31a_w25d_0 {
+	@ストーリー依存状況チェック
+	@グローバルロード w31a w25c
+	eval( $i:プレイヤー初期Ｘ位置 = 19000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -1500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -234846 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w31a_w25d_0 ) ;
+	load "w25d" -no_save $f:NO_VARSAVEフラグ ;
+}
+*/
+
+
+// シェル２中央棟１Ｆ→シェル２中央棟Ｂ１
+proc mv_w31a_w31b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル２中央棟Ｂ１第一濾過室 );
+	@ストーリー依存状況チェック
+	@グローバルロード w31a w31b
+/*
+	eval( $i:プレイヤー初期Ｘ位置 = -1276 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -4000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -254172 ) ;
+*/
+	eval( $i:プレイヤー初期Ｘ位置 = -1276 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -4000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = (-254172-250) ) ;
+
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w31a_w31b_0 ) ;
+	load "w31b" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+proc mv_movie_w31a_0 {
+	@ストーリー依存状況チェック
+	load "w31a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+// w31b.gcl
+//-------------------------------------------
+// シェル２中央棟Ｂ１→シェル２中央棟１Ｆ
+proc mv_w31b_w31a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル２中央棟１Ｆ空気清浄室 );
+	@ストーリー依存状況チェック
+	@グローバルロード w31b w31a
+	eval( $i:プレイヤー初期Ｘ位置 = -1375 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -254000 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $b:プレイヤー初期姿勢 = d:FA_END_STAND ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w31b_w31a_0 ) ;
+	if ( $f:エマ存在フラグ == 1 || $f:夕方フラグ == 1 ) {
+		// 一回でもエマをつれてきたらステージを進める
+		eval( $f:夕方フラグ = 1 ) ;
+
+		load "w31d" -no_save $f:NO_VARSAVEフラグ ;
+	} else {
+		load "w31a" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+// デバッグ用に必要です。
+proc mv_w31b_w31d_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル２中央棟１Ｆ空気清浄室 );
+	@ストーリー依存状況チェック
+	@グローバルロード w31b w31a
+	eval( $i:プレイヤー初期Ｘ位置 = -1375 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -254000 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $b:プレイヤー初期姿勢 = d:FA_END_STAND ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w31b_w31a_0 ) ;
+	eval( $f:エマ存在フラグ = 1 );
+	eval( $f:夕方フラグ = 1 ) ;
+	load "w31d" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// シェル２中央棟Ｂ１第１濾過層→シェル２中央棟Ｂ１第２濾過層
+proc mv_w31b_w31c0_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル２中央棟Ｂ１第二濾過室 );
+	@ストーリー依存状況チェック
+	@グローバルロード w31b w31c
+	eval( $i:プレイヤー初期Ｘ位置 = -8500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -6250 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -231250 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $b:プレイヤー初期姿勢 = d:FA_END_STAND ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w31b_w31c0_0 ) ;
+	if ( $w:p_story < d:ST:P055_01_P01ヴァンプ戦前１ポリゴンデモ１開始 ) {
+		eval( $w:p_story = d:ST:P055_01_P01ヴァンプ戦前１ポリゴンデモ１開始 );
+		@mv_P055_01_P01_0
+	} else {
+		if ( $w:p_story < d:ST:P057_02_R01ヴァンプ戦終了２無線機デモ１終了 ) {
+			if ( $w:アイテム == d:アイテム:ゴル兵制服 ) {
+			// ゴルルコ兵装をしていた場合、常駐を呼びなおす
+				load "w31c" -r 'r_plt0' -no_save $f:NO_VARSAVEフラグ ;
+			} else {
+				load "w31c" -no_save $f:NO_VARSAVEフラグ ;
+			}
+		} else {
+			if ( $w:アイテム == d:アイテム:ゴル兵制服 ) {
+			// ゴルルコ兵装をしていた場合、常駐を呼びなおす
+				load "w31f" -r 'r_plt0' -no_save $f:NO_VARSAVEフラグ ;
+			} else {
+				load "w31f" -no_save $f:NO_VARSAVEフラグ ;
+			}
+		}
+	}
+}
+
+// エマとＡＩポリデモのときのみこっちを呼ぶ
+proc mv_demo_w31b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル２中央棟Ｂ１第一濾過室 );
+	@ストーリー依存状況チェック
+	@グローバルロード w31c w31b
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = ポリデモ全て終了 ) ;
+	if ( $w:アイテム == d:アイテム:ゴル兵制服 ) {
+	// ゴルルコ兵装をしていた場合、常駐を呼びなおす
+		load "w31b" -r 'r_plt0' -no_save $f:NO_VARSAVEフラグ ;
+	} else {
+		load "w31b" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+
+// w31c.gcl
+//-------------------------------------------
+// シェル２中央棟Ｂ１第２濾過層→シェル２中央棟Ｂ１第１濾過層
+proc mv_w31c0_w31b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:シェル２中央棟Ｂ１第一濾過室 );
+	@ストーリー依存状況チェック
+	@グローバルロード w31c w31b
+	eval( $i:プレイヤー初期Ｘ位置 = -8500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -6250 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = (-234500+500) ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w31c0_w31b_0 ) ;
+	load "w31b" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+
+// w32a.gcl
+//-------------------------------------------
+// 海上→Ｅ脚Ｂ１
+proc mv_w32a_w20a2_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｅ脚集配場 );
+	@ストーリー依存状況チェック
+	@グローバルロード w32a w20a
+	eval( $i:プレイヤー初期Ｘ位置 = 51000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -6500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -85000 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $b:プレイヤー初期姿勢 = d:FA_END_STAND ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w32a_w20a2_0 ) ;
+	eval ( $w:p_story = d:ST:P069_02_R01ヴァンプ狙撃終了２無線機デモ１終了 );
+	print $i:プレイヤー初期Ｘ位置
+	print $i:プレイヤー初期Ｙ位置
+	print $i:プレイヤー初期Ｚ位置
+
+	load "w20a" -r 'r_plt0' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+
+// 海上→海上ヴァンプ戦
+proc mv_w32a_w32b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:Ｌ脚下部オイルフェンス);
+	@ストーリー依存状況チェック
+	@グローバルロード w32a w32b
+	eval ($f:w32a_ヴァンプ登場フラグ = d:TRUE)
+
+//	eval( $i:プレイヤー初期Ｘ位置 = 52268 ) ;
+//	eval( $i:プレイヤー初期Ｙ位置 = -37574 ) ;
+//	eval( $i:プレイヤー初期Ｚ位置 = -204843 ) ;
+//	eval( $i:プレイヤー初期方向   = 120 ) ;
+
+	eval( $i:プレイヤー初期Ｘ位置 = 52910) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -38370 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -204638) ;
+	eval( $i:プレイヤー初期方向   = 113) ;
+
+	eval( $f:ロードチェックＯＮフラグ = 0 ) ;
+	eval( $s:登場ポイント = ヴァンプ登場デモ後 ) ;
+//	eval( $w:p_story = d:ST:P068_01_P01ヴァンプ狙撃前１ポリゴンデモ１開始) ;
+	if($w:アイテム == d:アイテム:ゴル兵制服){
+		load "w32b" -r 'r_plt5' -no_save $f:NO_VARSAVEフラグ ;
+	} else {
+		load "w32b" -r 'r_plt0' -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+// w41a.gcl
+//-------------------------------------------
+// アーセナルギア拷問部屋→アーセナルギア通路Ａ
+proc mv_w41a_w42a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:アーセナルギア空腸 );
+	@ストーリー依存状況チェック
+	@グローバルロード w41a w42a
+	eval( $i:プレイヤー初期Ｘ位置 = 6250 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -10250 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w41a_w42a_0 ) ;
+	load "w42a" -resident 'r_plt2' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// d070x9.gcl
+//-------------------------------------------
+// アーセナルギア拷問部屋→アーセナルギア拷問部屋デモ用ステージ
+proc mv_w41a_d070px9_0 {
+	load "d070px9" -resident 'r_plt2' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+// w42a.gcl
+//-------------------------------------------
+// アーセナルギア通路Ａ→アーセナルギア拷問部屋
+proc mv_w42a_w41a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:アーセナルギア胃 );
+	@ストーリー依存状況チェック
+	@グローバルロード w42a w41a
+	eval( $i:プレイヤー初期Ｘ位置 = 12000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -7250 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w42a_w41a_0 ) ;
+	load "w41a" -resident 'r_plt2' -no_save $f:NO_VARSAVEフラグ ;
+//	load "w41a" ;
+}
+
+// アーセナルギア通路Ａ→アーセナルギア小部屋Ａ
+proc mv_w42a_w43a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:アーセナルギア上行結腸 );
+	@ストーリー依存状況チェック
+	@グローバルロード w42a w43a
+	eval( $i:プレイヤー初期Ｘ位置 = 31000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 4000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -62500 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w42a_w43a_0 ) ;
+	// アラートモードを潜入に戻す
+	eval ($w:スタートアラートモード = d:ALERT_MODE_SENNYU);
+//	load "w43a" -resident 'r_plt2' -no_save $f:NO_VARSAVEフラグ ;
+//	load "w43a" -no_save $f:NO_VARSAVEフラグ ;
+	load "w43a" -resident 'r_plt0' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+
+// w43a.gcl
+//-------------------------------------------
+// ＡＧ丸通路→ＡＧ第２メタルハンガー
+proc mv_w43a_w44a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:アーセナルギア回腸 );
+	@ストーリー依存状況チェック
+	@グローバルロード w43a w44a
+	eval( $i:プレイヤー初期Ｘ位置 = 33000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 4000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -94000 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w43a_w44a_0 ) ;
+	load "w44a" -resident 'r_plt0' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+
+// w44a.gcl
+//-------------------------------------------
+// アーセナルギア通路Ｂ→アーセナルギア小部屋Ｂ
+proc mv_w44a_w45a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:アーセナルギアＳ状結腸 );
+	@ストーリー依存状況チェック
+	@グローバルロード w44a w45a
+	eval( $i:プレイヤー初期Ｘ位置 = 2000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -132500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w44a_w45a_0 ) ;
+	// アラートモードを潜入に戻す
+	eval ($w:スタートアラートモード = d:ALERT_MODE_SENNYU);
+	load "w45a" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+
+// w45a.gcl
+//-------------------------------------------
+//	アーセナルギア小部屋Ｂ→メタル戦ステージ
+proc mv_w45a_w46a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:アーセナルギア直腸 );
+	@ストーリー依存状況チェック
+	@グローバルロード w45a w46a
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 4000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -2000 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w45a_w46a_0 ) ;
+	// アラートモードを潜入に戻す
+	eval ($w:スタートアラートモード = d:ALERT_MODE_SENNYU);
+	if($w:アイテム == d:アイテム:ゴル兵制服){
+		load "w46a"  -r 'r_plt5' -no_save $f:NO_VARSAVEフラグ ;
+	} else {
+		load "w46a"  -r 'r_plt0'  -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+
+
+proc mv_w45a_d078p01_0 {
+	if($w:アイテム == d:アイテム:ゴル兵制服){
+		load "d078p01" -r 'r_plt5'
+	} else {
+		load "d078p01"
+	}
+}
+// w46a.gcl
+//-------------------------------------------
+proc mv_w46a_w51a_0 {
+	@ストーリー依存状況チェック
+	@グローバルロード w46a w51a
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 18000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 12000 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w46a_w51a_0 ) ;
+	// ＲＡＹ戦後は体力最大に
+	eval ( $w:体力 = $w:体力最大 );
+	if($w:アイテム == d:アイテム:ゴル兵制服){
+	// ゴルルコ兵装をしていた場合、常駐を呼びなおす
+		load "w51a" -r 'r_plt0' -no_save $f:NO_VARSAVEフラグ ;
+	} else {
+		load "w51a" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+// d080p01.gcl
+//-------------------------------------------
+// メタル戦→メタル戦終了デモ用ステージ
+proc mv_w46a_d080p01_0 {
+	@ストーリー依存状況チェック
+	if($w:アイテム == d:アイテム:ゴル兵制服){
+		load "d080p01" -r 'r_plt5' -no_save $f:NO_VARSAVEフラグ ;
+	} else {
+		load "d080p01" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+// w51a.gcl
+//-------------------------------------------
+
+// w61a.gcl
+//-------------------------------------------
+// フェデラルホール（ソリダス戦）
+proc mv_init_w61a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:フェデラルホール );
+	@ストーリー依存状況チェック
+	@グローバルロード w51a w61a
+	eval( $i:プレイヤー初期Ｘ位置 = 4605 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 18000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 8288 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_init_w61a_0 ) ;
+
+	// HARD以下、ソリダス戦前は体力を最大に戻してあげる
+	if( $w:ゲーム設定 <= d:LEVEL_HARD ) {
+		eval ( $w:体力 = $w:体力最大 );
+	}
+
+	if ( $w:アイテム == d:アイテム:ゴル兵制服 ) {
+	// ゴルルコ兵装をしていた場合、常駐を呼びなおす
+		load "w61a" -r 'r_plt0' -no_save $f:NO_VARSAVEフラグ ;
+	} else {
+		load "w61a" -no_save $f:NO_VARSAVEフラグ ;
+	}
+}
+
+
+// wmovie.gcl
+//-------------------------------------------
+//	ムービー再生専用ステージ
+proc mv_init_wmovie_0 {
+	@ストーリー依存状況チェック
+	load "wmovie" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+// webdemo.gcl
+//-------------------------------------------
+//	ＷＥＢサイトデモ専用ステージ
+proc mv_init_webdemo_0 {
+	@ストーリー依存状況チェック
+	load "webdemo" -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+
+// ボスラッシュ起動用
+//-------------------------------------------
+proc load_boss_survival {
+	eval( $w:ゲーム設定 = d:LEVEL_NORMAL );
+	eval( $b:res_mode = d:BOSS_SURVIVAL );
+	load "select" -r 'r_plt0';
+}
+
+proc veryeasy_set {
+	eval( $w:ゲーム設定 = d:LEVEL_VERYEASY );
+	load "select";
+}
+
+proc easy_set {
+	eval( $w:ゲーム設定 = d:LEVEL_EASY );
+	load "select";
+}
+
+proc normal_set {
+	eval( $w:ゲーム設定 = d:LEVEL_NORMAL );
+	load "select";
+}
+
+proc hard_set {
+	eval( $w:ゲーム設定 = d:LEVEL_HARD );
+	load "select";
+}
+
+proc extreme_set {
+	eval( $w:ゲーム設定 = d:LEVEL_EXTREME );
+	load "select";
+}
+
+proc load_boss_survival_snake {
+	eval( $s:ボスラッシュプレイヤー = スネーク );
+	load "boss" -resident 'r_sna_b' -change scenerio ;
+}
+
+proc load_boss_survival_raiden {
+	eval( $s:ボスラッシュプレイヤー = ライデン );
+	load "boss" -resident 'r_rai_b' -change scenerio ;
+}
+
+
+// ---ローポリ劇場
+
+//タンカー編オープニング
+proc mv_lowpoly_t00a1D {
+	eval($f:モノローグチェック = 1)
+	load "d00t" -r "r_plt6";
+}
+//タンカー乗っ取りデモ
+proc mv_lowpoly_t04a1D {
+	load "d04t" -r "r_plt10";
+}
+//オルガVSスネーク
+proc mv_lowpoly_t05a1D {
+	load "d05t" -r "r_plt11";
+}
+//RAY強奪
+proc mv_lowpoly_t12a1D {
+	load "d12t" -r "r_plt12";
+}
+//ヴァンプ遭遇
+proc mv_lowpoly_p010_01_p01 {
+	eval($w:p_story = d:ST:P010_01_P01ヴァンプ遭遇１ポリゴンデモ１開始)
+	load "d010p01" -r "r_plt7";
+}
+//フォーチュン遭遇
+proc mv_lowpoly_p012_01_p01 {
+	eval($w:p_story = d:ST:P012_01_P01フォーチュン遭遇１ポリゴンデモ１開始-1)
+	load "d012p01" -r "r_plt8";
+}
+//量産RAYvsソリダス
+proc mv_lowpoly_p080_03_p02 {
+	eval($w:p_story = d:ST:P080_03_P02ＡＧ浮上３ポリゴンデモ２開始-1)
+	load "d080p01" -r "r_plt9";
+}
+//ソリダスの最期
+proc mv_lowpoly_p082_01_p01 {
+	eval( $w:p_story = d:ST:P082_01_P01エンディング１ポリゴンデモ１開始 )
+	load "d082p01" -r "r_plt13";
+}
+
+//ローポリ劇場セレクト
+proc mv_lowpoly_select {
+	//	ストーリーフラグを初期化
+	eval ($w:t_story = 0);
+	eval ($w:p_story = 0);
+	eval($f:モノローグチェック = 0);
+	//	タイトルへ戻る
+	load "n_title" -r 'r_title';
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ---以下、向手実験用---
+proc mv_init_w46a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:アーセナルギア直腸 );
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 6000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 0 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_init_w46a_0 ) ;
+	load "w46a" ;
+}
+
+proc mv_init_w13b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＡＢ連絡橋 );
+	eval( $i:プレイヤー初期Ｘ位置 = 19750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -6500 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w12b0_w13a_0 ) ;
+	load "w13b" ;
+}
+
+proc mv_init_w15b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＢＣ連絡橋 );
+	eval( $i:プレイヤー初期Ｘ位置 = -54750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -42125 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w14a_w15a_0 ) ;
+	load "w15b" ;
+}
+
+proc mv_init_w21b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＥＦ連絡橋 );
+	eval( $i:プレイヤー初期Ｘ位置 = 60250 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -77500 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w20a0_w21a_0 ) ;
+	load "w21b" ;
+}
+
+proc mv_init_w23b_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＦＡ連絡橋 );
+	eval( $i:プレイヤー初期Ｘ位置 = -20000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -6500 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $b:プレイヤー初期姿勢 = 0) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w12b0_w23a_0 ) ;
+	load "w23b" ;
+}
+
+
+proc mv_init_VSMETAL {
+	eval( $w:現ステージ番号 = d:ステージ名:アーセナルギア直腸 );
+	eval( $f:w46a_メタル登場フラグ = d:TRUE )
+	eval( $w:p_story = d:ST:P079_03_P02ＲＡＹ戦前３ポリゴンデモ２終了 )
+
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 6000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 0 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = メタル戦開始)
+	load "w46a" ;
+}
+
+proc mv_init_GOUMONGO {
+	eval($w:p_story =  d:ST:P070_23_R04ＡＧ起動２３無線機デモ４終了)
+	//	プレイヤー初期位置を代入
+	eval($i:プレイヤー初期Ｘ位置 = -2000)
+	eval($i:プレイヤー初期Ｚ位置 = -3400)
+	//	リスタートかけてゲームに戻る
+	eval ($f:w41a_主観デモ完全終了フラグ = d:TRUE)
+	eval ($s:登場ポイント = 拷問直後)
+	load "w41a" -resident 'r_plt2' -no_save $f:NO_VARSAVEフラグ ;
+}
+
+
+
+
+
+
+
+
+
+
+// ---以下、デモ視聴ステージ用--- (00.11.06作成)
+// デモ呼び出しデバッグ用
+proc mv_tanker_demos_0 {
+	chara select name -s {
+		't00a1D' mv_init_d00t_0
+		't01a1D' mv_init_d01t_0
+		't02a1D' mv_init_d01t_1
+		't02a2D' mv_init_d01t_2
+		't03a1D' mv_init_d01t_3
+		't04a1D' mv_init_d04t_0
+		't04a2D' mv_init_w01e_0
+		't05a1D' mv_init_d05t_0
+		't06a1D' mv_init_d05t_2
+		't06a2D' mv_init_d05t_1
+		't08a1D' mv_init_d09t_0
+		't09a1D' mv_init_d09t_1
+		't10a1D' mv_init_w04a_1
+		't11a1D_1' mv_init_d11t_1
+		't11a1D_2' mv_init_d11t_2
+		't11a1D_3' mv_init_d11t_3
+		't11a1D_4' mv_init_d11t_4
+		't11a1D_5' mv_init_d11t_0
+		't12a1D' mv_init_d12t_0
+		't12a2D' mv_init_d12t_1
+		't12a3D' mv_init_d12t_2
+		't12a4D' mv_init_d12t4_0
+		't12a5D' mv_init_d12t4_1
+		't13a1D' mv_init_d13t_0
+		't14a1D' mv_init_d14t_0
+		't14a2D' mv_init_d14t_1
+		't14a3D' mv_init_d14t_2
+		'back' back_to
+	}
+}
+
+proc back_to{
+	restart
+}
+
+proc mv_init_d00t_0 {
+	load "d00t" ;
+}
+
+proc mv_init_d01t_0 {
+	eval($w:t_story = d:ST_T01a1D目的説明ポリゴンデモ開始-1)
+	load "d01t" ;
+}
+
+proc mv_init_d01t_1 {
+	eval($w:t_story = d:ST_T02a1Dカメラの使い方ポリゴンデモ開始-1)
+	eval($f:t02カメラデモ後半 = 0)
+	load "d01t" ;
+}
+
+proc mv_init_d01t_2 {
+	eval($w:t_story = d:ST_T02a1Dカメラの使い方ポリゴンデモ開始-1)
+	eval($f:t02カメラデモ後半 = 1)
+	load "d01t" ;
+}
+
+proc mv_init_d01t_3 {
+	eval($w:t_story = d:ST_T03a1Dカモフ登場ポリゴンデモ開始-1)
+	load "d01t" ;
+}
+
+proc mv_init_d04t_0 {
+	load "d04t" ;
+}
+
+proc mv_init_d05t_0 {
+	eval($w:t_story = (d:ST_T05a1Dオルガ戦前ポリゴンデモ終了-10))
+	load "d05t" ;
+}
+
+proc mv_init_d05t_1 {
+	eval($f:w00b_オルガ柵によりかかり = 1)
+	eval($w:t_story = d:ST_T05a1Dオルガ戦前ポリゴンデモ終了)
+	load "d05t" ;
+}
+
+proc mv_init_d05t_2 {
+	eval($f:w00b_オルガ柵によりかかり = 0)
+	eval($w:t_story = d:ST_T05a1Dオルガ戦前ポリゴンデモ終了)
+	load "d05t" ;
+}
+
+proc mv_init_d09t_0 {
+	eval($w:t_story = d:長廊下兵との戦闘突入ポリデモ開始)
+	eval($s:d_num = t08a1D)
+	eval($f:global_polygon_demo = 1)
+	load "w03b" ;
+}
+
+proc mv_init_d09t_1 {
+	eval($w:t_story = d:ST_T08a1Dハッチ閉鎖ポリゴンデモ開始)
+	eval($s:d_num = t09a1D)
+	eval($f:global_polygon_demo = 1)
+	load "w03b" ;
+}
+
+proc mv_init_d11t_0 {
+	eval($w:t_story = d:ST_T11a1D船首メタルギア登場ポリゴンデモ開始-1)
+	eval($s:登場ポイント = ダクト)
+	load "d11t" ;
+}
+
+proc mv_init_d11t_1 {
+	eval($w:t_story = d:ST_T11a1D船首メタルギア登場ポリゴンデモ開始-1)
+	eval($s:登場ポイント = 東１Ｆ)
+	load "d11t" ;
+}
+
+proc mv_init_d11t_2 {
+	eval($w:t_story = d:ST_T11a1D船首メタルギア登場ポリゴンデモ開始-1)
+	eval($s:登場ポイント = 西１Ｆ)
+	load "d11t" ;
+}
+
+proc mv_init_d11t_3 {
+	eval($w:t_story = d:ST_T11a1D船首メタルギア登場ポリゴンデモ開始-1)
+	eval($s:登場ポイント = 東２Ｆ)
+	load "d11t" ;
+}
+
+proc mv_init_d11t_4 {
+	eval($w:t_story = d:ST_T11a1D船首メタルギア登場ポリゴンデモ開始-1)
+	eval($s:登場ポイント = 西２Ｆ)
+	load "d11t" ;
+}
+
+proc mv_init_d12t_0 {
+	eval($w:t_story = (d:ST_T12a1Dメタルギア強奪ポリゴンデモ開始-1))
+	load "d12t" ;
+}
+
+proc mv_init_d12t_1 {
+	eval($w:t_story = (d:ST_T12a2Dメタルギア強奪ポリゴンデモ２開始-1))
+	load "d12t" ;
+}
+
+proc mv_init_d12t_2 {
+	eval($w:t_story = (d:ST_T12a3Dメタルギア強奪ポリゴンデモ３開始-1))
+	load "d12t3" ;
+}
+
+proc mv_init_d12t4_0 {
+	eval($w:t_story = (d:ST_T12a4Dメタルギア強奪ポリゴンデモ後半開始-1))
+	load "d12t4" ;
+}
+
+proc mv_init_d12t4_1 {
+	eval($w:t_story = (d:ST_T12a5Dメタルギア強奪ポリゴンデモ後半２開始-1))
+	load "d12t4" ;
+}
+
+proc mv_init_d13t_0 {
+	eval($w:t_story = d:ST_T12a5Dメタルギア強奪ポリゴンデモ後半２終了)
+	load "d13t" ;
+}
+
+proc mv_init_d14t_0 {
+	eval($s:デモ直前のエリア = w04a)
+	load "d14t" ;
+}
+
+proc mv_init_d14t_1 {
+	eval($s:デモ直前のエリア = w04b)
+	load "d14t" ;
+}
+
+proc mv_init_d14t_2 {
+	eval($s:デモ直前のエリア = w04c)
+	load "d14t" ;
+}
+
+
+
+
+
+proc mv_init_t00a1D_d00a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 0 ) ;
+	load "t00a1D.d00a" ;
+}
+
+proc mv_init_t01a1D_d00a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 0 ) ;
+	load "t01a1D.d00a" ;
+}
+
+proc mv_init_t01a1D_w00a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 0 ) ;
+	load "t01a1D.w00a" ;
+}
+
+proc mv_init_t02a1D_d00a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 0 ) ;
+	load "t01a2D.d00a" ;
+}
+
+proc mv_init_t03a1D_d00a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 0 ) ;
+	load "t03a1D.d00a" ;
+}
+
+proc mv_init_t05a1D_d00b_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 0 ) ;
+	load "t05a1D.d00b" ;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+// ---以下、コンセプトマップ用(現在未使用)---
+/*
+	sload.h
+	    ステージロード用ヘッダファイル
+
+	1999/09/03 Y.Matsuhana
+	$Id: sload.h,v 1.732 2002/09/18 11:54:06 usr03379 Exp $
+
+
+*/
+
+proc mv_init_cw00a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 18500 ) ;
+	load "cw00a" ;
+}
+
+// １Ｆ居住区（左舷)
+/*proc mv_cw00a_cw01a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = -10400 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 1400 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -6000 ) ;
+	load "cw01a" ;
+}
+*/
+
+//9月評価会限定
+proc mv_cw00a_cw01a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = -10400 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 1400 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -6000 ) ;
+	load "cw01a" ;
+}
+
+proc mv_cw01a_cw00a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = -8900 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 1400 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -4700 ) ;
+	load "cw00a" ;
+}
+
+// １Ｆ居住区（右舷)
+proc mv_cw00a_cw01a_1 {
+	eval( $i:プレイヤー初期Ｘ位置 = 10400 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 1400 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -6000 ) ;
+	load "cw01a" ;
+}
+
+proc mv_cw01a_cw00a_1 {
+	eval( $i:プレイヤー初期Ｘ位置 = 8900 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 1400 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -4700 ) ;
+	load "cw00a" ;
+}
+
+// 居住区一階 → 居住区二階（9月評価会限定）
+proc mv_cw01a_cw01b_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = -600 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 4000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -10000 ) ;
+	load "cw01b" ;
+}
+
+// 居住区一階 → 居住区二階（ビデオ撮影用限定）
+proc mv_vw01a_vw01b_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = -5000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 4000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -10000 ) ;
+	load "vw01b" ;
+}
+
+// 居住区二階 → 居住区一階（9月評価会限定）
+proc mv_cw01b_cw01a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -14000 ) ;
+	load "cw01a" ;
+}
+
+// 居住区二階西階段 → 居住区三階（9月評価会限定）
+proc mv_cw01b_cw01c_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = -9500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 6000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -14000 ) ;
+	load "cw01c" ;
+}
+
+// 居住区二階東階段 → 居住区三階（9月評価会限定）
+proc mv_cw01b_cw01c_1 {
+	eval( $i:プレイヤー初期Ｘ位置 = 9500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 6000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -14000 ) ;
+	load "cw01c" ;
+}
+
+// 居住区三階西 → 居住区二階（9月評価会限定）
+proc mv_cw01c_cw01b_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = -9319 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 4500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -10450 ) ;
+	load "cw01b" ;
+}
+
+// 居住区三階東 → 居住区二階（9月評価会限定）
+proc mv_cw01c_cw01b_1 {
+	eval( $i:プレイヤー初期Ｘ位置 = 9319 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 4500 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -10450 ) ;
+	load "cw01b" ;
+}
+
+// 居住区三階西 → ブリッジ外（9月評価会限定）
+proc mv_cw01c_cw01a_0x {
+	eval( $i:プレイヤー初期Ｘ位置 = -11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 7000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -8000 ) ;
+	load "cw00a" ;
+}
+
+// 居住区三階東 → ブリッジ外（9月評価会限定）
+proc mv_cw01c_cw01a_1x {
+	eval( $i:プレイヤー初期Ｘ位置 = 11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 7000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -8000 ) ;
+	load "cw00a" ;
+}
+
+// 居住区三階 → 居住区四階（9月評価会限定）
+proc mv_cw01c_cw01d_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = -5 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 10400 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -19050 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 )
+	load "cw01d" ;
+}
+
+// 居住区四階 → 居住区三階（9月評価会限定）
+proc mv_cw01d_cw01c_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = 50 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 8000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -17022 ) ;
+	eval( $i:プレイヤー初期方向 = 0 )
+	load "cw01c" ;
+}
+
+// 居住区四階 → 居住区五階（9月評価会限定）
+proc mv_cw01d_cw01e_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = -500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 13451 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -14261 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 )
+	load "cw01e" ;
+}
+
+// 居住区四階西 → ブリッジ外（9月評価会限定）
+proc mv_cw01d_cw01a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = -11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 7000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -8000 ) ;
+	load "cw00a" ;
+}
+
+// 居住区四階東 → ブリッジ外（9月評価会限定）
+proc mv_cw01d_cw01a_1 {
+	eval( $i:プレイヤー初期Ｘ位置 = 11000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 7000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -8000 ) ;
+	load "cw00a" ;
+}
+
+// 居住区五階 → 居住区四階（9月評価会限定）
+proc mv_cw01e_cw01d_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = -2100 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 13160 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -12770 ) ;
+	eval( $i:プレイヤー初期方向 = 0 )
+	load "cw01d" ;
+}
+
+// エンジンルーム(左舷)
+proc mv_cw01a_cw02a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = -8500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -3000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -14500 ) ;
+	load "cw02a" ;
+}
+
+proc mv_cw02a_cw01a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = -7250 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -14500 ) ;
+	load "cw01a" ;
+}
+
+// エンジンルーム(右舷)
+proc mv_cw01a_cw02a_1 {
+	eval( $i:プレイヤー初期Ｘ位置 = 8500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -3000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -14500 ) ;
+	load "cw02a" ;
+}
+
+proc mv_cw02a_cw01a_1 {
+	eval( $i:プレイヤー初期Ｘ位置 = 7250 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -14500 ) ;
+	load "cw01a" ;
+}
+
+proc mv_init_cw04a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -20000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -30000 ) ;
+	load "cw04a" ;
+}
+
+// ---以下、ビデオ撮影マップ用---
+
+// エンジンルーム→長廊下
+proc mv_vw02a_vw03a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = 8500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -3000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -14500 ) ;
+	load "vw03a" ;
+}
+
+// ---以下、プログラマ実験用---
+
+proc mv_ow01a_ow02a_0 {
+	eval( $i:プレイヤー初期Ｘ位置 = -8500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -3000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -14500 ) ;
+	load "w02a_old" ;
+}
+
+// ---以下、プログラマ実験用---
+proc mv_w12a_w13a_0 {
+	eval( $w:現ステージ番号 = d:ステージ名:ＡＢ連絡橋 );
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 0 ) ;
+	load "w13a" ;
+}
+
+
+// ---上野テスト用---
+proc mv_memcard {
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 0 ) ;
+	load "memcard" ;
+}
+
+
+proc mv_p010_06_m02 {
+	chara MOVIE再生 p010_06_m02 -file t:p010_06_m02 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc mv_p014_02_m01 {
+	chara MOVIE再生 p014_02_m01 -file t:p014_02_m01 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc mv_p014_04_m02 {
+	chara MOVIE再生 p014_04_m02 -file t:p014_04_m02 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc mv_p014_07_m03 {
+	chara MOVIE再生 p014_07_m03 -file t:p014_07_m03 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc mv_p049_04_m02 {
+	chara MOVIE再生 p049_04_m02 -file t:p049_04_m02 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc mv_p049_06_m03 {
+	chara MOVIE再生 p049_06_m03 -file t:p049_06_m03 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc mv_p049_09_m05 {
+	chara MOVIE再生 p049_09_m05 -file t:p049_09_m05 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc mv_p055_03_m01 {
+	chara MOVIE再生 p055_03_m01 -file t:p055_03_m01 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc mv_p059_02_m02 {
+	chara MOVIE再生 p059_02_m02 -file t:p059_02_m02 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc mv_p080_02_m01 {
+	chara MOVIE再生 p080_02_m01 -file t:p080_02_m01 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc mv_p080_06_m02 {
+	chara MOVIE再生 p080_06_m02 -file t:p080_06_m02 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc mv_p080_27_m11 {
+	chara MOVIE再生 p080_27_m11 -file t:p080_27_m11 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc mv_p010_02_m01 {
+	chara MOVIE再生 p010_02_m01 -file t:p010_02_m01 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc mv_p010_07_m03 {
+	chara MOVIE再生 p010_07_m03 -file t:p010_07_m03 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc mv_p010_08_m04 {
+	chara MOVIE再生 p010_08_m04 -file t:p010_08_m04 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc mv_p014_14_m04 {
+	chara MOVIE再生 p014_14_m04 -file t:p014_14_m04 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc mv_p036_09_m01 {
+	chara MOVIE再生 p036_09_m01 -file t:p036_09_m01 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc mv_p040_06_r02 {
+	chara MOVIE再生 p040_06_r02 -file t:p040_06_r02 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+// テロにより、削除されていたため削除 2002.06.10 吉池
+//proc mv_p049_03_m01 {
+//	chara MOVIE再生 p049_03_m01 -file t:p049_03_m01 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+//}
+proc mv_p049_07_m04 {
+	chara MOVIE再生 p049_07_m04 -file t:p049_07_m04 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc	mv_p050_03_m02 {
+	chara MOVIE再生 p050_03_m02 -file t:p050_03_m02 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc	mv_p050_05_m03 {
+	chara MOVIE再生 p050_05_m03 -file t:p050_05_m03 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc	mv_p058_05_m01 {
+	chara MOVIE再生 p058_05_m01 -file t:p058_05_m01 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc	mv_p062_02_m01 {
+	chara MOVIE再生 p062_02_m01 -file t:p062_02_m01 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc	mv_p062_04_m02 {
+	chara MOVIE再生 p062_04_m02 -file t:p062_04_m02 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc	mv_p070_06_m01 {
+	chara MOVIE再生 p070_06_m01 -file t:p070_06_m01 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc	mv_p070_11_m02 {
+	chara MOVIE再生 p070_11_m02 -file t:p070_11_m02 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc	mv_p070_14_m03 {
+	chara MOVIE再生 p070_14_m03 -file t:p070_14_m03 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc	mv_p070_19_m05 {
+	chara MOVIE再生 p070_19_m05 -file t:p070_19_m05 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc	mv_p080_08_m03 {
+	chara MOVIE再生 p080_08_m03 -file t:p080_08_m03 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc	mv_p080_10_m04 {
+	chara MOVIE再生 p080_10_m04 -file t:p080_10_m04 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc	mv_p080_12_m05 {
+	chara MOVIE再生 p080_12_m05 -file t:p080_12_m05 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc	mv_p080_15_m06 {
+	chara MOVIE再生 p080_15_m06 -file t:p080_15_m06 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc	mv_p080_17_m07 {
+	chara MOVIE再生 p080_17_m07 -file t:p080_17_m07 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+// テロにより、削除されていたため削除 2002.06.10 吉池
+//proc	mv_p080_20_m08 {
+//	chara MOVIE再生 p080_20_m08 -file t:p080_20_m08 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+//}
+proc	mv_p080_22_m09 {
+	chara MOVIE再生 p080_22_m09 -file t:p080_22_m09 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc	mv_p080_24_m10 {
+	chara MOVIE再生 p080_24_m10 -file t:p080_24_m10 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+proc	mv_p082_03_m01 {
+	chara MOVIE再生 p082_03_m01 -file t:p082_03_m01 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+// テロにより、削除されていたため削除 2002.06.10 吉池
+//proc	mv_p082_08_m03 {
+//	chara MOVIE再生 p082_08_m03 -file t:p082_08_m03 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+//}
+proc	mv_p082_09_m04 {
+	chara MOVIE再生 p082_09_m04 -file t:p082_09_m04 -top 0, d:MOVIE_TOP_Y -size 512, 320 -proc movie_end_proc
+}
+
+
+
+
+
+proc mv_demotest {
+	eval( $b:res_mode = d:DEMO_TEST )
+	restart -s ;
+}
+
+proc mv_boss_check {
+	eval( $b:res_mode = d:BOSS_CHECK )
+	restart -s ;
+}
+
+proc mv_bombtest1 {
+	eval( $b:res_mode = d:BOMB_TEST1 )
+	restart -s ;
+}
+
+proc mv_bombtest2 {
+	eval( $b:res_mode = d:BOMB_TEST2 )
+	restart -s ;
+}
+
+proc mv_bombtest3 {
+	eval( $b:res_mode = d:BOMB_TEST3 )
+	restart -s ;
+}
+
+proc mv_movietest {
+	eval( $b:res_mode = d:MOVIE_TEST )
+	restart -s ;
+}
+
+
+// カウントダウンイベント　バグチェック用エントリ
+// ----------------------------------------
+
+proc contdown_event_set {
+	eval ( $w:p_story = d:ST:P024_01_R01爆弾解体センサーＢ入手１無線デモ１終了 );
+	eval($f:w23a_サイファー遭遇デモフラグ = 1) ;
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+
+	eval( $i:Ａ脚底部爆弾タイマー残り時間   = (60*60));		// 0 になるとゲームオーバー
+
+}
+proc contdown_event2_set {
+	eval ( $w:p_story = d:ST:P031_01_P01フォーチュン戦終了１ポリゴンデモ１終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	eval( $i:ヘリポート爆弾タイマー残り時間 = (60*60));		// 0 になるとゲームオーバー
+}
+proc contdown_event3_set {
+	eval ( $w:p_story = d:ST:P069_02_R01ヴァンプ狙撃終了２無線機デモ１終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+}
+
+proc mv_count_test1_a_roof {
+	@contdown_event_set
+	@mv_w12b0_w12a_0
+}
+proc mv_count_test1_a {
+	@contdown_event_set
+	@mv_w13a_w12b0_0
+}
+proc mv_count_test1_ab {
+	@contdown_event_set
+	@mv_w14a_w13a_0
+}
+proc mv_count_test1_b {
+	@contdown_event_set
+	@mv_w15a_w14a_0
+}
+proc mv_count_test1_bc {
+	@contdown_event_set
+	@mv_w16a_w15a_0
+}
+proc mv_count_test1_c {
+	@contdown_event_set
+	@mv_w17a_w16a_0
+}
+proc mv_count_test1_cd {
+	@contdown_event_set
+	@mv_w18a_w17a_0
+}
+proc mv_count_test1_d {
+	@contdown_event_set
+	@mv_w19a_w18a_0
+}
+proc mv_count_test1_de {
+	@contdown_event_set
+	@mv_w18a_w19a_0
+}
+proc mv_count_test1_e {
+	@contdown_event_set
+	@mv_w19a_w20a0_0
+}
+proc mv_count_test1_heriport {
+	@contdown_event_set
+	@mv_w20a1_w20b_0
+}
+proc mv_count_test1_ef {
+	@contdown_event_set
+	@mv_w20a0_w21a_0
+}
+proc mv_count_test1_f {
+	@contdown_event_set
+	@mv_w21a_w22a0g_0
+}
+proc mv_count_test1_fa {
+	@contdown_event_set
+	@mv_w22a0h_w23a_0
+}
+
+proc mv_count_test2_a_roof {
+	@contdown_event2_set
+	@mv_w12b0_w12a_0
+}
+proc mv_count_test2_a {
+	@contdown_event2_set
+	@mv_w13a_w12b0_0
+}
+proc mv_count_test2_ab {
+	@contdown_event2_set
+	@mv_w14a_w13a_0
+}
+proc mv_count_test2_b {
+	@contdown_event2_set
+	@mv_w15a_w14a_0
+}
+proc mv_count_test2_bc {
+	@contdown_event2_set
+	@mv_w16a_w15a_0
+}
+proc mv_count_test2_c {
+	@contdown_event2_set
+	@mv_w17a_w16a_0
+}
+proc mv_count_test2_cd {
+	@contdown_event2_set
+	@mv_w18a_w17a_0
+}
+proc mv_count_test2_d {
+	@contdown_event2_set
+	@mv_w19a_w18a_0
+}
+proc mv_count_test2_de {
+	@contdown_event2_set
+	@mv_w18a_w19a_0
+}
+proc mv_count_test2_e {
+	@contdown_event2_set
+	@mv_w19a_w20a0_0
+}
+proc mv_count_test2_heriport {
+	@contdown_event2_set
+	@mv_w20a1_w20b_0
+}
+proc mv_count_test2_ef {
+	@contdown_event2_set
+	@mv_w20a0_w21a_0
+}
+proc mv_count_test2_f {
+	@contdown_event2_set
+	@mv_w21a_w22a0g_0
+}
+proc mv_count_test2_fa {
+	@contdown_event2_set
+	@mv_w22a0h_w23a_0
+}
+
+
+proc mv_count_test3_e {
+	@contdown_event3_set
+	@mv_w19a_w20a0_0
+}
+proc mv_count_test3_ef {
+	@contdown_event3_set
+	@mv_w20a0_w21a_0
+}
+proc mv_count_test3_c1f {
+	@contdown_event3_set
+	@mv_w21a_w24a_0
+}
+
+
+
+
+proc mv_opening_demo {
+	@mv_P001_01_P01_0
+}
+proc mv_snake_elv_up {
+	@mv_P003_01_p01_0
+}
+proc mv_node_access {
+	@mv_P004_01_P01_0
+}
+proc mv_raiden_elv_up {
+	@mv_P005_01_P01_0
+}
+proc mv_encount_vamp_no_gun {
+	@mv_P010_01_p01_0
+}
+
+proc mv_encount_vamp_gun {
+	@mv_P010_01_p01_1
+}
+proc mv_encount_vamp_no_shave {
+	@mv_P010_09_P04_0
+}
+proc mv_encount_vamp_shave {
+	@mv_P010_09_P04_1
+}
+proc mv_encount_fortune {
+	@mv_P012_01_P01_0
+}
+proc mv_encount_petar {
+	@mv_P014_01_P01_0
+}
+proc mv_encount_olga {
+	@mv_P021_01_p01_0
+}
+proc mv_vs_fortune_before {
+	@mv_P028_01_p01_0
+}
+proc mv_vs_fortune_after {
+	@mv_P031_01_p01_0
+}
+proc mv_vs_fatman_before {
+	@mv_P032_01_p01_0
+}
+proc mv_vs_fatman_after {
+	@mv_P034_01_p01_0
+}
+proc mv_encount_ninja {
+	@mv_P036_01_p01_0
+}
+proc mv_in_hostage_room {
+	@mv_P039_01_p01_0
+}
+proc mv_encount_ames {
+	@mv_P040_01_p01_0
+}
+proc mv_vs_harrier_before {
+	@mv_P045_01_p01_0
+}
+proc mv_vs_harrier_after {
+	@mv_P046_01_P01_0
+}
+proc mv_olga_in_front_of_EFloor {
+	@mv_P047_01_p01_0
+}
+proc mv_Prez_demo {
+	@mv_P049_01_p01_0
+}
+proc mv_Petar_molg {
+	@mv_P054_01_P01_0
+}
+proc mv_vs_vamp_before {
+	@mv_P055_01_P01_0
+}
+proc mv_vs_vamp_after {
+	@mv_P057_01_P01_0
+}
+proc mv_emma_1 {
+	@mv_P058_01_P01_0
+}
+proc mv_emma_2 {
+	@mv_P059_01_P01_0
+}
+proc mv_emma_3 {
+	@mv_P062_01_P01_0
+}
+proc mv_emma_card_5 {
+	eval( $w:p_story = d:ST:P063_01_P01カード五１ポリゴンデモ１開始 );
+	@mv_w25d_d063p01_0
+}
+proc mv_emma_L_prop {
+	@mv_P065_01_P01_0
+}
+proc mv_vamp_snaiping {
+	@mv_P068_01_P01_0x
+}
+proc mv_ag_start_up {
+	@mv_P070_01_P01_0
+}
+proc mv_tube {
+	@mv_P073_02_P01_0
+}
+proc mv_katana {
+	@mv_P074_01_P01_0
+}
+proc mv_tengu {
+	@mv_P077_02_P01_0
+}
+proc mv_ag_fortune {
+	@mv_P078_01_P01_0
+}
+proc mv_vs_ray {
+	@mv_P079_01_P01_0
+}
+proc mv_raise_the_ag {
+	@mv_P080_01_P01_0
+}
+proc mv_ending {
+	@mv_P082_01_P01_0
+}
+
+
+// ---Boss調整用ステージ
+proc mv_vs_fortune_ve {
+	eval($w:ゲーム設定 = d:LEVEL_VERYEASY) ;
+	eval ( $w:p_story = d:ST:P029_01フォーチュン戦開始 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_w11b_w11c_0
+}
+
+proc mv_vs_fortune_ea {
+	eval($w:ゲーム設定 = d:LEVEL_EASY) ;
+	eval ( $w:p_story = d:ST:P029_01フォーチュン戦開始 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_w11b_w11c_0
+}
+
+proc mv_vs_fortune_no {
+	eval($w:ゲーム設定 = d:LEVEL_NORMAL) ;
+	eval ( $w:p_story = d:ST:P029_01フォーチュン戦開始 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_w11b_w11c_0
+}
+
+proc mv_vs_fortune_ha {
+	eval($w:ゲーム設定 = d:LEVEL_HARD) ;
+	eval ( $w:p_story = d:ST:P029_01フォーチュン戦開始 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_w11b_w11c_0
+}
+
+proc mv_vs_fortune_vh {
+	eval($w:ゲーム設定 = d:LEVEL_EXTREME) ;
+	eval ( $w:p_story = d:ST:P029_01フォーチュン戦開始 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_w11b_w11c_0
+}
+
+proc mv_vs_fatman_ve {
+	eval($w:ゲーム設定 = d:LEVEL_VERYEASY) ;
+	eval ( $w:p_story = d:ST:P032_01_P01ファットマン登場１ポリゴンデモ１終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_demo2_w20b_0
+}
+
+proc mv_vs_fatman_ea {
+	eval($w:ゲーム設定 = d:LEVEL_EASY) ;
+	eval ( $w:p_story = d:ST:P032_01_P01ファットマン登場１ポリゴンデモ１終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_demo2_w20b_0
+}
+
+proc mv_vs_fatman_no {
+	eval($w:ゲーム設定 = d:LEVEL_NORMAL) ;
+	eval ( $w:p_story = d:ST:P032_01_P01ファットマン登場１ポリゴンデモ１終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_demo2_w20b_0
+}
+
+proc mv_vs_fatman_ha {
+	eval($w:ゲーム設定 = d:LEVEL_HARD) ;
+	eval ( $w:p_story = d:ST:P032_01_P01ファットマン登場１ポリゴンデモ１終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_demo2_w20b_0
+}
+
+proc mv_vs_fatman_vh {
+	eval($w:ゲーム設定 = d:LEVEL_EXTREME) ;
+	eval ( $w:p_story = d:ST:P032_01_P01ファットマン登場１ポリゴンデモ１終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_demo2_w20b_0
+}
+
+proc mv_vs_harrier_ve {
+	eval($w:ゲーム設定 = d:LEVEL_VERYEASY) ;
+	eval ( $w:p_story = d:ST:P045_01_P01ハリアー登場１ポリゴンデモ１終了 );
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 3);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval( $b:w25a_ステージ状態 = 1 ) ;
+	eval( $f:w18a_ノードフラグ = 1 );
+	@mv_w18a_w25a_1
+}
+
+proc mv_vs_harrier_ea {
+	eval($w:ゲーム設定 = d:LEVEL_EASY) ;
+	eval ( $w:p_story = d:ST:P045_01_P01ハリアー登場１ポリゴンデモ１終了 );
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 3);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval( $b:w25a_ステージ状態 = 1 ) ;
+	eval( $f:w18a_ノードフラグ = 1 );
+	@mv_w18a_w25a_1
+}
+
+proc mv_vs_harrier_no {
+	eval($w:ゲーム設定 = d:LEVEL_NORMAL) ;
+	eval ( $w:p_story = d:ST:P045_01_P01ハリアー登場１ポリゴンデモ１終了 );
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 3);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval( $b:w25a_ステージ状態 = 1 ) ;
+	eval( $f:w18a_ノードフラグ = 1 );
+	@mv_w18a_w25a_1
+}
+
+proc mv_vs_harrier_ha {
+	eval($w:ゲーム設定 = d:LEVEL_HARD) ;
+	eval ( $w:p_story = d:ST:P045_01_P01ハリアー登場１ポリゴンデモ１終了 );
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 3);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval( $b:w25a_ステージ状態 = 1 ) ;
+	eval( $f:w18a_ノードフラグ = 1 );
+	@mv_w18a_w25a_1
+}
+
+proc mv_vs_harrier_vh {
+	eval($w:ゲーム設定 = d:LEVEL_EXTREME) ;
+	eval ( $w:p_story = d:ST:P045_01_P01ハリアー登場１ポリゴンデモ１終了 );
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 3);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval( $b:w25a_ステージ状態 = 1 ) ;
+	eval( $f:w18a_ノードフラグ = 1 );
+	@mv_w18a_w25a_1
+}
+
+proc mv_vs_vamp_ve {
+	eval($w:ゲーム設定 = d:LEVEL_VERYEASY) ;
+	eval ( $w:p_story = d:ST:P055_04_P03ヴァンプ戦前４ポリゴンデモ３終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 4);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+
+	eval( $f:ピーター浮遊死体デモ見た = 1 ) ;
+	eval( $f:w31b_左の水密ドアを開けました = 1 ) ;
+
+	@mv_w31b_w31c0_0
+}
+
+proc mv_vs_vamp_ea {
+	eval($w:ゲーム設定 = d:LEVEL_EASY) ;
+	eval ( $w:p_story = d:ST:P055_04_P03ヴァンプ戦前４ポリゴンデモ３終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 4);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+
+	eval( $f:ピーター浮遊死体デモ見た = 1 ) ;
+	eval( $f:w31b_左の水密ドアを開けました = 1 ) ;
+
+	@mv_w31b_w31c0_0
+}
+
+proc mv_vs_vamp_no {
+	eval($w:ゲーム設定 = d:LEVEL_NORMAL) ;
+	eval ( $w:p_story = d:ST:P055_04_P03ヴァンプ戦前４ポリゴンデモ３終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 4);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+
+	eval( $f:ピーター浮遊死体デモ見た = 1 ) ;
+	eval( $f:w31b_左の水密ドアを開けました = 1 ) ;
+
+	@mv_w31b_w31c0_0
+}
+
+proc mv_vs_vamp_ha {
+	eval($w:ゲーム設定 = d:LEVEL_HARD) ;
+	eval ( $w:p_story = d:ST:P055_04_P03ヴァンプ戦前４ポリゴンデモ３終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 4);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+
+	eval( $f:ピーター浮遊死体デモ見た = 1 ) ;
+	eval( $f:w31b_左の水密ドアを開けました = 1 ) ;
+
+	@mv_w31b_w31c0_0
+}
+
+proc mv_vs_vamp_vh {
+	eval($w:ゲーム設定 = d:LEVEL_EXTREME) ;
+	eval ( $w:p_story = d:ST:P055_04_P03ヴァンプ戦前４ポリゴンデモ３終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 4);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+
+	eval( $f:ピーター浮遊死体デモ見た = 1 ) ;
+	eval( $f:w31b_左の水密ドアを開けました = 1 ) ;
+
+	@mv_w31b_w31c0_0
+}
+
+proc mv_vs_teng_vh {
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_EXTREME プラント編 $b:res_mode
+	eval($w:ゲーム設定 = d:LEVEL_EXTREME) ;
+	@爆弾解体イベント終了した処理
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 46);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 37);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 31);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 19);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 20);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 10);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 10);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 6);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 6);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 91);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 10);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 10);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 91);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 31);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 3);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 2);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+
+	//	天狗兵登場フラグを立てる
+	eval ($f:w45a_天狗兵登場フラグ = d:TRUE)
+	//	登場ポイントを変更
+	eval($s:登場ポイント = 天狗兵降下デモ終了後)
+	//	登場位置を再代入
+	eval( $i:プレイヤー初期Ｘ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -149250 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	//	ストーリーフラグを立てる
+	eval($w:p_story = d:ST:P077_02_P01天狗兵降下ラッシュポリゴンデモ１終了)
+	load "w45a" -no_save $f:NO_VARSAVEフラグ ;
+
+}
+
+proc mv_vs_ray_ve {
+	eval($w:ゲーム設定 = d:LEVEL_VERYEASY) ;
+	eval ( $w:p_story = d:ST:P079_03_P02ＲＡＹ戦前３ポリゴンデモ２終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+	@mv_init_VSMETAL
+}
+
+proc mv_vs_ray_ea {
+	eval($w:ゲーム設定 = d:LEVEL_EASY) ;
+	eval ( $w:p_story = d:ST:P079_03_P02ＲＡＹ戦前３ポリゴンデモ２終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+	@mv_init_VSMETAL
+}
+
+proc mv_vs_ray_no {
+	eval($w:ゲーム設定 = d:LEVEL_NORMAL) ;
+	eval ( $w:p_story = d:ST:P079_03_P02ＲＡＹ戦前３ポリゴンデモ２終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+	@mv_init_VSMETAL
+}
+
+proc mv_vs_ray_ha {
+	eval($w:ゲーム設定 = d:LEVEL_HARD) ;
+	eval ( $w:p_story = d:ST:P079_03_P02ＲＡＹ戦前３ポリゴンデモ２終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+	@mv_init_VSMETAL
+}
+
+proc mv_vs_ray_vh {
+	eval($w:ゲーム設定 = d:LEVEL_EXTREME) ;
+	eval ( $w:p_story = d:ST:P079_03_P02ＲＡＹ戦前３ポリゴンデモ２終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:Ｍ９] = 61);
+	eval($w:武器弾数Ｒ[d:武器:ソコム] = 46);
+	eval($w:武器弾数Ｒ[d:武器:マガジン] = 50);
+	eval($w:武器弾数Ｒ[d:武器:スタン] = 20);
+	eval($w:武器弾数Ｒ[d:武器:チャフ] = 20);
+	eval($w:武器弾数Ｒ[d:武器:凍結スプレー] = 1);
+	eval($w:武器弾数Ｒ[d:武器:雑誌] = 5);
+	eval($w:武器弾数Ｒ[d:武器:クレイモア] = 25);
+	eval($w:武器弾数Ｒ[d:武器:Ｍ４] = 151);
+	eval($w:武器弾数Ｒ[d:武器:Ｃ４] = 25);
+	eval($w:武器弾数Ｒ[d:武器:ＡＫＳ] = 151);
+	eval($w:武器弾数Ｒ[d:武器:マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:特殊マイク] = 1);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] = 51);
+	eval($w:武器弾数Ｒ[d:武器:ＲＧＢ６] = 31);
+	eval($w:武器弾数Ｒ[d:武器:グレネード] = 20);
+	eval($w:武器弾数Ｒ[d:武器:スティンガー] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ニキータ] = 50);
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+
+	eval($w:アイテム数Ｒ[d:アイテム:カード] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:サーマルゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:止血剤] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:煙草] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＡ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:センサーＢ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ソコムサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボール] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＢ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＣ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＤ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:ダンボールＥ] = 25);
+	eval($w:アイテム数Ｒ[d:アイテム:地雷探知器] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ゴル兵制服] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:携帯電話] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ジアゼパム] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:ＭＯディスク] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:ＡＫサプレッサ] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:暗視ゴーグル] = 1);
+	eval($w:アイテム数Ｒ[d:アイテム:防弾チョッキ] = 1);
+
+	@mv_init_VSMETAL
+}
+
+proc mv_vs_solidus_ve {
+	eval($w:ゲーム設定 = d:LEVEL_VERYEASY) ;
+	eval ( $w:p_story = d:ST:P080_28_P12ＡＧ浮上２８ポリゴンデモ１２終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_init_w61a_0
+}
+
+proc mv_vs_solidus_ea {
+	eval($w:ゲーム設定 = d:LEVEL_EASY) ;
+	eval ( $w:p_story = d:ST:P080_28_P12ＡＧ浮上２８ポリゴンデモ１２終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_init_w61a_0
+}
+
+proc mv_vs_solidus_no {
+	eval($w:ゲーム設定 = d:LEVEL_NORMAL) ;
+	eval ( $w:p_story = d:ST:P080_28_P12ＡＧ浮上２８ポリゴンデモ１２終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_init_w61a_0
+}
+
+proc mv_vs_solidus_ha {
+	eval($w:ゲーム設定 = d:LEVEL_HARD) ;
+	eval ( $w:p_story = d:ST:P080_28_P12ＡＧ浮上２８ポリゴンデモ１２終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_init_w61a_0
+}
+
+proc mv_vs_solidus_vh {
+	eval($w:ゲーム設定 = d:LEVEL_EXTREME) ;
+	eval ( $w:p_story = d:ST:P080_28_P12ＡＧ浮上２８ポリゴンデモ１２終了 );
+
+	eval($w:武器弾数Ｒ[d:武器:ブレード] = 1);
+
+	eval($w:アイテム数Ｒ[d:アイテム:レーション] = 5);
+	eval($w:アイテム数Ｒ[d:アイテム:デジカメ] = 1);
+
+	@mv_init_w61a_0
+}
+
+
+
+
+// ---E3用ステージ
+#ifdef d:MGS2_E3
+
+proc mv_e01a {
+	eval( $i:プレイヤー初期Ｘ位置 = -10750 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -11700 ) ;
+	eval( $i:プレイヤー初期方向 = 0 ) ;
+	eval( $s:登場ポイント = リフレッシュルーム左舷からロード ) ;
+	load "e01a" ;
+}
+
+proc mv_e04b {
+	load "e04b" ;
+}
+
+proc mv_init_e11c {
+	eval( $i:プレイヤー初期Ｘ位置 = -500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -45000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = 4000 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w11b_w11c_0 ) ;
+	load "e11c" ;
+}
+
+proc mv_e14a {
+	eval( $i:プレイヤー初期Ｘ位置 = -43500 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -19250 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w13a_w14a_0 ) ;
+	load "e14a" ;
+}
+
+proc mv_e43a {
+	eval( $i:プレイヤー初期Ｘ位置 = 3550 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 4000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -56250 ) ;
+	eval( $i:プレイヤー初期方向 = 1024 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w42a_w43a_0 ) ;
+	load "e43a" ;
+}
+
+proc mv_e45a {
+
+	eval( $i:プレイヤー初期Ｘ位置 = 2000 ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = 0 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -132500 ) ;
+	eval( $i:プレイヤー初期方向 = 2048 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = sp_w44a_w45a_0 ) ;
+	load "e45a" ;
+}
+
+
+proc mv_etitle {
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = etitle ) ;
+	load "etitle" ;
+}
+
+// ＴＧＳ２００１Ｆ 特別バージョン
+proc mv_tgs2001f_special {
+
+	// 初期化
+	@プレイヤーコンフィグ用初期設定 d:LEVEL_EASY タンカー編 $b:res_mode
+	eval( $w:コンフィグ設定 = $w:コンフィグ設定 & ~d:CONFIG_RADAR_OFF_INTRUDE )
+
+	command 配列セット $w:武器弾数[0] {
+		1,			/* 素手 */
+		25,			/* Ｍ９ */
+		25,			/* ＵＳＰ */
+		-1,			/* ソコム */
+		-1,			/* ＰＳＧ−１ */
+		-1,			/* ＲＧＢ６ */
+		-1,			/* ニキータ */
+		-1,			/* スティンガー */
+		-1,			/* クレイモア */
+		-1,			/* Ｃ４ */
+		10,			/* チャフ */
+		10,			/* スタン */
+		-1,			/* マイク */
+		-1,			/* ブレード */
+		-1,			/* 凍結スプレー */
+		-1,			/* ＡＫ */
+		10,			/* 空マガジン */
+		10,			/* グレネード */
+		-1,			/* Ｍ４ */
+		-1,			/* ＰＳＧ１−Ｔ */
+		-1,			/* 特殊マイク */
+		-1,			/* 雑誌 */
+	}
+
+
+	command 配列セット $w:アイテム数[0] {
+		1,				/* 素手 */
+		3,				/* レーション */
+		0,				/* ダミー双眼鏡 */
+		0,				/* 風邪薬 */
+		5,				/* 止血剤 */
+		5,				/* ジアゼパム */
+		0,				/* ゴル兵制服 */
+		0,				/* 防弾チョッキ */
+		0,				/* ステルス */
+		0,				/* 地雷探知器 */
+		0,				/* センサーＡ */
+		0,				/* センサーＢ */
+		0,				/* 暗視ゴーグル */
+		1,				/* サーマルゴーグル */
+		0,				/* 双眼鏡 */
+		0,				/* デジタルカメラ */
+		1,				/* ダンボールＡ */
+		1,				/* たばこ */
+		0,				/* カード */
+		0,				/* 髭剃り */
+		0,				/* 携帯電話 */
+		1,				/* タンカー編カメラ */
+		0,				/* ダンボールＢ */
+		0,				/* ダンボールＣ */
+		1,				/* 濡れダンボール */
+		1,				/* 振動センサー */
+		0,				/* ダンボールＤ */
+		0,				/* ダンボールＥ */
+		0,				/* 無駄毛処理器 */
+		0,				/* ソコムサプレッサ */
+		0,				/* ＡＫサプレッサ */
+		0,				/* ダミータンカー編カメラ */
+		0,				/* 無限バンダナ */
+		0,				/* ドッグタグ */
+		0,				/* ＭＯディスク */
+		1,				/* ＵＳＰサプレッサ */
+		0,				/* 無限カツラ */
+		0,				/* カツラＡ */
+		0,				/* カツラＢ */
+		0, 				/* カツラＣ */
+		0,				/* カツラＤ	*/
+	}
+
+	eval( $w:現ステージ番号 = d:ステージ名:機関室 );
+	@グローバルロード w01f w02a
+	eval( $i:プレイヤー初期Ｘ位置 = (9800+1500) ) ;
+	eval( $i:プレイヤー初期Ｙ位置 = -5000 ) ;
+	eval( $i:プレイヤー初期Ｚ位置 = -11000 ) ;
+	eval( $i:プレイヤー初期方向 = 3072 ) ;
+	eval( $f:ロードチェックＯＮフラグ = 0);
+	eval( $s:登場ポイント = リフレッシュルーム右舷地下からロード ) ;
+
+	eval($w:t_story = d:ST_T06b1Rオルガ戦勝利後無線機デモ終了)
+	eval($f:w01eへ２回目以降 = 1)
+
+	load 'w02a' -resident 'r_tnk0'
+}
+#endif
+
+
+
+
+
+//	使用しない
+#if 0
+//フォーチュン戦後
+proc mv_lowpoly_p031_01_p01 {
+	eval($w:p_story = d:ST:P031_01_P01フォーチュン戦終了１ポリゴンデモ１開始)
+	load "w11c" -r "r_plt6" ;
+}
+
+//エイムズ死亡
+proc mv_lowpoly_p040_09_p05 {
+	eval($w:p_story = d:ST:P040_09_P05エイムズ発見９ポリゴンデモ５開始)
+	load "d036p03" -r "r_plt6" ;
+}
+
+//ハリアー登場
+proc mv_lowpoly_p045_01_p01 {
+	load "d045p01"
+}
+//ヴァンプ戦前
+proc mv_lowpoly_p055_01_p01 {
+	load "d055p01"
+}
+#endif
+
+
+
+
+
+
+
+
+//	E3対応
+#include lowpoly.h
+proc E3test_snake {
+	eval( $w:コンフィグ設定 = $w:コンフィグ設定 | d:CONFIG_CAPTION_OFF);
+	@メインセレクト 1 90 0 0 0
+}
+
+proc E3test_myl {
+	eval( $w:コンフィグ設定 = $w:コンフィグ設定 | d:CONFIG_CAPTION_OFF);
+	@メインセレクト 3 0 91 0 0
+}
+
+proc E3test_mylo {
+	eval( $w:コンフィグ設定 = $w:コンフィグ設定 | d:CONFIG_CAPTION_OFF);
+	@メインセレクト 3 0 92 0 0
+}
+
+proc E3test_txds {
+	eval( $w:コンフィグ設定 = $w:コンフィグ設定 | d:CONFIG_CAPTION_OFF);
+	@メインセレクト 1 93 0 0 0
+}
+
+#else
+
+print 'sload.h double include!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+
+#endif
+

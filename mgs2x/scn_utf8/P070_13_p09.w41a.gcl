@@ -1,0 +1,379 @@
+/*
+		P070_13_p09.w41a.gcl
+	    拷問部屋デモステージ（メタル格納庫込み）
+
+	2000/11/28 H.Yoshiike         
+	$Id: P070_13_p09.w41a.gcl,v 1.20 2001/09/26 08:44:47 usr03635 Exp $                      
+
+	
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+#define		DEMO_STAGE		1		// デモステージかどうかで起動するキャラを切り分ける
+
+
+// 各種設定用define
+// ------------------------------------
+
+#define		HZX_NAME			d00a3
+
+#define		KMS_NAME0			w41a			//	本体
+#define		KMS_NAME1			w41a_corridor	//	廊下
+
+
+//	ドア
+#define		DOOR_NAME			w41a_cell_sdr		//	独房用
+#define		DOOR_NAME2			w41a_cell_sdr_02	//	右ドア用
+#define		DOOR_NAME_LOAD		w01f_dr			// 	ロード用使ってない
+#define		DOOR_NAME_LOAD1A	w41a_dr_left	// 	ロード用
+#define		DOOR_NAME_LOAD1B	w41a_dr_right	// 	ロード用
+
+//	天井君で置くもの
+#define		CEIL_NAME0			w41a_ar			//	屋根
+
+//	プットオブジェで置くもの
+#define		KMS_NAME2			w42a_dummy		//	ロードエリア
+
+#define		KMS_NAME3			dr_lamp_cor_off	//	廊下西ドアランプ赤
+#define		KMS_NAME4			dr_lamp_cor_on 	//	廊下西ドアランプ青
+#define		KMS_NAME5			dr_lamp_cel_off	//	独房ドアランプ赤
+
+#define		CAN					w41a_kan		//	缶
+#define		STRAW				w41a_kan_st		//	ストロー
+#define		BED					w41a_goumon		//	拷問ベッド
+
+#define		LT2_NAME			w41a
+
+
+// include
+// ------------------------------------
+#include "5sec_bfr_demo.h"
+#include "demo_vardef.h"
+#include "demo_stdch.h"
+#include "demo_stdch2.h"
+#include "story.h"
+#include "sload.h"
+
+#include "p_force_cdc.ch"
+
+#if d:PLANT_DEMO_ALL_SKIP
+	#define		DEMO_SKIP_ENABLE 1
+#else
+	#define		DEMO_SKIP_ENABLE 0
+#endif
+
+#include "w41a_d_common.h"	//	ゲーム／デモ共通プロック
+
+#if d:MGS2_DEMO
+	#define DEMO_SET_STAGE 2	// 再生するステージを切り替える
+								// 0 : p070_13_09
+								// 1 : p070_16_10
+								// 2 : p070_17_11
+								// 3 : 他(?)
+#endif
+
+/***************************************************************************************************/
+// マップ起動
+/***************************************************************************************************/
+chara マップ 拷問部屋	-k	d:KMS_NAME0 \
+			-k	d:KMS_NAME1	\
+			-h 	d:HZX_NAME,0 -l d:LT2_NAME
+
+
+//###################################################################################
+//								ストーリーフラグ & デモ再生
+//###################################################################################
+command マップ設定 拷問部屋 -set {
+	// デモ環境かどうか。
+	#if d:MGS2_DEMO
+		// 不要プログラムの起動阻害
+		eval($s:d_num = P036_04_p03)
+chara デモアクトデバッグ demodebug  -i t:p070_17_p11 -d 'p070_17_p11' -l   \
+			-p 拷問台オフ 拷問台オン
+
+		if (d:DEMO_SET_STAGE == 0) {
+			eval($s:d_num = P070_13_p09)
+		} else if (d:DEMO_SET_STAGE == 1) {
+			eval($s:d_num = P070_16_p10)
+		} else if (d:DEMO_SET_STAGE == 2) {
+			eval($s:d_num = P070_17_p11)
+		} else {
+//			eval($s:d_num = P070_13_p09)
+		}
+
+
+	#else
+		if($w:p_story == d:ST:P070_13_P09ＡＧ起動１３ポリゴンデモ９開始) {
+			print'd:ST:P070_13_P09ＡＧ起動１３ポリゴンデモ９開始'
+			//eval($w:p_story = d:ST:P070_13_P09ＡＧ起動１３ポリゴンデモ９開始)
+			/* こいつは私の息子、とライデンを呼ぶソリダス */
+			// デモ特有の変数代入
+			eval($s:d_num = P070_13_p09)
+			// polydemo_**.h の最初のデモの時には必ず呼ぶこと。レーダー明示的にオフさせる。
+			@デモではレーダー不要
+			//	かつら等対応
+			@デモモデル差し替え処理
+			@デモ再生_P070_13_p09
+		} else if(d:ST:P070_15_M04ＡＧ起動１５ムービーデモ４終了 <= $w:p_story && \
+					$w:p_story < d:ST:P070_16_P10ＡＧ起動１６ポリゴンデモ１０開始) {
+			print'd:ST:P070_16_P10ＡＧ起動１６ポリゴンデモ１０開始'
+			eval($w:p_story = d:ST:P070_16_P10ＡＧ起動１６ポリゴンデモ１０開始)
+			/* ソリダス、拷問部屋を出てゆく */
+			// デモ特有の変数代入
+			eval($s:d_num = P070_16_p10)
+			// サウンド
+			@サウンドマネージャーセット
+			@サウンドマネージャー_mesg_1
+			//	かつら等対応
+			@デモモデル差し替え処理
+			@デモ再生_P070_16_p10
+		} else if(d:ST:P070_16_P10ＡＧ起動１６ポリゴンデモ１０終了 <= $w:p_story && \
+						$w:p_story < d:ST:P070_17_P11ＡＧ起動１７ポリゴンデモ１１開始) {
+			print'd:ST:P070_17_P11ＡＧ起動１７ポリゴンデモ１１開始'
+			eval($w:p_story = d:ST:P070_17_P11ＡＧ起動１７ポリゴンデモ１１開始)
+			/* オルガが来てオセロット去る */
+			// デモ特有の変数代入
+			eval($s:d_num = P070_17_p11)
+			//	かつら等対応
+			@デモモデル差し替え処理
+			@デモ再生_P070_17_p11
+		} else if(d:ST:P070_17_P11ＡＧ起動１７ポリゴンデモ１１終了 <= $w:p_story && \
+						$w:p_story < d:ST:P070_18_R02ＡＧ起動１８無線機デモ２開始) {
+			print'd:ST:P070_18_R02ＡＧ起動１８無線機デモ２開始'
+			eval($w:p_story = d:ST:P070_18_R02ＡＧ起動１８無線機デモ２開始)
+			/* オルガ体内通信　タンカー編からのいきさつを語るオルガ */
+			// デモ特有の変数代入
+			eval($s:d_num = P070_18_r02)
+			@rt_P070_18_R02ＡＧ起動１８無線機デモ２
+		} else if(d:ST:P070_19_M05ＡＧ起動１９ムービーデモ５終了 <= $w:p_story && \
+					$w:p_story < d:ST:P070_20_R03ＡＧ起動２０無線機デモ３開始) {
+			print'd:ST:P070_20_R03ＡＧ起動２０無線機デモ３開始'
+			eval($w:p_story = d:ST:P070_20_R03ＡＧ起動２０無線機デモ３開始)
+			/* オルガ体内通信　Ｓ３計画についてはじめて触れる */
+			// デモ特有の変数代入
+			eval($s:d_num = P070_20_r03)
+			@サウンドマネージャーセット
+			@サウンドマネージャー_mesg_1
+			@rt_P070_20_R03ＡＧ起動２０無線機デモ３
+		}
+	#endif
+	// デモ仕様のセット
+	@常駐キャラ設定						// stdch.hで定義
+	if($s:d_num != not_demo){
+		// 共通して使用するもの
+		chara デモキャンセルチェック デモキャンセル \
+			-p demo_cancel
+
+		// 無線ではシネマスクリーン起動しない
+		if(($s:d_num != P070_18_r02) && \
+			($s:d_num != P070_20_r03) && \
+			($s:d_num != P070_23_r04)){
+			@シネマスクリーンセット
+		}
+		@拷問台セット
+		@ロッカー設置
+		//	w41a_d_common.h内で記述
+		@ドア設置
+		@オブジェクト設定
+		@フォグ設定
+		@天井設定
+		@監視カメラ設定
+
+		@リアル影セット
+	}
+} // < 「command マップ設定 拷問部屋」 の閉じカッコ
+
+// 初期マップの表示
+command マップ表示 -show 拷問部屋
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+//###################################################################################
+//									デモのみ仕様各種
+//###################################################################################
+
+// ダミープロック
+proc dummy_proc {}
+
+// デモキャンセル
+proc demo_cancel {
+	command StreamStopAll
+}
+
+// リスタート
+proc restart_proc {
+	restart
+}
+
+// デモ終了時プロック
+
+proc P070_13_p09終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+	#if d:DEMO_SKIP_ENABLE
+		eval($w:p_story = d:ST:P070_17_P11ＡＧ起動１７ポリゴンデモ１１終了)
+		print '$w:p_story = d:ST:P070_17_P11ＡＧ起動１７ポリゴンデモ１１終了'
+	#else
+		eval($w:p_story = d:ST:P070_13_P09ＡＧ起動１３ポリゴンデモ９終了)
+		print '$w:p_story = d:ST:P070_13_P09ＡＧ起動１３ポリゴンデモ９終了'
+	#endif
+
+	@サウンドマネージャー_mesg_2
+	chara delay ディレイ \
+		-time 1 \ 
+		-exec{
+			//	ムービー用ステージへ
+			@mv_init_wmovie_0
+		}
+}
+
+proc P070_16_p10終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+	#if d:DEMO_SKIP_ENABLE
+		eval($w:p_story = d:ST:P070_17_P11ＡＧ起動１７ポリゴンデモ１１終了)
+		print '$w:p_story = d:ST:P070_17_P11ＡＧ起動１７ポリゴンデモ１１終了'
+	#else
+		eval($w:p_story = d:ST:P070_16_P10ＡＧ起動１６ポリゴンデモ１０終了)
+		print '$w:p_story = d:ST:P070_16_P10ＡＧ起動１６ポリゴンデモ１０終了'
+	#endif
+
+	chara delay ディレイ \
+		-time 1 \ 
+		-exec{
+			restart
+		}
+}
+
+proc P070_21_p12終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+	eval($w:p_story = d:ST:P070_21_P12ＡＧ起動２１ポリゴンデモ１２終了)
+	print '$w:p_story = d:ST:P070_21_P12ＡＧ起動２１ポリゴンデモ１２終了'
+
+	chara delay ディレイ \
+		-time 1 \ 
+		-exec{
+			// インタラクティブ主観へ
+			@ゲームステージへ戻る
+//			restart
+			@mv_w24d_w41a_0
+		}
+}
+
+
+
+//###################################################################################
+//									オブジェクト
+//###################################################################################
+
+	// ロッカー設置
+	proc ロッカー設置 {
+		chara プットオブジェ ロッカー１ \
+			-m neo_locker_door \
+			-r 0,0,0 \
+			-p 2950, 0,-6900 \
+			-s 100,100,100 \
+			-l d:LT2_NAME
+	}
+
+// 拷問台
+proc 拷問台セット {
+	chara プットオブジェ 拷問ベッド -m d:BED \
+		-r 0,0,0 \
+		-p 0,0,0  -l d:LT2_NAME \
+		-s 100,100,100
+}
+proc 拷問台オフ {
+	mesg プットオブジェ 拷問ベッド off
+}
+proc 拷問台オン {
+	mesg プットオブジェ 拷問ベッド on
+}
+// シネマスクリーン
+proc シネマスクリーンセット {
+	chara シネマスクリーン シネマ \
+		-top d:CINEMA_BELT_UPPER \
+		-bottom d:CINEMA_BELT_LOWER \
+		-ftime 60	//デフォルト値（ゼロは駄目）
+	mesg シネマスクリーン シネマ フェードアウト 1
+}
+proc デモ再生_P070_13_p09 {
+		chara demo デモ再生 \
+		-i t:p070_13_p09 \
+		-p 拷問台オフ 拷問台オン \
+		-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+		-next P070_13_p09終了
+}
+proc デモ再生_P070_16_p10 {
+	chara demo デモ再生 \
+		-i t:p070_16_p10 \
+		-p 拷問台オフ 拷問台オン \
+		-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+		-next P070_16_p10終了
+}
+proc デモ再生_P070_17_p11 {
+	chara demo デモ再生 \
+		-i t:p070_17_p11 \
+		-p 拷問台オフ 拷問台オン \
+		-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+		-next P070_17_p11終了
+}
+proc P070_17_p11終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+	eval($w:p_story = d:ST:P070_17_P11ＡＧ起動１７ポリゴンデモ１１終了)
+	print '$w:p_story = d:ST:P070_17_P11ＡＧ起動１７ポリゴンデモ１１終了'
+
+	chara delay ディレイ -time 1 \ 
+		-exec{
+			restart
+		}
+}
+
+// [追加] 2001/08/30 Uehara Masatoshi
+proc リアル影セット {
+
+	chara 影投影モデル 室内の影もでる \
+		-m w41a_sdw \
+		-p 0 0 0
+//	chara 影投影モデル 廊下の影もでる \
+//		-m w41a_sdw_02 \
+//		-p 0 0 0
+
+	chara 影管理 影かんり \
+		-t 1 
+
+	if ($s:d_num == P070_13_p09) {
+		mesg 影管理 影かんり demo_add rai_def_mh_demo       室内の影もでる	// ライデン
+		mesg 影管理 影かんり demo_add rev_plant_mh_demo     室内の影もでる	// オセロット
+		mesg 影管理 影かんり demo_add sol_def_addhand_mh_mt 室内の影もでる	// ソリダス
+		mesg 影管理 影かんり demo_add sol_snakearm_2_mh_mt  室内の影もでる	// ソリダス蛇手
+	} else if ($s:d_num == P070_16_p10) {
+		mesg 影管理 影かんり demo_add rai_def_mh_demo           室内の影もでる	// ライデン
+		mesg 影管理 影かんり demo_add rev_plant_addhand_mh_demo 室内の影もでる	// オセロット
+		mesg 影管理 影かんり demo_add sol_def_addhand_mh_mt     室内の影もでる	// ソリダス
+		mesg 影管理 影かんり demo_add sol_snakearm_2_mh_mt      室内の影もでる	// ソリダス蛇手
+	} else if ($s:d_num == P070_17_p11) {
+		mesg 影管理 影かんり demo_add rai_def_mh_demo   室内の影もでる	// ライデン
+		mesg 影管理 影かんり demo_add rev_plant_mh_demo 室内の影もでる	// オセロット
+		mesg 影管理 影かんり demo_add org_plant_mh_demo 室内の影もでる	// オルガ
+	}
+}
+
+// サウンド
+proc サウンドマネージャーセット {
+	chara サウンドマネージャー ＳＤマネ -pak -1		// パックをロードしない
+}
+
+proc サウンドマネージャー_mesg_1 {
+	command セットサウンドコード -c d:SNG_PLAY_05
+}
+
+proc サウンドマネージャー_mesg_2 {
+	command セットサウンドコード -c d:SNG_FOUTS_S
+}
+

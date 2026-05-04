@@ -1,0 +1,52 @@
+//
+// 無線モード用データ 大佐無線
+// codec.src
+// 
+// 2001/05/16  T.Fukushima
+//
+// $Id: f01a.src,v 1.9 2001/07/06 05:29:40 usr03005 Exp $
+//
+
+block .face
+
+
+
+
+// 無線画面用人物モデル
+include "face_ros.h"  // ローズ顔セット
+include "face_cam.h"  // 大佐顔セット
+include "face_rai.h"  // ライデン顔セット
+include "face_rai_gbsbody.h" //ゴルルコ兵装 マスクなし
+include "face_rai_gbshead.h" //ゴルルコ兵装 マスクあり
+
+//include "face_iro.h"  // スネーク顔セット
+include "face_save_icon.h"	//ＳＡＶＥアイコン
+
+//include "face_otc.h"  // オタコン顔セット
+
+
+
+//どーなのこれは？
+//mtn		cdc_snake.mls	// スネークデフォルトモーション
+//mtn		cdc_otacon.mls	// オタコンデフォルトモーション
+
+
+//human           sna_radio/sna_radio_mh_mt.evm    // スネーク
+//human           otc_def/otc_radio_mh_mt.evm      // オタコン
+
+//human		rai_radio/rai_radio_mh_mt.evm	// ライデン
+
+//human		ros_def/ros_radio_mh_mt.evm	// ローズ
+//human		cam_def/cam_radio_mh_mt.evm	// キャンベル大佐
+//human		org_tng/org_tng_radio_mh_mt.evm	// オルガ忍者
+
+// 髪の毛実験
+//human		ros_def/ros_radio_hair_f.evm	// ローズ髪の毛
+
+
+//// 下記例のように、本体と髪の毛を続けて書くとテクスチャを共有できます。
+//human		ros_def/ros_radio_mh_mt.evm	\  // ローズ
+//		ros_def/ros_hair_f_mh_mt.evm	   // ローズ髪の毛
+
+//human		cam_def/cam_radio_mh_mt.evm	// キャンベル大佐
+//human		org_tng/org_tng_radio_mh_mt.evm	// オルガ忍者

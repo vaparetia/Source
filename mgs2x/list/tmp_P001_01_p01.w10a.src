@@ -1,0 +1,97 @@
+//
+//	tmp_P001_01_p01.w10a.src
+//
+//	written by S.Hirano 01/03/05
+//
+//	$Id: tmp_P001_01_p01.w10a.src,v 1.8 2001/05/29 09:19:35 usr01098 Exp $
+
+
+block .use r_plt1
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+include		common.h
+include		c_effect.h
+
+// キャラクタ 
+// 警官隊
+// これだけマルチテクスチャ（黒人デカ）
+human	nyp_def/nyp_def4_mt.kms
+human	nyp_def
+
+// ワールド
+// プラント全景分
+// world		w10a/w10a_plant/w10a_plant00.kms
+world		w10c
+
+// ベラザノ橋（スケール１００倍。w10a_8のみ１０倍で表示）
+world		w10a/w10a_bridge
+pack_all	w10a_1234.tri \
+			world/w10a/w10a_land/w10a_1.dar \
+			world/w10a/w10a_land/w10a_2.dar \
+			world/w10a/w10a_land/w10a_3.dar \
+			world/w10a/w10a_land/w10a_4.dar
+world		w10a/w10a_land/w10a_1.kms
+world		w10a/w10a_land/w10a_2.kms
+world		w10a/w10a_land/w10a_3.kms
+world		w10a/w10a_land/w10a_4.kms
+world		w10a/w10a_land
+// 海中モデル
+world		w10b/w10b.kms
+
+// ライト
+// 通常用
+lt2			w10a.lt2
+// ベラザノ橋用スケールかけライト
+lt2			w10a_scale100.lt2
+
+hazard		d00a3.hzx
+
+/*
+// 海面分
+pack_all oil.tri \
+	debug/takabe/tex/oil_alp_ovl_mod0222.bmp \
+	debug/takabe/tex/sky_evening_add_alp_ovl_mod1120.bmp
+debug takabe/oilfence/oilfence.kms
+*/
+
+// 海面分(水谷テスト)
+pack_all oil.tri \
+	debug/takabe/tex/sea_alp_ovl_mod0222.bmp \
+	debug/takabe/tex/sky02_day_add_alp_ovl_mod1120.bmp
+	debug/takabe/tex/sky03_day_add_alp_ovl_mod1120.bmp
+debug takabe/oilfence/oilfence.kms
+
+// 海面
+debug	takabe/mipmap_tri/w10a_sea.tri
+
+//空用
+pack_all skies.tri \
+		debug/shibata/sky/sky_wall1.dar \
+		debug/shibata/sky/sky_wall2.dar
+debug	shibata/sky/sky_wall1.kms
+debug	shibata/sky/sky_wall2.kms
+
+// デバッグ用
+pack_trnall	hirano.tri	effect/bonbori/rcm_l_msk.bmp 
+
+// リネーム
+
+/* 臨時 */
+pack_all	raiden.tri \
+		human/rai_def/rai_def_mt.dar \
+		human/rai_def/rai_def_mh_mt.dar
+human		rai_def/rai_def_mt.kms
+human		rai_def/rai_def_mh_mt.evm
+/* mgdemo added ----from here (Mon May 14 17:00:34 2001) ---- */
+human	rai_diver/rai_diver_sh_mt.kms
+human	rai_def/rai_hair_mh_mt.evm
+human	rai_def/rai_hair_bounding.kms
+human	sna_def/sna_def.kms
+meca	hh60h/hh60h.kms
+goods	demo_dummy/demo_dummy.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Sun May 27 17:26:51 2001) ---- */
+cvd	human/rai_diver/rai_diver_bounding.cv2
+/* mgdemo added ----upto here ---- */

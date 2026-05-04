@@ -1,0 +1,623 @@
+/*
+	P080_14_p08.w61a.gcl
+	    ソリダス戦デモステージ（フェデラルホール上）
+
+	2001/03/29 H.Yoshiike         
+	$Id: P080_14_p08.w61a.gcl,v 1.19 2002/09/17 05:39:00 usr02774 Exp $                      
+
+	
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+#define		DEMO_STAGE		1		// デモステージかどうかで起動するキャラを切り分ける
+
+// 各種スイッチ用define
+// ------------------------------------
+// キャラクター関係
+#define		RAIDEN			1		// SNAKEとは排他
+// ドア
+// 入出トラップ
+// フォグ
+#define		FOG				1
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+#endif
+#define		SCREENSHOT		0		// スクリーンショット
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME		w61a
+#define		KMS_NAME0		w61a
+#define		KMS_NAME1		w61a_other1
+#define		FLAG_NAME		w61a_flag
+#define		POLE_NAME		w61a_flag_pole
+#define		GW_NAME			w61a_gw_statue
+#define		LT2_NAME		w61a
+
+// キャラクター関係
+#if d:RAIDEN
+	#define		PLAYER		ライデン	// モーションができるまで名前はスネーク
+#else
+	#define		PLAYER		スネーク
+#endif
+
+#if d:MGS2_DEMO
+	// アーセナル・マンハッタン・海面の表示非表示を切り替える。
+	#define		DEMO_AG_SET 1	// 0 : 表示しない
+								// 1 : 表示する
+#endif
+
+// include
+// ------------------------------------
+#include "5sec_bfr_demo.h"
+#include "demo_vardef.h"
+#include "demo_stdch.h"
+#include "demo_stdch2.h"
+#include "story.h"
+#include "sload.h"
+#include "w61a_common.h"
+#include "p_force_cdc.ch"
+
+#if d:PLANT_DEMO_ALL_SKIP
+	#define		DEMO_SKIP_ENABLE 1
+#else
+	#define		DEMO_SKIP_ENABLE 0
+#endif
+
+// マップ設定
+// ------------------------------------
+chara マップ フェデラルホール -h d:HZX_NAME,0 -l d:LT2_NAME
+
+command マップ設定 フェデラルホール -set {
+// デモ環境かどうか。
+#if d:MGS2_DEMO
+	// デモ環境デバッグ用
+		/* デモ班環境では無条件でオフ、って関係ないか？じつは */
+		eval($w:武器弾数Ｒ[d:武器:ブレード] = 0);
+
+if(d:DEMO_AG_SET == 1) {
+	eval( $s:d_num = p080_14_p08 );
+} else {
+	eval( $s:d_num = p080_16_p09 );
+}
+
+chara デモアクトデバッグ demodebug  -i t:p080_14_p08 -d 'p080_14_p08' -l  -s 'p080_14_p08'  \
+					-p 消えた白いハト 逃げて行く白いハト \
+					   フェデラルホールオン フェデラルホールオフ \
+					   マンハッタンオン マンハッタンオフ
+
+#else
+		@ポリデモ再生
+#endif
+
+	@常駐キャラ設定						// stdch.hで定義
+	@デモ開始時シネマスクリーンセット	// demo_stdproc.hで定義
+	@遠景設定							// w61a_common.hで定義
+
+	@フェデラルホールセット
+	@フェデラルホール旗設置				// w61a_common.hで定義
+	@フォグ設定							// w61a_common.hで定義
+	if($s:d_num != p080_19_r01){
+		@フェデラルホールの鳩
+	}
+
+	if( ($s:d_num == p080_14_p08) || ($s:d_num == p080_18_p10) )
+	{
+		@マンハッタン遠景セット
+		@マンハッタン壊れ後陸地
+		@海面セット
+	}
+
+//	chara delay ディレイ -time 100 -exec{ 
+//			@フェデラルホールオフ
+//			@マンハッタンオン
+//		 }
+
+}
+
+//初期マップの表示
+command マップ表示 -show フェデラルホール
+
+// ポリデモ処理
+// ------------------------------------
+	proc ポリデモ再生 {
+		#if d:DEBUG_PRINT
+			print 'polydemo_start!!  p_story ='
+			print $w:p_story
+		#endif
+
+		chara デモキャンセルチェック デモキャンセル \
+			-p ポリデモキャンセル
+
+		if($w:p_story == d:ST:P080_14_P08ＡＧ浮上１４ポリゴンデモ８開始) {
+			/* p080_05_p03 から p080_28_p12 までのデモ中では、
+			ライデンは刀を持たせない。
+			ここの前のステージ(w51a)で０にしているが、念のため
+			再度０にしておく。
+			デモからゲームに戻る際に刀を持たせる（＝装備数を１に
+			戻す） */
+			eval($w:武器弾数Ｒ[d:武器:ブレード] = 0);
+
+			/* ソリダス踊りまくり */
+
+			// デモ特有の変数代入
+ 			eval( $s:d_num = p080_14_p08 );
+
+			@デモモデル差し替え処理
+			chara demo デモ再生 \
+//				-i t:data_dummy_raiden \
+				-i t:p080_14_p08 \
+				-p 消えた白いハト 逃げて行く白いハト \
+				   フェデラルホールオン フェデラルホールオフ \
+				   マンハッタンオン マンハッタンオフ \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next ポリデモ終了		// ムービーへ
+
+
+		} else if($w:p_story == d:ST:P080_16_P09ＡＧ浮上１６ポリゴンデモ９開始) {
+			/* 「寿命とはなんだ？」恍惚のソリダス演説 */
+
+			// デモ特有の変数代入
+			eval( $s:d_num = p080_16_p09 );
+
+			@デモモデル差し替え処理
+			chara demo デモ再生 \
+				-i t:p080_16_p09 \
+				-p 消えた白いハト 逃げて行く白いハト \
+				   フェデラルホールオン フェデラルホールオフ \
+				   マンハッタンオン マンハッタンオフ \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next ポリデモ終了		// ムービーへ
+
+		} else if($w:p_story == d:ST:P080_18_P10ＡＧ浮上１８ポリゴンデモ１０開始) {
+		/* 「記憶の中の絵苦損でありたい」 */
+
+			// デモ特有の変数代入
+			eval( $s:d_num = p080_18_p10 );
+
+			@デモモデル差し替え処理
+			chara demo デモ再生 \
+//				-i t:data_dummy_raiden \
+				-i t:p080_18_p10 \
+				-p 消えた白いハト 逃げて行く白いハト \
+				   フェデラルホールオン フェデラルホールオフ \
+				   マンハッタンオン マンハッタンオフ \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next ポリデモ終了 //無線デモの背景を黒にするためにリスタートへ変更	//fukushima 0901
+//				-next rt_P080_19_R01ＡＧ浮上１９無線機デモ１		// 無線後ムービーへ
+
+		//無線デモの背景を黒にするためにリスタートへ変更	//fukushima 0901
+	}else if( $w:p_story == d:ST:P080_19_R01ＡＧ浮上１９無線機デモ１開始){
+		eval( $s:d_num = p080_19_r01 );
+		@rt_P080_19_R01ＡＧ浮上１９無線機デモ１
+
+
+		} else if( $w:p_story == d:ST:P080_26_P11ＡＧ浮上２６ポリゴンデモ１１開始 ) {
+		/* ジャックの両親はソリダスが殺した、とソリダスが告げる */
+
+			// デモ特有の変数代入
+			eval( $s:d_num = p080_26_p11 );
+
+			@デモモデル差し替え処理
+			chara demo デモ再生 \
+				-i t:p080_26_p11 \
+				-p 消えた白いハト 逃げて行く白いハト \
+				   フェデラルホールオン フェデラルホールオフ \
+				   マンハッタンオン マンハッタンオフ \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next ポリデモ終了		// ムービーへ
+
+		} else if ( $w:p_story == d:ST:P080_28_P12ＡＧ浮上２８ポリゴンデモ１２開始 ) {
+		/* ボス戦へ移行直前　この後ボス戦 */
+
+			// デモ特有の変数代入
+			eval( $s:d_num = p080_28_p12 );
+
+			@デモモデル差し替え処理
+			chara demo デモ再生 \
+//				-i t:data_dummy_raiden \
+				-i t:p080_28_p12 \
+				-p 消えた白いハト 逃げて行く白いハト \
+				   フェデラルホールオン フェデラルホールオフ \
+				   マンハッタンオン マンハッタンオフ \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next ポリデモ終了		// ボス戦へ
+
+		// デモの時以外は、以下を通過する。
+		} else {
+			// このフラグが立っていると、親（ゲームの）GCLの方で必要なキャラが起動する。
+			@ゲームステージへ戻る
+
+		}
+
+	}
+
+	// 終了proc
+	// ------------------------------------
+	proc ポリデモ終了 {
+		#if d:DEBUG_PRINT
+			print 'polydemo_end!!  d_num ='
+			print $s:d_num
+		#endif
+
+		@デモ終了時シネマスクリーンオフ
+		mesg デモキャンセルチェック デモキャンセル kill
+
+		if ( $s:d_num == p080_14_p08 ) {
+			eval( $w:p_story = d:ST:P080_14_P08ＡＧ浮上１４ポリゴンデモ８終了 );
+			eval( $w:p_story = d:ST:P080_15_M06ＡＧ浮上１５ムービーデモ６開始 );
+			chara delay ディレイ -time 1 -exec{ @mv_init_wmovie_0 }
+
+		} else if ( $s:d_num == p080_16_p09 ) {
+			eval( $w:p_story = d:ST:P080_16_P09ＡＧ浮上１６ポリゴンデモ９終了 );
+			eval( $w:p_story = d:ST:P080_17_M07ＡＧ浮上１７ムービーデモ７開始 );
+			chara delay ディレイ -time 1 -exec{ @mv_init_wmovie_0 }
+
+		//無線デモの背景を黒にするためにリスタートへ変更	//fukushima 0901
+		} else if ( $s:d_num == p080_18_p10 ) {
+			eval( $w:p_story = d:ST:P080_18_P10ＡＧ浮上１８ポリゴンデモ１０終了 );
+			eval( $w:p_story = d:ST:P080_19_R01ＡＧ浮上１９無線機デモ１開始 );
+			restart 
+
+		} else if ( $s:d_num == p080_26_p11 ) {
+			eval( $w:p_story = d:ST:P080_26_P11ＡＧ浮上２６ポリゴンデモ１１終了 );
+			eval( $w:p_story = d:ST:P080_27_M11ＡＧ浮上２７ムービーデモ１１開始 );
+			chara delay ディレイ -time 1 -exec{ @mv_init_wmovie_0 }
+
+		} else if ( $s:d_num == p080_28_p12 ) {
+			eval( $w:p_story = d:ST:P080_28_P12ＡＧ浮上２８ポリゴンデモ１２終了 );
+			@ゲームステージへ戻る
+			chara delay ディレイ -time 1 -exec{ @mv_init_w61a_0 }
+
+		}
+	}
+
+	// フォグ
+	// ------------------------------------
+	proc フォグ設定 {
+		#if d:DEBUG_PRINT
+			print 'fog_set'
+		#endif
+
+//		chara フォグ 霧\
+//			-c 3, 17, 33 \
+//			-n -1500 \
+//			-f 50000 
+	}
+
+	proc フェデラルホールセット {
+		chara プットオブジェ w60a \
+			-m d:KMS_NAME0 -r 0,0,0 -p 0,0,0 \
+			-s 100,100,100 -l d:LT2_NAME \
+			-f 0x0010
+
+		chara プットオブジェ GW \
+			-m d:GW_NAME -r 0,0,0 -p 0,0,0 \
+			-s 100,100,100 -l d:LT2_NAME \
+			-f 0x0010
+	}
+	proc フェデラルホールオン {
+		// フェデラルホール
+		mesg プットオブジェ w60a on
+		mesg プットオブジェ GW on
+		// 遠景
+		mesg プットオブジェ 遠景１ on
+		// 旗
+		mesg プット頂点アニメオブジェ 旗 表示
+		// ポール
+		mesg プットオブジェ ポール on
+	}
+	proc フェデラルホールオフ {
+		// フェデラルホール
+		mesg プットオブジェ w60a off
+		mesg プットオブジェ GW off
+		// 遠景
+		mesg プットオブジェ 遠景１ off
+		// 旗
+		mesg プット頂点アニメオブジェ 旗 非表示
+		// ポール
+		mesg プットオブジェ ポール off
+	}
+
+
+	proc マンハッタン遠景セット {
+		// ビル
+		chara プットオブジェ w60a_1 \
+			-m w60a_1 -r 0,0,0 -p 0,0,0 \
+			-s 1000,1000,1000 -l d:LT2_NAME \
+			-f 0x0010
+		chara プットオブジェ w60a_2 \
+			-m w60a_2 -r 0,0,0 -p 0,0,0 \
+			-s 1000,1000,1000 -l d:LT2_NAME \
+			-f 0x0010
+		chara プットオブジェ w60a_3 \
+			-m w60a_3 -r 0,0,0 -p 0,0,0 \
+			-s 1000,1000,1000 -l d:LT2_NAME \
+			-f 0x0010
+		chara プットオブジェ w60a_4 \
+			-m w60a_4 -r 0,0,0 -p 0,0,0 \
+			-s 1000,1000,1000 -l d:LT2_NAME \
+			-f 0x0010
+		chara プットオブジェ w60a_5 \
+			-m w60a_5 -r 0,0,0 -p 0,0,0 \
+			-s 1000,1000,1000 -l d:LT2_NAME \
+			-f 0x0010
+		chara プットオブジェ w60a_6 \
+			-m w60a_6 -r 0,0,0 -p 0,0,0 \
+			-s 1000,1000,1000 -l d:LT2_NAME \
+			-f 0x0010
+		chara プットオブジェ w60a_8 \
+			-m w60a_8 -r 0,0,0 -p 0,0,0 \
+			-s 1000,1000,1000 -l d:LT2_NAME \
+			-f 0x0010
+
+		mesg プットオブジェ w60a_1 off
+		mesg プットオブジェ w60a_2 off
+		mesg プットオブジェ w60a_3 off
+		mesg プットオブジェ w60a_4 off
+		mesg プットオブジェ w60a_5 off
+		mesg プットオブジェ w60a_6 off
+		mesg プットオブジェ w60a_8 off
+	}
+
+	proc マンハッタン壊れ後陸地 {
+		// 陸地
+		chara プットオブジェ vw60a_9 \
+			-m vw60a_9 -r 0,0,0 -p 0,0,0 \
+			-s 1000,1000,1000 -l d:LT2_NAME \
+			-f 0x0010
+
+		mesg プットオブジェ vw60a_9 off
+	}
+
+	// 2001/08/15 田中(信)追加
+	proc 海面セット {
+		chara 巨大海面 seaseasea \
+			-mipmap 3 50000 0 \
+			-size 400000 400000 \
+			-light_enable \
+			-tex w10a_sea \
+			w10a_sea03_128_alp_ovl \
+			w10a_sea03_256_alp_ovl \
+			w10a_sea03_64_alp_ovl \
+			w10a_sea03_32_alp_ovl \
+			-pos 60000,0,-200000
+
+		mesg 巨大海面 seaseasea 表示状態 0
+	}
+
+	proc マンハッタンオン {
+		// 海面
+		mesg 巨大海面 seaseasea 表示状態 1
+		// 遠景モデル
+		mesg プットオブジェ w60a_1 on
+		mesg プットオブジェ w60a_2 on
+		mesg プットオブジェ w60a_3 on
+		mesg プットオブジェ w60a_4 on
+		mesg プットオブジェ w60a_5 on
+		mesg プットオブジェ w60a_6 on
+		mesg プットオブジェ w60a_8 on
+		// 壊れモデル
+		mesg プットオブジェ vw60a_9 on
+	}
+	proc マンハッタンオフ {
+		// 海面
+		mesg 巨大海面 seaseasea 表示状態 0
+		// 遠景モデル
+		mesg プットオブジェ w60a_1 off
+		mesg プットオブジェ w60a_2 off
+		mesg プットオブジェ w60a_3 off
+		mesg プットオブジェ w60a_4 off
+		mesg プットオブジェ w60a_5 off
+		mesg プットオブジェ w60a_6 off
+		mesg プットオブジェ w60a_8 off
+		// 壊れモデル
+		mesg プットオブジェ vw60a_9 off
+	}
+
+
+proc フェデラルホールの鳩 {
+#if d:DEBUG_PRINT
+	print '*** Pigeon ***'
+#endif
+    chara かもめマネージャ かもめ管理 \
+        // ハトモード
+	-qpigeon 1 \
+	// モデルデータ名
+	-datamdl pgn_def, pgn_def, pgn_def, pgn_def \ 
+	// 平均速度
+	-zspeed 60 \
+	// 基本ルーチン
+	-base d:KMNG_BASE_ESCAPE \	// 基本状態:敏感
+	// 鳩の名前
+	-name \ 
+	Pigeon00, Pigeon01, Pigeon02, Pigeon03, Pigeon04, \		// 
+	Pigeon05, Pigeon06, Pigeon07, Pigeon08, Pigeon09, \		// 
+	Pigeon10, Pigeon11, Pigeon12, Pigeon13, Pigeon14, \		// 
+	Pigeon15, Pigeon16, Pigeon17, Pigeon18, Pigeon19, \		// 
+	Pigeon20, Pigeon21, Pigeon22, Pigeon23, Pigeon24, \		// 
+	Pigeon25, Pigeon26, Pigeon27, Pigeon28, Pigeon29, \		// 
+	Pigeon30, Pigeon31, Pigeon32, Pigeon33, Pigeon34, \		// 
+	Pigeon35, Pigeon36, Pigeon37, Pigeon38, Pigeon39, \		// 
+	Pigeon40, Pigeon41, Pigeon42, Pigeon43, Pigeon44, \		// 
+	Pigeon45, Pigeon46, Pigeon47, Pigeon48, Pigeon49, \		// 
+	Pigeon50, Pigeon51, Pigeon52, Pigeon53, Pigeon54, \		// 
+	Pigeon55, Pigeon56, Pigeon57, Pigeon58, Pigeon59, \		// 
+	Pigeon60, Pigeon61, Pigeon62, Pigeon63, Pigeon64, \		// 
+	Pigeon65, Pigeon66, Pigeon67, Pigeon68, Pigeon69, \		// 
+	Pigeon70, Pigeon71, Pigeon72, Pigeon73, Pigeon74, \		// 
+	Pigeon75, Pigeon76, Pigeon77, Pigeon78, Pigeon79, \		// 
+	Pigeon80, Pigeon81, Pigeon82, Pigeon83, Pigeon84, \		// 
+	Pigeon85, Pigeon86, Pigeon87, Pigeon88, Pigeon89, \		// 
+	Pigeon90, Pigeon91, Pigeon92, Pigeon93, Pigeon94, \		// 
+	Pigeon95, Pigeon96, Pigeon97, Pigeon98, Pigeon99 \		// 
+
+	// 初期Y方向 ( 0 〜 4096 : -1でランダム)
+	-yrot  \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+	1024, 1024, 1024, 1024, 1024, \
+
+	// 初期位置指定フラグ (-fareaの何番目を初期位置として与えるか[0x00の部分が何番目に相当]）
+	-unitpos \	
+	(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+	(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+	(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+	(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+	(d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), \
+	(d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), \
+	(d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), \
+	(d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), \
+	(d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), \
+	(d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), \
+	(d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), \
+	(d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), \
+	(d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), \
+	(d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), \
+	(d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), \
+	(d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), (d:KMM_IPOS_AREA | 0x03), \
+	(d:KMM_IPOS_AREA | 0x04), (d:KMM_IPOS_AREA | 0x04), (d:KMM_IPOS_AREA | 0x04), (d:KMM_IPOS_AREA | 0x04), (d:KMM_IPOS_AREA | 0x04), \
+	(d:KMM_IPOS_AREA | 0x04), (d:KMM_IPOS_AREA | 0x04), (d:KMM_IPOS_AREA | 0x04), (d:KMM_IPOS_AREA | 0x04), (d:KMM_IPOS_AREA | 0x04), \
+	(d:KMM_IPOS_AREA | 0x04), (d:KMM_IPOS_AREA | 0x04), (d:KMM_IPOS_AREA | 0x04), (d:KMM_IPOS_AREA | 0x04), (d:KMM_IPOS_AREA | 0x04), \
+	(d:KMM_IPOS_AREA | 0x04), (d:KMM_IPOS_AREA | 0x04), (d:KMM_IPOS_AREA | 0x04), (d:KMM_IPOS_AREA | 0x04), (d:KMM_IPOS_AREA | 0x04), \
+
+	// エリア指定型初期位置  : 始点に当たる ([最小X, 最小Y, 最小Z] [最大X, 最大Y, 最大Z]の順番は守る)
+	-farea \   
+	 -6500, 16000, 23000,  -6000, 16250, 25000 \		//ソリダス奥、旗の下辺り(-1672,16175,23445)
+	 -6000, 15750, 23000,  -5500, 16000, 25000 \		//ソリダス奥、旗の下辺り(-1672,16175,23445)
+	 -5500, 15500, 23000,  -5000, 15750, 25000 \		//ソリダス奥、旗の下辺り(-1672,16175,23445)
+	 -5000, 15250, 23000,  -4500, 15500, 25000 \		//ソリダス奥、旗の下辺り(-1672,16175,23445)
+	 -4500, 15000, 23000,  -4000, 15250, 25000 \		//ソリダス奥、旗の下辺り(-1672,16175,23445)
+
+	// 飛行エリアインデックス(-areadataの何番目を飛行エリアにするか [0x00の部分が何番目に相当])
+	-indexarea \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+
+	// 飛行エリア : 終点にあたる ([最小X, 最小Y, 最小Z] [最大X, 最大Y, 最大Z]の順番は守る)
+	-areadata \
+	 0, 20000, 20000,   30000, 40000, 30000 \
+
+	// 初期モーション,
+	-mot \
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, \  
+	d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK, d:KMM_MOT_FLYAWAY_QUICK \  
+
+	// 初期思考
+	-routine \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST   
+
+//	command カモメ非表示
+
+	// 飛び立ちからはじめる
+//	chara delay てす -time 3200 -exec {
+//		command カモメ表示
+//		mesg かもめマネージャ かもめ管理 全かもめ緊急離陸 60
+//	}
+
+}
+
+proc 消えた白いハト {
+	command カモメ非表示
+}
+
+proc 逃げて行く白いハト {
+	command カモメ表示
+	mesg かもめマネージャ かもめ管理 全かもめ緊急離陸 60
+}
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+// 以下仮キャラ用proc
+// -----------------------------------------------------------------------------------
+// 仮キャラ
+// ------------------------------------
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------

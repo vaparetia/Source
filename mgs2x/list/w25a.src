@@ -1,0 +1,134 @@
+//
+//	w25a.src
+//
+//	written by Y.Matsuhana 2000.Nov
+//
+//	$Id: w25a.src,v 1.60 2002/07/18 12:22:53 usr03682 Exp $
+
+block .use r_plt0
+block .nocache
+block .cache
+
+#define WN_W25A
+#define DAY_SKY		// 空タイプ
+#define EFFECT_CUSTUM
+#define E_KOGETUKI	// 壁への焦げ付き
+#define E_C4BOMB	// Ｃ４爆弾、赤外線センサー
+#define E_HIMATU	// 水飛沫
+#define E_SUN		// 太陽
+#define E_DOOR_LUMP	// ドアランプ
+#define E_OTHER1	// 水面、水中、リニアガン、雨、フェード、バルカン人形、ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define E_OTHER2	// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+#define E_OTHER3	// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+#define E_WATER
+
+// 各ステージ共通要素
+#include	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+
+#define		NORM_CYP	// サイファー
+#include	"cypher.h"	// サイファー
+
+// ライデン 体燃え用
+pack_all	raiden.tri \
+		human/rai_def/rai_def_mt.dar \
+		human/rai_def/rai_def_mh_mt.dar
+human		rai_def/rai_def_mt.kms
+human		rai_def/rai_def_mh_mt.evm
+pack_trnall	effect.tri \
+		debug/morita/w11c_test/w11c2_fire3a_alp.bmp \
+		effect/color/col128_alp.bmp \
+		effect/light/light05_msk.bmp \
+		effect/light/light10_msk.bmp \
+		effect/plant_sea/d_oil_sea_alp_ovl_mod0222.bmp \
+		effect/mark/hosi_msk.bmp /* 気絶星 */\
+		effect/mark/zzz_msk.bmp /* 睡眠ZZZ */
+
+cvd		human/sna_skl/sna_skl.cv2
+
+#include	"w25a_harrier.h"
+
+// キャラクタ
+// 強制モーション
+mtn		rai_w25a.mls
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+option makexti6 -l 256
+pack_all	oil.tri \
+		effect/plant_sea/d_oil_ref_add_alp_ovl_mod1120.bmp \
+		effect/plant_sea/d_oil_sea_alp_ovl_mod0222.bmp
+option makexti6
+
+pack_all	stgTex.tri \
+		2D/sight/stg/stg_stgTex.dar
+pack_all	'-s'	gmov.tri	2D/game_over/plant_bomb2_alp_ovl.bmp \
+					2D/game_over/dekisi_alp_ovl.bmp
+
+world		w25a/other/w25a_18b.kms
+world/w25ab_common	w25ab_14a.kms \
+			w25ab_17a.kms \
+			w25ab_18a.kms \
+			w25ab_19a.kms \
+			w25ab_20a.kms \
+			w25ab_21a.kms \
+			w25ab_24a.kms \
+			w25ab_31a.kms \
+			w25ab_32a.kms \
+			w25ab_32b.kms \
+			w25ab_32c.kms \
+			w25ab_crane.kms \
+			w25ab_gh.kms \
+			w25ab_i1.kms \
+			w25ab_i2.kms \
+			w25ab_kl.kms \
+			w25ab_l.kms \
+			w25ab_other00.kms \
+			w25ab_other01.kms \
+			w25ab_other02.kms \
+			w25a_g.kms \
+			w25a_gl.kms \
+			w25ab_hi.kms
+			
+world		door/w25a_dr00.kms
+world		sea
+
+pack_all	zw25a0.tri	world/w25a/w25a/w25a0.dar
+world		w25a/w25a
+
+lt2		w25a.lt2
+hazard		w25a.hzx
+
+// オブジェクト
+meca		ir_sensor
+
+world		w25a/w25a_flag/w25a_flag.kms
+cvd		world/w25a/w25a_flag/w25a_flag.cv2
+
+// パッドデモ
+rpd		w25a_pdemo_00.rpd
+rpd		w25a_pdemo_01.rpd
+
+//	振動
+vib		etc/drop_sea.vib
+vib		program/explosion.vib
+
+// アイテム
+itembox
+goods		null/null.kms
+lt2		null.lt2
+
+human		kmo_def		// かもめモデル
+mtn		kamome.mls	// かもめモーション
+pack_all	kmo_mark.tri	effect/mark/zzz_msk.bmp \
+				effect/mark/hosi_msk.bmp
+
+weapon		cfr/cfr_trp.kms
+
+texrename w25ab_24a.kms w10c_cntw04.bmp w10c_cntw04aaaa.bmp
+
+//  ボスラッシュステージ
+gcx		boss
+

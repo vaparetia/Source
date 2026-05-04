@@ -1,0 +1,505 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+	@fn			extern "C" void edgePostUpsample8( qword output, qword input, qword istride, qword ostride, qword count )
+	@fn			extern "C" void edgePostUpsampleF( qword output, qword input, qword istride, qword ostride, qword count )
+	@fn			extern "C" void edgePostUpsample16( qword output, qword input, qword istride, qword ostride, qword count )
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+.include "edgepost_helpers.inc"
+
+// Float
+
+.macro BilerpTl_F( r, tl, tr, bl, br )
+	.localreg	t, b
+	fma			t, tr, kThreeF, tl
+	fma			b, br, kThreeF, bl
+	fma			r, b, kThreeF, t
+	fm			r, r, kOverSixteenF
+.endmacro
+
+.macro BilerpTr_F( r, tl, tr, bl, br )
+	.localreg	t, b
+	fma			t, tl, kThreeF, tr
+	fma			b, bl, kThreeF, br
+	fma			r, b, kThreeF, t
+	fm			r, r, kOverSixteenF
+.endmacro
+
+.macro BilerpBl_F( r, tl, tr, bl, br )
+	.localreg	t, b
+	fma			t, tr, kThreeF, tl
+	fma			b, br, kThreeF, bl
+	fma			r, t, kThreeF, b
+	fm			r, r, kOverSixteenF
+.endmacro
+
+.macro BilerpBr_F( r, tl, tr, bl, br )
+	.localreg	t, b
+	fma			t, tl, kThreeF, tr
+	fma			b, bl, kThreeF, br
+	fma			r, t, kThreeF, b
+	fm			r, r, kOverSixteenF
+.endmacro
+
+.macro PerPixelUpsample_F
+	// First 2x2 quad.
+	BilerpTl_F( r00, p00, p10, p01, p11);
+	BilerpTr_F( r10, p10, p20, p11, p21);
+	BilerpBl_F( r01, p01, p11, p02, p12);
+	BilerpBr_F( r11, p11, p21, p12, p22);
+	
+	// Second 2x2 quad
+	BilerpTl_F( r20, p10, p20, p11, p21);
+	BilerpTr_F( r30, p20, p30, p21, p31);
+	BilerpBl_F( r21, p11, p21, p12, p22);
+	BilerpBr_F( r31, p21, p31, p22, p32);
+	
+	// Third 2x2 quad
+	BilerpTl_F( r40, p20, p30, p21, p31);
+	BilerpTr_F( r50, p30, p40, p31, p41);
+	BilerpBl_F( r41, p21, p31, p22, p32);
+	BilerpBr_F( r51, p31, p41, p32, p42);
+	
+	// Fourth 2x2 quad
+	BilerpTl_F( r60, p30, p40, p31, p41);
+	BilerpTr_F( r70, p40, p50, p41, p51);
+	BilerpBl_F( r61, p31, p41, p32, p42);
+	BilerpBr_F( r71, p41, p51, p42, p52);
+.endmacro
+
+// Integer
+
+.macro BilerpTl_EVEN( r, tl, tr, bl, br )
+	.localreg t, b
+	mpya		t, tr, kThree, tl
+	mpya		b, br, kThree, bl
+	mpya		r, b, kThree, t
+	rotmi		r, r, -4
+.endmacro
+
+.macro BilerpTr_EVEN( r, tl, tr, bl, br )
+	.localreg t, b
+	mpya		t, tl, kThree, tr
+	mpya		b, bl, kThree, br
+	mpya		r, b, kThree, t
+	rotmi		r, r, -4
+.endmacro
+
+.macro BilerpBl_EVEN( r, tl, tr, bl, br )
+	.localreg t, b
+	mpya		t, tr, kThree, tl
+	mpya		b, br, kThree, bl
+	mpya		r, t, kThree, b
+	rotmi		r, r, -4
+.endmacro
+
+.macro BilerpBr_EVEN( r, tl, tr, bl, br )
+	.localreg t, b
+	mpya		t, tl, kThree, tr
+	mpya		b, bl, kThree, br
+	mpya		r, t, kThree, b
+	rotmi		r, r, -4
+.endmacro
+
+.macro BilerpTl_ODD( r, tl, tr, bl, br )
+	.localreg t, b
+	mpya		t, tr, kThree, tl
+	mpya		b, br, kThree, bl
+	mpya		r, b, kThree, t
+	rotqmbii	r, r, -4
+.endmacro
+
+.macro BilerpTr_ODD( r, tl, tr, bl, br )
+	.localreg t, b
+	mpya		t, tl, kThree, tr
+	mpya		b, bl, kThree, br
+	mpya		r, b, kThree, t
+	rotqmbii	r, r, -4
+.endmacro
+
+.macro BilerpBl_ODD( r, tl, tr, bl, br )
+	.localreg t, b
+	mpya		t, tr, kThree, tl
+	mpya		b, br, kThree, bl
+	mpya		r, t, kThree, b
+	rotqmbii	r, r, -4
+.endmacro
+
+.macro BilerpBr_ODD( r, tl, tr, bl, br )
+	.localreg t, b
+	mpya		t, tl, kThree, tr
+	mpya		b, bl, kThree, br
+	mpya		r, t, kThree, b
+	rotqmbii	r, r, -4
+.endmacro
+
+.macro PerPixelUpsample(BilerpTl, BilerpTr, BilerpBl, BilerpBr)
+	// First 2x2 quad.
+	BilerpTl( r00, p00, p10, p01, p11);
+	BilerpTr( r10, p10, p20, p11, p21);
+	BilerpBl( r01, p01, p11, p02, p12);
+	BilerpBr( r11, p11, p21, p12, p22);
+	
+	// Second 2x2 quad
+	BilerpTl( r20, p10, p20, p11, p21);
+	BilerpTr( r30, p20, p30, p21, p31);
+	BilerpBl( r21, p11, p21, p12, p22);
+	BilerpBr( r31, p21, p31, p22, p32);
+	
+	// Third 2x2 quad
+	BilerpTl( r40, p20, p30, p21, p31);
+	BilerpTr( r50, p30, p40, p31, p41);
+	BilerpBl( r41, p21, p31, p22, p32);
+	BilerpBr( r51, p31, p41, p32, p42);
+	
+	// Fourth 2x2 quad
+	BilerpTl( r60, p30, p40, p31, p41);
+	BilerpTr( r70, p40, p50, p41, p51);
+	BilerpBl( r61, p31, p41, p32, p42);
+	BilerpBr( r71, p41, p51, p42, p52);
+.endmacro
+
+/////// 
+.macro PackPixels8( r, p0, p1, p2, p3)
+	shufb	p0, p0, p1, kShuf01
+	shufb	p2, p2, p3, kShuf23
+	or		r, p0, p2
+.endmacro
+
+.macro PackPixels8_ODD( r, p0, p1, p2, p3)
+	shufb	p0, p0, p1, kShuf01
+	shufb	p2, p2, p3, kShuf23
+	shufb	r, p0, p2, kShufABcd
+.endmacro
+
+
+.macro UnpackPixels8( p0, p1, p2, p3, s )
+	shufb	p0, s, s, kUnpack0
+	shufb	p1, s, s, kUnpack1
+	shufb	p2, s, s, kUnpack2
+	shufb	p3, s, s, kUnpack3
+.endmacro
+
+.macro UnpackPixels8_X000( p0, s )
+	shufb	p0, s, s, kUnpack0
+.endmacro
+
+.macro UnpackPixels8_000X( p3, s )
+	shufb	p3, s, s, kUnpack3
+.endmacro
+
+.macro UnpackPixels16( p0, p1, p2, p3, s0, s1 )
+	shufb	p0, s0, s0, kUnpack0_16
+	shufb	p1, s0, s0, kUnpack1_16
+	shufb	p2, s1, s1, kUnpack0_16
+	shufb	p3, s1, s1, kUnpack1_16
+.endmacro
+
+.macro UnpackPixels16_0X00( p0, p1, p2, p3, s0, s1 )
+	shufb	p1, s0, s0, kUnpack1_16
+.endmacro
+
+.macro UnpackPixels16_X000( p0, p1, p2, p3, s0, s1 )
+	shufb	p0, s0, s0, kUnpack0_16
+.endmacro
+
+
+.macro PackPixels16( d0, s0, s1 )
+	shufb	d0, s0, s1, kPack_16
+.endmacro
+
+
+// upsample argb8
+
+.cfunc void edgePostUpsample8( qword output, qword input, qword istride, qword ostride, qword count )
+	
+	.reg	kThree, kShuf01, kShuf23, kUnpack0, kUnpack1, kUnpack2, kUnpack3, kShufABcd
+	ila		kThree, 3
+	il128	kShuf01, "DHLPdhlp00000000"
+	il128	kShuf23, "00000000DHLPdhlp"
+	il128	kUnpack0, "000A000B000C000D"
+	il128	kUnpack1, "000E000F000G000H"
+	il128	kUnpack2, "000I000J000K000L"
+	il128	kUnpack3, "000M000N000O000P"
+	il128	kShufABcd, "ABcd"
+	
+	// setup pointers
+	.reg	input0, input1, input2, output0, output1
+	sf		input0, istride, input
+	ori		input1, input, 0
+	a		input2, input, istride
+	ori		output0, output, 0
+	a		output1, output, ostride
+	
+loop:
+	ai		output0, output0, 0x20
+	ai		output1, output1, 0x20
+	ai		input0, input0, 0x10
+	ai		input1, input1, 0x10
+	ai		input2, input2, 0x10
+	ai		count, count, -8
+	
+	// Load data
+	.reg	s00, s10, s20
+	.reg	s01, s11, s21
+	.reg	s02, s12, s22
+	
+	// Load first row
+	lqd		s00, -0x20( input0 )
+	lqd		s10, -0x10( input0 )
+	lqd		s20, 0x00( input0 )
+	
+	// Load second row
+	lqd		s01, -0x20( input1 )
+	lqd		s11, -0x10( input1 )
+	lqd		s21, 0x00( input1 )
+	
+	// Load third row
+	lqd		s02, -0x20( input2 )
+	lqd		s12, -0x10( input2 )
+	lqd		s22, 0x00( input2 )
+	
+	// Unpack pixels
+	.reg p00, p10, p20, p30, p40, p50
+	.reg p01, p11, p21, p31, p41, p51
+	.reg p02, p12, p22, p32, p42, p52
+	UnpackPixels8_000X( p00, s00)
+	UnpackPixels8( p10, p20, p30, p40, s10)
+	UnpackPixels8_X000( p50, s20)
+	UnpackPixels8_000X( p01, s01)
+	UnpackPixels8( p11, p21, p31, p41, s11)
+	UnpackPixels8_X000( p51, s21)
+	UnpackPixels8_000X( p02, s02)
+	UnpackPixels8( p12, p22, p32, p42, s12)
+	UnpackPixels8_X000( p52, s22)
+		
+	// Upsample
+	.reg	r00, r10, r20, r30, r40, r50, r60, r70
+	.reg	r01, r11, r21, r31, r41, r51, r61, r71
+	
+	// Here we use a little trick:
+	// To balance the pipes, we replaced the rotmi -4 in the lerps with
+	// rotqmbii -4. This will result in junk in the upper 4 bits of each
+	// word, but as our results are in bytes, we do not care.
+	PerPixelUpsample(BilerpTl_ODD, BilerpTr_ODD, BilerpBl_ODD, BilerpBr_ODD)
+	
+	// Pack pixels
+	.reg	d00, d10, d01, d11
+	PackPixels8( d00, r00, r10, r20, r30)
+	PackPixels8( d10, r40, r50, r60, r70)
+	PackPixels8( d01, r01, r11, r21, r31)
+	PackPixels8_ODD( d11, r41, r51, r61, r71)
+		
+	// Store
+	stqd	d00, -0x20( output0 )
+	stqd	d10, -0x10( output0 )
+	stqd	d01, -0x20( output1 )
+	stqd	d11, -0x10( output1 )
+	
+	brnz	count, loop
+.endfunc
+
+
+// upsample float
+
+.cfunc void edgePostUpsampleF( qword output, qword input, qword istride, qword ostride, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	
+	.reg		kThreeF, kOverSixteenF, kShuf01, kShuf23, kShufABcd
+	ilf32		kThreeF, 3.f
+	ilf32		kOverSixteenF, 1.f / 16.f
+	
+	il128		kShuf01, "Aa00"
+	il128		kShuf23, "00Aa"
+	il128		kShufABcd, "ABcd"
+	
+	// setup pointers
+	.reg		input0, input1, input2, output0, output1
+	sf			input0, istride, input
+	ori			input1, input, 0
+	a			input2, input, istride
+	ori			output0, output, 0
+	a			output1, output, ostride
+	
+loop:
+	ai			output0, output0, 0x20
+	ai			output1, output1, 0x20
+	ai			input0, input0, 0x10
+	ai			input1, input1, 0x10
+	ai			input2, input2, 0x10
+	ai			count, count, -8
+	
+	// Load data
+	.reg		s00, s10, s20
+	.reg		s01, s11, s21
+	.reg		s02, s12, s22
+	
+	// Load first row
+	lqd			s00, -0x20( input0 )
+	lqd			s10, -0x10( input0 )
+	lqd			s20, 0x00( input0 )
+	
+	// Load second row
+	lqd			s01, -0x20( input1 )
+	lqd			s11, -0x10( input1 )
+	lqd			s21, 0x00( input1 )
+	
+	// Load third row
+	lqd			s02, -0x20( input2 )
+	lqd			s12, -0x10( input2 )
+	lqd			s22, 0x00( input2 )
+	
+	// Unpack
+	.reg		p00, p10, p20, p30, p40, p50
+	.reg		p01, p11, p21, p31, p41, p51
+	.reg		p02, p12, p22, p32, p42, p52
+	shufb		p00, s00, s00, kEdgePostReplicateW
+	shufb		p10, s10, s10, kEdgePostReplicateX
+	shufb		p20, s10, s10, kEdgePostReplicateY
+	shufb		p30, s10, s10, kEdgePostReplicateZ
+	shufb		p40, s10, s10, kEdgePostReplicateW
+	shufb		p50, s20, s20, kEdgePostReplicateX
+	
+	shufb		p01, s01, s01, kEdgePostReplicateW
+	shufb		p11, s11, s11, kEdgePostReplicateX
+	shufb		p21, s11, s11, kEdgePostReplicateY
+	shufb		p31, s11, s11, kEdgePostReplicateZ
+	shufb		p41, s11, s11, kEdgePostReplicateW
+	shufb		p51, s21, s21, kEdgePostReplicateX
+	
+	shufb		p02, s02, s02, kEdgePostReplicateW
+	shufb		p12, s12, s12, kEdgePostReplicateX
+	shufb		p22, s12, s12, kEdgePostReplicateY
+	shufb		p32, s12, s12, kEdgePostReplicateZ
+	shufb		p42, s12, s12, kEdgePostReplicateW
+	shufb		p52, s22, s22, kEdgePostReplicateX
+		
+	// Upsample
+	.reg	r00, r10, r20, r30, r40, r50, r60, r70
+	.reg	r01, r11, r21, r31, r41, r51, r61, r71
+	PerPixelUpsample_F
+	
+	// Pack ( reuse abuse )
+	.reg	d00, d10, d01, d11
+	// the shuffle masks here are actually different, so it's not an 8bit pack.
+	PackPixels8_ODD( d00, r00, r10, r20, r30)
+	PackPixels8_ODD( d10, r40, r50, r60, r70)
+	PackPixels8_ODD( d01, r01, r11, r21, r31)
+	PackPixels8_ODD( d11, r41, r51, r61, r71)
+		
+	// Store
+	stqd	d00, -0x20( output0 )
+	stqd	d10, -0x10( output0 )
+	stqd	d01, -0x20( output1 )
+	stqd	d11, -0x10( output1 )
+	brnz	count, loop
+.endfunc
+
+// upsample argb 16:16:16:16
+.cfunc void edgePostUpsample16( qword output, qword input, qword istride, qword ostride, qword count )
+	
+	.reg	kThree, kUnpack0_16, kUnpack1_16, kPack_16
+	ila		kThree, 3
+	il128	kUnpack0_16, "0a0b0c0d"
+	il128	kUnpack1_16, "0e0f0g0h"
+	il128	kPack_16, 0x02030607_0a0b0e0f_12131617_1a1b1e1f
+	
+	// setup pointers
+	.reg	input0, input1, input2, output0, output1
+	sf		input0, istride, input
+	ori		input1, input, 0
+	a		input2, input1, istride
+	ori		output0, output, 0
+	a		output1, output, ostride
+	
+loop:
+	ai		output0, output0, 0x40
+	ai		output1, output1, 0x40
+	ai		input0, input0, 0x20
+	ai		input1, input1, 0x20
+	ai		input2, input2, 0x20
+	ai		count, count, -8
+	
+	// Load data
+	.reg	s00, s10, s20, s30
+	.reg	s01, s11, s21, s31
+	.reg	s02, s12, s22, s32
+	
+	// Load first row
+	lqd		s00, -0x30( input0 )
+	lqd		s10, -0x20( input0 )
+	lqd		s20, -0x10( input0 )
+	lqd		s30, 0x00( input0 )
+	
+	// Load second row
+	lqd		s01, -0x30( input1 )
+	lqd		s11, -0x20( input1 )
+	lqd		s21, -0x10( input1 )
+	lqd		s31, 0x00( input1 )
+	
+	// Load third row
+	lqd		s02, -0x30( input2 )
+	lqd		s12, -0x20( input2 )
+	lqd		s22, -0x10( input2 )
+	lqd		s32, 0x00( input2 )
+	
+	// Unpack pixels
+	.reg p00, p10, p20, p30, p40, p50
+	.reg p01, p11, p21, p31, p41, p51
+	.reg p02, p12, p22, p32, p42, p52
+	UnpackPixels16_0X00(discard, p00, discard, discard, s00, s00)
+	UnpackPixels16(p10, p20, p30, p40, s10, s20)
+	UnpackPixels16_X000(p50, discard, discard, discard, s30, s30)
+	UnpackPixels16_0X00(discard, p01, discard, discard, s01, s01)
+	UnpackPixels16(p11, p21, p31, p41, s11, s21)
+	UnpackPixels16_X000(p51, discard, discard, discard, s31, s31)
+	UnpackPixels16_0X00(discard, p02, discard, discard, s02, s02)
+	UnpackPixels16(p12, p22, p32, p42, s12, s22)
+	UnpackPixels16_X000(p52, discard, discard, discard, s32, s32)
+
+	.reg	r00, r10, r20, r30, r40, r50, r60, r70
+	.reg	r01, r11, r21, r31, r41, r51, r61, r71
+	
+	// Upsample
+	// Here we use a little trick:
+	// To balance the pipes, we replaced the rotmi -4 in the lerps with
+	// rotqmbii -4. This will result in junk in the upper 4 bits of each
+	// word, but as our results are in halfwords, we do not care.
+
+	PerPixelUpsample(BilerpTl_ODD, BilerpTr_ODD, BilerpBl_ODD, BilerpBr_EVEN)
+	
+	// Pack pixels
+	.reg	d00, d10, d20, d30, d01, d11, d21, d31
+	PackPixels16(d00, r00, r10)
+	PackPixels16(d10, r20, r30)
+	PackPixels16(d20, r40, r50)
+	PackPixels16(d30, r60, r70)
+	PackPixels16(d01, r01, r11)
+	PackPixels16(d11, r21, r31)
+	PackPixels16(d21, r41, r51)
+	PackPixels16(d31, r61, r71)
+		
+	// Store
+	stqd	d00, -0x40( output0 )
+	stqd	d10, -0x30( output0 )
+	stqd	d20, -0x20( output0 )
+	stqd	d30, -0x10( output0 )
+	stqd	d01, -0x40( output1 )
+	stqd	d11, -0x30( output1 )
+	stqd	d21, -0x20( output1 )
+	stqd	d31, -0x10( output1 )
+	
+	brnz	count, loop
+.endfunc

@@ -1,0 +1,144 @@
+//
+//	a17a.src（アナザーミッション用）
+//
+//	written by S.Mukaide 2002.Feb
+//
+//	$Id: a17a.src,v 1.10 2002/08/03 13:17:44 usr03682 Exp $
+
+//	ステージ名表記用
+#define		WN_W17A
+// アナザーミッション明示
+#define		WN_ANOTHER
+
+#define		DAY_SKY		//	昼空
+
+block .use r_vr_s
+block .nocache
+block .cache
+
+//	各ステージ共通要素
+#include		"p_common.h"
+#include		"common.h"
+// include		a_effect.h
+#include		"c_effect.h"
+//include		item_box_tank.h
+//include		gover.h
+//include		wp_plant.h
+
+//	オルタナティブ追加エフェクト
+#include	"alt_effect.h"
+
+// 敵兵タイプ
+	//	警備兵
+#define		ENE_P_GOL
+	//	通常アタッカー
+#define		ENE_ATTACKER
+	//	ハイテク兵
+#define		ENE_HIGH_TECH
+
+
+// 特殊兵
+	//	ショットガン兵セット
+#define		ENE_SHOT
+	//	盾兵セット
+#define		ENE_SHIELD
+
+// 特殊兵のモーション設定
+	//	天狗兵とウォークマン兵のモーションはいらない
+#define 	ENE_MAR '-DDEL_TNG=DUMMY -DDEL_WALKMAN=DUMMY'
+
+//	キャラクタ
+#include	"ene_plant.h"
+
+//	NPCスネーク
+//human		sna_def/sna_def_sh.kms
+#if 0
+human		iro_def/iro_def_mt.kms
+#endif
+//	強制モーション
+mtn		rai_a17a.mls
+mtn		sna_a17a.mls
+
+// NPCスネークのモーション
+#if 0
+mtn		npc_snake.mls
+mtn		npc_snake_cap.mls
+mtn		npc_snake_drag.mls
+#endif
+//	敵兵ステージ固有モーション
+//	敵兵固有モーション
+mtn		gbs_w17a.mls
+
+//死体捨て用強制モーション
+mtn			corpse_w17a.mls
+
+//	ワールド
+/*
+pack_all	oil.tri \
+		debug/takabe/tex/oil_alp_ovl_mod0222.bmp \
+		debug/takabe/tex/sky_day_add_alp_ovl_mod1120.bmp
+*/
+
+//	海
+option makexti6 -l 256
+pack_all	oil.tri \
+		effect/plant_sea/d_oil_sea_alp_ovl_mod0222.bmp \
+		effect/plant_sea/d_oil_ref_add_alp_ovl_mod1120.bmp
+option makexti6
+
+pack_trnall	effect.tri \
+		effect/plant_sea/d_oil_sea_alp_ovl_mod0222.bmp
+
+pack_all 	w17a.tri \
+				world/w17a/w17a \
+				world/door/w17a_dr00.dar \
+				world/door/w17a_dr01.dar \
+				world/door/w17a_dr00x.dar
+
+world/door	w17a_dr00.kms w17a_dr01.kms w17a_dr00x.kms
+world		w17a/w17a
+world		w17a/other
+world		w17a/load
+
+lt2			w17a.lt2
+hazard		a17a.hzx
+world		sea
+
+// 解体Ｃ４セット(一番最後に描画してもらうためにzからはじめる)
+pack_all	z_object.tri \
+			goods/c4_kaitai_a \
+			goods/c4_kaitai_b
+
+goods		c4_kaitai_a
+goods		c4_kaitai_b
+
+// サイファセット
+#define		NORM_CYP
+#include	"cypher.h"
+
+
+//	ダミー
+goods		null/null.kms
+
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+//	振動
+vib		etc/drop_sea.vib
+vib		program/explosion.vib
+
+//	落し穴
+include		pit_effect.h
+
+// プラント用監視カメラ
+meca		svc_plant
+
+// アイテム
+itembox
+
+
+// リネーム
+rename		gbs_w17a.mar	gbsstage.mar
+
+texrename w17a_24a.kms w10c_cntw04.bmp w10c_cntw04aaaa.bmp

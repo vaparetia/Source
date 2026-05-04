@@ -1,0 +1,471 @@
+★ libgv リファレンス
+
+--------------------------------------------------------------------------------
+■ 概要
+--------------------------------------------------------------------------------
+
+libgvはメモリ管理や実行単位の制御など、ゲームの一番基本的な部分の管理を
+行なうライブラリである。
+以下の機能を持つ。
+
+・メモリ管理 ( MALLOC型／freelist型)
+・データリスト管理
+・実行単位管理( ACTOR system )
+・メッセージ管理
+・パッドユーティリティ
+・ベクトルユーティリティ
+・デバッグユーティリティ
+
+--------------------------------------------------------------------------------
+■メモリ管理
+--------------------------------------------------------------------------------
+
+16バイトタグ・双方向リスト型メモリ管理でメインの管理(GV_AllocMemory系)を
+行ない、局所的なデータブロック管理用に、Freeリストのみで管理する
+メモリ管理ライブラリ(memlist系)を持つ。
+
+実際にPS２の実メモリをどう設定するかは、libgv.cnfで定義している。
+
+・GV_AllocMemory系
+
+メイン管理は、MAX_MEMSYSで定義されるだけのメモリシステムを管理できる。
+各メモリシステムはID（０からの通し番号）で管理される。
+メインに使用されるメモリシステムに関しては、GV_Mallocなどのユーティリティで
+簡易にアクセスできる。
+
+基本的にはalloc時に最小16バイトから指定サイズまでのアライメントを設定できる。
+管理用タグのサイズは16バイト。双方向リンクリストと、allocを高速化するための
+Freeblockリスト用のポインタを持つ。
+
+また、DMA系のデータ用に、遅延Free機能を持つ。GV_FreeMemory2で解放されたメモリは、
+実際には次のフレームの頭(gvd実行中)に解放される。
+
+void GV_InitMemoryBlock( int id, int type, void *top, int size );
+void GV_InitMemorySystemAll( void );
+void GV_CleanMemorySystem( void );		// delay freeの実行
+
+void *GV_AllocMemory( int id, void **ptr, int size, int align );
+void GV_FreeMemory( int id, void *ptr );
+void GV_ZeroMemory( void *to, int size );
+void GV_ResizeMemory( int id, void *ptr, int size );
+void GV_FreeMemory2( int which, void *addr );	// delayed free予約
+
+int GV_GetMaxFreeMemory( int id );
+int GV_GetFreeMemorySize( int id );
+
+// ユーティリティ
+void *GV_Malloc( int size );
+void GV_Free( void *addr );
+void GV_Resize( void *addr, int size );
+void GV_DelayedFree( void *addr );
+
+・memlist系
+
+ローカルなメモリブロック内でさらにメモリ管理をするための機構。
+memlist.hをincludeする。
+管理するメモリブロックに対し、MEMLIST構造体をユーザー側で用意する。
+
+管理用タグをFreeBlockにしか持たないタイプであるため、Freeする時にサイズの指定が
+必要になる。
+
+void GV_MlBufferInit( MEMLIST *list, char *name, void *top, void *bottom, int align );
+void *GV_MlMalloc( MEMLIST *list, int size );
+void GV_MlFree( MEMLIST *list, void *free, int size );
+
+・常駐データ系
+
+常駐データは単純に登録順に確保される。
+途中で確保や解放されることは考えていない。
+
+void GV_InitResidentMemory( void );
+void *GV_AllocResidentMemory( int size, int id );
+void GV_ReinitResidentData( void );
+
+
+--------------------------------------------------------------------------------
+■データリスト管理(CACHE SYTEM)
+--------------------------------------------------------------------------------
+
+CACHEと呼ばれる機構で、データのアドレスとIDを管理している。
+各データはファイル名から生成される24Bitのハッシュコード（以下文字列ID）で管理される。
+データは今の実装では512個まで登録可能。
+また、拡張子によって、登録された初期化関数を自動的に呼び出す機能もある。
+また、データによっては常駐領域にロードされ、各ステージで再設定される。
+
+// キャッシュID算出
+int GV_StrCode( char *string );
+int GV_CacheID( int root_id, int spec );
+int GV_CacheID2( char *root_name, int spec );
+int GV_CacheID3( char *name );
+
+// キャッシュへデータ登録／取得
+void GV_InitCacheSystem( void );
+void GV_FreeCacheSystem( void );
+void *GV_GetCache( int id );
+int GV_SetCache( int id, void *buf );
+
+// 初期化関数登録／初期化
+void GV_ResetLoader( void );
+void GV_SetLoader( int spec, GV_LOADFUNC init );
+int GV_LoadInit( void *data, int name, int cache_mode );
+
+--------------------------------------------------------------------------------
+■実行単位管理(ACTOR SYSTEM)
+--------------------------------------------------------------------------------
+
+各処理単位のプログラムをGV_ACT構造体で管理する。
+
+基本的には、GV_ACT構造体を先頭に持つWorkという構造体を定義し、
+その中にそのACTORが必要な情報をすべて入れる。
+actとして指定された関数の引数に、そのworkという構造体のアドレスが
+渡されるので、それを使って処理を行なうという形式になる。
+
+基本的には、以下の手順で呼び出す。
+LEVELは実行LEVEL（後述）
+
+typedef struct {
+	GV_ACT actor;
+	...
+} Work;
+
+void *NewFunc( ... )
+{
+	Work *work;
+
+	/* ワークの確保と初期設定、リンクリストへの追加 */
+	work = ( Work * )GV_NewActor( LEVEL, sizeof( Work ) );
+	if( work != NULL ){
+		/* 実行関数／終了関数の設定 */
+		GV_SetActor( work, Act, Die );
+
+		/* ここで work を初期設定する */
+	}
+	return work;
+}
+
+
+ACTORは以下の機能を持つ
+・メモリ確保／初期化
+・act, die関数による各処理の実行
+・終了処理
+・level, priorityによる実行順序の制御
+・level毎に設定されるPAUSE処理
+・各ACTORごとのRESET処理
+・sleep, wakeupによる実行時間の節約(message待ち等)
+・killメッセージを自動処理
+・エフェクトのメモリ制限
+
+また、拡張されたGV_ACT_EX構造体を使うことで、以下の機能が使用可能になる。
+・ACTOR間の親子関係の構築
+・親子間でのシグナル関数を使った情報のやりとり
+
+ACTOR SYSTEMのデバッグ支援機能としては
+・ACTORを登録したファイル名の記録
+・実行にかかった時間(HSYNC)の記録
+を行ない、それをターミナルにダンプすることができる。
+
+使用上の注意点として以下をあげる。
+・Die関数中で他のキャラクタを起動しない。
+
+以下、それぞれを説明する。
+
+・メモリ確保／初期化
+
+自前でGV_ACT構造体を初期化した場合は、
+void GV_InsertActor( int level, void *work );
+void GV_InsertActorPriority( int level, void *work, int prio );
+
+で、リンクリストに接続できる。
+void GV_SetActorKillLevel( void *this, int kill_level );
+void GV_SetActorClass( void *this, int class );
+で、メンバのそれぞれの値を設定。
+基本的なものはユーティリティ関数
+void *GV_CreateActor( int level, int class, int size, int prio );
+で、設定できる。
+ユーザープログラムからは、以下のマクロを使うことを推奨
+#define GV_NewActor( _l, _s ) GV_CreateActor( _l, GV_CLASS_OBJECT, _s, 0 )
+#define GV_NewActorPrio( _l, _s, _p ) GV_CreateActor( _l, GV_CLASS_OBJECT, _s, _p )
+#define GV_NewEffect( _l, _s ) GV_CreateActor( _l, GV_CLASS_EFFECT, _s, 0 )
+#define GV_NewEffectPrio( _l, _s, _p ) GV_CreateActor( _l, GV_CLASS_EFFECT, _s, _p )
+
+・act, die関数による各処理の実行
+
+GV_ACTには、少なくとも
+void ( *act )( GV_ACT *work );	// 1loopに1回呼び出される。
+void ( *die )( GV_ACT *work );	// 終了時に呼び出される。
+という2つの関数へのポインタを持ち、この関数をGV_ExecActorSystem内から
+呼び出すことで各処理を実行する。
+act関数を処理の途中で切替えることも可能。
+
+void GV_SetActor( void *this, void *act, void *die );
+で設定する。
+ACTORがDieした時にWorkそのものをFreeするための関数へのポインタをGV_ACT内に持っている。
+GV_CreateActor(GV_NewActor, GV_NewEffect)で初期化されたものはGV_Freeがそこに設定されている。
+自前で確保したworkの場合は、
+void GV_SetActorFreeFunc( void *this, GV_FREEFUNC free );
+で関数を設定できる。freeがNULLの時は終了時になにもしない。
+void GV_ChangeActFunc( void *this, void *func );
+でactを切替える。
+
+・終了処理
+
+void GV_DestroyActor( void *this );
+で「自分自身」を終了させることができる。他のACTORをこれで終了させるのは禁止。
+れを実行すると、「次のターン」でDieが実行されてリンクリストから切り離される。
+
+void GV_DestroyOtherActor( void *target );
+は、他のACTORを終了させるための関数。
+リンクリストをたどって、存在をチェックしてから終了処理を行なう。
+必ずこれを使うこと。
+
+void GV_DestroyOtherActorQuick( void *target );
+は、他のACTORを直ちに終了させる関数。
+「自分のすぐ次」のACTORを終了させると問題が起こるので、基本的に実行レベルの
+異なるACTORに対して使用すること。
+
+・level, priorityによる実行順序の制御
+
+ACTORは実行順番を規定するためのlevelとpriorityの2つの属性を持つ。
+level毎にACTORのリストが作られ、登録時にpriorityの小さい順に
+適切な場所に挿入される。priorityを見ない登録関数もあり、
+その場合はリストをたどることなく、そのレベルの最初に登録される。
+(初期化時間を最小化するため)
+NewActor系はprioはみず、NewActorPrioを使うと設定できる。
+
+・level毎に設定されるPAUSE処理
+
+各レベルに対し、system/libgv/actor.c内でPAUSEフラグが定義される。
+PAUSEは、設定された値とGV_PauseLevelとの論理積が０以外であればそのレベルの
+実行を行なわれないことで、実現している。
+
+void GV_PauseOnActorSystem( int pause );
+void GV_PauseOffActorSystem( int pause );
+void GV_PauseToggleActorSystem( int pause );
+
+・各ACTORごとのRESET処理
+
+RESETに関しては、各ACTORのGV_DestroyActorSystemの引数と各GV_ACTのkillメンバに
+設定された値とのANDが真ならばそのACTORをDestroyする。ステージ切替えなどの時に
+すべてのキャラを終了させる時などに用いられる。
+
+void GV_DestroyActorSystem( int kill );
+
+・sleep, wakeupによる実行時間の節約(message待ち等)
+
+ACTを実行することは、ICACHEの無駄になるので、GV_ACT構造体のclassメンバに
+WAITのフラグを設け、これが立っている時にはACTを実行しないようになっている。
+このフラグをセットするには、GV_SleepActor(), クリアするには、GV_WakeupActorを使う。
+ユーザービットは2つまで空いているのでそれを使うことができる。
+GV管轄のメッセージ待ちとGAME管轄のマップ切替え待ちにはそれぞれビットを割り当ててあり、
+それぞれ、GV_WaitMessage, GM_WaitMapChangeで待ち状態になり、システムで自動的にwakeupされる。
+
+void GV_SleepActor( void *this, int waitflag );
+void GV_WakeupActor( void *this, int waitflag );
+void GV_WaitMessage( void *this, int name );
+
+・killメッセージを自動処理
+
+初期化時にGV_SetActorMessageKill( this, name )を実行しておくことで、
+GV_ACTのclassメンバにフラグを立て、kill message( 0x00FFFFFF )を自動的に
+処理することができる。ただし、これが受け付けられたときは、Actを通らずにDieに
+移行するので注意すること。
+なお、gclでkill messageを書く時にはきちんとcommand.defで定義しておく必要がある。
+
+void GV_SetActorMessageKill( void *this, int name );
+
+・エフェクトのメモリ制限
+
+ユーティリティ関数GV_NewEffectを使ってキャラを設定すると、GV_ACTのclassメンバに
+GV_CLASS_EFFECTビットを立て、GV_CreateActor内でメモリチェックを行ない、
+GV_MEM_EFFECT_LIMIT_SIZE (libgv/actor.c内で定義:現状は128K)以上の空きがない場合は
+起動しない(NULLを返す)ようにする。これにより、必ず起動しなければならないACTORの
+起動を妨げないことが保証できる。
+
+#define GV_NewEffect( _l, _s ) GV_CreateActor( _l, GV_CLASS_EFFECT, _s, 0 )
+#define GV_NewEffectPrio( _l, _s, _p ) GV_CreateActor( _l, GV_CLASS_EFFECT, _s, _p )
+
+・ACTOR間の親子関係の構築
+
+GV_ACT構造体をGV_ACT_EX構造体にし、GV_ActorEX()で初期化すると、
+GV_SetActorChild( parent, child )を使って、ACTOR同士を親子として定義できるようになる。
+親子間ではシグナルを使って情報のやりとりができる。ただし、親子は、あくまでリンクリスト
+としてつながっているという意味のみで、実行順番についてはなにも関係がないことには
+注意すること。
+親がDieした場合は、子にGV_SIGNAL_KILLというシグナルが発生する。このシグナルでは、
+デフォルトのシグナル関数で自分にGV_DestroyActorをかけるようになっており、
+これによって、「親が死んだら子も死ぬ」を実現している。
+したのシグナル機能を使うために、シグナル関数を自前で登録した場合、
+GV_SIGNAL_KILLのシグナルに対する処理を書かなければならない。
+（ただし、わざと書かないことで、親が死んでも死なない子も作れる）
+
+#define GV_ActorEX( _act )
+void GV_SetActorChild( void *parent, void *child );
+void GV_DestroyChild( void *this );
+
+・親子間でのシグナル関数を使った情報のやりとり
+
+親子の間では、
+GV_CallChildSignalFunc() で子のsignal関数を、
+GV_CallParentSignalFunc()で親のsignal関数を
+呼び出し、通信することができる。
+signalに関しては、GV_SIGNAL_KILL, GV_SIGNAL_DIEが予約済み。
+valueは、signalに関して付加情報を割り当てることができる。
+デフォルトのシグナル関数として、GV_DefaultSignalFuncが設定されている。
+独自のシグナルを使うには、GV_SetActorSignalFuncをつかって、signal関数を設定し、
+その中でsignal, valueに応じて処理を行なう。thisには、そのACTORのworkの
+先頭アドレスが入ってくる。
+
+void GV_CallChildSignalFunc( void *this, int signal, int value );
+int GV_CallParentSignalFunc( void *this, int signal, int value );
+int GV_DefaultSignalFunc( void *work, int signal, int value );
+
+・ACTORを登録したファイル名の記録
+
+DEBUG_MODEマクロをONにした状態でコンパイルされると、GV_ACT構造体にデバッグメンバが
+追加され、ACTORの初期化時にそのファイル名が記録されるようになる。
+これは、ACTの実行時に変数に代入され、ハングアップした時にどのACTの実行中かを
+示すことができる。
+
+・実行にかかった時間(HSYNC)の記録
+
+デバッグメンバがある状態では、各ACTの実行時間をHSYNC単位で計測し、累積している。
+GV_DumpActorSystem内で、現在のACTORのリストをその平均実行時間とともに出力する。
+
+void GV_DumpActorSystem( int mode );
+
+・Die関数中で他のキャラクタを起動しない。
+
+Die関数中で他のキャラクタの起動関数を呼ぶのは禁止する。
+ステージのリセット時にすべてのキャラクタがDieを呼ぶが、そのときに
+新規キャラクタが発生するとまずい状況になるからである。
+それを防ぐために以下の関数を用意してある。
+int GV_IsFollowDestroy( void *this ) ;	// 親が死んだ時に真
+int	GV_IsStageDestroy( void *this ) ;	// GV_DestroyActorSystemで死んだ時に真
+
+--------------------------------------------------------------------------------
+■メッセージ管理(MESSAGE SYSTEM)
+--------------------------------------------------------------------------------
+
+各ACTOR間でのデータのやりとりのためにメッセージシステムが用意されている。
+このメッセージシステムは以下の特徴を持つ。
+
+・メッセージボックスに対し、名前IDで登録／取得を行なう。
+  同じ名前を持つものに対して、ブロードキャスト的に送られる。
+・int複数個のデータをやりとりする。
+・ACTORの実行順番によらず、あるフレームで送られたデータは、その次のフレームでのみ
+  取得できる。
+
+メッセージのやりとりは、以下の構造体で行なわれる。
+
+typedef struct {
+	int address;		/* 宛先 */
+	short _len;			/* 内部使用 */
+	short _flag;		/* 内部使用 */
+	int *message;		/* メッセージ列へのポインタ */
+	int message_len;	/* メッセージの数 */
+} GV_MSG;
+
+送る側はaddress, message, message_lenを適切に指定していなければならない。
+messageは、SendMessage中で内部のバッファにコピーされる。
+
+関数は以下の通り。
+
+void GV_ClearMessageSystem( void ); // システム使用。バッファのフリップ
+
+int GV_SendMessage( GV_MSG *send );
+int GV_ReceiveMessage( int address, GV_MSG **msg_ptr ); // 存在するメッセージの数を返す
+
+GV_ReceiveMessage で取得されたGV_MSG *はその時に存在するメッセージ列の先頭。
+同一 address(名前ID)に送られたメッセージはメモリ的に連続していることが
+保証されている。
+
+--------------------------------------------------------------------------------
+■パッド管理(PAD SYSTEM)
+--------------------------------------------------------------------------------
+
+PlayStation2のパッド情報を管理するためのライブラリ群。
+DualShock2を基本として考えている。
+
+以下の構造体が、gvdの中で毎フレーム更新されている。
+
+typedef struct {
+	short type;					/* ペリフェラルタイプ */
+
+	/* デジタルデータ */
+	unsigned short status;		/* 状態 */
+	unsigned short press;		/* press trigger */
+	unsigned short release;		/* release trigger */
+
+	short dir;					/* 十字キー入力方向 */
+	short analog_input;			/* アナログ入力の有無 */
+
+	unsigned char right_dx;		/* アナログ */
+	unsigned char right_dy;
+	unsigned char left_dx;
+	unsigned char left_dy;
+
+	unsigned char pressure[ 12 ];		/* 感圧情報へのポインタ */
+
+	int	flag ;			/* パッド状態フラグ */
+} GV_PAD;
+
+extern GV_PAD 	GV_PadData[ GV_PAD_MAX ];
+extern GV_PAD	GV_PadDataDirect[ GV_PAD_MAX ] ;
+
+以下の関数がシステムから呼び出され、更新を行なう。
+
+void GV_InitPadSystem( void );
+void GV_ResetPadSystem( void );
+void GV_UpdatePadSystem( void );
+
+dirメンバについては、以下の関数でどの方向を０にするか設定できる。
+カメラ位置等で上方向をずらす時に使用する。
+
+int	GV_GetPadOrigin( void ) ;
+void GV_OriginPadSystem( int org );
+
+パッドの振動を設定する関数。
+
+void GV_SetPadVibration1( int which, int value );
+void GV_SetPadVibration2( int which, int value );
+
+#ifdef DEBUG_MODE
+int GV_PadHangupCheck( void );
+#endif
+
+パッドをシステム的にリリース状態にしたり、あるボタンをマスクしたりする関数群。
+
+void	GV_PadReleaseOnSystem( int ) ;
+void	GV_PadReleaseOffSystem( int ) ;
+void	GV_PadReleaseOn( int ) ;
+void	GV_PadReleaseOff( int ) ;
+void	GV_PadReleaseOnScn( int ) ;
+void	GV_PadMaskOn( int, int ) ;
+void	GV_PadMaskOff( int ) ;
+void	GV_PadMaskOnScn( int, int ) ;
+void	GV_PadPressScn( int, int ) ;
+void	GV_PadMaskCancelScn( int, int ) ;
+
+void	GV_PadSetDemoData( int, int, void * ) ;
+
+--------------------------------------------------------------------------------
+■ベクトルユーティリティ
+--------------------------------------------------------------------------------
+
+歴史的経緯により、ベクトル系関数群が一部GVにある。
+これについては、
+system/libgv/util.h
+を参照のこと。
+
+--------------------------------------------------------------------------------
+■デバッグユーティリティ
+--------------------------------------------------------------------------------
+
+PlayStation2のデバッグレジスタ等を使用するためのマクロが、
+system/libgv/break.h
+にある。
+データリード／ライト／バリュー例外の設定をサポート。
+
+ASSERT, HANGUP
+等のマクロをlibgv.hで定義している。
+これらのマクロは、DEBUG_MODEマクロを定義していなければ消える。

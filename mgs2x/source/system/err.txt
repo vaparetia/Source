@@ -1,0 +1,42 @@
+make[1]: Entering directory `/cygdrive/d/mgs2/mgs2x/source/system/libdg'
+make[1]: Leaving directory `/cygdrive/d/mgs2/mgs2x/source/system/libdg'
+make[1]: Entering directory `/cygdrive/d/mgs2/mgs2x/source/system/libfs'
+cl /nologo /MTd /W3 /Gi /GX /Od /FD /G6  /Zi -U_DEBUG /Fd../../mgs2lib.pdb  -DDEBUG -DDEBUG_MODE -DNTSC -DENGLISH -DAREA_EU -DWIN32 -D_XBOX -D_WINDOWS -DMEDIA_DVD -D_USE_XGMATH -I../../include -I../../game -I../../system/libgv -I../../system/libdg -I../../system/libgcl -I../../system/libfs -I../../system/libmt -I../../system/libhzx -I../../system/libgcl -I../../system/libutl -I../../system/libx2w -I../../system/libwbc -I../../../wmodule/include  -I"c:/DXSDK/include" -I"c:/Program Files/Microsoft Visual Studio/VC98/include" -c -D_HDU_ cdbios.c -Focdbios.obj
+cdbios.c
+cdbios.c(313) : warning C4090: 'function' : 'volatile' 修飾子は異なります。
+cdbios.c(313) : warning C4024: 'ﾎﾟｲﾝﾀによる関数の呼び出し' : の型が 1 の仮引数および実引数と異なります。
+cl /nologo /MTd /W3 /Gi /GX /Od /FD /G6  /Zi -U_DEBUG /Fd../../mgs2lib.pdb  -DDEBUG -DDEBUG_MODE -DNTSC -DENGLISH -DAREA_EU -DWIN32 -D_XBOX -D_WINDOWS -DMEDIA_DVD -D_USE_XGMATH -I../../include -I../../game -I../../system/libgv -I../../system/libdg -I../../system/libgcl -I../../system/libfs -I../../system/libmt -I../../system/libhzx -I../../system/libgcl -I../../system/libutl -I../../system/libx2w -I../../system/libwbc -I../../../wmodule/include  -I"c:/DXSDK/include" -I"c:/Program Files/Microsoft Visual Studio/VC98/include" -c -D_DEV_ cdbios.c -Focdbios_dev.obj
+cdbios.c
+cdbios.c(254) : warning C4047: '=' : 間接参照のﾚﾍﾞﾙが 'int ' と 'void *' で異なっています。
+cdbios.c(256) : warning C4047: '=' : 間接参照のﾚﾍﾞﾙが 'void *' と 'int ' で異なっています。
+cdbios.c(313) : warning C4090: 'function' : 'volatile' 修飾子は異なります。
+cdbios.c(313) : warning C4024: 'ﾎﾟｲﾝﾀによる関数の呼び出し' : の型が 1 の仮引数および実引数と異なります。
+cl /nologo /MTd /W3 /Gi /GX /Od /FD /G6  /Zi -U_DEBUG /Fd../../mgs2lib.pdb  -DDEBUG -DDEBUG_MODE -DNTSC -DENGLISH -DAREA_EU -DWIN32 -D_XBOX -D_WINDOWS -DMEDIA_DVD -D_USE_XGMATH -I../../include -I../../game -I../../system/libgv -I../../system/libdg -I../../system/libgcl -I../../system/libfs -I../../system/libmt -I../../system/libhzx -I../../system/libgcl -I../../system/libutl -I../../system/libx2w -I../../system/libwbc -I../../../wmodule/include  -I"c:/DXSDK/include" -I"c:/Program Files/Microsoft Visual Studio/VC98/include" -c -D_XDAT_ cdbios.c -Focdbios_xdat.obj
+cdbios.c
+cdbios.c(313) : warning C4090: 'function' : 'volatile' 修飾子は異なります。
+cdbios.c(313) : warning C4024: 'ﾎﾟｲﾝﾀによる関数の呼び出し' : の型が 1 の仮引数および実引数と異なります。
+cdbios.c(588) : warning C4101: 'res' : ﾛｰｶﾙ変数は 1 度も使われません。
+ar rus ../../lib/libfs.a cdbios.obj cdbios_dev.obj cdbios_xdat.obj fshdx.obj stageldx.obj stream.obj fsxdev.obj cdutil.obj stagezcd.obj
+make[1]: Leaving directory `/cygdrive/d/mgs2/mgs2x/source/system/libfs'
+make[1]: Entering directory `/cygdrive/d/mgs2/mgs2x/source/system/libgv'
+make[1]: Leaving directory `/cygdrive/d/mgs2/mgs2x/source/system/libgv'
+make[1]: Entering directory `/cygdrive/d/mgs2/mgs2x/source/system/libhzx'
+make[1]: Leaving directory `/cygdrive/d/mgs2/mgs2x/source/system/libhzx'
+make[1]: Entering directory `/cygdrive/d/mgs2/mgs2x/source/system/libmt'
+make[1]: Leaving directory `/cygdrive/d/mgs2/mgs2x/source/system/libmt'
+make[1]: Entering directory `/cygdrive/d/mgs2/mgs2x/source/system/libgcl'
+make[1]: Leaving directory `/cygdrive/d/mgs2/mgs2x/source/system/libgcl'
+make[1]: Entering directory `/cygdrive/d/mgs2/mgs2x/source/system/libutl'
+make[1]: Leaving directory `/cygdrive/d/mgs2/mgs2x/source/system/libutl'
+make[1]: Entering directory `/cygdrive/d/mgs2/mgs2x/source/system/libx2w'
+make[1]: Leaving directory `/cygdrive/d/mgs2/mgs2x/source/system/libx2w'
+make[1]: Entering directory `/cygdrive/d/mgs2/mgs2x/source/system/libwbc'
+make[1]: Leaving directory `/cygdrive/d/mgs2/mgs2x/source/system/libwbc'
+cd ..; make link
+make[1]: Entering directory `/cygdrive/d/mgs2/mgs2x/source'
+Link with link_hd.o mgs2.elf
+[ mgs2.exe ]
+link -out:mgs2.exe main/mainw.obj  system/libfs/link_hd.obj stage/_stage.obj \
+	 ./lib/libfs.a ./lib/mode.a ./lib/korekado.a ./lib/sonoyama.a ./lib/sigeno.a ./lib/yamashita.a ./lib/uehara.a ./lib/yano.a ./lib/shibata.a ./lib/satoyoshi.a ./lib/okuta.a ./lib/kunibe.a ./lib/okajima3.a ./lib/okajima2.a ./lib/morita.a ./lib/kano.a ./lib/okajima.a ./lib/skoba.a ./lib/kira.a ./lib/takabe.a ./lib/game.a ./lib/libutl.a ./lib/libmt.a ./lib/libfs.a ./lib/libdg.a ./lib/libgv.a ./lib/libhzx.a ./lib/libgcl.a ./lib/libx2w.a ./lib/libwbc.a ./../wmodule/lib/mts.a ./../wmodule/lib/sound.a ./../wmodule/lib/zlibdec.a d3d8.lib d3dx8.lib dxerr8.lib dsound.lib dinput8.lib dinput.lib dxguid.lib ksuser.lib libcmt.lib libcpmt.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib winmm.lib oldnames.lib msacm32.lib amstrmid.lib strmiids.lib /nologo /incremental:no /debug /machine:I386 /libpath:"c:/DXSDK/lib" /libpath:"c:/Program Files/Microsoft Visual Studio/VC98/lib" /opt:ref /opt:icf /subsystem:windows /fixed:no  /map /nodefaultlib
+LINK : warning LNK4089: "GDI32.dll" へのすべての参照は /OPT:REF によって廃棄されます
+make[1]: Leaving directory `/cygdrive/d/mgs2/mgs2x/source'

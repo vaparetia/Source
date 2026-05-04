@@ -1,0 +1,221 @@
+//
+//	P036_04_p03.w24c.src
+//
+//	written by H.Yoshiike 2000.Nov
+//
+//	$Id: P036_04_p03.w24c.src,v 1.38 2002/09/11 12:04:32 usr03682 Exp $
+
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+include		common.h
+include		c_effect.h
+
+// キャラクタ
+// arkms はどのキャラクタよりも先に記述すること。
+arkms		hos_all_def.kls
+arkms		hos_all_mid.kls
+arkms		hos_all_low.kls
+
+// ライデン
+human		rai_def/rai_def_mh_mt.evm
+//cvd			human/rai_def
+// エイムズ
+pack_all ric_def_mh.tri \
+		human/ric_def/ric_blindeye_mh.dar \
+		human/ric_def/ric_blindlip_mh.dar \
+		human/ric_def/ric_def_mh.dar
+human		ric_def/ric_blindeye_mh.evm
+human		ric_def/ric_blindlip_mh.evm
+human		ric_def/ric_def_mh.evm
+
+pack_all ric_def.tri \
+		human/ric_def/ric_low.dar \
+		human/ric_def/ric_mid.dar \
+		human/ric_def/ric_def.dar
+
+human		ric_def/ric_low.kms
+human		ric_def/ric_mid.kms
+human		ric_def/ric_def.kms
+cvd			human/ric_def/ric_low.cv2 -vn
+cvd			human/ric_def/ric_mid.cv2 -vn
+
+mtn		hostage.mls
+mtn		hos_a.mls
+mtn		hos_b.mls
+mtn		hos_c.mls
+mtn		hosf_d.mls
+mtn		hosf_e.mls
+
+// 人質さん
+human		hos_def/hos_tie_green.kms
+human		hos_def/hos_tie_browm.kms
+human		hos_def/hos_femalea_def_mt.kms
+human		hos_def/hos_femaleb_def_mt.kms
+
+human		hos_def/hos_femalea_sk_mh.evm
+human		hos_def/hos_femaleb_sk_mh_mt.evm
+
+// ソリダス
+//human		sol_def/sol_def_sh_mt.kms
+// 忍者
+//human		org_tng
+// オセロット
+//human		rev_plant
+// 敵兵
+human		gbs_def
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+option makexti6 -l 1024 -f PAL8
+pack_all	w24c.tri \
+		world/w24c/w24c0 \
+		world/door/w24c_stdr.dar \
+		world/door/w01f_dr.dar
+option makexti6
+
+world		w24c/w24c0
+
+option makexti6 -l 1024 -f PAL8
+world		w24c/w24c1
+option makexti6
+
+world		door/w24c_stdr.kms
+//world		door/w02a_l_dr.kms
+//world		door/w01f_dr.kms
+world		door/w24b_dr02.kms	//人質部屋ドア
+
+world		w24c/load_model/w24c_w24b.kms
+lt2			w24c.lt2
+hazard		d00a3.hzx
+
+
+// オブジェクト
+
+//野尻追加
+//米国旗
+world		w24c/w24c0_flag/w24c0_flag_mh.evm
+//天井ライトきらめき
+pack_all	xfade.tri effect/light/w24c0/xlit24a_alp.bmp effect/light/w24c0/xlit24b_alp.bmp effect/light/w24c0/xlit24c_alp.bmp
+
+//ヌルモデル
+goods	null/null.kms
+
+//壊れ物関連（演説台プレート）
+pack_all allcm_cm.tri \
+		goods/bottle/btl_piece.dar
+//グラス
+goods	glass bottle/btl_piece.kms
+
+//紙と皿
+world/w01d/dining \
+	dish1.kms       dish5.kms \
+	dishBroL_cm.kms dishBroS_cm.kms \
+	paper.kms  paperBro_L.kms  paperBro_S_cm.kms
+
+//りんご
+world	w16a/w16a_bro/w16a0_apple
+pack_trnall apple_effect.tri effect/crash/apple_alp.bmp
+//野尻追加
+
+//水谷追加
+weapon	aks/aks.kms
+goods	demo_aks_sp_gbs/demo_aks_sp_gbs.kms
+goods	demo_aks_sp_gbs/demo_aks_amo_gbs.kms
+//武器リネーム（この対処はAKSを使う全部に必要?！）
+rename	demo_aks_sp_gbs.kms aks_sp.kms
+rename	demo_aks_amo_gbs.kms aks_amo.kms
+
+// デバッグ用
+//weapon	aks/aks.kms
+//weapon	aks/aks_sp.kms
+//weapon	aks_rai/aks_sp_rai_sub.kms
+
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム
+
+/* mgdemo added ----from here (Fri Jun 29 00:36:03 2001) ---- */
+human	gps_def/gps_def_mt.kms
+goods	demo_org_tng_hfb/demo_org_tng_hfb_r_sheath.kms
+goods	demo_org_tng_hfb/demo_org_tng_hfb_r_blade_mt.kms
+weapon	saa/saa_lefthand.kms
+human	rev_coat/rev_hair_fix.kms
+human	rai_gbs/rai_gbs_gbshead_mh_mt.evm
+human	rai_gbs/rai_gbs_body_mh_mt.evm
+human	rev_coat/rev_hair_fix.kms
+human	rev_coat/rev_coat_bounding.kms
+weapon	usp/usp_sub.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Jun 29 17:18:16 2001) ---- */
+human	hos_def/hos_malea_def.kms
+human	hos_def/hos_malec_def.kms
+/* mgdemo added ----from here (Fri Jun 29 17:24:10 2001) ---- */
+human	rai_gbs/rai_gbs_raihead_mh_mt.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Jun 29 22:17:39 2001) ---- */
+human	org_tng/org_tng_sld_mt.kms
+human	org_tng/org_tng_mh_mt.evm
+human	org_tng/org_tng_sh_mt.kms
+human	rev_plant/rev_plant_mh_mt.evm
+human	rev_plant/rev_plant_sh_mt.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Jul 17 14:33:23 2001) ---- */
+human	gbs_demo/gbs_def_mt.kms
+item	radio/rad.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Jul 30 16:02:27 2001) ---- */
+human	sol_def/sol_def_mant_2_mh_mt.evm
+human	sol_def/sol_def_mant_body_mh_mt.evm
+human	sol_def/sol_def_mant_2_mh_mt.evm
+human	sol_def/sol_bounding.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Wed Aug  1 10:26:46 2001) ---- */
+item	item_security_card_lv3/security_card_lv3.kms
+/* mgdemo added ----upto here ---- */
+// テロップ用テクスチャ
+#ifdef MGS2_LANG_ENGLISH
+// 英語
+pack_all	staff.tri \
+		2D/demo_telop/eng/sr08j_alp_ovl.bmp
+#else
+pack_all	staff.tri \
+		2D/demo_telop/jpn/sr08j_alp_ovl.bmp
+#endif
+
+// koba4
+l2d     2D/sight/vtr/vtr.l2d
+
+/* mgdemo added ----from here (Mon Aug 20 21:44:59 2001) ---- */
+vib	demo/P040_09_p05_gbs_01.vib
+vib	demo/P040_01_p01_rai_02.vib
+vib	demo/P040_01_p01_rai_01.vib
+goods	demo_dummy/demo_dummy.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Aug 21 16:40:39 2001) ---- */
+vib	demo/P040_09_p05_rai_01.vib
+vib	demo/P040_09_p05_org_01.vib
+vib	demo/P040_09_p05_ric_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Aug 21 22:50:33 2001) ---- */
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_text_R_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_text_L_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_mitsubishi_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_square_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_noiz_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_head_met_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_cover_alp.bmp
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Aug 28 16:09:38 2001) ---- */
+vib	demo/P040_09_p05_org_02.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Sep 25 14:44:34 2001) ---- */
+human	rai_def/rai_def_addhand_mh_mt.evm
+/* mgdemo added ----upto here ---- */
+
+human	rai_gbs/rai_gbshead_addhand_mh_mt.evm

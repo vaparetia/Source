@@ -1,0 +1,44 @@
+// e43a.src
+// ＡＧ・丸通路(E3用)
+// 2001/04/18 S.Yamashita
+// $Id: e43a.src,v 1.4 2001/06/04 10:50:13 usr02011 Exp $
+
+
+block .use r_tnk0
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"common.h"
+include		c_effect.h
+//include		wp_plant.h
+
+// キャラクタ
+human		sna_def/sna_def_mh.evm
+rmt			sna_rmt
+
+// 強制モーション
+mtn		sna_w02a.mls
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+pack_all	object.tri world/door/w02a_l_dr.dar world/door/w01f_dr.dar
+
+world		w43a
+world		door/w02a_l_dr.kms
+world		door/w01f_dr.kms
+lt2			w43a.lt2
+hazard		w43a.hzx
+
+// オブジェクト
+// 小さいサイズのテクスチャはまとめておく
+
+// アイテム
+itembox
+
+// デバッグ用
+
+
+
+// リネーム

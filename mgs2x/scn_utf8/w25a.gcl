@@ -1,0 +1,2427 @@
+/*
+	w25a.gcl                     
+	    ＤＧ連絡橋
+
+	2000/11/30 Y.Matsuhana         
+	$Id: w25a.gcl,v 1.162 2002/07/18 12:24:14 usr03682 Exp $                      
+	
+*/
+
+
+// 各種スイッチ用define
+// ------------------------------------
+// プラント編識別
+#define STAGE_PLANT			1
+#define STAGE_W25A			1 
+
+// 注）敵兵は出ませんので、敵兵用define はありません。
+
+// サウンド
+#define		SOUND			1		// サウンドデータは最初に呼ぶ
+#define		BGM			1		// BGMは敵兵コマンダーの後に呼ぶ
+
+// プレイヤー
+#define		RAIDEN			1		// SNAKEとは排他
+
+// 敵兵
+#define		SUPPORT			0		// サポート兵
+#define		ATTACKER		0		// 攻撃兵
+#define		SHIELD			0		// 盾兵(1) or 通常攻撃兵(0)
+
+// デバッグ
+#define		USB_KEY			0		// USBキーボード
+#define		DEBUG_MODE		0		// デバッグモード
+#define		DEBUG_PRINT		0		// デバッグ表示
+
+// ステージロード制御
+#define		STAGE_END		0		// ステージ終了時処理を使用可にする
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME		w25a
+
+#define		KMS_NAME0		w25a0		// シェル1シェル２連絡橋上部
+#define		KMS_NAME1		w25a1		// シェル1シェル２連絡橋下部
+#define		KMS_NAME2		w25ab_17a	// 遠景
+#define		KMS_NAME3		w25ab_18a	// 遠景
+#define		KMS_NAME4		w25ab_19a	// 遠景
+#define		KMS_NAME5		w25ab_20a	// 遠景
+#define		KMS_NAME6		w25a_gl		// 遠景
+#define		KMS_NAME7		w25ab_gh	// 遠景
+#define		KMS_NAME8		w25a_g		// 遠景
+#define		KMS_NAME9		w25ab_14a	// 遠景
+#define		KMS_NAMEA		w25ab_21a	// 遠景
+#define		KMS_NAMEB		w25ab_24a	// 遠景
+#define		KMS_NAMEC		w25ab_31a	// 遠景
+#define		KMS_NAMED		w25ab_32a	// 遠景
+#define		KMS_NAMEE		w25ab_32b	// 遠景
+#define		KMS_NAMEF		w25ab_32c	// 遠景
+#define		KMS_NAMEG		w25ab_crane	// 遠景
+#define		KMS_NAMEH		w25ab_i1	// 遠景
+#define		KMS_NAMEI		w25ab_i2	// 遠景
+#define		KMS_NAMEJ		w25ab_kl	// 遠景
+#define		KMS_NAMEK		w25ab_l		// 遠景
+#define		KMS_NAMEL		w25ab_other00	// 遠景
+#define		KMS_NAMEM		w25ab_other01	// 遠景
+#define		KMS_NAMEN		w25ab_other02	// 遠景
+#define		KMS_NAMEO		w25a_18b	// Ｄ脚ロード部分
+#define		KMS_NAMEP		w25ab_hi	// 遠景 ＨＩ連絡橋　サブスタンスから追加 2002.07.18 by 吉池
+
+// デモ前
+#define		KMS_ENT_D_0		w25a_brk00a	// Ｄ脚入り口破壊前
+#define		KMS_ENT_G_0		w25a_brk01a	// Ｇ脚入り口破壊前
+#define		KMS_ENT_P_0		w25a_brk02a	// パイプへこみ前
+
+// デモ後
+#define		KMS_ENT_D_1		w25a_brk00b	// Ｄ脚入り口破壊後
+#define		KMS_ENT_G_1		w25a_brk01b	// Ｇ脚入り口破壊後
+#define		KMS_ENT_P_1		w25a_brk02b	// パイプへこみ後
+
+#define		KMS_NAME0_BEFORE	w25a0_obj00	// 破壊前上部
+#define		KMS_NAME1_BEFORE	w25a1_obj00	// 破壊前下部
+#define		KMS_NAME0_AFTER		w25a0_obj01	// 破壊後上部
+#define		KMS_NAME1_AFTER		w25a1_obj01	// 破壊後下部
+#define		KMS_NAME_SEA		sea		// 海
+
+#define		DOOR_NAME_LOAD		w25a_dr00		// ロード用
+
+#define		LT2_NAME		w25a
+
+#define		NULL_KMS_NAME		null
+#define		NULL_LT2_NAME		null
+
+
+
+
+// キャラクター関係
+#if d:RAIDEN
+	#define		PLAYER		ライデン	// モーションができるまで名前はスネーク
+#else
+	#define		PLAYER		スネーク
+#endif
+
+// 外部関数宣言
+// ------------------------------------
+extern	chara ボスラッシュカサッカ
+
+
+// モーション関係
+// ------------------------------------
+#include "rai_w25a.mh"
+
+// include
+// ------------------------------------
+#include "stdch.h"
+#include "sload.h"
+#include "jump.h"
+#include "beyond.h"
+#include "sound.h"
+#include "enevoice.h"
+#include "item_info.h"
+#include "sdemo.h"
+#include "fall.h"
+#include "w25_kamome.gcl"		/* 奥田君管理（かもめヘッダ） */
+#include "Boss_harrier.h"		/* ハリアー関連（satoyoshi） */
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+
+// 共通オブジェクトの設置
+// -----------------------
+#include "w25a_common.h"
+
+
+// ボスラッシュ用 ---------------------
+#include "boss_stdproc.h"
+// ------------------------------------
+
+
+
+// スネーク　アイテム補給関連
+#define POINT_MAX	6
+#define ITEM_KIND_MAX	6
+
+// アイテム残数確認によりアイテムリクエストが
+// 重なった場合の出現間隔
+#define ITEM_REQUEST_INTERVAL_VE (10*60)
+#define ITEM_REQUEST_INTERVAL_EA (20*60)
+#define ITEM_REQUEST_INTERVAL_NO (30*60)
+#define ITEM_REQUEST_INTERVAL_HA (40*60)
+#define ITEM_REQUEST_INTERVAL_VH (50*60)
+
+dim $i:w25aアイテム出現Ｘ位置[ d:POINT_MAX ];
+dim $i:w25aアイテム出現Ｙ位置[ d:POINT_MAX ];
+dim $i:w25aアイテム出現Ｚ位置[ d:POINT_MAX ];
+dim $s:w25aアイテム箱モデル[ d:ITEM_KIND_MAX ] ;
+dim $s:w25aアイテム箱モデル影[ d:ITEM_KIND_MAX ] ;
+dim $s:w25aアイテム箱ラベル[ d:ITEM_KIND_MAX ] ;
+dim $b:w25a分類種別[ d:ITEM_KIND_MAX ] ;
+dim $b:w25a武器種別[ d:ITEM_KIND_MAX ] ;
+dim $b:w25aアイテム武器数量[ d:ITEM_KIND_MAX ] ; 
+#enum リクエストアイテム種別 {
+	レーション,
+	ＲＧＢ６,
+	スティンガー,
+	Ｍ９,
+	ソコム,
+	Ｍ４
+} ;
+
+
+// マップ設定
+// ------------------------------------
+
+#ifndef d:BOSS_MODE
+	// 不具合防止のためNULLライトの設定は最初で行う
+	chara マップ 破壊前兆弾当たり専用 	-k d:NULL_KMS_NAME -h d:HZX_NAME,28 -l d:NULL_LT2_NAME
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 6
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 7
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 8
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 9
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 10
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 11
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 12
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 13
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 14
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 15
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 16
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 17
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 18
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 19
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 20
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 21
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 22
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 23
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 24
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 25
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 26
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 27
+	command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 29		// サブスタンスからＨＩ連絡橋を追加しました。2002.07.18 by 吉池
+
+	chara マップ 破壊後兆弾当たり専用 	-k d:NULL_KMS_NAME -h d:HZX_NAME,28 -l d:NULL_LT2_NAME
+
+	// レンズフレア当たり用
+	command 追加ＨＺＸグループ登録 -hzx_id 8 -add_id 0
+	command 追加ＨＺＸグループ登録 -hzx_id 8 -add_id 1
+
+	chara マップ ＤＧ連絡橋1F \
+					-k d:KMS_NAME1 \
+					-k d:KMS_NAME2 \
+					-k d:KMS_NAME3 \
+					-k d:KMS_NAME4 \
+					-k d:KMS_NAME5 \
+					-k d:KMS_NAME6 \
+					-k d:KMS_NAME7 \
+					-k d:KMS_NAME8 \
+					-k d:KMS_NAME9 \
+					-k d:KMS_NAMEA \
+					-k d:KMS_NAMEB \
+					-k d:KMS_NAMEC \
+					-k d:KMS_NAMED \
+					-k d:KMS_NAMEE \
+					-k d:KMS_NAMEF \
+					-k d:KMS_NAMEG \
+					-k d:KMS_NAMEH \
+					-k d:KMS_NAMEI \
+					-k d:KMS_NAMEJ \
+					-k d:KMS_NAMEK \
+					-k d:KMS_NAMEL \
+					-k d:KMS_NAMEM \
+					-k d:KMS_NAMEN \
+					-k d:KMS_NAMEO \
+					-k d:KMS_NAMEP \
+					-h d:HZX_NAME,0 -l d:LT2_NAME
+	chara マップ ＤＧ連絡橋B1	-k d:KMS_NAME0 \
+					-h d:HZX_NAME,1 -l d:LT2_NAME
+	chara マップ ＤＧ連絡橋1F破壊前 -k d:KMS_NAME0_BEFORE \
+					-k d:KMS_NAME1_BEFORE \
+					-h d:HZX_NAME,28 -l d:LT2_NAME
+	chara マップ ＤＧ連絡橋1F破壊後 -k d:KMS_NAME0_AFTER \
+					-k d:KMS_NAME1_AFTER \
+					-h d:HZX_NAME,28 -l d:LT2_NAME
+
+
+	chara マップ接合 ＤＧ連絡橋接合基本	ＤＧ連絡橋1F ＤＧ連絡橋B1
+	chara マップ接合 ＤＧ連絡橋接合破壊前	ＤＧ連絡橋1F ＤＧ連絡橋1F破壊前
+	chara マップ接合 ＤＧ連絡橋接合破壊後	ＤＧ連絡橋1F ＤＧ連絡橋1F破壊後
+	chara マップ接合 破壊前兆弾当たり専用1F	ＤＧ連絡橋1F 破壊前兆弾当たり専用
+	chara マップ接合 破壊前兆弾当たり専用B1	ＤＧ連絡橋B1 破壊前兆弾当たり専用
+	chara マップ接合 破壊後兆弾当たり専用1F	ＤＧ連絡橋1F 破壊後兆弾当たり専用
+	chara マップ接合 破壊後兆弾当たり専用B1	ＤＧ連絡橋B1 破壊後兆弾当たり専用
+
+	/* 上下層でマップ分けしていたが、あまり効果が無いので常に両方のマップをONしてます。 */
+	mesg マップ接合 ＤＧ連絡橋接合基本 on
+
+	if ( $b:w25a_ステージ状態 == 0 ) {
+		// 全てが完全な状態
+		chara プットオブジェ ステージマップ -m d:KMS_ENT_D_0 -r 0 0 0 -p 0 0 0 -l d:LT2_NAME -s 100 100 100 -f 0
+		chara プットオブジェ ステージマップ -m d:KMS_ENT_G_0 -r 0 0 0 -p 0 0 0 -l d:LT2_NAME -s 100 100 100 -f 0
+		chara プットオブジェ ステージマップ -m d:KMS_ENT_P_0 -r 0 0 0 -p 0 0 0 -l d:LT2_NAME -s 100 100 100 -f 0
+		mesg マップ接合 ＤＧ連絡橋接合破壊前 on
+		mesg マップ接合 ＤＧ連絡橋接合破壊後 off
+		command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 2
+
+		mesg マップ接合 破壊前兆弾当たり専用1F on
+		mesg マップ接合 破壊前兆弾当たり専用B1 on
+		command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 4
+		mesg マップ接合 破壊後兆弾当たり専用1F off
+		mesg マップ接合 破壊後兆弾当たり専用B1 off
+		command 追加ＨＺＸグループ削除 -hzx_id 28 -add_id 5
+		// レンズフレア
+		command 追加ＨＺＸグループ登録 -hzx_id 8 -add_id 4
+
+	} else if ( $b:w25a_ステージ状態 == 1 ) {
+		// Ｄ脚、Ｇ脚の入り口が破壊された状態
+		chara プットオブジェ ステージマップ -m d:KMS_ENT_D_1 -r 0 0 0 -p 0 0 0 -l d:LT2_NAME -s 100 100 100 -f 0
+		chara プットオブジェ ステージマップ -m d:KMS_ENT_G_1 -r 0 0 0 -p 0 0 0 -l d:LT2_NAME -s 100 100 100 -f 0
+		chara プットオブジェ ステージマップ -m d:KMS_ENT_P_1 -r 0 0 0 -p 0 0 0 -l d:LT2_NAME -s 100 100 100 -f 0
+		mesg マップ接合 ＤＧ連絡橋接合破壊前 on
+		mesg マップ接合 ＤＧ連絡橋接合破壊後 off
+		command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 2
+
+		mesg マップ接合 破壊前兆弾当たり専用1F off
+		mesg マップ接合 破壊前兆弾当たり専用B1 off
+		command 追加ＨＺＸグループ削除 -hzx_id 28 -add_id 4
+		mesg マップ接合 破壊後兆弾当たり専用1F on
+		mesg マップ接合 破壊後兆弾当たり専用B1 on
+		command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 5
+		// レンズフレア
+		command 追加ＨＺＸグループ登録 -hzx_id 8 -add_id 5
+
+	} else if ( $b:w25a_ステージ状態 == 2 ) {
+		// Ｄ脚、Ｇ脚の入り口が破壊、さらに上層の一部が崩落した状態
+		chara プットオブジェ ステージマップ -m d:KMS_ENT_D_1 -r 0 0 0 -p 0 0 0 -l d:LT2_NAME -s 100 100 100 -f 0
+		chara プットオブジェ ステージマップ -m d:KMS_ENT_G_1 -r 0 0 0 -p 0 0 0 -l d:LT2_NAME -s 100 100 100 -f 0
+		chara プットオブジェ ステージマップ -m d:KMS_ENT_P_1 -r 0 0 0 -p 0 0 0 -l d:LT2_NAME -s 100 100 100 -f 0
+		mesg マップ接合 ＤＧ連絡橋接合破壊前 off
+		mesg マップ接合 ＤＧ連絡橋接合破壊後 on
+		command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 3
+
+		mesg マップ接合 破壊前兆弾当たり専用1F off
+		mesg マップ接合 破壊前兆弾当たり専用B1 off
+		command 追加ＨＺＸグループ削除 -hzx_id 28 -add_id 4
+		mesg マップ接合 破壊後兆弾当たり専用1F on
+		mesg マップ接合 破壊後兆弾当たり専用B1 on
+		command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 5
+		// レンズフレア
+		command 追加ＨＺＸグループ登録 -hzx_id 8 -add_id 5
+
+		command トラップ削除 -name by003	// 破壊された柵部分のエルード禁止
+
+	}
+	// ハリアー戦プレイ回数
+	// ノーマルモード以下なら10回コンティニューしたら、レーダーを強制的にONにしてあげる(救済対策)
+	if ( $w:ゲーム設定  <= d:LEVEL_NORMAL ) {
+		if ( $f:ハリアー戦中 ) {
+			eval($w:w25a_ハリアー戦プレイ回数 = $w:w25a_ハリアー戦プレイ回数 + 1)
+			if($w:w25a_ハリアー戦プレイ回数 < 10) {
+				command varsave $w:w25a_ハリアー戦プレイ回数
+			} else if($w:w25a_ハリアー戦プレイ回数 >= 10) {
+				// レーダーＯＮ
+				eval($f:w18a_ノードフラグ = 1)
+			}
+		}
+	}
+
+	// ステージ状態によらない共通設定
+	// ------------------------------
+	command マップ設定 ＤＧ連絡橋1F ＤＧ連絡橋B1 -set {
+		@サウンド設定		// データは最初に呼ぶ
+		@カメラ設定
+		@レーダー設定
+		@シネマスクリーン設定
+		@常駐キャラ設定
+		@ボスラッシュ開始時キャラ設定
+		@レーダー拡大設定
+		@ドア設置
+		@空と海面設置
+		@w25a狙撃イベントアイテム補給
+		@フォグ設定
+		@トラップ設定
+		@プラント編全体マップ設定 d:ＤＧ連絡橋マップ	// stdproc.hで定義
+		@ロード設定
+		@w25a_ビヨンド設定
+		@w25a_自動ジャンプ設定
+		@プレイヤー設定
+		@w25a専用赤外線設定
+		@キャラ用ライト設置		// マップ設定の最後に呼ぶ
+		
+		if ( $f:ハリアー戦中 ) {
+			@w25a専用赤外線破壊設定;
+			@Ｇ脚ドア破壊
+			@ハリアー戦前アイテムセット		/* スティンガー等 */
+			@ハリアーセット;
+			@プラグイン設定
+			@落下死設定
+		} else {
+			@米国旗設定
+			@w25aカモメ配置
+		}
+		#if d:DEBUG_MODE
+			@デバッグキャラセット
+		#endif
+	}
+
+	command マップ設定 ＤＧ連絡橋1F -set {
+		@主観禁止壁設定
+	}
+	#include "w25a_cdc.ch"
+	#include "p_force_cdc.ch"
+
+	command マップ表示 -show ＤＧ連絡橋1F
+	if ( $w:w25a_特殊ゲームオーバー == 1 ) {
+		@セムテックス爆発ゲームオーバー
+	} else {
+		@ステージ進入時処理
+	}
+#endif
+
+
+//=============================================================================
+// プロシージャ
+//=============================================================================
+
+// 弾痕跳弾関係の設定
+// ------------------------------------
+proc 弾痕跳弾設定 {
+	#if d:DEBUG_PRINT 
+		print 'recoil_set'
+	#endif
+
+	command 弾痕ノーマル -n 0	// 通常
+	command 弾痕ノーマル -n 1	// 階段、通常
+	command 弾痕ノーマル -n 2	// 鉄板
+	command 弾痕ノーマル -n 3	// 鉄筋
+	command 弾痕ノーマル -n 4	// ダンボール
+	command 弾痕ノーマル -n 5	// 木箱
+	command 弾痕ノーマル -n 6	// パイプ中
+	command 弾痕ノーマル -n 7	// パイプ大
+
+	command 跳弾ノーマル -n 0
+	command 跳弾ノーマル -n 1
+	command 跳弾ノーマル -n 2
+	command 跳弾ノーマル -n 3
+	command 跳弾ノーマル -n 5
+	command 跳弾水蒸気中 -n 6
+	command 跳弾水蒸気大 -n 7
+}
+
+
+proc ステージ進入時処理 {
+	// ステージ状態による個別開始設定
+	// ------------------------------
+	#ifndef d:BOSS_MODE
+		if ( $w:p_story <  d:ST:P042_01_R01シェル１シェル２連絡橋１無線デモ１開始 ) {
+			// パッドデモ表示
+			if( $f:w25a_パッドデモ＿フラグ == 0 && ( $w:アラートモード == 0 )) {
+				@ステージ開始時処理（デモ表示） \
+						d:LOAD_TYPE:SL_DOOR_TYPE \		// タイプ
+						Ｄ脚方面ドア \				// ドア名
+						2375 \					// 移動距離
+						d:DEFAULT_M_TYPE \			// モーションタイプ
+						d:wn_ＤＧ連絡橋 \			// 表示文字
+						w25a_pdemo_00 \				// デモファイル名
+						d:ALL_OFF \				// 表示フラグ
+						-2000 1550 -135276 0 \
+						d:P_F_STANCE_STAND
+				eval( $f:w25a_パッドデモ＿フラグ = 1 ) ;
+				@ステージ開始時カメラ
+				command varsave $f:w25a_パッドデモ＿フラグ		// PADデモ見せ終わり
+				chara プロック連続実行 カメラ戻し管理人 \
+					-proc 無線デモ移行管理
+			} else {
+				@ステージ開始時処理（ステージ名表示） \
+						d:LOAD_TYPE:SL_DOOR_TYPE \		// タイプ
+						Ｄ脚方面ドア \				// ドア名
+						2375 \					// 移動距離
+						d:DEFAULT_M_TYPE \			// モーションタイプ
+						d:wn_ＤＧ連絡橋
+			}
+		}else if ( $w:p_story <  d:ST:P045_01_P01ハリアー登場１ポリゴンデモ１開始 ) {
+			// パッドデモ表示
+			if( $f:w25a_パッドデモ＿フラグ＿２ == 0 && ( $w:アラートモード == 0 )) {
+				command シナリオ前装備変更 -number d:アイテム:双眼鏡
+				eval( $w:アイテム = d:アイテム:素手 ) ;
+				eval( $w:武器     = d:アイテム:素手 ) ;
+				chara フェードインアウト フェードイン -i 0,0,0 128 -c 0,0,0 0 -t 30
+				chara delay 遅延vc104301 -time 360 -exec { eval( $i:STREAM_ID = `%Stream t:vc104301` );} // これがセムテックス･･･
+				chara delay 遅延vc104302 -time 650 -exec { eval( $i:STREAM_ID = `%Stream t:vc104302` );} // これが制御装置か･･･
+				@w25a専用パッドデモ開始（キャンセルあり） w25a_pdemo_01 d:MENU_ON 0 1550 -137500 2048 d:P_F_STANCE_STAND
+				eval( $f:w25a_パッドデモ＿フラグ＿２ = 1 ) ;
+			} else {
+				@ステージ開始時処理（ステージ名表示） \
+						d:LOAD_TYPE:SL_DOOR_TYPE \		// タイプ
+						Ｄ脚方面ドア \				// ドア名
+						2375 \					// 移動距離
+						d:DEFAULT_M_TYPE \			// モーションタイプ
+						d:wn_ＤＧ連絡橋
+			}
+		} else if ( $w:p_story <  d:ST:P046_01_P01ハリアー戦勝利１ポリゴンデモ１開始 ) {
+			/* ハリアー戦イベント                             */
+			/* ---------------------------------------------- */
+			@デモ後武器アイテム制御 d:デモ後必ず素手 d:デモ後特殊装備なし
+			@ステージ開始時処理 d:LOAD_TYPE:NO_MOVE_TYPE 0 0 d:DEFAULT_M_TYPE
+		} else if ( $w:p_story <  d:ST:P046_02_R01ハリアー戦勝利２無線デモ１開始 ) {
+			@ステージ開始時処理 d:LOAD_TYPE:SL_DOOR_TYPE Ｄ脚方面ドア 2375 d:DEFAULT_M_TYPE
+		}
+	#else
+		/* ハリアー戦イベント                             */
+		/* ---------------------------------------------- */
+		@ステージ開始時処理 d:LOAD_TYPE:NO_MOVE_TYPE 0 0 d:DEFAULT_M_TYPE
+	#endif
+}
+
+proc ステージ開始時カメラ {
+	chara カメラ設定 カットインカメラ \
+		-c 1 \	
+		-p 1785,3875,-134924 -t -1878,1931,-134851 \
+		-r 318,3085,0 -f 4147 \
+		-a 184 \
+		-i 0 0 0 0 \
+		-s 1
+}
+
+proc 無線デモ移行管理 {
+	command パッドチェック \
+		-no_use
+	if ($status != 1) {
+		if ( $w:p_story <  d:ST:P042_01_R01シェル１シェル２連絡橋１無線デモ１開始 ) {
+			@rt_P042_01_R01シェル１シェル２連絡橋１無線デモ１
+		}
+		chara カメラ設定 カットインカメラ -s -1
+		mesg プロック連続実行 カメラ戻し管理人 kill
+	}
+}
+
+proc w25a専用パッドデモ開始（キャンセルあり） $:p_デモファイル名 $:p_表示フラグ $:p_終了時位置Ｘ $:p_終了時位置Ｙ $:p_終了時位置Ｚ $:p_終了時方向 $:p_終了時姿勢 {
+	#if d:DEBUG_PRINT 
+		print 'w25a_pad_demo_start'
+	#endif
+
+	// 無線機からのコールがあった場合キャンセルをかける
+	command 無線設定 -reset
+	@特殊装備解除
+	@ダンボール解除
+	// パッド操作を奪う(無線やポーズもフラグをたてなければ不許可にする)
+	command パッド操作 -release
+	if (($:p_表示フラグ & d:RADIO_ON) == 0) { command メニュー設定 -radio off }
+	if (($:p_表示フラグ & d:PAUSE_ON) == 0) { command メニュー設定 -pause off }
+
+	// パッドデモ再生フラグ
+	eval( $f:パッドデモ再生フラグ = d:PADDEMO_PLAY );
+	command プレイヤー無敵セット
+	chara デモキャンセルチェック デモキャンセル \
+		-p w25a専用パッドデモキャンセル
+	chara パッドデモ パッドデモ \
+		-file $:p_デモファイル名 \
+		-end_proc w25a専用パッドデモ終了（キャンセルあり）
+	if (($:p_表示フラグ & d:MENU_ON) == 0)   { command メニュー設定 -menu off }
+	if (($:p_表示フラグ & d:GAGE_ON) == 0)   { command メニュー設定 -gage off }
+	if (($:p_表示フラグ & d:RADAR_ON) == 0)  { command メニュー設定 -radar off }
+	if (($:p_表示フラグ & d:SUBWIN_ON) == 0) { command メニュー設定 -subwin off }
+	if (($:p_表示フラグ & d:RADIO_ON) == 0) { command メニュー設定 -radio off }
+	if (($:p_表示フラグ & d:PAUSE_ON) == 0) { command メニュー設定 -pause off }
+
+	mesg シネマスクリーン シネマ フェードアウト 0
+
+	// 終了時位置を渡すために変数に格納
+	eval($i:終了時位置Ｘ = $:p_終了時位置Ｘ);
+	eval($i:終了時位置Ｙ = $:p_終了時位置Ｙ);
+	eval($i:終了時位置Ｚ = $:p_終了時位置Ｚ);
+	eval($i:終了時方向 = $:p_終了時方向);
+	eval($b:終了時姿勢 = $:p_終了時姿勢);
+	mesg パッドデモ パッドデモ start
+}
+
+proc w25a専用パッドデモ終了（キャンセルあり） {
+	#if d:DEBUG_PRINT 
+		print 'pad_demo_end'
+	#endif
+	mesg デモキャンセルチェック デモキャンセル kill
+	if ( $b:セムテックス爆発ゲームオーバー回数 > 10 ) {
+		@フラッシュバックヒント映像初期化
+		eval( $b:制御装置カウンタ = 0 );
+		@フラッシュバックヒント映像
+	} else {
+		mesg シネマスクリーン シネマ フェードイン 0
+		command メニュー設定 -menu on -gage on -radar on -subwin on -radio on -pause on
+		command プレイヤー無敵解除
+		command パッド操作 -cancel
+	}
+}
+
+proc w25a専用パッドデモキャンセル {
+	mesg デモキャンセルチェック デモキャンセル kill
+	mesg コマンダー 敵兵セット 視界オフ
+	mesg delay 遅延vc104301 kill
+	mesg delay 遅延vc104302 kill
+	chara フェードインアウト フェードアウト \
+		-c 0,0,0 128 \
+		-t d:FADEOUT_TIME \
+		-p w25a専用パッドデモキャンセル後
+}
+proc w25a専用パッドデモキャンセル後 {
+	mesg パッドデモ パッドデモ kill
+	mesg シネマスクリーン シネマ フェードイン 0
+	chara delay 強制移動ディレイ \
+		-time 1 \
+		-exec {
+			mesg プレイヤー d:PLAYER position $i:終了時位置Ｘ $i:終了時位置Ｙ $i:終了時位置Ｚ
+			mesg プレイヤー d:PLAYER stance $b:終了時姿勢 $i:終了時方向 $i:終了時方向 0
+			// 主観系装備などは解除
+			@特殊装備解除
+			@ダンボール解除
+			chara フェードインアウト フェードイン \
+				-i 0,0,0 128 \
+				-c 0,0,0 0 \
+				-t d:FADEIN_TIME \
+				-p w25a専用パッドデモキャンセル後スタート
+		}
+}
+proc w25a専用パッドデモキャンセル後スタート {
+	if ( $b:セムテックス爆発ゲームオーバー回数 > 10 ) {
+		@フラッシュバックヒント映像初期化
+		eval( $b:制御装置カウンタ = 0 );
+		@フラッシュバックヒント映像
+	} else {
+		mesg コマンダー 敵兵セット 視界オン
+		command メニュー設定 -menu on -gage on -radar on -subwin on -radio on -pause on
+		eval( $f:パッドデモ再生フラグ = d:PADDEMO_END );
+		command プレイヤー無敵解除
+		command パッド操作 -cancel
+	}
+}
+
+proc セムテックス説明デモカメラ２ {
+	mesg プレイヤー d:PLAYER motion \
+		d:モーションリスト:non_behind_look_lb_p \
+		0 0 0 0
+	command 強制モーションループ回数設定 -loop 999999
+}
+proc セムテックス説明デモカメラ終了処理 {
+	command 強制モーションキャンセル
+	eval( $w:p_story = d:ST:P043_01_S01シェル１シェル２連絡橋２シナリオデモ１終了 )
+	restart ;
+}
+
+proc Ｇ脚ドア破壊 {
+	mesg  プットオブジェ Ｇ脚入口破壊前  kill ;
+	chara プットオブジェ Ｇ脚入口破壊後   -m d:KMS_ENT_G_1 -p 0,0,0 -r 0,0,0 -l d:LT2_NAME
+	mesg ドアランプ Ｇ脚方面ドアランプ 破壊
+}
+
+command マップ表示 -show ＤＧ連絡橋1F
+
+
+	// プレイヤー 
+	// ------------------------------------
+	proc プレイヤー設定 {
+		#if d:DEBUG_PRINT
+			print 'player_set'
+		#endif
+		#if d:RAIDEN
+			chara プレイヤー d:PLAYER \
+				-p $i:プレイヤー初期Ｘ位置,$i:プレイヤー初期Ｙ位置,$i:プレイヤー初期Ｚ位置 \
+				-d 0,$i:プレイヤー初期方向,0 \
+				-s 0 \
+				-m rai_def -a raiden -o rai_w25a 
+			// 髪の毛
+			@ライデン髪の毛設定 d:NORMAL_HAIR
+			@プレイヤーＬＯＤ設定 d:C_DISTANCE_TYPE 4000
+		#else if d:SNAKE
+			chara プレイヤー d:PLAYER \
+				-p $i:プレイヤー初期Ｘ位置,$i:プレイヤー初期Ｙ位置,$i:プレイヤー初期Ｚ位置 \
+				-d 0,$i:プレイヤー初期方向,0 \
+				-s 0 -m sna_def -a raiden -o rai_common
+				//バンダナ
+				chara ロープモデル３ バンダナ１ \
+					-n sna_bdn1 -d 1 -y スネーク \
+					-z 12 -x 0,60,-90 -m 12 \
+					-p 250 -k 350 -o 110 -f 1
+				chara ロープモデル３ バンダナ２ \
+					-n sna_bdn2 -d 1 -y スネーク \
+					-z 12 -x 0,50,-90 -m 22 \
+					-p 250 -k 350 -o 110 -f 1
+		#endif
+	}
+
+	// プラグインプログラム
+	// ------------------------------------
+	proc プラグイン設定 {
+		#if d:DEBUG_PRINT
+			print 'plugin_set'
+		#endif
+		command プラグイン自動ジャンプ
+		command プラグイン落下
+	}
+
+	// レーダー
+	// ------------------------------------
+	proc レーダー設定 {
+		#if d:DEBUG_PRINT 
+			print 'menu set'
+		#endif
+		#ifndef d:BOSS_MODE
+			@レーダーオンオフチェック $f:w18a_ノードフラグ
+		#else
+			@レーダーオンオフチェック 1
+		#endif
+	}
+
+
+	proc レーダー拡大設定 {
+		if ( $f:ハリアー戦中 ) {
+			%レーダーズーム設定 800
+		}
+	}
+
+	// シネマスクリーン常駐設定
+	// ------------------------------------
+	proc シネマスクリーン設定 {
+		chara シネマスクリーン シネマ \
+			-top d:CINEMA_BELT_UPPER -bottom d:CINEMA_BELT_LOWER -ftime d:C_FADE_TIME
+	}
+
+	// 空と海面設置
+	// ------------------------------------
+	proc 空と海面設置 {
+		#if d:DEBUG_PRINT
+			print 'w25a_sea_sky_set'
+		#endif
+		chara プラント海面 plant_sea \
+			-single_mode \	// シングルテクスチャモード
+			-tex oil d_oil_sea_alp_ovl_mod0222 d_oil_ref_add_alp_ovl_mod1120 \
+			-pos 0,-40000,-150000 \
+			-w 1 2 3 \
+			-l 
+		@拡張海面設置
+		@ハリアー昼空（レンズフレア指定） 0 -40000 -150000 -2700,-3100,-2700 8
+		
+		//command クリッププレーン変更 -far 600000
+		// ニア距離の変更は不具合が多発する可能性があるので基本的には使用禁止とする
+		// オプションを指定しなければデフォルト値が適用される
+		// near default : 50
+		// far default : 65536 * 20
+	}
+
+	// ドア関係
+	// ------------------------------------
+	// 2001.7.4 デモと共通化するためにw25a_common.hへ移設
+
+	// 入出トラップ
+	// ------------------------------------
+	proc ロードプロック {
+		#if d:DEBUG_PRINT 
+			print 'load_proc'
+		#endif
+
+		if ($s:呼び出しプロック == mv_w25a_w18a_0) {
+			// ＫＬ連絡橋へ
+			@mv_w25a_w18a_0
+		} else if ($s:呼び出しプロック == mv_w25a_w25b_0) {
+			// Ｂ１へ
+			@mv_w25a_w25b_0
+		}
+	}
+
+	// 入出トラップ
+	// ------------------------------------
+	proc ロード設定 {
+		#if d:DEBUG_PRINT 
+			print 'load_set'
+		#endif
+		// Ｄ脚へ
+		trap ld001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if( $f:ロードチェックＯＮフラグ == 1 ) {
+					mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_FOUTS_S	// 
+					eval( $b:ＰＳＧ１イベント悩んでるチェック = $b:ＰＳＧ１イベント悩んでるチェック + 1 ) ;
+					if ( $b:ＰＳＧ１イベント悩んでるチェック > 99 ) { eval( $b:ＰＳＧ１イベント悩んでるチェック = 99 ); }
+					eval( $f:フラッシュバックヒント見た = 0 ) ;
+					preseek 'w18a'
+					@ステージ終了時処理（ステージ名表示） -2250 0 -132250 0 mv_w25a_w18a_0 d:DEFAULT_M_TYPE d:wn_Ｄ脚第一沈殿池
+				}
+			}
+	}
+
+	// 赤外線センサー設定
+	// ------------------------------------
+	// 2001.7.4 デモと共通化するためにw25a_common.hへ移設
+
+	proc w25a狙撃イベントアイテム補給 {
+		eval( $f:bullet_exist_1 = 0 ) ;
+		eval( $f:bullet_exist_2 = 0 ) ;
+		eval( $f:bullet_exist_3 = 0 ) ;
+		chara プロック連続実行 w25a狙撃イベントアイテム補給 -time -1 -proc w25a狙撃イベント毎時処理
+	}
+	proc w25a狙撃イベント毎時処理 {
+		if ( $w:武器弾数Ｒ[ d:武器:ＰＳＧ１ ] <= 0 )  {
+			if (`%カメラ視界チェック -camera 0x01 -pos 3000,500,-137000` == 0 ) {
+				if ($f:bullet_exist_1 == 0) {
+					command マップ設定 ＤＧ連絡橋1F ＤＧ連絡橋B1 -set {
+						chara アイテム アイテムボックス \
+							-b 0 \
+							-p 3000 500 -137000 \
+							-k rifle_amo_ibox \		// モデル：箱本体
+							-s rifle_amo_ibox_sh \		// モデル：箱影
+							-l psg_amo_label \		// モデル：ラベル
+							-f d:アイテム種別:武器弾 \	// ＩＤ：from ..../scn/equip.h
+							-i d:武器:ＰＳＧ１ \		// ＩＤ：from ..../scn/equip.h
+							-n 20 \				// 個数
+							-h 300 \
+							-r 0 \
+							-x { eval($f:bullet_exist_1 = 0) }
+					}
+					eval($f:bullet_exist_1 = 1) 
+				}
+			}
+		}
+print 'A0'
+		if ( $w:アイテム数Ｒ[ d:アイテム:ジアゼパム ] <= 0 )  {
+print 'A1'
+			if (`%カメラ視界チェック -camera 0x01 -pos -3000,500,-137000` == 0 ) {
+print 'A2'
+				if ($f:bullet_exist_2 == 0) {
+print 'A3'
+					command マップ設定 ＤＧ連絡橋1F ＤＧ連絡橋B1 -set {
+						chara アイテム アイテムボックス \
+							-b 0 \		// 発生パターン
+							-p -3000,500,-137000 \		// 発生位置
+							-k medicine_ibox \					// モデル：箱本体
+							-s medicine_ibox_sh \				// モデル：箱影
+						#ifdef d:JAPANESE
+							-l dzp_label \						// モデル：ラベル
+						#else
+							-l dzp2_label \						// モデル：ラベル
+						#endif
+							-f d:アイテム種別:アイテム \		// ＩＤ：from ..../scn/equip.h
+							-i d:アイテム:ジアゼパム \			// ＩＤ：from ..../scn/equip.h
+							-n 5 \								// 個数
+							-r 0 \						// 0で飛沫無し。
+							-h 300 \				// 床面からの高さ
+							-x { eval($f:bullet_exist_2 = 0) }
+					}
+					eval($f:bullet_exist_2 = 1) 
+				}
+			}
+		}
+		if ( $w:武器弾数Ｒ[ d:武器:ソコム ] <= 0 )  {
+			if (`%カメラ視界チェック -camera 0x01 -pos 1000,500,-135000` == 0 ) {
+				if ($f:bullet_exist_3 == 0) {
+					command マップ設定 ＤＧ連絡橋1F ＤＧ連絡橋B1 -set {
+						chara アイテム アイテムボックス \
+							-b 0 \
+							-p -1500,500,-137000 \		// 発生位置
+							-k handgun_amo_ibox \			// モデル：箱本体
+							-s handgun_amo_ibox_sh \		// モデル：箱影
+							-l scm_amo_label \				// モデル：ラベル
+							-f d:アイテム種別:武器弾 \	// ＩＤ：from ..../scn/equip.h
+							-i d:武器:ソコム \		// ＩＤ：from ..../scn/equip.h
+							-n 12 \				// 個数
+							-h 300 \
+							-r 0 \
+							-x { eval($f:bullet_exist_3 = 0) }
+					}
+					eval($f:bullet_exist_3 = 1) 
+				}
+			}
+		}
+	}
+
+	// トラップ関係
+	// -----------------------------------
+	proc トラップ設定 {
+		// エルードによる下層への移動時のマップチェンジ処理
+		trap dr001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command キャラマップチェンジ -name d:PLAYER -map ＤＧ連絡橋B1
+				// このときエルード関連カメラはOFFにする。
+				chara カメラ設定 ビヨンドカメラ -s -1 ;
+				chara カメラ設定 モーションカメラ -s -1 ;
+			}
+		#ifndef d:BOSS_MODE
+		trap ev006a d:PLAYER -mask 入る -exec {
+			if ( $w:p_story <  d:ST:P042_01_R01シェル１シェル２連絡橋１無線デモ１開始 ) {
+				@rt_P042_01_R01シェル１シェル２連絡橋１無線デモ１
+			}
+		}
+		trap ev006b d:PLAYER -mask 入る -exec {
+			if ( $w:p_story <  d:ST:P042_01_R01シェル１シェル２連絡橋１無線デモ１開始 ) {
+				@rt_P042_01_R01シェル１シェル２連絡橋１無線デモ１
+			}
+		}
+		trap ev001 d:PLAYER -mask 入る -exec {
+			if (   ( $f:w25a赤外線イベントクリア == 1 ) \
+			    && ( $w:p_story <  d:ST:P044_01_R01赤外線センサークリア１無線デモ１開始 )) {
+				eval( $b:w25a_ステージ状態 = 1 ) ;
+				@rt_P044_01_R01赤外線センサークリア１無線デモ１
+			}
+		}
+		trap ev092 d:PLAYER -mask 入る -exec {
+			if ( $w:p_story < d:ST:P044_01_R01赤外線センサークリア１無線デモ１開始 ) {
+				if ( $b:ＰＳＧ１イベント悩んでるチェック >= 4 ) {
+					// 何回もＰＳＧ１イベント中にステージを出入りしている。
+					// ひょっとして悩んでる？(現在は出入り回数4回）
+					if ( $f:フラッシュバックヒント見た == 0 ) {
+						// ステージに入って一回だけ見る(ロードし直せばまた見れる）
+						eval( $f:フラッシュバックヒント見た = 1 ) ;
+						@フラッシュバックヒント映像初期化
+						eval( $b:制御装置カウンタ = 0 );
+						@フラッシュバックヒント映像
+					}
+				}
+			}
+		}
+		#endif
+	}
+
+	// w25aシェル１シェル２連絡橋１無線デモ１終了処理
+	// -----------------------------------
+	proc w25aシェル１シェル２連絡橋１無線デモ１終了処理 {
+		eval( $i:プレイヤー初期Ｘ位置 = -79 ) ;
+		eval( $i:プレイヤー初期Ｙ位置 = 1550 ) ;
+		eval( $i:プレイヤー初期Ｚ位置 = -137163 ) ;
+		eval( $i:プレイヤー初期方向 = 2048 ) ;
+		chara フェードインアウト フェードアウト \
+			-c 0,0,0 128 -t 30 
+		command パッド操作 -release
+		chara delay 遅延 -time 30 -exec {
+			restart -s;
+		}
+	}
+
+	// 国旗
+	// ---------------------
+	proc 米国旗設定 {
+		#if d:DEBUG_PRINT
+			print 'w25a_Flag'
+		#endif
+
+		chara プット旗オブジェ 旗めく \
+		        -model w25a_flag \
+			-rot   -192, 512, 128 \
+		        -pos  -9366,1850,-163211
+
+		chara delay 遅延 -time (60*(`%rand 12`+3)) -exec {
+			mesg プット旗オブジェ 旗めく 旗めく ;
+			return (60*(`%rand 12`+3)) ;
+		}
+	}
+
+#define		HARRIER_CAM_TRACK	15944
+
+	// ステージカメラ設定 
+	// ------------------------------------
+	proc カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'stage_camera_set'
+		#endif
+
+		chara カメラ ステージカメラ		-c 0 -l 3 -p 0 
+		chara カメラ ハリアー戦カメラ		-c 0 -l 2 -p 50
+		chara カメラ 小部屋カメラ		-c 0 -l 2 -p 45
+		chara カメラ カットインカメラ		-c 0 -l 2 -p 40
+		chara カメラ パートカメラ		-c 0 -l 2 -p 30
+		chara カメラ パート２カメラ		-c 0 -l 2 -p 20
+		chara カメラ ビヨンドカメラ		-c 0 -l 2 -p 15
+		chara カメラ モーションカメラ		-c 0 -l 2 -p 10
+		chara カメラ カモフ演出カメラ		-c 0 -l 0 -p 20
+		chara カメラ ハリアー戦演出カメラ	-c 0 -l 0 -p 15
+		chara カメラ ゲームオーバーカメラ	-c 0 -l 0 -p 10
+
+		// デフォルトカメラ
+		chara カメラ設定 ステージカメラ \
+			-c 0 \
+			-b d:CAM_MIN,     9388,  -135633 d:CAM_MAX,     9388,-135633 \
+			-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-137288 \
+			-r 879,2048,0 \
+			-f 7500 \
+			-a 200 \
+			-i 0 0 0 0 \
+			-s 1
+
+		// ハリアー戦最中
+		if(( $w:p_story >= d:ST:P044_01_R01赤外線センサークリア１無線デモ１終了 ) \
+			&& ( $w:p_story < d:ST:P046_01_P01ハリアー戦勝利１ポリゴンデモ１開始 )) {
+			eval( $i:ハリアー戦カメラトラック = d:HARRIER_CAM_TRACK ) ;
+			chara カメラ設定 ハリアー戦カメラ \
+				-c 0 \	
+				-b d:CAM_MIN,7346,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-134562 \
+				-l d:CAM_MIN,-2425,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-146513 \
+				-r 430,1838,0 -f $i:ハリアー戦カメラトラック \
+				-a 262 \
+				-d 1 \
+				-i 0 0 0 0 \
+				-s 1
+		}
+
+		// 階下層
+		trap ca001 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 小部屋カメラ \
+					-c 0 \	
+					-b -320000,-2367,-320000 320000 -2367 -139250 \
+					-l   -1166,-2718,-320000 320000 -2718 -152435 \
+					-r 18,1988,0 -f 12715 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+		// 上下フロア移動用階段
+		trap ca002 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 小部屋カメラ \
+					-c 1 \	
+					-p -4376,-2282,-141915 \
+					-t -3520,-1924,-144938 \
+					-r 120,2048,0 -f 5000 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+		// 南側（Ｄ脚側）ドア前
+		trap ca003 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 小部屋カメラ \
+					-c 0 \	
+					-b -2559,   4200,-134750 844,  4200,-134550 \
+					-l -2559,-320000,-320000 844,320000,-134555 \
+					-r 980,2048,0 -f 1000 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+		// 中央穴の下
+		trap ca004 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 パート２カメラ \
+					-c 1 \	
+					-p -1047,14984,-146454 -t -543,-334,-150816 \
+					-r 842,1973,0 -f 15935 \
+					-a 262 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+		// 中央穴の下破壊後
+		trap ca004a d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				if( $b:w25a_ステージ状態 == 2 ) {
+				chara カメラ設定 パートカメラ \
+					-c 1 \	
+					-p -1047,14984,-146454 -t -543,-334,-150816 \
+					-r 842,1973,0 -f 15935 \
+					-a 262 \
+					-i 0 0 0 0 \
+					-s $3
+				}
+			}
+
+		// 下段の奥
+		trap ca006 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 パート２カメラ \
+					-c 0 \	
+					-b d:CAM_MIN,-1576,-153539 d:CAM_MAX,-1576,-153539 \
+					-l d:CAM_MIN,-2823,-155208 d:CAM_MAX,-2823,-155208 \
+					-r 418,2048,0 -f 15936 \
+					-a 186 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+		// 張付きアングル換え
+		// ------------------------------------
+		trap ca100 d:PLAYER -mask ？ -camera -dir 0,512 -state d:TRP_STATE_BEHINDCAMERA_ENABLE \
+			-exec {
+				chara カメラ設定 カットインカメラ \
+					-c 0 \
+					-b -320000 -320000 -320000 320000 320000 320000 \
+					-l -320000 -320000 -320000 320000 320000 320000 \
+					-r 1020,$i:カメラ角度Ｙ,0 -f 6400 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-s $3
+			}
+		trap ca101 d:PLAYER -mask ？ -camera -dir 2048,512 -state d:TRP_STATE_BEHINDCAMERA_ENABLE \
+			-exec {
+				chara カメラ設定 カットインカメラ \
+					-c 0 \
+					-b -320000 -320000 -320000 320000 320000 320000 \
+					-l -320000 -320000 -320000 320000 320000 320000 \
+					-r 1020,$i:カメラ角度Ｙ,0 -f 6400 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-s $3
+			}
+		trap ca102 d:PLAYER -mask ？ -camera -dir 3072,512 -state d:TRP_STATE_BEHINDCAMERA_ENABLE \
+			-exec {
+				chara カメラ設定 カットインカメラ \
+					-c 0 \
+					-b -320000 -320000 -320000 320000 320000 320000 \
+					-l -320000 -320000 -320000 320000 320000 320000 \
+					-r 1020,$i:カメラ角度Ｙ,0 -f 6400 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-s $3
+			}
+		trap ca103 d:PLAYER -mask ？ -camera -dir 1024,512 -state d:TRP_STATE_BEHINDCAMERA_ENABLE \
+			-exec {
+				chara カメラ設定 カットインカメラ \
+					-c 0 \
+					-b -320000 -320000 -320000 320000 320000 320000 \
+					-l -320000 -320000 -320000 320000 320000 320000 \
+					-r 1020,$i:カメラ角度Ｙ,0 -f 6400 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-s $3
+			}
+
+	}
+	// キャラ用光源(マップの設置が終わってから設定することで、キャラだけに光を当てる)
+	// ------------------------------------
+	proc キャラ用ライト設置 {
+		#if d:DEBUG_PRINT
+			print 'chara_light_set'
+		#endif
+		chara 環境光 環境光源 \
+			 -c 59,61,38 		// 2001.7.27 根岸指示の値に変更
+		chara 平行光 平行光源 \
+			 -c 166,167,147 \	// 2001.7.27 根岸指示の値に変更
+			 -p -2700 -3100 -2700
+	}
+
+	// ハリアー本体設置
+	// ------------------------------------
+	proc ハリアー戦前アイテムセット {
+		@スティンガー_初期設置		スティンガー	  2125   -1000 -147500 0 なし
+		@弾薬_スティンガー_初期設置	スティンガー弾	 -2125   -1000 -145000 0
+
+		#ifdef d:BOSS_MODE
+		if ( $s:ボスラッシュプレイヤー != スネーク ) {
+			// 雷電
+			@弾薬_ＰＳＧ１_初期設置		ＰＳＧ１弾	 -2500     500 -163000 0
+			@弾薬_ＰＳＧ１－Ｔ_初期設置	ＰＳＧ１－Ｔ弾	  1750   -4000 -146125 0
+			@Ｃ４_初期設置			Ｃ４		  -500   -4000 -155125 0
+			@弾薬_Ｍ４_初期設置		Ｍ４弾		   500   -4000 -144750 0
+			@弾薬_ＡＫＳ_初期設置		ＡＫＳ弾	     0   -1000 -141500 0
+			@ジアゼパム_初期設置		ジアゼパム	  2375     500 -163000 0
+		} else {
+			// スネーク
+			@レーション_初期設置		レーション	  2375     500 -163000 0
+		}
+		#endif
+
+	}
+	#ifndef d:BOSS_MODE
+		proc アイテム取得時番号設定 $:ボックス名 {
+			#if d:DEBUG_PRINT
+				print 'item_no_set'
+			#endif
+			/* 再セットはありません */
+		}
+	#endif
+
+	// ハリアー本体設置
+	// ------------------------------------
+	proc ハリアーセット {
+		@ボスハリアー関連設定
+		@w25aハリアーアイテム出現初期化 ;
+		eval( $f:浮上デモ見せた = 0 ) ;
+		eval( $w:アイテムリクエスト返答待ち = 0 ) ;
+		chara プロック連続実行 w25aカメラ演出処理 -time -1 -proc w25aハリアー戦毎時処理
+		eval( $b:ハリアー戦状態 =  30 );	// バルカンモードとして初期化
+
+		if ($w:ゲーム設定 == d:LEVEL_VERYEASY) {
+			eval( $w:ITEM_REQUEST_INTERVAL = d:ITEM_REQUEST_INTERVAL_VE ) ;
+			eval( $w:リクエスト開始ＲＧＢ６残弾数 = 24 ) ;
+			eval( $w:リクエスト開始スティンガー残弾数 = 30 ) ;
+			eval( $w:リクエスト開始ソコム残弾数 = 45 ) ;
+			eval( $w:リクエスト開始Ｍ９残弾数 = 45 ) ;
+			eval( $w:リクエスト開始Ｍ４残弾数 = 90 ) ;
+			eval( $w:リクエスト開始レーション残弾数 = 3 ) ;
+		} else if ($w:ゲーム設定 == d:LEVEL_EASY) {
+			eval( $w:ITEM_REQUEST_INTERVAL = d:ITEM_REQUEST_INTERVAL_EA ) ;
+			eval( $w:リクエスト開始ＲＧＢ６残弾数 = 12 ) ;
+			eval( $w:リクエスト開始スティンガー残弾数 = 20 ) ;
+			eval( $w:リクエスト開始ソコム残弾数 = 30 ) ;
+			eval( $w:リクエスト開始Ｍ９残弾数 = 30 ) ;
+			eval( $w:リクエスト開始Ｍ４残弾数 = 60 ) ;
+			eval( $w:リクエスト開始レーション残弾数 = 3 ) ;
+		} else if ($w:ゲーム設定 == d:LEVEL_NORMAL) {
+			eval( $w:ITEM_REQUEST_INTERVAL = d:ITEM_REQUEST_INTERVAL_NO ) ;
+			eval( $w:リクエスト開始ＲＧＢ６残弾数 = 6 ) ;
+			eval( $w:リクエスト開始スティンガー残弾数 = 10 ) ;
+			eval( $w:リクエスト開始ソコム残弾数 = 15 ) ;
+			eval( $w:リクエスト開始Ｍ９残弾数 = 15 ) ;
+			eval( $w:リクエスト開始Ｍ４残弾数 = 30 ) ;
+			eval( $w:リクエスト開始レーション残弾数 = 2 ) ;
+		} else if ($w:ゲーム設定 == d:LEVEL_HARD) {
+			eval( $w:ITEM_REQUEST_INTERVAL = d:ITEM_REQUEST_INTERVAL_HA ) ;
+			eval( $w:リクエスト開始ＲＧＢ６残弾数 = 3 ) ;
+			eval( $w:リクエスト開始スティンガー残弾数 = 5 ) ;
+			eval( $w:リクエスト開始ソコム残弾数 = 7 ) ;
+			eval( $w:リクエスト開始Ｍ９残弾数 = 7 ) ;
+			eval( $w:リクエスト開始Ｍ４残弾数 = 14 ) ;
+			eval( $w:リクエスト開始レーション残弾数 = 1 ) ;		/* レーション補給無し */
+		} else {
+			eval( $w:ITEM_REQUEST_INTERVAL = d:ITEM_REQUEST_INTERVAL_VH ) ;
+			eval( $w:リクエスト開始ＲＧＢ６残弾数 = 1 ) ;
+			eval( $w:リクエスト開始スティンガー残弾数 = 1 ) ;
+			eval( $w:リクエスト開始ソコム残弾数 = 1 ) ;
+			eval( $w:リクエスト開始Ｍ９残弾数 = 1 ) ;
+			eval( $w:リクエスト開始Ｍ４残弾数 = 1 ) ;
+			eval( $w:リクエスト開始レーション残弾数 = 0 ) ;		/* レーション補給無し */
+		}
+		#ifndef d:BOSS_MODE
+			if ($w:ゲーム設定 < d:LEVEL_EXTREME) {
+				// 演出のために最初にレーションを一個補給してくれる
+				// エクストリーム以上では無し
+				eval( $f:最初のレーションをリクエストした = 0 ) ;
+				chara delay レーション補給 -time (1*60) -exec {
+						eval( $w:落下場所 = 0 ) ;
+						eval( $i:リクエストアイテム番号 = d:リクエストアイテム種別:レーション ) ;
+						eval( $w:アイテムリクエストタイマ = $w:ITEM_REQUEST_INTERVAL ) ;
+						eval( $w:アイテムリクエスト返答待ち = 1 ) ;
+						command ハリアアイテムセット \
+							$i:w25aアイテム出現Ｘ位置[ $w:落下場所 ] \
+							$i:w25aアイテム出現Ｙ位置[ $w:落下場所 ] \
+							$i:w25aアイテム出現Ｚ位置[ $w:落下場所 ] \
+							$i:リクエストアイテム番号 ;
+							print '----------------------------------------------'
+							print 'Request RATION !!!!!!!!!!!'
+							print $i:w25aアイテム出現Ｘ位置[ $w:落下場所 ],$i:w25aアイテム出現Ｙ位置[ $w:落下場所 ],$i:w25aアイテム出現Ｚ位置[ $w:落下場所 ]
+							print d:リクエストアイテム種別:レーション;
+							print '----------------------------------------------'
+						eval( $f:最初のレーションをリクエストした = 1 ) ;
+				}
+			} else {
+				// EXTREAMでは最初にアイテムを投げないのでデモも安全のため割愛します。
+				// （どこで出るか判らないため）
+				eval( $f:スネークアイテム投げデモ済み = 1 ) ;
+			}
+		#else
+			if (($w:ゲーム設定 < d:LEVEL_EXTREME) && ( $s:ボスラッシュプレイヤー != スネーク )) {
+				// 演出のために最初にレーションを一個補給してくれる
+				// エクストリームでは無し
+				eval( $f:最初のレーションをリクエストした = 0 ) ;
+				chara delay レーション補給 -time (1*60) -exec {
+						eval( $w:落下場所 = 0 ) ;
+						eval( $i:リクエストアイテム番号 = d:リクエストアイテム種別:レーション ) ;
+						eval( $w:アイテムリクエストタイマ = $w:ITEM_REQUEST_INTERVAL ) ;
+						eval( $w:アイテムリクエスト返答待ち = 1 ) ;
+						command ハリアアイテムセット \
+							$i:w25aアイテム出現Ｘ位置[ $w:落下場所 ] \
+							$i:w25aアイテム出現Ｙ位置[ $w:落下場所 ] \
+							$i:w25aアイテム出現Ｚ位置[ $w:落下場所 ] \
+							$i:リクエストアイテム番号 ;
+							print '----------------------------------------------'
+							print 'Request RATION !!!!!!!!!!!'
+							print $i:w25aアイテム出現Ｘ位置[ $w:落下場所 ],$i:w25aアイテム出現Ｙ位置[ $w:落下場所 ],$i:w25aアイテム出現Ｚ位置[ $w:落下場所 ]
+							print d:リクエストアイテム種別:レーション;
+							print '----------------------------------------------'
+						eval( $f:最初のレーションをリクエストした = 1 ) ;
+				}
+			} else {
+				// EXTREAMでは最初にアイテムを投げないのでデモも安全のため割愛します。
+				// （どこで出るか判らないため）
+				eval( $f:スネークアイテム投げデモ済み = 1 ) ;
+			}
+		#endif
+		// 落下給水タンク付近
+		trap ca005 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				if( $3 == いる) {
+					if ( $f:ハリアー戦カメラ位置Ｙ初期化不必要 == 0 ) {
+						eval ( $i:ハリアー戦カメラ位置Ｙ = 8031 ) ;
+						eval ( $f:ハリアー戦カメラ位置Ｙ初期化不必要 = 1 ) ;
+					}
+					if (`@カメラ対策カサッカ監視処理 $i:カメラＸ位置 $i:カメラＹ位置 $i:カメラＺ位置 4000` != 0 ) {
+						eval( $i:ハリアー戦カメラ位置Ｙ = $i:ハリアー戦カメラ位置Ｙ + 100 ) ;
+					} else {
+						eval( $i:ハリアー戦カメラ位置Ｙ = $i:ハリアー戦カメラ位置Ｙ - 100 ) ;
+						if ( $i:ハリアー戦カメラ位置Ｙ < 8031 ) { eval( $i:ハリアー戦カメラ位置Ｙ = 8031 ) ; } 
+					}
+					chara カメラ設定 パート２カメラ \
+						-c 1 \	
+						-p -1315,$i:ハリアー戦カメラ位置Ｙ,-135464 -t -197,912,-138812 \
+						-r 724,1838,0 -f 7946 \
+						-a 262 \
+						-i 0 0 0 0 \
+						-s 1
+				} else {
+					eval ( $f:ハリアー戦カメラ位置Ｙ初期化不必要 = 0 ) ;
+					chara カメラ設定 パート２カメラ -s -1 ;
+				}
+			}
+		chara 透明壁 Ｄ脚側閉鎖 \
+			-position -1000 500 -138000 2000 \
+				   1000 500 -138000 2000 \
+			-attribute \
+				( d:HZX_SEG_NO_HARITSUKI	| \ 	/* 張り付かない */
+				  d:HZX_SEG_NO_DISP_RADAR	| \ 	/* レーダーに写らない */
+				  d:HZX_SEG_NO_KNOCK_SE	) \ 	/* 壁コンコンならない */
+			-map ＤＧ連絡橋1F 
+		chara 透明壁 Ｇ脚側閉鎖 \
+			-position -1000 500 -164000 2000 \
+				   1000 500 -164000 2000 \
+			-attribute \
+				( d:HZX_SEG_NO_HARITSUKI	| \ 	/* 張り付かない */
+				  d:HZX_SEG_NO_DISP_RADAR	| \ 	/* レーダーに写らない */
+				  d:HZX_SEG_NO_KNOCK_SE	) \ 	/* 壁コンコンならない */
+			-map ＤＧ連絡橋1F 
+		chara ステージ置き炎 fire -f 0 -pos  400   500 -164000
+		chara ステージ置き炎 fire -f 0 -pos -400   500 -137750
+		chara ステージ置き炎 fire -f 0 -pos  400   500 -137750
+	}
+
+	// 落下死設定
+	proc 落下死設定 {
+		print 'Set trap ev091'
+		trap ev091 d:PLAYER \
+			-mask 入る \
+			-exec {
+				print 'into trap ev091'
+				@ジャンプ落下死発動 0x0004 -41000
+			}
+		chara 水面監視水飛沫 落下水飛沫 -n d:PLAYER 
+		command 水位設定 -lv -40000
+	}
+	// ジャンプ落下死開始処理 (fall.h内部よりコールされる)
+	proc ジャンプ落下死開始処理 {
+		eval( $w:ゲームオーバーカメラ回転値 = 2048) ;
+		chara プロック連続実行 ゲームオーバー時のカメラ回転 -proc ゲームオーバーカメラ回転
+		command ゲームオーバー背景設定 \
+			-t gmov \
+			-s dekisi_alp_ovl \
+			-m 1
+		@ゲームオーバー開始処理
+	}
+	proc  ゲームオーバーカメラ回転 {
+		eval( $w:ゲームオーバーカメラ回転値 = ($w:ゲームオーバーカメラ回転値 + 2) & 4095 ) ;
+		chara カメラ設定 ゲームオーバーカメラ \
+				-c 0 \
+				-b d:CAM_MIN,-8500,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-l d:CAM_MIN,-40000,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+				-r 3800,$w:ゲームオーバーカメラ回転値,0 -f 4340 \
+				-a 200 \
+				-i 0 -1 0 0 \
+				-s 1
+	}
+	//  ゲームオーバー終了処理 (fall.h内部よりコールされる)
+	proc ゲームオーバー終了処理 {
+		chara パッド振動 落下振動 -vibfile drop_sea
+	}
+
+
+	proc w25aハリアー演出 {
+		mesg delay フラグセット遅延 kill ;
+		eval( $b:ハリアー戦状態 = $1 ) ;
+	}
+	
+	proc カサッカイベント関数 {
+		#ifndef d:BOSS_MODE
+			if ( $1 == 10 ) {	// スネークがアイテムを投げ始める
+		#else
+			if (( $s:ボスラッシュプレイヤー != スネーク ) && ( $1 == 10 )) {	// スネークがアイテムを投げ始める
+		#endif
+			command プレイヤー状態取得 ;
+			eval( $i:w25aプレイヤー状態 = $status ) ;
+			if ((`command ゲームオーバーチェック` == 0 ) && (( $i:w25aプレイヤー状態 & d:PFLAG_ELUDE_FALL ) == 0)){
+				if( $f:スネークアイテム投げデモ済み == 0 ) {
+					eval( $f:スネークアイテム投げデモ済み = 1 ) ;
+					eval( $w:カメラ切替カウンター = 0 );
+					@カサッカ演出デモ初期処理
+					chara プロック連続実行 カサッカイベントカメラ連続実行 -time -1 -proc スネークアイテム投げカメラ
+					chara delay 遅延 -time (4*60) -exec { @カサッカ演出デモ終了処理 }
+				}
+			}
+		}
+	}
+	
+	proc カサッカ演出デモ初期処理 {
+		command サイト表示制御 -switch off
+		command 無線設定 -reset
+		mesg シネマスクリーン シネマ フェードアウト 1
+		command パッド操作 -release
+		chara デモキャンセルチェック カサッカ演出カメラデモ専用キャンセル \
+			-p カサッカ演出デモ終了処理
+		command メニュー設定 \
+			-menu off \
+			-gage off \
+			-radar off \
+			-radio off \
+			-pause off
+	}
+	proc カサッカ演出デモ終了処理 {
+		print 'Cancel Start!'
+		chara delay サイト回復遅延 -time 1 -exec { command サイト表示制御 -switch on }
+		mesg シネマスクリーン シネマ フェードイン 1
+		command パッド操作 -cancel
+		command メニュー設定 \
+			-menu on \
+			-gage on \
+			-radar on \
+			-radio on \
+			-pause on
+		mesg デモキャンセルチェック カサッカ演出カメラデモ専用キャンセル kill
+		mesg プロック連続実行 カサッカイベントカメラ連続実行 kill
+		chara delay 遅延 -time 2 -exec {
+			chara カメラ設定 カモフ演出カメラ -s -1
+		}
+	}
+	
+	proc w25aハリアー戦演出デモ初期処理 {
+		eval( $f:ハリアー戦デモキャンセル = 0 ) ;
+		eval( $f:ハリアー戦デモ中 = 1 ) ;
+		command サイト表示制御 -switch off
+		command 無線設定 -reset
+		mesg シネマスクリーン シネマ フェードアウト 1
+		chara デモキャンセルチェック シナリオカメラデモ専用キャンセル \
+			-p w25aハリアー戦演出デモキャンセル処理
+		command パッド操作 -release
+		command メニュー設定 \
+			-menu off \
+			-gage off \
+			-radar off \
+			-radio off \
+			-pause off
+	}
+
+	proc w25aハリアー戦演出デモ終了処理 {
+		eval( $f:ハリアー戦デモ中 = 0 ) ;
+		chara delay サイト回復遅延 -time 1 -exec { command サイト表示制御 -switch on }
+		mesg シネマスクリーン シネマ フェードイン 1
+		command パッド操作 -cancel
+		command メニュー設定 \
+			-menu on \
+			-gage on \
+			-radar on \
+			-radio on \
+			-pause on
+		mesg デモキャンセルチェック シナリオカメラデモ専用キャンセル kill
+	}
+	proc w25aハリアー戦演出デモキャンセル処理 {
+		eval( $f:ハリアー戦デモキャンセル = 1 ) ;
+		chara delay サイト回復遅延 -time 1 -exec { command サイト表示制御 -switch on }
+		mesg シネマスクリーン シネマ フェードイン 1
+		command パッド操作 -cancel
+		command メニュー設定 \
+			-menu on \
+			-gage on \
+			-radar on \
+			-radio on \
+			-pause on
+		mesg デモキャンセルチェック シナリオカメラデモ専用キャンセル kill
+	}
+
+	proc w25aハリアー戦毎時処理 {
+		#ifndef d:BOSS_MODE
+		if (( $f:最初のレーションをリクエストした ) || ( $w:ゲーム設定 >= d:LEVEL_EXTREME )) {
+		#else
+		if (( $f:最初のレーションをリクエストした ) || ( $w:ゲーム設定 >= d:LEVEL_EXTREME ) || ( $s:ボスラッシュプレイヤー == スネーク )) {
+		#endif
+			if( `%ゲームオーバーチェック` ) {
+				/* プレイヤーが死んでいるらしい。全ての演出は中止 */
+				if ( $f:ハリアー戦デモ中 == 1 ) {
+					@w25aハリアー戦演出デモ終了処理
+					chara カメラ設定 ハリアー戦演出カメラ -s -1 ;
+				}
+			} else {
+				#ifndef d:BOSS_MODE
+					command ゲットスネーク座標 $i:スネーク位置Ｘ $i:スネーク位置Ｙ $i:スネーク位置Ｚ  $i:スネーク位置Ｘ後 $i:スネーク位置Ｙ後 $i:スネーク位置Ｚ後 $i:スネーク位置Ｘ上 $i:スネーク位置Ｙ上 $i:スネーク位置Ｚ上
+				#else
+					if ( $s:ボスラッシュプレイヤー != スネーク ) {
+						command ゲットスネーク座標 $i:スネーク位置Ｘ $i:スネーク位置Ｙ $i:スネーク位置Ｚ  $i:スネーク位置Ｘ後 $i:スネーク位置Ｙ後 $i:スネーク位置Ｚ後 $i:スネーク位置Ｘ上 $i:スネーク位置Ｙ上 $i:スネーク位置Ｚ上
+					}
+				#endif
+				command ゲットハリアー座標 \
+					$i:hpx $i:hpy $i:hpz $i:hnx $i:hnx $i:hnx $i:hnx $i:hnx $i:hnx \
+					$i:hnx $i:hnx $i:hnx $i:hnx $i:hnx $i:hnx
+				if ( $b:ハリアー戦状態 == 0 ) {		@ハリア浮上中演出 ;			
+				} else if ( $b:ハリアー戦状態 ==  2 ) {	@浮上完了からミサイル発射中演出 ;	
+				} else if ( $b:ハリアー戦状態 ==  4 ) {	@ハリア飛び去り中演出 ;			
+				} else if ( $b:ハリアー戦状態 == 10 ) {	@クラスター爆撃前演出 ;			
+				} else if ( $b:ハリアー戦状態 == 11 ) {	@クラスター爆撃直前演出 ;			
+				} else if ( $b:ハリアー戦状態 == 12 ) {	@クラスター爆撃直前演出 ;		
+				} else if ( $b:ハリアー戦状態 == 14 ) {	@クラスター爆撃後演出 ;			
+				} else if ( $b:ハリアー戦状態 == 20 ) {	@バーニア焼き攻撃前演出 ;		
+				} else if ( $b:ハリアー戦状態 == 22 ) {	@バーニア焼き攻撃中演出 ;		
+				} else if ( $b:ハリアー戦状態 == 24 ) {	@バーニア焼き攻撃後演出 ;		
+				// } else if ( $b:ハリアー戦状態 == 42 ) {	@アムラーム攻撃演出 ;			
+				} else if ( $b:ハリアー戦状態 == 30 ) {	@バルカンモード中演出 ;			
+				} else {
+					// その他の攻撃モードなので演出解除
+					if ( $f:ハリアー戦デモ中 == 1 ) {
+						@w25aハリアー戦演出デモ終了処理
+						chara カメラ設定 ハリアー戦演出カメラ -s 0 
+					}
+					// カメラのカサッカ食い込み防止
+					if (`@カメラ対策カサッカ監視処理 $i:カメラＸ位置 $i:カメラＹ位置 $i:カメラＺ位置 4000` != 0 ) {
+						eval( $i:ハリアー戦カメラトラック = $i:ハリアー戦カメラトラック + 100 ) ;
+					} else {
+						eval( $i:ハリアー戦カメラトラック = $i:ハリアー戦カメラトラック - 100 ) ;
+						if ( $i:ハリアー戦カメラトラック < d:HARRIER_CAM_TRACK ) {
+							eval( $i:ハリアー戦カメラトラック = d:HARRIER_CAM_TRACK ) ;
+						}
+					}
+					chara カメラ設定 ハリアー戦カメラ \
+						-c 0 \	
+						-b d:CAM_MIN,7346,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-134562 \
+						-l d:CAM_MIN,-2425,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-146513 \
+						-r 430,1838,0 -f $i:ハリアー戦カメラトラック \
+						-a 262 \
+						-d 1 \
+						-i 0 0 0 0 \
+						-s 1
+				}
+				#ifndef d:BOSS_MODE
+					@アイテム残段数監視		// 数が減ったらカサッカにリクエストを発行
+				#else
+					if ( $s:ボスラッシュプレイヤー == スネーク ) {
+						@アイテム残段数監視即時発生	// 数が減ったら見えないところへ即発生
+					} else {
+						@アイテム残段数監視		// 数が減ったらカサッカにリクエストを発行
+					}
+				#endif
+			}
+		}
+	}
+
+	proc ハリア浮上中演出 {
+		/* -------------------------- */
+		/* ハリア浮上中               */
+		/* -------------------------- */
+		if ( $f:浮上デモ見せた == 0 ) {
+			if ( $f:ハリアー戦デモキャンセル == 0 ) {
+				if ( $i:hpy > -15000 ) {		// ハリアーの高度-15000以上でカメラ演出開始
+					if ( $f:ハリアー戦デモ中 == 0 ) {
+						@w25aハリアー戦演出デモ初期処理
+					}
+					eval( $i:cpx =  -15023 ) ;
+					eval( $i:cpy =    1443 ) ;
+					eval( $i:cpz = -150000 ) ;
+					eval( $i:ctx = $i:hpx ) ;
+					eval( $i:ctz = $i:hpz ) ;
+					if ( $i:hpy > -1000 ) { // 浮上したらハリアーを写す
+						eval( $w:agl = $w:agl+5 ) ;
+						eval( $i:cty = $i:hpy ) ;
+					} else {  // 浮上するまではプレイヤーを写す
+						eval( $w:agl = 170 ) ;
+						eval( $i:cty =  $i:プレイヤー位置Ｙ ) ;
+					}
+					chara カメラ設定 ハリアー戦演出カメラ \
+						-c 1 \
+						-p $i:cpx $i:cpy $i:cpz -t $i:ctx $i:cty $i:ctz  \
+						-a $w:agl \
+						-d 1 \
+						-i 0 0 0 0 \
+						-s 1 ;
+				} else {
+					chara カメラ設定 ハリアー戦演出カメラ -s -1 ;
+				}
+			} else {
+				// デモは既にキャンセルされている
+				chara カメラ設定 ハリアー戦演出カメラ -s -1 ;
+				eval( $b:ハリアー戦状態 =  2 ) ;
+				@浮上完了からミサイル発射中演出 ;
+			}
+		}
+	}
+	proc 浮上完了からミサイル発射中演出 {
+		/* -------------------------- */
+		/* 浮上完了からミサイル発射中 */
+		/* -------------------------- */
+		if ( $f:ハリアー戦デモ中 == 1 ) {
+			@w25aハリアー戦演出デモ終了処理
+			chara カメラ設定 ハリアー戦演出カメラ -s -1 
+//			eval( $f:浮上デモ見せた = 1 ) ;
+		}
+		if ( $i:プレイヤー位置Ｙ >= -1000 ) {
+			// 上段 ---------------------------------
+			if ( $i:hpx > 0 ) { eval( $i:cpx = -14338 ) ;
+			} else { eval( $i:cpx = -14338) ;
+			}
+			eval( $i:cpy = 6544 );
+			eval( $i:cpz = $i:プレイヤー位置Ｚ );
+			if ( $i:hpx > 0 ) { eval( $i:ctx = 166 ) ;
+			} else { eval( $i:ctx = 166 ) ;
+			}
+			eval( $i:cty = 2703 );
+			eval( $i:ctz = $i:プレイヤー位置Ｚ );
+		} else {
+			// 下段 ----------------------------------
+			if ( $i:hpx > 0 ) { eval( $i:cpx = -15023 ) ;
+			} else { eval( $i:cpx = -15023) ;
+			}
+			eval( $i:cpy = 1443 );
+			eval( $i:cpz = $i:プレイヤー位置Ｚ );
+			if ( $i:hpx > 0 ) { eval( $i:ctx = -7607 ) ;
+			} else { eval( $i:ctx = -7607 ) ;
+			}
+			eval( $i:cty = 249 );
+			eval( $i:ctz = $i:プレイヤー位置Ｚ );
+		}
+		// カメラの毎時書き換え
+		chara カメラ設定 モーションカメラ \
+			-c 1 \
+			-p $i:cpx $i:cpy $i:cpz -t $i:ctx $i:cty $i:ctz  \
+			-a 200 \
+			-d 1 \
+			-i 0 -1 0 0 \
+			-s 1 ;
+	}
+	proc ハリア飛び去り中演出 {
+		/* ---------------------------------------------------- */
+		/* ハリア飛び去り中（ 指定秒後にバルカンモードへ移行 ） */
+		/* ---------------------------------------------------- */
+		if ( $f:ハリアー戦デモ中 == 0 ) {
+			@w25aハリアー戦演出デモ初期処理
+			chara カメラ設定 モーションカメラ -s 0
+			eval( $w:ズームカウンタ = 200 ) ;
+			eval( $i:東西フラグ = $i:hpx ) ;
+			chara delay 遅延 -time (4*60) -exec { eval( $b:ハリアー戦状態 = 30 )} ;		/* 最長で4秒 */
+		}
+		if ( $i:東西フラグ > 0 ) { eval( $i:cpx = 8750 ) ;
+		} else { eval( $i:cpx = -8750 ) ;
+		}
+		eval( $i:cpy = 1000 ) ;
+		eval( $i:cpz = -156250 ) ;
+		eval( $i:ctx = $i:hpx + (`command sin $w:手ブレ用カウンターX`) );
+		eval( $i:cty = $i:hpy + (`command cos $w:手ブレ用カウンターY`) );
+		eval( $i:ctz = $i:hpz + (`command sin $w:手ブレ用カウンターZ`) );
+		eval( $w:手ブレ用カウンターX = ($w:手ブレ用カウンターX + 83) & 4095 )
+		eval( $w:手ブレ用カウンターY = ($w:手ブレ用カウンターY + 72) & 4095 )
+		eval( $w:手ブレ用カウンターZ = ($w:手ブレ用カウンターZ + 57) & 4095 )
+		eval( $w:ズームカウンタ = $w:ズームカウンタ + 3 )
+		// カメラの毎時書き換え
+		if ( $f:ハリアー戦デモキャンセル == 0 ) {
+			chara カメラ設定 ハリアー戦演出カメラ \
+				-c 1 \
+				-p $i:cpx $i:cpy $i:cpz -t $i:ctx $i:cty $i:ctz -a $w:ズームカウンタ \
+				-d 1 -i 0 0 0 0 -s 1 ;
+		} else {
+			// デモは既にキャンセルされている
+			chara カメラ設定 ハリアー戦演出カメラ -s -1 ;
+		}
+	}
+
+	proc クラスター爆撃前演出 {
+		/* ---------------------------------------------------- */
+		/* クラスター爆撃前 */
+		/* ---------------------------------------------------- */
+		if ( $f:ハリアー戦デモ中 == 0 ) {
+			@w25aハリアー戦演出デモ初期処理
+		}
+		// カメラの毎時書き換え
+		if ( $f:ハリアー戦デモキャンセル == 0 ) {
+			chara カメラ設定 ハリアー戦演出カメラ \
+				-c 1 \
+				-p 4681,-978,-153814 -t $i:hpx $i:hpy $i:hpz  \
+				-a 200 \
+				-d 1 \
+				-i 0 0 0 0 \
+				-s 1 ;
+		} else {
+			chara カメラ設定 ハリアー戦演出カメラ -s -1 ;
+		}
+	}
+	proc クラスター爆撃直前演出 {
+		/* ---------------------------------------------------- */
+		/* クラスター爆撃直前 */
+		/* ---------------------------------------------------- */
+		command ゲットクラスター座標 \
+			$i:rbx $i:rby $i:rbz $i:lbx $i:lby $i:lbz 
+		if ( $i:rby > 100000 ) {
+			if ( $f:ハリアー戦デモキャンセル == 0 ) {
+				chara カメラ設定 ハリアー戦演出カメラ \
+					-c 1 \
+					-p -13013,107236,-158506 -t (($i:rbx+$i:lbx)/2) (($i:rby+$i:lby)/2) (($i:rbz+$i:lbz)/2)  \
+					-a 200 \
+					-d 1 \
+					-i 0 0 0 0 \
+					-s 1 ;
+			} else {
+				chara カメラ設定 ハリアー戦演出カメラ -s -1 ;
+			}
+		} else {
+			if ( $f:ハリアー戦デモ中 == 1 ) {
+				@w25aハリアー戦演出デモ終了処理
+				chara カメラ設定 ハリアー戦演出カメラ -s -1 ;
+			}
+		}
+	}
+	proc クラスター爆撃後演出 {
+		/* ---------------------------------------------------- */
+		/* クラスター爆撃後 （ 指定秒後にバルカンモードへ移行 ） */
+		/* ---------------------------------------------------- */
+		if ( $f:ハリアー戦デモ中 == 1 ) {
+			@w25aハリアー戦演出デモ終了処理
+			chara カメラ設定 ハリアー戦演出カメラ -s -1 ;
+		}
+	}
+	proc バーニア焼き攻撃前演出 {
+		/* ---------------------------------------------------- */
+		/* バーニア焼き攻撃(前) */
+		/* ---------------------------------------------------- */
+		if ( $f:ハリアー戦デモ中 == 0 ) {
+			@w25aハリアー戦演出デモ初期処理
+		}
+		// カメラの毎時書き換え
+		if ( $f:ハリアー戦デモキャンセル == 0 ) {
+			chara カメラ設定 ハリアー戦演出カメラ \
+				-c 1 \
+				-p 12681,-978,-153814 -t $i:hpx $i:hpy $i:hpz  \
+				-a 200 \
+				-d 1 \
+				-i 0 0 0 0 \
+				-s 1 ;
+		} else {
+			chara カメラ設定 ハリアー戦演出カメラ -s -1;
+		}
+	}
+	proc バーニア焼き攻撃中演出 {
+		/* ---------------------------------------------------- */
+		/* バーニア焼き攻撃(中) */
+		/* ---------------------------------------------------- */
+		if ( $f:ハリアー戦デモ中 == 1 ) {
+			@w25aハリアー戦演出デモ終了処理
+			chara カメラ設定 ハリアー戦演出カメラ -s -1 ;
+		}
+		eval( $i:ctx = $i:プレイヤー位置Ｘ ) ;
+		eval( $i:cty = $i:プレイヤー位置Ｙ ) ;
+		eval( $i:ctz = $i:プレイヤー位置Ｚ ) ;
+		eval( $i:cpx = $i:ctx -  8000 ) ;
+		eval( $i:cpy = $i:cty + 20000 );
+		eval( $i:cpz = $i:ctz +  8000 );
+		// カメラの毎時書き換え
+		chara カメラ設定 パートカメラ \
+			-c 1 \
+			-p $i:cpx $i:cpy $i:cpz \
+			-t $i:ctx $i:cty $i:ctz \
+			-a 200 \
+			-d 1 \
+			-i 0 -1 0 0 \
+			-s 1 ;
+	}
+	proc バーニア焼き攻撃後演出 {
+		/* ---------------------------------------------------- */
+		/* バーニア焼き攻撃(後) （ 指定秒後にバルカンモードへ移行 ） */
+		/* ---------------------------------------------------- */
+		if ( $f:ハリアー戦デモ中 == 0 ) {
+			@w25aハリアー戦演出デモ初期処理
+			chara カメラ設定 パートカメラ -s -1
+		}
+		// カメラの毎時書き換え
+		if ( $f:ハリアー戦デモキャンセル == 0 ) {
+			chara カメラ設定 ハリアー戦演出カメラ \
+				-c 1 \
+				-p -12681,-978,-153814 -t $i:hpx $i:hpy $i:hpz  \
+				-a 200 \
+				-d 1 \
+				-i 0 0 0 0 \
+				-s 1 ;
+		} else {
+			chara カメラ設定 ハリアー戦演出カメラ -s -1
+		}
+	}
+	proc バルカンモード中演出 {
+		/* ---------------------------------------------------- */
+		/* バルカンモード中 */
+		/* ---------------------------------------------------- */
+		if ( $f:ハリアー戦デモ中 == 1 ) {
+			@w25aハリアー戦演出デモ終了処理
+			chara カメラ設定 ハリアー戦演出カメラ -s -1 ;
+		}
+		if (`@カメラ対策カサッカ監視処理 $i:カメラＸ位置 $i:カメラＹ位置 $i:カメラＺ位置 4000` != 0 ) {
+			eval( $i:ハリアー戦カメラトラック = $i:ハリアー戦カメラトラック + 100 ) ;
+		} else {
+			eval( $i:ハリアー戦カメラトラック = $i:ハリアー戦カメラトラック - 100 ) ;
+			if ( $i:ハリアー戦カメラトラック < d:HARRIER_CAM_TRACK ) {
+				eval( $i:ハリアー戦カメラトラック = d:HARRIER_CAM_TRACK ) ;
+			}
+		}
+		chara カメラ設定 ハリアー戦カメラ \
+			-c 0 \	
+			-b d:CAM_MIN,7346,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-134562 \
+			-l d:CAM_MIN,-2425,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-146513 \
+			-r 430,1838,0 -f $i:ハリアー戦カメラトラック \
+			-a 262 \
+			-d 1 \
+			-i 0 0 0 0 \
+			-s 1
+	}
+	proc スネークアイテム投げカメラ {
+		/* ---------------------------------------------------- */
+		/* スネークアイテム投げ */
+		/* ---------------------------------------------------- */
+		eval( $w:カメラ切替カウンター = $w:カメラ切替カウンター + 1 );
+		if ( $w:カメラ切替カウンター < 80 ) {
+			/* スネークを正面から狙ったカット */
+			eval( $i:Ａ位置Ｘ = $i:スネーク位置Ｘ ) ;
+			eval( $i:Ａ位置Ｙ = $i:スネーク位置Ｙ ) ;
+			eval( $i:Ａ位置Ｚ = $i:スネーク位置Ｚ ) ;
+			eval( $i:Ｂ位置Ｘ =   20982 );
+			eval( $i:Ｂ位置Ｙ =   -6843 );
+			eval( $i:Ｂ位置Ｚ = -144678 );
+			eval( $i:トラック差分 = -4000 );
+			eval( $i:カメラ高さ補正 = 400 ) ;
+			eval( $w:画角補正 = 900 ) ;
+		} else {
+			/* アイテム落下位置背後からスネークを狙ったカット */
+			eval( $i:Ａ位置Ｘ = $i:スネーク位置Ｘ ) ;
+			eval( $i:Ａ位置Ｙ = $i:スネーク位置Ｙ ) ;
+			eval( $i:Ａ位置Ｚ = $i:スネーク位置Ｚ ) ;
+			eval( $i:Ｂ位置Ｘ =   20982 );
+			eval( $i:Ｂ位置Ｙ =   -6843 );
+			eval( $i:Ｂ位置Ｚ = -144678 );
+			eval( $i:トラック差分 = 1 );
+			eval( $i:カメラ高さ補正 = 300 ) ;
+			eval( $w:画角補正 = 200 ) ;
+		}
+		eval( $i:L1 = `%VecLen $i:Ａ位置Ｘ $i:Ａ位置Ｙ $i:Ａ位置Ｚ $i:Ｂ位置Ｘ $i:Ｂ位置Ｙ $i:Ｂ位置Ｚ` );
+		eval( $i:cpx = (($i:L1+$i:トラック差分) * ( $i:Ｂ位置Ｘ -$i:Ａ位置Ｘ) / $i:L1 ) + $i:Ａ位置Ｘ ) ;
+		eval( $i:cpy = (($i:L1+$i:トラック差分) * ( $i:Ｂ位置Ｙ -$i:Ａ位置Ｙ) / $i:L1 ) + $i:Ａ位置Ｙ + $i:カメラ高さ補正 ) ;
+		eval( $i:cpz = (($i:L1+$i:トラック差分) * ( $i:Ｂ位置Ｚ -$i:Ａ位置Ｚ) / $i:L1 ) + $i:Ａ位置Ｚ ) ;
+		eval( $i:ctx = $i:Ａ位置Ｘ + (`command sin $w:手ブレ用カウンターX` / 32) ) ;
+		eval( $i:cty = $i:Ａ位置Ｙ + (`command cos $w:手ブレ用カウンターY` / 32) ) ;
+		eval( $i:ctz = $i:Ａ位置Ｚ + (`command sin $w:手ブレ用カウンターZ` / 32) ) ;
+		eval( $w:手ブレ用カウンターX = ($w:手ブレ用カウンターX + 83) & 4095 )
+		eval( $w:手ブレ用カウンターY = ($w:手ブレ用カウンターY + 72) & 4095 )
+		eval( $w:手ブレ用カウンターZ = ($w:手ブレ用カウンターZ + 57) & 4095 )
+		// カメラの毎時書き換え
+		chara カメラ設定 カモフ演出カメラ \
+			-c 1 \
+			-p $i:cpx $i:cpy $i:cpz -t $i:ctx $i:cty $i:ctz  \
+			-a $w:画角補正 \
+			-d 1 \
+			-i 0 0 0 0 \
+			-s 1 ;
+	}
+
+	proc アイテム残段数監視 {
+		/* ------------------------------------------------------------------ */
+		/* 注意)                                                              */
+		/* 同じフレームに同時にコールされてもプログラム的問題はない           */
+		/* アイテム箱が破壊されて確定するまでは後にリクエストされたものが優先 */
+		/* ------------------------------------------------------------------ */
+		if (( $w:アイテムリクエスト返答待ち == 0 ) && \		// 現在、他にリクエストしたアイテムセット待ちではない
+		    ( $w:アイテムリクエストタイマ   == 0 ) && \		// 前のアイテムリクエストから充分に時間が立っている
+		    ( $f:ステージ上にアイテムがある == 0 )) {		// 他のアイテムがステージ上に残っていない
+			eval( $w:落下場所 = `%rand d:POINT_MAX`) ;
+			if (( $w:武器弾数Ｒ[ d:武器:スティンガー ] >= 0 ) && ( $w:武器弾数Ｒ[ d:武器:スティンガー ] < $w:リクエスト開始スティンガー残弾数 )) {
+				eval( $i:リクエストアイテム番号 = d:リクエストアイテム種別:スティンガー ) ;
+				eval( $w:アイテムリクエストタイマ = $w:ITEM_REQUEST_INTERVAL ) ;
+				eval( $w:アイテムリクエスト返答待ち = 1 ) ;
+				command ハリアアイテムセット \
+					$i:w25aアイテム出現Ｘ位置[ $w:落下場所 ] \
+					$i:w25aアイテム出現Ｙ位置[ $w:落下場所 ] \
+					$i:w25aアイテム出現Ｚ位置[ $w:落下場所 ] \
+					$i:リクエストアイテム番号 ;
+					print '----------------------------------------------'
+					print 'Request STINGER ammo !!!!!!!!!!!'
+					print $i:w25aアイテム出現Ｘ位置[ $w:落下場所 ],$i:w25aアイテム出現Ｙ位置[ $w:落下場所 ],$i:w25aアイテム出現Ｚ位置[ $w:落下場所 ]
+					print d:リクエストアイテム種別:スティンガー;
+					print '----------------------------------------------'
+			} else if(( $w:武器弾数Ｒ[ d:武器:ＲＧＢ６] >= 0 ) && ( $w:武器弾数Ｒ[ d:武器:ＲＧＢ６] < $w:リクエスト開始ＲＧＢ６残弾数 )) {
+				eval( $i:リクエストアイテム番号 = d:リクエストアイテム種別:ＲＧＢ６ ) ;
+				eval( $w:アイテムリクエストタイマ = $w:ITEM_REQUEST_INTERVAL ) ;
+				eval( $w:アイテムリクエスト返答待ち = 1 ) ;
+				command ハリアアイテムセット \
+					$i:w25aアイテム出現Ｘ位置[ $w:落下場所 ] \
+					$i:w25aアイテム出現Ｙ位置[ $w:落下場所 ] \
+					$i:w25aアイテム出現Ｚ位置[ $w:落下場所 ] \
+					$i:リクエストアイテム番号 ;
+					print '----------------------------------------------'
+					print 'Request RGB6 ammo !!!!!!!!!!!'
+					print $i:w25aアイテム出現Ｘ位置[ $w:落下場所 ],$i:w25aアイテム出現Ｙ位置[ $w:落下場所 ],$i:w25aアイテム出現Ｚ位置[ $w:落下場所 ]
+					print d:リクエストアイテム種別:ＲＧＢ６;
+					print '----------------------------------------------'
+			#ifndef d:BOSS_MODE
+			// Ｍ９とソコムは本編のみの補給
+			} else if(( $w:武器弾数Ｒ[ d:武器:ソコム] >= 0 ) && ( $w:武器弾数Ｒ[ d:武器:ソコム] < $w:リクエスト開始ソコム残弾数 )) {
+				eval( $i:リクエストアイテム番号 = d:リクエストアイテム種別:ソコム ) ;
+				eval( $w:アイテムリクエストタイマ = $w:ITEM_REQUEST_INTERVAL ) ;
+				eval( $w:アイテムリクエスト返答待ち = 1 ) ;
+				command ハリアアイテムセット \
+					$i:w25aアイテム出現Ｘ位置[ $w:落下場所 ] \
+					$i:w25aアイテム出現Ｙ位置[ $w:落下場所 ] \
+					$i:w25aアイテム出現Ｚ位置[ $w:落下場所 ] \
+					$i:リクエストアイテム番号 ;
+					print '----------------------------------------------'
+					print 'Request SOCOM ammo !!!!!!!!!!!'
+					print $i:w25aアイテム出現Ｘ位置[ $w:落下場所 ],$i:w25aアイテム出現Ｙ位置[ $w:落下場所 ],$i:w25aアイテム出現Ｚ位置[ $w:落下場所 ]
+					print d:リクエストアイテム種別:ソコム;
+					print '----------------------------------------------'
+			} else if(( $w:武器弾数Ｒ[ d:武器:Ｍ９] >= 0 ) && ( $w:武器弾数Ｒ[ d:武器:Ｍ９] < $w:リクエスト開始Ｍ９残弾数 )) {
+				eval( $i:リクエストアイテム番号 = d:リクエストアイテム種別:Ｍ９ ) ;
+				eval( $w:アイテムリクエストタイマ = $w:ITEM_REQUEST_INTERVAL ) ;
+				eval( $w:アイテムリクエスト返答待ち = 1 ) ;
+				command ハリアアイテムセット \
+					$i:w25aアイテム出現Ｘ位置[ $w:落下場所 ] \
+					$i:w25aアイテム出現Ｙ位置[ $w:落下場所 ] \
+					$i:w25aアイテム出現Ｚ位置[ $w:落下場所 ] \
+					$i:リクエストアイテム番号 ;
+					print '----------------------------------------------'
+					print 'Request M9 !!!!!!!!!!!'
+					print $i:w25aアイテム出現Ｘ位置[ $w:落下場所 ],$i:w25aアイテム出現Ｙ位置[ $w:落下場所 ],$i:w25aアイテム出現Ｚ位置[ $w:落下場所 ]
+					print d:リクエストアイテム種別:Ｍ９;
+					print '----------------------------------------------'
+			#endif
+			} else if(( $w:武器弾数Ｒ[ d:武器:Ｍ４] >= 0 ) && ( $w:武器弾数Ｒ[ d:武器:Ｍ４] < $w:リクエスト開始Ｍ４残弾数 )) {
+				eval( $i:リクエストアイテム番号 = d:リクエストアイテム種別:Ｍ４ ) ;
+				eval( $w:アイテムリクエストタイマ = $w:ITEM_REQUEST_INTERVAL ) ;
+				eval( $w:アイテムリクエスト返答待ち = 1 ) ;
+				command ハリアアイテムセット \
+					$i:w25aアイテム出現Ｘ位置[ $w:落下場所 ] \
+					$i:w25aアイテム出現Ｙ位置[ $w:落下場所 ] \
+					$i:w25aアイテム出現Ｚ位置[ $w:落下場所 ] \
+					$i:リクエストアイテム番号 ;
+					print '----------------------------------------------'
+					print 'Request M4 ammo !!!!!!!!!!!'
+					print $i:w25aアイテム出現Ｘ位置[ $w:落下場所 ],$i:w25aアイテム出現Ｙ位置[ $w:落下場所 ],$i:w25aアイテム出現Ｚ位置[ $w:落下場所 ]
+					print d:リクエストアイテム種別:Ｍ４;
+					print '----------------------------------------------'
+			#ifndef d:BOSS_MODE
+			// BOSSラッシュでは、レーション補給無し
+			} else if(( $w:アイテム数Ｒ[ d:アイテム:レーション ] >= 0 ) && ( $w:アイテム数Ｒ[ d:アイテム:レーション ] < $w:リクエスト開始レーション残弾数 )) {
+				eval( $i:リクエストアイテム番号 = d:リクエストアイテム種別:レーション ) ;
+				eval( $w:アイテムリクエストタイマ = $w:ITEM_REQUEST_INTERVAL ) ;
+				eval( $w:アイテムリクエスト返答待ち = 1 ) ;
+				command ハリアアイテムセット \
+					$i:w25aアイテム出現Ｘ位置[ $w:落下場所 ] \
+					$i:w25aアイテム出現Ｙ位置[ $w:落下場所 ] \
+					$i:w25aアイテム出現Ｚ位置[ $w:落下場所 ] \
+					$i:リクエストアイテム番号 ;
+					print '----------------------------------------------'
+					print 'Request RATION !!!!!!!!!!!'
+					print $i:w25aアイテム出現Ｘ位置[ $w:落下場所 ],$i:w25aアイテム出現Ｙ位置[ $w:落下場所 ],$i:w25aアイテム出現Ｚ位置[ $w:落下場所 ]
+					print d:リクエストアイテム種別:レーション;
+					print '----------------------------------------------'
+			#endif
+			}
+		}
+		eval( $w:アイテムリクエストタイマ = $w:アイテムリクエストタイマ - 1 ) ;
+		if ( $w:アイテムリクエストタイマ < 0 ) { eval( $w:アイテムリクエストタイマ = 0 ) }
+
+		// リクエストしたのに待っても出ない場合、ハマリ防止のために強制的に出現させます
+		if ( $w:アイテムリクエスト返答待ち > 0 ) { eval( $w:アイテムリクエスト返答待ち = $w:アイテムリクエスト返答待ち + 1 ) ; }
+		if ( $w:アイテムリクエスト返答待ち > (60*60)) { @w25aハリアーアイテム出現 }
+	}
+
+	/* BOSSモードのスネーク用アイテム補給プロック */
+	/* スネーク用なので見る配列はスネーク専用となっている */
+	proc アイテム残段数監視即時発生 {
+		if ( $w:アイテムリクエストタイマ   == 0 ) {
+			if ( ( $w:武器弾数[ d:武器:スティンガー ] >= 0 ) && ( $w:武器弾数[ d:武器:スティンガー ] < $w:リクエスト開始スティンガー残弾数 ) )  {
+				eval( $i:リクエストアイテム番号 = d:リクエストアイテム種別:スティンガー ) ;
+				@即時アイテム発生用プロック ;
+			}
+		}
+		eval( $w:アイテムリクエストタイマ = $w:アイテムリクエストタイマ - 1 ) ;
+		if ( $w:アイテムリクエストタイマ < 0 ) { eval( $w:アイテムリクエストタイマ = 0 ) }
+	}
+
+	proc 即時アイテム発生用プロック {
+			eval( $w:落下場所 = `%rand d:POINT_MAX`) ;
+			eval( $w:アイテムリクエストタイマ = $w:ITEM_REQUEST_INTERVAL ) ;
+			if (`%カメラ視界チェック -camera 0x01 -pos $i:w25aアイテム出現Ｘ位置[ $w:落下場所 ],$i:w25aアイテム出現Ｙ位置[ $w:落下場所 ],$i:w25aアイテム出現Ｚ位置[ $w:落下場所 ]` == 0 ) {
+				if ( $f:ステージ上にアイテムがある == 0 ) {
+					eval( $f:ステージ上にアイテムがある = 1 ) ;
+					command マップ設定 ＤＧ連絡橋1F ＤＧ連絡橋B1 -set {
+						chara アイテム カサッカ落下アイテム \
+							-b 1 \
+							-p $i:w25aアイテム出現Ｘ位置[ $w:落下場所 ] \
+							   $i:w25aアイテム出現Ｙ位置[ $w:落下場所 ] \
+							   $i:w25aアイテム出現Ｚ位置[ $w:落下場所 ] \
+							-k $s:w25aアイテム箱モデル[$i:リクエストアイテム番号] \		// モデル：箱本体
+							-s $s:w25aアイテム箱モデル影[$i:リクエストアイテム番号] \		// モデル：箱影
+							-l $s:w25aアイテム箱ラベル[$i:リクエストアイテム番号] \		// モデル：ラベル
+							-f $b:w25a分類種別[$i:リクエストアイテム番号] \			// ＩＤ：from ..../scn/equip.h
+							-i $b:w25a武器種別[$i:リクエストアイテム番号] \			// ＩＤ：from ..../scn/equip.h
+							-n $b:w25aアイテム武器数量[$i:リクエストアイテム番号] \		// 個数
+							-r 0 \					// 0で飛沫無し。
+							-h 300 \		 		// 床面からの高さ
+							-z アイテム自然消滅 \
+							-x {
+								eval( $f:ステージ上にアイテムがある = 0 );
+							}
+					}
+				}
+			}
+	}
+
+	proc w25aハリアーアイテム出現初期化 {
+		command	配列セット $i:w25aアイテム出現Ｘ位置[0] {
+			2358,-3625,2101,1980,-1792,0
+		}
+		command	配列セット $i:w25aアイテム出現Ｙ位置[0] {
+			0,0,0,0,0,-4000
+		}
+		command	配列セット $i:w25aアイテム出現Ｚ位置[0] {
+			-150400 -149500 -154885 -146536 -146492,-150000
+		}
+		command	配列セット $s:w25aアイテム箱モデル[0] {
+			"ration_ibox",\
+			"launcher_amo_ibox",\
+			"launcher_amo_ibox",\
+			"handgun_amo_ibox",\
+			"handgun_amo_ibox",\
+			"rifle_amo_ibox"
+		}
+		command	配列セット $s:w25aアイテム箱モデル影[0] {
+			"ration_ibox_sh",\
+			"launcher_amo_ibox_sh",\
+			"launcher_amo_ibox_sh",\
+			"handgun_amo_ibox_sh",\
+			"handgun_amo_ibox_sh",\
+			"rifle_amo_ibox_sh"
+		}
+		command	配列セット $s:w25aアイテム箱ラベル[0] {
+			"rtn_label",\
+			"rgb_amo_label",\
+			"stg_amo_label",\
+			"m92_amo_label",\
+			"scm_amo_label",\
+			"m4_amo_label"
+		}
+		command	配列セット $b:w25a分類種別[0] {
+			d:アイテム種別:アイテム,\
+			d:アイテム種別:武器弾,\
+			d:アイテム種別:武器弾,\
+			d:アイテム種別:武器弾,\
+			d:アイテム種別:武器弾,\
+			d:アイテム種別:武器弾
+		}
+		command	配列セット $b:w25a武器種別[0] {
+			d:アイテム:レーション,\
+			d:武器:ＲＧＢ６,\
+			d:武器:スティンガー,\
+			d:武器:Ｍ９,\
+			d:武器:ソコム,\
+			d:武器:Ｍ４
+		}
+		command 配列セット $b:w25aアイテム武器数量[0] {
+			1,6,10,15,12,31 }
+	}
+	proc w25aハリアーアイテム出現 {
+		print '----------------------------------------------'
+		print 'Setting !!!!!!!!!!!'
+		print $i:w25aアイテム出現Ｘ位置[$w:落下場所] $i:w25aアイテム出現Ｙ位置[$w:落下場所] $i:w25aアイテム出現Ｚ位置[$w:落下場所]
+		print $i:リクエストアイテム番号
+		print '----------------------------------------------'
+		command マップ設定 ＤＧ連絡橋1F ＤＧ連絡橋B1 -set {
+			if ( $w:アイテムリクエスト返答待ち != 0 ) {	// 既に待ちくたびれてアイテムをセットしている場合はキャンセル
+				eval( $f:ステージ上にアイテムがある = 1 ) ;
+				eval( $w:アイテムリクエスト返答待ち = 0 ) ;		// リクエストに応えた
+				chara アイテム カサッカ落下アイテム \
+					-b 1 \
+					-p $i:w25aアイテム出現Ｘ位置[ $w:落下場所 ] \
+					   $i:w25aアイテム出現Ｙ位置[ $w:落下場所 ] \
+					   $i:w25aアイテム出現Ｚ位置[ $w:落下場所 ] \
+					-k $s:w25aアイテム箱モデル[$i:リクエストアイテム番号] \		// モデル：箱本体
+					-s $s:w25aアイテム箱モデル影[$i:リクエストアイテム番号] \		// モデル：箱影
+					-l $s:w25aアイテム箱ラベル[$i:リクエストアイテム番号] \		// モデル：ラベル
+					-f $b:w25a分類種別[$i:リクエストアイテム番号] \			// ＩＤ：from ..../scn/equip.h
+					-i $b:w25a武器種別[$i:リクエストアイテム番号] \			// ＩＤ：from ..../scn/equip.h
+					-n $b:w25aアイテム武器数量[$i:リクエストアイテム番号] \		// 個数
+					-r 0 \					// 0で飛沫無し。
+					-h 300 \		 		// 床面からの高さ
+					-z アイテム自然消滅 \
+					-x {
+						eval( $f:ステージ上にアイテムがある = 0 );
+						eval( $w:アイテムリクエストタイマ = 0 );
+					}
+			}
+		}
+	}
+	proc アイテム自然消滅 {
+		eval( $f:ステージ上にアイテムがある = 0 ) ;
+		eval( $w:アイテムリクエストタイマ = 0 );
+	}
+
+	// ステージ破壊処理
+	// ------------------------------------
+	proc w25aステージ破壊 {
+		#if d:DEBUG_PRINT
+			print 'w25a_stage_broken_proc'
+		#endif
+		eval( $b:w25a_ステージ状態 = 2 ) ;
+
+		// 置かれている雑誌やクレイモアを全て消去
+		mesg 爆発系管理 爆発系管理 消去 d:武器:クレイモア
+		mesg 爆発系管理 爆発系管理 消去 d:武器:雑誌
+		mesg 爆発系管理 爆発系管理 消去 d:武器:Ｃ４
+		mesg 爆発系管理 爆発系管理 消去 d:武器:マガジン
+
+		mesg マップ接合 ＤＧ連絡橋接合破壊前 off
+		command 追加ＨＺＸグループ削除 -hzx_id 0 -add_id 2
+		mesg マップ接合 ＤＧ連絡橋接合破壊後 on
+		command 追加ＨＺＸグループ登録 -hzx_id 0 -add_id 3
+		mesg マップ接合 破壊前兆弾当たり専用1F off
+		mesg マップ接合 破壊前兆弾当たり専用B1 off
+		command 追加ＨＺＸグループ削除 -hzx_id 28 -add_id 4
+		mesg マップ接合 破壊後兆弾当たり専用1F on
+		mesg マップ接合 破壊後兆弾当たり専用B1 on
+		command 追加ＨＺＸグループ登録 -hzx_id 28 -add_id 5
+		chara delay 遅延 -time (4*60) -exec {		// 安定するまで遅延する
+			command トラップ削除 -name by003	// 破壊された柵部分のエルード禁止
+			command トラップ削除 -name by005	// 破壊された柵部分のエルード禁止
+		}
+
+		command エフェクトバウンド追加 -3000 -1250 -156500 3000 -750 -152000 1
+		command エフェクトバウンド実行
+
+		// 2001.7.16 里吉の希望により破壊後 15フレームは床がある
+		//------------------------------------------------------
+		chara 透明床 ステージ破壊後透明床 \
+			-position -3000 -1000 -156500 \
+				  -3000 -1000 -152000 \
+				   3000 -1000 -152000 \
+				   3000 -1000 -156500 \
+			-n_points 4 \
+			-attribute \
+				( \
+				  d:HZX_FLOOR_NO_ENEMY \        // 0x0020	/* 敵兵の当たりチェックをしない */
+				| d:HZX_FLOOR_NO_BULLET \       // 0x0040	/* ショットの当たりをチェックしない */
+				| d:HZX_FLOOR_NO_MISSILE \      // 0x0080	/* ミサイル系の当たり判定をしない */
+				| d:HZX_FLOOR_NO_C4 \           // 0x0100	/* C4爆弾がセットできない */
+				| d:HZX_FLOOR_NO_RECOIL \       // 0x0200	/* ショットが跳弾しない */
+				| d:HZX_FLOOR_NO_CLAYMORE \    	// 0x0400	/* クレイモアがセットできない */
+				| d:HZX_FLOOR_NO_BLOOD \        // 0x0800	/* 血痕つかない */
+				| d:HZX_FLOOR_NO_BULLETHOLE \ 	// 0x1000	/* 弾痕つかない */
+				| d:HZX_FLOOR_NO_SPRAY \        // 0x2000	/* スプレーつかない */
+				| d:HZX_FLOOR_NO_ENEMY_EYES \	// 0x00010000	/* 敵兵視線通りぬける */
+				) \	
+			-map ＤＧ連絡橋1F
+		chara delay 遅延 -time 15 -exec {
+			mesg 透明床 ステージ破壊後透明床 kill ;
+		}
+	}
+
+	// ハリアーアウト
+	// ------------------------------------
+	proc ハリアーアウト {
+		#if d:DEBUG_PRINT
+			print 'Harrier_out_proc'
+		#endif
+		#ifndef d:BOSS_MODE
+			//　ゲーム中の処理
+			mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_FOUTS_S	// BGM停止
+			eval( $f:ハリアー戦中 = 0 ) ;
+			command パッド操作 -release
+			if ( $w:アイテム == d:アイテム:ゴル兵制服 ) {
+				/* キャップなし */
+				preseek 'r_plt5'
+			} else {
+				preseek 'd046p01'
+			}
+			chara フェードインアウト フェードアウト \
+				-c 0,0,0 128 \
+				-t d:FADEOUT_TIME \
+				-p ハリアーアウト処理後
+		#else
+			//　ボスラッシュ時の処理
+			@ボスラッシュ終了時処理
+		#endif
+
+	}
+	proc ハリアーアウト処理後 {
+		#if d:DEBUG_PRINT
+			print 'Harrier_out_proc2'
+		#endif
+		command ゲームオーバーチェック
+		if ( $status == 1 ) {
+			// プレイヤーも死んでいるらしい
+			chara フェードインアウト フェードイン一瞬 \
+				-c 0 0 0 0 \	//目標のＲＧＢα
+				-t 0 		//変化完了までのフレーム数
+		} else {
+			eval( $w:p_story =  d:ST:P046_01_P01ハリアー戦勝利１ポリゴンデモ１開始 )
+			if ( $w:アイテム == d:アイテム:ゴル兵制服 ) {
+				/* キャップなし */
+				load "d046p01" -r 'r_plt5'
+			} else {
+				load "d046p01" 
+			}
+		}
+	}
+
+	// サウンド
+	// ------------------------------------
+	proc サウンド設定 {
+		#if d:DEBUG_PRINT 
+			print 'sound_set'
+		#endif
+		if ( $f:ハリアー戦中 == 1 ) {
+			chara サウンドマネージャー ＳＤマネ -pak 0
+			mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_PLAY_01
+		} else {
+			chara サウンドマネージャー ＳＤマネ -pak 0
+			mesg サウンドマネージャー ＳＤマネ SD_CODE d:SNG_PLAY_05
+			chara ＢＧＭ風音 風音 \
+				-s d:BGM_WINDNOISE_WEATHER_FAIN
+		}
+		@サウンド効果音設定 ;
+		@弾痕跳弾設定
+	}
+
+
+	// 自動ジャンプ設定
+	// ------------------------------------
+	proc w25a_自動ジャンプ設定 {
+		trap ev093 d:PLAYER \
+			-mask 入る \
+			-exec {
+				@ジャンプ発動 ev093 100000 1	// ジャンプさせたくないので想定外数字
+			}
+	}
+
+	// ビヨンド設定
+	// ------------------------------------
+	proc w25a_ビヨンド設定 {
+		#if d:DEBUG_PRINT
+			print 'w25a_beyond_set'
+		#endif
+			trap by001 d:PLAYER \
+				-mask いる \
+				-and \
+				-button d:ACTION_BUTTON d:ACTION_BUTTON \		//ビヨンドボタン
+				-state 0,4 \	//立ち状態or張り付き
+				-exec {
+					if (`@東向きビヨンド発動 by001 -1500 $6 -152000 -148500 0x000002` != 0) {
+						eval( $b:発動ビヨンド識別 = 1 ) ;
+					}
+				}
+			trap by001 d:PLAYER -camera -mask ＊ -state d:TRP_STATE_FORCE \
+				-exec {
+					if ( $b:発動ビヨンド識別 == 1 ) {
+						chara カメラ設定 モーションカメラ \
+							-c 1 \
+							-p 3372,-3509,-149258 -t -668,-707,-150023 \
+							-r -390,2950,0 -f 4975 \
+							-a 200 \
+							-i 0 -1 0 0 \
+							-s $3
+					}
+				}
+			trap by001 d:PLAYER -camera -mask ？ -state d:TRP_STATE_ELUDE \
+				-exec {
+					if ( $b:発動ビヨンド識別 == 1 ) {
+						chara カメラ設定 ビヨンドカメラ \
+							-c 1 \
+							-p -249,-3611,-149721 -t -1239,-1431,-150075 \
+							-r 3365,2848,0 -f 2420 \
+							-a 178 \
+							-i 1 -1 0 0 \
+							-s $3
+					}
+				}
+
+			trap by002 d:PLAYER \
+				-mask いる \
+				-and \
+				-button d:ACTION_BUTTON d:ACTION_BUTTON \		//ビヨンドボタン
+				-state 0,4 \	//立ち状態or張り付き
+				-exec {
+					if( `@西向きビヨンド発動 by002 1500 $6 -152000 -148500 0x000002` != 0 ) {
+						eval( $b:発動ビヨンド識別 = 2 ) ;
+					}
+				}
+			trap by002 d:PLAYER -camera -mask ＊ -state d:TRP_STATE_FORCE \
+				-exec {
+					if ( $b:発動ビヨンド識別 == 2 ) {
+						chara カメラ設定 モーションカメラ \
+							-c 1 \
+							-p -3263,-3565,-148259 -t 768,-1093,-149850 \
+							-r -338,1269,0 -f 4989 \
+							-a 200 \
+							-i 0 -1 0 0 \
+							-s $3
+					}
+				}
+			trap by002 d:PLAYER -camera -mask ？ -state d:TRP_STATE_ELUDE \
+				-exec {
+					if ( $b:発動ビヨンド識別 == 2 ) {
+						chara カメラ設定 ビヨンドカメラ \
+							-c 1 \
+							-p 60,-3873,-149769 -t 557,-2669,-149952 \
+							-r 3342,1254,0 -f 1315 \
+							-a 180 \
+							-i 1 -1 0 0 \
+							-s $3
+					}
+				}
+
+			trap by003 d:PLAYER \
+				-mask いる \
+				-and \
+				-button d:ACTION_BUTTON d:ACTION_BUTTON \		//ビヨンドボタン
+				-state 0,4 \	//立ち状態or張り付き
+				-exec {
+					if ( `@南向きビヨンド発動 by003 -152000 $4 -1500 1500 0x000002` != 0 ) {
+						eval( $b:発動ビヨンド識別 = 3 ) ;
+					}
+				}
+			trap by003 d:PLAYER -camera -mask ＊ -state d:TRP_STATE_FORCE \
+				-exec {
+					if ( $b:発動ビヨンド識別 == 3 ) {
+						chara カメラ設定 モーションカメラ \
+							-c 1 \
+							-p 2229,-3906,-147338 -t 960,-1258,-151367 \
+							-r 3731,2247,0 -f 4986 \
+							-a 200 \
+							-i 0 -1 0 0 \
+							-s $3
+					}
+				}
+			trap by003 d:PLAYER -camera -mask ？ -state d:TRP_STATE_ELUDE \
+				-exec {
+					if ( $b:発動ビヨンド識別 == 3 ) {
+						chara カメラ設定 ビヨンドカメラ \
+							-c 1 \
+							-p 146,-3785,-150552 -t 79,-1594,-151565 \
+							-r -741,2091,0 -f 2415 \
+							-a 178 \
+							-i 1 -1 0 0 \
+							-s $3
+					}
+				}
+
+			trap by004 d:PLAYER \
+				-mask いる \
+				-and \
+				-button d:ACTION_BUTTON d:ACTION_BUTTON \		//ビヨンドボタン
+				-state 0,4 \	//立ち状態or張り付き
+				-exec {
+					if ( `@北向きビヨンド発動 by004 -148500 $4 -1500 1500 0x000002` != 0 ) {
+						eval( $b:発動ビヨンド識別 = 4 ) ;
+					}
+				}
+			trap by004 d:PLAYER -camera -mask ＊ -state d:TRP_STATE_FORCE \
+				-exec {
+					if ( $b:発動ビヨンド識別 == 4 ) {
+						chara カメラ設定 モーションカメラ \
+							-c 1 \
+							-p -2014,-3603,-153263 -t 418,-1194,-149623 \
+							-r -328,384,0 -f 4997 \
+							-a 200 \
+							-i 0 -1 0 0 \
+							-s $3
+					}
+				}
+			trap by004 d:PLAYER -camera -mask ？ -state d:TRP_STATE_ELUDE \
+				-exec {
+					if ( $b:発動ビヨンド識別 == 4 ) {
+						chara カメラ設定 ビヨンドカメラ \
+							-c 1 \
+							-p 189,-3580,-149783 -t 242,-1373,-148822 \
+							-r -756,36,0 -f 2407 \
+							-a 178 \
+							-i 1 -1 0 0 \
+							-s $3
+					}
+				}
+			trap by005 d:PLAYER \
+				-mask いる \
+				-and \
+				-button d:ACTION_BUTTON d:ACTION_BUTTON \		//ビヨンドボタン
+				-state 0,4 \	//立ち状態or張り付き
+				-exec {
+					@西向きビヨンド発動 by005 -3000 $6 -156500 -152000 0x000002
+				}
+			trap by005 d:PLAYER -camera -mask ＊ -state d:TRP_STATE_FORCE \
+				-exec {
+					chara カメラ設定 モーションカメラ \
+						-c 1 \
+						-p -5012,1083,-147813 -t -2888,417,-154018 \
+						-r 66,1833,0 -f 6592 \
+						-a 200 \
+						-i 0 -1 0 0 \
+						-s $3
+				}
+			trap by005 d:PLAYER -camera -mask ？ -state d:TRP_STATE_ELUDE \
+				-exec {
+					chara カメラ設定 ビヨンドカメラ \
+						-c 0 \
+						-b -320000 -320000 -320000 320000 320000 320000 \
+						-l -320000 -320000 -320000 320000 320000 320000 \
+						-r 831,1833,0 -f 12079 \
+						-a 200 \
+						-i 1 -1 0 0 \
+						-s $3
+				}
+			trap by006 d:PLAYER \
+				-mask いる \
+				-and \
+				-button d:ACTION_BUTTON d:ACTION_BUTTON \		//ビヨンドボタン
+				-state 0,4 \	//立ち状態or張り付き
+				-exec {
+					@東向きビヨンド発動 by006 3000 $6 -156500 -144000 0x000002
+				}
+			trap by006 d:PLAYER -camera -mask ＊ -state d:TRP_STATE_FORCE \
+				-exec {
+					chara カメラ設定 モーションカメラ \
+						-c 1 \
+						-p 11131,-5122,-138270 -t 2856,837,-149077 \
+						-r 3827,2474,0 -f 14859 \
+						-a 303 \
+						-i 0 -1 0 0 \
+						-s $3
+				}
+			trap by006 d:PLAYER -camera -mask ？ -state d:TRP_STATE_ELUDE \
+				-exec {
+					chara カメラ設定 ビヨンドカメラ \
+						-c 0 \
+						-b -320000 -320000 -320000 320000 320000 320000 \
+						-l -320000 -320000 -320000 320000 320000 320000 \
+						-r 825,2130,0 -f 12497 \
+						-a 303 \
+						-i 1 -1 0 0 \
+						-s $3
+				}
+		}
+
+	// デバッグモード
+	// ------------------------------------
+	proc カメラ対策カサッカ監視処理 $:カメラＸ位置 $:カメラＹ位置 $:カメラＺ位置 $:指定距離 {
+		// カメラ位置とカサッカの距離を監視して食い込みを防止します
+		eval( $i:L1 = `%VecLen $:カメラＸ位置 $:カメラＹ位置 $:カメラＺ位置 $i:スネーク位置Ｘ $i:スネーク位置Ｙ $i:スネーク位置Ｚ` );
+		eval( $i:L2 = `%VecLen $:カメラＸ位置 $:カメラＹ位置 $:カメラＺ位置 $i:hpx $i:hpy $i:hpz` );
+		if ( $i:L1 < $:指定距離 ) {
+			// カメラとカサッカが近い
+			return 1
+		} else if ( $i:L2 < $:指定距離 ) {
+			// カメラとハリアが近い
+			return 2
+		} else {
+			// カメラとカサッカは離れている
+			return 0
+		}
+	}
+
+	// デバッグモード
+	// ------------------------------------
+	proc デバッグキャラセット {
+		#if d:DEBUG_PRINT 
+			print 'debug_chara_set'
+		#endif
+	}

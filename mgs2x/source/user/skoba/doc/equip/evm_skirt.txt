@@ -1,0 +1,46 @@
+/*
+	evm_skirt.txt
+	EVMスカートの仕組み
+
+	2001/10/23	S.Kobayashi
+	$Id: evm_skirt.txt,v 1.1.1.3 2002/11/19 11:50:03 Yoshizawa1 Exp $
+
+*/
+
+1 処理手順
+	初期化
+		↓
+	EVMオブジェクト生成
+		↓
+	EVMオブジェクト表示
+		↓
+	各種Matrixの計算←←←←←←↑
+		↓						↑
+		↓						↑
+		↓						↑
+	ステージ終了時までループ→→↑
+		↓
+	終了
+
+2 関数説明
+	void *NewScnEvm_SkirtA( OBJECT *pObj , int name ) // ネーちゃん
+	void *NewScnEvm_SkirtB( OBJECT *pObj , int name ) // おばちゃん
+		ラップ関数
+
+	void *SK_NewEvm_Skirt( OBJECT *pObj , int strcode , int name )
+		本体
+
+	static int GetResources( Work *work , int strcode )
+		初期化関数
+
+	static void Die( Work *work )
+		終了処理関数
+
+	static void Act( Work *pWork )
+		通常実行関数
+
+	static void EvmActMotion( OBJECT *pObj , DG_EVMOBJ *evmobj )
+		Matrix計算関数
+
+	static	void	Clairvoyance( Work *work )
+		未使用

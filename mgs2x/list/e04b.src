@@ -1,0 +1,113 @@
+//
+//	e04b.src	
+//
+//	written by Y.Matsuhana 1999.Dec
+//
+//	$Id: e04b.src,v 1.11 2001/05/01 07:03:32 usr01098 Exp $
+
+
+// 常駐データ
+block .use r_tnk0
+
+block .nocache
+block .cache
+
+#define wn_w04b
+
+// 各ステージ共通要素
+include		c_effect.h
+
+// ワールド
+//debug		null
+world		w04b/w04b1.kms
+world		w04b/w04b2.kms
+world		w04b/w04b3.kms
+world		w04b
+lt2		w04b.lt2
+hazard	   	d00a3.hzx
+world		door/w04_dr.kms
+world		w04/hatch.kms
+
+// リアル影用床モデル
+world		w04b/w04b1_k4.kms
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+//野尻実験箱
+//world	w00b/obs_box3.kms
+world	w04/w04_box.kms
+
+//プロジェクタリモコン
+goods	remocon/remocon.kms
+
+// スネーク
+//human		sna_def
+
+// 忍者
+// マルチテクスチャのモデル
+human		org_tng/org_tng_mh_mt.evm
+
+pack_all org_tng_mt.tri \
+			human/org_tng/org_tng_sh_mt.dar \
+			human/org_tng/org_tng_sld_mt.dar \
+			human/org_tng/org_tng_high_freq_blade_mt.dar
+//			human/org_tng/org_tng_mh_mt.dar \
+
+human		org_tng/org_tng_sh_mt.kms
+human		org_tng/org_tng_sld_mt.kms
+human		org_tng/org_tng_high_freq_blade_mt.kms
+
+/*			human/org_tng/org_tng_high_freq_scabbard.dar \
+			human/org_tng/orn_sld.dar
+human		org_tng/org_tng_high_freq_scabbard.kms
+human		org_tng/orn_sld.kms
+*/
+// それ以外（シングルテクスチャ）
+human		org_tng
+/* mgdemo added ----from here (Mon Apr 16 14:59:36 2001) ---- */
+/* mgdemo added ----from here (Mon Apr 16 15:04:31 2001) ---- */
+human	sna_def/sna_def_mh.evm
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Apr 16 21:51:11 2001) ---- */
+human	rai_def/rai_hair_mh_mt.evm
+human	rai_def/rai_hair_bounding.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Apr 16 22:16:37 2001) ---- */
+/* mgdemo added ----from here (Mon Apr 16 22:17:07 2001) ---- */
+/* mgdemo added ----from here (Mon Apr 16 22:18:18 2001) ---- */
+weapon	hfb/hfb_mt.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Mon Apr 16 22:36:35 2001) ---- */
+item	handy_telephone/handy_telephone.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Apr 17 18:06:18 2001) ---- */
+weapon	m92_sna/m92_sna.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Apr 17 20:09:37 2001) ---- */
+weapon	m92/m92.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Wed Apr 18 11:20:16 2001) ---- */
+
+/* mgdemo added ----from here (Wed Apr 18 20:57:52 2001) ---- */
+goods	demo_org_tng_hfb/demo_org_tng_hfb_blade_mt.kms
+goods	demo_org_tng_hfb/demo_org_tng_hfb_sheath.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Apr 20 11:20:47 2001) ---- */
+goods	demo_org_tng_hfb/demo_org_tng_hfb_r_blade_mt.kms
+goods	demo_org_tng_hfb/demo_org_tng_hfb_r_sheath.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Fri Apr 20 21:41:12 2001) ---- */
+weapon	m92_sna/m92_sna_sub.kms
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Wed Apr 25 14:00:44 2001) ---- */
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_text_R_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_text_L_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_mitsubishi_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_square_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_noiz_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_head_met_alp.bmp
+pack_trnall trn.tri effect/org_ninja_seeld/orn_sld_cover_alp.bmp
+/* mgdemo added ----upto here ---- */
+

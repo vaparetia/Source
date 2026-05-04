@@ -1,0 +1,243 @@
+//
+//	sp03a.src	
+//	バラエティ ザコサバイバル
+//	written by H.Yoshiike 2002.Mar
+//
+//	$Id: sp03a.src,v 1.36 2002/09/30 14:06:28 usr03682 Exp $
+
+#define WN_SP03A
+
+block .use r_vr_r
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"vr_def.h"
+#include	"p_common.h"
+#include	"common.h"
+// エフェクト追加用define
+#define		E_HIMATU		// 水しぶき
+#include	"c_effect.h"
+
+// 敵兵関連define
+// 敵兵タイプ
+#define ENE_T_GOL		// タンカーゴル兵
+#define ENE_ATTACKER	// 攻撃兵
+#define ENE_SHIELD		// 盾兵
+#define ENE_SHOT		// ショットガン兵
+#define ENE_HIGH_TECH	// ハイテク兵
+
+// 特殊兵のモーション設定
+#define ENE_MAR '-DDEL_WALKMAN=DUMMY'
+
+#include "ene_plant.h"
+
+// アイテムボックス
+#define	USP			//	ＵＳＰ本体
+#define	SCM			//	ソコム本体
+#define	M9			//	Ｍ９本体
+//#define	USP_SP		//	ＵＳＰサプレッサ
+//#define	SCM_SP		//	ソコムサプレッサ
+#define	USP_AM		//	ＵＳＰ弾薬
+#define	SCM_AM		//	ソコム弾薬
+#define	M9_AM		//	Ｍ９弾薬
+#define	M4			//	Ｍ４本体
+#define	AK			//	ＡＫ本体
+#define	PSG1		//	ＰＳＧ１本体
+#define	PSG1T		//	ＰＳＧ１−Ｔ本体
+//#define	AK_SP		//	ＡＫサプレッサ
+#define	M4_AM		//	Ｍ４弾薬
+#define	AK_AM		//	ＡＫ弾薬
+#define	PSG1_AM		//	ＰＳＧ１弾薬
+#define	PSG1T_AM	//	ＰＳＧ１−Ｔ弾薬
+#define	RGB			//	ＲＧＢ６本体
+#define	STG			//	スティンガー本体
+//#define	NKT			//	ニキータ本体
+#define	RGB_AM		//	ＲＧＢ６弾薬
+#define	STG_AM		//	スティンガー弾薬
+//#define	NKT_AM		//	ニキータ弾薬
+#define	GRE			//	グレネード
+#define	CGR			//	チャフ
+#define	SGR			//	スタン
+#define	CLM			//	クレイモア
+#define	C4			//	Ｃ４
+#define	MGZ			//	雑誌
+//#define	MIC			//	指向性マイク
+#define	RTN			//	レーション
+//#define	BS			//	止血材
+#define	DZP			//	ジアゼパム
+//#define	SHV			//	髭剃り
+//#define	COLD		//	風邪薬
+#define	TGL			//	サーマルゴーグル
+//#define	NGL			//	暗視ゴーグル
+//#define	MND			//	地雷探知機
+//#define	BSN_B		//	爆弾センサーＢ
+//#define	CBX			//	ダンボール
+//#define	BAM			//	ボディアーマー
+//#define	D_CAM		//	デジタルカメラ
+
+#include "a_item.h"
+
+
+// ＶＲ的
+#define		VR_TGT_HEXA
+#include	"vrstage.h"
+
+// キャラ
+//ゴルルゴンシリーズ
+pack_all vrgll_mt.tri \
+	human/gll_gllgon/gll_def.dar \
+	human/gll_gllgon/aks_sp_gll.dar \
+	human/gll_gllgon/gll_tarai_mt.dar \
+	human/gno_meca/gno_meca_mt.dar \
+	human/gno_meca/gno_bdmeca_mt.dar \
+	human/gno_meca/gno_para.dar \
+	human/gno_meca/gno_meca_head_mt.dar \
+	human/gno_def/gno_def.dar \
+	human/gno_def/fms_4gno.dar \
+	meca/vr2_target/vr2_tgt_octa_nov.dar\
+	meca/vr2_target/vr2_tgt_straw.dar\
+	debug/korekado/box_koreB.dar
+
+pack_trnall	effect.tri \
+	effect/mark/heart_msk.bmp \
+	effect/mark/heart.bmp \
+	effect/mark/heart_alp.bmp \
+	effect/splash/splash03_alp.bmp \
+	effect/powder/powder01_alp.bmp /* 粉テクスチャ 消火器でも使用 */ \
+	effect/powder/powder03_alp.bmp /* 粉テクスチャ 消火器でも使用 */ \
+	effect/powder/powfog03_add.bmp /* 小麦粉 */ \
+	effect/powder/powder04_alp.bmp /* 小麦粉 */
+
+// ゴルルゴン
+human	gll_gllgon/gll_def.kms
+human	gll_gllgon/aks_sp_gll.kms
+human	gll_gllgon/gll_tarai_mt.kms
+cvd		human/gll_gllgon/gll_def.cv2 vn
+
+meca	vr2_target/vr2_tgt_octa_nov.kms
+meca	vr2_target/vr2_tgt_straw.kms
+
+lt2			vr_dark.lt2
+
+// メカゲノラ
+human	gno_meca/gno_meca_mt.kms
+human	gno_meca/gno_bdmeca_mt.kms
+human	gno_meca/gno_para.kms
+human	gno_meca/gno_meca_head_mt.kms
+cvd		human/gno_meca/gno_meca_mt.cv2 vn
+debug	korekado/box_koreB.kms
+
+
+// ゲノラ
+human	gno_def/gno_def.kms
+human	gno_def/fms_4gno.kms
+cvd		human/gno_def/gno_def.cv2 vn
+
+pack_trnall atrn.tri effect/hamon/hamon09_add_alp.bmp
+
+// ゴルルゴン達のモーション
+mtn		gll.mls
+mtn		gll_sp03a.mls
+
+pack_trnall katana_eft.tri \
+	debug/shibata/staffroll/alpha03_alp_ovl.bmp
+
+human	tng_def/tng_high.kms
+human	tng_def/tng_saya.kms
+human	tng_def/tng_magazine.kms
+human	tng_def/tng_strap.kms
+cvd		human/tng_def/tng_high.cv2 vn
+
+weapon/p90
+weapon	tbl/tbl_katana.kms
+item	sougan 
+
+// 連れ去られるライデン
+human	rai_gbs/rai_gbs_vsg_mt.kms
+
+// 強制モーション
+mtn			rai_sp03a.mls
+mtn			sna_sp03a.mls
+
+// 刀セット一式
+#include	"blade.h"
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル 
+option makexti6 -l 1024 -f PAL8
+pack_all	sp03a.tri \
+	world/vr_variety/sp03a/sp03a \
+	2D/zako_telop/gur_alp_ovl.bmp \
+	2D/zako_telop/mecgeno1_alp_ovl.bmp \
+	2D/zako_telop/geno_alp_ovl.bmp \
+	2D/zako_telop/gur_e_alp_ovl.bmp \
+	2D/zako_telop/mecgeno1_e_alp_ovl.bmp \
+	2D/zako_telop/geno_e_alp_ovl.bmp
+option makexti6
+
+world		vr_variety/sp03a/sp03a
+goods		null/null.kms
+
+rol			world/vr_variety/sp03a/sp03a_outline/zako_outline.rol
+rol			world/vr_variety/sp03a/sp03a_outline/grg_outline.rol
+rol			world/vr_variety/sp03a/sp03a_outline/mgr_outline.rol
+rol			world/vr_variety/sp03a/sp03a_outline/gnr_outline.rol
+rol			world/vr_variety/sp03a/sp03a_outline/gnr_outline2.rol
+rol			world/vr_variety/sp03a/sp03a/sp03a0.rol
+rol			world/vr_variety/sp03a/sp03a/sp03a_box01.rol
+rol			world/vr_variety/sp03a/sp03a/sp03a_box02.rol
+rol			world/vr_variety/sp03a/sp03a/sp03a_box03.rol
+rol			world/vr_variety/sp03a/sp03a/sp03a_box04.rol
+rol			world/vr_variety/sp03a/sp03a/sp03a_box05.rol
+rol			world/vr_variety/sp03a/sp03a/sp03a_box06.rol
+rol			world/vr_variety/sp03a/sp03a/sp03a_box07.rol
+rol			world/vr_variety/sp03a/sp03a/sp03a_box08.rol
+rol			world/vr_variety/sp03a/sp03a/sp03a_box09.rol
+rol			world/vr_variety/sp03a/sp03a/sp03a_box10.rol
+rol			world/vr_variety/sp03a/sp03a/sp03a_box11.rol
+rol			world/vr_variety/sp03a/sp03a/sp03a_box12.rol
+rol			world/vr_variety/sp03a/sp03a/sp03a_box13.rol
+
+hazard		sp03a.hzx
+
+// メカゲノラ戦用ライトファイル
+lt2			vr_dark.lt2
+
+
+//	ＶＲ追加エフェクト
+#include	"vr_effect.h"
+
+
+// テロップ用Ｌ２Ｄ
+l2d 2D/zako_survival/zako_survival.l2d
+l2d 2D/sight/ray_view/ray_view.l2d
+
+// パッドデモ
+rpd		sp03a_paddemo_01.rpd
+rpd		sp03a_paddemo_02.rpd
+
+
+// 振動データ
+vib		gbs/gol_howl.vib
+vib		gbs/gno_sneeze.vib
+vib		gbs/gol_down.vib
+vib		gbs/gol_collapse.vib
+
+vib		gbs/gol_appear_wall.vib
+vib		gbs/gol_heartbeat_sdemo.vib
+vib		gbs/mgn_appear_sdemo.vib
+vib		gbs/gol_high_jump_start.vib
+vib		gbs/gol_high_jump_end.vib
+vib		gbs/gol_fight_sdemo.vib
+vib		gbs/gol_gno_start_sdemo.vib
+vib		gbs/mgn_vs_gnr_start_sdemo.vib
+
+
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム

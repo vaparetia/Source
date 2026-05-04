@@ -1,0 +1,41 @@
+//
+//	w02a_old.src	
+//
+//	written by H.Yoshiike 1999.Oct
+//
+//	$Id: w02a_old.src,v 1.3 2000/07/27 23:58:06 usr04098 Exp $
+
+
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+include		common.h
+include		a_effect.h
+include		wp_tank.h
+
+// キャラクタ 
+include		player.h
+cvd		human/sna_skl/sna_skl2.cvd
+include		ene_tank.h
+
+// ワールド
+world		w02a_old
+world		w02_door
+lt2		w02a_old
+hzx		w02a_old
+		
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+pack_all	debug.tri debug/test_door debug/sling_test debug/clear_test debug/locker debug/corpse_a debug/corpse_u 
+
+debug		test_door
+debug		sling_test
+debug		clear_test
+debug		locker
+debug		corpse_a
+debug		corpse_u
+
+// リネーム
+rename		w02_dr0.kms	w02a_dr.kms
+rename		clear_test1.kms	clear_Test1.kms

@@ -1,0 +1,2719 @@
+/*
+	w25b.gcl                     
+	    タイトロープ（１）
+
+	2000/11/30 Y.Matsuhana         
+	$Id: w25b.gcl,v 1.122 2002/07/18 12:24:28 usr03682 Exp $                      
+
+	
+*/
+
+// 各種スイッチ用define
+// ------------------------------------
+// プラント編識別
+#define STAGE_PLANT			1
+#define STAGE_W25B			1 
+
+// 敵兵、ＮＰＣ状況（薬莢を呼び分けるのに必要）
+#define		ENE_P_GOL		1		// 都市迷彩ゴル兵
+#define		GUN_MECA		1 					// ガンカメ ガンサイファー 
+
+// サウンド
+#define		SOUND			1		// サウンドデータは最初に呼ぶ
+#define		BGM			1		// BGMは敵兵コマンダーの後に呼ぶ
+// デモ
+#define		DEMO			0
+// ノード端末
+// キャラクター関係
+#define		RAIDEN			1		// SNAKEとは排他
+#define		SNAKE			0
+#define		ENEMY			1		// コマンダーと警備兵(敵を出すときは必須)
+#define		SUPPORT			0		// サポート兵
+#define		ATTACKER		0		// 攻撃兵
+#define		SHIELD			0		// 盾兵(1) or 通常攻撃兵(0)
+// 監視カメラ関係
+#define		GUN_CAMERA		0		// ガンカメラ
+// 仮置きキャラ
+#define		DOLL			0
+// 入出トラップ
+#define		LOAD_TRAP		1
+#define		STAGE_END		0		// ステージ終了時処理を使用可にする
+#define		MAP_CHANGE 		1		// マップ切り替えのトラップを有効にする
+// フォグ
+#define		FOG			1
+// エフェクト関係
+#define		KAMOME			1		// かもめ
+#define		SMOKE			1		// 煙
+#define		EFFECT			1		// エフェクト全般
+#define		BLUR			0		// ブラー
+#define		Z_MANAGER		0		// Ｚフォーカス管理(敵のライト等で仕様)
+#define		BODY_SHADOW		0		// 敵のライトによって出る影
+// 子画面
+#define		SUB_CAMERA		0
+// カメラ関係
+#define		CLEAR_CAMERA		0		// クリアリング専用カメラ(要子画面)
+
+// 天井
+#define		CHARA_CEIL		0		// 天井君
+// イベント
+#define		EVENT			1		// イベント
+// 透明壁
+#define		TR_WALL			0		// シナリオ置きの透明壁
+// ライト関係
+#define		SPOT_LIGHT		0		// スポットライト
+#define		CHARA_LIGHT		1		// キャラ専用ライト
+// オブジェ関係
+#define		LOCKER			0		// ロッカー
+#define		SEA			1		// 海面
+// アイテム
+#define		ITEM			1
+// 強制モーション
+#define		JP_MOTION		1		// ジャンプモーション
+#define		BY_MOTION		1		// ビヨンドモーション
+// 監視カメラ関係
+#define		CYPHER			1		// サイファー
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA	0		// デバッグキャラ全体(FIX時は0)
+#else
+	#define		DEBUG_CHARA	1		// デバッグキャラ全体
+#endif
+#define		FALLDOWN_RESET		1		// 落下したら死亡
+#define		CHARA_CAMERA		0		// キャラ追従カメラ
+#define		TARGET_CHARA		敵兵:01		// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+#define		SHORTCUT 		0		// debug用スタート位置変更 (重野追加)
+#define		腰の高さ		980
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME		w25b
+#define		KMS_NAME0		w25b0
+#define		KMS_NAME1		w25b1
+#define		KMS_NAME2		w25ab_14a
+#define		KMS_NAME3		w25ab_17a
+#define		KMS_NAME4		w25ab_18a
+#define		KMS_NAME5		w25ab_19a
+#define		KMS_NAME6		w25ab_20a
+#define		KMS_NAME7		w25ab_21a
+#define		KMS_NAME8		w25ab_24a
+#define		KMS_NAME9		w25ab_31a
+#define		KMS_NAMEA		w25ab_32a
+#define		KMS_NAMEB		w25ab_32b
+#define		KMS_NAMEC		w25ab_32c
+#define		KMS_NAMED		w25ab_crane
+#define		KMS_NAMEE		w25ab_gh
+#define		KMS_NAMEF		w25ab_i1
+#define		KMS_NAMEG		w25ab_i2
+#define		KMS_NAMEH		w25ab_kl
+#define		KMS_NAMEI		w25ab_l
+#define		KMS_NAMEJ		w25ab_other00
+#define		KMS_NAMEK		w25ab_other01
+#define		KMS_NAMEL		w25ab_other02
+#define		KMS_NAMEM		w25b_jk
+#define		KMS_NAMEN		w25b_g
+#define		KMS_NAMEO		w25b0_wall
+#define		KMS_NAMEP		w25b_rail
+#define		KMS_NAMEQ		w25ab_hi
+#define		DOOR_NAME_LOAD		w25a_dr00		// ロード用
+#define		LT2_NAME		w25b
+#define		KMS_NAME_SEA		sea
+
+#define		NULL_KMS_NAME		null
+#define		NULL_LT2_NAME		null
+
+
+
+#define ENE_SNEAK_SIGHT_W25		10000
+#define ENE_ALERT_SIGHT_W25		11000
+
+
+// キャラクター関係
+#if d:RAIDEN
+	#define		PLAYER		ライデン	// モーションができるまで名前はスネーク
+#else
+	#define		PLAYER		スネーク
+#endif
+
+// ローカル変数
+
+// モーション関係
+// ------------------------------------
+#include "rai_w25b.mh"
+
+// include
+// ------------------------------------
+#include "stdch.h"
+#include "sload.h"
+#include "jump.h"
+#include "sdemo.h"
+#include "beyond.h"
+#include "beyond2.h"
+#include "sound.h"
+#include "enevoice.h"
+#include "item_info.h"
+#include "fall.h"
+#include "w25_kamome.gcl"		/* 奥田君管理（かもめヘッダ） */
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+
+// マップ設定
+// ------------------------------------
+chara マップ 兆弾専用グループ -k d:NULL_KMS_NAME -h d:HZX_NAME,2 -l d:NULL_LT2_NAME
+chara マップ タイトロープ１ 	-k d:KMS_NAME0 \
+				-k d:KMS_NAME2 \
+				-k d:KMS_NAME3 \
+				-k d:KMS_NAME4 \
+				-k d:KMS_NAME5 \
+				-k d:KMS_NAME6 \
+				-k d:KMS_NAME7 \
+				-k d:KMS_NAME8 \
+				-k d:KMS_NAME9 \
+				-k d:KMS_NAMEA \
+				-k d:KMS_NAMEB \
+				-k d:KMS_NAMEC \
+				-k d:KMS_NAMED \
+				-k d:KMS_NAMEE \
+				-k d:KMS_NAMEF \
+				-k d:KMS_NAMEG \
+				-k d:KMS_NAMEH \
+				-k d:KMS_NAMEI \
+				-k d:KMS_NAMEJ \
+				-k d:KMS_NAMEK \
+				-k d:KMS_NAMEL \
+				-k d:KMS_NAMEM \
+				-k d:KMS_NAMEN \
+				-k d:KMS_NAMEO \
+				-k d:KMS_NAMEQ \
+				-h d:HZX_NAME,0 -l d:LT2_NAME
+chara マップ タイトロープ２ 	-k d:KMS_NAME1 -h d:HZX_NAME,1 -l d:LT2_NAME
+
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 3
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 4
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 5
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 6
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 7
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 8
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 9
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 10
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 11
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 12
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 13
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 14
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 15
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 16
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 17
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 18
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 19
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 20
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 21
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 22
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 23
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 24
+command 追加ＨＺＸグループ登録 -hzx_id 2 -add_id 25		// サブスタンスからＨＩ連絡橋を追加しました。2002.07.18 by 吉池
+
+chara	マップ接合 タイトロープ１／２接合 タイトロープ１ タイトロープ２
+chara	マップ接合 兆弾当たり結合 タイトロープ１ 兆弾専用グループ
+mesg	マップ接合 タイトロープ１／２接合 on
+mesg	マップ接合 兆弾当たり結合 on
+
+command マップ設定 タイトロープ１ タイトロープ２ -set {
+	@サウンド設定	// データは最初に呼ぶ
+	@レーダー設定
+	@常駐キャラ設定
+	@共通シネマスクリーンセット
+	@ローカル変数初期化
+	@プラグイン設定
+	@特殊装備解除
+	@プレイヤー設定
+	@コマンダー設定
+	@ＢＧＭ設定	// プレイヤー→敵兵→BGMの順で呼ぶ
+	@ロード設定
+	@マップ切り替え設定
+	@背景設置
+	@オブジェクト設置
+//	@リアル影設置
+	@アイテム設置
+	@フォグ設定
+	@エフェクト設定
+	@カメラセット
+	@w25bカモメ配置
+	@ＤＧ連絡橋破壊ビヨンド設定
+	@タイトロープ１ジャンプ設定
+	@タイトロープ１カメラ設定
+	@キャラ用ライト設置		// マップ設定の最後に呼ぶ
+	@サイファー設置
+	@デバッグキャラセット
+	
+	if ( $s:登場ポイント == sp_w25a_w25b_0 ) {
+		@プラント編全体マップ設定 d:ＤＧ連絡橋マップ	// stdproc.hで定義
+	} else {
+		@プラント編全体マップ設定 d:ＧＬ連絡橋マップ	// stdproc.hで定義
+	}
+
+}
+
+command マップ設定 タイトロープ１ -set {
+	if( $s:登場ポイント == sp_w25a_w25b_0 ) {
+		@崩落床セット
+	}
+}
+
+command マップ設定 タイトロープ２ -set {
+	@ＤＧ連絡橋破壊ビヨンド設定２
+}
+
+// 無線用include ※位置は動かさないこと
+#include "w25b_cdc.ch"
+
+
+// 全てのセットが終わったところでフェードイン
+if( $s:登場ポイント == sp_w25a_w25b_0 ) {
+	// 破壊前ＤＧ連絡橋から
+	//初期マップの表示
+	command マップ表示 -show タイトロープ１
+	command マップ表示 -show タイトロープ２
+	// 全てのセットが終わったところでフェードイン
+	@ステージ開始時処理（ステージ名表示） d:LOAD_TYPE:NO_MOVE_TYPE 0 0 0 d:wn_ＤＧ連絡橋
+} else if( $s:登場ポイント == sp_w25c_w25b_0 ) {
+	// タイトロープ後半から
+	//初期マップの表示
+	command マップ表示 -show タイトロープ１
+	command マップ表示 -show タイトロープ２
+	// 全てのセットが終わったところでフェードイン
+	@w25b専用ステージ開始時処理
+	@w25b側ロード時カメラ設定
+}
+
+
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// 全マップ共通
+	// サウンド
+	// ------------------------------------
+	proc サウンド設定 {
+		#if d:DEBUG_PRINT 
+			print 'sound_set'
+		#endif
+
+		chara サウンドマネージャー ＳＤマネ -pak 0
+		@サウンド効果音設定 ;
+		@弾痕跳弾設定
+	}
+
+	// 弾痕跳弾関係の設定
+	// ------------------------------------
+	proc 弾痕跳弾設定 {
+		#if d:DEBUG_PRINT 
+			print 'recoil_set'
+		#endif
+
+		command 弾痕ノーマル -n 0	// 通常
+		command 弾痕ノーマル -n 1	// 階段、通常
+		command 弾痕ノーマル -n 2	// 鉄板
+		command 弾痕ノーマル -n 3	// 鉄筋
+		command 弾痕ノーマル -n 4	// ダンボール
+		command 弾痕ノーマル -n 5	// 木箱
+		command 弾痕ノーマル -n 6	// パイプ中
+		command 弾痕ノーマル -n 7	// パイプ大
+
+		command 跳弾ノーマル -n 0
+		command 跳弾ノーマル -n 1
+		command 跳弾ノーマル -n 2
+		command 跳弾ノーマル -n 3
+		command 跳弾ノーマル -n 5
+		command 跳弾水蒸気中 -n 6
+		command 跳弾水蒸気大 -n 7
+	}
+
+	// レーダー
+	// ------------------------------------
+	proc レーダー設定 {
+		#if d:DEBUG_PRINT 
+			print 'menu set'
+		#endif
+		if ($w:ゲーム設定 <= d:LEVEL_VERYEASY) {
+			@レーダーオンオフチェック 1
+		} else {
+			@レーダーオンオフチェック 0
+		}
+	}
+
+	// ローカル変数初期化
+	// ------------------------------------
+	proc ローカル変数初期化 {
+		#if d:DEBUG_PRINT 
+			print 'localvar_init'
+		#endif
+	}
+
+	// ポリデモ
+	// ------------------------------------
+	// ノード端末
+	// ------------------------------------
+
+	// プラグインプログラム
+	// ------------------------------------
+	proc プラグイン設定 {
+		#if d:DEBUG_PRINT
+			print 'plugin_set'
+		#endif
+
+		#if d:JP_MOTION
+			command プラグイン自動ジャンプ
+		#endif
+		command プラグイン落下
+	}
+
+	// プレイヤー 
+	// ------------------------------------
+	proc プレイヤー設定 {
+
+		#if d:SHORTCUT
+		eval($i:プレイヤー初期Ｘ位置 = 17495)
+		eval($i:プレイヤー初期Ｙ位置 = 369 )
+		eval($i:プレイヤー初期Ｚ位置 = -182785)
+		#endif
+
+		#if d:DEBUG_PRINT
+			print 'player_set'
+		#endif
+
+		#if d:RAIDEN
+			chara プレイヤー d:PLAYER \
+				-p $i:プレイヤー初期Ｘ位置,$i:プレイヤー初期Ｙ位置,$i:プレイヤー初期Ｚ位置 \
+				-d 0,$i:プレイヤー初期方向,0 \
+				-s 0 \
+				-m rai_def -a raiden -o rai_w25b 
+			@ライデン髪の毛設定 d:NORMAL_HAIR
+			@プレイヤーＬＯＤ設定 d:C_DISTANCE_TYPE 4000
+
+		#else if d:SNAKE
+			chara プレイヤー d:PLAYER \
+				-p $i:プレイヤー初期Ｘ位置,$i:プレイヤー初期Ｙ位置,$i:プレイヤー初期Ｚ位置 \
+				-d 0,$i:プレイヤー初期方向,0 \
+				-s 0 \
+				-m sna_def -a snake -o rai_common
+
+				//バンダナ
+				chara ロープモデル３ バンダナ１ \
+					-n sna_bdn1 -d 1 \
+					-y スネーク -z 12 -x 0,60,-90 -m 12 \
+					-p 250 -k 350 -o 110 -f 1
+
+				chara ロープモデル３ バンダナ２ \
+					-n sna_bdn2 -d 1 \
+					-y スネーク -z 12 -x 0,50,-90 -m 22 \
+					-p 250 -k 350 -o 110 -f 1
+		#endif
+	}
+
+	// 敵兵 
+	// ------------------------------------
+	proc タイト兵０ {
+		#if d:DEBUG_PRINT
+			print 'watcher_set'
+		#endif
+		
+		if ($w:ゲーム設定 >= d:LEVEL_NORMAL) { /* 新ノーマル（イージー）以上のみ出現 */
+			if ($f:w25bタイトロープ兵１死亡フラグ != 1) {
+				// w25cからきた場合は状態継承
+				// 敵兵セット前に置く
+				if ( $s:直前のエリア == w25c ) {
+					command 敵兵メモリーコピー \
+						w25c \
+						敵兵:03 \
+						w25b \
+						敵兵:01 \
+						タイトロープ２ 
+				}
+				if ( $f:w25b_デモカット再生済み == 1 ) {
+					eval( $b:w25b初期ルート１ = 0 ) ;
+				} else {
+					eval( $b:w25b初期ルート１ = 5 ) ;
+				}
+				if($w:ゲーム設定 > d:LEVEL_EXTREME) {
+					// EExtremeでは、PSG1の発射音が聞こえる
+					eval($w:タイトロープ兵聴力 = $w:敵標準聴力 * 3)
+				} else {
+					eval($w:タイトロープ兵聴力 = $w:敵標準聴力)
+				}
+				chara タイトロープ兵 敵兵:01 \
+					-r $b:w25b初期ルート１ \
+					-d 35695 169 -200710 \
+					-p \
+						32220 269 -198360 \
+					//	28645 269 -196410 \
+					//	25345 269 -194410 \
+						21645 269 -192385 \
+					-i d:ENE_SNEAK_SIGHT_W25,d:ENE_ALERT_SIGHT_W25,d:ENE_SNEAK_SIGHT_W25,d:ENE_SNEAK_SIGHT_W25 \ //視力
+					-l $w:敵標準体力 -h $w:敵標準聴力 -f $w:敵標準気絶 \
+					-mode 3 \
+					-b 1 \
+					-s 0x02 \
+					-end w25bタイトロープ兵１死亡
+				if ( $s:直前のエリア != w25c ) {
+					mesg 敵兵共通 敵兵:01 永久アンリアルＯＮ
+				}
+			}
+		}
+		if ($w:ゲーム設定 >= d:LEVEL_EASY) { /* 新ハード（ノーマル）以上のみ出現 */
+			if ($f:w25bタイトロープ兵２死亡フラグ != 1) {
+				// w25cからきた場合は状態継承
+				// 敵兵セット前に置く
+				if ( $s:直前のエリア == w25c ) {
+					command 敵兵メモリーコピー \
+						w25c \
+						敵兵:04 \
+						w25b \
+						敵兵:02 \
+						タイトロープ２ 
+				}
+				if ( $f:w25b_デモカット再生済み == 1 ) {
+					eval( $b:w25b初期ルート２ = 1 ) ;
+				} else {
+					eval( $b:w25b初期ルート２ = 6 ) ;
+				}
+				if($w:ゲーム設定 > d:LEVEL_EXTREME) {
+					// EExtremeでは、PSG1の発射音が聞こえる
+					eval($w:タイトロープ兵聴力 = $w:敵標準聴力 * 4)
+				} else {
+					eval($w:タイトロープ兵聴力 = $w:敵標準聴力)
+				}
+				chara タイトロープ兵 敵兵:02 \
+					-r $b:w25b初期ルート２ \
+					-d 33620 169 -199485 \
+					-p \
+					//	30320 269 -197335 \
+						26995 269 -195435 \
+						23670 269 -193485 \
+					//	20020 269 -191385 \
+					-i d:ENE_SNEAK_SIGHT_W25,d:ENE_ALERT_SIGHT_W25,d:ENE_SNEAK_SIGHT_W25,d:ENE_SNEAK_SIGHT_W25 \ //視力
+					-l $w:敵標準体力 -h $w:タイトロープ兵聴力 -f $w:敵標準気絶 \
+					-mode 3 \
+					-b 1 \
+					-s 0x02 \
+					-end w25bタイトロープ兵２死亡
+				if ( $s:直前のエリア != w25c ) {
+					mesg 敵兵共通 敵兵:02 永久アンリアルＯＮ
+				}
+			}
+		}
+	}
+	proc w25bタイトロープ兵１死亡 { eval( $f:w25bタイトロープ兵１死亡フラグ = 1 ) ; }
+	proc w25bタイトロープ兵２死亡 { eval( $f:w25bタイトロープ兵２死亡フラグ = 1 ) ; }
+
+	proc サポート兵 {
+		#if d:DEBUG_PRINT
+			print 'support_set'
+		#endif
+	}
+
+	proc 攻撃兵０ {
+		#if d:DEBUG_PRINT
+			print 'attacker_set'
+		#endif
+	}
+
+
+	proc タイト兵コマンダー {
+		#if d:DEBUG_PRINT
+			print 'wccomm_set'
+		#endif
+		chara 海上巡回コマンダー wccomm -e { タイト兵０ }
+	}
+
+
+	proc 攻撃兵コマンダー {
+		#if d:DEBUG_PRINT
+			print 'atcomm_set'
+		#endif
+
+		chara 攻撃コマンダー atcomm -e 攻撃兵０
+	}
+
+
+	resource ghq_area_alert_voice {
+	w25b:
+		$t{
+			// PLAREA0
+			t:vc049009	// 指揮官「了解！敵を殲滅せよ！」
+			-1
+		}
+	}
+
+	resource ghq_caution_voice {
+	w25b:
+		$t{
+			// PLAREA0
+			t:vc040601,	// 指揮官　　「了解！僧院警戒を強化せよ！」
+			-2,
+			t:vc040065,	// 指揮官　　「どうした、応答しろ！」
+			-1
+		}
+	}
+
+
+
+	proc コマンダー設定 {
+		#if d:DEBUG_PRINT
+			print 'commander_set'
+		#endif
+
+		// タイト兵０で敵兵が一人も出ないとコマンダーの中が空になってしまい落ちてしまうため対処
+		// 2002.07.01 吉池
+		local $$:タイト兵起動したフラグ;
+
+		if ($w:ゲーム設定 >= d:LEVEL_NORMAL) { /* 新ノーマル（イージー）以上のみ出現 */
+			if ( $f:w25bタイトロープ兵１死亡フラグ == 1 && $f:w25bタイトロープ兵２死亡フラグ == 1 ) {
+				$$:タイト兵起動したフラグ = 0;
+			} else {
+				$$:タイト兵起動したフラグ = 1;
+			}
+		} else if ( $w:ゲーム設定 >= d:LEVEL_EASY ) {
+			if ( $f:w25bタイトロープ兵２死亡フラグ == 1 ) {
+				$$:タイト兵起動したフラグ = 0;
+			} else {
+				$$:タイト兵起動したフラグ = 1;
+			}
+		} else {
+			$$:タイト兵起動したフラグ = 0;
+		}
+
+		if ( $$:タイト兵起動したフラグ == 1 ) {
+			chara コマンダー 敵兵セット \
+				-w タイト兵コマンダー \
+				-m $w:スタートアラートモード \
+				-r 40125,0,-203250 タイトロープ２ \
+				-c 40125,0,-203250 タイトロープ２ \
+				-v [ene_plant_voice:04] \
+				-x [ghq_area_alert_voice:w25b] \
+				-y [ghq_caution_voice:w25b] \
+				-f 5 2 t:vc045052 t:vc045052_len \
+				   6 1 t:vc045051 t:vc045051_len \
+				-s d:ENE_STAGE_GPS \
+				-z $i:敵標準麻酔持続 \
+				-b $w:敵標準再発生数 \
+				-h $i:標準警戒時間 // 警戒時間←ここの行を追加する。
+		} else {
+			chara コマンダー 敵兵セット \
+				-m $w:スタートアラートモード \
+				-r 40125,0,-203250 タイトロープ２ \
+				-c 40125,0,-203250 タイトロープ２ \
+				-v [ene_plant_voice:04] \
+				-x [ghq_area_alert_voice:w25b] \
+				-y [ghq_caution_voice:w25b] \
+				-f 5 2 t:vc045052 t:vc045052_len \
+				   6 1 t:vc045051 t:vc045051_len \
+				-s d:ENE_STAGE_GPS \
+				-z $i:敵標準麻酔持続 \
+				-b $w:敵標準再発生数 \
+				-h $i:標準警戒時間 // 警戒時間←ここの行を追加する。
+		}
+	}
+	// 監視カメラ関係
+	// ------------------------------------
+	proc サイファー設置 {
+		#if d:DEBUG_PRINT 
+			print 'cypher_set'
+		#endif
+		chara サイファ  サイファー:01 \
+			-route 2 0 \ 
+			-type 1 \ /* 0:NORMAL,1:GUN */
+			-zidouset 2 4 3 \
+			-i 6000 
+		//mesg サイファ サイファー:01 セットアンリアル
+	}
+	// ＢＧＭ
+	// ------------------------------------
+	proc ＢＧＭ設定 {
+		#if d:DEBUG_PRINT 
+			print 'bgm_set'
+		#endif
+		chara ＢＧＭマネージャー ＢＧＭマネ
+		chara ＢＧＭ風音 風音 \
+			-s d:BGM_WINDNOISE_WEATHER_FAIN
+		@サウンド効果音設定
+	}
+
+	// 入出トラップ
+	// ------------------------------------
+	proc ロードプロック {
+		#if d:DEBUG_PRINT 
+			print 'load_proc'
+		#endif
+		// 次のステージが潜入モードならばBGMをフェードアウト
+		if ( `command 再生ＢＧＭ取得` != d:SNG_PLAY_04 && $w:スタートアラートモード == d:ALERT_MODE_SENNYU) {
+			command セットサウンドコード -c d:SNG_FOUTS_S		//ＢＧＭフェードアウト
+		} else if ( `command 再生ＢＧＭ取得` != d:SNG_PLAY_05 && $w:スタートアラートモード == d:ALERT_MODE_KAIHI) {
+			command セットサウンドコード -c d:SNG_FOUTS_S		//ＢＧＭフェードアウト
+		}
+		if ($s:呼び出しプロック == mv_w25b_w25c_0) {
+			// ＫＬ連絡橋へ
+			@mv_w25b_w25c_0
+		}
+	}
+
+	proc ロード設定 {
+		#if d:DEBUG_PRINT 
+			print 'load_set'
+		#endif
+
+		// タイトロープ２へ
+		trap ld001 d:PLAYER \
+			-mask 入る \
+			-key d:PAD_ACTION \
+			-exec {
+				if( $f:ロードチェックＯＮフラグ == 1 ) {
+					preseek 'w25c'
+					@w25b専用ステージ終了時処理 41000 -3000 -196125 1024 mv_w25b_w25c_0 d:DEFAULT_M_TYPE d:wn_Ｌ脚外周
+				}
+			}
+	}
+
+	proc マップ切り替え設定 {
+		#if d:DEBUG_PRINT 
+			print 'map_change'
+		#endif
+
+		print 'map change! #01 -> #02 -----------------======================'
+
+		trap ev002 d:PLAYER \
+			-mask 入る \
+			-exec {
+				#if d:DEBUG_PRINT
+					print 'map change! #01 -> #02 -------------------------------------------'
+				#endif
+				print 'map change! #01 -> #02 -------------------------------------------'
+				command キャラマップチェンジ -name d:PLAYER -map タイトロープ２
+				// 処理を軽くするためステージ置き炎を軽減
+				mesg ステージ置き炎 fire2 キル ;
+				command 全体マップリアルタイム設定 -p d:ＧＬ連絡橋マップ
+			}
+	}
+
+	// オブジェクト設置
+	// ------------------------------------
+	proc オブジェクト設置 {
+		#if d:DEBUG_PRINT
+			print 'w25b_object_set'
+		#endif
+		chara プットオブジェ 掴まり棒 -m d:KMS_NAMEP -r 0,-284,0 -p 3000,0,-144350  -l d:LT2_NAME 
+	}
+
+	// 背景設置
+	// ------------------------------------
+	proc 背景設置 {
+		#if d:DEBUG_PRINT
+			print 'w25b_sea_set'
+		#endif
+		chara プラント海面 plant_sea \
+			-single_mode \	// シングルテクスチャモード
+			-tex oil d_oil_sea_alp_ovl_mod0222 d_oil_ref_add_alp_ovl_mod1120 \
+			-pos 0,-40000,-180000 \
+			-w 1 2 3 \
+			-l 
+		chara 拡張海表示 sea_serface_ex		\
+			-t	d_oil_sea_alp_ovl_mod0222	\
+			-pos	0,-40000,-180000
+		mesg プラント海面 plant_sea 上下運動計算処理 0
+		@昼空（レンズフレア指定） 0 -40000 -180000 -2700 -3100 -2700 2
+		@風基本設定
+	}
+
+	// リアル影
+	// ------------------------------------
+	proc リアル影設置 {
+		#if d:DEBUG_PRINT
+			print 'real_shadow'
+		#endif
+		// 影投影モデル -m 影投影専用モデル -p 設置位置
+		chara 影投影モデル 影投影モデル -m d:KMS_NAME0 -p -3,6,-3
+
+		// 影管理 -t 光源タイプ -l 光源距離(並行光源時のみ有効) -p 並行光源方向直接指定
+		chara 影管理 影管理 -t 0 -l 6000 -p -2700 -3100 -2700
+		mesg 影管理 影管理 add d:PLAYER 影投影モデル
+	}
+
+	// アイテム
+	// ------------------------------------
+	proc アイテム設置 {
+		#if d:DEBUG_PRINT
+			print 'item_set'
+		#endif
+		@弾薬_ＰＳＧ１_初期設置 ＰＳＧ１弾 -1500 -5250 -156000 0
+		
+		if ( $w:武器弾数Ｒ[d:武器:ＰＳＧ１−Ｔ] >= 0 ) {	/* 持ってたら出す */
+			@弾薬_ＰＳＧ１−Ｔ_初期設置 ＰＳＧ１−Ｔ弾 499 -3500 -163597 0
+		} else {
+			@弾薬_ＰＳＧ１_初期設置 ＰＳＧ１弾 499 -3500 -163597 0
+		}
+		@レーション_初期設置 レーション 8375  -3875 -145000 0	// パイプ上
+
+		if (( $w:プレイヤーフラグ & d:PL_AK_SPPRSR_ATTACHED ) || ( $w:アイテム数Ｒ[ d:アイテム:ＡＫサプレッサ ] > 0 )) {
+			// AKサプレッサを装備済みか入手状態
+			@弾薬_ＡＫＳ_初期設置 ＡＫサプレッサ弾 -2000 -4000 -163125 0	// 炎の向こう
+		} else {
+			// 上記以外
+			@ＡＫサプレッサ_初期設置 ＡＫサプレッサ -2000 -4000 -163125 0	// 炎の向こう
+		}
+
+		// ユーザーを崩落階段へ誘う「餌」
+		@レーション_初期設置 落下予定特殊レーション -3250  -4250 -147000 0	// 崩落階段の上
+	}
+	proc アイテム取得時番号設定 $:ボックス名 {
+		#if d:DEBUG_PRINT
+			print 'item_no_set'
+		#endif
+		/* このステージへ帰ってくることは出来ないため再セット処理不要 */
+	}
+
+
+	// フォグ
+	// ------------------------------------
+	proc フォグ設定 {
+		#if d:DEBUG_PRINT
+			print 'fog_set'
+		#endif
+
+		chara フォグ 霧\
+			-c 220,237,198 \
+			-n -15000 \
+			-f 250000
+	}
+
+	// キャラ用光源(マップの設置が終わってから設定することで、キャラだけに光を当てる)
+	// ------------------------------------
+	proc キャラ用ライト設置 {
+		#if d:DEBUG_PRINT
+			print 'chara_light_set'
+		#endif
+
+		chara 環境光 環境光源 \
+			 -c 59,61,38
+
+		chara 平行光 平行光源 \
+			 -c 166,167,147 \
+			 -p -2500 -3500 -2500
+	}
+
+	// エフェクト関係
+	// -----------------------------------
+	proc エフェクト設定 {
+		#if d:DEBUG_PRINT
+			print 'effect_set'
+		#endif
+
+		chara 水面監視水飛沫 落下水飛沫 -n d:PLAYER 
+		command 水位設定 -lv -40000
+
+		#if d:BLUR
+			chara ブラー ブラー
+		#endif
+
+		#if d:Z_MANAGER
+			chara Ｚフォーカス管理 Z_manager
+			mesg Ｚフォーカス管理 Z_manager パラメータ 5000 30
+		#endif
+
+		#if d:BODY_SHADOW
+			chara ＯＦＦ制御 off_man
+			mesg ＯＦＦ制御 off_man ボディシャドウＯＦＦ
+		#endif
+		#if d:SMOKE
+			chara テスト昇り煙 smoke \
+				-radius 500 \
+				-pos    8500 -4750 -144500
+			chara テスト昇り煙 smoke \
+				-radius 500 \
+				-pos     125 -1250 -164000
+			chara テスト昇り煙 smoke \
+				-radius 500 \
+				-pos    13750 1250 -188000
+			chara テスト昇り煙 smoke \
+				-radius 500 \
+				-pos    -4875 2250 -170750
+			chara テスト昇り煙 smoke \
+				-radius 500 \
+				-pos    -625 -250 -148250
+			chara テスト昇り煙 smoke \
+				-radius 500 \
+				-pos    -1500 -250 -148250
+			chara テスト昇り煙 smoke \
+				-radius 500 \
+				-pos    -2500 -250 -148250
+			chara テスト昇り煙 smoke \
+				-radius 500 \
+				-pos    -625 -250 -148250
+			chara テスト昇り煙 smoke \
+				-radius 500 \
+				-pos    5125 -3500 -141500
+			chara テスト昇り煙 smoke \
+				-radius 750 \
+				-pos    10212 -7706 -164555
+			chara テスト昇り煙 smoke \
+				-radius 850 \
+				-pos    -8903 -5071 -164199
+			chara テスト昇り煙 smoke \
+				-radius 1000 \
+				-pos    -10593 1332 -170657
+			chara テスト昇り煙 smoke \
+				-radius 800 \
+				-pos    3500 -4000 -163200
+			chara テスト昇り煙 smoke \
+				-radius 850 \
+				-pos    18204 -831 -186533
+			chara テスト昇り煙 smoke \
+				-radius 700 \
+				-pos    6850 -8000 -164599
+			chara テスト昇り煙 smoke \
+				-radius 400 \
+				-pos   -2070 -5171 -162748
+			chara テスト昇り煙 smoke \
+				-radius 500 \
+				-pos   -136 -8185 -156498
+
+			chara ステージ置き炎 fire2 -f 1 -proc 炎消火１ -pos    -780 -3775 -162500 -xwidth 250 -zwidth 646 	// Ｇ脚出入口を閉鎖
+			eval( $f:ステージ置き炎燃焼１ = 1 );
+			chara ステージ置き炎 fire2 -f 0 -proc 炎消火２ -pos    -750 -3562 -163646 -xwidth 250 -zwidth 500 	// Ｇ脚出入口を閉鎖
+			eval( $f:ステージ置き炎燃焼２ = 1 );
+			chara ステージ置き炎 fire2 -f 1 -proc 炎消火３ -pos    -780 -3450 -165046 -xwidth 250 -zwidth 900 	// Ｇ脚出入口を閉鎖
+			eval( $f:ステージ置き炎燃焼３ = 1 );
+			chara ステージ置き炎 fire2 -f 0 -proc 炎消火４ -pos    -400   500 -137750 -xwidth 250 -zwidth 250 	// Ｄ脚出入口を閉鎖（hzxに常駐当たりあり）
+			eval( $f:ステージ置き炎燃焼４ = 1 );
+			chara ステージ置き炎 fire2 -f 0 -proc 炎消火５ -pos     400   500 -137750 -xwidth 250 -zwidth 250 	// Ｄ脚出入口を閉鎖（hzxに常駐当たりあり）
+			eval( $f:ステージ置き炎燃焼５ = 1 );
+			chara ステージ置き炎 fire  -f 1 -proc 炎消火６ -pos    -625  -750 -148250 -xwidth 900 -zwidth 225 	// ＤＧ連絡橋の上
+			eval( $f:ステージ置き炎燃焼６ = 1 );
+			chara ステージ置き炎 fire2 -f 0 -proc 炎消火７ -pos   -1500  -750 -148170 -xwidth 500 -zwidth 225 	// ＤＧ連絡橋の上
+			eval( $f:ステージ置き炎燃焼７ = 1 );
+			chara ステージ置き炎 fire  -f 1 -proc 炎消火８ -pos   -2150  -750 -148230 -xwidth 700 -zwidth 250 	// ＤＧ連絡橋の上
+			eval( $f:ステージ置き炎燃焼８ = 1 );
+			chara ステージ置き炎 fire  -f 1 -proc 炎消火９ -pos   13750  1250 -188000 -xwidth 250 -zwidth 250 	// Ｇ脚のＬ脚側出入口
+			eval( $f:ステージ置き炎燃焼９ = 1 );
+			// 注意）"fire2"という名前になっている「炎」は、タイトロープ２へ移行した時点で処理軽減のため消火します。
+		#endif
+	}
+	proc 炎消火１ { eval( $f:ステージ置き炎燃焼１ = 0 ); }
+	proc 炎消火２ { eval( $f:ステージ置き炎燃焼２ = 0 ); }
+	proc 炎消火３ { eval( $f:ステージ置き炎燃焼３ = 0 ); }
+	proc 炎消火４ { eval( $f:ステージ置き炎燃焼４ = 0 ); }
+	proc 炎消火５ { eval( $f:ステージ置き炎燃焼５ = 0 ); }
+	proc 炎消火６ { eval( $f:ステージ置き炎燃焼６ = 0 ); }
+	proc 炎消火７ { eval( $f:ステージ置き炎燃焼７ = 0 ); }
+	proc 炎消火８ { eval( $f:ステージ置き炎燃焼８ = 0 ); }
+	proc 炎消火９ { eval( $f:ステージ置き炎燃焼９ = 0 ); }
+
+	// 子画面設定 
+	// ------------------------------------
+	proc 子画面設定 {
+		#if d:DEBUG_PRINT
+			print 'sub_camera_set'
+		#endif
+		chara サブ画面 子画面 \
+			-w (512-d:SUB_MARGIN-d:SUB_WIDTH),d:SUB_MARGIN (512-d:SUB_MARGIN),(d:SUB_HEIGHT+d:SUB_MARGIN)
+	}
+
+	// ステージカメラ設定 
+	// ------------------------------------
+	proc カメラセット {
+		#if d:DEBUG_PRINT
+			print 'stage_camera_set'
+		#endif
+		chara カメラ ステージカメラ		-c 0 -l 3 -p 0 
+		chara カメラ 小部屋カメラ		-c 0 -l 2 -p 40
+		chara カメラ 通路カメラ			-c 0 -l 2 -p 35
+		chara カメラ 小部屋強カメラ		-c 0 -l 2 -p 33
+		chara カメラ ビヨンドカメラ		-c 0 -l 2 -p 30
+		chara カメラ サイファカメラ		-c 0 -l 2 -p 25
+		chara カメラ モーションカメラ		-c 0 -l 2 -p 20
+		chara カメラ カットインカメラ		-c 0 -l 2 -p 10
+		chara カメラ ロードカメラ		-c 0 -l 2 -p 5
+
+		// デフォルトカメラ
+		chara カメラ設定 ステージカメラ \
+			-c 0 \	
+			-b d:CAM_MIN,      500,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			//-r 400,1900,0 \
+			//-f 9000 \
+			-r 675,2255,0 \
+			-f 10665 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s 1
+	}
+
+	// ------------------------------------
+	// ビヨンド設定
+	// ------------------------------------
+	proc ＤＧ連絡橋破壊ビヨンド設定 {
+		#if d:DEBUG_PRINT
+			print 'w25b_beyond_set'
+		#endif
+
+		// ca0**を例外的に使用して、片手エルードを実現（トラップの重なり問題でやむなく）
+		trap ca001 d:PLAYER -mask ＊ -exec {
+			command	プレイヤー床高さ取得 -current 
+			if($status > -5000) {
+				command プレイヤー状態取得 ;
+				if(($status == 0) \
+				|| ($status & d:PFLAG_WALK) \
+				|| ($status & d:PFLAG_SUBJECT) \
+				|| ($status & d:PFLAG_DAMAGED)) {
+					// 歩きで入った
+					command	プレイヤー床高さ取得
+					if ( `@斜め片手ビヨンド発動 ca001 $4 $6 10900 -164700 12800 -168100 (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)` == 0 ) {
+						if ( `@斜め片手ビヨンド発動 ca001 $4 $6 13800 -169800 14300 -170700 (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)` == 0 ) {
+							if ( `@斜め片手ビヨンド発動 ca001 $4 $6 15300 -172400 16800 -175000 (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)` == 0 ) {
+								if ( `@斜め片手ビヨンド発動 ca001 $4 $6 17700 -176700 19200 -179300 (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)` == 0 ) {
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		trap ca001 d:PLAYER \
+			-camera \
+			-mask ＊ \
+			-state 6 \	// 強制モーション中
+			-exec {
+				command プレイヤー状態取得 ;
+				if (( $status & d:PFLAG_ELUDE ) || ( $3 == 出る)) {
+					chara カメラ設定 モーションカメラ \
+						-c 0 \
+						-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+						-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+						-r 3744,2593,0 -f 8221 \
+						-a 200 \
+						-i 0 0 0 0 \
+						-s $3
+				}
+			}
+		trap ca001 d:PLAYER \
+			-camera \
+			-mask ？ \
+			-state 5 \	// エルード中
+			-exec {
+				chara カメラ設定 ビヨンドカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 3744,2593,0 -f 8221 \
+					-a 200 \
+					-i 1 0 0 0 \
+					-s $3
+			}
+
+
+			trap by001 d:PLAYER \
+				-mask いる \
+				-and \
+				-button d:ACTION_BUTTON d:ACTION_BUTTON \		//ビヨンドボタン
+				-state 0,4 \	//立ち状態or張り付き
+				-exec {
+					@w25b_特別斜めビヨンド発動 by001s $4 $6 3000 -144350 7670 -154365 1500 0x000002
+				}
+
+			trap by001 d:PLAYER \
+				-camera \
+				-mask ＊ \
+				-state 6 \	// 強制モーション中
+				-exec {
+					command プレイヤー状態取得 ;
+					if (( $status & d:PFLAG_ELUDE ) || ( $3 == 出る)) {
+						chara カメラ設定 モーションカメラ \
+							-c 1 \
+							-p 4710,-2682,-140838 -t 3473,288,-146233 \
+							-r -321,2195,0 -f 6282 \
+							-a 190 \
+							-i 0 -1 0 0 \
+							-s $3
+					}
+				}
+
+			trap by001 d:PLAYER \
+				-camera \
+				-mask ？ \
+				-state 5 \	// エルード中
+				-exec {
+					chara カメラ設定 ビヨンドカメラ \
+						-c 0 \
+						-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+						-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+						-r 698,2255,0 -f 6000 \
+						-a 200 \
+						-i 1 -1 0 0 \
+						-s $3
+				}
+
+			trap by002 d:PLAYER \
+				-mask いる \
+				-and \
+				-button d:ACTION_BUTTON d:ACTION_BUTTON \		//ビヨンドボタン
+				-state 0,4 \	//立ち状態or張り付き
+				-exec {
+					@斜めビヨンド発動 by002 $4 $6 17041 -184548 19241 -180737 1500 0x000002
+				}
+			trap by002 d:PLAYER -camera -mask ＊ -state d:TRP_STATE_FORCE \
+				-exec {
+					chara カメラ設定 モーションカメラ \
+						-c 1 \
+						-p 20952,1059,-179008 -t 18816,447,-182860 \
+						-r 90,2378,0 -f 4447 \
+						-a 225 \
+						-i 0 -1 0 0 \
+						-s $3
+				}
+			trap by002 d:PLAYER -camera -mask ？ -state d:TRP_STATE_ELUDE \
+				-exec {
+					chara カメラ設定 モーションカメラ \
+						-c 0 \	
+						-b d:CAM_MIN,      500,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+						-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+						-r 675,2255,0 \
+						-f 10665 \
+						-a 400 \
+						-i 0 -1 0 0 \
+						-s $3
+				}
+
+
+			trap by003 d:PLAYER \
+				-mask 入る \
+				-exec {
+					command プレイヤー状態取得 ;
+					if(($status == 0) \
+					|| ($status & d:PFLAG_WALK) \
+					|| ($status & d:PFLAG_SUBJECT) \
+					|| ($status & d:PFLAG_DAMAGED)) {
+						// 歩きで入った
+						command	プレイヤー床高さ取得
+						@北向き片手ビヨンド発動 by003 -150250 $4 -3000 -1500 $status (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)
+					}
+				}
+			trap by003 d:PLAYER -camera -mask ？ -state 5,6  -exec {
+					chara カメラ設定 モーションカメラ \
+						-c 1 \
+						-p -5469,-4256,-158059 -t -2913,-3139,-152903 \
+						-f 5886 -a 288 \
+						-i 0 -1 0 0 -s $3
+			}
+			trap by004 d:PLAYER \
+				-mask 入る \
+				-exec {
+					command プレイヤー状態取得 ;
+					if(($status == 0) \
+					|| ($status & d:PFLAG_WALK) \
+					|| ($status & d:PFLAG_SUBJECT) \
+					|| ($status & d:PFLAG_DAMAGED)) {
+						// 歩きで入った
+						command	プレイヤー床高さ取得
+						@東向き片手ビヨンド発動 by004 -1500 $6 -150250 -148500 $status (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)
+					}
+				}
+			trap by004 d:PLAYER -camera -mask ？ -state 5,6  -exec {
+					chara カメラ設定 モーションカメラ \
+						-c 1 \
+						-p 3572,-5348,-157229 -t -927,-3446,-150736 \
+						-r -154,3701,0 -f 8125 \
+						-a 204 \
+						-i 0 -1 0 0 -s $3
+			}
+			trap by005 d:PLAYER \
+				-mask 入る \
+				-exec {
+					command プレイヤー状態取得 ;
+					if(($status == 0) \
+					|| ($status & d:PFLAG_WALK) \
+					|| ($status & d:PFLAG_SUBJECT) \
+					|| ($status & d:PFLAG_DAMAGED)) {
+						// 歩きで入った
+						command	プレイヤー床高さ取得
+						@東向き片手ビヨンド発動 by005  3000 $6 -152000 -147250 $status (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)
+					}
+				}
+			trap by005 d:PLAYER -camera -mask ？ -state 5,6  -exec {
+					chara カメラ設定 モーションカメラ \
+						-c 1 \
+						-p 11461,-6947,-166058 -t 7694,-4467,-159337 \
+						-r -203,3763,0 -f 8094 \
+						-a 450 \
+						-i 0 -1 0 0 -s $3
+			}
+			trap by006 d:PLAYER \
+				-mask 入る \
+				-exec {
+					command プレイヤー状態取得 ;
+					if(($status == 0) \
+					|| ($status & d:PFLAG_WALK) \
+					|| ($status & d:PFLAG_SUBJECT) \
+					|| ($status & d:PFLAG_DAMAGED)) {
+						// 歩きで入った
+						command	プレイヤー床高さ取得
+						@北向き片手ビヨンド発動 by006 -152000 $4 1500 3000 $status (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)
+					}
+				}
+			trap by006 d:PLAYER -camera -mask ？ -state 5,6  -exec {
+					chara カメラ設定 モーションカメラ \
+						-c 1 \
+						-p 11461,-6947,-166058 -t 7694,-4467,-159337 \
+						-r -203,3763,0 -f 8094 \
+						-a 450 \
+						-i 0 -1 0 0 -s $3
+			}
+			trap by007 d:PLAYER \
+				-mask 入る \
+				-exec {
+					command プレイヤー状態取得 ;
+					if(($status == 0) \
+					|| ($status & d:PFLAG_WALK) \
+					|| ($status & d:PFLAG_SUBJECT) \
+					|| ($status & d:PFLAG_DAMAGED)) {
+						// 歩きで入った
+						command	プレイヤー床高さ取得
+						@西向き片手ビヨンド発動 by007 1500 $6 -152000 -150250 $status (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)
+					}
+				}
+			trap by007 d:PLAYER -camera -mask ？ -state 5,6  -exec {
+					chara カメラ設定 モーションカメラ \
+						-c 1 \
+						-p -4571,1666,-148495 -t 1810,-2568,-151047 \
+						-r 360,1272,0 -f 8072 \
+						-a 203 \
+						-i 0 -1 0 0 -s $3
+			}
+			trap by008 d:PLAYER \
+				-mask 入る \
+				-exec {
+					command プレイヤー状態取得 ;
+					if(($status == 0) \
+					|| ($status & d:PFLAG_WALK) \
+					|| ($status & d:PFLAG_SUBJECT) \
+					|| ($status & d:PFLAG_DAMAGED)) {
+						// 歩きで入った
+						command	プレイヤー床高さ取得
+						@南向き片手ビヨンド発動 by008 -155500 $4 -2500 2000 $status (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)
+					}
+				}
+			trap by008 d:PLAYER -camera -mask ？ -state 5,6  -exec {
+					chara カメラ設定 モーションカメラ \
+						-c 1 \
+						-p -4143,-5640,-148538 -t -87,-7091,-155352 \
+						-r 118,1698,0 -f 8062 \
+						-a 196 \
+						-i 0 -1 0 0 -s $3
+			}
+			trap by009 d:PLAYER \
+				-mask 入る \
+				-exec {
+					command プレイヤー状態取得 ;
+					if(($status == 0) \
+					|| ($status & d:PFLAG_WALK) \
+					|| ($status & d:PFLAG_SUBJECT) \
+					|| ($status & d:PFLAG_DAMAGED)) {
+						// 歩きで入った
+						command	プレイヤー床高さ取得
+						@東向き片手ビヨンド発動 by009 2000 $6 -156625 -155500 $status (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)
+					}
+				}
+			trap by009 d:PLAYER -camera -mask ？ -state 5,6  -exec {
+					chara カメラ設定 モーションカメラ \
+						-c 1 \
+						-p 4831,-3027,-151491 -t 744,-7676,-156646 \
+						-r 401,2485,0 -f 8055 \
+						-a 196 \
+						-i 0 -1 0 0 -s $3
+			}
+			trap by010 d:PLAYER \
+				-mask 入る \
+				-exec {
+					command プレイヤー状態取得 ;
+					if(($status == 0) \
+					|| ($status & d:PFLAG_WALK) \
+					|| ($status & d:PFLAG_SUBJECT) \
+					|| ($status & d:PFLAG_DAMAGED)) {
+						// 歩きで入った
+						command	プレイヤー床高さ取得
+						@西向き片手ビヨンド発動 by010 -2500 $6 -156324 -155500 $status (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)
+					}
+				}
+			trap by010 d:PLAYER -camera -mask ？ -state 5,6  -exec {
+					chara カメラ設定 モーションカメラ \
+						-c 1 \
+						-p -6980,-4238,-152989 -t -841,-7737,-156850 \
+						-r 293,1390,0 -f 8052 \
+						-a 166 \
+						-i 0 -1 0 0 -s $3
+			}
+
+
+
+
+			// ----------------------------------------------
+
+			trap by106 d:PLAYER \
+				-camera \
+				-mask ＊ \
+				-state 6 \	// 強制モーション中
+				-exec {
+					chara カメラ設定 モーションカメラ \
+						-c 1 \
+						-p 25227,2420,-181360 -t 20165,-3814,-182383 \
+						-r 573,2942,0 -f 8095 \
+						-a 200 \
+						-i 0 -1 0 0 \
+						-s $3
+				}
+
+			trap by106 d:PLAYER \
+				-camera \
+				-mask ？ \
+				-state 5 \	// エルード中
+				-exec {
+					chara カメラ設定 ビヨンドカメラ \
+						-c 1 \
+						-p 25227,2420,-181360 -t 20165,-3814,-182383 \
+						-r 573,2942,0 -f 8095 \
+						-a 200 \
+						-i 0 -1 0 0 \
+						-s $3
+				}
+
+			// ----------------------------------------------
+			trap by012s d:PLAYER \
+				-mask いる \
+				-and \
+				-button d:ACTION_BUTTON d:ACTION_BUTTON \		//ビヨンドボタン
+				-state 0,4 \	//立ち状態or張り付き
+				-exec {
+					@斜めビヨンド発動 by012s $4 $6 21089 -183537 24053 -186403 1500 0x000002
+				}
+
+			trap by012s d:PLAYER \
+				-camera \
+				-mask ＊ \
+				-state 6 \	// 強制モーション中
+				-exec {
+					chara カメラ設定 モーションカメラ \
+						-c 0 \
+						-b -320000 -320000 -320000 320000 320000 320000 \
+						-l -320000 -320000 -320000 320000 320000 320000 \
+						-r 640 2048 0 \
+						-f 8000 \
+						-a 200 \
+						-i 0 -1 0 0 \
+						-s $3
+				}
+
+			trap by012s d:PLAYER \
+				-camera \
+				-mask ？ \
+				-state 5 \	// エルード中
+				-exec {
+					chara カメラ設定 ビヨンドカメラ \
+						-c 0 \
+						-b -320000 -320000 -320000 320000 320000 320000 \
+						-l -320000 -320000 -320000 320000 320000 320000 \
+						-r 640 2048 0 \
+						-f 8000 \
+						-a 200 \
+						-i 0 -1 0 0 \
+						-s $3
+				}
+
+			// ----------------------------------------------
+			trap by013s1 d:PLAYER \
+				-mask いる \
+				-and \
+				-button d:ACTION_BUTTON d:ACTION_BUTTON \		//ビヨンドボタン
+				-state 0,4 \	//立ち状態or張り付き
+				-exec {
+					@斜めビヨンド発動 by013s1 $4 $6 24053 -186403 25785 -187403 1500 0x000002
+				}
+
+			trap by013s1 d:PLAYER \
+				-camera \
+				-mask ＊ \
+				-state 6 \	// 強制モーション中
+				-exec {
+					chara カメラ設定 モーションカメラ \
+						-c 0 \
+						-b -320000 -320000 -320000 320000 320000 320000 \
+						-l -320000 -320000 -320000 320000 320000 320000 \
+						-r 640 2048 0 \
+						-f 8000 \
+						-a 200 \
+						-i 0 -1 0 0 \
+						-s $3
+				}
+
+			trap by013s1 d:PLAYER \
+				-camera \
+				-mask ？ \
+				-state 5 \	// エルード中
+				-exec {
+					chara カメラ設定 ビヨンドカメラ \
+						-c 0 \
+						-b -320000 -320000 -320000 320000 320000 320000 \
+						-l -320000 -320000 -320000 320000 320000 320000 \
+						-r 640 2048 0 \
+						-f 8000 \
+						-a 200 \
+						-i 0 -1 0 0 \
+						-s $3
+				}
+			// ----------------------------------------------
+			trap by013s2 d:PLAYER \
+				-mask いる \
+				-and \
+				-button d:ACTION_BUTTON d:ACTION_BUTTON \		//ビヨンドボタン
+				-state 0,4 \	//立ち状態or張り付き
+				-exec {
+					@斜めビヨンド発動 by013s2 $4 $6 29249 -189403 33213 -190537 1500 0x000002
+				}
+
+			trap by013s2 d:PLAYER \
+				-camera \
+				-mask ＊ \
+				-state 6 \	// 強制モーション中
+				-exec {
+					chara カメラ設定 モーションカメラ \
+						-c 0 \
+						-b -320000 -320000 -320000 320000 320000 320000 \
+						-l -320000 -320000 -320000 320000 320000 320000 \
+						-r 640 2048 0 \
+						-f 8000 \
+						-a 200 \
+						-i 0 -1 0 0 \
+						-s $3
+				}
+
+			trap by013s2 d:PLAYER \
+				-camera \
+				-mask ？ \
+				-state 5 \	// エルード中
+				-exec {
+					chara カメラ設定 ビヨンドカメラ \
+						-c 0 \
+						-b -320000 -320000 -320000 320000 320000 320000 \
+						-l -320000 -320000 -320000 320000 320000 320000 \
+						-r 640 2048 0 \
+						-f 8000 \
+						-a 200 \
+						-i 0 -1 0 0 \
+						-s $3
+				}
+
+			// ----------------------------------------------
+			trap by014s d:PLAYER \
+				-mask いる \
+				-and \
+				-button d:ACTION_BUTTON d:ACTION_BUTTON \		//ビヨンドボタン
+				-state 0,4 \	//立ち状態or張り付き
+				-exec {
+					@斜めビヨンド発動 by014s $4 $6 29250 -189403 31250 -190000 1500 0x000002
+				}
+
+			trap by014s d:PLAYER \
+				-camera \
+				-mask ＊ \
+				-state 6 \	// 強制モーション中
+				-exec {
+					chara カメラ設定 モーションカメラ \
+						-c 0 \
+						-b -320000 -320000 -320000 320000 320000 320000 \
+						-l -320000 -320000 -320000 320000 320000 320000 \
+						-r 640 2048 0 \
+						-f 8000 \
+						-a 200 \
+						-i 0 -1 0 0 \
+						-s $3
+				}
+
+			trap by014s d:PLAYER \
+				-camera \
+				-mask ？ \
+				-state 5 \	// エルード中
+				-exec {
+					chara カメラ設定 ビヨンドカメラ \
+						-c 0 \
+						-b -320000 -320000 -320000 320000 320000 320000 \
+						-l -320000 -320000 -320000 320000 320000 320000 \
+						-r 640 2048 0 \
+						-f 8000 \
+						-a 200 \
+						-i 0 -1 0 0 \
+						-s $3
+				}
+
+			// ----------------------------------------------
+			trap by015s d:PLAYER \
+				-mask いる \
+				-and \
+				-button d:ACTION_BUTTON d:ACTION_BUTTON \		//ビヨンドボタン
+				-state 0,4 \	//立ち状態or張り付き
+				-exec {
+					@斜めビヨンド発動 by015s $4 $6 33213 -190537 40141 -194537 1500 0x000002
+				}
+
+			trap by015s d:PLAYER \
+				-camera \
+				-mask ＊ \
+				-state 6 \	// 強制モーション中
+				-exec {
+					eval( $i:cpx = $i:プレイヤー位置Ｘ +  275 )
+					eval( $i:cpy = $i:プレイヤー位置Ｙ + 4333 )
+					eval( $i:cpz = $i:プレイヤー位置Ｚ + 9439 )
+					eval( $i:ctx = $i:プレイヤー位置Ｘ - 1591 )
+					eval( $i:cty = $i:プレイヤー位置Ｙ + 2532 )
+					eval( $i:ctz = $i:プレイヤー位置Ｚ -  580 )
+					chara カメラ設定 モーションカメラ \
+						-c 1 \
+						-p $i:cpx,$i:cpy,$i:cpz \
+						-t $i:ctx,$i:cty,$i:ctz \
+						-a 200 \
+						-i 0 -1 0 0 \
+						-s $3
+				}
+
+			trap by015s d:PLAYER \
+				-camera \
+				-mask ＊ \
+				-state 5 \	// エルード中
+				-exec {
+					eval( $i:cpx = $i:プレイヤー位置Ｘ +  275 )
+					eval( $i:cpy = $i:プレイヤー位置Ｙ + 4333 )
+					eval( $i:cpz = $i:プレイヤー位置Ｚ + 9439 )
+					eval( $i:ctx = $i:プレイヤー位置Ｘ - 1591 )
+					eval( $i:cty = $i:プレイヤー位置Ｙ + 2532 )
+					eval( $i:ctz = $i:プレイヤー位置Ｚ -  580 )
+					chara カメラ設定 ビヨンドカメラ \
+						-c 1 \
+						-p $i:cpx,$i:cpy,$i:cpz \
+						-t $i:ctx,$i:cty,$i:ctz \
+						-a 200 \
+						-i 0 -1 0 0 \
+						-s $3
+				}
+		}
+	/* 着地が四つんばいになる特別エルード関数 */
+	proc w25b_特別斜めビヨンド発動 $:トラップ名 $:プレイヤーＸ位置 $:プレイヤーＺ位置 $:手すりＡ点Ｘ座標 $:手すりＡ点Ｚ座標 $:手すりＢ点Ｘ座標 $:手すりＢ点Ｚ座標 $:発動距離 $:フラグ {
+		if ( $:手すりＡ点Ｘ座標  < $:手すりＢ点Ｘ座標) {
+			eval( $i:EX_手すりＡ点Ｘ座標 = $:手すりＡ点Ｘ座標 );
+			eval( $i:EX_手すりＡ点Ｚ座標 = $:手すりＡ点Ｚ座標 );
+			eval( $i:EX_手すりＢ点Ｘ座標 = $:手すりＢ点Ｘ座標 );
+			eval( $i:EX_手すりＢ点Ｚ座標 = $:手すりＢ点Ｚ座標 );
+		} else {
+			eval( $i:EX_手すりＡ点Ｘ座標 = $:手すりＢ点Ｘ座標 );
+			eval( $i:EX_手すりＡ点Ｚ座標 = $:手すりＢ点Ｚ座標 );
+			eval( $i:EX_手すりＢ点Ｘ座標 = $:手すりＡ点Ｘ座標 );
+			eval( $i:EX_手すりＢ点Ｚ座標 = $:手すりＡ点Ｚ座標 );
+		}
+		if ( $:手すりＡ点Ｘ座標  < $:手すりＢ点Ｘ座標) {
+			eval( $i:可動範囲最小Ｘ座標 = $:手すりＡ点Ｘ座標 );
+			eval( $i:可動範囲最大Ｘ座標 = $:手すりＢ点Ｘ座標 );
+		} else {
+			eval( $i:可動範囲最小Ｘ座標 = $:手すりＢ点Ｘ座標 );
+			eval( $i:可動範囲最大Ｘ座標 = $:手すりＡ点Ｘ座標 );
+		}
+		if ( $:手すりＡ点Ｚ座標  < $:手すりＢ点Ｚ座標) {
+			eval( $i:可動範囲最小Ｚ座標 = $:手すりＡ点Ｚ座標 );
+			eval( $i:可動範囲最大Ｚ座標 = $:手すりＢ点Ｚ座標 );
+		} else {
+			eval( $i:可動範囲最小Ｚ座標 = $:手すりＢ点Ｚ座標 );
+			eval( $i:可動範囲最大Ｚ座標 = $:手すりＡ点Ｚ座標 );
+		}
+
+		eval( $w:デルタＸ座標 = $i:EX_手すりＢ点Ｘ座標 - $i:EX_手すりＡ点Ｘ座標 ) ;
+		eval( $w:デルタＺ座標 = $i:EX_手すりＢ点Ｚ座標 - $i:EX_手すりＡ点Ｚ座標 ) ;
+		eval( $i:手すり傾き１ = ($w:デルタＺ座標 * 10000 ) / ($w:デルタＸ座標)) ;
+		eval( $i:手すり傾き２ = (-(($w:デルタＸ座標 * 10000 ) / ($w:デルタＺ座標)))) ;
+		eval( $i:手すり加算値１ = $i:EX_手すりＡ点Ｚ座標 - (($i:EX_手すりＡ点Ｘ座標 * $i:手すり傾き１) / 10000)) ;
+		eval( $i:手すり加算値２ = $:プレイヤーＺ位置 - (($:プレイヤーＸ位置 * $i:手すり傾き２) / 10000)) ;
+		eval( $i:手すり交点Ｘ = (((( $i:手すり加算値２ - $i:手すり加算値１ ) * 10000 ) / ( $i:手すり傾き１ - $i:手すり傾き２ )))) ;
+		eval( $i:手すり交点Ｚ = (( $i:手すり傾き１ * $i:手すり交点Ｘ ) / 10000 ) + $i:手すり加算値１) ;
+
+		eval( $w:デルタＸ座標１ = $i:EX_手すりＢ点Ｘ座標 - $i:EX_手すりＡ点Ｘ座標 ) ;
+		eval( $w:デルタＺ座標１ = $i:EX_手すりＢ点Ｚ座標 - $i:EX_手すりＡ点Ｚ座標 ) ;
+		eval( $w:手すり角度 = `command atan $w:デルタＺ座標１ $w:デルタＸ座標１`) ;
+		eval( $i:発動誤差Ｘ座標 = `command cos $w:手すり角度` * d:ADJ_BEYOND_X_DELTA / 4096 );
+		eval( $i:発動誤差Ｘ座標 = `command abs $i:発動誤差Ｘ座標` );
+		eval( $i:発動範囲最小Ｘ座標 = $i:可動範囲最小Ｘ座標 + $i:発動誤差Ｘ座標 );
+		eval( $i:発動範囲最大Ｘ座標 = $i:可動範囲最大Ｘ座標 - $i:発動誤差Ｘ座標 );
+		eval( $i:発動範囲最小Ｚ座標 = (( $i:手すり傾き１ * $i:発動範囲最小Ｘ座標 ) / 10000 ) + $i:手すり加算値１);
+		eval( $i:発動範囲最大Ｚ座標 = (( $i:手すり傾き１ * $i:発動範囲最大Ｘ座標 ) / 10000 ) + $i:手すり加算値１);
+		if ( $i:発動範囲最小Ｘ座標 > $i:発動範囲最大Ｘ座標 ) {
+			eval( $i:EX_発動範囲Ｘ座標  = $i:発動範囲最小Ｘ座標 ) ;
+			eval( $i:発動範囲最小Ｘ座標 = $i:発動範囲最大Ｘ座標 ) ;
+			eval( $i:発動範囲最大Ｘ座標 = $i:EX_発動範囲Ｘ座標  ) ;
+		}
+		if ( $i:発動範囲最小Ｚ座標 > $i:発動範囲最大Ｚ座標 ) {
+			eval( $i:EX_発動範囲Ｚ座標  = $i:発動範囲最小Ｚ座標 ) ;
+			eval( $i:発動範囲最小Ｚ座標 = $i:発動範囲最大Ｚ座標 ) ;
+			eval( $i:発動範囲最大Ｚ座標 = $i:EX_発動範囲Ｚ座標  ) ;
+		}
+
+		if (( $i:手すり交点Ｘ < $i:発動範囲最小Ｘ座標 ) || ( $i:手すり交点Ｘ > $i:発動範囲最大Ｘ座標 )) {
+			print 'beyond error : Out of range(X)'
+			print $i:発動範囲最小Ｘ座標 $i:発動範囲最大Ｘ座標 $i:手すり交点Ｘ
+			print $i:手すり加算値１ $i:手すり加算値２ $i:手すり傾き１ $i:手すり傾き２
+			return 0 ;
+		 }
+		if (( $i:手すり交点Ｚ < $i:発動範囲最小Ｚ座標 ) || ( $i:手すり交点Ｚ > $i:発動範囲最大Ｚ座標 )) {
+			print 'beyond error : Out of range(Z)'
+			print $i:発動範囲最小Ｚ座標 $i:発動範囲最大Ｚ座標 $i:手すり交点Ｚ
+			return 0 ;
+		 }
+		eval( $w:デルタＸ座標２ = $i:手すり交点Ｘ - $:プレイヤーＸ位置  ) ;
+		eval( $w:デルタＺ座標２ = $i:手すり交点Ｚ - $:プレイヤーＺ位置  ) ;
+		eval( $w:垂線角度 = `command atan $w:デルタＺ座標２ $w:デルタＸ座標２`) ;
+		eval( $i:線分距離 = (( $w:デルタＺ座標２ * 4096 ) / (`command cos $w:垂線角度`))) ;
+
+		if (($i:線分距離 > $:発動距離) || ($i:線分距離 < (-$:発動距離))) {
+			print 'beyond error : long distance'
+			return 0 ;
+		}
+
+        //可動範囲が狭すぎるときは、５００まで広げる */
+        eval ( $i:可動範囲幅 = $i:可動範囲最大Ｘ座標 - $i:可動範囲最小Ｘ座標)
+        if ( $i:可動範囲幅 < 500 ) {
+			eval ( $i:可動範囲幅 = 500 - $i:可動範囲幅 )
+			eval ( $i:可動範囲最小Ｘ座標 = $i:可動範囲最小Ｘ座標 - $i:可動範囲幅 / 2 )
+			eval ( $i:可動範囲最大Ｘ座標 = $i:可動範囲最大Ｘ座標 + $i:可動範囲幅 / 2 )
+		}
+        eval ( $i:可動範囲幅 = $i:可動範囲最大Ｚ座標 - $i:可動範囲最小Ｚ座標)
+        if ( $i:可動範囲幅 < 500 ) {
+			eval ( $i:可動範囲幅 = 500 - $i:可動範囲幅 )
+			eval ( $i:可動範囲最小Ｚ座標 = $i:可動範囲最小Ｚ座標 - $i:可動範囲幅 / 2 )
+			eval ( $i:可動範囲最大Ｚ座標 = $i:可動範囲最大Ｚ座標 + $i:可動範囲幅 / 2 )
+		}
+
+		eval( $w:BY_プレイヤー方向 = $w:プレイヤー方向 & 4095 );
+		if (`command PlayerStatus -f 0`== 1) {
+			// 通常状態からのビヨンド
+			if ( `command 絶対角度差 $w:BY_プレイヤー方向 $w:垂線角度` < 384 ) {
+
+
+				//ビヨンドモーション開始座標に移動
+				eval( $w:EX_発動角度 = ( $w:垂線角度 + 2048 ) & 4095 );
+				eval( $i:モーション発動Ｘ座標 = `command sin $w:EX_発動角度` * d:ADJ_DIS_NOMAL / 4096 + $i:手すり交点Ｘ ) ;
+				eval( $i:モーション発動Ｚ座標 = `command cos $w:EX_発動角度` * d:ADJ_DIS_NOMAL / 4096 + $i:手すり交点Ｚ ) ;
+				mesg プレイヤー d:PLAYER position2 0 ($i:モーション発動Ｘ座標)
+				mesg プレイヤー d:PLAYER position2 2 ($i:モーション発動Ｚ座標)
+				mesg プレイヤー d:PLAYER motion \
+					d:モーションリスト:none_drop_start \	//モーション番号
+					$w:垂線角度 \	//初期方向
+					-1 \	//終了方向
+					4 \	//終了姿勢（４はビヨンド）
+					0x00000003	//フラグ（壁床みない）
+
+				//ビヨンド設定
+				command エルード設定 -values \
+					d:モーションリスト:none_drop \				// 静止モーション
+					d:モーションリスト:none_drop_r \			// 移動モーション右
+					d:モーションリスト:none_drop_l \			// 移動モーション左
+					d:モーションリスト:none_drop_end_fence \	// 戻りモーション
+					6 \											// 床チェックする関節（ここでは右腕）
+					(($w:垂線角度+2048) & 4095) \				// 開始時向き
+					(($w:垂線角度+2048) & 4095) \				// 終了時向き
+					$:フラグ \									// フラグ
+					d:モーションリスト:none_drop_end_wall \		// 戻りモーション（壁有り
+					14 \										// 戻り時に壁チェックする関節番号
+					d:モーションリスト:none_drop_idle_tired \	// 静止モーション（疲れ）
+					d:モーションリスト:non_elude_fall_start \	// 落下モーション(落ちはじめ)
+					d:モーションリスト:non_elude_fall \			// 落下中モーション
+					d:モーションリスト:non_elude_fall_damage \	// 落下してダメージ
+					d:モーションリスト:non_elude_fall_out \		// 落下して死亡
+					d:モーションリスト:rai_non_drop_touchdown_allfours \	// 落下しても無事着地
+					d:モーションリスト:non_drop_dam \			// エルード中のダメージ
+					d:モーションリスト:non_drop_pullup_start \	// 懸垂開始
+					d:モーションリスト:non_drop_pullup_idle \	// 懸垂静止
+					d:モーションリスト:non_drop_pullup_end		// 懸垂終了
+
+				command エルード移動範囲設定 \
+					-x_range $i:可動範囲最小Ｘ座標 $i:可動範囲最大Ｘ座標 \
+					-z_range $i:可動範囲最小Ｚ座標 $i:可動範囲最大Ｚ座標
+
+				mesg プレイヤー d:PLAYER beyond_trap $:トラップ名
+				eval ( $s:エルード落下トラップ = $:トラップ名 )
+				return $:トラップ名
+			} else {
+				print 'beyond error : out of angle'
+				return 0
+			}
+		} else if (`command PlayerStatus -f 4` == 1) {
+			// ビハインド状態からのビヨンド
+			eval( $w:逆垂線角度 = ( $w:垂線角度 + 2048 ) & 4095 ) ;
+			if ( `command 絶対角度差 $w:BY_プレイヤー方向 $w:逆垂線角度` < 512 ) {
+
+
+				//ビヨンドモーション開始座標に移動
+				eval( $w:EX_発動角度 = ( $w:垂線角度 + 2048 ) & 4095 );
+				eval( $i:モーション発動Ｘ座標 = `command sin $w:EX_発動角度` * d:ADJ_DIS_BEHIND / 4096 + $i:手すり交点Ｘ ) ;
+				eval( $i:モーション発動Ｚ座標 = `command cos $w:EX_発動角度` * d:ADJ_DIS_BEHIND / 4096 + $i:手すり交点Ｚ ) ;
+				mesg プレイヤー d:PLAYER position2 0 $i:モーション発動Ｘ座標
+				mesg プレイヤー d:PLAYER position2 2 $i:モーション発動Ｚ座標
+				mesg プレイヤー d:PLAYER motion \
+					d:モーションリスト:sna_non_drop_start_behind_t \	//モーション番号
+					$w:垂線角度 \	//初期方向
+					-1 \	//終了方向
+					4 \	//終了姿勢（４はビヨンド）
+					0x00000003	//フラグ（壁床みない）
+
+				//ビヨンド設定
+				command エルード設定 -values \
+					d:モーションリスト:none_drop \				// 静止モーション
+					d:モーションリスト:none_drop_r \			// 移動モーション右
+					d:モーションリスト:none_drop_l \			// 移動モーション左
+					d:モーションリスト:none_drop_end_fence \	// 戻りモーション
+					6 \											// 床チェックする関節（ここでは右腕）
+					(($w:垂線角度+2048) & 4095) \				// 開始時向き
+					(($w:垂線角度+2048) & 4095) \				// 終了時向き
+					$:フラグ \									// フラグ
+					d:モーションリスト:none_drop_end_wall \		// 戻りモーション（壁有り
+					14 \										// 戻り時に壁チェックする関節番号
+					d:モーションリスト:none_drop_idle_tired \	// 静止モーション（疲れ）
+					d:モーションリスト:non_elude_fall_start \	// 落下モーション(落ちはじめ)
+					d:モーションリスト:non_elude_fall \			// 落下中モーション
+					d:モーションリスト:non_elude_fall_damage \	// 落下してダメージ
+					d:モーションリスト:non_elude_fall_out \		// 落下して死亡
+					d:モーションリスト:rai_non_drop_touchdown_allfours \	// 落下しても無事着地
+					d:モーションリスト:non_drop_dam \			// エルード中のダメージ
+					d:モーションリスト:non_drop_pullup_start \	// 懸垂開始
+					d:モーションリスト:non_drop_pullup_idle \	// 懸垂静止
+					d:モーションリスト:non_drop_pullup_end		// 懸垂終了
+
+				command エルード移動範囲設定 \
+					-x_range $i:可動範囲最小Ｘ座標 $i:可動範囲最大Ｘ座標 \
+					-z_range $i:可動範囲最小Ｚ座標 $i:可動範囲最大Ｚ座標
+
+				mesg プレイヤー d:PLAYER beyond_trap $:トラップ名
+				eval ( $s:エルード落下トラップ = $:トラップ名 )
+
+				return $:トラップ名
+			} else {
+				print 'beyond error : out of angle'
+				return 0
+			}
+		} else {
+			print 'beyond error : Invalid Mode'
+			return 0
+		}
+	}
+
+	// ------------------------------------
+	// ビヨンド設定
+	// ------------------------------------
+	proc ＤＧ連絡橋破壊ビヨンド設定２ {
+		#if d:DEBUG_PRINT
+			print 'w25b_beyond_set'
+		#endif
+
+		trap by100 d:PLAYER \
+			-mask ＊ \
+			-dir 1365,1024 \
+			-exec {
+				command	プレイヤー床高さ取得 -current 
+				if($status > -5000) {
+					command プレイヤー状態取得 ;
+					if(($status == 0) \
+					|| ($status & d:PFLAG_WALK) \
+					|| ($status & d:PFLAG_SUBJECT) \
+					|| ($status & d:PFLAG_DAMAGED)) {
+						// 歩きで入った
+						command	プレイヤー床高さ取得
+						@斜め片手ビヨンド発動 by100 $4 $6 25250 -188250 25750 -187500 (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)
+					}
+				}
+			}
+		trap by101 d:PLAYER \
+			-mask ＊ \
+			-dir 3413,1024 \
+			-exec {
+				command	プレイヤー床高さ取得 -current 
+				if($status > -5000) {
+					command プレイヤー状態取得 ;
+					if(($status == 0) \
+					|| ($status & d:PFLAG_WALK) \
+					|| ($status & d:PFLAG_SUBJECT) \
+					|| ($status & d:PFLAG_DAMAGED)) {
+						// 歩きで入った
+						command	プレイヤー床高さ取得
+						@斜め片手ビヨンド発動 by101 $4 $6 27000 -189250 27500 -188500 (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)
+					}
+				}
+			}
+		trap by102 d:PLAYER \
+			-mask ＊ \
+			-exec {
+				command	プレイヤー床高さ取得 -current 
+				if($status > -5000) {
+					command プレイヤー状態取得 ;
+					if(($status == 0) \
+					|| ($status & d:PFLAG_WALK) \
+					|| ($status & d:PFLAG_SUBJECT) \
+					|| ($status & d:PFLAG_DAMAGED)) {
+						// 歩きで入った
+						command	プレイヤー床高さ取得
+						@斜め片手ビヨンド発動 by102 $4 $6 34250 -192750 34875 -191625 (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)
+					}
+				}
+			}
+		trap by103 d:PLAYER \
+			-mask ＊ \
+			-exec {
+				command	プレイヤー床高さ取得 -current 
+				if($status > -5000) {
+					command プレイヤー状態取得 ;
+					if(($status == 0) \
+					|| ($status & d:PFLAG_WALK) \
+					|| ($status & d:PFLAG_SUBJECT) \
+					|| ($status & d:PFLAG_DAMAGED)) {
+						// 歩きで入った
+						command	プレイヤー床高さ取得
+						@斜め片手ビヨンド発動 by103 $4 $6 37750 -194750 38375 -193625 (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)
+					}
+				}
+			}
+		trap by104 d:PLAYER \
+			-mask ＊ \
+			-exec {
+				command	プレイヤー床高さ取得 -current 
+				if($status > -5000) {
+					command プレイヤー状態取得 ;
+					if(($status == 0) \
+					|| ($status & d:PFLAG_WALK) \
+					|| ($status & d:PFLAG_SUBJECT) \
+					|| ($status & d:PFLAG_DAMAGED)) {
+						// 歩きで入った
+						command	プレイヤー床高さ取得
+						@斜め片手ビヨンド発動 by104 $4 $6 27517 -188403 29249 -189403 (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)
+					}
+				}
+			}
+		trap by105 d:PLAYER \
+			-mask ＊ \
+			-exec {
+				command	プレイヤー床高さ取得 -current 
+				if($status > -5000) {
+					command プレイヤー状態取得 ;
+					if(($status == 0) \
+					|| ($status & d:PFLAG_WALK) \
+					|| ($status & d:PFLAG_SUBJECT) \
+					|| ($status & d:PFLAG_DAMAGED)) {
+						// 歩きで入った
+						command	プレイヤー床高さ取得
+						@斜め片手ビヨンド発動 by105 $4 $6 31231 -189970 33213 -190537 (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)
+					}
+				}
+			}
+		trap by106 d:PLAYER \
+			-mask ＊ \
+			-exec {
+				command	プレイヤー床高さ取得 -current 
+				if($status > -5000) {
+					command プレイヤー状態取得 ;
+					if(($status == 0) \
+					|| ($status & d:PFLAG_WALK) \
+					|| ($status & d:PFLAG_SUBJECT) \
+					|| ($status & d:PFLAG_DAMAGED)) {
+						// 歩きで入った
+						command	プレイヤー床高さ取得
+						@斜め片手ビヨンド発動 by106 $4 $6 19357 -182537 21089 -183537 (d:BY_NOFOOTSHADOW | d:BY_FALL_DEAD | d:BY_NO_STAMP)
+					}
+				}
+			}
+	}
+
+// 各マップ別設定
+// ------------------------------------
+// タイトロープ１
+	// 天井設置
+	// ------------------------------------
+	proc タイトロープ１天井設置 {
+		#if d:DEBUG_PRINT
+			print 'w25b0_ceil_set'
+		#endif
+	}
+
+
+	// 強制モーション用トラップ
+	// ------------------------------------
+	// ジャンプ設定
+	// ------------------------------------
+	proc タイトロープ１ジャンプ設定 {
+		#if d:DEBUG_PRINT
+			print 'w25b_jump_set'
+		#endif
+		trap ky001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				@ジャンプ発動 ky001 1000 350
+			}
+		trap ky002 d:PLAYER \
+			-mask 入る \
+			-exec {
+				@ジャンプ発動 ky002 1000 350
+			}
+		trap ky003 d:PLAYER \
+			-mask 入る \
+			-exec {
+				// 飛び降りモーション発動用なので
+				// 登れる高さは不可能値とする
+				@ジャンプ発動 ky003 9999 1	
+			}
+	}
+
+	// 各種カメラの設定
+	// ------------------------------------
+	proc タイトロープ１カメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w25b_camera_set'
+		#endif
+
+#define CUSHION 350
+#define MAX_VEC_LENGTH 6400
+		trap ca002 d:PLAYER -mask ＊ -exec {
+			if( $3 == いる ) {
+				command プレイヤーマップ名
+				if ( $status == タイトロープ２ ) {
+					eval( $i:ca002プレイヤーＸ座標 = $4 ) ;
+					eval( $i:ca002プレイヤーＹ座標 = $5 ) ;
+					eval( $i:ca002プレイヤーＺ座標 = $6 ) ;
+					if ( $f:ca002サイファー状態 == 1 ) {
+						@サイファー距離検査		// 距離にあわせてカメラ呼び分け
+					} else  {
+						@プレイヤー単独特殊カメラ	// プレイヤーだけいる
+					}
+				} else {
+					@特殊カメラ消去				// プレイヤーがマップ違い
+				}
+			} else {
+				@特殊カメラ消去					// プレイヤーが出た
+			}
+		}
+		trap ca002 サイファー:01 -mask ＊ -exec {
+			if( $3 == いる ) {
+				eval( $f:ca002サイファー状態 = 1 ) ;
+				eval( $i:ca002サイファーＸ座標 = $4 ) ;
+				eval( $i:ca002サイファーＹ座標 = $5 ) ;
+				eval( $i:ca002サイファーＺ座標 = $6 ) ;
+			} else {
+				eval( $f:ca002サイファー状態 = 0 ) ;
+			}
+		}
+
+		// GL連絡橋(梯子下)
+		trap ca003 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 小部屋カメラ \
+					-c 1 \	
+					-p 39708 525 -191893 \
+					-t 40871 -1866 -195665 \
+					-r 355,1853,0 -f 4615 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+		// シェル1シェル２連絡橋
+		trap ca005 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				if ( $6 <= -143724 ) {
+					@CS_スムーズカメラ２ $6 -151458 -143724 980 300 5500 8500
+					eval( $i:補完ＲＸ = $i:CS_結果１ );
+					if  ( $i:補完ＲＸ > 980 ) { eval( $i:補完ＲＸ = 980 ) } 
+					eval( $w:トラック補完 = $i:CS_結果２ );
+				} else {
+					eval( $i:補完ＲＸ = 300 ) ;
+					eval( $w:トラック補完 = 8500 ) ;
+				}
+				chara カメラ設定 小部屋カメラ \
+					-c 0 \	
+					-b -1772,-320000,-320000 320000 320000 -136432 \
+					-l -245,-320000,-320000 320000 320000 -142580 \
+					-r $i:補完ＲＸ,1900,0 \
+					-f $w:トラック補完 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+		// てすり（大ジャンプ後）
+		trap ca006 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-state d:TRP_STATE_CAUTION \
+			-exec {
+				chara カメラ設定 小部屋カメラ \
+					-c 1 \	
+					-p -2117,-555,-155994 -t -1949,-10133,-159401 \
+					-r 801,2016,0 -f 10167 \
+					-a 200 \
+					-i 3 2 0 0 \
+					-s $3
+			}
+		// 落下給水タンク付近
+		trap ca007 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 小部屋カメラ \
+					-c 1 \	
+					-p -1315,8031,-135464 -t -197,912,-138812 \
+					-r 724,1838,0 -f 7946 \
+					-a 262 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+		// タイトロープ２落下後付近
+		trap ca016 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 小部屋強カメラ \
+					-c 1 \	
+					-p 21784,1285,-179261 -t 18533,-3285,-185125 \
+					-r 390,2378,0 -f 8114 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+		// 張付きアングル換え
+		// ------------------------------------
+		trap ca100 d:PLAYER -mask ？ -camera -dir 1024,512 -state d:TRP_STATE_BEHINDCAMERA_ENABLE \
+			-exec {
+				chara カメラ設定 カットインカメラ \
+					-c 0 \
+					-b -320000 -320000 -320000 320000 320000 320000 \
+					-l -320000 -320000 -320000 320000 320000 320000 \
+					-r 1020,$i:カメラ角度Ｙ,0 -f 6400 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-s $3
+			}
+		trap ca101 d:PLAYER -mask ？ -camera -dir 3072,512 -state d:TRP_STATE_BEHINDCAMERA_ENABLE \
+			-exec {
+				chara カメラ設定 カットインカメラ \
+					-c 0 \
+					-b -320000 -320000 -320000 320000 320000 320000 \
+					-l -320000 -320000 -320000 320000 320000 320000 \
+					-r 1020,$i:カメラ角度Ｙ,0 -f 6400 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-s $3
+			}
+		trap ca102 d:PLAYER -mask ？ -camera -dir 2048,512 -state d:TRP_STATE_BEHINDCAMERA_ENABLE \
+			-exec {
+				chara カメラ設定 カットインカメラ \
+					-c 0 \
+					-b -320000 -320000 -320000 320000 320000 320000 \
+					-l -320000 -320000 -320000 320000 320000 320000 \
+					-r 1020,$i:カメラ角度Ｙ,0 -f 6400 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-s $3
+			}
+		trap ca103 d:PLAYER -mask ？ -camera -dir 0,512 -state d:TRP_STATE_BEHINDCAMERA_ENABLE \
+			-exec {
+				chara カメラ設定 カットインカメラ \
+					-c 0 \
+					-b -320000 -320000 -320000 320000 320000 320000 \
+					-l -320000 -320000 -320000 320000 320000 320000 \
+					-r 1020,$i:カメラ角度Ｙ,0 -f 6400 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-s $3
+			}
+	}
+
+proc 共通シネマスクリーンセット {
+	chara シネマスクリーン シネマ \
+		-top d:CINEMA_BELT_UPPER \
+		-bottom d:CINEMA_BELT_LOWER \
+		-ftime 30	//デフォルト値（ゼロは駄目）
+}
+
+proc サイファー距離検査 {
+	command VecLen \
+		$i:ca002プレイヤーＸ座標 \
+		$i:ca002プレイヤーＹ座標 \
+		$i:ca002プレイヤーＺ座標 \
+		$i:ca002サイファーＸ座標 \
+		$i:ca002サイファーＹ座標 \
+		$i:ca002サイファーＺ座標
+	if ( $status < d:MAX_VEC_LENGTH ) {
+		// 一定距離内にいる
+		@サイファー追跡特殊カメラ
+	} else {
+		// 一定距離離れた
+		@プレイヤー単独特殊カメラ
+	}
+}
+
+proc サイファー追跡特殊カメラ {
+	eval( $i:ca002サイファカメラＸ注視 = ( $i:ca002プレイヤーＸ座標 + $i:ca002サイファーＸ座標 ) / 2 );
+	eval( $i:ca002サイファカメラＹ注視 = ( $i:ca002プレイヤーＹ座標 + $i:ca002サイファーＹ座標 ) / 2 );
+	eval( $i:ca002サイファカメラＺ注視 = ( $i:ca002プレイヤーＺ座標 + $i:ca002サイファーＺ座標 ) / 2 );
+	if ( $f:ca002初期化不必要フラグ == 0 ) {
+		eval( $f:ca002初期化不必要フラグ = 1 ) ;
+		eval( $i:中心ca002サイファカメラＸ注視 = $i:ca002サイファカメラＸ注視 );
+		eval( $i:中心ca002サイファカメラＹ注視 = $i:ca002サイファカメラＹ注視 );
+		eval( $i:中心ca002サイファカメラＺ注視 = $i:ca002サイファカメラＺ注視 );
+	}
+	if (( $i:ca002サイファカメラＸ注視 > ($i:中心ca002サイファカメラＸ注視 + d:CUSHION )) || ( $i:ca002サイファカメラＸ注視 < ($i:中心ca002サイファカメラＸ注視 - d:CUSHION ))) {
+		eval( $i:差分ca002サイファカメラＸ注視 = $i:前回ca002サイファカメラＸ注視 - $i:ca002サイファカメラＸ注視 );
+		eval( $i:中心ca002サイファカメラＸ注視 = $i:中心ca002サイファカメラＸ注視 - $i:差分ca002サイファカメラＸ注視 );
+	}
+	if (( $i:ca002サイファカメラＹ注視 > ($i:中心ca002サイファカメラＹ注視 + d:CUSHION )) || ( $i:ca002サイファカメラＹ注視 < ($i:中心ca002サイファカメラＹ注視 - d:CUSHION ))) {
+		eval( $i:差分ca002サイファカメラＹ注視 = $i:前回ca002サイファカメラＹ注視 - $i:ca002サイファカメラＹ注視 );
+		eval( $i:中心ca002サイファカメラＹ注視 = $i:中心ca002サイファカメラＹ注視 - $i:差分ca002サイファカメラＹ注視 );
+	}
+	if (( $i:ca002サイファカメラＺ注視 > ($i:中心ca002サイファカメラＺ注視 + d:CUSHION )) || ( $i:ca002サイファカメラＺ注視 < ($i:中心ca002サイファカメラＺ注視 - d:CUSHION ))) {
+		eval( $i:差分ca002サイファカメラＺ注視 = $i:前回ca002サイファカメラＺ注視 - $i:ca002サイファカメラＺ注視 );
+		eval( $i:中心ca002サイファカメラＺ注視 = $i:中心ca002サイファカメラＺ注視 - $i:差分ca002サイファカメラＺ注視 );
+	}
+	chara カメラ設定 サイファカメラ \
+		-c 1 \
+		-p ($i:中心ca002サイファカメラＸ注視+6000),($i:中心ca002サイファカメラＹ注視+4000),($i:中心ca002サイファカメラＺ注視+6000) \
+		-t $i:中心ca002サイファカメラＸ注視,$i:中心ca002サイファカメラＹ注視,$i:中心ca002サイファカメラＺ注視 \
+		-a 200 \
+		-i 0 -1 0 0 \
+		-s 1
+	eval( $i:前回ca002サイファカメラＸ注視 = $i:ca002サイファカメラＸ注視 );
+	eval( $i:前回ca002サイファカメラＹ注視 = $i:ca002サイファカメラＹ注視 );
+	eval( $i:前回ca002サイファカメラＺ注視 = $i:ca002サイファカメラＺ注視 );
+}
+
+proc プレイヤー単独特殊カメラ {
+	eval( $i:cpx =  $i:プレイヤー位置Ｘ +  519 )
+	eval( $i:cpy =  $i:プレイヤー位置Ｙ + 8036 )
+	eval( $i:cpz =  $i:プレイヤー位置Ｚ + 8822 )
+	eval( $i:ctx =  $i:プレイヤー位置Ｘ + 1285 )
+	eval( $i:cty =  $i:プレイヤー位置Ｙ + 2754 )
+	eval( $i:ctz =  $i:プレイヤー位置Ｚ -  404 )
+	chara カメラ設定 通路カメラ \
+		-c 1 \
+		-p $i:cpx,$i:cpy,$i:cpz \
+		-t $i:ctx,$i:cty,$i:ctz  \
+		-a 250 \
+		-i 0 -1 0 0 \
+		-s 1
+	chara カメラ設定 サイファカメラ -s -1
+}
+proc 特殊カメラ消去 {
+	chara カメラ設定 通路カメラ -s -1 ;
+	chara カメラ設定 サイファカメラ -s -1 ;
+}
+
+
+
+
+
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下仮キャラ用proc
+// -----------------------------------------------------------------------------------
+// 仮キャラ
+// ------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------
+proc デバッグキャラセット {
+	#if d:DEBUG_PRINT
+		print 'debug_chara_set'
+	#endif
+
+	#if d:CHARA_CAMERA
+		chara キャラカメラ 敵兵カメラ \
+			-c d:TARGET_CHARA \
+			-s -920,610,200 \
+			-r -200,1024,0 
+	#endif
+
+	#if d:SCREENSHOT
+		chara スクリーンショット shot
+	#endif
+
+	#if d:USB_KEY
+		chara USBキーボード実行 test \
+			-e d:KBD_ESC {
+				mesg プレイヤー d:PLAYER position -5500, -13000, -500
+			} \
+	#endif
+	#if d:FALLDOWN_RESET
+		trap ev001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				@ジャンプ落下死発動 0x0004 -41000
+			}
+	#endif
+
+	// 消えない炎
+	trap ev007 d:PLAYER -mask 入る -exec {
+		if ( $f:侵入禁止炎設置済み == 0 ) {
+			eval( $f:侵入禁止炎設置済み = 1 ) ;
+			chara ステージ置き炎 fire3a -f 1 -s 2 -pos   4250 -4000 -163750  -xwidth 250 -zwidth 750 
+			chara ステージ置き炎 fire3b -f 1 -s 2 -pos   4250 -4000 -163000  -xwidth 250 -zwidth 750 
+		}
+	}
+
+	trap ev008a d:PLAYER -mask ？ -exec {
+		command プレイヤー状態取得 ;
+		if($status & d:PFLAG_RUN) {
+			#ifndef PAL
+				@プレイヤーツルリン 3072 -18
+			#else
+				@プレイヤーツルリン 3072 -20
+			#endif
+		}
+	}
+	trap ev008b d:PLAYER -mask ？ -exec {
+		command プレイヤー状態取得 ;
+		if($status & d:PFLAG_RUN) {
+			#ifndef PAL
+				@プレイヤーツルリン 1024 18
+			#else
+				@プレイヤーツルリン 1024 20
+			#endif
+		}
+	}
+	trap ev008c d:PLAYER -mask ？ -exec {
+		command プレイヤー状態取得 ;
+		if($status & d:PFLAG_RUN) {
+			#ifndef PAL
+				@プレイヤーツルリン 3072 -18
+			#else
+				@プレイヤーツルリン 3072 -20
+			#endif
+		}
+	}
+
+	trap ev009 d:PLAYER -mask ？ -exec {
+		if ( $3 == 入る ) {
+			// パイプの上はダンボール系禁止
+			command	不可装備設定 -item 	d:アイテム:ダンボール, \
+							d:アイテム:ダンボールＢ, \
+							d:アイテム:ダンボールＣ, \
+							d:アイテム:濡れダンボール, \
+							d:アイテム:ダンボールＤ, \
+							d:アイテム:ダンボールＥ 
+		} else {
+			command	不可装備設定 -cancel			//設定リセット
+		}
+	}
+	trap ev004 d:PLAYER -mask 入る -exec {
+		if ( !$f:w25b_デモカット再生済み ) {
+			if ( $w:ゲーム設定 >= d:LEVEL_EASY ) {
+				command パッド操作 -release
+				chara delay 遅延 -time (1*60) -exec {
+					@敵兵デモ発動
+				}
+			}
+		}
+	}
+}
+proc 敵兵デモ発動 {
+	if ( $f:w25b_デモカット再生済み == 0 && $w:アラートモード == d:ALERT_MODE_SENNYU ) {
+		eval( $f:w25b_デモカット再生済み = 1 ) ;
+		chara delay 敵兵デモ遅延 -time 60 -exec {
+			// 敵兵始動
+			mesg 敵兵共通 敵兵:01 永久アンリアルＯＦＦ
+			mesg 敵兵共通 敵兵:02 永久アンリアルＯＦＦ
+			//mesg サイファ サイファー:01 アンセットアンリアル
+			// 敵兵デモ終了後、通常巡回ルートへ復帰
+			chara delay 敵兵通常ルート移動遅延 -time (10*60) -exec {
+				mesg タイトロープ兵 敵兵:01 ルート変更 0 0
+				mesg タイトロープ兵 敵兵:02 ルート変更 1 0
+			}
+			// デモカメラ準備
+			if ( $w:ゲーム設定 >= d:LEVEL_EASY ) {
+				@シナリオカメラデモフラグ変更 (d:SDEMO_CINEMASCREEN_ON | d:SDEMO_CANCEL_ENABLE | d:SDEMO_RADAR_OFF | d:SDEMO_PAD_DISABLE) 1 (5*60)
+				@シナリオカメラデモ（シネマ） 14 $i:カメラＸ位置,$i:カメラＹ位置,$i:カメラＺ位置,$i:注視点Ｘ位置,$i:注視点Ｙ位置,$i:注視点Ｚ位置,200  37110,3287,-196562 38080,-259,-206571 200
+			} else if ( $w:ゲーム設定 >= d:LEVEL_NORMAL ) {
+				@シナリオカメラデモフラグ変更 (d:SDEMO_CINEMASCREEN_ON | d:SDEMO_CANCEL_ENABLE | d:SDEMO_RADAR_OFF | d:SDEMO_PAD_DISABLE) 1 (10*60)
+				@シナリオカメラデモ（シネマ） 14 $i:カメラＸ位置,$i:カメラＹ位置,$i:カメラＺ位置,$i:注視点Ｘ位置,$i:注視点Ｙ位置,$i:注視点Ｚ位置,200  37110,3287,-196562 38080,-259,-206571 200
+			}
+		}
+	}
+}
+
+proc プレイヤーツルリン $:p_角度 $:p_横滑り速度 {
+	command	強制モーション終了プロック -proc ツルリン終了 
+	mesg プレイヤー d:PLAYER motion d:モーションリスト:non_slip $:p_角度 $:p_角度 d:FA_END_DOWN_BACK 0
+	eval( $i:横滑り座標 = $i:プレイヤー位置Ｘ ) ;
+	eval( $i:横滑り速度 = $:p_横滑り速度 )
+	chara プロック連続実行 横滑り移動用 -proc 横滑り移動
+}
+proc 横滑り移動 {
+	command	プレイヤー床高さ取得 -current 
+	if ( $status < -6875 ) {
+		command 強制モーションキャンセル
+		@ツルリン終了
+	}
+	mesg プレイヤー d:PLAYER position2 0 $i:横滑り座標
+	eval( $i:横滑り座標 = $i:横滑り座標 + $i:横滑り速度 ) ;
+}
+proc ツルリン終了 {
+	mesg プロック連続実行 横滑り移動用 kill ;
+}
+
+
+proc 崩落床セット {
+	// ------------------------------------
+	// 崩れ落ちそうな階段
+	chara プット落下オブジェ 崩落階段 \
+	        -model w25b_step00 \
+	        -rot   0,0,-100 \
+	        -pos   -3000, -1500, -150000 \
+		-proc  階段落下開始
+
+	trap ev010 d:PLAYER -mask ？ -exec {
+		if ( $3 == 入る ) {
+			// 入ったら揺らして、一定時間内にトラップから出ない場合は崩落
+			mesg プット落下オブジェ 崩落階段 揺らす
+			chara delay 崩落遅延 -time (4*60) -exec {
+				mesg プット落下オブジェ 崩落階段 落下
+				chara delay 崩落遅延２ -time 30 -exec {
+					chara カメラ設定 ビヨンドカメラ -s -1
+				}
+			}
+			chara カメラ設定 ビヨンドカメラ \
+				-c 0 \
+				-b -320000 -320000 -320000 320000 320000 320000 \
+				-l -320000 -320000 -320000 320000 320000 320000 \
+				-r 436,1802,0 -f 7122 \
+				-a 200 \
+				-i 1 1 0 0 -s 1
+		} else {
+			print 'ev010 out -----------------------------------'
+			mesg プット落下オブジェ 崩落階段 落下
+			chara カメラ設定 ビヨンドカメラ -s -1
+		}
+	}
+
+
+	chara 崩落床 崩落床手前１ \
+		-position (12514+680) (-1842+113) (-169493-175) \
+		-rotate 100 -338 60 \
+		-model w25b_fl01 w25b_trap_dammy1\
+		-hazard 12514 -1842 -169493 \
+			13374 -1755 -168989 \
+			13862 -1605 -169848 \
+			13003 -1691 -170352 \
+		-map タイトロープ１ \
+		-status 0 \
+		-fall_time (30*3) \
+		-se_pattern 0 \
+		-fall_pattern 2 \
+		-proc 崩落床手前落下
+	chara 崩落床 崩落床手前２ \
+		-position (12025+680) (-1992+113) (-168633-175) \
+		-rotate 100 -338 60 \
+		-model w25b_fl01  w25b_trap_dammy1\
+		-hazard 12025 -1992 -168633 \
+			12885 -1905 -168130 \
+			13374 -1755 -168989 \
+			12514 -1842 -169493 \
+		-map タイトロープ１ \
+		-status 0 \
+		-se_pattern 1 \
+		-fall_pattern 0 \
+		-fall_time (30*3) \
+		-proc 崩落床手前落下
+
+	trap fa001 d:PLAYER -mask ？ -exec {
+			if ( $3 == 入る ) {
+				eval( $b:w25b崩落床手前スイッチ = 1 ) ;
+			} else {
+				if ( $b:w25b崩落床手前スイッチ == 1 ) {
+					if ( $i:プレイヤー位置Ｚ < -169500 ) {
+						/* 手前に戻った場合は落とさない */
+						mesg 崩落床 崩落床手前１ fall
+						mesg 崩落床 崩落床手前２ fall
+					} else {
+						eval( $b:w25b崩落床手前スイッチ = 0 )
+					}
+				} else {
+					eval( $b:w25b崩落床手前スイッチ = 0 )
+				}
+			}
+	}
+	trap fa002 d:PLAYER -mask ？ -exec {
+			if ( $3 == 入る ) {
+				eval( $b:w25b崩落床中央スイッチ = 1 ) ;
+			} else {
+				if ( $b:w25b崩落床中央スイッチ == 1 ) {
+					if ( $i:プレイヤー位置Ｚ < -171465 ) {
+						/* 手前に戻った場合は落とさない */
+						mesg 崩落床 崩落床中央１ fall
+						mesg 崩落床 崩落床中央２ fall
+					} else {
+						eval( $b:w25b崩落床中央スイッチ = 0 )
+					}
+				} else {
+					eval( $b:w25b崩落床中央スイッチ = 0 )
+				}
+			}
+	}
+	trap fa003 d:PLAYER -mask ？ -exec {
+			if ( $3 == 入る ) {
+				eval( $b:w25b崩落床奥スイッチ = 1 ) ;
+			} else {
+				if ( $b:w25b崩落床奥スイッチ == 1 ) {
+					if ( $i:プレイヤー位置Ｚ < -175579 ) {
+						/* 手前に戻った場合は落とさない */
+						mesg 崩落床 崩落床奥１ fall
+						mesg 崩落床 崩落床奥２ fall
+					} else {
+						eval( $b:w25b崩落床奥スイッチ = 0 )
+					}
+				} else {
+					eval( $b:w25b崩落床奥スイッチ = 0 )
+				}
+			}
+	}
+
+	trap fa001 d:PLAYER -mask いる -exec {
+		command 崩落床状態取得 -name 崩落床手前１
+		eval( $b:崩落床手前１状態 = $status ) ;
+		command 崩落床状態取得 -name 崩落床手前２
+		eval( $b:崩落床手前２状態 = $status ) ;
+			//0: 誰も乗ったことがない
+			//1: 誰かが一度のってへこんでいる
+			//2: すでに落ちている
+		if (( $f:w25b崩落床シナリオカメラ != 1 ) && (( $b:崩落床手前１状態 == 1) || ( $b:崩落床手前２状態 == 1))) {
+			eval( $f:w25b崩落床シナリオカメラ = 1 ) ;
+			command varsave $f:w25b崩落床シナリオカメラ ;	/* コンティニュー後はもう出ない */
+			@シナリオカメラデモフラグ変更 (d:SDEMO_CINEMASCREEN_ON | d:SDEMO_CANCEL_ENABLE | d:SDEMO_RADAR_OFF | d:SDEMO_PAD_DISABLE) 1 30
+			@シナリオカメラデモ 14 $i:カメラＸ位置,$i:カメラＹ位置,$i:カメラＺ位置,$i:注視点Ｘ位置,$i:注視点Ｙ位置,$i:注視点Ｚ位置,200 \
+				15029,-1216,-166992 7997,-4327,-174377 200
+		}
+	}
+
+
+
+	// ------------------------------------
+	chara 崩落床 崩落床中央１ \
+		-position (13980+680) ,(-1391+113) ,(-172071-175) \
+		-rotate 100 -338 60 \
+		-model w25b_fl01  w25b_trap_dammy1\
+		-hazard ((13491+14469)/2) ((-1541-1240)/2) ((-171212-172931)/2) \
+			((14351+15328)/2) ((-1454-1153)/2) ((-170708-172427)/2) \
+			15328 -1153 -172427 \
+			14469 -1240 -172931 \
+		-map タイトロープ１ \
+		-status 0 \
+		-se_pattern 0 \
+		-fall_pattern 2 \
+		-fall_time (30*3) \
+		-proc 崩落床中央落下
+	chara 崩落床 崩落床中央２ \
+		-position (13491+680) ,(-1541+113) ,(-171212-175) \
+		-rotate 100 -338 60 \
+		-model w25b_fl01  w25b_trap_dammy1\
+		-hazard 13491 -1541 -171212 \
+			14351 -1454 -170708 \
+			((14351+15328)/2) ((-1454-1153)/2) ((-170708-172427)/2) \
+			((13491+14469)/2) ((-1541-1240)/2) ((-171212-172931)/2) \
+		-map タイトロープ１ \
+		-status 0 \
+		-se_pattern 1 \
+		-fall_pattern 5 \
+		-fall_time (30*3) \
+		-proc 崩落床中央落下
+
+	trap fa002 d:PLAYER -mask いる -exec {
+		command 崩落床状態取得 -name 崩落床中央１
+		eval( $b:崩落床中央１状態 = $status ) ;
+		command 崩落床状態取得 -name 崩落床中央２
+		eval( $b:崩落床中央２状態 = $status ) ;
+			//0: 誰も乗ったことがない
+			//1: 誰かが一度のってへこんでいる
+			//2: すでに落ちている
+		if (( $f:w25b崩落床シナリオカメラ != 1 ) && (( $b:崩落床中央１状態 == 1) || ( $b:崩落床中央２状態 == 1))) {
+			eval( $f:w25b崩落床シナリオカメラ = 1 ) ;
+			@シナリオカメラデモフラグ変更 (d:SDEMO_CINEMASCREEN_ON | d:SDEMO_CANCEL_ENABLE | d:SDEMO_RADAR_OFF | d:SDEMO_PAD_DISABLE) 1 30
+			@シナリオカメラデモ 14 $i:カメラＸ位置,$i:カメラＹ位置,$i:カメラＺ位置,$i:注視点Ｘ位置,$i:注視点Ｙ位置,$i:注視点Ｚ位置,200  \
+				17186,-602,-169456  9035,-3714,-175579 200
+		}
+	}
+
+	// ------------------------------------
+	chara 崩落床 崩落床奥１ \
+		-position (16423+680),(-639+113),(-176368-175) \
+		-rotate 100 -338 60 \
+		-model w25b_fl01  w25b_trap_dammy1\
+		-hazard 16423 -639 -176369 \
+			17283 -552 -175865 \
+			17771 -401 -176724 \
+			16912 -488 -177228 \
+		-map タイトロープ１ \
+		-status 0 \
+		-se_pattern 0 \
+		-fall_pattern 4 \
+		-fall_time (30*3) \
+		-proc 崩落床奥落下
+	chara 崩落床 崩落床奥２ \
+		-position (15934+680) ,(-789+113) ,(-175509-175) \
+		-rotate 100 -338 60 \
+		-model w25b_fl01  w25b_trap_dammy1\
+		-hazard 15934 -789 -175509 \
+			16794 -702 -175005 \
+			17283 -552 -175865 \
+			16423 -639 -176369 \
+		-map タイトロープ１ \
+		-status 0 \
+		-se_pattern 1 \
+		-fall_pattern 0 \
+		-fall_time (30*3) \
+		-proc 崩落床奥落下
+
+	trap fa003 d:PLAYER -mask いる -exec {
+		command 崩落床状態取得 -name 崩落床奥１
+		eval( $b:崩落床奥１状態 = $status ) ;
+		command 崩落床状態取得 -name 崩落床奥２
+		eval( $b:崩落床奥２状態 = $status ) ;
+			//0: 誰も乗ったことがない
+			//1: 誰かが一度のってへこんでいる
+			//2: すでに落ちている
+		if (( $f:w25b崩落床シナリオカメラ != 1 ) && (( $b:崩落床奥１状態 == 1) || ( $b:崩落床奥２状態 == 1))) {
+			eval( $f:w25b崩落床シナリオカメラ = 1 ) ;
+			@シナリオカメラデモフラグ変更 (d:SDEMO_CINEMASCREEN_ON | d:SDEMO_CANCEL_ENABLE | d:SDEMO_RADAR_OFF | d:SDEMO_PAD_DISABLE) 1 30
+			@シナリオカメラデモ 14 $i:カメラＸ位置,$i:カメラＹ位置,$i:カメラＺ位置,$i:注視点Ｘ位置,$i:注視点Ｙ位置,$i:注視点Ｚ位置,200  \
+				19098,105,-174351,13080,-2840,-179108 200
+		}
+	}
+}
+proc 崩落床手前落下 {
+	#if d:DEBUG_PRINT
+		print 'w25b_FALL_1'
+	#endif
+	mesg 崩落床 崩落床手前１ fall
+	mesg 崩落床 崩落床手前２ fall
+	mesg プレイヤー d:PLAYER position 13000,$i:プレイヤー位置Ｙ,-169250
+	@ジャンプ落下死発動 0x0004 -41000
+}
+proc 崩落床中央落下 {
+	#if d:DEBUG_PRINT
+		print 'w25b_FALL_2'
+	#endif
+	mesg 崩落床 崩落床中央１ fall
+	mesg 崩落床 崩落床中央２ fall
+	mesg プレイヤー d:PLAYER position 14500,$i:プレイヤー位置Ｙ,-171875
+	@ジャンプ落下死発動 0x0004 -41000
+}
+proc 崩落床奥落下 {
+	#if d:DEBUG_PRINT
+		print 'w25b_FALL_3'
+	#endif
+	mesg 崩落床 崩落床奥１ fall
+	mesg 崩落床 崩落床奥２ fall
+	mesg プレイヤー d:PLAYER position 16875,$i:プレイヤー位置Ｙ,-176250
+	@ジャンプ落下死発動 0x0004 -41000
+}
+proc 階段落下開始 {
+	#if d:DEBUG_PRINT
+		print 'Step fall'
+	#endif
+	// アイテムがまだあれば落下開始
+	mesg アイテム 落下予定特殊レーション 床監視開始
+}
+
+// ジャンプ落下死開始処理 (fall.h内部よりコールされる)
+proc ジャンプ落下死開始処理 {
+	eval( $w:ゲームオーバーカメラ回転値 = 2048) ;
+	chara プロック連続実行 ゲームオーバー時のカメラ回転 -proc ゲームオーバーカメラ回転
+	command ゲームオーバー背景設定 \
+		-t gmov \
+		-s dekisi_alp_ovl \
+		-m 1
+	@ゲームオーバー開始処理
+}
+proc  ゲームオーバーカメラ回転 {
+	eval( $w:ゲームオーバーカメラ回転値 = ($w:ゲームオーバーカメラ回転値 + 2) & 4095 ) ;
+	chara カメラ設定 カットインカメラ \
+			-c 0 \
+			-b d:CAM_MIN,-8500,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-l d:CAM_MIN,-40000,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-r 3800,$w:ゲームオーバーカメラ回転値,0 -f 4340 \
+			-a 200 \
+			-i 0 -1 0 0 \
+			-s 1
+}
+
+//  ゲームオーバー終了処理 (fall.h内部よりコールされる)
+proc ゲームオーバー終了処理 {
+	chara パッド振動 落下振動 -vibfile drop_sea
+}
+
+proc w25b専用ステージ終了時処理 $:目標位置Ｘ $:目標位置Ｙ $:目標位置Ｚ $:終了時方向 $:終了時プロック $:モーションタイプ $:表示文字 {
+	// 梯子を上りながらのステージ切り替えを行うための特殊なステージ終了
+	#if d:DEBUG_PRINT 
+		print 'w25b special stage_end'
+	#endif
+
+	// 二重呼び防止のためにフラグを寝かす
+	eval($f:ロードチェックＯＮフラグ = 0);
+
+	// 次のステージへのアラートモード引継
+	if ($w:ゲーム設定 <= d:LEVEL_EASY) {
+		// easyより易しいレベルはロードすると潜入モード
+		eval( $w:スタートアラートモード = d:ALERT_MODE_SENNYU );
+	} else {
+		if ($w:アラートモード == d:ALERT_MODE_KIKEN && $i:アラートレベル < 1024) {
+			// 危険モード時(危険値MAXは除く)は回避モードまで下げる
+			eval( $w:スタートアラートモード = d:ALERT_MODE_KAIHI );
+		} else {
+			eval( $w:スタートアラートモード = $w:アラートモード );
+		}
+	}
+
+	if ($w:アラートモード != d:ALERT_MODE_KIKEN) {
+		// 敵兵の視界オフ
+		mesg コマンダー 敵兵セット 視界オフ
+	}
+	
+	// 無線機からのコールがあった場合キャンセルをかける
+	command 無線設定 -reset
+
+	@特殊装備解除
+
+	// パッド操作を奪う(無線やポーズもフラグをたてなければ不許可にする)
+	command パッド操作 -release
+	command メニュー設定 -menu off -gage off -radar off -subwin off -radio off -pause off
+
+	// *********** ここからが梯子のぼりのための特別処理 ***************
+	mesg プレイヤー d:PLAYER motion d:モーションリスト:non_ladder_up_c_start  1365 -1 0 \
+		( d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_USE_NOW_HEIGHT ) \
+		40870 -196047 -2000
+	mesg プレイヤー d:PLAYER motion d:モーションリスト:non_ladder_up_loop  -1 -1 0 \
+		( d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_USE_NOW_HEIGHT ) 
+	mesg プレイヤー d:PLAYER motion d:モーションリスト:non_ladder_up_loop  -1 -1 0 \
+		( d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_USE_NOW_HEIGHT ) 
+	mesg プレイヤー d:PLAYER motion d:モーションリスト:non_ladder_up_loop  -1 -1 0 \
+		( d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_USE_NOW_HEIGHT ) 
+	chara カメラ設定 モーションカメラ \
+		-c 1 \
+		-p 37844,-3047,-192831 -t 39320,-2100,-194460 \
+		-r -265,1568,0 -f 2393 \
+		-a 200 \
+		-i 0 -1 0 0 \
+		-s 1
+	// *********** ここまでが梯子のぼりのための特別処理 ***************
+
+	eval($s:呼び出しプロック = $:終了時プロック);
+
+	chara delay ステージ名表示ディレイ \
+		-time 40 \
+		-arg $:表示文字 \
+		-exec {
+			@ステージ名表示（終了時） $1
+		}
+
+	chara delay フェード遅延 -time 120 -exec {
+		chara フェードインアウト フェードアウト \
+			-c 0,0,0 128 \
+			-t d:FADEOUT_TIME \		
+			-p ロードプロック \
+			-s 10
+	}
+}
+
+proc w25b専用ステージ開始時処理 {
+			// パッド操作を奪う(無線やポーズも不許可にする)
+			command パッド操作 -release
+			command メニュー設定 -radio off -pause off 
+
+			// フェードインスタート(フェードの強さを弱める)
+			chara フェードインアウト フェードイン \
+				-i 0,0,0 128 \
+				-c 0,0,0 0 \
+				-t d:FADEIN_TIME -s 10
+
+			// 前のステージの表示に文字を重ねる
+			@ステージ名表示 d:wn_ＬＧ連絡橋
+
+			command	強制モーション終了プロック \
+				-proc 強制モーション終了時処理 
+
+			mesg プレイヤー d:PLAYER motion d:モーションリスト:non_ladder_down_c_end  1365 -1 0 \
+				( d:FA_NO_CHECK_SEG | d:FA_NO_CHECK_FLR | d:FA_USE_NOW_HEIGHT ) \
+				40970 -196047 -1500
+}
+
+proc w25b側ロード時カメラ設定 {
+	chara カメラ設定 ロードカメラ \
+		-c 1 \
+		-p 41583,-100,-193889 -t 41002,-1711,-196041 \
+		-r 408,2220,0 -f 2750 \
+		-a 200 \
+		-i 0 1 0 0 \
+		-s 1
+
+	chara プロック連続実行 カメラ戻し管理人 \
+		-proc カメラ戻し管理
+}
+proc カメラ戻し管理 {
+	command パッドチェック \
+		-no_use
+	if ($status != 1) {
+		chara カメラ設定 ロードカメラ \
+			-s -1
+		mesg プロック連続実行 カメラ戻し管理人 kill
+	}
+}
+proc 強制モーション終了時処理 {
+	command パッド操作 -cancel
+	command メニュー設定 -radio on -pause on
+	eval($f:ロードチェックＯＮフラグ = 1);
+}

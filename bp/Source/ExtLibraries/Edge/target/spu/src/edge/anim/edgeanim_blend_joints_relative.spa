@@ -1,0 +1,569 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2007 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+.cfunc void edgeAnimBlendJointsRelative(EdgeAnimJointTransform* __restrict__ outputJoints, 
+                                  uint8_t* __restrict__ outputWeights,
+                                  const EdgeAnimJointTransform* __restrict__ leftJoints,
+                                  const uint8_t* __restrict__ leftWeights,
+                                  const EdgeAnimJointTransform* __restrict__ rightJoints, 
+                                  const uint8_t* __restrict__ rightWeights,
+                                  float alpha, uint32_t blendMode, unsigned int count)
+
+	//----------------------------------------------------------------------------------------------
+	// Early out
+	//----------------------------------------------------------------------------------------------    
+
+  	brz		count, NoLoop
+
+	//----------------------------------------------------------------------------------------------
+	// Splat input params
+	//----------------------------------------------------------------------------------------------    
+ 
+    .reg    shufAAAA
+    il128   shufAAAA, "AAAA"
+    
+    shufb   outputWeights, outputWeights, outputWeights, shufAAAA
+    shufb   leftWeights, leftWeights, leftWeights, shufAAAA
+    shufb   rightWeights, rightWeights, rightWeights, shufAAAA          
+    shufb   alpha, alpha, alpha, shufAAAA 
+    shufb   blendMode, blendMode, blendMode, shufAAAA 
+       
+
+    //----------------------------------------------------------------------------------------------
+    // Vectorised count (warning : will overread/overwrite)
+    //----------------------------------------------------------------------------------------------
+
+    .reg    count4, countTmp
+    ai      countTmp, count, 3
+    rotmi   count4, countTmp, -2    
+    
+        
+    //----------------------------------------------------------------------------------------------
+    // Init code
+    //----------------------------------------------------------------------------------------------        
+            
+    // Shuffle / select masks
+    .reg    shufAaBb, shufBbAa, shufCcDd    
+    il128   shufAaBb, "AaBb"
+    il128   shufBbAa, "BbAa"
+    il128   shufCcDd, "CcDd"
+    
+    .reg    shufDdCc, shufCDab, shufABcd    
+    il128   shufDdCc, "DdCc"
+    il128   shufCDab, "CDab"    
+    il128   shufABcd, "ABcd"    
+    
+    .reg    shufBBBB, shufCCCC, shufDDDD
+    il128   shufBBBB, "BBBB"
+    il128   shufCCCC, "CCCC"
+    il128   shufDDDD, "DDDD"    
+    
+    .reg    shuf000A000B000C000D, shuf000X000X000X000X
+    il128   shuf000A000B000C000D, "000A000B000C000D"
+    ilhu    shuf000X000X000X000X, 0x808080C0@h
+    iohl    shuf000X000X000X000X, 0x808080C0@l   
+
+    // Constants
+    .reg    kZero, kOne, kMinusOne, kCufltScale
+    .reg    kOneMinusEpsilon, kClampWU    
+    ilhu    kOne, 0x3f800000@h
+    ilhu    kMinusOne, 0xbf800000@h
+    il      kZero, 0
+    ilhu    kOneMinusEpsilon, 0x3F7FBE77@h  // +0.999f
+    iohl    kOneMinusEpsilon, 0x3F7FBE77@l  // +0.999f
+    ilhu    kCufltScale, 0x3F808081@h       // +1.0039215686f 
+    iohl    kCufltScale, 0x3F808081@l       // +1.0039215686f (256/255)
+    il      kClampWU, 0xFF
+
+    .reg    kMulNoWpos, kMulNoWneg
+    il128   kMulNoWpos, 0x3F800000_3F800000_3F800000_00000000
+    il128   kMulNoWneg, 0xBF800000_BF800000_BF800000_00000000
+        
+    // Constants : MacLaurin - Acos
+    .reg    kAcosPacked0, kAcos0, kAcos1, kAcos2, kAcos3
+    il128   kAcosPacked0, 0x3FC90FDA_3E5BBFCA_3DB63A9E_3D4D8392  // 1.5707963050 0.2145988016 0.0889789874 0.0501743046
+    shufb   kAcos0, kAcosPacked0, kAcosPacked0, shufAAAA
+    shufb   kAcos1, kAcosPacked0, kAcosPacked0, shufBBBB
+    shufb   kAcos2, kAcosPacked0, kAcosPacked0, shufCCCC
+    shufb   kAcos3, kAcosPacked0, kAcosPacked0, shufDDDD
+    
+    // Constants : Taylor - Sin
+    .reg    kSinPacked0, kSin0, kSin1, kSin2, kSin3
+    il128   kSinPacked0, 0xBE2AAAAB_3C088887_B9500C03_3638B94F  // -0.1666666664 0.0083333315 -0.000198409 0.0000027526
+    shufb   kSin0, kSinPacked0, kSinPacked0, shufAAAA
+    shufb   kSin1, kSinPacked0, kSinPacked0, shufBBBB
+    shufb   kSin2, kSinPacked0, kSinPacked0, shufCCCC
+    shufb   kSin3, kSinPacked0, kSinPacked0, shufDDDD       
+    
+    // NULL weights 
+    .reg    selLeftWeightsNonNull, selRightWeightsNonNull
+    clgti   selLeftWeightsNonNull, leftWeights, 0
+    clgti   selRightWeightsNonNull, rightWeights, 0 
+    .reg    shufLeftWeights, shufRightWeights   
+    selb    shufLeftWeights, shuf000X000X000X000X, shuf000A000B000C000D, selLeftWeightsNonNull
+    selb    shufRightWeights, shuf000X000X000X000X, shuf000A000B000C000D, selRightWeightsNonNull
+    
+    
+    .memgroup outWeightAliasingGroup
+
+    .reg	shufabcd, shufABCD
+    il128   shufABCD, "ABCD"
+    il128   shufabcd, "abcd"
+
+    .reg    subtract, compose, selSubtract, selCompose, maskFloatSignNegate
+    .reg	maskConjugate, mulDeltaTrans, selNotCompose, shufSwapRots
+    andi    subtract, blendMode, 0x01
+    andi    compose, blendMode, 0x10
+    clgti   selSubtract, subtract, 0
+    clgti   selCompose, compose, 0
+    nand    selNotCompose, selCompose, selCompose
+    ilhu    maskFloatSignNegate, 0x80000000@h
+    selb    maskConjugate, kZero, maskFloatSignNegate, selSubtract
+    selb    mulDeltaTrans, kMulNoWpos, kMulNoWneg, selSubtract        
+    selb	shufSwapRots, shufabcd, shufABCD, selSubtract
+    
+    .reg    shufCompose, shufDHLPDHLPDHLPDHLP
+    il128   shufDHLPDHLPDHLPDHLP, "DHLPDHLPDHLPDHLP"
+    selb    shufCompose, shufABCD, shufabcd, selCompose 
+                                         
+    //----------------------------------------------------------------------------------------------
+    // Loop
+    //----------------------------------------------------------------------------------------------        
+    
+Loop:
+    ai      count4, count4, -1        
+    ai      outputJoints, outputJoints, 0xC0
+    ai      leftJoints, leftJoints, 0xC0
+    ai      rightJoints, rightJoints, 0xC0
+    
+    //----------------------------------------------------------------------------------------------        
+    // Weights
+    //----------------------------------------------------------------------------------------------
+
+    // Load and realign 
+    .reg    leftWQw0, rightWQw0, leftWB, leftWU, rightWB, rightWU
+    lqd     leftWQw0, 0x0(leftWeights)
+    lqd     rightWQw0, 0x0(rightWeights)
+    rotqby  leftWB, leftWQw0, leftWeights    
+    rotqby  rightWB, rightWQw0, rightWeights        
+    ai      rightWeights, rightWeights, 0x04        
+    ai      leftWeights, leftWeights, 0x04        
+    shufb   leftWU, leftWB, leftWB, shufLeftWeights
+    shufb   rightWU, rightWB, rightWB, shufRightWeights
+    
+    // Convert to floats + scale
+    .reg    rightWFt, rightWF
+    cuflt   rightWFt, rightWU, 8 
+    fm      rightWF, rightWFt, kCufltScale
+        
+    // Partial animation logic
+    .reg    leftZeroMask, rightZeroMask, selForceRight, shufCopyRight, maskZeroW0, maskZeroW1, maskZeroW2, maskZeroW
+    ceqi    rightZeroMask, rightWU, 0
+    ceqi    leftZeroMask, leftWU, 0
+    and     selForceRight, leftZeroMask, selCompose
+    selb    shufCopyRight, shufABCD, shufabcd, selForceRight           
+    and     maskZeroW0, selNotCompose, leftZeroMask
+    or      maskZeroW1, leftZeroMask, rightZeroMask
+    and     maskZeroW2, maskZeroW1, selSubtract
+    nor     maskZeroW, maskZeroW0, maskZeroW2
+                    
+    // Alpha
+    .reg    tmpAlpha0, t
+    fm      tmpAlpha0, alpha, rightWF
+    shufb   t, tmpAlpha0, kOne, shufCompose 
+
+    // Update weights 
+    .reg    outWQwSrc, shufOutputWeights, outWQw
+    .reg    outWU0, outWU1, outWU2, outWB, selClampOutWU
+    lqd     [outWeightAliasingGroup] outWQwSrc, 0x0(outputWeights)   
+    cwd     shufOutputWeights, 0x0(outputWeights)       
+    a       outWU0, leftWU, rightWU
+    clgt    selClampOutWU, outWU0, kClampWU 
+    selb    outWU1, outWU0, kClampWU, selClampOutWU     
+    and     outWU2, outWU1, maskZeroW   
+    shufb   outWB, outWU2, outWU2, shufDHLPDHLPDHLPDHLP
+    shufb   outWQw, outWB, outWQwSrc, shufOutputWeights
+    stqd    [outWeightAliasingGroup] outWQw, 0x0(outputWeights)  
+    ai      outputWeights, outputWeights, 0x04  
+    
+    // Splat t
+    .reg    t0, t1, t2, t3
+    shufb   t0, t, t, shufAAAA
+    shufb   t1, t, t, shufBBBB
+    shufb   t2, t, t, shufCCCC
+    shufb   t3, t, t, shufDDDD
+    
+    // Splat force right/right (shuffles, to reduce even pipe load)
+    .reg    selForceRight0, selForceRight1, selForceRight2, selForceRight3
+    shufb   selForceRight0, selForceRight, selForceRight, shufAAAA  
+    shufb   selForceRight1, selForceRight, selForceRight, shufBBBB
+    shufb   selForceRight2, selForceRight, selForceRight, shufCCCC
+    shufb   selForceRight3, selForceRight, selForceRight, shufDDDD 
+    .reg    shufCopyRight0, shufCopyRight1, shufCopyRight2, shufCopyRight3
+    selb    shufCopyRight0, shufABCD, shufabcd, selForceRight0
+    selb    shufCopyRight1, shufABCD, shufabcd, selForceRight1
+    selb    shufCopyRight2, shufABCD, shufabcd, selForceRight2   
+    selb    shufCopyRight3, shufABCD, shufabcd, selForceRight3
+    
+    .reg    selForceLeft0, selForceLeft1, selForceLeft2, selForceLeft3
+    shufb   selForceLeft0, rightZeroMask, rightZeroMask, shufAAAA  
+    shufb   selForceLeft1, rightZeroMask, rightZeroMask, shufBBBB
+    shufb   selForceLeft2, rightZeroMask, rightZeroMask, shufCCCC
+    shufb   selForceLeft3, rightZeroMask, rightZeroMask, shufDDDD 
+    .reg    shufCopyLeft0, shufCopyLeft1, shufCopyLeft2, shufCopyLeft3, shufCopyLeft
+    selb    shufCopyLeft0, shufABCD, shufabcd, selForceLeft0
+    selb    shufCopyLeft1, shufABCD, shufabcd, selForceLeft1
+    selb    shufCopyLeft2, shufABCD, shufabcd, selForceLeft2   
+    selb    shufCopyLeft3, shufABCD, shufabcd, selForceLeft3
+	selb	shufCopyLeft, shufABCD, shufabcd, rightZeroMask    	
+    	
+    //----------------------------------------------------------------------------------------------        
+    // Slerp
+    //----------------------------------------------------------------------------------------------
+                        
+    // Load left rot...
+    .reg    leftRot0, leftRot1, leftRot2, leftRot3
+    lqd     leftRot0, -0xC0(leftJoints)
+    lqd     leftRot1, -0x90(leftJoints)
+    lqd     leftRot2, -0x60(leftJoints)
+    lqd     leftRot3, -0x30(leftJoints)
+    
+    // Load right rot
+    .reg    rightRot0, rightRot1, rightRot2, rightRot3
+    lqd     rightRot0, -0xC0(rightJoints)
+    lqd     rightRot1, -0x90(rightJoints)
+    lqd     rightRot2, -0x60(rightJoints)
+    lqd     rightRot3, -0x30(rightJoints)       
+       
+    // Swizzle left rot
+    .reg    leftRotX, leftRotY, leftRotZ, leftRotW 
+    .reg    leftRotX0X1Y0Y1, leftRotY2Y3X2X3, leftRotZ0Z1W0W1, leftRotW2W3Z2Z3
+    shufb   leftRotX0X1Y0Y1, leftRot0, leftRot1, shufAaBb
+    shufb   leftRotY2Y3X2X3, leftRot2, leftRot3, shufBbAa
+    shufb   leftRotX, leftRotX0X1Y0Y1, leftRotY2Y3X2X3, shufABcd
+    shufb   leftRotY, leftRotX0X1Y0Y1, leftRotY2Y3X2X3, shufCDab
+    shufb   leftRotZ0Z1W0W1, leftRot0, leftRot1, shufCcDd
+    shufb   leftRotW2W3Z2Z3, leftRot2, leftRot3, shufDdCc
+    shufb   leftRotZ, leftRotZ0Z1W0W1, leftRotW2W3Z2Z3, shufABcd
+    shufb   leftRotW, leftRotZ0Z1W0W1, leftRotW2W3Z2Z3, shufCDab
+                               
+    // Swizzle right rot
+    .reg    rightRotXtmp, rightRotYtmp, rightRotZtmp, rightRotW 
+    .reg    rightRotX0X1Y0Y1, rightRotY2Y3X2X3, rightRotZ0Z1W0W1, rightRotW2W3Z2Z3
+    shufb   rightRotX0X1Y0Y1, rightRot0, rightRot1, shufAaBb
+    shufb   rightRotY2Y3X2X3, rightRot2, rightRot3, shufBbAa
+    shufb   rightRotXtmp, rightRotX0X1Y0Y1, rightRotY2Y3X2X3, shufABcd
+    shufb   rightRotYtmp, rightRotX0X1Y0Y1, rightRotY2Y3X2X3, shufCDab
+    shufb   rightRotZ0Z1W0W1, rightRot0, rightRot1, shufCcDd
+    shufb   rightRotW2W3Z2Z3, rightRot2, rightRot3, shufDdCc
+    shufb   rightRotZtmp, rightRotZ0Z1W0W1, rightRotW2W3Z2Z3, shufABcd
+    shufb   rightRotW, rightRotZ0Z1W0W1, rightRotW2W3Z2Z3, shufCDab
+    
+    // Conjugate (subtract mode)? 
+    .reg    rightRotX, rightRotY, rightRotZ
+    xor     rightRotX, rightRotXtmp, maskConjugate
+    xor     rightRotY, rightRotYtmp, maskConjugate
+    xor     rightRotZ, rightRotZtmp, maskConjugate    
+        
+    // Swap left & right rotations for subtract mode
+    .reg    aRotX, aRotY, aRotZ, aRotW
+    shufb	aRotX, leftRotX, rightRotX, shufSwapRots
+    shufb	aRotY, leftRotY, rightRotY, shufSwapRots
+    shufb	aRotZ, leftRotZ, rightRotZ, shufSwapRots
+    shufb	aRotW, leftRotW, rightRotW, shufSwapRots
+    
+    .reg    bRotX, bRotY, bRotZ, bRotW
+    shufb	bRotX, rightRotX, leftRotX, shufSwapRots 
+    shufb	bRotY, rightRotY, leftRotY, shufSwapRots
+    shufb	bRotZ, rightRotZ, leftRotZ, shufSwapRots 
+    shufb	bRotW, rightRotW, leftRotW, shufSwapRots    
+        
+    // Compose rotations
+    .reg    composedRotXa, composedRotYa, composedRotZa, composedRotWa  
+    fm      composedRotXa, aRotX, bRotW
+    fm      composedRotYa, aRotY, bRotW
+    fm      composedRotZa, aRotZ, bRotW
+    fm      composedRotWa, aRotW, bRotW
+    
+    .reg    composedRotXb, composedRotYb, composedRotZb, composedRotWb  
+    fma     composedRotXb, aRotW, bRotX, composedRotXa
+    fnms    composedRotYb, aRotZ, bRotX, composedRotYa
+    fma     composedRotZb, aRotY, bRotX, composedRotZa
+    fnms    composedRotWb, aRotX, bRotX, composedRotWa
+    
+    .reg    composedRotXc, composedRotYc, composedRotZc, composedRotWc  
+    fma     composedRotXc, aRotZ, bRotY, composedRotXb
+    fma     composedRotYc, aRotW, bRotY, composedRotYb
+    fnms    composedRotZc, aRotX, bRotY, composedRotZb
+    fnms    composedRotWc, aRotY, bRotY, composedRotWb
+
+    .reg    composedRotX, composedRotY, composedRotZ, composedRotW      
+    fnms    composedRotX, aRotY, bRotZ, composedRotXc
+    fma     composedRotY, aRotX, bRotZ, composedRotYc 
+    fma     composedRotZ, aRotW, bRotZ, composedRotZc
+    fnms    composedRotW, aRotZ, bRotZ, composedRotWc
+
+    // Dot
+    .reg    dotRot, dotRotX, dotRotXY, dotRotXYZ
+    fm      dotRotX, leftRotX, composedRotX
+    fma     dotRotXY, leftRotY, composedRotY, dotRotX
+    fma     dotRotXYZ, leftRotZ, composedRotZ, dotRotXY
+    fma     dotRot, leftRotW, composedRotW, dotRotXYZ
+    
+    // Target quat (right or -right)
+    .reg    selSign, floatSign, cosAngle
+    .reg    targetRotX, targetRotY, targetRotZ, targetRotW      
+    fcgt    selSign, kZero, dotRot  
+    selb    floatSign, kOne, kMinusOne, selSign 
+    fm      targetRotX, composedRotX, floatSign
+    fm      targetRotY, composedRotY, floatSign 
+    fm      targetRotZ, composedRotZ, floatSign
+    fm      targetRotW, composedRotW, floatSign
+    fm      cosAngle, dotRot, floatSign
+ 
+    // Acos eval 
+    .reg    oneMinusCosAngle, rsqEst, evalTmp, rsqTmp
+    .reg    acosEval3, acosEval2, acosEval1, acosEval0, angle
+    fs      oneMinusCosAngle, kOne, cosAngle
+    frsqest rsqEst, oneMinusCosAngle
+    fi      rsqTmp, oneMinusCosAngle, rsqEst
+    fnms    evalTmp, rsqTmp, cosAngle, rsqTmp
+    fm      acosEval3, cosAngle, kAcos3
+    fnms    acosEval2, cosAngle, acosEval3, kAcos2
+    fnms    acosEval1, cosAngle, acosEval2, kAcos1
+    fnms    acosEval0, cosAngle, acosEval1, kAcos0
+    fm      angle, acosEval0, evalTmp       
+    
+    // Sina = sin(a)
+    .reg    sqAngle
+    .reg    sinaEval3, sinaEval2, sinaEval1, sinaEval0, sina    
+    fm      sqAngle, angle, angle
+    fma     sinaEval3, kSin3, sqAngle, kSin2
+    fma     sinaEval2, sinaEval3, sqAngle, kSin1
+    fma     sinaEval1, sinaEval2, sqAngle, kSin0
+    fma     sinaEval0, sinaEval1, sqAngle, kOne
+    fm      sina, sinaEval0, angle  
+    
+    // Sinb = sin(alphaRot*a)
+    .reg    tAngle, sqTAngle
+    .reg    sinbEval3, sinbEval2, sinbEval1, sinbEval0, sinb    
+    fm      tAngle, t, angle
+    fm      sqTAngle, tAngle, tAngle
+    fma     sinbEval3, kSin3, sqTAngle, kSin2
+    fma     sinbEval2, sinbEval3, sqTAngle, kSin1
+    fma     sinbEval1, sinbEval2, sqTAngle, kSin0
+    fma     sinbEval0, sinbEval1, sqTAngle, kOne
+    fm      sinb, sinbEval0, tAngle
+    
+    // Sinc = sin((1-alphaRot)a)
+    .reg    oneMinusT, oneMinusTAngle, sqOneMinusTAngle 
+    .reg    sincEval3, sincEval2, sincEval1, sincEval0, sinc            
+    fs      oneMinusT, kOne, t
+    fm      oneMinusTAngle, oneMinusT, angle
+    fm      sqOneMinusTAngle, oneMinusTAngle, oneMinusTAngle    
+    fma     sincEval3, kSin3, sqOneMinusTAngle, kSin2
+    fma     sincEval2, sincEval3, sqOneMinusTAngle, kSin1
+    fma     sincEval1, sincEval2, sqOneMinusTAngle, kSin0
+    fma     sincEval0, sincEval1, sqOneMinusTAngle, kOne
+    fm      sinc, sincEval0, oneMinusTAngle 
+            
+    // Divide 
+    .reg    estInvSina, invSina, fLeftTmp, fRightTmp
+    frest   estInvSina, sina
+    fi      invSina, sina, estInvSina
+    fm      fLeftTmp, sinc, invSina
+    fm      fRightTmp, sinb, invSina
+     
+    // Select
+    .reg    selRange
+    .reg    fLeft, fRight    
+    fcgt    selRange, cosAngle, kOneMinusEpsilon    
+    selb    fLeft, fLeftTmp, oneMinusT, selRange
+    selb    fRight, fRightTmp, t, selRange
+    
+    // Actual blend
+    .reg    tmpRotX, tmpRotY, tmpRotZ, tmpRotW
+    .reg    destRotX, destRotY, destRotZ, destRotW
+    fm      tmpRotX, leftRotX, fLeft
+    fm      tmpRotY, leftRotY, fLeft
+    fm      tmpRotZ, leftRotZ, fLeft    
+    fm      tmpRotW, leftRotW, fLeft        
+    fma     destRotX, targetRotX, fRight, tmpRotX
+    fma     destRotY, targetRotY, fRight, tmpRotY
+    fma     destRotZ, targetRotZ, fRight, tmpRotZ
+    fma     destRotW, targetRotW, fRight, tmpRotW
+       
+    // Bypass - required because input values can be NaN -> can't just force t to 0 or 1
+    // using shuffles instead of selects to reduce even pipe load
+	shufb	destRotX, destRotX, leftRotX, shufCopyLeft
+	shufb	destRotY, destRotY, leftRotY, shufCopyLeft
+	shufb	destRotZ, destRotZ, leftRotZ, shufCopyLeft
+	shufb	destRotW, destRotW, leftRotW, shufCopyLeft	    
+	shufb	destRotX, destRotX, rightRotX, shufCopyRight
+	shufb	destRotY, destRotY, rightRotY, shufCopyRight
+	shufb	destRotZ, destRotZ, rightRotZ, shufCopyRight
+	shufb	destRotW, destRotW, rightRotW, shufCopyRight    
+                 
+    // Unswizzle dest rotation
+    .reg    destRot0, destRot1, destRot2, destRot3
+    .reg    destRotX0Y0X1Y1, destRotZ1W1Z0W0, destRotX2Y2X3Y3, destRotZ3W3Z2W2      
+    shufb   destRotX0Y0X1Y1, destRotX, destRotY, shufAaBb
+    shufb   destRotZ1W1Z0W0, destRotZ, destRotW, shufBbAa
+    shufb   destRot0, destRotX0Y0X1Y1, destRotZ1W1Z0W0, shufABcd
+    shufb   destRot1, destRotX0Y0X1Y1, destRotZ1W1Z0W0, shufCDab    
+    shufb   destRotX2Y2X3Y3, destRotX, destRotY, shufCcDd
+    shufb   destRotZ3W3Z2W2, destRotZ, destRotW, shufDdCc
+    shufb   destRot2, destRotX2Y2X3Y3, destRotZ3W3Z2W2, shufABcd
+    shufb   destRot3, destRotX2Y2X3Y3, destRotZ3W3Z2W2, shufCDab                
+    
+    // Store dest rotation
+    stqd    destRot0, -0xC0(outputJoints)
+    stqd    destRot1, -0x90(outputJoints)
+    stqd    destRot2, -0x60(outputJoints)
+    stqd    destRot3, -0x30(outputJoints)
+
+    //----------------------------------------------------------------------------------------------        
+    // Lerp trans
+    //----------------------------------------------------------------------------------------------
+
+    // Ite 0 : Lerp Trans (not vectorized)
+    .reg    leftTrans0, rightTrans0, rightTrans0b, tgtTrans0
+    .reg	outTrans0Tmp0, outTrans0Tmp1, outTrans0Tmp2, outTrans0
+    lqd     leftTrans0, -0xB0(leftJoints)   
+    lqd     rightTrans0, -0xB0(rightJoints)     
+    fm      rightTrans0b, rightTrans0, mulDeltaTrans
+    fa      tgtTrans0, rightTrans0b, leftTrans0
+    fma     outTrans0Tmp0, tgtTrans0, t0, leftTrans0
+    fnms    outTrans0Tmp1, leftTrans0, t0, outTrans0Tmp0     
+    shufb   outTrans0Tmp2, outTrans0Tmp1, leftTrans0, shufCopyLeft0    
+    shufb   outTrans0, outTrans0Tmp2, rightTrans0b, shufCopyRight0     
+    stqd    outTrans0, -0xB0(outputJoints)
+    
+    // Ite 1 : Lerp Trans (not vectorized)
+    .reg    leftTrans1, rightTrans1, rightTrans1b, tgtTrans1
+    .reg	outTrans1Tmp0, outTrans1Tmp1, outTrans1Tmp2, outTrans1
+    lqd     leftTrans1, -0x80(leftJoints)   
+    lqd     rightTrans1, -0x80(rightJoints)     
+    fm      rightTrans1b, rightTrans1, mulDeltaTrans
+    fa      tgtTrans1, rightTrans1b, leftTrans1
+    fma     outTrans1Tmp0, tgtTrans1, t1, leftTrans1    
+    fnms    outTrans1Tmp1, leftTrans1, t1, outTrans1Tmp0    
+    shufb   outTrans1Tmp2, outTrans1Tmp1, leftTrans1, shufCopyLeft1    
+    shufb   outTrans1, outTrans1Tmp2, rightTrans1b, shufCopyRight1           
+    stqd    outTrans1, -0x80(outputJoints)
+        
+    // Ite 2 : Lerp Trans (not vectorized)
+    .reg    leftTrans2, rightTrans2, rightTrans2b, tgtTrans2 
+    .reg	outTrans2Tmp0, outTrans2Tmp1, outTrans2Tmp2, outTrans2    
+    lqd     leftTrans2, -0x50(leftJoints)   
+    lqd     rightTrans2, -0x50(rightJoints)     
+    fm      rightTrans2b, rightTrans2, mulDeltaTrans
+    fa      tgtTrans2, rightTrans2b, leftTrans2
+    fma     outTrans2Tmp0, tgtTrans2, t2, leftTrans2
+    fnms    outTrans2Tmp1, leftTrans2, t2, outTrans2Tmp0
+    shufb   outTrans2Tmp2, outTrans2Tmp1, leftTrans2, shufCopyLeft2    
+    shufb   outTrans2, outTrans2Tmp2, rightTrans2b, shufCopyRight2                
+    stqd    outTrans2, -0x50(outputJoints)
+        
+    // Ite 3 : Lerp Trans (not vectorized)
+    .reg    leftTrans3, rightTrans3, rightTrans3b, tgtTrans3
+	.reg	outTrans3Tmp0, outTrans3Tmp1, outTrans3Tmp2, outTrans3
+    lqd     leftTrans3, -0x20(leftJoints)   
+    lqd     rightTrans3, -0x20(rightJoints)     
+    fm      rightTrans3b, rightTrans3, mulDeltaTrans
+    fa      tgtTrans3, rightTrans3b, leftTrans3
+    fma     outTrans3Tmp0, tgtTrans3, t3, leftTrans3    
+    fnms    outTrans3Tmp1, leftTrans3, t3, outTrans3Tmp0    
+    shufb   outTrans3Tmp2, outTrans3Tmp1, leftTrans3, shufCopyLeft3
+    shufb   outTrans3, outTrans3Tmp2, rightTrans3b, shufCopyRight3        
+    stqd    outTrans3, -0x20(outputJoints)
+    
+    //----------------------------------------------------------------------------------------------        
+    // Lerp scale
+    //----------------------------------------------------------------------------------------------    
+    
+    // Ite 0 : Lerp Trans/Scale (not vectorized)
+    .reg    leftScale0, rightScale0Tmp, tgtScale0     
+    lqd     leftScale0, -0xA0(leftJoints)
+    lqd     rightScale0Tmp, -0xA0(rightJoints) 
+    .reg    estInvDeltaScale0, invDeltaScale0, rightScale0, tmp0, tmp1
+    frest   estInvDeltaScale0, rightScale0Tmp
+    fi      tmp0, rightScale0Tmp, estInvDeltaScale0    
+	fnms	tmp1, rightScale0Tmp, tmp0, kOne
+	fma		invDeltaScale0, tmp1, tmp0, tmp0
+    selb    rightScale0, rightScale0Tmp, invDeltaScale0, selSubtract     
+    fm      tgtScale0, rightScale0, leftScale0
+	.reg	outScale0Tmp0, outScale0Tmp1, outScale0Tmp2, outScale0
+    fma     outScale0Tmp0, tgtScale0, t0, leftScale0
+    fnms    outScale0Tmp1, leftScale0, t0, outScale0Tmp0     
+    shufb   outScale0Tmp2, outScale0Tmp1, leftScale0, shufCopyLeft0            
+    shufb   outScale0, outScale0Tmp2, rightScale0, shufCopyRight0                
+    stqd    outScale0, -0xA0(outputJoints)
+    
+    // Ite 1 : Lerp Scale (not vectorized)
+    .reg    leftScale1, rightScale1Tmp, tgtScale1     
+    lqd     leftScale1, -0x70(leftJoints)   
+    lqd     rightScale1Tmp, -0x70(rightJoints)    
+    .reg    estInvDeltaScale1, invDeltaScale1, rightScale1
+    frest   estInvDeltaScale1, rightScale1Tmp
+    fi      tmp0, rightScale1Tmp, estInvDeltaScale1    
+	fnms	tmp1, rightScale1Tmp, tmp0, kOne
+	fma		invDeltaScale1, tmp1, tmp0, tmp0
+    selb    rightScale1, rightScale1Tmp, invDeltaScale1, selSubtract                
+    fm      tgtScale1, rightScale1, leftScale1
+    .reg	outScale1Tmp0, outScale1Tmp1, outScale1Tmp2, outScale1
+    fma     outScale1Tmp0, tgtScale1, t1, leftScale1
+    fnms    outScale1Tmp1, leftScale1, t1, outScale1Tmp0     
+    shufb   outScale1Tmp2, outScale1Tmp1, leftScale1, shufCopyLeft1            
+    shufb   outScale1, outScale1Tmp2, rightScale1, shufCopyRight1                
+    stqd    outScale1, -0x70(outputJoints)
+        
+    // Ite 2 : Lerp Scale (not vectorized)
+    .reg    leftScale2, rightScale2Tmp, tgtScale2     
+    lqd     leftScale2, -0x40(leftJoints)   
+    lqd     rightScale2Tmp, -0x40(rightJoints) 
+    .reg    estInvDeltaScale2, invDeltaScale2, rightScale2
+    frest   estInvDeltaScale2, rightScale2Tmp
+    fi      tmp0, rightScale2Tmp, estInvDeltaScale2    
+	fnms	tmp1, rightScale2Tmp, tmp0, kOne
+	fma		invDeltaScale2, tmp1, tmp0, tmp0
+    selb    rightScale2, rightScale2Tmp, invDeltaScale2, selSubtract             
+    fm      tgtScale2, rightScale2, leftScale2
+    .reg	outScale2Tmp0, outScale2Tmp1, outScale2Tmp2, outScale2
+    fma     outScale2Tmp0, tgtScale2, t2, leftScale2
+    fnms    outScale2Tmp1, leftScale2, t2, outScale2Tmp0     
+    shufb   outScale2Tmp2, outScale2Tmp1, leftScale2, shufCopyLeft2            
+    shufb   outScale2, outScale2Tmp2, rightScale2, shufCopyRight2                
+    stqd    outScale2, -0x40(outputJoints)     
+        
+    // Ite 3 : Lerp Scale (not vectorized)
+    .reg    leftScale3, rightScale3Tmp, tgtScale3         
+    lqd     leftScale3, -0x10(leftJoints)   
+    lqd     rightScale3Tmp, -0x10(rightJoints)
+    .reg    estInvDeltaScale3, invDeltaScale3, rightScale3
+    frest   estInvDeltaScale3, rightScale3Tmp
+    fi      tmp0, rightScale3Tmp, estInvDeltaScale3    
+	fnms	tmp1, rightScale3Tmp, tmp0, kOne
+	fma		invDeltaScale3, tmp1, tmp0, tmp0
+    selb    rightScale3, rightScale3Tmp, invDeltaScale3, selSubtract                
+    fm      tgtScale3, rightScale3, leftScale3
+    .reg	outScale3Tmp0, outScale3Tmp1, outScale3Tmp2, outScale3
+    fma     outScale3Tmp0, tgtScale3, t3, leftScale3
+    fnms    outScale3Tmp1, leftScale3, t3, outScale3Tmp0     
+    shufb   outScale3Tmp2, outScale3Tmp1, leftScale3, shufCopyLeft3            
+    shufb   outScale3, outScale3Tmp2, rightScale3, shufCopyRight3                
+    stqd    outScale3, -0x10(outputJoints)     
+                    
+    //----------------------------------------------------------------------------------------------        
+    // Loop
+    //----------------------------------------------------------------------------------------------
+
+    brnz    count4, Loop 
+
+NoLoop:
+
+.endfunc                 
+ 

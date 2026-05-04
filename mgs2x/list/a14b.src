@@ -1,0 +1,138 @@
+// a14b.src
+// Ｂ脚・変電室(スネークテイルズＤ用)
+// 2002/02/12 H.Yoshiike
+// $Id: a14b.src,v 1.2 2002/07/02 07:08:27 usr03379 Exp $
+
+
+
+// ステージ名
+#define		WN_W14A
+
+// 敵兵タイプ
+#define		ENE_P_GOL
+#define		ENE_ATTACKER
+#define		ENE_HIGH_TECH
+#define		ENE_SHADOW 1
+
+// 特殊兵
+
+// 特殊兵のモーション設定
+#define		ENE_MAR '-DDEL_SHOTGUN=DUMMY -DDEL_TNG=DUMMY -DDEL_SHIELD=DUMMY -DDEL_WALKMAN=DUMMY'
+
+
+block .use r_vr_s
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"common.h"
+#include	"c_effect.h"
+#include	"goverpic.h"
+//include		wp_plant.h
+// オルタナティブミッション用追加エフェクト
+#include	"alt_effect.h"
+
+
+
+// キャラクタ
+#include	"ene_plant.h"
+
+// ＮＰＣスネーク
+//mtn			npc_snake.mls
+//mtn			npc_snake_cap.mls
+//mtn			npc_snake_drag.mls
+//far			sna_npc.far
+
+// 2001.9.11 水谷要請により、ゲーム中M4モデルを入替えます
+// weapon		m4/m4a_nm.kms
+
+goods			demo_m4_sna/demo_m4_sna.kms
+rename			demo_m4_sna.kms m4a_nm.kms
+
+
+// 強制モーション
+mtn			sna_a14a.mls
+mtn			rai_a14a.mls
+mtn			sna_locker.mls		// ロッカー開閉モーション
+mtn			locker.mls			// ロッカー扉開閉モーション
+
+
+
+
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル
+
+pack_all	object1.tri \
+				world/door/w14a_dr00.dar \
+				world/door/w14a_dr01.dar \
+				world/door/dr_free.dar
+
+world		door/w14a_dr00.kms
+world		door/w14a_dr01.kms
+world		door/dr_free.kms
+
+world		w14a/w14a0
+world		w14a/w14a1
+world		w14a/w14a_load
+lt2			w14a.lt2
+hazard		a14b.hzx		//	テイルズＤ用ハザード
+
+
+
+
+
+// オブジェクト
+// 小さいサイズのテクスチャはまとめておく
+
+// 電灯虫
+pack_all	obj_cm.tri \
+				goods/fly/fly_cm.dar
+
+goods		fly/fly_cm.kms
+
+// 解体Ｃ４・監視カメラ・消火器
+pack_all	object2.tri \
+				goods/c4_kaitai_a/c4_kaitai_a1.dar \
+				goods/c4_kaitai_a/c4_kaitai_a1_frost_cm.dar \
+				meca/svc_plant/svc_plant.dar \
+				meca/svc_plant/svc_plant_brk1.dar \
+				debug/okajima/hose_test/hose_cone.dar \
+				debug/okajima/hose_test/hose_new2.dar
+
+goods		c4_kaitai_a
+meca		svc_plant
+debug		okajima/hose_test/hose_cone.kms
+debug		okajima/hose_test/hose_new2.kms
+cvd  		debug/okajima/hose_test/hose_new2.cvd vn
+
+// ＳＥＡＬＳ・海軍大佐
+pack_all	object3.tri \
+				human/sel_dead/sel_dead_ac.dar \
+				human/sel_dead/sel_dead_acm4.dar \
+				human/sel_dead/sel_dead_b.dar
+//				human/sel_dead/sel_dead_bm4.dar
+
+pack_all	object4.tri \
+				human/sel_dead/sel_dead_indoor.dar \
+				human/sel_dead/sel_dead_indoorm4.dar \
+				world/w14a/other/cap_dead.dar
+
+human		sel_dead/sel_dead_ac.kms
+human		sel_dead/sel_dead_acm4.kms
+human		sel_dead/sel_dead_b.kms
+//human		sel_dead/sel_dead_bm4.kms
+human		sel_dead/sel_dead_indoor.kms
+human		sel_dead/sel_dead_indoorm4.kms
+world		w14a/other/cap_dead.kms
+
+// アイテム
+itembox
+
+
+
+// リネーム
+rename	a14b.hzx	a14a.hzx		//	テイルズＤ用ハザードの名前をリネームする
+
+

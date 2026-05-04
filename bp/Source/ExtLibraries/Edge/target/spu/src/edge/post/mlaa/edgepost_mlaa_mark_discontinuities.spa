@@ -1,0 +1,197 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2010 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+/*
+ * This is the second step of the edge detection. It compares the absolute difference of two
+ * pixels (in each channel) with the minimum of the threshold values of the pixels.
+ * Simple changes to the edge detection can probably be limited to the writing of the thresholds,
+ * without touching this function.
+ */
+
+
+.macro COMPARE2(result, p0, p1, r0, compareMaskV, compareMaskH)
+	.localreg	a0, a1, b0, b1
+	absdb		a0, p0, p1
+	absdb		a1, p0, r0
+
+	clgtb		b0, compareMaskV, a0				// Check which bytes are smaller or equal to the threshold
+	clgtb		b1, compareMaskH, a1
+	clgt		b0, kThresholdCap, b0				// b0 is 0x00FFFFFF if no pixel is over the threshold. This, as long as 0x00FFFFFF is greater b0, we mark.
+	clgt		b1, kThresholdCap, b1
+
+	selb		result, p0, b0, kHorizontalMask		// Keep p0, copy in a0 bit
+	selb		result, result, b1, kVerticalMask	// Keep p0, copy in a1 bit
+
+.endmacro
+
+.macro GET_COMPARE_MASK(mask, p0, p1)
+	.localreg	comp
+	clgtb		comp, p0, p1
+	selb		mask, p0, p1, comp
+	shufb		mask, mask, mask, kAlphaThresholdSplat
+.endmacro
+
+.cfunc void edgePostMlaaMarkDiscontinuities(
+	qword line0, qword line1, qword line2, qword line3, qword line4, 	
+	qword count)
+
+	.reg		kVerticalMask, kHorizontalMask
+	.reg		kShiftAndCopyLast, kShufRotateAndInsertNext, kAlphaThresholdSplat
+	.reg		kThresholdCap
+	
+	il128		kVerticalMask, 0x40000000_40000000_40000000_40000000
+	il128		kHorizontalMask, 0x80000000_80000000_80000000_80000000
+	il128		kShiftAndCopyLast, "BCDD"
+	il128		kShufRotateAndInsertNext, "BCDa"
+	il128		kAlphaThresholdSplat, "0AAA0EEE0III0MMM" //this looks like some strange comic-book scream...
+	il32		kThresholdCap, 0x00ffffff
+	
+	// for sumb we need to mask out the alpha
+	.reg		kAlphaShuf
+	il128		kAlphaShuf, "0BCD0FGH0JKL0NOP"
+	
+	.reg		kSumShuf0, kSumShuf1
+	il128		kSumShuf0, "dBCDhFGHlJKLpNOP"
+	il128		kSumShuf1, "bBCDfFGHjJKLnNOP"
+	
+	
+	// compute input/output offsets
+	.reg		nextOffset1, nextOffset2, nextOffset3
+	.reg		inputOffset1, inputOffset2, inputOffset3, inputOffset4
+	
+	//get relative addresses. This is all lock-stepped after all.
+	sf			inputOffset1, line0, line1
+	sf			inputOffset2, line0, line2
+	sf			inputOffset3, line0, line3
+	sf			inputOffset4, line0, line4
+	
+	ai			nextOffset1, inputOffset1, 0x10
+	ai			nextOffset2, inputOffset2, 0x10
+	ai			nextOffset3, inputOffset3, 0x10
+	
+	.reg		input, input2
+	ai			input, line0, -0x10
+	
+	ai			count, count, -4
+		
+loop:
+	ai			input, input, 0x10
+	mvo			input2, input
+	ai			count, count, -4
+	
+	// Load pixels
+	.reg		p0, p1, p2, p3, p4
+	.reg		n0, n1, n2, n3
+	lqd			p0, 0x00(input)
+	lqx			p1, inputOffset1, input
+	lqx			p2, inputOffset2, input
+	lqx			p3, inputOffset3, input
+	lqx			p4, inputOffset4, input
+	
+
+	// load next pixels	
+	lqd			n0, 0x10(input)
+	lqx			n1, nextOffset1, input
+	lqx			n2, nextOffset2, input
+	lqx			n3, nextOffset3, input
+	
+
+	// shift and insert next pixel for vertical comparison
+	.reg		r0, r1, r2, r3
+	shufb		r0, p0, n0, kShufRotateAndInsertNext
+	shufb		r1, p1, n1, kShufRotateAndInsertNext
+	shufb		r2, p2, n2, kShufRotateAndInsertNext
+	shufb		r3, p3, n3, kShufRotateAndInsertNext
+
+	.reg		kCompareMaskH0, kCompareMaskH1, kCompareMaskH2, kCompareMaskH3
+	.reg		kCompareMaskV0, kCompareMaskV1, kCompareMaskV2, kCompareMaskV3
+
+
+	GET_COMPARE_MASK(kCompareMaskV0, p0, p1)
+	GET_COMPARE_MASK(kCompareMaskV1, p1, p2)
+	GET_COMPARE_MASK(kCompareMaskV2, p2, p3)
+	GET_COMPARE_MASK(kCompareMaskV3, p3, p4)
+	GET_COMPARE_MASK(kCompareMaskH0, p0, r0)
+	GET_COMPARE_MASK(kCompareMaskH1, p1, r1)
+	GET_COMPARE_MASK(kCompareMaskH2, p2, r2)
+	GET_COMPARE_MASK(kCompareMaskH3, p3, r3)
+
+	.reg		p0_no_alpha, p1_no_alpha, p2_no_alpha, p3_no_alpha
+	shufb		p0_no_alpha, p0, p0, kAlphaShuf
+	shufb		p1_no_alpha, p1, p1, kAlphaShuf
+	shufb		p2_no_alpha, p2, p2, kAlphaShuf
+	shufb		p3_no_alpha, p3, p3, kAlphaShuf
+	
+	.reg		sum0, sum1
+	sumb		sum0, p0_no_alpha, p1_no_alpha
+	sumb		sum1, p2_no_alpha, p3_no_alpha
+	
+	//shift right by 4 bits, use qword version to be ODD.
+	rotqmbii	sum0, sum0, -4
+	rotqmbii	sum1, sum1, -4
+	
+	shufb		p0, p0, sum0, kSumShuf0
+	shufb		p1, p1, sum0, kSumShuf1
+	shufb		p2, p2, sum1, kSumShuf0
+	shufb		p3, p3, sum1, kSumShuf1
+	
+	.reg		result0, result1, result2, result3
+	COMPARE2(result0, p0, p1, r0, kCompareMaskV0, kCompareMaskH0)
+	COMPARE2(result1, p1, p2, r1, kCompareMaskV1, kCompareMaskH1)
+	COMPARE2(result2, p2, p3, r2, kCompareMaskV2, kCompareMaskH2)
+	COMPARE2(result3, p3, p4, r3, kCompareMaskV3, kCompareMaskH3)
+	
+	// Store back
+	stqd		result0, 0x00(input2)
+	stqx		result1, inputOffset1, input2
+	stqx		result2, inputOffset2, input2
+	stqx		result3, inputOffset3, input2
+	
+	
+	brnz		count, loop : $mintrip<4>
+	///////////////////// end loop
+
+	// and now, the last block.
+	
+	ai			input, input, 0x10
+	
+	lqd			p0, 0x00(input)
+	lqx			p1, inputOffset1, input
+	lqx			p2, inputOffset2, input
+	lqx			p3, inputOffset3, input
+	lqx			p4, inputOffset4, input
+	
+
+	
+	// shift and insert next pixel for vertical comparison
+
+	shufb		r0, p0, p0, kShiftAndCopyLast
+	shufb		r1, p1, p1, kShiftAndCopyLast
+	shufb		r2, p2, p2, kShiftAndCopyLast
+	shufb		r3, p3, p3, kShiftAndCopyLast
+	
+	GET_COMPARE_MASK(kCompareMaskV0, p0, p1)
+	GET_COMPARE_MASK(kCompareMaskV1, p1, p2)
+	GET_COMPARE_MASK(kCompareMaskV2, p2, p3)
+	GET_COMPARE_MASK(kCompareMaskV3, p3, p4)
+	GET_COMPARE_MASK(kCompareMaskH0, p0, r0)
+	GET_COMPARE_MASK(kCompareMaskH1, p1, r1)
+	GET_COMPARE_MASK(kCompareMaskH2, p2, r2)
+	GET_COMPARE_MASK(kCompareMaskH3, p3, r3)
+
+	COMPARE2(result0, p0, p1, r0, kCompareMaskV0, kCompareMaskH0)
+	COMPARE2(result1, p1, p2, r1, kCompareMaskV1, kCompareMaskH1)
+	COMPARE2(result2, p2, p3, r2, kCompareMaskV2, kCompareMaskH2)
+	COMPARE2(result3, p3, p4, r3, kCompareMaskV3, kCompareMaskH3)
+	
+	// Store back
+	stqd		result0, 0x00(input)
+	stqx		result1, inputOffset1, input
+	stqx		result2, inputOffset2, input
+	stqx		result3, inputOffset3, input
+		
+.endfunc
+	

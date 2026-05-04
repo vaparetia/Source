@@ -1,0 +1,607 @@
+/*
+    w12a用かもめデータ
+    w12a_kamome.gcl
+    2001/05/07 Masafumi Okuta
+    $Id: w12a_kamome.gcl,v 1.36 2002/05/09 13:07:49 usr01475 Exp $
+*/
+
+// 002 北低   004 低エリア検索用   008 非難エリア   013 非難エリア検索用
+// 011 南高
+// 003 北高
+
+proc w12a_かもめ危険モード開始
+{
+	mesg かもめマネージャ かもめ管理 指定トラップ内緊急散開 ev004 ev008 75 30
+	mesg かもめマネージャ かもめ管理 指定トラップ内緊急離陸 ev004 ev008 75 30
+}
+proc w12a_かもめ危険モード終了
+{
+	mesg かもめマネージャ かもめ管理 指定トラップ内緊急散開 ev013 ev002 75 360
+	mesg かもめマネージャ かもめ管理 指定トラップ内緊急離陸 ev013 ev002 75 360
+}
+proc w12a_かもめ自由飛行管理	// 連続呼びでw12aのかもめ自由飛行を監視
+{
+	if($i:w12a_カモメ着地カウンタ > 0) {
+		// カウントダウン
+		eval($i:w12a_カモメ着地カウンタ = $i:w12a_カモメ着地カウンタ - 1)
+
+	} else if($i:w12a_カモメ着地カウンタ == 0) {
+		// 着地点の設定
+		eval($i:w12a_カモメ着地点 = $i:w12a_カモメ着地点 + `command rand 16` + 1)	// 着地する線を決める
+		eval($i:w12a_カモメ着地点 = $i:w12a_カモメ着地点 % 16)
+		if(($i:w12a_カモメ着地点 == 1) || ($i:w12a_カモメ着地点 == 4)) {	// この２つのケースはカモメが壁にめり込む可能性が高いので使わない
+			eval($i:w12a_カモメ着地点 = $i:w12a_カモメ着地点 + 1)
+		}
+		// 着地数
+		eval($i:w12a_カモメ着地数 = `command rand 2` + 1)							// 着地するかもめの数を決める
+		// カウント設定
+		eval($i:w12a_カモメ着地カウンタ = `command rand 800` + 800)					// 次の着地命令発行までの間隔を決める
+
+		// 着地制御
+		if($i:w12a_カモメ着地点 == 0) {
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev002, -3800, 6000, -15950,  3800, 6000, -15950, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev003,  7500, 7500,     50, -1500, 7500,     50, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev011, -7500, 7500,     50, -4875, 7500,     50, 1000, 3000, 360
+		} else if($i:w12a_カモメ着地点 == 1) {
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev002, -9050, 7500,  -2500, -9050, 7500,  -1500, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev003, -9050, 7500,  -2500, -9050, 7500,  -1500, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev011,  9050, 7500,  -9750,  9050, 7500, -12500, 1000, 3000, 360
+		} else if($i:w12a_カモメ着地点 == 2) {
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev002, -9050, 7500,  -1500, -7550, 7500,     50, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev003, -9050, 7500,  -1500, -7550, 7500,     50, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev011,  9050, 7500, -12500,  7550, 7500, -14050, 1000, 3000, 360
+		} else if($i:w12a_カモメ着地点 == 3) {
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev002,  7500, 7500,     50, -1500, 7500,     50, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev003, -7500, 7500,     50, -4875, 7500,     50, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev011,  7500, 7500, -14050,  4000, 7500, -14050, 1000, 3000, 360
+		} else if($i:w12a_カモメ着地点 == 4) {
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev002, -9050, 7500,  -2500, -9050, 7500,  -1500, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev003,  9050, 7500,  -9750,  9050, 7500, -12500, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev011,  5800, 7500,  -9750,  5800, 7500, -11550, 1000, 3000, 360
+		} else if($i:w12a_カモメ着地点 == 5) {
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev002, -9050, 7500,  -1500, -7550, 7500,     50, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev003,  9050, 7500, -12500,  7550, 7500, -14050, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev011,  5800, 7500, -11550,  3925, 7500, -11550, 1000, 3000, 360
+		} else if($i:w12a_カモメ着地点 == 6) {
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev002, -7550, 7500,     50, -4875, 7500,     50, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev003,  7550, 7500, -14050,  4000, 7500, -14050, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev011, -3925, 7500, -11550, -3925, 7500, -16000, 1000, 3000, 360
+		} else if($i:w12a_カモメ着地点 == 7) {
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev002,  9050, 7500,  -9750,  9050, 7500, -12500, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev003,  5800, 7500,  -9750,  5800, 7500, -11550, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev011, -5800, 7500,  -9750, -5800, 7500, -11550, 1000, 3000, 360
+		} else if($i:w12a_カモメ着地点 == 8) {
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev002,  9050, 7500, -12500,  7500, 7500, -14050, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev003,  5800, 7500, -11550,  3925, 7500, -11550, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev011, -5800, 7500, -11550, -3925, 7500, -11550, 1000, 3000, 360
+		} else if($i:w12a_カモメ着地点 == 9) {
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev002,  7550, 7500, -14050,  4000, 7500, -14050, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev003,  3925, 7500, -11550,  3925, 7500, -16000, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev011, -3925, 7500, -11550, -3925, 7500, -16000, 1000, 3000, 360
+		} else if($i:w12a_カモメ着地点 == 10) {
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev002,  5800, 7500,  -9750,  5800, 7500, -11550, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev003, -5800, 7500,  -9750, -5800, 7500, -11550, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev011, -3800, 6000, -15950,  3800, 6000, -15950, 1000, 3000, 360
+		} else if($i:w12a_カモメ着地点 == 11) {
+
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev002,  5800, 7500, -11550,  3925, 7500, -11500, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev003, -5800, 7500, -11550, -3925, 7500, -11500, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev011,  9050, 7500,  -2500,  9050, 7500,  -1500, 1000, 3000, 360
+		} else if($i:w12a_カモメ着地点 == 12) {
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev002,  3925, 7500, -11550,  3925, 7500, -16000, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev003, -3925, 7500, -11550, -3925, 7500, -16000, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev011,  9000, 7500,  -1500,  7500, 7500,     50, 1000, 3000, 360
+		} else if($i:w12a_カモメ着地点 == 13) {
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev002, -5800, 7500,  -9750, -5800, 7500, -11550, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev003, -3800, 6000, -15950,  3800, 6000, -15950, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev011,  7550, 7500,     50, -1500, 7500,     50, 1000, 3000, 360
+		} else if($i:w12a_カモメ着地点 == 14) {
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev002, -5800, 7500, -11550, -3925, 7500, -11550, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev003,  9050, 7500,  -2500,  9050, 7500,  -1500, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev011, -9050, 7500,  -2500, -9050, 7500,  -1500, 1000, 3000, 360
+		} else if($i:w12a_カモメ着地点 == 15) {
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev002, -3925, 7500, -11550, -3925, 7500, -16000, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev003,  9050, 7500,  -1500,  7550, 7500,     50, 1000, 3000, 360
+			mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:w12a_カモメ着地数, ev011, -9050, 7500,  -1500, -7550, 7500,     50, 1000, 3000, 360
+		}
+	}
+}
+
+proc w12a_かもめ_20
+{
+#if d:DEBUG_PRINT
+	print '*** Seagull 20 ***'
+#endif
+
+    chara かもめマネージャ かもめ管理 \
+	// モデルデータ名
+	-datamdl kmo_noalp, kmo_low, kmo_low, kmo_low \ 
+
+	// 平均速度
+	-zspeed 65 \
+
+	// 基本ルーチン
+	-base d:KMNG_BASE_ESCAPE \	// 基本状態:敏感
+
+	// フントラップ
+	-cdanna ev011 \
+
+	// 消去する高さ
+	-eraseh -40500 \
+#ifndef d:ANOTHER
+	\ // かもめダメージ時プロック
+	-wdmgproc rp_かもめ殺しやがった \
+#endif
+	\ // かもめの名前
+	-name \ 
+	Kamome00, Kamome01, Kamome02, Kamome03, Kamome04, \		// 北西
+	Kamome05, Kamome06, Kamome07, Kamome08, Kamome09, \		// 北東
+	Kamome10, Kamome11, Kamome12, Kamome13, Kamome14, \		// 南西
+	Kamome15, Kamome16, Kamome17, Kamome18, Kamome19, \		// 南東
+
+	// 初期Ｙ方向
+	-yrot \
+	0, 0, 0, 0, 0, \
+	0, 3000, 0, 0, 0, \
+	4096 - 500, 500, 644, 711, 804, \
+	4096 - 256, 400, 544, 811, 904, \
+
+	//-------------------------------------------
+	// 初期位置
+
+	// エリア指定型初期位置
+	-farea \
+	-5500, 5000, -11000, -5000, 5000, -10500, \		// 穴前 (0x00)
+	-5000, 5000, -11000, -4500, 5000, -10500, \		// (0x01)
+	-5500, 5000, -12500, -5000, 5000, -11800, \		// (0x02)
+
+	// 線指定型初期位置
+	-linepos \ /* 初期位置線指定 */
+	-3800, 6000, -15950,  3800, 6000, -15950, \		// 北フェンス
+
+	 9050, 7500,  -2500,  9050, 7500,  -1500, \		// 南東
+	 9050, 7500,  -1500,  7550, 7500,     50, \		// 
+	 7550, 7500,     50, -1500, 7500,     50, \		// 
+
+	-9050, 7500,  -2500, -9050, 7500,  -1500, \		// 南西 
+	-9050, 7500,  -1500, -7550, 7500,     50, \		// 
+	-7550, 7500,     50, -4875, 7500,     50, \		// 
+
+	 9050, 7500,  -9750,  9050, 7500, -12500, \		// 北東
+	 9050, 7500, -12500,  7550, 7500, -14050, \
+	 7550, 7500, -14050,  4000, 7500, -14050, \
+
+	 5800, 7500,  -9750,  5800, 7500, -11550, \		// 北東
+	 5800, 7500, -11550,  3925, 7500, -11550, \
+	 3925, 7500, -11550,  3925, 7500, -16000, \
+
+	-5800, 7500,  -9750, -5800, 7500, -11550, \		// 北西
+	-5800, 7500, -11550, -3925, 7500, -11550, \
+	-3925, 7500, -11550, -3925, 7500, -16000, \
+
+	// 初期位置指定フラグ
+	-unitpos \
+	(d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_LINE | 0x0e), (d:KMM_IPOS_LINE | 0x0f), \
+	(d:KMM_IPOS_LINE | 0x00), (d:KMM_IPOS_LINE | 0x07), (d:KMM_IPOS_LINE | 0x09), (d:KMM_IPOS_LINE | 0x0b), (d:KMM_IPOS_LINE | 0x0b), \
+	(d:KMM_IPOS_LINE | 0x04), (d:KMM_IPOS_LINE | 0x04), (d:KMM_IPOS_LINE | 0x04), (d:KMM_IPOS_LINE | 0x06), (d:KMM_IPOS_LINE | 0x06), \
+	(d:KMM_IPOS_LINE | 0x01), (d:KMM_IPOS_LINE | 0x02), (d:KMM_IPOS_LINE | 0x03), (d:KMM_IPOS_LINE | 0x03), (d:KMM_IPOS_LINE | 0x03), \
+
+	//-------------------------------------------
+	// 飛行エリア
+
+	// 飛行エリアトラップ列
+	-traparea \
+	        ev002 ev011 ev003 \		// 002 北低、011 南高、003 北高
+	// 飛行エリアインデックス
+	-indexarea \
+	(d:KMM_FLYA_TRAP | 0x01), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x01), \
+	(d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x01), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x02), \
+	(d:KMM_FLYA_TRAP | 0x01), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x01), \
+	(d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x01), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x02), \
+
+	//-------------------------------------------
+
+	// 初期モーション
+	-mot \
+	d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING  \  
+
+	// 初期思考
+	-routine \
+	d:KMM_INITTHK_GROUNDREST, d:KMM_INITTHK_GROUNDREST, d:KMM_INITTHK_GROUNDREST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST
+}
+proc w12a_かもめ_40
+{
+#if d:DEBUG_PRINT
+	print '*** Seagull 40 ***'
+#endif
+
+    chara かもめマネージャ かもめ管理 \
+	// モデルデータ名
+	-datamdl kmo_noalp, kmo_low, kmo_low, kmo_low \ 
+
+	// 平均速度
+	-zspeed 65 \
+
+	// 基本ルーチン
+	-base d:KMNG_BASE_ESCAPE \	// 基本状態:敏感
+
+	// 消去する高さ
+	-eraseh -40500 \
+
+	// フントラップ
+	-cdanna ev011 \
+#ifndef d:ANOTHER
+	\ // かもめダメージ時プロック
+	-wdmgproc rp_かもめ殺しやがった \
+#endif
+	\ // かもめの名前
+	-name \ 
+	Kamome00, Kamome01, Kamome02, Kamome03, Kamome04, \		// 穴前
+	Kamome05, Kamome06, Kamome07, Kamome08, Kamome09, \		// 穴前
+	Kamome10, Kamome11, Kamome12, Kamome13, Kamome14, \		// 北西
+	Kamome15, Kamome16, Kamome17, Kamome18, Kamome19, \		// 北西
+	Kamome20, Kamome21, Kamome22, Kamome23, Kamome24, \		// 北東
+	Kamome25, Kamome26, Kamome27, Kamome28, Kamome29, \		// 北東
+	Kamome30, Kamome31, Kamome32, Kamome33, Kamome34, \		// 南西
+	Kamome35, Kamome36, Kamome37, Kamome38, Kamome39, \		// 南東
+
+	// 初期Ｙ方向
+	-yrot \
+	   0, 500, 644, 711, 804, \
+	   0, 400, 544,   30, 40, \
+	   50, 1500, 3500, 1460, 2222, \
+	 512, 2222, 2222,  720, 1500, \
+	3500,  512,  720, 2222,  512, \
+	2222, 2222, 2222, 2222,   55, \
+	2222, 2222, 2222,   55, 2222, \
+	3500,  512,  720, 2222,  720, \
+
+	//-------------------------------------------
+	// 初期位置
+
+	// エリア指定型初期位置
+	-farea \
+	-5500, 5000, -11000, -5000, 5000, -10500, \		// 穴前
+	-5000, 5000, -11000, -4500, 5000, -10500, \
+	-5500, 5000, -12500, -5000, 5000, -11800, \		// (0x02)
+
+	// 線指定型初期位置
+	-linepos \ /* 初期位置線指定 */
+	-3800, 6000, -15950,  3800, 6000, -15950, \		// 北フェンス
+
+	 9050, 7500,  -2500,  9050, 7500,  -1500, \		// 南東
+	 9050, 7500,  -1500,  7550, 7500,     50, \		// 
+	 7550, 7500,     50, -1500, 7500,     50, \		// 
+
+	-9050, 7500,  -2500, -9050, 7500,  -1500, \		// 南西 
+	-9050, 7500,  -1500, -7550, 7500,     50, \		// 
+	-7550, 7500,     50, -4875, 7500,     50, \		// 
+
+	 9050, 7500,  -9750,  9050, 7500, -12500, \		// 北東
+	 9050, 7500, -12500,  7550, 7500, -14050, \
+	 7550, 7500, -14050,  4000, 7500, -14050, \
+
+	 5800, 7500,  -9750,  5800, 7500, -11550, \		// 北東
+	 5800, 7500, -11550,  3925, 7500, -11550, \
+	 3925, 7500, -11550,  3925, 7500, -16000, \
+
+	-5800, 7500,  -9750, -5800, 7500, -11550, \		// 北西
+	-5800, 7500, -11550, -3925, 7500, -11550, \
+	-3925, 7500, -11550, -3925, 7500, -16000, \
+
+	// 初期位置指定フラグ
+	-unitpos \
+	(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+	(d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_AREA | 0x02), \
+	(d:KMM_IPOS_AREA | 0x02), (d:KMM_IPOS_LINE | 0x00), (d:KMM_IPOS_LINE | 0x00), (d:KMM_IPOS_LINE | 0x00), (d:KMM_IPOS_LINE | 0x00), \
+	(d:KMM_IPOS_LINE | 0x0d), (d:KMM_IPOS_LINE | 0x0d), (d:KMM_IPOS_LINE | 0x0e), (d:KMM_IPOS_LINE | 0x0e), (d:KMM_IPOS_LINE | 0x0f), \
+	(d:KMM_IPOS_LINE | 0x07), (d:KMM_IPOS_LINE | 0x08), (d:KMM_IPOS_LINE | 0x08), (d:KMM_IPOS_LINE | 0x09), (d:KMM_IPOS_LINE | 0x0b), \
+	(d:KMM_IPOS_LINE | 0x0b), (d:KMM_IPOS_LINE | 0x0b), (d:KMM_IPOS_LINE | 0x0c), (d:KMM_IPOS_LINE | 0x0c), (d:KMM_IPOS_LINE | 0x0c), \
+	(d:KMM_IPOS_LINE | 0x01), (d:KMM_IPOS_LINE | 0x02), (d:KMM_IPOS_LINE | 0x02), (d:KMM_IPOS_LINE | 0x03), (d:KMM_IPOS_LINE | 0x03), \
+	(d:KMM_IPOS_LINE | 0x04), (d:KMM_IPOS_LINE | 0x05), (d:KMM_IPOS_LINE | 0x05), (d:KMM_IPOS_LINE | 0x06), (d:KMM_IPOS_LINE | 0x06), \
+
+	//-------------------------------------------
+	// 飛行エリア
+
+	// 飛行エリアトラップ列
+	-traparea \
+	        ev002 ev011 ev003 \		// 002 北低、011 南高、003 北高
+	// 飛行エリアインデックス
+	-indexarea \
+	(d:KMM_FLYA_TRAP | 0x01), (d:KMM_FLYA_TRAP | 0x01), (d:KMM_FLYA_TRAP | 0x01), (d:KMM_FLYA_TRAP | 0x01), (d:KMM_FLYA_TRAP | 0x01), \
+	(d:KMM_FLYA_TRAP | 0x01), (d:KMM_FLYA_TRAP | 0x01), (d:KMM_FLYA_TRAP | 0x01), (d:KMM_FLYA_TRAP | 0x01), (d:KMM_FLYA_TRAP | 0x01), \
+	(d:KMM_FLYA_TRAP | 0x01), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x00), \
+	(d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x02), \
+	(d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x00), \
+	(d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x02), \
+	(d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x00), \
+	(d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x02), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x02), \
+
+	//-------------------------------------------
+
+	// 初期モーション
+	-mot \
+	d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, \  
+	d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, \  
+	d:KMM_MOT_IDLE02, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING  \  
+
+	// 初期思考
+	-routine \
+	d:KMM_INITTHK_GROUNDREST, d:KMM_INITTHK_GROUNDREST, d:KMM_INITTHK_GROUNDREST, d:KMM_INITTHK_GROUNDREST, d:KMM_INITTHK_GROUNDREST, \
+	d:KMM_INITTHK_GROUNDREST, d:KMM_INITTHK_GROUNDREST, d:KMM_INITTHK_GROUNDREST, d:KMM_INITTHK_GROUNDREST, d:KMM_INITTHK_GROUNDREST, \
+	d:KMM_INITTHK_GROUNDREST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST
+}
+
+
+
+
+
+
+
+
+
+
+
+#if 0
+proc w12aかもめ
+{
+#if 1
+    chara かもめマネージャ かもめ管理 \
+	// モデルデータ名
+//	-datamdl kmo_low, kmo_low, \
+	-datamdl kmo_noalp, kmo_low, \ 
+
+	// 平均速度
+	-zspeed 45 \	
+//	-gspeed 10 \
+
+	// 基本ルーチン
+	-base d:KMNG_BASE_ESCAPE \
+
+	// 消去する高さ
+	-eraseh -40500 \
+
+	// フントラップ
+	-cdanna ev011 \
+
+	// かもめの名前
+	-name \ 
+	Kamome00, Kamome01, Kamome02, Kamome03, Kamome04, \
+	Kamome05, Kamome06, Kamome07, Kamome08, Kamome09, \
+	Kamome10, Kamome11, Kamome12, Kamome13, Kamome14, \
+	Kamome15, Kamome16, Kamome17, Kamome18, Kamome19, \
+	Kamome20, Kamome21, Kamome22, Kamome23, Kamome24, \
+	Kamome25, Kamome26, Kamome27, Kamome28, Kamome29, \
+	Kamome30, Kamome31, Kamome32, Kamome33, Kamome34, \
+	Kamome35, Kamome36, Kamome37, Kamome38, Kamome39, \
+	Kamome40, Kamome41, Kamome42, Kamome43, Kamome44, \
+
+	// 初期位置指定フラグ
+	-unitpos \	/* 位置指定用番号 0～32*/
+	(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+	(d:KMM_IPOS_LINE | 0x00), (d:KMM_IPOS_LINE | 0x05), (d:KMM_IPOS_LINE | 0x01), (d:KMM_IPOS_LINE | 0x0e), (d:KMM_IPOS_LINE | 0x02), \
+	(d:KMM_IPOS_LINE | 0x03), (d:KMM_IPOS_LINE | 0x04), (d:KMM_IPOS_LINE | 0x05), (d:KMM_IPOS_LINE | 0x06), (d:KMM_IPOS_LINE | 0x07), \
+	(d:KMM_IPOS_LINE | 0x08), (d:KMM_IPOS_LINE | 0x08), (d:KMM_IPOS_LINE | 0x09), (d:KMM_IPOS_LINE | 0x0a), (d:KMM_IPOS_LINE | 0x0b), \
+	(d:KMM_IPOS_LINE | 0x0c), (d:KMM_IPOS_LINE | 0x0d), (d:KMM_IPOS_LINE | 0x0e), (d:KMM_IPOS_LINE | 0x0e), (d:KMM_IPOS_LINE | 0x0f), \
+	(d:KMM_IPOS_LINE | 0x00), (d:KMM_IPOS_LINE | 0x05), (d:KMM_IPOS_LINE | 0x01), (d:KMM_IPOS_LINE | 0x0e), (d:KMM_IPOS_LINE | 0x02), \
+	(d:KMM_IPOS_LINE | 0x03), (d:KMM_IPOS_LINE | 0x04), (d:KMM_IPOS_LINE | 0x05), (d:KMM_IPOS_LINE | 0x06), (d:KMM_IPOS_LINE | 0x07), \
+	(d:KMM_IPOS_LINE | 0x08), (d:KMM_IPOS_LINE | 0x08), (d:KMM_IPOS_LINE | 0x09), (d:KMM_IPOS_LINE | 0x0a), (d:KMM_IPOS_LINE | 0x0b), \
+	(d:KMM_IPOS_LINE | 0x0c), (d:KMM_IPOS_LINE | 0x0d), (d:KMM_IPOS_LINE | 0x0e), (d:KMM_IPOS_LINE | 0x0e), (d:KMM_IPOS_LINE | 0x0f)  \
+
+	// エリア指定型初期位置
+	-farea \   /* 初期位置エリア指定 */
+	-5000, 5000, -11000, -4500, 5000, -10500, \
+	-5000, 5000, -11000, -4500, 5000, -10500, \
+	-5500, 5000, -12500, -5000, 5000, -11800, \		// (0x02)
+
+	// 線指定型初期位置
+	-linepos \ /* 初期位置線指定 */
+	-3800, 6000, -15950,  3800, 6000, -15950, \		// 北フェンス
+
+	 9050, 7500,  -2500,  9050, 7500,  -1500, \		// 南東
+	 9050, 7500,  -1500,  7550, 7500,     50, \		// 
+	 7550, 7500,     50, -1500, 7500,     50, \		// 
+
+	-9050, 7500,  -2500, -9050, 7500,  -1500, \		// 南西 
+	-9050, 7500,  -1500, -7550, 7500,     50, \		// 
+	-7550, 7500,     50, -4875, 7500,     50, \		// 
+
+	 9050, 7500,  -9750,  9050, 7500, -12500, \		// 北東
+	 9050, 7500, -12500,  7550, 7500, -14050, \
+	 7550, 7500, -14050,  4000, 7500, -14050, \
+
+	 5800, 7500,  -9750,  5800, 7500, -11550, \		// 北東
+	 5800, 7500, -11550,  3925, 7500, -11550, \
+	 3925, 7500, -11550,  3925, 7500, -16000, \
+
+	-5800, 7500,  -9750, -5800, 7500, -11550, \		// 北西
+	-5800, 7500, -11550, -3925, 7500, -11550, \
+	-3925, 7500, -11550, -3925, 7500, -16000, \
+
+	// 飛行エリアトラップ列
+	-traparea \
+	        ev002 ev003 ev004 ev008 \
+
+	// 飛行エリアインデックス
+	-indexarea \
+	(d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), \
+	(d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), \
+	(d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), \
+	(d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), \
+	(d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), \
+	(d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), \
+	(d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), \
+	(d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), \
+	(d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), (d:KMM_FLYA_TRAP | 0x00), \
+
+	// 初期モーション
+	-mot \
+	d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, d:KMM_MOT_IDLE02, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \  
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING  \  
+
+	// 初期思考
+	-routine \
+	d:KMM_INITTHK_GROUNDREST, d:KMM_INITTHK_GROUNDREST, d:KMM_INITTHK_GROUNDREST, d:KMM_INITTHK_GROUNDREST, d:KMM_INITTHK_GROUNDREST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, \
+	d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST, d:KMM_INITTHK_REST
+#endif
+#if 0
+    chara かもめマネージャ かもめ管理 \
+//	-datamdl kmo_low, kmo_low, \
+	-datamdl kmo_noalp, kmo_low, \ 
+
+	-zspeed 45 \	
+//	-gspeed 10 \
+
+	-base d:KMNG_BASE_ESCAPE \
+
+	// 消去する高さ
+	-eraseh -40500 \
+
+	// フントラップ
+	-cdanna ev011 \
+
+	-name \ 
+	Kamome00 \
+
+	-unitpos \	/* 位置指定用番号 0～32*/
+	(d:KMM_IPOS_AREA | 0x00)  \
+
+	-farea \   /* 初期位置エリア指定 */
+	-5000, 5000, -11000, -4500, 5000, -10500, \
+	-5000, 5000, -11000, -4500, 5000, -10500, \
+	-5500, 5000, -12500, -5000, 5000, -11800, \		// (0x02)
+
+	// 線指定型初期位置
+	-linepos \ /* 初期位置線指定 */
+	-3800, 6000, -15950,  3800, 6000, -15950, \		// 北フェンス
+
+	 9050, 7500,  -2500,  9050, 7500,  -1500, \		// 南東
+	 9050, 7500,  -1500,  7550, 7500,     50, \		// 
+	 7550, 7500,     50, -1500, 7500,     50, \		// 
+
+	-9050, 7500,  -2500, -9050, 7500,  -1500, \		// 南西 
+	-9050, 7500,  -1500, -7550, 7500,     50, \		// 
+	-7550, 7500,     50, -4875, 7500,     50, \		// 
+
+	 9050, 7500,  -9750,  9050, 7500, -12500, \		// 北東
+	 9050, 7500, -12500,  7550, 7500, -14050, \
+	 7550, 7500, -14050,  4000, 7500, -14050, \
+
+	 5800, 7500,  -9750,  5800, 7500, -11550, \		// 北東
+	 5800, 7500, -11550,  3925, 7500, -11550, \
+	 3925, 7500, -11550,  3925, 7500, -16000, \
+
+	-5800, 7500,  -9750, -5800, 7500, -11550, \		// 北西
+	-5800, 7500, -11550, -3925, 7500, -11550, \
+	-3925, 7500, -11550, -3925, 7500, -16000, \
+
+	-traparea \
+	        ev002 ev003 ev004 ev008 \
+
+	-indexarea \
+	(d:KMM_FLYA_TRAP | 0x00) \
+
+	-mot \
+	d:KMM_MOT_IDLE02 \  
+
+	-routine \
+	d:KMM_INITTHK_GROUNDREST
+#endif
+#if 1
+	chara delay てすと -time 600 -exec {
+//		mesg かもめマネージャ かもめ管理 指定エリア内搾取死亡 -3400, 6300, -15500, 4141, 15000, -8097, 120
+	mesg かもめマネージャ かもめ管理 指定エリア内飛行エリア変更 -3400, 6300, -15500, 4141, 15000, -8097, \
+		-3400, 16300, -15500, 4141, 20000, -8097, 180
+	}
+#endif
+}
+
+proc w12穴かもめ{
+    if ( $i:カモメ拡散カウンタ > 0 ){
+        eval( $i:カモメ拡散カウンタ = $i:カモメ拡散カウンタ - 1 )
+	if ( $i:カモメ拡散カウンタ == 0 ){
+	    mesg かもめマネージャ かもめ管理 指定トラップ内集合 ev002, 5, -4976, 5380, -11566, ev004, 120
+	}
+    }
+}
+
+proc w12かもめ弾監視
+{
+    if ( $1 >= 1 && $1 <= 4){
+	mesg かもめマネージャ かもめ管理 指定球内エリア変更 -4976, 5380, -11566,, 2000, ev002, 30
+        eval( $i:カモメ拡散カウンタ = 300 )
+    }
+}
+
+proc w12aかもめ昇降機飛び立ち{ // 昇降機が到着してかもめが飛び立つ
+	mesg かもめマネージャ かもめ管理 指定球内緊急離陸 200, 5000, -12500, 8000, ev003, 60, 4
+}
+
+/*------------- 自由飛行 -------------*/
+proc w12aかもめ自由飛行管理{ // 連続呼びでw12aのかもめ自由飛行を監視
+    // かもめの自由着陸管理
+    if ( $i:カモメ着地カウンタ > 0 ){
+        eval( $i:カモメ着地カウンタ = $i:カモメ着地カウンタ - 1 )
+	if ( $i:カモメ着地カウンタ == 0 ){
+	    eval( $i:カモメ着地点 = $i:カモメ着地点 + `command rand 2` + 1)		// 着地する線を決める
+	    eval( $i:カモメ着地点 = $i:カモメ着地点 % 10) 				
+  	    eval( $i:カモメ着地数 = `command rand 2` + 3)		// 着地するかもめの数を決める
+  	    eval( $i:カモメ着地カウンタ = `command rand 500` + 500 )	// 次の着地命令発行までの間隔を決める
+
+	    if ( $i:カモメ着地点 == 0 ){
+		mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:カモメ着地数, ev002, -3800, 6000, -15850,  3800, 6000, -15850, 1000, 3000, 360
+	    }else if ( $i:カモメ着地点 == 1 ){
+		mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:カモメ着地数, ev002, 9000, 7500,  -3000,  9000, 7500,  -1500, 1000, 3000, 360
+	    }else if ( $i:カモメ着地点 == 2 ){
+		mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:カモメ着地数, ev002, 7500, 7500,      0, -1500, 7500,      0, 1000, 3000, 360
+	    }else if ( $i:カモメ着地点 == 3 ){
+		mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:カモメ着地数, ev002, -9000, 7500,  -3000, -9000, 7500,  -1500, 1000, 3000, 360
+	    }else if ( $i:カモメ着地点 == 4 ){
+		mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:カモメ着地数, ev002, -7500, 7500,      0, -4875, 7500,      0, 1000, 3000, 360
+	    }else if ( $i:カモメ着地点 == 5 ){
+		mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:カモメ着地数, ev002, 7500, 7500, -14000,  4000, 7500, -14000, 1000, 3000, 360
+	    }else if ( $i:カモメ着地点 == 6 ){
+		mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:カモメ着地数, ev002, 3875, 7500, -11500,  3875, 7500, -16000, 1000, 3000, 360
+	    }else if ( $i:カモメ着地点 == 7 ){
+		mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:カモメ着地数, ev002, -5750, 7500,  -9750, -5750, 7500, -11500, 1000, 3000, 360
+	    }else if ( $i:カモメ着地点 == 8 ){
+		mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:カモメ着地数, ev002, -3875, 7500, -11500, -3875, 7500, -16000, 1000, 3000, 360
+	    }else if ( $i:カモメ着地点 == 9 ){
+		mesg かもめマネージャ かもめ管理 指定トラップ内搾取線着地 $i:カモメ着地数, ev002, 9000, 7500,  -9750,  9000, 7500, -12500, 1000, 3000, 360
+	    }
+	}
+    }
+}
+#endif
+

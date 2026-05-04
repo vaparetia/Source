@@ -1,0 +1,2251 @@
+/**************************************************************************************
+	プラント編オタコン無線 (独)
+		$Id: p_otacon_g.cm,v 1.11 2002/08/02 10:52:49 usr01098 Exp $
+***************************************************************************************/
+
+//場所依存会話 d //e
+//拷問部屋 d //e
+//開かない扉 h //e
+resource PO_拷問部屋＿開かない扉__g {
+//vox t:vc240011 {
+オタコン_000: {
+Raiden, ich glaube nicht,
+da&~s man die T&~ur &~offnen kannst.
+Beeil' Dich und triff Snake.
+}
+/*ライデン、そこの扉は開きそうもない。
+早くスネークと合流するんだ。
+Raiden, I don't think that door
+can be opened. Hurry up and
+rendezvous with Snake.
+*/
+//dv}//v
+}//d
+
+//回避モード状態 h //e
+resource PO_拷問部屋＿回避モード状態__g {
+//vox t:vc240021 {
+オタコン_000: {
+Raiden, Du bekommst Gesellschaft.
+Versteck Dich irgendwo!
+}
+/*ライデン、まずい。
+早くどこかに隠れないと。
+Raiden, there's company coming.
+Find somewhere to hide!
+*/
+オタコン_001: {
+Leichter gesagt als getan,
+ich wei&~s, He, wie w&~are es, wenn
+Du so tust, als w&~arst Du noch gefangen?
+}
+/*と言っても隠れる場所が……
+そうだ、まだ捕まってる振りをするって
+いうのはどうだい？
+Easier said than done, I know.
+Hey, how about pretending you're
+still in captivity?
+*/
+//dv}//v
+}//d
+
+//前作やってる人 h //e
+resource PO_拷問部屋＿前作__g {
+//vox t:vc240031 {
+オタコン_000: {
+Da kommen Erinnerungen auf,
+nicht wahr? Wenn ich Stealth-Tarnung
+h&~atte, k&~onnte ich, mitzumachen.
+}
+/*ずいぶん懐かしい感じだな……。
+ステルス迷彩があれば助けに行きたい
+ところだよ。
+Brings back memories, doesn't
+it... If I had a stealth camo, I'd
+be tempted to join in.
+*/
+//dv}//v
+}//d
+
+
+
+//天狗通路Ａ d //e
+
+//天狗兵の説明 h //e
+resource PO_天狗通路＿天狗兵１__g {
+//vox t:vc240041 {
+オタコン_000: {
+Raiden, achte auf R&~uckendeckung.
+Diese M&~anner besitzen Spezialausr&~ustung.
+}
+/*ライデン、気をつけるんだ。
+そこの兵士は特殊兵装を身につけている。
+Raiden, watch your back. Those
+men have special-issue equipment.
+*/
+ライデン_001: {
+Sind das die Tengu-Kommandos,
+von denen ich so viel geh&~ort habe?
+}
+/*ああ。これが例の天狗部隊とかいう
+奴等か。
+These are the so-called Tengu
+commandos I've heard so much
+about?
+*/
+//dv}//v
+}//d
+resource PC_天狗通路＿天狗兵＿刀１__g {
+//vox t:vc240051 {
+オタコン_000: {
+Sie haben Schwerter,
+von denen Kugeln abprallen.
+}//<ページ数変更>
+オタコン_000_1: {
+Tritt ihnen mit Deinem Schwert
+gegen&~uber. Du hast doch ge&~ubt, oder?
+}
+/*刀を装備している天狗は銃弾を弾く。
+こっちも刀で対抗するんだ。
+練習は充分だろう？
+They have blades that
+bullets just glance off
+of.
+Fight it with your own blade.
+You've had time to practice,
+right?
+*/
+//dv}//v
+}//d
+resource PC_天狗通路＿天狗兵＿刀２__g {
+//vox t:vc240061 {
+オタコン_000: {
+Selbst wenn sie Kugeln mit ihrem
+Schwert zur&~uckwerfen k&~onnen,
+}//<ページ数変更>
+オタコン_000_1: {
+k&~onnen sie keine niedrigen
+Sch&~usse abwehren,
+}//<ページ数変更>
+オタコン_000_2: {
+Wechsle in die Beobachtungsperspektive
+und ziele auf ihre F&~u&~se.
+}
+/*刀で銃弾を弾くと言っても、さすがに
+足元は防御出来ないはずだ。銃を使う
+なら主観攻撃で足元を狙うといい。
+Even if they can bounce bullets
+back with their swords,
+they won't be able to
+deflect anything too low.
+Use the First Person View
+and fire at their feet.
+*/
+//dv}//v
+}//d
+
+//天狗通路Ｂ d //e
+//二階には上がれない h //e
+resource PO_天狗通路Ｂ＿二階行けない__g {
+//vox t:vc240071 {
+オタコン_000: {
+Raiden, Du brauchst nicht
+in die zweite Etage.
+}//<ページ数変更>
+オタコン_000_1: {
+Gehe einfach weiter bis zur
+T&~ur ganz im Norden.
+}
+/*ライデン、二階には上がらなくていい。
+北の奥にある扉まで進むんだ。
+Raiden, you don't need to
+go up to the second floor.
+Just keep going until you reach
+the door to the far north.
+*/
+//dv}//v
+}//d
+
+//前のエリアには戻れない h //e
+resource PO_天狗通路Ｂ＿戻れない__g {
+//vox t:vc240081 {
+オタコン_000: {
+Raiden, die T&~ur hinter Dir ist
+verschlossen. Du kommst nicht
+zur&~uck. Gehe einfach weiter
+Richtung Norden.
+}
+/*ライデン、そのドアはロックされて
+しまったようだ。後戻りは出来ない。
+北に進むんだ。
+Raiden, that door's locked behind
+you. There's no way to go back.
+Just keep heading north.
+*/
+//dv}//v
+}//d
+
+
+
+//★ストーリー依存会話 d //e
+//拷問部屋にいる場合 h //e
+resource PO_拷問部屋＿合流しろ１__g {
+//vox t:vc240091 {
+オタコン_000: {
+Raiden, was glaubst Du eigentlich,
+was Du da machst?
+}//<ページ数変更>
+オタコン_000_1: {
+Wir m&~ussen Solidus aufhalten.
+Triff Snake so schnell wie m&~oglich.
+}
+/*ライデン、戻ってどうするんだ？
+早くソリダス達を止めないと。
+スネークと合流してくれ。
+Raiden, what do you think
+you're doing back there?
+We need to stop Solidus.
+Meet up with Snake as
+soon as you can.
+*/
+//dv}//v
+}//d
+
+
+//天狗通路Ａ h //e
+resource PO_天狗通路Ａ＿北東行け__g {
+//vox t:vc240101 {
+オタコン_000: {
+Raiden, Snake wartet. Er steht
+vor der T&~ur im nord&~ostlichen
+Abschnitt der zweiten Etage.
+}//<ページ数変更>
+オタコン_000_1: {
+Beeile Dich!
+}
+/*ライデン、スネークが待ってる。
+二階の北東にある扉の先だ。急いで！
+Raiden, Snake's waiting. He's outside
+the door on the northeast section of
+the second floor.
+Hurry up!
+*/
+//dv}//v
+}//d
+
+//裸注意 h //e
+resource PO_裸注意＿操作制限１__g {
+//vox t:vc240111 {
+オタコン_000: {
+Raiden, Du solltest lieber Snake treffen
+und Dir Deine Ausr&~ustung zur&~uckholen.
+}
+/*ライデン、早くスネークと合流して
+装備をもらった方がいい。
+Raiden, you'd better meet up with
+Snake and get your gear back fast.
+*/
+オタコン_001: {
+So kannst Du nicht w&~urgen, treten,
+hangeln oder werfen.
+}
+/*その格好じゃ首絞めもキックも
+エルードも投げも出来ないだろ？
+You won't be able to choke,
+kick, hang or throw like that.
+*/
+//dv}//v
+}//d
+
+//風邪状態 h //e
+resource PO_裸注意＿風邪１__g {
+//vox t:vc240121 {
+オタコン_000: {
+Raiden, hast Du Dich erk&~altet oder so?
+}
+/*ライデン、ひょっとして風邪でも
+ひいてるんじゃないか？
+Raiden, did you catch
+a cold or something?
+*/
+ライデン_001: {
+Nat&~urlich nicht!
+Ich bin -- HAAAA-TSCHIIII!
+}
+/*いや、そんなことは……ハックション！
+Of course not!
+I'm... AH-CHOO!
+*/
+オタコン_002: {
+Ich wu&~ste es. Geschieht Dir recht,
+wenn Du so herumrennst.
+}
+/*やっぱり。そんな格好してるからだよ。
+I knew it. Serves you right
+for running around like that.
+*/
+ライデン_003: {
+Ich hatte doch gar keine Wahl --
+TSCHIII!!
+}
+/*I didn't exactly have
+a choice, CHOO!!
+俺だって好きでしてるわけじゃ……
+ハックション！
+*/
+オタコン_004: {
+Gesundheit.
+}
+/*お大事に。
+Bless you.
+*/
+//dv}//v
+}//d
+//二回目以降 t //e
+resource PO_裸注意＿風邪２__g {
+//vox t:vc240131 {
+オタコン_000: {
+Du mu&~st etwas gegen die Erk&~altung tun.
+}//<ページ数変更>
+オタコン_000_1: {
+Wenn Du nicht aufh&~orst
+zu niesen, machst Du jeden,
+in H&~orweite aufmerksam.
+}
+/*風邪は何とかした方がいいね。
+そうひっきりなしにクシャミしてたんじゃ
+敵に見つかってしまう。
+You'll have to do something
+about that cold.
+If you can't stop sneezing, you're
+an open invitation to everyone
+within earshot.
+*/
+オタコン_001: {
+Nimm ein Erk&~altungsmittel.
+Und besorge Dir etwas,
+um Dich einzuwickeln.
+}
+/*風邪薬を飲めば何とかなるだろう。
+とりあえず何か羽織るのもいいかもね。
+Take some cold medication.
+And get something to wrap
+up in at least.
+*/
+//dv}//v
+}//d
+
+//裸時はダメージも大きい h //e
+resource PO_裸注意＿ダメージ__g {
+//vox t:vc240141 {
+オタコン_000: {
+Raiden, so kannst Du Dich
+nicht sch&~utzen.
+}//<ページ数変更>
+オタコン_000_1: {
+Du wirst mehr Schaden als gew&~ohnlich
+erleiden, also achte auf Deine
+R&~uckendeckung.
+}
+/*ライデン、その格好じゃ身を守りようが
+ないだろ。受けるダメージも大きく
+なってるはずだ。気をつけた方がいい。
+Raiden, you can't protect
+yourself like this.
+The damage you receive is greater
+than usual, so you really need to
+watch your back.
+*/
+//dv}//v
+}//d
+
+
+//見つかると即死に近い h //e
+resource PO_裸注意＿見つかるな__g {
+//vox t:vc240151 {
+オタコン_000: {
+So hast Du im Kampf keine
+Chance. Bleib' in Bewegung,
+ohne dass der Feind Dich sieht.
+}
+/*ライデン、その格好では戦闘なんか
+できっこない。敵に見つからないように
+進むんだ。
+You don't have a chance in battle
+like this. Keep moving, but stay
+out of the enemy's sight.
+*/
+//dv}//v
+}//d
+
+//南北通路 h //e
+resource PO_南北通路＿スネーク探せ１__g {
+//vox t:vc240161 {
+オタコン_000: {
+Snake m&~u&~ste eigentlich hier irgendwo
+auf Dich warten. Schau Dich um.
+}
+/*スネークはそのあたりで
+待っているはずだ。探してみてくれ。
+Snake should be waiting for
+you somewhere around there.
+Look around.
+*/
+//dv}//v
+}//d
+//フラグ進め方 h //e
+resource PO_南北通路＿スネーク探せ２__g {
+//vox t:vc240171 {
+オタコン_000: {
+Ich habe Deinen CALL-Ton jetzt
+schon einige Male geh&~ort.
+}//<ページ数変更>
+オタコン_000_1: {
+Autworte doch mal!
+}
+/*ＣＡＬＬが何度も鳴ってるみたい
+じゃないか。受けてみたらどうだい？
+I've heard your CALL sound
+go off a couple of times now.
+Try answering it for
+a change, okay?
+*/
+//dv}//v
+}//d
+//スネーク合流後 扉近く h //e
+resource PO_南北通路＿スネーク合流後扉近く__g {
+//vox t:vc240181 {
+オタコン_000: {
+Raiden, die T&~ur ist verschlossen.
+Gehe besser nach Norden.
+}
+/*ライデン、そこの扉はロックされてる。
+北の方に向かうんだ。
+Raiden, that door's locked.
+Head north instead.
+*/
+//dv}//v
+}//d
+
+//★P073_05_S01通路Ａ５シナリオデモ１終了＜フラグ＜P074_01_P01通路Ａ刀後１ポリゴンデモ１開始 d //e
+//スネーク合流後 h //e
+resource PO_南北通路＿スネーク合流後__g {
+//vox t:vc240191 {
+オタコン_000: {
+Gut, Du hast Snake getroffen.
+Wenn Du genug mit dem Schwert
+ge&~ubt hast, gehe in Richtung Norden.
+}
+/*スネークと合流できたね。
+刀の練習が済んだら北に向かうんだ。
+Good, you met up with Snake.
+When you're done practicing
+with the sword, head north.
+*/
+//dv}//v
+}//d
+
+//スネーク合流後 催促 h //e
+resource PO_南北通路＿スネーク合流後＿催促__g {
+//vox t:vc240201 {
+オタコン_000: {
+Ich glaube, Du hast jetzt genug
+ge&~ubt. Mach Dich auf den Weg
+-- Du mu&~st Snake einholen.
+}
+/*もう練習は充分だろ？
+そろそろ先に進もう。
+スネークのところに行ってくれ。
+I think you've had enough practice.
+It's time to get going -- you need
+to catch up to Snake.
+*/
+//dv}//v
+}//d
+
+
+//★P074_03_P02通路Ａ刀後３ポリゴンデモ２終了＜フラグ＜P076_01_R01大佐ＡＩ１無線機デモ１開始 d //e
+//北に行け h //e
+resource PO_天狗通路Ｂ＿北に行け__g {
+//vox t:vc0240211 {
+オタコン_000: {
+Am Nordende des
+Korridors ist eine T&~ur.
+}//<ページ数変更>
+オタコン_000_1: {
+Solidus m&~u&~ste irgendwo auf der
+anderen Seite sein. Bleib' bei Snake
+und gehe weiter nach Norden.
+}
+/*その通路の北に扉がある。
+ソリダス達はその先にいるはずだ。
+スネークと一緒に北に進むんだ。
+There's a door at the north
+end of that corridor.
+Solidus should be somewhere on
+the other side. Stay with Snake
+and keep north.
+*/
+//dv}//v
+}//d
+
+//スネークが死ぬと一緒にゲームオーバー h //e
+resource PO_スネーク死んだら終わり__g {
+//vox t:vc240221 {
+オタコン_000: {
+Snakes LIFE-Anzeige ist
+direkt unter Deiner. Ihr lebt
+und sterbt gemeinsam, ist das klar?
+}
+/*スネークのＬＩＦＥが君のＬＩＦＥ
+ゲージの下に表示されている。
+一連托生だ、いいね。
+Snake's Life Gauge is right below
+yours. You live and die together,
+do you understand?
+*/
+オタコン_001: {
+Es wird schon alles glatt gehen,
+aber wenn er in der Klemme sitzt,
+hilf ihm so gut Du kannst.
+}//<ページ数変更>
+オタコン_001_1: {
+Ich verla&~se mich auf Dich!
+}
+/*大丈夫だとは思うけど、スネークが
+危なくなったら援護してやってくれ。
+頼むよ！
+I'm sure everything will be okay,
+but if he gets in a tight spot, give
+him all the backup you can.
+I'm counting on you!
+*/
+//dv}//v
+}//d
+
+//★P077_01_R01ローズ拉致１無線機デモ１終了＜フラグ＜天狗兵登場 d //e
+//
+//北に進もう h //e
+resource PO_天狗ラッシュ前__g {
+//vox t:vc240231 {
+オタコン_000: {
+Ich Verla&~se mich auf Dich! An der
+Nordwand m&~u&~ste eine hohe Leiter sein.
+}//<ページ数変更>
+オタコン_000_1: {
+Die M&~anner m&~u&~sten irgendwo
+oben sein. Klettere hoch!
+}
+/*北の壁に長いハシゴがあるだろう。
+それを登ればきっとその先に奴等がいる。
+ハシゴを登るんだ。
+There should be a tall
+ladder on the north wall.
+Those guys should be at
+the top. Start climbing!
+*/
+//dv}//v
+}//d
+
+//★天狗兵登場＜フラグ＜P078_01_P01ＡＧフォーチュン登場１ポリゴンデモ１開始 d //e
+//全滅させろ h //e
+resource PO_天狗ラッシュ＿基本__g {
+//vox t:vc240241 {
+オタコン_000: {
+Der Feind ist genauso
+entschlossen Dich aufzuhalten,
+wie Du, an ihm vorbeizukommen.
+}//<ページ数変更>
+オタコン_000_1: {
+Deine einzige Chance ist,
+alle Gegner auszuschalten. Tu's.
+}
+/*敵も君達を阻止しようと必死なんだ。
+そいつらを全て排除しなければ先には
+進めないだろう。がんばって！
+The enemy is as desperate to stop
+you as you are to get past them.
+Taking them all out is the
+only way through. Do it!
+*/
+//dv}//v
+}//d
+
+//みねうち h //e
+resource PO_天狗ラッシュ＿みねうち__g {
+//vox t:vc240251 {
+オタコン_000: {
+Wenn Du sie nicht t&~oten willst,
+schlage die Gegner mit dem
+Schwertschaft bewu&~stlos.
+}
+/*敵の命を奪いたくない時は刀の
+みねうちを使って気絶させるといい。
+If you don't want to kill, use the
+sword to hilt-strike someone
+and knock them unconscious.
+*/
+//dv}//v
+}//d
+
+//★P078_01_P01ＡＧフォーチュン登場１ポリゴンデモ１終了＜フラグ＜P079_01_P01ＲＡＹ戦前１ポリゴンデモ１開始 d //e
+//メタル戦前 h //e
+resource PO_メタル戦前先行け__g {
+//vox t:vc240261 {
+オタコン_000: {
+Snake schl&~agt sich bestimmt gut.
+&~Uberla&~s ihm Fortune -- und geh Du weiter.
+}
+/*スネークならきっと大丈夫だ。
+フォーチュンはスネークに任せて
+君は先に進め。
+I'm sure Snake is fine.
+Let him deal with Fortune
+-- you keep going.
+*/
+オタコン_001: {
+Du mu&~st Arsenal Gear aufhalten und
+Solidus schlagen.
+}
+/*アーセナルギアを止めるんだ。
+ソリダス達を倒してくれ。
+You have to stop Arsenal
+Gear and take out Solidus.
+*/
+//dv}//v
+}//d
+
+
+//★P079_03_P02ＲＡＹ戦前３ポリゴンデモ２終了＜フラグ＜P080_01_P01ＡＧ浮上１ポリゴンデモ１開始 d //e
+//メタルギアＲＡＹ戦 h //e
+//スティンガー使え h //e
+resource PO_メタル戦＿スティンガー__g {
+//vox t:vc240271 {
+オタコン_000: {
+Raiden, ziele mit den Stinger-Raketen
+auf RAY's Kopfbereich.
+}
+/*ライデン、スティンガーでＲＡＹの
+頭部を狙うんだ。
+Raiden, aim for RAY's
+head section with the
+Stinger missiles.
+*/
+//dv}//v
+}//d
+
+//チャフ使え h //e
+resource PO_メタル戦＿チャフ１__g {
+//vox t:vc240281 {
+オタコン_000: {
+Der in Serie gebaute Metal Gear
+ist unbemannt.
+}//<ページ数変更>
+オタコン_000_1: {
+Er wird vermutlich von GW gesteuert,
+der k&~unstlichen Arsenal Gear-Intelligenz.
+}
+/*量産型メタルギアＲＡＹは無人機だ。
+おそらくアーセナルギアのＡＩ、
+『Ｇ．Ｗ』によって制御されている。
+The mass-production
+Metal Gear is unmanned.
+It's probably under the control
+of GW, the Arsenal Gear AI.
+*/
+//dv}//v
+}//d
+//二回目以降 t //e
+resource PO_メタル戦＿チャフ２__g {
+//vox t:vc240291 {
+オタコン_000: {
+Ein D&~uppelangriff m&~u&~ste
+elektronische St&~orungen erzeugen
+und RAY eine Weile verwirren.
+}//<ページ数変更>
+オタコン_000_1: {
+Nutze die Gelegenheit, eine Stinger
+auf den Metal Gear RAY abzufeuern.
+}
+/*チャフで電子妨害を仕掛ければＲＡＹを
+一時的に混乱させることが出来るだろう。
+その隙にスティンガーを撃ち込むんだ。
+A chaff attack should cause
+electronic interference and
+confuse RAY for a moment.
+Use the opportunity to
+fire a Stinger into it.
+*/
+//dv}//v
+}//d
+
+//没きちＸＸＸＸＸＸＸｘ
+resource PO_メタル戦＿チャフ＿スティンガーロック効かない__g {
+//vox t:vc240301 {
+オタコン_000: {
+Solange der D&~uppel in der Luft ist,
+kann die Stinger sich nicht aufs
+Ziel aufschie&~sen. Du mu&~st
+also manuell zielen.
+}
+/*チャフを使っている間はスティンガーの
+ロックオン機能も効かなくなる。手動で
+狙っていくしかないよ。
+The Stinger's targeting lock won't
+function while the chaff is around.
+You have to aim manually.
+*/
+//dv}//v
+}//d
+
+
+//刀使え h //e
+resource PO_メタル戦＿刀__g {
+//vox t:vc240311 {
+オタコン_000: {
+Mit dem Schwert kannst Du RAYs
+Maschinengewehrfeuer abwehren.
+}
+/*刀を使えばＲＡＹの機銃を跳ね返す
+ことも出来るはずだ。
+Use the sword to deflect
+RAY's machine gun fire.
+*/
+//dv}//v
+}//d
+
+//クイックチェンジ活用 h //e
+resource PO_メタル戦＿クイックチェンジ__g {
+//vox t:vc240321 {
+オタコン_000: {
+Solange Du mit der Stinger zielst,
+kannst Du Dich nicht bewegen.
+}
+/*スティンガーを構えている間は
+移動出来ない。
+You can't move while you're
+aiming with the Stinger.
+*/
+オタコン_001: {
+Mit der R2-Taste,
+kannst Du schnell die Waffen wechseln.
+}
+/*でもＲ２ボタンを素早く押して離せば
+武器のクイックチェンジが出来るんだ。
+But hitting the R2 button will
+let you do a quick change of
+weapons.
+*/
+オタコン_002: {
+Sobald Du RAY angreifen siehst,
+}//<ページ数変更>
+オタコン_002_1: {
+wechsle schnell die Waffe, lege
+die Stinger ab und mach,
+da&~s Du da rauskommst.
+}
+/*ＲＡＹの攻撃が来そうになったら、
+クイックチェンジでスティンガーを
+外してすぐに逃げるんだ。
+If you see RAY getting
+ready to attack,
+use the quick change to deselect
+the Stinger and get the hell out
+of there.
+*/
+//dv}//v
+}//d
+
+
+//踏み付け h //e
+resource PO_メタル戦＿踏み付け__g {
+//vox t:vc240341 {
+オタコン_000: {
+N&~ahere Dich RAY mit gr&~o&~ster Vorsicht.
+Wenn er auf Dich tritt, bist Du tot!
+}
+/*ＲＡＹに押しつぶされたらひとたまりも
+ない。近づく時は気をつけるんだ。
+Approach RAY with extreme
+caution. There's no way you'll
+survive being stepped on.
+*/
+
+オタコン_001: {
+Selbst wenn Du ausweichen kannst,
+wirst Du vom Aufprall vermutlich
+umgeworfen
+}
+オタコン_002: {
+und kannst sehr leicht
+angegriffen werden.
+}
+オタコン_003: {
+Aber wenn Du im richtigen Moment
+f&~allst und rollst,
+}//<ページ数変更>
+オタコン_003_1: {
+kannst Du ausweichen,
+ohne aus dem Gleichgewicht
+zu geraten.
+}
+/*ＲＡＹに近づく時は気をつけるんだ。
+踏み潰されたらひとたまりもない。
+
+たとえよけても、衝撃に足をとられて
+しまうだろう。大きな隙をつくって
+しまうことになる。
+
+でもタイミング良くローリングを使えば
+足をとられずに逃げられるはずだ。
+
+Even if you manage to get out
+of the way, you'd probably get
+knocked off your feet by the impact.
+
+You'd be wide open to an attack.
+
+However, if you drop and
+roll at just the right time,
+
+you should be able to get away
+without losing your footing.
+*/
+
+}//d
+
+//ＲＡＹは倒しても倒しても出てくる h //e
+resource PO_メタル戦＿きりがない１__g {
+//vox t:vc240351 {
+ライデン_000: {
+Verdammt! Einer erledigt,
+schon ist ein anderer da.
+Wie viele gibt es von der Sorte?
+}
+/*くっ！次から次へと……出てくる……。
+一体何機いるんだ？
+Damn it! Take one down,
+another takes its place...
+How many are there?
+*/
+//dv}//v
+}//d
+
+//二回目以降 t //e
+resource PO_メタル戦＿きりがない２__g {
+//vox t:vc240361 {
+オタコン_000: {
+Raiden, gib nicht auf!
+}//<ページ数変更>
+オタコン_000_1: {
+Es sind viele, das stimmt,
+aber solange Du weiter k&~ampfst,
+hast Du auch eine Chance! K&~ampfe!
+}
+/*ライデン、相手が多数でもあきらめちゃ
+ダメだ！あきらめなければそのうち
+何とかなる！戦うんだ！
+Raiden, don't give up!
+There's a lot of them, sure, but
+as long as you keep fighting,
+you have a chance! Fight!
+*/
+//dv}//v
+}//d
+
+//近づけばＲＧＢ６も当たる h //e
+resource PO_メタル戦＿ＲＧＢ６__g {
+//vox t:vc240371 {
+オタコン_000: {
+Das RGB6 m&~u&~ste eigentlich
+etwas ausrichten k&~onnen,
+wenn Du auf den Kopfbereich zielst.
+}//<ページ数変更>
+オタコン_000_1: {
+Aber wahrscheinlich kannst Du ihn nur
+aus relativ kurzer Entfernung treffen.
+}
+/*ＲＧＢ６でも頭部を狙えばダメージを
+与えられると思う。ただ、かなり接近
+しなければ当てられないだろうね。
+The RGB6 should be capable of
+inflicting damage as long as you
+aim for the head section.
+But you probably won't be able
+to land a shot unless you get in
+pretty close.
+*/
+//dv}//v
+}//d
+
+//ミサイルは近くでは無効 h //e
+resource PO_メタル戦＿ミッソー近く無効__g {
+//vox t:vc240381 {
+オタコン_000: {
+RAYs Raketenzielsystem ist &~uber kurze
+Strecken anscheinend nicht sehr wirksam.
+}
+/*ＲＡＹのミサイルは近距離の相手に
+対してはうまくターゲッティングが
+出来ないみたいだ。
+RAY's missile targeting system
+doesn't seem to be very effective
+against targets within close range.
+*/
+オタコン_001: {
+Versuch doch,
+ganz nah ranzukommen!
+}
+/*思い切って近づいてみるのもいいだろう。
+You could try going
+in really close.
+*/
+//dv}//v
+}//d
+//Ｌ１ボタンでロックオン h //e
+resource PO_メタル戦＿ロックオン__g {
+//vox t:vc240391 {
+オタコン_000: {
+Dr&~ucke L1-Taste, wenn Du einen
+RAY l&~anger ansehen m&~ochtest.
+}
+/*Ｌ１ボタンを押せば特定のＲＡＹの
+方向に向き続けることが可能だ。
+Press the L1 button to keep
+facing a particular RAY unit.
+*/
+オタコン_001: {
+Dr&~ucke nochmal L1-Taste,
+um zu einem anderen RAY zu wechseln.
+Bleib' wachsam!
+}
+/*他のＲＡＹに方向を変えたい時は
+Ｌ１ボタンを押せばその度に
+切り替えられる。
+Push the L1 button again to
+switch to another RAY. Keep
+on your toes!
+*/
+//dv}//v
+}//d
+//側転 h //e
+resource PO_メタル戦＿側転__g {
+//vox t:vc240401 {
+オタコン_000: {
+Um einem angreifenden RAY in
+letzter Minute auszuweichen,
+lass Dich fallen und rolle.
+}
+/*ＲＡＹの攻撃が迫ってきても
+ローリングを使えばギリギリかわせる
+かもしれない。
+For a last-ditch evasion from an
+attacking RAY, try dropping and
+rolling.
+*/
+オタコン_001: {
+Eine gut getimte Rolle kann sich auszahlen.
+}
+/*ローリングをうまく使うんだ。
+A well-timed roll could
+come in handy.
+*/
+//dv}//v
+}//d
+//法則 h //e
+resource PO_メタル戦＿法則__g {
+//vox t:vc240411 {
+オタコン_000: {
+Die RAYs folgen bei Gruppenangriffen
+bestimmten Formationen.
+}//<ページ数変更>
+オタコン_000_1: {
+Versuche, sie zu verstehen.
+}
+/*ＲＡＹの連携攻撃にはいくつかの
+フォーメーションに基づいている。
+それを見つけ出すんだ。
+The RAYs follow certain
+basic formations for their
+group attacks.
+Try to figure out
+what these are.
+*/
+//dv}//v
+}//d
+//隙をつかないと当たらない h //e
+resource PO_メタル戦＿隙を突け__g {
+//vox t:vc240421 {
+オタコン_000: {
+Versuche, sie zu verstehen.RAYs
+Verteidigungsf&~ahigkeit ist ziemlich hoch.
+}
+/*ＲＡＹは防御行動にも相当優れている
+みたいだ。
+RAY's defensive capabilities
+are pretty high.
+*/
+オタコン_001: {
+Manchmal stehen sie still,
+aber sie sind stets wachsam.
+}//<ページ数変更>
+オタコン_001_1: {
+Wenn Du eine Stinger abfeuerst,
+blockt er sie ab.
+}
+/*じっと警戒している時は
+スティンガーを撃っても防がれて
+しまうだろう。
+Sometimes they stay still,
+but they're on their guard.
+Fire a Stinger and
+they'll just block it.
+*/
+オタコン_002: {
+Du mu&~st entweder einen D&~uppel
+einsetzen oder beim Angriff des RAY
+das kleine Angriffsfenster treffen.
+}
+/*チャフを使うか攻撃時の隙に
+狙うしかないね。
+You'll have to use either a chaff or
+go for that small strike window
+during RAY's own attack.
+*/
+//dv}//v
+}//d
+
+//ＲＡＹは小回りが利かない h //e
+resource PO_メタル戦＿小回りきかない__g {
+//vox t:vc240431 {
+オタコン_000: {
+In Serie gebaute RAY-Modelle wurden
+eigens dazu konstruiert, um Arsenal
+Gear zu unterst&~utzen.
+}
+/*量産型ＲＡＹはアーセナルギアの
+護衛が目的の兵器だ。
+Mass-production RAY models were
+designed to flank Arsenal Gear.
+*/
+オタコン_001: {
+Ihr System ist vermutlich nicht f&~ur
+menschliche Gegner konzipiert,
+}//<ページ数変更>
+オタコン_001_1: {
+und ihre Bewegungen sind vermutlich
+gr&~o&~ser und plumper als Deine.
+}
+/*制御プログラムも対人戦闘は元々想定していないだろう。小回りは利かない
+はずだ。
+Their system probably isn't
+equipped to take on human
+opponents,
+and the scale of their movements
+should be larger and clumsier
+than yours.
+*/
+オタコン_002: {
+Bewege Dich,
+dann hast Du eine Chance.
+Gib nicht auf.
+}
+/*細かく動き回れば勝機をつかめると思う。
+あきらめるな！
+Keep moving and you'll have
+your chance. Don't give up!
+*/
+//dv}//v
+}//d
+
+//★P080_28_P12ＡＧ浮上２８ポリゴンデモ１２終了＜フラグ＜P082_01_P01エンディング１ポリゴンデモ１開始 d //e
+//ソリダス戦 h //e
+//刀で攻撃しろ h //e
+resource PO_ソリダス戦＿刀__g {
+//vox t:vc240441 {
+オタコン_000: {
+Raiden, mit blo&~sen H&~anden kannst
+Du nicht viel ausrichten. Du hast
+Dein eigenes Schwert. Benutze es.
+}
+/*ライデン、素手では勝ち目がないだろう。君も刀を使うんだ。
+Raiden, you don't have a lot going
+for you with just your bare hands.
+You have your own blade. Use it.
+*/
+//dv}//v
+}//d
+
+//蛇手  h //e
+resource PO_ソリダス戦＿蛇手__g {
+//vox t:vc240451 {
+オタコン_000: {
+Pa&~s auf Solidus' Schlangenarme auf.
+}//<ページ数変更>
+オタコン_000_1: {
+Wenn sie Dich fassen, dr&~ucke
+mehrmals den Linker Analog-Stick
+}//<ページ数変更>
+オタコン_000_2: {
+oder die Tasten, um ihn abzusch&~utteln.
+}
+/*ソリダスの蛇手に気をつけて。
+もしつかまれたら左スティックや
+ボタンを連打して振り払うんだ。
+Watch out for Solidus' snake arms.
+If they catch you, shake yourself
+free by pressing the left analog
+stick＃－
+or the buttons again and again.
+*/
+//dv}//v
+}//d
+
+//蛇手 ミサイル h //e
+resource PO_ソリダス戦＿蛇手ミッソー__g {
+//vox t:vc240461 {
+オタコン_000: {
+Die Raketen von den Schlangenarmen
+sind sehr schlagkr&~aftig, aber nicht
+sehr wendig.
+}//<ページ数変更>
+オタコン_000_1: {
+Solange Du Dich st&~andig bewegst,
+m&~u&~stest Du sie absch&~utteln k&~onnen.
+}
+/*蛇手からのミサイルは強力だ。
+でも誘導性能はそれほど高くない。
+立ち止まらなければ逃げられるはずだ。
+The missiles from the snake arms
+pack a punch, but they're fairly
+low on maneuverability.
+You should be able to shake them
+as long as you don't stop moving.
+*/
+オタコン_001: {
+Wenn Du sie nicht absch&~utteln kannst,
+durchtrenne sie mit dem Schwert.
+}
+/*逃げ切れなかったら刀で斬り落とすんだ。
+If you can't get rid of them,
+slice them with the sword.
+*/
+//dv}//v
+}//d
+//ＨＡＲＤ以上？ h //e
+resource PO_ソリダス戦＿蛇手ミッソー２__g {
+//vox t:vc240471 {
+オタコン_000: {
+Raiden, schneide die Raketen mit dem
+Schwert von den Schlangenarmen ab.
+Time den Hieb und trenne die Raketen ab.
+}
+/*ライデン、蛇手からのミサイルは刀で
+斬り落とすんだ。間合いを測って斬れ。
+Raiden, cut down the missiles from
+the snake arms with your blade.
+Time the stroke and let it rip!
+*/
+//dv}//v
+}//d
+//回り込め h //e
+resource PO_ソリダス戦＿正面攻撃無効__g {
+//vox t:vc240481 {
+オタコン_000: {
+Greife nie von vorne an
+-- seine Verteidigung ist zu gut.
+}//<ページ数変更>
+オタコン_000_1: {
+Gehe zur Seite oder nach hinten
+und greife von da an.
+}
+/*正面から攻撃してはだめだ。
+ほとんど防御されてしまう。
+横や背後に回り込んで攻撃するんだ。
+Don't attack from the front
+-- his defenses are too good.
+Go around to the side
+or back and get him.
+*/
+//dv}//v
+}//d
+//接近しすぎるな h //e
+resource PO_ソリダス戦＿接近しすぎ注意__g {
+//vox t:vc240491 {
+オタコン_000: {
+Bleibe nicht in Solidus'
+Reichweite. Es ist gef&~ahrlich,
+einen Direktangriff zu versuchen.
+}
+/*ソリダスの間合いにとどまっては危ない。
+まともに斬りあっては駄目だ。
+Don't stay in Solidus' range.
+It's too dangerous to try and
+take him head-on.
+*/
+オタコン_001: {
+Halte Abstand. Deine Strategie
+sollte hei&~sen: schnell zuschlagen
+und fl&~uchten.
+}
+/*距離をとりながらヒット・アンド・
+アウェーで攻めた方がいいよ。
+Keep your distance. Your
+strategy should be to hit
+fast and move out.
+*/
+//dv}//v
+}//d
+//突き有効 h //e
+resource PO_ソリダス戦＿突き有効__g {
+//vox t:vc240501 {
+オタコン_000: {
+Dr&~ucke den Rechter Analog-Stick
+nach vorne, um Solidus von au&~serhalb
+seiner Reichweite anzugreifen.
+}
+/*右スティックを押し込んで出す突きを
+使えばソリダスの間合いの外から攻撃
+出来るはずだ。
+Push the right analog stick in to
+strike out at Solidus from outside
+his range.
+*/
+オタコン_001: {
+Aber achte darauf, da&~s Du gut zielst.
+Wenn Du ihn verfehlst, bist Du Solidus
+Gegenangriff schutzlos ausgesetzt.
+}
+/*ただ、外した時の隙は大きいから
+ソリダスの反撃を食う可能性も高くなる。
+よく狙ってくれ。
+Make sure your aim is good, though.
+If you miss, you'll be wide open for
+Solidus' counterstrike.
+*/
+//dv}//v
+}//d
+
+//加速装置 h //e
+resource PO_ソリダス戦＿加速装置１__g {
+//vox t:vc240511 {
+オタコン_000: {
+Solidus benutzt einen Beschleuniger,
+also pa&~s auf, da&~s Du ihn nicht verlierst.
+}
+/*ソリダスは加速装置を使う。
+見失わないように気をつけるんだ。
+Solidus uses an accelerator, so
+make sure you don't lose him.
+*/
+//dv}//v
+}//d
+resource PO_ソリダス戦＿加速装置炎__g {
+//vox t:vc240521 {
+オタコン_000: {
+Wenn Du Feuer f&~angst, rolle,
+bis das Feuer aus ist.
+}
+/*炎が燃えうつったら、ローリングを
+繰り返せば消せるはずだ。
+If you catch fire, just go into
+a roll until the fire goes out.
+*/
+//dv}//v
+}//d
+
+//左目に眼帯をしているので左が死角 h //e
+resource PO_ソリダス戦＿死角__g {
+//vox t:vc240531 {
+オタコン_000: {
+Solidus tr&~agt links eine Augenklappe
+Deshalb hat er dort einen toten Winkel.
+}//<ページ数変更>
+オタコン_000_1: {
+Wenn Du dorthin rutscht,
+bist Du im Vorteil.
+}
+/*ソリダスは左目に眼帯をしている。
+左側は死角になっているはずだ。左に
+回り込めば有利に戦えるんじゃないか？
+Solidus has an eye patch on
+his left eye, so he should have
+a blind spot to his left.
+Maybe slipping into that spot
+will give you an advantage.
+*/
+//dv}//v
+}//d
+
+//後回し会話 d //e
+//量産型ＲＡＹについて h //e
+resource PO_天狗通路Ａ＿メタル１__g {
+//vox t:vc240541 {
+オタコン_000: {
+Raiden, schau mal.
+}
+/*ライデン、見るんだ。
+Raiden, take a look.*/
+ライデン_001: {
+Ah, Ist das das in
+Metal Gear RAY-Serien-Modell?
+}
+/*ああ……。
+これが量産型メタルギアＲＡＹ……？
+Hm...
+Is this the mass-production
+model Metal Gear RAY?
+*/
+//dv}//v
+}//d
+resource PO_量産型ＲＡＹうんちく１__g {
+//vox t:vc240551 {
+オタコン_000: {
+Metal Gear RAY wurde urspr&~unglich
+von den Marines
+}//<ページ数変更>
+オタコン_000_1: {
+als Gegenma&~snahme gegen andere
+Metal Gear-Versionen entwickelt.
+}
+/*メタルギアＲＡＹは元々、海兵隊主導で
+対メタルギア用兵器として設計された
+ものだった。
+Metal Gear RAY was originally
+designed by the Marines as a
+countermeasure＃－
+against other Metal Gear variations.
+*/
+オタコン_001: {
+Aber das in Massen hergestellte Modell
+basiert nur auf dem Design der Marines.
+}//<ページ数変更>
+オタコン_001_1: {
+Es wurde f&~ur den Schutz von Arsenal
+Gear neu konzipiert.
+}
+/*でも量産型はその基本設計だけを
+流用してアーセナルギア護衛用に
+再設計されたものなんだそうだ。
+But the mass-produced model is
+only based on the Marines' design.
+It's been redesigned to guard
+Arsenal Gear.
+*/
+オタコン_002: {
+Jetzt sch&~utzt es einen anderen
+Metal Gear, all das wei&~s ich von Emma.
+}
+/*メタルギアを守るためのメタルギア……。
+エマが教えてくれた。
+Now it protects another
+Metal Gear... I heard all
+this from Emma.
+*/
+オタコン_003: {
+Sieht aus, als bes&~a&~sen
+die in Serie hergestellten
+Metal Gear RAYs die F&~ahigkeit,
+}//<ページ数変更>
+オタコン_003_1: {
+gemeinsam zu k&~ampfen. Dabei dient
+GW als prim&~ares Steuersystem.
+}
+/*量産型メタルギアＲＡＹは基幹制御
+システムに『Ｇ．Ｗ』をおいた高度な
+共同交戦能力を持っているらしい。
+It seems that the mass-production
+model Metal Gear RAYs＃－
+have Cooperative Engagement
+Capability, with GW as the
+primary control system.
+*/
+オタコン_004: {
+Mehrere RAYs k&~onnen zu Arsenal
+Gear Kontakt aufnehmen und Daten
+austauschen.
+}
+/*複数のＲＡＹとアーセナルギアが、
+相互に通信しあってデータを完全に
+共有するんだ。
+Several RAYs can connect with
+Arsenal Gear and mutually
+exchange data.
+*/
+オタコン_005: {
+In diesem gemeinsamen Bereich
+k&~onnen alle RAYs zusammen
+Bedrohungen durch Information,
+}//<ページ数変更>
+オタコン_005_1: {
+Verfolgung und Abfangen begegnen --
+ganz wie im richtigen Leben.
+}
+/*全てのＲＡＹが統一された思考の下に
+脅威目標に対する探知、追尾、迎撃を
+有機的に連携して行う。
+Within this unified domain, all
+RAYs can cooperatively manage
+threats through notification,
+pursuit, and interception --
+all in a lifelike manner.
+*/
+オタコン_006: {
+Alle f&~ur einen, einer f&~ur alle.
+Es gibt keine Schwachpunkte.
+}
+/*個にして全、全にして個、ってわけだ。
+死角はない。
+All for one and one for all.
+There's no weak spot.
+*/
+オタコン_007: {
+Gesch&~utzt durch eine Horde von
+RAYs kann Arsenal Gear sich auch
+ohne  eine Eskorte von Kreuzern
+oder Zerst&~orern bewegen.
+}
+/*ＲＡＹの群れに守られることで
+アーセナルギアは巡洋艦や駆逐艦の護衛
+なしで単独行動出来るようになるんだ。
+When protected by a pack of RAYs,
+Arsenal Gear can move without
+cruisers or destroyers as escorts.
+*/
+//dv}//v
+}//d
+
+//二回目以降 t //e
+resource PO_天狗通路Ａ＿メタル２__g {
+//vox t:vc240561 {
+オタコン_000: {
+Sieht aus, als w&~urde das in
+Serie hergestellte Metal Gear
+RAY-Serien-Modell gerade gewartet.
+}//<ページ数変更>
+オタコン_000_1: {
+Ich glaube nicht, da&~s es sich
+bewegen kann. Geh weiter.
+}
+/*そこにある量産型メタルギアは整備中
+みたいだ。動き出す心配はないと思う。
+先に進んでくれ。
+Those mass-production model
+Metal Gear RAYs look like
+they're being serviced.
+I don't think they can
+move. Keep going.
+*/
+//dv}//v
+}//d
+
+//天狗兵装備 Ｐ９０ h //e
+resource PO_天狗兵＿Ｐ９０１__g {
+//vox t:vc240571 {
+オタコン_000: {
+Tengu-Soldaten haben eine P90
+zur Selbstverteidigung.
+}//<ページ数変更>
+オタコン_000_1: {
+Es ist ein Mittelding zwischen
+Gewehr und Pistole.
+}
+/*奴等が持ってる銃はＰ９０。パーソナル
+・ディフェンス・ウェポンと呼ばれる、
+ライフルと拳銃の中間に位置する兵器だ。
+Tengu soldiers carry the P90
+Personal Defense Weapon.
+It lies somewhere in between
+a rifle and a pistol.
+*/
+オタコン_001: {
+Die Entwickler der P90 mir ihrer
+Munition wollten die Benutzerfreundlichkeit
+einer Pistole
+}//<ページ数変更>
+オタコン_001_1: {
+mit der Durchschu&~skraft
+eines Gewehrs verbinden.
+}
+/*Ｐ９０は拳弾の扱いやすさとライフルの
+貫通力を持った兵器と弾薬のセットと
+して開発されたものだ。
+The designers of the P90 and
+its ammunition focused on the
+convenience of a pistol and
+the penetrating power
+of a rifle.
+*/
+オタコン_002: {
+Sie feuert das neue 5,7 x 28mm Gescho&~s.
+}
+/*弾薬は新設計の５．７ｍｍＸ２８弾を
+使用している。
+It fires the new
+5.7 x 28mm cartridge.
+*/
+オタコン_003: {
+Die leichten Geschosse haben ein
+Projektilgewicht von 2,02g,
+}//<ページ数変更>
+オタコン_003_1: {
+eine M&~undungsgeschwindigkeit von
+715 m/s und geringen R&~uckschlag.
+}
+/*毎秒７１５ｍという高い銃口初速を
+持ちながら弾体重量は２．０２ｇと軽い
+から反動は拳銃並みに小さいんだ。
+The lightweight rounds feature
+a projectile weight of 2.02g and＃－
+a muzzle velocity of
+715mps, and low recoil.
+*/
+オタコン_004: {
+Ihre Durchschlagkraft ist hoch.
+}//<ページ数変更>
+オタコン_004_1: {
+Sie kann eine normale kugelsichere
+Weste auf eine Entfernung von 100m
+durchdringen.
+}
+/*貫通力も高い。１００ｍ離れていても
+普通の防弾衣なら簡単に射抜くよ。
+Its piercing power
+is also quite high.
+It can penetrate an ordinary
+bulletproof vest at a distance
+of 100 meters.
+*/
+オタコン_005: {
+Das Geh&~ause ist symmetrisch und
+aus Kunststoff,
+}//<ページ数変更>
+オタコン_005_1: {
+selbst ein linksh&~andiger Sch&~utze
+kommt gut mit dieser Waffe zurecht.
+}
+/*本体は全体がプラスティックで出来て
+いて、左利きの人でも問題なく使える
+ように左右対称の作りになっている。
+The body is made entirely of
+plastic, and perfectly symmetrical,
+so even left-handed shooters
+can easily use it.
+*/
+オタコン_006: {
+Das Magazin fa&~st 50 Schu&~s
+}//<ページ数変更>
+オタコン_006_1: {
+und wird oben aufgesetzt, damit es beim
+Schie&~sen im Liegen nicht behindert.
+}
+/*装弾数は５０発。マガジンは銃の上部に
+セットされるから伏せ射撃の時も邪魔に
+ならない。
+It carries a fifty-round magazine.
+The magazine is mounted on top,
+so it doesn't get in the way when
+firing from a prone position.
+*/
+オタコン_007: {
+Das gef&~ahrlichste ist aber ihre
+Schnellfeuerkraft und Pr&~azision.
+}//<ページ数変更>
+オタコン_007_1: {
+Am besten vermeidest
+Du einen Frontalangriff.
+}
+/*とにかくその連射性能と精度は脅威だ。
+まともに撃ち合ったりしない方が
+いいだろうね。
+But the biggest threats are
+its rapid firing rate and its
+accuracy.
+It's probably best to avoid
+a full-frontal assault.
+*/
+//dv}//v
+}//d
+//刀を持っている場合 t //e
+resource PO_天狗兵＿Ｐ９０２__g {
+//vox t:vc240581 {
+オタコン_000: {
+Wenn Du Dich mit dem
+Schwert verteidigst,
+}//<ページ数変更>
+オタコン_000_1: {
+m&~u&~stest Du selbst Angriffe
+der P90 abwehren k&~onnen.
+}
+/*刀を使って防御すればＰ９０の連射も
+弾けるはずだ。
+If you use the blade
+to defend yourself,
+you should be able to deflect
+even the attacks of the P90.
+*/
+//dv}//v
+}//d
+//天狗兵装備 強化服 h //e
+resource PO_天狗兵＿強化服__g {
+//vox t:vc240591 {
+オタコン_000: {
+Tengu-Soldaten tragen einen speziellen,
+von DARPA entwickelten Kampfanzug.
+}//<ページ数変更>
+オタコン_000_1: {
+Er scheint eine Art
+Hautskelett-Technologie zu nutzen.
+}
+/*奴等が身につけている特殊兵装は
+ＤＡＲＰＡで開発されていた
+外骨格技術を導入したものみたいだね。
+Tengu soldiers wear a special kind
+of combat suit that was developed
+by DARPA.
+It seems to utilize some kind
+of exoskeletal technology.
+*/
+オタコン_001: {
+Der Anzug umh&~ullt den Soldaten
+in einer Panzerschicht.
+}//<ページ数変更>
+オタコン_001_1: {
+Er ist dar&~uber mit
+Ausl&~osern versehen,
+}//<ページ数変更>
+オタコン_001_2: {
+die mit k&~unstlichem Muskelgewebe
+die Kraft des Soldaten verst&~arken und
+seine &~Uberlebenschancen erh&~ohen.
+}
+/*兵士の全身を装甲で覆い、人工筋肉を
+取り入れたアクチュエータを装備して
+生存性と戦闘力を増幅させた強化服だ。
+The suit encases the soldier
+in a layer of armor,
+and is outfitted with actuators
+which utilize artificial muscle
+tissue＃－
+to amplify the soldier's
+strength and increase
+his chances of survival.
+*/
+オタコン_002: {
+Dank der Verst&~arkung seiner menschlichen
+Kraft durch den k&~unstlichen Muskel kann
+sich ein Soldat schneller bewegen,
+}//<ページ数変更>
+オタコン_002_1: {
+weiter laufen und schwerere
+Waffen tragen.
+}
+/*人工筋肉による人力増幅で兵士は
+より重い火器を携行して、より早く
+より遠くまで行動できるようになる。
+Using the Human Strength
+Amplification provided by
+the artificial muscle,
+a soldier can move faster, travel
+farther, and carry heavier weapons
+than normal.
+*/
+オタコン_003: {
+Mit anderen Worten, er hat &~uberlegene
+Sp&~ah- und Kampff&~ahigkeiten
+}//<ページ数変更>
+オタコン_003_1: {
+und kann so das Schlachtfeld
+beherrschen.
+}
+/*つまり、より高い地上偵察能力と
+戦場支配力を実現出来るってことだ。
+In other words, he has superior
+scouting and combat abilities,
+and can basically dominate
+the battlefield.
+*/
+オタコン_004: {
+Jeder Soldat, der diesen besonderen
+Anzug tr&~agt,
+}//<ページ数変更>
+オタコン_004_1: {
+kann sich mit &~ubermenschlicher
+Wendigkeit bewegen.
+}//<ページ数変更>
+オタコン_004_2: {
+Sei darauf gefa&~st.
+}
+/*特殊兵装を装備した敵兵士は人間離れ
+した運動能力を発揮するはずだ。
+充分気をつけて。
+Any soldiers you face＃－
+who are wearing this special kind
+of suit will be able to move with
+superhuman agility.
+Make sure you're prepared.
+*/
+//dv}//v
+}//d
+//天狗通路 全滅させないと進めない h //e
+resource PO_天狗通路ドア全滅__g {
+//vox t:vc240601 {
+オタコン_000: {
+Raiden, die T&~ur ist verschlossen.
+}//<ページ数変更>
+オタコン_000_1: {
+Sieht aus, als k&~onntest Du sie
+nur entriegeln, wenn Du alle
+feindlichen Soldaten ausschaltest.
+}//<ページ数変更>
+オタコン_000_2: {
+Tu's.
+}
+/*ライデン、そこのドアはロックされてる。
+ロックを外すには敵を全滅させるしか
+ないみたいだ。敵を全て倒してくれ。
+Raiden, that door is locked.
+It looks like the only way to
+unlock it is to defeat all the
+enemy soldiers.
+Take them all out!
+*/
+//dv}//v
+}//d
+
+//大佐について判明前 h //e
+resource PO_大佐判明前__g {
+//vox t:vc240611 {
+ライデン_000: {
+Hast Du schon etwas &~uber den Oberst
+herausgefunden? Sein Verhalten wird
+immer merkw&~urdiger.
+}
+/*大佐のことは何かわかったか？
+ますます様子がおかしく
+なってるんだが……。
+Have you found out anything about
+the Colonel yet? His behavior is
+getting stranger and stranger...
+*/
+オタコン_001: {
+Nein, noch nichts.
+Gib mit noch etwas Zeit.
+}
+/*いや、まだだ。
+もう少し時間をくれ……。
+Nope, nothing yet. Just
+give me a little more time.
+*/
+//dv}//v
+}//d
+
+//メタルギア戦 ミサイル h //e
+resource PO_メタル戦＿ミッソー１__g {
+//vox t:vc240621 {
+オタコン_000: {
+Raiden, achte auf
+Lenkflugk&~orper des RAY.
+}
+/*
+ライデン、ＲＡＹの誘導ミサイルに
+気をつけるんだ。
+Raiden, watch out for
+RAY's guided missiles.
+*/
+オタコン_001: {
+Sie sind mit HEAT-K&~opfen best&~uckt --
+die eigentlich f&~ur die Abwehr von Panzern
+oder Kriegsschiffen gedacht sind.
+}//<ページ数変更>
+オタコン_001_1: {
+Also vermutlich nicht f&~ur den Kampf
+gegen Personen. Einen Angriff
+w&~urdest Du trotzdem nicht &~uberleben.
+}
+/*弾頭は対艦もしくは対戦車用の
+ＨＥＡＴで対人榴弾じゃないいだろう
+けど、直撃すればただではすまない。
+They have HEAT warheads --
+designed for anti-tank or anti-
+warship purposes,
+so it's probably not intended for
+anti-personnel use, but you still
+won't survive a direct assault.
+*/
+//dv}//v
+}//d
+resource PO_メタル戦＿ミッソー２__g {
+//vox t:vc240631 {
+オタコン_000: {
+Vermutlich ist sie auch mit einem
+bildgesteuerten Verfolgungskopf versehen.
+}//<ページ数変更>
+オタコン_000_1: {
+Ziemlich modernes Lenksystem.
+}
+/*おそらくイメージ誘導式のシーカー
+ヘッドも備えている。誘導性能は
+かなり高いよ。
+It's probably also equipped with
+an image-guided tracking head.
+The guidance system
+is quite advanced.
+*/
+//dv}//v
+}//d
+resource PO_メタル戦＿ミッソー３__g {
+//vox t:vc240641 {
+オタコン_000: {
+Es sind keine Antie-Personen Raketen
+Du m&~u&~stest sie also mit etwas
+D&~uppel blockieren k&~onnen.
+}
+/*でももともと対人用のミサイルじゃない
+からチャフを使えば撹乱できるはずだ。
+But it's not designed as an anti-
+personnel weapon, so you should
+be able to jam it with some chaff.
+*/
+オタコン_001: {
+Bleib' in Bewegung, dann kannst
+Du ihm ausweichen. Duck' und roll' Dich.
+}
+/*止まらずに動きつづけても回避できる
+かもしれない。ローリングをうまく
+使ってかわすんだ。
+You should also be able to evade
+it if you keep moving. Dodge by
+rolling.
+*/
+//dv}//v
+}//d
+//ＲＡＹの駆動系について h //e
+resource PO_メタル戦＿人工筋肉__g {
+//vox t:vc240651 {
+オタコン_000: {
+Der Metal Gear RAY-Motor scheint
+mit k&~unstlichem Muskelgewebe
+versehen zu sein.
+}
+/*メタルギアＲＡＹは駆動系に人工筋肉を
+導入しているみたいだね。
+The engine system of Metal Gear
+RAY appears to be outfitted with
+artificial muscle tissue.
+*/
+オタコン_001: {
+Die k&~unstlichen Muskeln bestehen
+aus Ausl&~osern, die menschlichen
+Gewebe &~ahnlich sind.
+}//<ページ数変更>
+オタコン_001_1: {
+Die Ausl&~oser sind aus stromleitendem,
+makromolekularem Gewebe.
+}
+/*人工筋肉は電気活性のある
+高分子繊維を使って生物の筋肉を
+模したアクチュエーターだ。
+The artificial muscle consists
+of actuators that resemble
+human muscle tissue.
+It's made of a macromolecular
+fiber that conducts electricity.
+*/
+オタコン_002: {
+Dieses System unterscheidet
+sich von normalen Motoren,
+}//<ページ数変更>
+オタコン_002_1: {
+die mechanisch und mit
+&~Oldruck funktionieren.
+}//<ページ数変更>
+オタコン_002_2: {
+Es kann viele unterschiedliche
+Bewegungen mit einem einzigen
+Motor ausf&~uhren.
+}
+/*機械式アクチュエーターや
+油圧式駆動機構と違って一種類の
+駆動系でいくつもの動きが可能になる。
+This system is different
+from ordinary engines＃－
+based on mechanical activators
+and oil pressure.
+It's capable of many different
+kinds of movement using a
+single kind of engine.
+*/
+オタコン_003: {
+Mit anderen Worten: Er kann komplexe
+Bewegungen glatt und m&~uhelos ausf&~uhren.
+}
+/*つまり迅速で複雑な動きを、
+単純な機構でなめらかに実現出来るって
+ことだ。
+In other words, it's capable of
+performing a complex series of
+motions smoothly and effortlessly.
+*/
+オタコン_004: {
+RAY bewegt sich schnell und pr&~azise.
+Sei vorsichtig!
+}
+/*ＲＡＹの動きは素早くて的確だよ。
+気をつけるんだ。
+RAY's movements are both
+quick and precise. Be careful!
+*/
+//dv}//v
+}//d
+
+//ＲＡＹの装甲について h //e
+resource PO_メタル戦＿装甲__g {
+//vox t:vc240661 {
+オタコン_000: {
+RAY ist mit einer topmodernen
+Keramik-Titanlegierung gepanzert.
+}
+/*ＲＡＹの装甲は最新式のセラミック・
+チタン系複合装甲だ。
+RAY's armor is made of a
+state-of-the-art ceramic-
+titanium alloy.
+*/
+オタコン_001: {
+Ein Netz einfacher Sensormuster zieht
+sich um den ganzen K&~orper.
+}//<ページ数変更>
+オタコン_001_1: {
+Dazu geh&~oren auch leitende Nanor&~ohren,
+die die Oberfl&~ache mit dem Panzerinneren
+verbinden.
+}
+/*装甲表面と内部に伝導性ナノチューブ
+などの単純なセンサー群が張り巡らされ
+ている。
+A network of simple sensor arrays
+stretches around the body,
+including conductive nanotubes
+that connect the surface and
+the interior of the armor.
+*/
+オタコン_002: {
+Wenn sich der Zustand der Panzerung
+ver&~andert, stellen Selbstdiagnosesysteme
+in der gesamten Panzerung diese
+fest und reagieren.
+}//<ページ数変更>
+オタコン_002_1: {
+Sie wirken wie ein Netz
+autonomer Reflexnerven.
+}
+/*装甲の状態に変化があると各部の
+自己診断システムがそれを検知して
+自律神経系的に対処を行うシステムだ。
+When the condition of the armor
+changes, self-diagnostic systems
+located throughout the armor＃－
+detect and respond to this change,
+like a network of autonomic reflex
+nerves.
+*/
+オタコン_003: {
+Dieses Netz ist ein
+Schadensbegrenzungssystem.
+}//<ページ数変更>
+オタコン_003_1: {
+Es schaltet beispielsweise einen
+besch&~adigten Bereich ab oder leitet
+Signale &~uber Hilfskreisl&~aufe um.
+}
+/*区画閉鎖や予備回路への切り替え等の
+ダメージ・コントロールも反射的に
+行われる。
+This acts as a damage control
+response system, performing
+functions＃－
+such as shutting down a damaged
+section or rerouting signals through
+auxiliary circuits.
+*/
+オタコン_004: {
+Gleichzeitig werden L&~ocher und Risse
+im Panzer weitgehend mit Hilfe
+}//<ページ数変更>
+オタコン_004_1: {
+einer 'Nanopaste' repariert,
+die von Ventilen in der N&~ahe des
+besch&~adigten Bereichs automatisch
+ausgeschieden wird.
+}
+/*同時に「傷口」近くの「分泌孔」から
+ナノペースト素材が自律的に分泌されて、
+ある程度の自己補修も行われるらしい。
+At the same time, any holes and
+tears in the armor are repaired
+to some degree＃－
+by a kind of "nanopaste" that's
+secreted automatically from
+valves near the damaged area.
+*/
+オタコン_005: {
+Mit dieser Nanopaste hat es fast
+den Anschein, als w&~urde RAY bluten.
+}
+/*ＲＡＹが血を流すように見えるのは
+そのナノペーストだ。
+This nanopaste almost makes
+RAY seem like it's bleeding.
+*/
+オタコン_006: {
+Mit Deinen Waffen wirst Du
+die RAY-Panzerung nicht
+durchdringen k&~onnen.
+}//<ページ数変更>
+オタコン_006_1: {
+Ziele auf den Kopf,
+wo die Panzerung relativ d&~unn ist.
+}
+/*君の持ってる火器でまともに装甲を
+貫くことは出来ないだろう。装甲の
+手薄な頭部を狙うしかない。
+You probably won't be able
+to pierce RAY's armor with
+the weapons you're carrying.
+You'll have to aim for the head,
+where the armor is relatively
+thin.
+*/
+オタコン_007: {
+Ziele mit Stinger-Raketen auf den Kopf.
+}
+/*スティンガーで頭を狙うんだ。
+Aim for the head using
+Stinger missiles.
+*/
+//dv}//v
+}//d
+
+//マッスルスーツ h //e
+resource PO_ソリダス戦＿マッスルスーツうんちく１__g {
+//vox t:vc240671 {
+オタコン_000: {
+Solidus' Power-Anzug ist
+ein hochmoderner Hautskelettanzug,
+}//<ページ数変更>
+オタコン_000_1: {
+der k&~unstliches Muskelgewebe nutzt.
+}//<ページ数変更>
+オタコン_000_2: {
+Dieser Anzug verleiht seinem Tr&~ager
+&~ubermenschliche Motorf&~ahigkeiten.
+}
+/*ソリダスの強化服は人工筋肉を採用した
+最新式の外骨格だ。人間を遥かに超えた
+運動能力を装着者に与える。
+The power suit that Solidus is
+wearing is a state-of-the-art
+exoskeleton＃－
+that makes use of artificial
+muscle tissue.
+It gives the person wearing
+it superhuman motor skill
+capabilities.
+*/
+オタコン_001: {
+Es ist dieselbe Technologie wie f&~ur
+den RAY-Motor und die Kampfanz&~uge
+der Tengu-Soldaten.
+}//<ページ数変更>
+オタコン_001_1: {
+Dein Skull Suit nutzt
+diese Technik ansatzweise.
+}
+/*ＲＡＹの駆動系や天狗兵の装備と
+同種のテクノロジーだ。君のスカル
+スーツにも一部流用されている。
+It's the same technology used
+in RAY's engine system and the
+Tengu soldiers' combat suits.
+Your skull suit uses
+a little bit of it, too.
+*/
+オタコン_002: {
+Eine Anzahl von Sensoren reichen von
+der Anzugoberfl&~ache ins Innere -
+wie ein neurales Netzwerk.
+}
+/*強化服の表面と内部にはいくつもの
+センサーが神経のように張り巡らされて
+いるんだ。
+A number of sensors stretch between
+the surface and interior of the suit
+like a neural network.
+*/
+オタコン_003: {
+Sobald diese Sensoren einen Aufprall
+feststellen, reagiert der k&~unstliche
+Muskel im Anzug.
+}//<ページ数変更>
+オタコン_003_1: {
+Er zieht sich zusammen und
+verteilt dadurch den Schaden.
+}
+/*センサーが衝撃を検知すると瞬時に
+人工筋肉が収縮し、ダメージを
+拡散させる反射運動をとる。
+When these sensors detect an
+impact, the artificial muscle in
+the suit reacts instantaneously＃－
+by automatically contracting
+and diffusing the damage.
+*/
+オタコン_004: {
+Du kannst ihn also nicht einfach
+mit dem Schwert zerschlagen.
+Dein Anzug nutzt die gleiche Technologie.
+}
+/*だから刀でも簡単に真っ二つってわけ
+にはいかない。この技術も君のスカル
+スーツに流用されてる。
+So you can't just chop him in half
+with your sword. Your suit uses
+the same technology.
+*/
+オタコン_005: {
+Man k&~onnte fast sagen, Da&~s Dein
+Anzug, Solidus' Anzug und Metal Gear
+RAY so etwas wie Br&~uder sind.
+}
+/*つまりソリダスの強化服、君のスカル
+スーツ、メタルギアＲＡＹは兄弟みたい
+なものだってことだ……。
+You could almost say that your suit,
+Solidus' suit, and Metal Gear RAY
+are like brothers...
+*/
+//dv}//v
+}//d
+
+//再追加 ------- h //e
+//ＲＡＹ戦 口の中が弱点 h //e
+resource PO_ＲＡＹ戦＿口の中１__g {
+//vox t:vc240681 {
+オタコン_000: {
+RAY speit einen Hochdruck -
+Wasserstrahl aus.
+}//<ページ数変更>
+オタコン_000_1: {
+Einfach gesagt ist das ein Hydroschneider,
+aber mit ganz au&~sergew&~ohnlicher Kraft.
+}
+/*ＲＡＹは口から超高水圧の水流を吐く。
+原理的には水圧カッターと同じだけど
+その威力は桁違いだ。
+RAY shoots a jet of
+super-pressurized
+water from its mouth.
+Fundamentally, it's a hydro-cutter,
+but the power is on a completely
+different scale.
+*/
+//dv}//v
+}//d
+resource PO_ＲＡＹ戦＿口の中２__g {
+//vox t:vc240691 {
+オタコン_000: {
+Sobald RAY den Mund &~offnet,
+hast Du die Chance anzugreifen.
+}
+/*でもＲＡＹが口を開ける瞬間は
+君にとって攻撃のチャンスでもある。
+The moment RAY opens
+its mouth is your chance
+to attack.
+*/
+//dv}//v
+}//d
+resource PO_ＲＡＹ戦＿口の中３__g {
+//vox t:vc240701 {
+オタコン_000: {
+Schie&~se eine Stinger in RAYs Mund.
+So f&~ugst Du ihm echten Schaden zu.
+}
+/*ＲＡＹの口の中にスティンガーを
+叩き込めば内部に直接ダメージを
+与えることが出来るはずだ。
+Shooting a Stinger into RAY's mouth
+should inflict some real damage.
+*/
+//dv}//v
+}//d
+
+
+//ソリダス戦　攻撃をローリングでかわせる。h //e
+resource PO_ソリダス戦＿ローリング回避__g {
+//vox t:vc240711 {
+オタコン_000: {
+Wenn Du rollst, m&~u&~ste es Dir
+gelingen, seinem Schwert oder.
+Schlangenarmen zu entgehen.
+}
+/*刀や蛇手が迫ってきてもローリングなら
+紙一重でかわせるはずだ。ローリングを
+うまく使うんだ。
+If you roll, you should be able
+to barely avoid his blade or
+snake arms.
+*/
+//dv}//v
+}//d
+
+//ソリダス戦　ソリダスの防御 h //e
+resource PO_ソリダス戦＿ソリダス防御__g {
+//vox t:vc240721 {
+オタコン_000: {
+Solidus Panzerung ist undurchdringlich.
+Ziele auf die ungesch&~utzten Bereiche.
+}
+/*Soldus defenses are solid. You should
+aim for the unprotected parts.
+ソリダスの防御は堅い。
+防御していない部分を狙った方が
+いいだろう。
+Solidus' defenses are solid.
+You should aim for the
+unprotected parts.
+*/
+オタコン_001: {
+Wenn er einen Angriff hoch abwehrt,
+schlage mit dem Schwert von unten
+nach oben.
+}
+/*ソリダスが上段を守っているなら
+下から斬り上げろ。
+If he is defending high,
+slash upward, and cut
+him from below.
+*/
+オタコン_002: {
+Wenn er einen Angriff tief abwehrt,
+schlage mit dem Schwert von oben
+nach unten.
+}
+/*下段を防御しているなら上から
+斬り下ろすんだ。
+When he's defending low,
+slash downward, and cut
+him from above.
+*/
+//dv}//v
+}//d
+
+
+resource PO_ばぐっち__g {
+オタコン_000: {
+BUGBUGBUG
+}
+/*ばぐっちょ？*/
+}//d
+

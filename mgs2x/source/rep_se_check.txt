@@ -1,0 +1,141 @@
+
+
+
+
+user\uehara\pss\ending.c(813): if( prev_tick + 1 != DG_TickCount ){
+user\uehara\pss\ending.c(814): 	printf( "DELAYED !! %d\n", DG_TickCount - prev_tick );
+user\uehara\pss\ending.c(816): prev_tick = DG_TickCount;
+user\uehara\pss\ending.c(912): //			if( DG_TickCount % 2 == 0 ) return;	// 30fps
+user\uehara\pss\mpeg.c(428): 			if( DG_TickCount % 2 == 0 ) return;	// 30fps
+user\uehara\pss\mpegstr.c(541): //			if( DG_TickCount % 2 == 0 ) return;	// 30fps
+user\uehara\pss\endingx.c(76): #define	GET_ENDING_TICK()	(DG_TickCount)
+user\skoba\etc\gameover.c(295): 	ftmp = DG_TickCount / TICK_DIV;
+user\skoba\etc\gameover.c(308): 	ftmp = DG_FABS( DG_TickCount - pWork->tick_back );
+user\skoba\etc\gameover.c(309): 	pWork->tick_back = DG_TickCount;
+user\skoba\etc\gameover.c(330): 	pWork->tick_back = DG_TickCount;
+user\skoba\etc\gameover.c(351): //		tmp = TickToSub( DG_TickCount );
+user\skoba\etc\gameover.c(415): //		tmp = TickToSub( DG_TickCount );
+user\skoba\etc\gameover.c(602): //		tmp = TickToSub( DG_TickCount );
+user\skoba\etc\gameover.c(615): //		tmp = TickToSub( DG_TickCount );
+user\skoba\etc\gameover.c(661): //	tmp = TickToSub( DG_TickCount );
+user\skoba\etc\gameover.c(1078): 	work->tick_back = DG_TickCount;
+user\sigeno\effect\xstagebreak.c(556): 	se_tick = DG_TickCount - work->se_cnt ;
+user\sigeno\effect\xstagebreak.c(561): 				work->se_cnt = DG_TickCount ;
+user\sigeno\effect\xstagebreak.c(562): 				work->se_cyc = DG_TickCount;
+user\sigeno\effect\xstagebreak.c(565): 				if( (DG_TickCount - work->se_cyc) >=DIRECT_TICK(12) ){
+user\sigeno\effect\xstagebreak.c(566): //				if( (DG_TickCount - work->se_cyc) >=DIRECT_TICK(16) ){
+user\sigeno\effect\xstagebreak.c(567): //printf("SE CYCLE [%d]\n",(DG_TickCount - work->se_cyc));
+user\sigeno\effect\xstagebreak.c(576): 					work->se_cyc = DG_TickCount;
+user\sigeno\effect\stagebreak.c(459): 	se_tick = DG_TickCount - work->se_cnt ;
+user\sigeno\effect\stagebreak.c(469): 				work->se_cnt = DG_TickCount ;
+user\sigeno\effect\stagebreak.c(473): 				if( (DG_TickCount - work->se_cyc) >DIRECT_TICK(12) ){
+user\sigeno\effect\stagebreak.c(479): 					work->se_cyc = DG_TickCount;
+user\sigeno\display\timer.c(481): 				if((DG_TickCount%3)==0){
+user\sigeno\device\eyecheck.c(382): 	if((DG_TickCount - eye->se_tick) > CAM_SE_INT){	//音を鳴らした瞬間を保存
+user\sigeno\device\eyecheck.c(384): 		eye->se_tick = DG_TickCount ;
+user\sigeno\device\sv_camera.c(257):     if((DG_TickCount - work->se_tick) <= CAM_SE_INT){
+user\sigeno\device\sv_camera.c(264): 	work->se_tick = DG_TickCount ;
+user\sigeno\demo\scn_break.c(209): 		se_tick = DG_TickCount - work->first_se_tick ;
+user\sigeno\demo\scn_break.c(213): 			work->first_se_tick = DG_TickCount ;
+user\sigeno\demo\scn_break.c(215): 			if( (DG_TickCount - work->last_se_tick) >DIRECT_TICK(12) ){
+user\sigeno\demo\scn_break.c(217): 				work->last_se_tick = DG_TickCount;
+user\sigeno\demo\gll_photo.c(541): 	((work->bas_mot == MOT_SWIM)&&((DG_TickCount&63)==0))
+user\sigeno\demo\play_ap.c(243): 		se_tick = DG_TickCount - work->first_se_tick ;
+user\sigeno\demo\play_ap.c(246): 	//		work->first_se_tick = DG_TickCount ;
+user\sigeno\demo\play_ap.c(249): 			work->first_se_tick = DG_TickCount ;
+user\sigeno\demo\play_ap.c(251): 			if( (DG_TickCount - work->last_se_tick) >DIRECT_TICK(12) ){
+user\sigeno\demo\play_ap.c(253): 				work->last_se_tick = DG_TickCount;
+user\sigeno\attacker\sig_conv.c(1185): 	if ( !(DG_TickCount % rnd_rate) ) {
+user\shibata\demo\traffic.c(237): extern	int		DG_TickCount ;
+user\shibata\demo\traffic.c(515): 	vcount_diff = DG_TickCount - work->pre_vcount ;
+user\shibata\demo\traffic.c(516): 	work->pre_vcount = DG_TickCount ;
+user\shibata\demo\traffic.c(1117): 	work->pre_vcount = DG_TickCount ;
+user\satoyoshi\device\cyp_act.c(225): 	if((DG_TickCount - work->se_tick)*TIME_BASE > CAM_SE_INT*20){	//音を鳴らした瞬間を保存
+user\satoyoshi\device\cyp_act.c(227): 	    work->se_tick = DG_TickCount ;
+user\satoyoshi\device\eyecheck.c(356): 	if((DG_TickCount - eye->se_tick)*TIME_BASE > CAM_SE_INT){	//音を鳴らした瞬間を保存
+user\satoyoshi\device\eyecheck.c(358): 		eye->se_tick = DG_TickCount ;
+user\satoyoshi\device\sv_camera.c(313): 	if((DG_TickCount - work->se_tick)*TIME_BASE > CAM_SE_INT){	//音を鳴らした瞬間を保存
+user\satoyoshi\device\sv_camera.c(315): 	    work->se_tick = DG_TickCount ;
+user\okuta\prez\prezinit.c(198): //    extern	int	DG_TickCount;			/* 起動からの総VSyncカウント数 */
+user\okuta\parrot\parinit.c(15): //    extern	int	DG_TickCount;			/* 起動からの総VSyncカウント数 */
+user\okuta\fatman\fatattack.c(42):     if (abs(nBodySeTime - DG_TickCount) < COUNT_VMODE(120) ){
+user\okuta\fatman\fatattack.c(46):     nBodySeTime = DG_TickCount;
+user\okuta\fatman\fatc4.c(50): 	( pbombData + i )->nLastSeTime = DG_TickCount;
+user\okuta\fatman\fatc4.c(123): 		    ( pbombData + i )->nLastSeTime = DG_TickCount; // 音鳴り封じ
+user\okuta\fatman\fatc4.c(262): 	    ( pbombData + i )->nLastSeTime = DG_TickCount;
+user\okuta\fatman\fatc4.c(307): 	    ( pbombData + i )->nLastSeTime = DG_TickCount;
+user\okuta\fatman\fatc4.c(343): 	    work->bombData[i].nLastSeTime = DG_TickCount;
+user\okuta\effect\namedetect.c(50): extern int   DG_TickCount;
+user\okuta\effect\namedetect.c(318):     if ( DG_TickCount >= ndmng->nLastClock ){
+user\okuta\effect\namedetect.c(319): 	ndmng->nPastTime += (DG_TickCount - ndmng->nLastClock);
+user\okuta\effect\namedetect.c(321): 	ndmng->nPastTime += DG_TickCount;
+user\okuta\effect\namedetect.c(323):     ndmng->nLastClock = DG_TickCount;
+user\okuta\effect\namedetect.c(377): 	if ( abs(DG_TickCount - ndmng->nRTCLastFrm) >= FRAME_TIME ){
+user\okuta\effect\namedetect.c(378): 	    ndmng->nRTCSecond += (int)(abs(DG_TickCount - ndmng->nRTCLastFrm) / FRAME_TIME);	
+user\okuta\effect\namedetect.c(379): 	    ndmng->nRTCLastFrm = DG_TickCount;
+user\okuta\effect\namedetect.c(864): 	ndmng->nLastClock = DG_TickCount;
+user\okuta\effect\namedetect.c(874): 	ndmng->nRTCLastFrm = DG_TickCount;
+user\okuta\effect\waterfall.c(65): extern int   DG_TickCount;
+user\okuta\effect\waterfall.c(350):     if ( abs( DG_TickCount - work->nFallSeTime) >= work->nFallSeIntv && 
+user\okuta\effect\waterfall.c(355): 	work->nFallSeTime = DG_TickCount;
+user\okuta\effect\waterfall.c(552): 	    if ( abs( DG_TickCount - work->nHitSeTime) >= work->nHitSeIntv && 
+user\okuta\effect\waterfall.c(557): 		work->nHitSeTime = DG_TickCount;
+user\okuta\effect\waterfall.c(1254):     work->nFallSeTime = DG_TickCount;
+user\okuta\effect\waterfall.c(1255):     work->nHitSeTime = DG_TickCount;
+user\okuta\effect\waterlinefall.c(66): extern int  	DG_TickCount;
+user\okuta\effect\waterlinefall.c(449):     if ( abs( DG_TickCount - work->nFallSeTime) >= work->nFallSeIntv){
+user\okuta\effect\waterlinefall.c(453): 	work->nFallSeTime = DG_TickCount;
+user\okuta\effect\waterlinefall.c(1043):     work->nFallSeTime = DG_TickCount;
+user\nobu\demo\demothrd.c(152): 	nVSync = DG_TickCount;
+user\nobu\demo\demothrd.c(174): 		/* DG_TickCountは60フレームでカウントしているので引く値は１になる */
+user\mode\demo\demod.c(248): 		work->start_time = DG_TickCount ;
+user\mode\demo\demod.c(250): //		work->last_time = DG_TickCount;
+user\mode\demo\demod.c(251): 		work->current_time = DG_TickCount;
+user\mode\demo\demod.c(259): 		dm_debug.frame = DG_TickCount - work->start_time;
+user\mode\demo\demod.c(260): 		dm_debug.pre_tick = DG_TickCount;
+user\mode\demo\demod.c(266): 	current_time = ( DG_TickCount - work->start_time ) * TIME_BASE ;
+user\mode\demo\demod.c(280): 			dtime = ( DG_TickCount - work->current_time );
+user\mode\demo\demod.c(296): 		work->current_time = DG_TickCount;
+user\mode\demo\demod.c(298): 		current_time = ( DG_TickCount - work->start_time ) * TIME_BASE;
+user\mode\demo\demod.c(326): 	GM_ReadError( ( DG_TickCount % 60 < 30 ) ? 0 : 1 );
+user\mode\demo\demod.c(1986): 			work->start_time += DG_TickCount - dm_debug.pre_tick;
+user\mode\demo\demod.c(1990): 		/* DG_TickCountの値を保存 */
+user\mode\demo\demod.c(2013): 				if ( (DG_TickCount - work->start_time) > 0 ) {
+user\mode\demo\demod.c(2072): 			work->start_time += DG_TickCount - dm_debug.pre_tick;
+user\mode\demo\demod.c(2076): 		/* DG_TickCountの値を保存 */
+user\mode\demo\demod.c(2175): 		frame = DG_TickCount - work->start_time;
+user\mode\demo\libdemo.h(219): 	int     pre_tick;	/* 前回のDG_TickCountの値 */
+user\mode\codec-20010606\codec.c(305):     if( DG_TickCount % 60 > 20 ){
+user\mode\codec\codec.c(580):     if( DG_TickCount % 60 > 20 ){
+system\libfs\stagezcd.c(44): extern int DG_TickCount;
+system\libfs\stagezcd.c(1072): printf( "LOAD START TICK = %d\n", ( start_tick_time = DG_TickCount ) );
+system\libfs\stagezcd.c(1144): printf( "LOAD END TICK %d %d\n", DG_TickCount, DG_TickCount - start_tick_time );
+system\libdg\xdgd.c(112): int		DG_TickCount = 0 ;
+system\libdg\xdgd.c(233): 	DG_TickCount++ ;
+system\libdg\xdgd.c(348): 	DG_PassageTick = DG_TickCount - DG_OldTickCount ;
+system\libdg\xdgd.c(349): 	DG_OldTickCount = DG_TickCount ;
+system\libdg\xdmactrl.c(201): 	//DmaStartTime = DG_TickCount ;
+system\libdg\xdmactrl.c(235): 	//DmaStartTime = DG_TickCount ;
+system\libdg\wdgd.c(172): int		DG_TickCount = 0 ;
+system\libdg\wdgd.c(303): 	DG_TickCount++ ;
+system\libdg\wdgd.c(599): 	DG_PassageTick = DG_TickCount - DG_OldTickCount ;
+system\libdg\wdgd.c(600): 	DG_OldTickCount = DG_TickCount ;
+system\libdg\wdmactrl.c(197): 	//DmaStartTime = DG_TickCount ;
+system\libdg\wdmactrl.c(231): 	//DmaStartTime = DG_TickCount ;
+system\libdg\dgd.c(57): int		DG_TickCount = 0 ;
+system\libdg\dgd.c(286): 	DG_TickCount++ ;
+system\libdg\dgd.c(359): 	DG_PassageTick = DG_TickCount - DG_OldTickCount ;
+system\libdg\dgd.c(360): 	DG_OldTickCount = DG_TickCount ;
+system\libdg\dma_ctrl.c(619): 	DmaStartTime = DG_TickCount ;
+system\libdg\dma_ctrl.c(708): 	DmaStartTime = DG_TickCount ;
+system\libdg\dma_ctrl.c(722): 		if ( ( DG_TickCount - DmaStartTime ) > 60 ){
+system\libdg\dma_ctrl.c(738): 		if ( ( DG_TickCount - DmaStartTime ) > 60 ){
+system\libdg\dgd.cpp(79): int DG_TickCount = 0;
+system\libdg\dgd.cpp(233): 	DG_TickCount++;
+system\libdg\libdgx.h(1312): extern int          DG_TickCount;            /* 起動からの総VSyncカウント数 */
+system\libdg\libdgw.h(1746): extern int          DG_TickCount;            /* 起動からの総VSyncカウント数 */
+system\libdg\libdg.h(1111): extern	int			DG_TickCount ;			/* 起動からの総VSyncカウント数 */
+game\strctrl.c(42): extern int DG_TickCount;
+game\strctrl.c(183): 		int now = DG_TickCount;
+game\strctrl.c(321): 			work->start = DG_TickCount;
+game\gamed.c(1035): printf( "SCENARIO SETUP END : %d\n", DG_TickCount );

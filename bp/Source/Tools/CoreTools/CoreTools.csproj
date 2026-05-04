@@ -1,0 +1,150 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.50727</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{8609AB86-F7D1-4843-9C0E-F846ABB9AAEB}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>CoreTools</RootNamespace>
+    <AssemblyName>CoreTools</AssemblyName>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <OldToolsVersion>2.0</OldToolsVersion>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\..\Bin\Tools\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\..\bin\tools\release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Prefab\PrefabHelper.cs" />
+    <Compile Include="Prefab\Prefab.cs" />
+    <Compile Include="Prefab\PrefabManager.cs" />
+    <Compile Include="Prefab\UI\PrefabViewer.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Prefab\UI\PrefabViewer.Designer.cs">
+      <DependentUpon>PrefabViewer.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Prefab\UI\TagButton.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Prefab\UI\TagControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Prefab\UI\TagControl.Designer.cs">
+      <DependentUpon>TagControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Property\UI\ConnectionEditorDockPane.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Property\UI\ConnectionEditorDockPane.Designer.cs">
+      <DependentUpon>ConnectionEditorDockPane.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Property\UI\PropertyEditor.cs" />
+    <Compile Include="Property\UI\PropertyEditorDockPane.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Property\UI\PropertyEditorDockPane.Designer.cs">
+      <DependentUpon>PropertyEditorDockPane.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Property\UI\PropertySpline.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Prefab\UI\PrefabViewer.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>PrefabViewer.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Prefab\UI\TagControl.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>TagControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <SubType>Designer</SubType>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Property\UI\ConnectionEditorDockPane.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ConnectionEditorDockPane.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Property\UI\PropertyEditorDockPane.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>PropertyEditorDockPane.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\ExtLibraries\DockPanel\branch\Src\WinFormsUI\WinFormsUI.csproj">
+      <Project>{C75532C4-765B-418E-B09B-46D36B2ABDB1}</Project>
+      <Name>WinFormsUI</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Helper\Helper.vcproj">
+      <Project>{035E71A5-9D7C-4F00-B4E8-A30FC879B0F0}</Project>
+      <Name>Helper</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Open3d\Open3d.vcproj">
+      <Project>{C3782A98-DACD-4CC0-9BD1-55349C8ECF77}</Project>
+      <Name>Open3d</Name>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Properties\SplineEditor\SplineEditor.csproj">
+      <Project>{02F678E8-2A57-447A-9630-9960CD26F7BA}</Project>
+      <Name>SplineEditor</Name>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Tools\Tools.csproj">
+      <Project>{DBE26B3B-3FA8-4D4E-9836-BA48951EF091}</Project>
+      <Name>Tools</Name>
+      <Private>False</Private>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\x-Button.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\x-Button-Disabled.bmp" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+  </PropertyGroup>
+</Project>

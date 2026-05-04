@@ -1,0 +1,186 @@
+/*
+	dogtag2.txt
+	ドッグタグビューの仕組み
+
+	2001/10/26	S.Kobayashi
+	$Id: dogtag2.txt,v 1.1.1.3 2002/11/19 11:50:05 Yoshizawa1 Exp $
+
+*/
+
+1 処理手順
+	初期化 数値の初期化
+		   セレクト画面L２D初期化
+		   リスト構造生成
+		↓
+→→セレクト画面
+↑	タンカー編を選ぶ、プラント編を選ぶ、キャンセルをする→→→→→→→→→→→A
+↑		↓                  ↓												
+↑	  一度クリアしているかどうか？→→→↓
+↑		↓Yes				            ↓No
+↑		↓					            ↓
+↑	全てのドッグタグLocationを表示   取得済のドッグタグのみLocationを表示
+↑		↓                              ↓
+↑		↓←←←←←←←←←←←←←←←←
+↑		↓
+↑  キャンセルされるまで情報を表示
+←←キャンセルされた
+		
+
+		A
+		↓
+	メモリ解放
+		↓
+	終了
+
+2 関数説明
+	void *NewDogtagMode( void *font_work , int handle )
+		メイン関数
+
+	static	int	GetResources( Work *work )
+		初期化関数
+
+	static void Signal( void *work , int sign , int value )
+		L2D用シグナルファンクション
+
+	static void SelectAct( Work *pWork )
+		セレクト画面メイン関数
+
+	static void SelectUpdate( Work *pWork )
+		セレクト画面更新関数
+
+	static void DotFade( Work *pWork ) // ドットのfade
+		カーソルフェード管理関数
+
+	static void SelectInitialize( Work *pWork )
+		セレクト画面関連初期化
+
+	static inline void DotUpdate( Work *pWork ) // update
+		カーソル更新関数
+
+	static	void	Die( Work *pWork )
+		終了処理関数
+
+	static void Act( Work *pWork )
+		メイン関数
+
+	static void NormalAct( Work *pWork )
+		ビューワ時メイン関数
+
+	static void PadAct( Work *pWork )
+		パッド管理関数
+
+	static void PadControlSelect( Work *pWork )
+		Tanker or Plant選択時のパッド管理関数
+
+	static void PadControlNormal( Work *pWork )
+		Viewer表示時のパッド管理関数
+
+	static inline void HilightUpdate( Work *pWork )
+		ハイライトエフェクトα更新関数
+
+	static inline Dogtag_List *PageChange( Work *pWork )
+		ページの切替(レベルの変更)関数
+
+	static inline void DifControl( Work *pWork )
+		難易度テクスチャUV値変更関数
+
+	static inline Dogtag_List *DogtagLinker( Work *pWork )
+		各難易度の先頭のアドレスを設定する関数
+
+	static void LocationInit( Dogtag_List *pDogtag_list , int location_max )
+		未使用		
+
+	static void LocationDisp( Work *pWork , Dogtag_List *pDogtag_list , int point )
+		未使用		
+
+	static inline void NumToBarthday( Work *pWork , Dogtag_List *pDogtag_list , int point )
+		誕生日表示関数
+
+	static inline void NumToLocation( Work *pWork , Dogtag_List *pDogtag_list , int point )
+		場所情報表示関数
+
+	static void *GetLinkvariableAddr(void *addr)
+		Linkvariable変数のアドレスを取得する関数
+
+	static inline void NameUpdate( Work *pWork , Dogtag_List *pDogtag_list , int point )
+		名前表示関数
+
+	static inline void NumToReg( Work *pWork , Dogtag_List *pDogtag_list , int point )
+		国表示関数（未使用）
+
+	static inline void NumToBlood( Work *pWork , Dogtag_List *pDogtag_list , int point )
+		血液型表示関数
+
+	static inline void NumToId( Work *pWork , Dogtag_List *pDogtag_list , int point )
+		ID表示関数
+
+	static inline void PercentDisp( Work *pWork )
+		取得率表示関数
+
+	static void FontFade( Work *pWork )
+		フォントα管理関数
+
+	static void ArrowFade( Work *pWork )
+		次に進むことが出来るのかを表示する関数
+
+	static void LocationControl( Work *pWork )
+		場所情報表示管理関数
+
+	static void ListAll( Work *pWork )
+		未使用
+
+	static void DogtagListFree( Work *pWork , int select_mode , int level )
+		リスト解放関数
+
+	static inline Dogtag_List *DogtagListSearch( Dogtag_List *pDogtag_list , int position )
+		現在の場所から任意の場所までリストを進める関数
+
+	static void ListDebug( Work *pWork , int level )
+		未使用
+
+	static inline Dogtag_List *DogtagListForward( Dogtag_List *pDogtag_list )
+		リストを前に進める関数
+
+	static inline Dogtag_List *DogtagListBack( Dogtag_List *pDogtag_list )
+		リストを後に進める関数
+
+	static int DogtagListAdd( Work *pWork )
+		リストに情報を追加する関数
+
+	static int DogtagListAddSub( Work *pWork , int id , int location , u_char *name , int manth , int day ,
+								 int blood , u_char *region , int where , int level , Dogtag_List *pDogtag_list )
+		リストに挿入する関数
+
+	static void DogtagListAddMng( Work *pWork )
+		リスト挿入管理関数
+
+	static inline int TankerOrPlant( int id )
+		未使用
+
+	static inline int IdToPage( int id )
+		未使用
+
+	static inline Dogtag_List *DogtagListPageSet( Work *pWork , int select_mode , int page )
+		ページの先頭アドレスをセットする関数
+
+	static int DogtagListInitialize( Work *pWork )
+		リストを初期化する関数
+
+	static void FontUpdate( Work *pWork )
+		各種情報の更新を管理する関数
+
+	static void FontAlphaControl( Work *pWork )
+		未使用
+
+	static void FontFadein( Work *pWork )
+		未使用
+
+	static int SprInit( Work *pWork )
+		L2dスプライトの初期化
+
+	
+
+
+
+
+

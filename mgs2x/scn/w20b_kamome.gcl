@@ -1,0 +1,74 @@
+//=============================================================================
+// w20b_kamome.gcl
+// かもめ
+// 2001/07/28 S. Yamashita
+// $Id: w20b_kamome.gcl,v 1.5 2001/10/03 12:59:13 usr03692 Exp $
+//
+
+proc w20b_かもめ_15 {
+#if d:DEBUG_PRINT
+	print '*** Seagull 15 ***'
+#endif
+
+    chara かもめマネージャ かもめ管理 \
+	// モデルデータ名
+	-datamdl kmo_noalp, kmo_noalp, kmo_obj_stop, kmo_obj_flying \
+	-xlod 150000 \
+
+	// 平均速度
+	-zspeed 65 \
+
+	// 基本ルーチン
+	-base d:KMNG_BASE_ESCAPE \	// 基本状態:敏感
+
+	// かもめダメージ時プロック
+	-wdmgproc rp_かもめ殺しやがった \
+
+	// かもめの名前
+	-name \ 
+	Kamome00, Kamome01, Kamome02, Kamome03, Kamome04, \
+	Kamome05, Kamome06, Kamome07, Kamome08, Kamome09, \
+	Kamome10, Kamome11, Kamome12, Kamome13, Kamome14 \
+
+	//-------------------------------------------
+	// 初期位置
+
+	// エリア指定型初期位置
+	-farea \
+	 45000, 15500, -114000, 72000, 17500, -81500 \	// 俯瞰カメラに写る
+	 56500, 23000, -122000, 80000, 35000, -81500 \	// 俯瞰カメラに写らない
+
+	// 初期位置指定フラグ
+	-unitpos \
+	(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), \
+	(d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x00), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), \
+	(d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01), (d:KMM_IPOS_AREA | 0x01) \
+
+	//-------------------------------------------
+	// 飛行エリア
+
+	// エリア指定型飛行エリア
+	-areadata \
+	 45000, 15500, -114000, 72000, 17500, -81500 \	// 俯瞰カメラに写る
+	 56500, 23000, -122000, 80000, 35000, -81500 \	// 俯瞰カメラに写らない
+
+	// 飛行エリアインデックス
+	-indexarea \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), \
+	(d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x00), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), \
+	(d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01), (d:KMM_FLYA_BOUND | 0x01) \
+
+	//-------------------------------------------
+
+	// 初期モーション
+	-mot \
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, \
+	d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING, d:KMM_MOT_FLYING \
+
+	// 初期思考
+	-routine \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, \
+	d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING, d:KMM_INITTHK_FLYING
+}

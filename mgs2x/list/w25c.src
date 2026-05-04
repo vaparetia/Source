@@ -1,0 +1,114 @@
+//
+//	w25c.src	
+//
+//	written by Y.Matsuhana 2000.Nov
+//
+//	$Id: w25c.src,v 1.33 2002/05/31 11:51:49 usr02774 Exp $
+
+block .use r_plt0
+block .nocache
+block .cache
+
+#define		WN_W25C
+#define		ENE_P_GOL		// w25cは都市迷彩攻撃兵
+#define		DAY_SKY		// 空タイプ
+#define		EFFECT_CUSTUM	
+#define		E_KOGETUKI	// 壁への焦げ付き
+#define		E_C4BOMB	// Ｃ４爆弾、赤外線センサー
+#define		E_HIMATU	// 水飛沫
+#define		E_SUN		// 太陽
+#define		E_OTHER1	// 水面、水中、リニアガン、雨、フェード、バルカン人形、ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define		E_OTHER2	// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+#define		E_OTHER3	// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+#define		E_ENEMY
+#define		E_SLING
+#define		E_WATER
+#define		E_ENEMY_LIGHT
+#define		E_DOOR_LUMP
+
+// 各ステージ共通要素
+#include	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+
+// キャラクタ 
+#include	"ene_plant.h"
+
+// 強制モーション
+mtn		rai_w25c.mls
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル 
+pack_all	zw25c.tri world/w25c/w25c
+world		w25c/w25c
+world		w25cd_common/w25cd_bg
+world		w25cd_common/other/w25cd_31b.kms
+world		sea
+
+world		door/w25c_dr00.kms
+lt2		w25c.lt2
+hazard		w25c.hzx
+
+// オブジェクト
+human		kmo_def		// かもめモデル
+mtn		kamome.mls	// かもめモーション
+
+#define		GUN_CYP
+#include	"cypher.h"
+
+// アイテム
+// アイテム(必要最小限に抑える)
+pack_all	w25c_itembox.tri \
+		itembox/amo/rifle_amo_ibox.dar \
+		itembox/amo/rifle_amo_ibox_sh.dar \
+		itembox/amo/psg_amo_label.dar \
+		itembox/amo/aks_amo_label.dar \
+		itembox/weapon/grenade_ibox.dar \
+		itembox/weapon/grenade_ibox_sh.dar \
+		itembox/weapon/cgr_label.dar \
+		itembox/amo/handgun_amo_ibox.dar \
+		itembox/amo/handgun_amo_ibox_sh.dar \
+		itembox/amo/scm_amo_label.dar \
+		itembox/item/ration_ibox.dar \
+		itembox/item/ration_ibox_sh.dar \
+		itembox/item/rtn_label.dar 
+
+itembox		amo/rifle_amo_ibox.kms
+itembox		amo/rifle_amo_ibox_sh.kms
+itembox		amo/psg_amo_label.kms
+itembox		amo/aks_amo_label.kms
+
+itembox		weapon/grenade_ibox.kms
+itembox		weapon/grenade_ibox_sh.kms
+itembox		weapon/cgr_label.kms
+
+itembox		amo/handgun_amo_ibox.kms
+itembox		amo/handgun_amo_ibox_sh.kms
+itembox		amo/scm_amo_label.kms
+
+itembox		item/ration_ibox.kms
+itembox		item/ration_ibox_sh.kms
+itembox		item/rtn_label.kms
+
+
+//	振動
+vib		etc/drop_sea.vib
+vib		program/board_fall.vib
+
+option makexti6 -l 256
+pack_all	oil.tri \
+		effect/plant_sea/d_oil_ref_add_alp_ovl_mod1120.bmp \
+		effect/plant_sea/d_oil_sea_alp_ovl_mod0222.bmp
+option makexti6
+
+pack_all '-s'	gmov.tri 2D/game_over/dekisi_alp_ovl.bmp
+pack_trnall	effect.tri \
+		effect/plant_sea/d_oil_sea_alp_ovl_mod0222.bmp 
+
+// ライデン
+human		rai_def/rai_def_mh_mt.evm
+//	落し穴
+include		pit_effect.h
+
+texrename w25cd_24a.kms w10c_cntw04.bmp w10c_cntw04aaaa.bmp

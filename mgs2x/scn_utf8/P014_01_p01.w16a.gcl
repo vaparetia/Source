@@ -1,0 +1,1053 @@
+//=============================================================================
+// P014_01_p01.w16a.gcl
+// Ｃ脚・食堂＆トイレデモ専用ステージ
+// 2001/02/26 S.Yamashita
+// $Id: P014_01_p01.w16a.gcl,v 1.43 2001/08/27 18:53:34 usr03635 Exp $
+//
+
+//=============================================================================
+// define
+//=============================================================================
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+#define		DEMO_STAGE		1		// デモステージかどうかで起動するキャラを切り分ける
+
+//-----------------------------------------------------------------------------
+// スイッチ
+#define SCREENSHOT 0			// スクリーンショット
+#define KEYBOARD   0			// ＵＳＢキーボード
+
+//-----------------------------------------------------------------------------
+// マップ関係
+#define HZX_NAME		d00a3
+#define KMS_NAME0		w16a0
+#define KMS_NAME1		w16a1
+#define KMS_NAME_W18A0	w18a
+//#define KMS_NAME_W18A1	w18a_hatch
+//#define KMS_NAME_W18A2	w18a_crps_saku
+
+#define		W18A_HATCH_MDL		w18a_hatch
+#define		W18A_HATCH_MTN		rai_hatch
+
+#define		W18A_SAKU_MDL		w18a_crps_saku
+#define		W18A_SAKU_MTN		corpse_w18a
+
+#define CEIL_NAME0		w16a0r
+#define CEIL_NAME1		w16a1r
+#define CEIL_NAME_W18A	w18ar
+#define LT2_NAME		w16a
+#define LT2_NAME_W18A	w18a
+#define DOOR_NAME1		w02a_dr
+
+//=============================================================================
+// include
+//=============================================================================
+#include "5sec_bfr_demo.h"
+#include "demo_vardef.h"
+#include "demo_stdch.h"
+#include "demo_stdch2.h"
+#include "story.h"
+#include "sload.h"
+#include "stdproc.h"			// 2001/08/06 Uehara Masatoshi
+
+#include "p_force_cdc.ch"
+
+// 壊れ物データ
+#include "w16ab_break.h"
+#include "w18a_common.h"		// 2001/08/06 Uehara Masatoshi
+
+#if d:KEYBOARD 
+#include "usbkbd.h"
+#endif
+
+#if d:PLANT_DEMO_ALL_SKIP
+	#define		DEMO_SKIP_ENABLE 1
+#else
+	#define		DEMO_SKIP_ENABLE 0
+#endif
+
+#define USE_WMOVIE_STAGE	1
+
+
+#if d:MGS2_DEMO
+	#define ステージ切り替え 1	// 0 : 食堂  1 : 沈殿池
+#endif
+//=============================================================================
+// メイン
+//=============================================================================
+
+#if d:MGS2_DEMO
+//＜↓↓↓同期せよ↓↓↓＞
+if(d:ステージ切り替え == 0) {
+	print 'w16a light'
+	chara マップ 食堂＆トイレ -h d:HZX_NAME -l d:LT2_NAME
+} else {
+	print 'w18a light'
+	chara マップ 食堂＆トイレ -h d:HZX_NAME -l d:LT2_NAME_W18A
+}
+#else
+if(d:ST:P014_11_P04ピーター遭遇１１ポリゴンデモ４終了 <= $w:p_story && \
+			$w:p_story < d:ST:P014_12_P05ピーター遭遇１２ポリゴンデモ５開始) {
+	chara マップ 食堂＆トイレ -h d:HZX_NAME -l d:LT2_NAME_W18A
+} else {
+	chara マップ 食堂＆トイレ -h d:HZX_NAME -l d:LT2_NAME
+}
+#endif
+
+command マップ設定 食堂＆トイレ -set {
+
+//	デモ環境かゲーム環境かで起動を読み分ける。
+// ------------------------------------
+#if d:MGS2_DEMO
+
+chara デモアクトデバッグ demodebug  -i t:p014_01_p01 -d 'p014_01_p01' -l   \
+		-p null_x
+
+		// t01 を再生するとき
+//			eval($s:d_num = t01a1D)
+
+	// 2001/08/06 Uehara Masatoshi
+	// P014_12_p05(w18a D脚沈殿池)を再生するときは、//をはずして下さい
+if(d:ステージ切り替え == 0){
+	eval($s:d_num = P014_11_p04)
+}else{
+	eval($s:d_num = P014_12_p05)
+}
+
+#else
+
+// 実際の再生
+//-----------------------------------------------------------
+	// 実際のデモ再生の方も、ストーリーフラグで変える
+	// ゲームステージ(w16a）から来る
+	if($w:p_story == d:ST:P014_01_P01ピーター遭遇１ポリゴンデモ１開始) {
+		print '$w:p_story = ST:P014_01_P01ピーター遭遇１ポリゴンデモ１開始'
+
+		/* ピーターと初遭遇する */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P014_01_p01)
+
+		@デモモデル差し替え処理
+		proc デモ再生_P014_01_p01 {
+			#if 0
+chara デモアクトデバッグ demodebug  -i t:p014_01_p01 -d 'p014_01_p01' -l   \
+					-i t:p014_01_p01 -d 'p014_01_p01' -l -s 'p014_01_p01' \
+					-next P014_01_p01終了 \
+					-p null_x
+			#else
+				chara demo デモ再生 \
+					-i t:p014_01_p01 \
+					-p null_x \
+					-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+					-next P014_01_p01終了
+			#endif
+		}
+
+		@デモ再生_P014_01_p01
+
+#if d:USE_WMOVIE_STAGE
+// ムービーはメモリ不足で再生できなかったため、wmovie へ飛ばす。
+	} else if(d:ST:P014_01_P01ピーター遭遇１ポリゴンデモ１終了 <= $w:p_story && \
+					$w:p_story < d:ST:P014_02_M01ピーター遭遇２ムービーデモ１開始) {
+		eval($w:p_story = d:ST:P014_02_M01ピーター遭遇２ムービーデモ１開始)
+		print '$w:p_story = ST:P014_02_M01ピーター遭遇２ムービーデモ１開始'
+
+		/* ファットマンの紹介映像 */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P014_02_m01)
+
+//			chara デバッグポーズ pause 'MOVIE_P014_02_m01' -p P014_02_m01終了		// 01.07.18 山下修正
+		chara MOVIE再生 p014_02_m01 -file t:p014_02_m01 -top 0, 36 -size 512, 320 -proc P014_02_m01終了
+
+#endif
+
+	} else if(d:ST:P014_02_M01ピーター遭遇２ムービーデモ１終了 <= $w:p_story && \
+					$w:p_story < d:ST:P014_03_P02ピーター遭遇３ポリゴンデモ２開始) {
+		eval($w:p_story = d:ST:P014_03_P02ピーター遭遇３ポリゴンデモ２開始)
+		print '$w:p_story = ST:P014_03_P02ピーター遭遇３ポリゴンデモ２開始'
+
+		/* プリスキン、ピーターに自己紹介 */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P014_03_p02)
+
+		@デモモデル差し替え処理
+		proc デモ再生_P014_03_p02 {
+			chara demo デモ再生 \
+				-i t:p014_03_p02 \
+				-p null_x \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next P014_03_p02終了
+		}
+
+		@デモ再生_P014_03_p02
+
+#if d:USE_WMOVIE_STAGE
+	} else if(d:ST:P014_03_P02ピーター遭遇３ポリゴンデモ２終了 <= $w:p_story && \
+					$w:p_story < d:ST:P014_04_M02ピーター遭遇４ムービーデモ２開始) {
+		eval($w:p_story = d:ST:P014_04_M02ピーター遭遇４ムービーデモ２開始)
+		print '$w:p_story = ST:P014_04_M02ピーター遭遇４ムービーデモ２開始'
+
+		/* オタコンがビッグシェルに来たことを示すムービー */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P014_04_m02)
+
+		#if 1
+//			chara デバッグポーズ pause 'MOVIE_P014_04_m02' -p P014_04_m02終了		// 01.07.18 山下修正
+			chara MOVIE再生 p014_04_m02 -file t:p014_04_m02 -top 0, 36 -size 512, 320 -proc P014_04_m02終了
+		#else
+			/* ムービー再生キャラ */
+			/* P014_04_m02終了 */
+		#endif
+#endif
+
+// wmovie.gcl に移行  2001.08.13
+#if 0
+	} else if(d:ST:P014_04_M02ピーター遭遇４ムービーデモ２終了 <= $w:p_story && \
+					$w:p_story < d:ST:P014_05_R01ピーター遭遇５無線デモ１開始) {
+		eval($w:p_story = d:ST:P014_05_R01ピーター遭遇５無線デモ１開始)
+		print '$w:p_story = ST:P014_05_R01ピーター遭遇５無線デモ１開始'
+
+		/* 大佐強制コール　大佐に相談＞爆弾処理していい？ */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P014_05_r01)
+
+		@rt_P014_05_R01ピーター遭遇５無線デモ１
+		/* P014_05_r01終了 */
+		/*
+		eval($w:p_story = d:ST:P014_05_R01ピーター遭遇５無線デモ１終了)
+		// ゲームへ
+		@ゲームステージへ戻る
+		@mv_demo1_w16a_0
+		*/
+#endif
+	// ゲーム(w16a)から戻ってくる
+	} else if($w:p_story == d:ST:P014_07_M03ピーター遭遇７ムービーデモ３開始) {
+		print '$w:p_story = ST:P014_07_M03ピーター遭遇７ムービーデモ３開始'
+
+		/* ファットマンは香水を使う、ムービー */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P014_07_m03)
+
+		chara delay ディレイ \
+			-time 1 \ 
+			-exec{
+				#if d:USE_WMOVIE_STAGE
+					load 'wmovie'
+				#else
+					restart
+				#endif
+			}
+
+	} else if(d:ST:P014_10_P03ピーター遭遇１０ポリゴンデモ３終了 <= $w:p_story && \
+					$w:p_story < d:ST:P014_11_P04ピーター遭遇１１ポリゴンデモ４開始) {
+		eval($w:p_story = d:ST:P014_11_P04ピーター遭遇１１ポリゴンデモ４開始)
+		print '$w:p_story = ST:P014_11_P04ピーター遭遇１１ポリゴンデモ４開始'
+
+		/* カード１をもらう */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P014_11_p04)
+
+		@サウンドマネージャーセット
+		@サウンドマネージャー_mesg_1
+
+		@デモモデル差し替え処理
+		proc デモ再生_P014_11_p04 {
+			chara demo デモ再生 \
+				-i t:p014_11_p04 \
+				-p null_x \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next P014_11_p04終了
+		}
+
+		@デモ再生_P014_11_p04
+
+	// セットするステージは w18a のもの。
+	// ＜↑↑↑同期せよ↑↑↑＞
+	} else if(d:ST:P014_11_P04ピーター遭遇１１ポリゴンデモ４終了 <= $w:p_story && \
+			$w:p_story < d:ST:P014_12_P05ピーター遭遇１２ポリゴンデモ５開始) {
+		eval($w:p_story = d:ST:P014_12_P05ピーター遭遇１２ポリゴンデモ５開始)
+		print '$w:p_story = d:ST:P014_12_P05ピーター遭遇１２ポリゴンデモ５開始'
+
+	/* セキュリティカードの説明 */ 
+
+	// デモ特有の変数代入
+	eval($s:d_num = P014_12_p05)
+
+	@デモモデル差し替え処理
+	proc デモ再生_P014_12_p05 {
+		chara demo デモ再生 \
+			-i t:p014_12_p05 \
+//			-i t:data_dummy_raiden \
+			-p null_x \
+			-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+			-next P014_12_p05終了
+	}
+
+	@デモ再生_P014_12_p05
+
+	} else if(d:ST:P014_12_P05ピーター遭遇１２ポリゴンデモ５終了 <= $w:p_story && \
+					$w:p_story < d:ST:P014_13_P06ピーター遭遇１３ポリゴンデモ６開始) {
+		eval($w:p_story = d:ST:P014_13_P06ピーター遭遇１３ポリゴンデモ６開始)
+		print '$w:p_story = ST:P014_13_P06ピーター遭遇１３ポリゴンデモ６開始'
+
+		/* プリスキン、ピーターの同道を断る */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P014_13_p06)
+
+		@サウンドマネージャーセット
+		@サウンドマネージャー_mesg_1
+
+		@デモモデル差し替え処理
+		proc デモ再生_P014_13_p06 {
+			chara demo デモ再生 \
+				-i t:p014_13_p06 \
+				-p null_x \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next P014_13_p06終了
+		}
+
+		@デモ再生_P014_13_p06
+
+	} else if(d:ST:P014_13_P06ピーター遭遇１３ポリゴンデモ６終了 <= $w:p_story && \
+					$w:p_story <= d:ST:P014_14_M04ピーター遭遇１４ムービーデモ４開始) {
+		eval($w:p_story = d:ST:P014_14_M04ピーター遭遇１４ムービーデモ４開始)
+		print '$w:p_story = ST:P014_14_M04ピーター遭遇１４ムービーデモ４開始'
+
+		/* プリスキンが偽SEALだと語るピーター */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P014_14_m04)
+
+		chara delay ディレイ \
+			-time 1 \ 
+			-exec{
+				#if d:USE_WMOVIE_STAGE
+					load 'wmovie'
+				#else
+					restart
+				#endif
+			}
+/*
+		#if 1
+			chara デバッグポーズ pause 'MOVIE_P014_14_m04' -p P014_14_m04終了
+		#else
+			/* ムービー再生キャラ */
+			/* P014_14_m04終了 */
+		#endif
+*/
+
+	} else if(d:ST:P014_14_M04ピーター遭遇１４ムービーデモ４終了 <= $w:p_story && \
+					$w:p_story < d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７開始) {
+		eval($w:p_story = d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７開始)
+		print '$w:p_story = ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７開始'
+
+		/* ピーターと別れる。ゲームへ */
+
+		// デモ特有の変数代入
+		eval($s:d_num = P014_15_p07)
+
+		@デモモデル差し替え処理
+		proc デモ再生_P014_15_p07 {
+			chara demo デモ再生 \
+				-i t:p014_15_p07 \
+				-p null_x \
+				-rename_evm rai_def_mh_mt rai_gbs_raihead_mh_mt \
+				-next P014_15_p07終了
+		}
+
+		@デモ再生_P014_15_p07
+
+	}
+
+
+
+#endif
+
+	// デモキャンセルは全てのデモで共通につかう
+	chara デモキャンセルチェック デモキャンセル \
+		-p demo_cancel
+
+// 以下、諸々セット
+//-----------------------------------------------------------
+	@常駐キャラ設定						// stdch.hで定義
+
+	//----- 基本設定
+	if($s:d_num == P014_12_p05){
+		@ｗ１８ａステージモデルセット
+		@ｗ１８ａ_フォグ設定
+		@ｗ１８ａ_ドアセット
+		// 2001/08/06 Uehara Masatoshi
+		@壊れライト設定
+		@電灯虫設定
+//	} else if($s:d_num == P014_10_p03){
+//		@ビッグシェル全景_フォグ設定
+//		@ビッグシェル全景_空設置
+//		@ビッグシェル全景_海面セット
+	} else {
+		@ステージモデルセット
+		@ドア設定
+		@壊れ物食堂
+		@壊れ物以外の物を置くセット
+		if( ($s:d_num == P014_01_p01) || ($s:d_num == P014_03_p02) ){
+			@壊れ物以外の物を置くセット２
+		}
+
+		@フォグ設定
+	}
+
+	// 無線ではシネマスクリーン起動しない
+	if($s:d_num != P014_05_r01){
+		@シネマスクリーンセット
+	}
+}
+
+
+command マップ表示 -show 食堂＆トイレ
+
+
+
+
+
+//=============================================================================
+// プロシージャ
+//=============================================================================
+// デモデモ再生関連のプロック
+//-----------------------------------------------------------
+proc null_x {}
+
+proc demo_cancel {
+	command StreamStopAll
+}
+
+proc P014_01_p01終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+	#if d:DEMO_SKIP_ENABLE
+		eval($w:p_story = )
+	#else
+		print '$w:p_story = d:ST:P014_01_P01ピーター遭遇１ポリゴンデモ１終了'
+		eval($w:p_story = d:ST:P014_01_P01ピーター遭遇１ポリゴンデモ１終了)
+	#endif
+
+	chara delay ディレイ \
+		-time 1 \ 
+		-exec{
+			#if d:USE_WMOVIE_STAGE
+				load 'wmovie'
+			#else
+				restart
+			#endif
+		}
+}
+
+#if d:USE_WMOVIE_STAGE
+proc P014_02_m01終了 {
+	@デモ終了時シネマスクリーンオフ
+	#if d:DEMO_SKIP_ENABLE
+		print '$w:p_story = d:ST:P014_04_M02ピーター遭遇４ムービーデモ２終了'
+		eval($w:p_story = d:ST:P014_04_M02ピーター遭遇４ムービーデモ２終了)
+	#else
+		eval($w:p_story = d:ST:P014_02_M01ピーター遭遇２ムービーデモ１終了)
+	#endif
+	restart
+}
+#endif
+
+proc P014_03_p02終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+	#if d:DEMO_SKIP_ENABLE
+		print '$w:p_story = d:ST:P014_04_M02ピーター遭遇４ムービーデモ２終了'
+		eval($w:p_story = d:ST:P014_04_M02ピーター遭遇４ムービーデモ２終了)
+	#else
+		print '$w:p_story = d:ST:P014_03_P02ピーター遭遇３ポリゴンデモ２終了'
+		eval($w:p_story = d:ST:P014_03_P02ピーター遭遇３ポリゴンデモ２終了)
+	#endif
+
+	chara delay ディレイ \
+		-time 1 \ 
+		-exec{
+			#if d:USE_WMOVIE_STAGE
+				load 'wmovie'
+			#else
+				restart
+			#endif
+		}
+}
+
+#if d:USE_WMOVIE_STAGE
+proc P014_04_m02終了 {
+	@デモ終了時シネマスクリーンオフ
+	eval($w:p_story = d:ST:P014_04_M02ピーター遭遇４ムービーデモ２終了)
+	restart
+}
+#endif
+
+/*
+proc P014_05_r01終了 {
+	eval($w:p_story = d:ST:P014_05_R01ピーター遭遇５無線デモ１終了)
+	// ゲームへ
+	@ゲームステージへ戻る
+	@mv_demo1_w16a_0
+}
+*/
+
+proc P014_06_i01終了 {
+	@デモ終了時シネマスクリーンオフ
+	eval($w:p_story = d:ST:P014_06_I01ピーター遭遇６インタラクティブ主観デモ１終了)
+	restart
+}
+
+proc P014_07_m03終了 {
+	@デモ終了時シネマスクリーンオフ
+	eval($w:p_story = d:ST:P014_07_M03ピーター遭遇７ムービーデモ３終了)
+	// ゲームへ
+	@ゲームステージへ戻る
+	@mv_demo2_w16a_0
+}
+
+#if 0
+	// 実行するステージがP001_01_p01.w10aに変更になりました。(田中(信)修正)
+#endif
+
+proc P014_11_p04終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+	#if d:DEMO_SKIP_ENABLE
+		print '$w:p_story = d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了'
+		eval($w:p_story = d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了)
+	#else
+		print '$w:p_story = d:ST:P014_11_P04ピーター遭遇１１ポリゴンデモ４終了'
+		eval($w:p_story = d:ST:P014_11_P04ピーター遭遇１１ポリゴンデモ４終了)
+	#endif
+
+	@サウンドマネージャー_mesg_2
+	chara delay ディレイ \
+		-time 1 \ 
+		-exec{
+			#if d:DEMO_SKIP_ENABLE
+				restart
+			#else
+				restart
+			#endif
+		}
+}
+
+proc P014_12_p05終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+	#if d:DEMO_SKIP_ENABLE
+		print '$w:p_story = d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了'
+		eval($w:p_story = d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了)
+	#else
+		eval($w:p_story = d:ST:P014_12_P05ピーター遭遇１２ポリゴンデモ５終了)
+		print '$w:p_story = d:ST:P014_12_P05ピーター遭遇１２ポリゴンデモ５終了'
+	#endif
+
+	chara delay ディレイ \
+		-time 1 \ 
+		-exec{
+			#if 0
+				load 'd014p01'
+			#else
+				restart
+			#endif
+		}
+}
+
+
+proc P014_13_p06終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+	#if d:DEMO_SKIP_ENABLE
+		print '$w:p_story = d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了'
+		eval($w:p_story = d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了)
+	#else
+		print '$w:p_story = d:ST:P014_13_P06ピーター遭遇１３ポリゴンデモ６終了'
+		eval($w:p_story = d:ST:P014_13_P06ピーター遭遇１３ポリゴンデモ６終了)
+	#endif
+
+	chara delay ディレイ \
+		-time 1 \ 
+		-exec{
+			restart
+		}
+}
+
+proc P014_14_m04終了 {
+	@デモ終了時シネマスクリーンオフ
+	#if d:DEMO_SKIP_ENABLE
+		print '$w:p_story = d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了'
+		eval($w:p_story = d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了)
+	#else
+		eval($w:p_story = d:ST:P014_14_M04ピーター遭遇１４ムービーデモ４終了)
+	#endif
+	restart
+}
+
+proc P014_15_p07終了 {
+	@デモ終了時シネマスクリーンオフ
+	mesg デモキャンセルチェック デモキャンセル kill
+
+	print '$w:p_story = d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了'
+	eval($w:p_story = d:ST:P014_15_P07ピーター遭遇１５ポリゴンデモ７終了)
+
+	@サウンドマネージャー_mesg_2
+
+	chara delay ディレイ \
+		-time 1 \ 
+		-exec{
+			#if 1
+				// ゲームへ
+				@ゲームステージへ戻る
+				@mv_demo3_w16a_0
+			#else
+				restart
+			#endif
+		}
+}
+
+
+
+proc シネマスクリーンセット  {
+	chara シネマスクリーン シネマ \
+		-top d:CINEMA_BELT_UPPER \
+		-bottom d:CINEMA_BELT_LOWER \
+		-ftime 60	//デフォルト値（ゼロは駄目）
+	mesg シネマスクリーン シネマ フェードアウト 1
+}
+
+
+//=============================================================================
+// 基本設定
+//=============================================================================
+
+
+//=============================================================================
+// オブジェクト
+//=============================================================================
+//-----------------------------------------------------------------------------
+// ステージモデル設定
+proc ステージモデルセット {
+	chara プットオブジェ 食堂 \
+		-m d:KMS_NAME0 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+	chara プットオブジェ 食堂天井 \
+		-m d:CEIL_NAME0 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+
+	chara プットオブジェ 廊下 \
+		-m d:KMS_NAME1 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+	chara プットオブジェ 廊下天井 \
+		-m d:CEIL_NAME1 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+}
+
+proc ｗ１８ａステージモデルセット {
+	chara プットオブジェ w18aステージ０ \
+		-m d:KMS_NAME_W18A0 -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME_W18A
+
+	chara プットモーションモデル w18aハッチ1F北西 \
+		-pos -10170 -4000 -128125 \		//$v:配置座標
+		-dir 3794 \				//$i:方向
+		-kms d:W18A_HATCH_MDL \			//$s:KMSモデル名
+		-mar d:W18A_HATCH_MTN \			//$s:モーションファイル名
+		-number 0 \				//$i:基本モーション番号 ... 
+		-status	(d:PUT_MOT_PRESHADE | d:PUT_MOT_WAIT) 				//$w:ステータス 
+
+	chara プットモーションモデル w18aハッチ1F西 \
+		-pos -10525 -4000 -112579 \		//$v:配置座標
+		-dir 302 \				//$i:方向
+		-kms d:W18A_HATCH_MDL \			//$s:KMSモデル名
+		-mar d:W18A_HATCH_MTN \			//$s:モーションファイル名
+		-number 0 \				//$i:基本モーション番号 ... 
+		-status	(d:PUT_MOT_PRESHADE | d:PUT_MOT_WAIT) 				//$w:ステータス 
+
+	chara プットモーションモデル w18aハッチ1F中央 \
+		-pos 1500 -4000 -133750 \		//$v:配置座標
+		-dir 3072 \				//$i:方向
+		-kms d:W18A_HATCH_MDL \			//$s:KMSモデル名
+		-mar d:W18A_HATCH_MTN \			//$s:モーションファイル名
+		-number 0 \				//$i:基本モーション番号 ... 
+		-status	(d:PUT_MOT_PRESHADE | d:PUT_MOT_WAIT) 				//$w:ステータス 
+
+	chara プットモーションモデル w18aハッチ1F東 \
+		-pos 10170 -4000 -128125 \		//$v:配置座標
+		-dir 2350 \				//$i:方向
+		-kms d:W18A_HATCH_MDL \			//$s:KMSモデル名
+		-mar d:W18A_HATCH_MTN \			//$s:モーションファイル名
+		-number 0 \				//$i:基本モーション番号 ... 
+		-status	(d:PUT_MOT_PRESHADE | d:PUT_MOT_WAIT) 				//$w:ステータス 
+
+	chara プットモーションモデル w18aハッチ2F西 \
+		-pos -10170 -1000 -128125 \		//$v:配置座標
+		-dir 3794 \				//$i:方向
+		-kms d:W18A_HATCH_MDL \			//$s:KMSモデル名
+		-mar d:W18A_HATCH_MTN \			//$s:モーションファイル名
+		-number 0 \				//$i:基本モーション番号 ... 
+		-status	(d:PUT_MOT_PRESHADE | d:PUT_MOT_WAIT) 				//$w:ステータス 
+
+	chara プットモーションモデル w18aハッチ2F東 \
+		-pos 10170 -1000 -128125 \		//$v:配置座標
+		-dir 2350 \				//$i:方向
+		-kms d:W18A_HATCH_MDL \			//$s:KMSモデル名
+		-mar d:W18A_HATCH_MTN \			//$s:モーションファイル名
+		-number 0 \				//$i:基本モーション番号 ... 
+		-status	(d:PUT_MOT_PRESHADE | d:PUT_MOT_WAIT) 				//$w:ステータス 
+/*
+	chara プットオブジェ w18aステージHATCH0 \
+		-m d:KMS_NAME_W18A1 -r 0,3794,1024 -p -10170,-4000,-128125 -s 100,100,100 -l d:LT2_NAME_W18A
+	chara プットオブジェ w18aステージHATCH1 \
+		-m d:KMS_NAME_W18A1 -r 0,302,1024 -p -10525,-4000,-112579 -s 100,100,100 -l d:LT2_NAME_W18A
+	chara プットオブジェ w18aステージHATCH2 \
+		-m d:KMS_NAME_W18A1 -r 0,3072,1024 -p 1500,-4000,-133750 -s 100,100,100 -l d:LT2_NAME_W18A
+	chara プットオブジェ w18aステージHATCH3 \
+		-m d:KMS_NAME_W18A1 -r 0,2350,1024 -p 10170,-4000,-128125 -s 100,100,100 -l d:LT2_NAME_W18A
+	chara プットオブジェ w18aステージHATCH4 \
+		-m d:KMS_NAME_W18A1 -r 0,3794,1024 -p 10170,-1000,-128125 -s 100,100,100 -l d:LT2_NAME_W18A
+	chara プットオブジェ w18aステージHATCH4 \
+		-m d:KMS_NAME_W18A1 -r 0,2350,1024 -p 10170,-1000,-128125 -s 100,100,100 -l d:LT2_NAME_W18A
+*/
+				chara プットモーションモデル w18a1F東 \
+					-pos 10325,-4000,-119000 \		//$v:配置座標
+					-dir 0 \				//$i:方向
+					-kms d:W18A_SAKU_MDL \			//$s:KMSモデル名
+					-mar d:W18A_SAKU_MTN \			//$s:モーションファイル名
+					-number 3 \
+					-status	(d:PUT_MOT_PRESHADE | d:PUT_MOT_WAIT) 				//$w:ステータス
+
+				chara プットモーションモデル w18a1F西 \
+					-pos -10325,-4000,-119000 \		//$v:配置座標
+					-dir 0 \				//$i:方向
+					-kms d:W18A_SAKU_MDL \			//$s:KMSモデル名
+					-mar d:W18A_SAKU_MTN \			//$s:モーションファイル名
+					-number 5 \
+					-status	(d:PUT_MOT_PRESHADE | d:PUT_MOT_WAIT) 				//$w:ステータス
+
+				chara プットモーションモデル w18a2F中央 \
+					-pos 5500,-1000,-131075 \		//$v:配置座標
+					-dir 1024 \				//$i:方向
+					-kms d:W18A_SAKU_MDL \			//$s:KMSモデル名
+					-mar d:W18A_SAKU_MTN \			//$s:モーションファイル名
+					-number 3 \
+					-status	(d:PUT_MOT_PRESHADE | d:PUT_MOT_WAIT) 				//$w:ステータス
+
+/*
+	chara プットオブジェ w18aステージSAKU0 \
+		-m d:KMS_NAME_W18A2 -r 0,0,0 -p 10325,-4000,-119000 -s 100,100,100 -l d:LT2_NAME_W18A
+	chara プットオブジェ w18aステージSAKU1 \
+		-m d:KMS_NAME_W18A2 -r 0,0,0 -p -10325,-4000,-119000 -s 100,100,100 -l d:LT2_NAME_W18A
+	chara プットオブジェ w18aステージSAKU2 \
+		-m d:KMS_NAME_W18A2 -r 0,1024,0 -p 5500,-1000,-131075 -s 100,100,100 -l d:LT2_NAME_W18A
+*/
+	chara プットオブジェ w18aステージ天井 \
+		-m d:CEIL_NAME_W18A -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME_W18A
+}
+
+//-----------------------------------------------------------------------------
+// ドア設定
+proc ドア設定 {
+	// デモでキャラ置き
+}
+
+proc ｗ１８ａ_ドアセット {
+	// 2001/08/06 Uehara Masatoshi
+	// ドアランプの追加（w18a.gclよりコピーなので注意！）
+	chara プットオブジェ Ｃ脚方面ドア \ // w17a
+		-m w18a_dr00 \
+		-r 0 (1327+2048) 0 \
+		-p -10450,0,-111650 \
+		-l d:LT2_NAME_W18A \
+		-s 100 100 100
+		@ドアランプ設定 Ｃ脚方面ドアランプ 1326 -9700,0,-110150 0
+
+	chara プットオブジェ Ｅ脚方面ドア上 \ // w19a
+		-m w18a_dr00 \
+		-r 0 (2769+2048) 0 \
+//		-p 10450,0,-111650 \
+		-p 9700,0,-110150 \
+		-l d:LT2_NAME_W18A \
+		-s 100 100 100
+		@ドアランプ設定 Ｅ脚方面ドア上ランプ 722 9700,0,-110150 1
+
+	chara プットオブジェ Ｅ脚方面ドア下 \ // w19a
+		-m w18a_dr01 \
+		-r 0 2769 0 \
+		-p 10450,-4000,-111650 \
+		-l d:LT2_NAME_W18A \
+		-s 100 100 100
+		@ドアランプ設定 Ｅ脚方面ドア下ランプ 722 9700,-4000,-110150 1
+
+	chara プットオブジェ Ｇ脚方面ドア \ // w25a
+		-m w18a_dr02 \
+		-r 0 0 0 \
+		-p -3000,500,-134125 \
+		-l d:LT2_NAME_W18A \
+		-s 100 100 100
+		@ドアランプ設定 Ｇ脚方面ドアランプ 0 -3000,500,-134125 0
+}
+
+#if 0
+// ビッグシェル全景モデル（P014_10_P03ピーター遭遇１０ポリゴンデモ３用）
+//----------------------------------------------------------------------
+proc プラント全景モデルセット {
+	// プラント座標オフセット値
+	eval($i:d001p01_plt_x = -150000)
+	eval($i:d001p01_plt_y = 40000)
+	eval($i:d001p01_plt_z = 0)
+
+	// プラント回転オフセット値。Ｙのみ必要。
+	eval($i:d001p01_rot_y = 3072)
+
+	chara プットオブジェ 全景_w10c_12a \
+		-m w10c_12a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_13a \
+		-m w10c_13a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_14a \
+		-m w10c_14a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_15a \
+		-m w10c_15a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_16a \
+		-m w10c_16a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_17a \
+		-m w10c_17a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_18a \
+		-m w10c_18a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_19a \
+		-m w10c_19a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_20a \
+		-m w10c_20a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_20b \
+		-m w10c_20b -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_21a \
+		-m w10c_21a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_22a \
+		-m w10c_22a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_23a \
+		-m w10c_23a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_24a \
+		-m w10c_24a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_25a \
+		-m w10c_25a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_31a \
+		-m w10c_31a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_gh \
+		-m w10c_gh -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_gl \
+		-m w10c_gl -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_h \
+		-m w10c_h -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_hi \
+		-m w10c_hi -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_i \
+		-m w10c_i -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_ij \
+		-m w10c_ij -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_j \
+		-m w10c_j -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_jk \
+		-m w10c_jk -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_k \
+		-m w10c_k -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_kl \
+		-m w10c_kl -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_l \
+		-m w10c_l -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+
+	chara プットオブジェ 全景_w10c_crane \
+		-m w10c_crane -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_other00 \
+		-m w10c_other00 -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_other01 \
+		-m w10c_other01 -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_other02 \
+		-m w10c_other02 -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_32a \
+		-m w10c_32a -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_32b \
+		-m w10c_32b -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+	chara プットオブジェ 全景_w10c_32c \
+		-m w10c_32c -p $i:d001p01_plt_x,$i:d001p01_plt_y,$i:d001p01_plt_z \
+		-r 0,$i:d001p01_rot_y,0 -s 100,100,100 -l d:LT2_NAME -f 0x0200
+}
+
+proc ビッグシェル全景_空設置 {
+	chara 汎用空 デモ用空 \
+		-c 7 31 37\
+		-pos 52000 -41000 -210000 \
+		-l   (32*20) \
+		-f	 0 \
+		-t 4 sky_n1_alp 198 54 42 50 \
+			 sky_n2_alp 125 44 34 50 \
+			 sky_n3_alp 0 0 0 0 \
+			 sky_n4_alp 154 73 53 50 \
+		-m 1 n_sky_wall1 25 24 24 -100 0
+
+		chara 太陽 ソル \
+			-l (32*20) \
+			-p 0 0 0 \    		//中心の位置
+			-f -4700 350 -1600 \    //平行光源の-pと同じ値
+			-a 9
+}
+
+proc ビッグシェル全景_海面セット {
+	chara 巨大海面 seaseasea \
+		-mipmap 3 50000 0 \
+		-size 400000 400000 \
+		-light_enable \
+		-tex w10a_sea \
+		w10a_v2_sea02_256_alp_ovl \
+		w10a_v2_sea02_128_alp_ovl \
+		w10a_v2_sea02_64_alp_ovl \
+		w10a_v2_sea02_32_alp_ovl \
+		-pos 60000,0,-200000 
+}
+#endif
+
+//=============================================================================
+// フォグ
+//=============================================================================
+//-----------------------------------------------------------------------------
+// フォグ設定
+proc フォグ設定 {
+	// フォグ
+	chara フォグ 霧\
+		-c 34, 61, 54 \
+		-n -1000 \
+		-f 32000
+}
+
+proc ｗ１８ａ_フォグ設定 {
+	// フォグ
+	chara フォグ 霧\
+		-c 20,20,30 \
+		-n 15000 \
+		-f 40000 
+}
+
+//proc ビッグシェル全景_フォグ設定 {
+//	chara フォグ 霧 \
+//		-c 39,61,65 \
+//		-n (-1500000) \
+//		-f (3000000) \
+//		-z 					// ファークリップ機能追加（山下）
+//}
+
+#define PETER_X -52200
+#define PETER_Z -102125
+
+proc 壊れ物以外の物を置くセット {
+	chara プットオブジェ ポスター \
+		-m w16a0_poster -p 0,0,0 \
+		-r 0,0,0 -s 100,100,100 \
+		-l d:LT2_NAME
+
+	chara プットオブジェ Ｃ４ \
+		-p (d:PETER_X+638),1000, (d:PETER_Z+300) \
+		-r -1024,(1024+2048),0 \
+		-m c4_kaitai_a1 \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+
+	chara プットオブジェ ピーターＣ４_冷却２ \
+		-p (d:PETER_X+638),1000, (d:PETER_Z+300) \
+		-r -1024,(1024+2048),0 \
+		-m c4_kaitai_a1_frost_cm \
+		-s 100,100,100 \
+//		-f d:PUT_OBJ_CALC_LIGHT \
+		-l d:LT2_NAME
+}
+
+proc 壊れ物以外の物を置くセット２ {
+	chara プットオブジェ 冷却スプレー１ \
+		-p (d:PETER_X+250),1112,(d:PETER_Z-450) \
+		-r -1024,(1024+284),0 \
+		-m cls_sub \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+
+	chara プットオブジェ 冷却スプレー２ \
+		-p (d:PETER_X+500),1112,(d:PETER_Z-800) \
+		-r -1024,(1024-796),0 \
+		-m cls_sub \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+
+	chara プットオブジェ センサーＡ１ \
+		-p (d:PETER_X+564),1394,(d:PETER_Z-184) \
+		-r -34, -571, 1010 \
+		-m bombsensor_a \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+
+	chara プットオブジェ センサーＡ２ \
+		-p (d:PETER_X+600),1394,(d:PETER_Z-350) \
+		-r 0,(1024+57),0 \
+		-m bombsensor_a \
+		-s 100,100,100 \
+		-l d:LT2_NAME
+}
+
+
+// サウンド
+proc サウンドマネージャーセット {
+	chara サウンドマネージャー ＳＤマネ -pak -1		// パックをロードしない
+}
+
+proc サウンドマネージャー_mesg_1 {
+	command セットサウンドコード -c d:SNG_PLAY_06
+}
+
+proc サウンドマネージャー_mesg_2 {
+	command セットサウンドコード -c d:SNG_FOUTS_S
+}
+
+//=============================================================================
+// デバッグ用
+//=============================================================================
+proc restart_proc {
+	restart
+}
+
+
+

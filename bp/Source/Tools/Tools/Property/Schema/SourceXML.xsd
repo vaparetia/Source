@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+   <xs:complexType name="PropertyObject">
+      <xs:sequence>
+         <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:element name="Property" type="Property" maxOccurs="unbounded" />
+            <xs:element name="AddPropertyObject" type="AddPropertyObject" />
+            <xs:element name="UILayout" type="UILayout" />
+            <xs:element name="EvaluatorProperty" type="EvaluatorProperty" />
+         </xs:choice>
+      </xs:sequence>
+      <xs:attribute name="isVisible" type="xs:boolean" />
+      <xs:attribute name="id" type="xs:string" use="required" />
+      <xs:attribute name="exportDeclaration" type="xs:string" />
+      <xs:attribute name="type" use="required" type="xs:string">
+      </xs:attribute>
+      <xs:attribute name="noExport" type="xs:boolean" />
+      <xs:attribute name="tooltip" type="xs:string" />
+      <xs:attribute name="label" type="xs:string" />
+      <xs:attribute name="cookAs" type="xs:string" />
+   </xs:complexType>
+   <xs:complexType name="Component">
+      <xs:sequence>
+         <xs:choice maxOccurs="unbounded">
+            <xs:element name="Property" type="Property" />
+            <xs:element name="EvaluatorProperty" type="EvaluatorProperty" />
+            <xs:element name="Messages" type="Messages" maxOccurs="1" />
+            <xs:element name="Links" type="Links" maxOccurs="1" />
+            <xs:element name="Events" type="Events" maxOccurs="1" />
+            <xs:element name="Methods" type="Methods" maxOccurs="1" />
+            <xs:element name="UILayout" type="UILayout" />
+            <xs:element name="AddPropertyObject" type="AddPropertyObject" minOccurs="0" maxOccurs="unbounded" />
+            <xs:element name="AddComponentGroup" type="AddComponentGroup" />
+         </xs:choice>
+      </xs:sequence>
+      <xs:attribute name="id" type="xs:string" use="required" />
+      <xs:attribute name="group" type="xs:string" use="required" />
+      <xs:attribute name="classPropertiesExportDeclaration" type="xs:string" />
+      <xs:attribute name="classExportDeclaration" type="xs:string" />
+      <xs:attribute name="gameObjectType" type="xs:string" />
+      <xs:attribute name="tooltip" type="xs:string" />
+      <xs:attribute name="shortDisplayName" type="xs:string" />
+      <xs:attribute name="useMethods" type="xs:string" />
+      <xs:attribute name="evaluatorUpdateType" type="xs:string" />
+      <xs:attribute name="useParentEvaluatorAllocator" type="xs:boolean" />
+      <xs:attribute name="maxSubComponents" type="xs:unsignedInt" />
+      <xs:attribute name="helpCategory" type="xs:string" />
+      <xs:attribute name="noExport" type="xs:boolean" />
+      <xs:attribute name="platforms" type="xs:string" />
+   </xs:complexType>
+   <xs:complexType name="MessageObject">
+      <xs:sequence>
+         <xs:choice maxOccurs="unbounded" minOccurs="0">
+            <xs:element name="Property" type="Property" />
+            <xs:element name="AddPropertyObject" type="AddPropertyObject" />
+            <xs:element name="EvaluatorProperty" type="EvaluatorProperty" />
+            <xs:element name="UILayout" type="UILayout" />
+         </xs:choice>
+      </xs:sequence>
+      <xs:attribute name="type" type="xs:string" />
+      <xs:attribute name="id" type="xs:string" use="required" />
+      <xs:attribute name="exportDeclaration" type="xs:string" />
+      <xs:attribute name="tooltip" type="xs:string" />
+      <xs:attribute name="cookAs" type="xs:string" />
+   </xs:complexType>
+   <xs:complexType name="Evaluator">
+      <xs:sequence>
+         <xs:choice maxOccurs="unbounded" minOccurs="0">
+            <xs:element name="Property" type="Property" />
+            <xs:element name="EvaluatorProperty" type="EvaluatorProperty" />
+            <xs:element name="AddPropertyObject" type="AddPropertyObject" />
+         </xs:choice>
+      </xs:sequence>
+      <xs:attribute name="id" type="xs:string" use="required" />
+      <xs:attribute name="type" use="required">
+         <xs:simpleType>
+            <xs:restriction base="xs:string">
+               <xs:enumeration value="float" />
+               <xs:enumeration value="vector3" />
+               <xs:enumeration value="customAnimationNode" />
+               <xs:enumeration value="bool" />
+               <xs:enumeration value="color" />
+               <xs:enumeration value="emitterPV" />
+               <xs:enumeration value="modifierPV" />
+               <xs:enumeration value="userData" />
+            </xs:restriction>
+         </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="scope" type="xs:string" />
+      <xs:attribute name="tooltip" type="xs:string" />
+      <xs:attribute name="exportDeclaration" type="xs:string" />
+   </xs:complexType>
+   <xs:element name="PropertyContainerFile">
+      <xs:complexType>
+         <xs:sequence>
+            <xs:choice maxOccurs="unbounded">
+               <xs:element name="Evaluator" type="Evaluator" />
+               <xs:element name="PropertyObject" type="PropertyObject" />
+               <xs:element name="Component" type="Component" />
+               <xs:element name="PropertyContainer" type="PropertyContainer" />
+               <xs:element name="MessageObject" type="MessageObject" />
+            </xs:choice>
+         </xs:sequence>
+         <xs:attribute name="pcfVersion" type="xs:positiveInteger" use="required" />
+      </xs:complexType>
+   </xs:element>
+   <xs:complexType name="Property">
+      <xs:sequence>
+         <xs:choice maxOccurs="unbounded" minOccurs="0">
+            <xs:element name="Value" type="Value" minOccurs="0" maxOccurs="1" />
+            <xs:element name="EnumEntry" type="EnumEntry" />
+         </xs:choice>
+      </xs:sequence>
+      <xs:attribute name="name" type="xs:string" use="required" />
+      <xs:attribute name="type" type="propertyType" use="required">
+      </xs:attribute>
+      <xs:attribute name="tooltip" type="xs:string" />
+      <xs:attribute name="subType" type="xs:string" />
+      <xs:attribute name="assetTypes" type="xs:string" />
+      <xs:attribute name="lockAssetOnLoad" type="xs:boolean" />
+      <xs:attribute name="noExport" type="xs:boolean" />
+      <xs:attribute name="isVisible" type="xs:boolean" />
+      <xs:attribute name="label" type="xs:string" />
+      <xs:attribute name="max" type="xs:string" />
+      <xs:attribute name="min" type="xs:string" />
+      <xs:attribute name="needsExportForUpdate" type="xs:boolean" />
+      <xs:attribute name="enumName" type="xs:string" />
+      <xs:attribute name="generateCode" type="xs:boolean" />
+      <xs:attribute name="useParentName" type="xs:boolean" />
+      <xs:attribute name="bitFieldName" type="xs:string" />
+      <xs:attribute name="bitFieldPosition" type="xs:unsignedInt" />
+      <xs:attribute name="namespace" type="xs:string" />
+      <xs:attribute name="displayName" type="xs:string" />
+      <xs:attribute name="keepInitialValue" type="xs:boolean" />
+      <xs:attribute name="cookAs" type="xs:string" />
+      <xs:attribute name="mayaLabel" type="xs:string" />
+      <xs:attribute name="editorRenderFilter" type="xs:string" />
+      <xs:attribute name="assetSubType" type="assetSubTypeChoice" />
+   </xs:complexType>
+   <xs:complexType name="EvaluatorProperty">
+      <xs:sequence>
+         <xs:element name="UsingEvaluator" type="UsingEvaluator" minOccurs="0" />
+      </xs:sequence>
+      <xs:attribute name="type" type="propertyType" />
+      <xs:attribute name="name" type="xs:string" />
+      <xs:attribute name="tooltip" type="xs:string" />
+      <xs:attribute name="allowEmptyEvaluator" type="xs:boolean" />
+      <xs:attribute name="disableCodeGenEvaluatorInitialization" type="xs:boolean" />
+   </xs:complexType>
+   <xs:simpleType name="propertyType">
+      <xs:restriction base="xs:string">
+         <xs:enumeration value="int" />
+         <xs:enumeration value="float" />
+         <xs:enumeration value="string" />
+         <xs:enumeration value="asset" />
+         <xs:enumeration value="bool" />
+         <xs:enumeration value="customAnimationNode" />
+         <xs:enumeration value="enum" />
+         <xs:enumeration value="vector3" />
+         <xs:enumeration value="modifierPV" />
+         <xs:enumeration value="color" />
+         <xs:enumeration value="emitterPV" />
+         <xs:enumeration value="EvaluatorContainer" />
+         <xs:enumeration value="bool" />
+         <xs:enumeration value="custom" />
+         <xs:enumeration value="userData" />
+      </xs:restriction>
+   </xs:simpleType>
+   <xs:complexType name="UsingEvaluator">
+      <xs:sequence>
+         <xs:choice maxOccurs="unbounded">
+            <xs:element name="UsingProperty" type="UsingProperty" minOccurs="0" maxOccurs="unbounded" />
+            <xs:element name="UsingPropertyObject" type="UsingPropertyObject" />
+         </xs:choice>
+      </xs:sequence>
+      <xs:attribute name="id" type="xs:string" />
+   </xs:complexType>
+   <xs:complexType name="Messages">
+      <xs:sequence>
+         <xs:choice maxOccurs="unbounded">
+            <xs:element name="Message" type="Message" maxOccurs="unbounded" minOccurs="0" />
+            <xs:element name="DynamicItems" type="DynamicItems" maxOccurs="unbounded" minOccurs="0" />
+         </xs:choice>
+      </xs:sequence>
+   </xs:complexType>
+   <xs:complexType name="Message">
+      <xs:sequence>
+      </xs:sequence>
+      <xs:attribute name="type" type="xs:string" use="required" />
+      <xs:attribute name="tooltip" type="xs:string" />
+   </xs:complexType>
+   <xs:complexType name="Links">
+      <xs:sequence>
+         <xs:choice maxOccurs="unbounded">
+            <xs:element name="Link" type="Link" maxOccurs="unbounded" minOccurs="0" />
+            <xs:element name="DynamicItems" type="DynamicItems" maxOccurs="unbounded" minOccurs="0" />
+         </xs:choice>
+      </xs:sequence>
+   </xs:complexType>
+   <xs:complexType name="Link">
+      <xs:sequence>
+         <xs:element name="Allow" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
+      </xs:sequence>
+      <xs:attribute name="tooltip" type="xs:string" />
+      <xs:attribute name="type" type="xs:string" use="required" />
+      <xs:attribute name="message" type="xs:string" />
+   </xs:complexType>
+   <xs:complexType name="Methods">
+      <xs:sequence>
+         <xs:element name="Method" type="Method" maxOccurs="unbounded" />
+      </xs:sequence>
+   </xs:complexType>
+   <xs:complexType name="Method">
+      <xs:sequence>
+      </xs:sequence>
+      <xs:attribute name="type" type="xs:string" use="required" />
+      <xs:attribute name="ignoreFunctions" type="xs:string" />
+   </xs:complexType>
+   <xs:complexType name="Events">
+      <xs:sequence>
+         <xs:choice maxOccurs="unbounded">
+            <xs:element name="Event" type="Event" maxOccurs="unbounded" minOccurs="0" />
+            <xs:element name="DynamicItems" type="DynamicItems" maxOccurs="unbounded" minOccurs="0" />
+         </xs:choice>
+      </xs:sequence>
+   </xs:complexType>
+   <xs:complexType name="Event">
+      <xs:sequence>
+      </xs:sequence>
+      <xs:attribute name="type" type="xs:string" use="required" />
+      <xs:attribute name="tooltip" type="xs:string" />
+      <xs:attribute name="cookAs" type="xs:string" />
+   </xs:complexType>
+   <xs:complexType name="AddPropertyObject">
+      <xs:sequence>
+         <xs:choice maxOccurs="unbounded" minOccurs="0">
+            <xs:element name="UsingProperty" type="UsingProperty" />
+            <xs:element name="UsingPropertyObject" type="UsingPropertyObject">
+            </xs:element>
+         </xs:choice>
+      </xs:sequence>
+      <xs:attribute name="name" type="xs:string" use="required" />
+      <xs:attribute name="id" type="xs:string" use="required" />
+      <xs:attribute name="tooltip" type="xs:string" />
+   </xs:complexType>
+   <xs:complexType name="UILayout">
+      <xs:sequence>
+         <xs:choice maxOccurs="unbounded">
+            <xs:element name="UIState" type="UIState" />
+            <xs:element name="LayoutItem" type="LayoutItem" />
+            <xs:element name="Layout" type="Layout" />
+         </xs:choice>
+      </xs:sequence>
+   </xs:complexType>
+   <xs:complexType name="UIState">
+      <xs:sequence>
+      </xs:sequence>
+      <xs:attribute name="name" type="xs:string" use="required" />
+   </xs:complexType>
+   <xs:complexType name="LayoutItem">
+      <xs:sequence>
+         <xs:element name="UIState" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
+      </xs:sequence>
+      <xs:attribute name="name" type="xs:string" use="required" />
+   </xs:complexType>
+   <xs:complexType name="Layout">
+      <xs:sequence>
+         <xs:choice maxOccurs="unbounded">
+            <xs:element name="Layout" type="Layout" />
+            <xs:element name="LayoutItem" type="LayoutItem" />
+            <xs:element name="UIState" type="UIState" />
+         </xs:choice>
+      </xs:sequence>
+      <xs:attribute name="name" type="xs:string" use="required" />
+      <xs:attribute name="type" type="LayoutType" use="required" />
+      <xs:attribute name="displayName" type="xs:string" />
+   </xs:complexType>
+   <xs:simpleType name="LayoutType">
+      <xs:restriction base="xs:string">
+         <xs:enumeration value="groupBar" />
+         <xs:enumeration value="group" />
+         <xs:enumeration value="tabGroup" />
+         <xs:enumeration value="tab" />
+      </xs:restriction>
+   </xs:simpleType>
+   <xs:complexType name="PropertyContainer">
+      <xs:sequence>
+         <xs:choice maxOccurs="unbounded">
+            <xs:element name="AddComponentGroup" type="AddComponentGroup" />
+         </xs:choice>
+      </xs:sequence>
+      <xs:attribute name="id" type="xs:string" use="required" />
+      <xs:attribute name="type" type="xs:string" use="required" />
+      <xs:attribute name="createEditorId" type="xs:boolean" />
+   </xs:complexType>
+   <xs:complexType name="AddComponentGroup">
+      <xs:sequence>
+         <xs:choice maxOccurs="unbounded" minOccurs="0">
+            <xs:element name="UsingComponent" type="UsingComponent" />
+         </xs:choice>
+      </xs:sequence>
+      <xs:attribute name="id" type="xs:string" use="required" />
+      <xs:attribute name="activeComponent" type="xs:string" use="required" />
+      <xs:attribute name="name" type="xs:string" use="required" />
+      <xs:attribute name="allowEmptyComponent" type="xs:boolean" />
+      <xs:attribute name="useParentEvaluatorAllocator" type="xs:boolean" />
+      <xs:attribute name="createEditorId" type="xs:boolean" />
+   </xs:complexType>
+   <xs:complexType name="UsingComponent">
+      <xs:sequence>
+         <xs:choice maxOccurs="unbounded">
+            <xs:element name="UsingPropertyObject" type="UsingPropertyObject" />
+            <xs:element name="UsingProperty" type="UsingProperty" />
+         </xs:choice>
+      </xs:sequence>
+      <xs:attribute name="id" type="xs:string" use="required" />
+   </xs:complexType>
+   <xs:complexType name="UsingPropertyObject">
+      <xs:sequence>
+         <xs:choice maxOccurs="unbounded">
+            <xs:element name="UsingPropertyObject" type="UsingPropertyObject" />
+            <xs:element name="UsingProperty" type="UsingProperty" />
+         </xs:choice>
+      </xs:sequence>
+      <xs:attribute name="id" type="xs:string" use="required" />
+      <xs:attribute name="name" type="xs:string" use="required" />
+   </xs:complexType>
+   <xs:complexType name="UsingProperty">
+      <xs:sequence>
+         <xs:element name="Value" type="Value" />
+      </xs:sequence>
+      <xs:attribute name="name" type="xs:string" use="required" />
+   </xs:complexType>
+   <xs:complexType name="EnumEntry">
+      <xs:sequence>
+      </xs:sequence>
+      <xs:attribute name="name" type="xs:string" use="required" />
+      <xs:attribute name="desc" type="xs:string" />
+      <xs:attribute name="tooltip" type="xs:string" />
+   </xs:complexType>
+   <xs:complexType name="Value" mixed="true">
+      <xs:sequence>
+         <xs:any minOccurs="0" maxOccurs="unbounded" processContents="skip" />
+      </xs:sequence>
+      <xs:anyAttribute processContents="skip" />
+   </xs:complexType>
+   <xs:simpleType name="assetSubTypeChoice">
+      <xs:restriction base="xs:string">
+         <xs:enumeration value="normalMap" />
+      </xs:restriction>
+   </xs:simpleType>
+   <xs:complexType name="DynamicItems">
+      <xs:sequence>
+      </xs:sequence>
+      <xs:attribute name="type" type="xs:string" use="required" />
+      <xs:attribute name="src" type="xs:string" use="required" />
+      <xs:attribute name="query" type="xs:string" use="required" />
+      <xs:attribute name="recursiveSourceQuery" type="xs:string" use="optional" />
+   </xs:complexType>
+</xs:schema>

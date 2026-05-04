@@ -1,0 +1,389 @@
+/*
+	w11c.gcl                     
+	    フォーチュン戦
+
+	2001/01/18 H.Yoshiike         
+	$Id: w11c.gcl,v 1.43 2001/08/22 17:15:19 usr03682 Exp $                      
+
+	
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_PLANT		1		// 共通プロック切り分け用
+// ステージ名
+#define		STAGE_W11C		1		// 共通プロック切り分け用
+// 敵兵、ＮＰＣ状況（薬莢を呼び分けるのに必要）
+
+
+// 各種スイッチ用define
+// ------------------------------------
+// サウンド
+#define		SOUND			1		// サウンドデータは最初に呼ぶ
+#define		BGM				0		// BGMは敵兵コマンダーの後に呼ぶ
+// デモ
+#define		DEMO			0
+// キャラクター関係
+#define		RAIDEN			1		// SNAKEとは排他
+// ドア
+#define		SLIDE_DOOR		1		// スライドドア
+// 入出トラップ
+#define		LOAD_TRAP		1
+#define		STAGE_END		1		// ステージ終了時処理を使用可にする
+// フォグ
+#define		FOG				1
+// エフェクト関係
+#define		F_LIGHT			1		// 床照り返し管理
+// 天井
+#define		CHARA_CEIL		1		// 天井君
+// 透明壁
+#define		TR_WALL			0		// シナリオ置きの透明壁
+// ライト関係
+#define		SPOT_LIGHT		0		// スポットライト
+#define		CHARA_LIGHT		1		// キャラ専用ライト
+// オブジェ関係
+// アイテム
+#define		ITEM			1		// アイテム
+// 強制モーション
+#define		JP_MOTION		0		// ジャンプモーション
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+	#define		DEBUG_MODE		0		// デバッグ開発環境
+	#define		NO_POLYDEMO		0		// ポリデモなしフラグ
+	#define		NO_NEXT_STAGE	0		// フォーチュン戦終了後処理しない
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+	#define		DEBUG_MODE		0		// デバッグ開発環境
+	#define		NO_POLYDEMO		0		// ポリデモなしフラグ
+	#define		NO_NEXT_STAGE	0		// フォーチュン戦終了後処理しない
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME		w11c
+#define		KMS_NAME		w11c2
+#define		WALL_NAME1		w11c2_southwall
+#define		BK_OBJ_NAME		w11c2_door_fusagi 
+#define		BK_CABLE_NAME	w11c2r_cable_brk 
+#define		CEIL_NAME2		w11c2r
+#define		DOOR_NAME1		dr_free
+#define		LT2_NAME		w11
+#define		R_MT_FILE		rai_w11c
+
+// キャラクター関係
+#if d:RAIDEN
+	#define		PLAYER		ライデン	// モーションができるまで名前はスネーク
+#else
+	#define		PLAYER		スネーク
+#endif
+
+
+// ローカル変数
+
+
+// include
+// ------------------------------------
+#include "rai_w11c.mh"		// 強制モーションリスト
+#include "stdch.h"
+#include "sload.h"
+#include "jump.h"
+#include "sound.h"
+#include "item_info.h"
+#include "w11abc_common.h"
+#include "w11bc_common.h"
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+
+// マップ設定
+// ------------------------------------
+chara マップ 昇降機ホール -k d:KMS_NAME -h d:HZX_NAME,0 -l d:LT2_NAME
+
+#include "polydemo_w11c.h"	// フォーチュン専用ポリデモ（位置はここ）
+							// ポリデモ終了後、$s:d_num = not_demoになりrestartをかけ、ゲームに戻る
+
+// ボス用gclのinclude
+#include "w11c_boss.h"
+
+command マップ設定 昇降機ホール -set {
+	// デモorゲームにかかわらずセットする
+	command フォーチュン索敵初期化
+
+	if($s:d_num == not_demo) {
+		// デモじゃないときはこっちをセット
+		// ゲームのみ使用
+		// サウンド、キャラクターのセット
+		// ------------------------------------
+		#if d:SOUND	
+			@サウンド設定				// データは最初に呼ぶ。w11abc_common.hで定義
+		#endif
+			@レーダーオンオフチェック $f:w11a_ノードフラグ	// stdproc.hで定義
+	}
+
+	@常駐キャラ設定				// stdch.hで定義
+
+	if($s:d_num == not_demo) {
+			@ローカル変数初期化			// w11abc_common.hで定義
+			@設定値変更					// w11abc_common.hで定義
+			@レーダーオンオフチェック $f:w11a_ノードフラグ	// stdch.hで定義
+//			@プラグイン設定				// w11abc_common.hで定義
+			@プレイヤー設定				// w11abc_common.hで定義
+			@ボスフォーチュン			// w11c_boss.hで定義
+			@共通シネマスクリーンセット	// w11c_boss.hで定義
+			@フォーチュン戦オイル燃え	// w11c_boss.hで定義
+			@はまりバグ防止チェック
+		#if d:BGM	
+			@ＢＧＭ設定					// プレイヤー→敵兵→BGMの順で呼ぶ。w11abc_common.hで定義
+		#endif
+			@弾痕跳弾設定				// w11abc_common.hで定義
+		// ステージ、オブジェクト関連
+		// ------------------------------------
+			@プラント編全体マップ設定 d:Ａ脚マップ	// stdproc.hで定義
+			@壊れ物アタリ設定			// w11c_boss.hで定義
+		#if d:ITEM
+			@昇降機ホールアイテム設置				// w11abc_common.hで定義
+		#endif
+		#if d:F_LIGHT
+			@床照り返し設定				// リニアガンが出るなら必要
+		#endif
+
+			@カメラセット				// w11abc_common.hで定義
+			@昇降機ホールカメラ設定
+
+		#if d:CHARA_LIGHT
+			@キャラ用ライト設置			// w11abc_common.hで定義
+		#endif
+
+		#if d:DEBUG_CHARA
+		//	@デバッグキャラセット
+		#endif
+	}
+
+
+	// ゲームとデモ両方で使用
+	// ------------------------------------
+	// マップ切り替え、ロード、ドア
+	// ------------------------------------
+#if d:SLIDE_DOOR
+	@ドア設置					// w11abc_common.hで定義
+#endif
+	// ステージ、オブジェクト関連
+	// ------------------------------------
+#if d:CHARA_CEIL
+	@昇降機ホール天井設置			// w11abc_common.hで定義
+	@天井崩れ						// w11bc_common.hで定義
+	@デモ中壊れオブジェクト設定		// w11abc_common.hで定義
+#endif
+	@昇降機ホール揺れライト設定		// w11abc_common.hで定義
+	@昇降機ホール壁ライト設定		// w11abc_common.hで定義
+	@昇降機ホール壁スポットライト	// w11abc_common.hで定義
+	if ( $w:p_story < d:ST:P030_01_R01フォーチュン戦中無線無線デモ１終了) {
+		@昇降機ホールオブジェ設置 0		// w11bc_common.hで定義
+	} else {
+		@昇降機ホールオブジェ設置 2		// w11bc_common.hで定義
+	}
+	@昇降機設置						// w11abc_common.hで定義
+if($s:d_num != not_demo) {
+	// スポットライトはデモのときのみ出す
+	@昇降機ホールスポットライト設定 // w11abc_common.hで定義
+	// 落ちてきた天井は最後のデモのときにおく
+	if ( $w:p_story >= d:ST:P030_01_R01フォーチュン戦中無線無線デモ１終了) {
+		@崩れ天井設置
+	}
+}
+#if d:FOG
+	@フォグ設定					// w11abc_common.hで定義
+#endif
+}
+
+if($s:d_num == not_demo) {
+	// 無線用include ※位置は動かさないこと
+	#include "w11c_cdc.ch"
+}
+#include "p_force_cdc.ch"
+
+
+// 全てのセットが終わったところでフェードイン
+if($s:d_num == not_demo) {
+// ゲーム時
+	if( $s:登場ポイント == sp_w11b_w11c_0 ) {
+		//初期マップの表示
+		command マップ表示 -show 昇降機ホール
+		
+		// Ｍ９を持っていたときは
+		
+		// 全てのセットが終わったところでフェードイン
+		@ステージ開始時処理 d:LOAD_TYPE:NO_MOVE_TYPE フォーチュン戦スタート位置 0 d:M_TYPE:WALK_CHANGE
+	}
+} else {
+// デモ再生時
+	command マップ表示 -show 昇降機ホール
+}
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// 全マップ共通
+	// エフェクト関係
+	// -----------------------------------
+	proc 床照り返し設定 {
+		#if d:DEBUG_PRINT
+			print 'f_light_set'
+		#endif
+
+		chara 床照り返し管理 床照り返し
+	}
+
+	// はまりバグ防止のために新たに生成されるアタリの中にいる場合は常にチェックする
+	proc はまりバグ防止チェック {
+		#if d:DEBUG_PRINT
+			print 'flk_demo_set'
+		#endif
+
+		trap ev022 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					#if d:DEBUG_PRINT
+						print '$f:フォークリフトゾーン中央にいるフラグ入った'
+					#endif
+					eval( $f:フォークリフトゾーン中央にいるフラグ = 1 );
+				} else {
+					#if d:DEBUG_PRINT
+						print '$f:フォークリフトゾーン中央にいるフラグ出た'
+					#endif
+					eval( $f:フォークリフトゾーン中央にいるフラグ = 0 );
+				}
+			}
+
+		trap ev023 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					#if d:DEBUG_PRINT
+						print '$f:フォークリフトゾーン左にいるフラグ入った'
+					#endif
+					eval( $f:フォークリフトゾーン左にいるフラグ = 1 );
+				} else {
+					#if d:DEBUG_PRINT
+						print '$f:フォークリフトゾーン左にいるフラグ出た'
+					#endif
+					eval( $f:フォークリフトゾーン左にいるフラグ = 0 );
+				}
+			}
+
+		trap ev024 d:PLAYER \
+			-mask ？ \
+			-exec {
+				if ( $3 == 入る ) {
+					#if d:DEBUG_PRINT
+						print '$f:フォークリフトゾーン右にいるフラグ入った'
+					#endif
+					eval( $f:フォークリフトゾーン右にいるフラグ = 1 );
+				} else {
+					#if d:DEBUG_PRINT
+						print '$f:フォークリフトゾーン右にいるフラグ出た'
+					#endif
+					eval( $f:フォークリフトゾーン右にいるフラグ = 0 );
+				}
+			}
+
+	}
+
+
+// 各マップ別設定
+// ------------------------------------
+// 昇降機ホール
+	// 落ちてきた天井（デモ限定）
+	// ------------------------------------
+	proc 崩れ天井設置 {
+		#if d:DEBUG_PRINT
+			print 'broken_ceil_set'
+		#endif
+
+		chara プットオブジェ 崩れ天井 -m  demo_w11c2_hari_brk_all -r 0,0,0 -p 0,0,0 -s 100,100,100 -l d:LT2_NAME
+	}
+
+	// 各種カメラの設定
+	// ------------------------------------
+	proc 昇降機ホールカメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w11c_camera_set'
+		#endif
+
+		// 通常カメラ
+		trap ca021 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 3250 2250 341 491
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b -2539,-40204,0 2539,d:CAM_MAX,9850 \
+					-l -2539,-43007,-6750 2539,d:CAM_MAX,4574 \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 6500 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-s $3
+			}
+
+		// 荷物の裏の匍匐時カメラ
+		trap ca022 d:PLAYER \
+			-mask ？ \
+			-state 1,2 \	//しゃがみor匍匐
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 0 \	
+					-b -2500,-40000,0 2500,d:CAM_MAX,10500 \
+					-l -2500,d:CAM_MIN,-6750 2500,d:CAM_MAX,3181 \
+					-r 800,2048,0 \
+					-f 6000 \
+					-a 200 \
+					-i 3 -1 0 0 \
+					-s $3
+			}
+
+		// 手前の壁に張りついたときのカメラ
+		trap ca023 d:PLAYER \
+			-mask ？ \
+			-state 4 \	// 張りつき
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 0 \	
+					-b -2500,-40000,0 5438,d:CAM_MAX,5301 \
+					-l -2500,d:CAM_MIN,4081 2500,d:CAM_MAX,3946 \
+					-r 897,2048,0 \
+					-f 7000 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+	}
+
+
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+// 以下仮キャラ用proc
+// -----------------------------------------------------------------------------------
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------

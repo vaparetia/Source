@@ -1,0 +1,165 @@
+#
+# アクション名対応マクロ定義ヘッダ生成用ファイル
+# アクション名の StrCode に対応するマクロは、mode_act.lst から、
+# macrobld.pl を通じて mode_act.h に変換される。
+#
+# $Id: mode_act.lst,v 1.1.1.3 2002/11/19 11:45:16 Yoshizawa1 Exp $
+#
+
+# ダウンロード関係は枠レイアウトにある。
+
+SCRN_DefaultAction	:DefaultAction
+SCRN_selectOpt		:selectOpt
+
+SCRN_setBaseOpen	:setBaseOpen
+SCRN_setBaseClose	:setBaseClose
+SCRN_openDown		:openDown
+SCRN_closeDown		:closeDown
+SCRN_setMapDownload	:setMapDownload
+SCRN_setMapComplete	:setMapComplete
+
+# プログレスバー関係
+SCRN_progressEdge	:progressEdge
+SCRN_progress		:progress
+
+KEY_progress0		:progress0
+KEY_progress100		:progress100
+
+
+SCRN_prg_num001		:prg_num001
+SCRN_prg_num010		:prg_num010
+SCRN_prg_num100		:prg_num100
+
+KEY_num0		:num0
+KEY_num1		:num1
+KEY_num2		:num2
+KEY_num3		:num3
+KEY_num4		:num4
+KEY_num5		:num5
+KEY_num6		:num6
+KEY_num7		:num7
+KEY_num8		:num8
+KEY_num9		:num9
+
+
+# メニュー開閉アクション等
+SCRN_openOptSlant1	:openOptSlant1
+SCRN_openOptSlant2	:openOptSlant2
+SCRN_closeOptSlant1	:closeOptSlant1
+
+
+# オプション項目オブジェクト名称
+OBJ_optVIB		:optVIB
+OBJ_optRAD		:optRAD
+OBJ_optBLD		:optBLD
+OBJ_optSND		:optSND
+OBJ_opt5_1CH		:opt5_1CH
+OBJ_optCAP		:optCAP
+OBJ_optOWN		:optOWN
+OBJ_optITEM		:optITEM
+OBJ_optQUICK		:optQUICK
+OBJ_optSCRN		:optSCRN
+OBJ_optCOL		:optCOL
+# OBJ_optEXIT		:optEXIT
+OBJ_optEXIT		:menuExit
+
+# 各項目の ":" 記号
+OBJ_colonVIB		:colonVIB
+OBJ_colonRAD		:colonRAD
+OBJ_colonBLD		:colonBLD
+OBJ_colonSND		:colonSND
+OBJ_colon5_1CH		:colon5_1CH
+OBJ_colonCAP		:colonCAP
+OBJ_colonOWN		:colonOWN
+OBJ_colonITEM		:colonITEM
+OBJ_colonQUICK		:colonQUICK
+
+# 選択状態キー名称
+KEY_selVIB		:selVIB
+KEY_selRAD		:selRAD
+KEY_selBLD		:selBLD
+KEY_selSND		:selSND
+KEY_sel5_1CH		:sel5_1CH
+KEY_selCAP		:selCAP
+KEY_selOWN		:selOWN
+KEY_selITEM		:selITEM
+KEY_selQUICK		:selQUICK
+KEY_selSCRN		:selSCRN
+KEY_selCOL		:selCOL
+KEY_selEXIT		:selEXIT
+
+# 非選択状態キー名称
+KEY_unVIB		:unVIB
+KEY_unRAD		:unRAD
+KEY_unBLD		:unBLD
+KEY_unSND		:unSND
+KEY_un5_1CH		:un5_1CH
+KEY_unCAP		:unCAP
+KEY_unOWN		:unOWN
+KEY_unITEM		:unITEM
+KEY_unQUICK		:unQUICK
+KEY_unSCRN		:unSCRN
+KEY_unCOL		:unCOL
+KEY_unEXIT		:unEXIT
+
+
+
+# オプションスイッチオブジェクト名称
+OBJ_swVIB		:swVIB
+OBJ_swRAD		:swRAD
+OBJ_swBLD		:swBLD
+OBJ_swSND		:swSND
+OBJ_sw5_1CH		:sw5_1CH
+OBJ_swCAP		:swCAP
+OBJ_swOWN		:swOWN
+OBJ_swITEM		:swITEM
+OBJ_swQUICK		:swQUICK
+
+
+# オプションスイッチ状態キー名称
+SW_vibON		:vibON
+SW_vibOFF		:vibOFF
+SW_radON		:radON
+
+SW_radOFF1		:radOFF1
+SW_radTYPE1		:radTYPE1
+SW_radTYPE2		:radTYPE2
+SW_radOFF2		:radOFF2
+
+SW_bldON		:bldON
+SW_bldOFF		:bldOFF
+SW_sndSTEREO		:sndSTEREO
+SW_sndMONO		:sndMONO
+SW_5_1chON		:5_1chON
+SW_5_1chOFF		:5_1chOFF
+SW_capON		:capON
+SW_capOFF		:capOFF
+SW_ownNORM		:ownNORM
+SW_ownREV		:ownREV
+SW_itemLINEAR		:itemLINEAR
+SW_itemGROUP		:itemGROUP
+SW_quickPREV		:quickPREV
+SW_quickUNEQUIP		:quickUNEQUIP
+
+
+# カーソル位置指定キー名称
+POS_curVIB		:curO_VIB
+POS_curRAD		:curO_RAD
+POS_curBLD		:curO_BLD
+POS_curSND		:curO_SND
+POS_cur5_1CH		:curO_5_1CH
+POS_curCAP		:curO_CAP
+POS_curOWN		:curO_OWN
+POS_curITEM		:curO_ITEM
+POS_curQUICK		:curO_QUICK
+POS_curSCRN		:curO_SCRN
+POS_curCOL		:curO_COL
+POS_curEXIT		:curO_EXIT
+
+# カーソルオブジェクト名称
+CUR_curs		:selCurs
+CUR_curs_parent		:selCursNull
+
+OBJ_ROOT		:ROOT
+OBJ_Prog		:Prog
+KEY_default		:default

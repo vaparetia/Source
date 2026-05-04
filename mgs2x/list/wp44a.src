@@ -1,0 +1,60 @@
+//
+//	wp44a.src
+//	武器訓練ミッション 狙撃４面
+//	written by S.Kaneyoshi 2002.05.12
+//
+//	$Id: wp44a.src,v 1.3 2002/08/19 10:36:06 usr04249 Exp $
+
+#define WN_WP44A
+
+block .use r_vr_r
+block .nocache
+block .cache
+
+// 的モデル呼び分け用
+#define		VR_TGT_CUBE		1
+#define		VR_TGT_SQUARE	1
+#define		VR_TGT_TRIANGLE	1
+#define		VR_TGT_OCTA		1
+#define		VR_TGT_STRAW	1
+#define		VR_TGT_HEXA		1
+#define		VR_TGT_WALL		1
+
+// 各ステージ共通要素
+#include	"vr_def.h"		// defineファイル 厳密にはc_effect.hの前でよい
+#include	"p_common.h"
+#include	"common.h"
+#include 	"vrstage.h"
+#include	"c_effect.h"
+
+// VR用追加エフェクト
+#include	"vr_effect.h"
+
+
+// 強制モーション
+mtn			rai_wp44a.mls
+mtn			sna_wp44a.mls
+
+// ワールド
+option makexti6 -l 1024 -f PAL8		// Xbox用劣化無しテクスチャ採用
+	pack_all	ws43a.tri \
+				world/vr_weapon/ws43a
+option makexti6
+
+world		vr_weapon/ws43a
+hazard		ws44a.hzx
+rol			world/vr_weapon/ws43a/ws43a.rol
+cvd			world/vr_weapon/ws43a/ws43a.cv2 v
+
+
+// マルチテクスチャモデル
+// それ以外のモデル
+
+// オブジェクト
+// アイテム
+itembox
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+// リネーム

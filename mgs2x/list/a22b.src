@@ -1,0 +1,147 @@
+//
+//	a22b.src	
+//	Ｆ脚倉庫(スネークテイルズＢ用)
+//	written by H.Yoshiike 2002.JAN
+//
+//	$Id: a22b.src,v 1.10 2002/07/20 06:40:26 usr03379 Exp $
+
+// ステージ名
+#define WN_W22A
+// アナザーミッション明示
+#define		WN_ANOTHER
+
+block .use r_vr_s
+block .nocache
+block .cache
+
+// 敵兵関連define
+// 敵兵タイプ
+#define ENE_P_GOL		// w22aは都市迷彩攻撃兵
+#define ENE_ATTACKER	// 攻撃兵
+#define ENE_SHIELD		// 盾兵
+#define ENE_SHOT		// ショットガン兵
+//#define ENE_HIGH_TECH	// 人質イベント後はハイテク兵
+
+// 特殊兵のモーション設定
+	//	天狗兵とウォークマン兵とロッカー（テイルズＢではロッカー開かない）とトイレとハイテク兵のモーションはいらない
+#define ENE_MAR '-DDEL_TNG=DUMMY -DDEL_WALKMAN=DUMMY -DDEL_LOCKER=DUMMY -DDEL_TOILET=DUMMY -DDEL_HIGH=DUMMY '
+
+// 各ステージ共通要素
+#include	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+// オルタナティブミッション用追加エフェクト
+#include	"alt_effect.h"
+
+// キャラクタ
+#include	"ene_plant.h"
+
+// 強制モーション
+mtn			rai_a22a.mls
+mtn			sna_a22a.mls
+mtn			gps_w22a.mls			// ゴル兵肩回しモーション
+
+// ロッカー
+mtn			sna_locker.mls
+mtn			locker.mls
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル 
+pack_all	w22a.tri \
+	world/w22a/w22a0 \
+	world/w22a/obj \
+	world/door/dr_free.dar \
+	world/door/dr_lv1_01.dar \
+	world/door/dr_lv1_02.dar \
+	world/door/dr_lv2_01.dar \
+	world/door/dr_lv2_02.dar \
+	world/door/dr_lv3_01.dar \
+	world/door/w22a_dr00.dar \
+	world/door/w22a_dr01.dar \
+	world/door/w22a_dr00x.dar
+
+world		w22a/w22a0
+world		w22a/obj
+world		w22a/w22a1
+world		door/dr_free.kms
+world		door/dr_lv1_01.kms
+world		door/dr_lv1_02.kms
+world		door/dr_lv2_01.kms
+world		door/dr_lv2_02.kms
+world		door/dr_lv3_02.kms
+world		door/w22a_dr00.kms
+world		door/w22a_dr01.kms
+world		door/w22a_dr00x.kms
+lt2			w22a.lt2
+hazard		a22a.hzx
+
+// オブジェクト
+pack_all	object.tri goods/locker/neo_locker_door.dar goods/c4_kaitai_a meca/ir_sensor weapon/cfr/cfr_trp.dar
+
+goods		locker/neo_locker_door.kms
+goods		c4_kaitai_a
+meca		ir_sensor
+weapon		cfr/cfr_trp.kms
+
+// 消火器
+debug		okajima/hose_test/hose_cone.kms
+debug		okajima/hose_test/hose_new2.kms
+cvd  		debug/okajima/hose_test/hose_new2.cvd vn
+
+// アイテム
+
+#define	M9			//	Ｍ９本体
+//#define	SCM_SP		//	ソコムサプレッサ
+#define	USP_SP		//	ＵＳＰサプレッサ
+
+#define	USP_AM		//	ＵＳＰ弾薬
+//#define	SCM_AM		//	ソコム弾薬
+#define	M9_AM		//	Ｍ９弾薬
+
+#define	M4			//	Ｍ４本体
+//#define	AK			//	ＡＫ本体
+//#define	PSG1		//	ＰＳＧ１本体
+//#define	PSG1T		//	ＰＳＧ１−Ｔ本体
+//#define	AK_SP		//	ＡＫサプレッサ
+
+#define	M4_AM		//	Ｍ４弾薬
+//#define	AK_AM		//	ＡＫ弾薬
+//#define	PSG1_AM		//	ＰＳＧ１弾薬
+//#define	PSG1T_AM	//	ＰＳＧ１−Ｔ弾薬
+
+//#define	RGB			//	ＲＧＢ６本体
+
+//#define	RGB_AM		//	ＲＧＢ６弾薬
+
+#define	GRE			//	グレネード
+//#define	CGR			//	チャフ
+#define	SGR			//	スタン
+#define	CLM			//	クレイモア
+//#define	C4			//	Ｃ４
+
+//#define	MGZ			//	雑誌
+
+#define	RTN			//	レーション
+//#define	BS			//	止血材
+//#define	DZP			//	ジアゼパム
+
+//#define	TGL			//	サーマルゴーグル
+
+//#define	MND			//	地雷探知機
+
+//	念のため
+#define	CBX			//	ダンボール
+
+#include	"a_item.h"
+
+//	アナザーミッション用追加分
+//	スネークテイルズＢ用エマ
+#include	"emma.h"
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム
+rename		gps_w22a.mar	gbsstage.mar

@@ -1,0 +1,49 @@
+Content-type: text/html;charset=EUC-JP
+
+<BODY BGCOLOR="gray" TEXT="white" LINK="#66EEFF" VLINK="#FF66EE" ALINK="#EEFF66" BACKGROUND="/runtime.xbox/images/bg.gif">
+<hr>
+<p><center><H1><B>Run Time に更新タイム</B></H1></center>
+<hr>
+
+<blink><H2>
+_tag_comment
+</H2></blink>
+
+<FORM ACTION="/cgi-bin/_tag_version/detail.cgi" METHOD="post">
+
+私の名は <INPUT TYPE="text" SIZE=15 NAME="name" VALUE="_tag_name">です。<BR>
+
+とりあえず職業は、<SELECT NAME="prof" >
+	<OPTION>シナリオ班  </OPTION>
+	<OPTION>デザイナー  </OPTION>
+	<OPTION>モーション班</OPTION>
+	<OPTION>プー        </OPTION>
+</SELECT>などをやっております。
+<P>
+
+<TABLE>
+        <TR><TD>今からRunTimeに移す元のファイルの場所は、
+	</TD></TR>
+	<TR><TD><INPUT TYPE="text" SIZE=50 NAME="locate" VALUE="_tag_locate">にあります。
+	</TD></TR>
+        <TR><TD>今からRunTimeに移す先のファイルの場所は、
+	</TD></TR>
+	<TR><TD><INPUT TYPE="text" SIZE=50 NAME="locate" VALUE="_tag_destinate">にあります。
+	</TD></TR>
+</TABLE>
+<TABLE>
+        <TR><TD>コメント</TD></TR>
+	<TR><TD><TEXTAREA NAME="comment" COLS=50 ROWS=6></TEXTAREA></TD></TR>
+</TABLE>
+<TABLE>
+	<TR><TD>
+	<font size="+3" color="#ff0000" >
+		<INPUT TYPE="submit" NAME=method VALUE="更新しちゃえ">
+		<INPUT TYPE="reset" VALUE="だめだ！！">
+	</font>
+	</TD></TR>
+</TABLE>
+
+<INPUT TYPE=HIDDEN NAME=success VALUE=1>
+</FORM>
+</BODY>

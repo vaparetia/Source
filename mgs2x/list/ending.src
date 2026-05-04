@@ -1,0 +1,24 @@
+
+//
+//	ending.src
+//
+//	2001/08/06 S.Nojiri
+//
+//	$Id: ending.src,v 1.5 2002/08/02 11:33:25 usr04761 Exp $
+
+block .use r_plt0
+block .nocache
+block .cache
+
+
+#ifdef MGS2_XBOX_1
+l2d		2D/node/save_load_sub/save_load.l2d
+#else
+l2d		2D/node/save_load/save_load.l2d
+#endif
+icon	icon/tnkicon.cnf
+icon	icon/plticon.cnf
+
+l2d		2D/clear_code_sub/clear_code.l2d 
+l2d		2D/clear_code_sub/code_name.l2d 
+pack_all animal.tri 2D/clear_code/animal_alp_ovl.bmp

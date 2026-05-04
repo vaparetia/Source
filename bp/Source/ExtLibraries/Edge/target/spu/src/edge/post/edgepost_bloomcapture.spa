@@ -1,0 +1,171 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+	@fn			extern "C" void edgePostBloomCapture8( qword output, qword input, qword count, qword exposureLevel, qword minLuminance, qword luminanceRangeRcp )
+**/
+//--------------------------------------------------------------------------------------------------
+
+.include "edgepost_helpers.inc"
+
+
+.macro BLOOM_CAPTURE( red, green, blue )
+	
+	// Multiply by exposure level
+	fm			red, red, exposureLevel
+	fm			green, green, exposureLevel
+	fm			blue, blue, exposureLevel
+	
+	//	half luminance = max( RgbToLuminance( color ), minLuminance );
+	.reg		luminance, m
+	fm			luminance, red, lfR
+	fma			luminance, green, lfG, luminance
+	fma			luminance, blue, lfB, luminance
+	fcgt		m, luminance, minLuminance
+	selb		luminance, minLuminance, luminance, m
+	
+	//	half scale = clamp( ( luminance - minLuminance )*luminanceRangeRcp, 0.0, 1.0 );	
+	.reg		scale, m0, m1
+	fs			scale, luminance, minLuminance
+	fm			scale, scale, luminanceRangeRcp
+	fcgt		m0, kEdgePostFloatZero, scale
+	selb		scale, scale, kEdgePostFloatZero, m0
+	fcgt		m1, scale, kEdgePostFloatOne
+	selb		scale, scale, kEdgePostFloatOne, m1
+	
+	//	out_colour.xyz = ( scale / luminance ).xxx * color;
+	.reg		iLuminance
+	frest		iLuminance, luminance
+	fi			iLuminance, luminance, iLuminance
+	fm			scale, scale, iLuminance
+	fm			red, scale, red
+	fm			green, scale, green
+	fm			blue, scale, blue
+.endmacro
+
+.cfunc void edgePostBloomCapture8( qword output, qword input, qword count, qword exposureLevel, qword minLuminance, qword luminanceRangeRcp)
+
+	// luminance factor
+	.reg		lfR, lfG, lfB
+	ilf32		lfR, 0.2126f
+	ilf32		lfG, 0.7152f
+	ilf32		lfB, 0.0722f
+	
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	
+	// swizzle masks for pixels
+	.reg		kPackRedGreen, kPackBlueAlphaZero
+	il128		kPackRedGreen, "0Dd00Hh00Ll00Pp0"
+	il128		kPackBlueAlphaZero, "0BCd0FGh0JKl0NOp"
+	
+loop:
+	ai			output, output, 0x10
+	ai			input, input, 0x10
+	ai			count, count, -4
+	
+	// Load pixels
+	.reg		s0
+	lqd			s0, -0x10( input )
+	
+	// Unpack pixels component-wise
+	.reg		red, green, blue
+	shufb		red, s0, s0, kEdgePostUnpackReds
+	shufb		green, s0, s0, kEdgePostUnpackGreens
+	shufb		blue, s0, s0, kEdgePostUnpackBlues
+
+	// Convert to floats
+	EDGEPOST_U8_TO_FLOAT( red, red)
+	EDGEPOST_U8_TO_FLOAT( green, green)
+	EDGEPOST_U8_TO_FLOAT( blue, blue)
+	
+	BLOOM_CAPTURE( red, green, blue )
+	
+	// convert to unsigned
+	EDGEPOST_FLOAT_TO_U8( red, red )
+	EDGEPOST_FLOAT_TO_U8( green, green )
+	EDGEPOST_FLOAT_TO_U8( blue, blue )
+	
+	// clamp values
+	EDGEPOST_CLAMP_PIXEL8( red )
+	EDGEPOST_CLAMP_PIXEL8( green )
+	EDGEPOST_CLAMP_PIXEL8( blue )
+	
+	//	pack back colors with alpha set to zero
+	.reg		r0
+	shufb		r0, red, green, kPackRedGreen
+	shufb		s0, r0, blue, kPackBlueAlphaZero
+
+	// Store
+	stqd		s0, -0x10( output )
+	brnz		count, loop
+.endfunc
+
+.cfunc void edgePostBloomCaptureFX16( qword output, qword input, qword count, qword exposureLevel, qword minLuminance, qword luminanceRangeRcp)
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+
+	// luminance factor
+	.reg		lfR, lfG, lfB
+	ilf32		lfR, 0.2126f
+	ilf32		lfG, 0.7152f
+	ilf32		lfB, 0.0722f
+	
+	// unpacking shuffle masks
+	.reg		kUnpackShuf0, kUnpackShuf1, kUnpackShuf2
+	il128		kUnpackShuf0, "0B0F0b0f"
+	il128		kUnpackShuf1, "0C0G0c0g"
+	il128		kUnpackShuf2, "0D0H0d0h"
+	
+	.reg		kPackShuf0, kPackShuf1, kPackShuf2, kPackShuf3
+	il128		kPackShuf0, "0Bb00Dd0"
+	il128		kPackShuf1, "0Ff00Hh0"
+	il128		kPackShuf2, "ABCbEFGd"
+	il128		kPackShuf3, "ABCfEFGh"
+	
+loop:
+	ai			output, output, 0x20
+	ai			input, input, 0x20
+	ai			count, count, -4
+	
+	// Load pixels
+	.reg		s0, s1
+	lqd			s0, -0x20( input )
+	lqd			s1, -0x10( input )
+	
+	// Unpack pixels component-wise
+	.reg		red, green, blue
+	shufb		red, s0, s1, kUnpackShuf0
+	shufb		green, s0, s1, kUnpackShuf1
+	shufb		blue, s0, s1, kUnpackShuf2
+
+	// Convert to floats
+	cuflt		red, red, 11
+	cuflt		green, green, 11
+	cuflt		blue, blue, 11
+	
+	BLOOM_CAPTURE( red, green, blue )
+	
+	cfltu		red, red, 11
+	cfltu		green, green, 11
+	cfltu		blue, blue, 11
+	
+	//	pack back colors with alpha set to zero
+	.reg		r0, r1
+	shufb		r0, red, green, kPackShuf0
+	shufb		r1, red, green, kPackShuf1
+	
+	shufb		r0, r0, blue, kPackShuf2
+	shufb		r1, r1, blue, kPackShuf3
+
+	// Store
+	stqd		r0, -0x20( output )
+	stqd		r1, -0x10( output )
+	brnz		count, loop
+.endfunc

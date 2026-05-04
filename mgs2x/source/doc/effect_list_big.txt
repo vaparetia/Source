@@ -1,0 +1,74 @@
+
+********************************
+ エフェクトリスト （田中 秀幸)
+********************************
+
+-----------------------------------------
+           関数呼び出し系
+-----------------------------------------
+
+
+<    単発系    >
+   
+   ●  血煙 (SCRPAD 使用)
+       void *NewBlood_2D( FVECTOR  *center ) ;
+	 
+                 center    出現位置
+
+
+   ●  スネークやライデンなど人の息 (SCRPAD  使用)
+        void  *NewBreath(FMATRIX  *world,FVECTOR *move )
+           
+               world      頭部のマトリックス 
+               move       頭部の中心からの位置
+
+   ●  盾煙     (SCRPAD  使用)
+       void *NewShield_Smoke(FMATRIX  *world)
+
+   ●  火花    (SCRPAD  使用)
+   	void *NewSpark1(
+		int          n_prims,             /* 火花の数  */
+		FVECTOR      *center,                  /* 位置      */
+		float        min_speed,            /* 初期最小スピード  */
+		float        speed_wide,            /* 初期最大スピード  */
+		float        gravity,               /* 重力 */
+		SVECTOR      *rot,                  /* 向き */  
+		SVECTOR      *rot_wide,             /* ワイド */
+		FVECTOR      *color,                 /* 色 */
+		float        length,            /* スピードに対する火の長さの割合 */
+		int          count                  /* 表示時間 */ 
+	)
+   ●  火花２  (SCRPAD  使用)
+	void *NewSpark2(
+ 		int          n_prims,         /* 火花の数 */
+		FMATRIX      *world,           /* マトリックス*/
+		float        min_speed,        /* 最小スピード */
+		float        speed_wide,        /* 最大スピード */
+		float        gravity,           /* 重力 */
+		SVECTOR      *rot,              /* 回転 */
+		SVECTOR      *rot_wide,         /* 幅 */
+		FVECTOR      *color,            /* 色 */ 
+		float        length,           /* スピードに対する火の長さの割合 */
+		int          count              /* カウント */ 
+	)
+
+
+<     ヘッドマーク系    >
+   ●  ぴよぴよ（ノーマル） (SCRPAD  使用) 
+       void *NewPiyori(FMATRIX *world) ;
+
+   ●  ぴよぴよ（麻酔）    (SCRPAD  使用) 
+	void *NewPiyori_Anes(FMATRIX *world)
+   ●  居眠り              (SCRPAD  使用)
+	void  *New_Zzz( FMATRIX  *world)
+       
+/--------------------------------------/
+          シナリオ呼び出し
+/--------------------------------------/
+   ● 煙突煙    (SCRPAD  使用)
+
+        chara 煙突煙[New_ChimnySmoke] $s:名前 \
+	-n $w:ユニット数 \ // ５ユニットまで
+	-c $v:色 ...     \
+	-p $v:出現位置 ... //ユニット数個
+

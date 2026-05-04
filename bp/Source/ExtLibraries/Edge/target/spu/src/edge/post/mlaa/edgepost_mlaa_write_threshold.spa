@@ -1,0 +1,147 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2010 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+/*
+ * Our edge detection method is driven by per-pixel theshold values, which are written by this function.
+ * Based on a scale and base value. Each pixel's threshold is the highest value in each of its color channels multiplied
+ * with the scale. If the resulting value is smaller than the base value, it is clamped to this value.
+ * The scale controls the responsiveness of the edge detection, while the function of the base is to make sure that
+ * very dark areas are not overrepresented.
+ *
+ * Normally, the scale and base are passed as parameters, but it is possible to use the alpha channel of the input
+ * image as the scale. This is controlled by the SCALE_FROM_ALPHA define. As the maximum scale is 255 and the highest
+ * absolute difference is also 255, it is not possible to fully disable edge detection this way. The define DISABLE_ON_255
+ * provides a way to get this functionality.
+ * Each of these defines adds about 60us of computation time (distributed over the SPUs).
+ */
+ 
+.set SCALE_FROM_ALPHA, 0
+.set DISABLE_ON_255, 0
+ 
+.macro RELATIVE_THRESHOLD2(offset0, offset1)
+	.localreg	pixels0, pixels1
+	lqd			pixels0, offset0(ptr)
+	lqd			pixels1, offset1(ptr)
+	
+	// These are now the raw pixels.
+	// We want to comp the maximum of the color channels, which sadly has no specific hardware support.
+	// If anyone knows of a better way to do this, please tell.
+	
+	.localreg	reds, greens, blues
+	shufb		reds,   pixels0, pixels1, kExtractReds
+	shufb		greens, pixels0, pixels1, kExtractGreens
+	shufb		blues,  pixels0, pixels1, kExtractBlues
+	
+.if SCALE_FROM_ALPHA
+	.localreg	factor
+	shufb		factor,	pixels0, pixels1, kExtractScales
+.endif	
+	
+	// find highest channel
+	.localreg	red_greater_green, max_red_green, blue_greatest, max	
+	clgtb		red_greater_green, reds, greens
+	selb		max_red_green, greens, reds, red_greater_green
+	clgtb		blue_greatest, blues, max_red_green
+	selb		max, max_red_green, blues, blue_greatest
+	
+	// scale up in 16bit land. We don't rotate down after the mpy. We do that with shufb later.
+	.localreg	scaled_max0, scaled_max1
+	mpy			scaled_max0, max, factor
+	mpyhh		scaled_max1, max, factor
+	
+	.localreg	scaled_max
+	shufb		scaled_max, scaled_max0, scaled_max1, kShufMuliplies
+	
+	// compare with base value
+	.localreg	base_larger
+	clgth		base_larger, base, scaled_max
+	
+	.localreg	clamped_max
+	selb		clamped_max, scaled_max, base, base_larger
+.if DISABLE_ON_255
+	.localreg	disable
+	ceqhi		disable, factor, 0xff
+	selb		clamped_max, clamped_max, kMinusOne, disable
+.endif	
+
+	.localreg	result0, result1
+	shufb		result0, pixels0, clamped_max, kShufResultInsertOdd
+	selb		result1, pixels1, clamped_max, kSelbResultInsertEven
+	
+	stqd		result0, offset0(ptr_fork)
+	stqd		result1, offset1(ptr_fork)
+.endmacro
+
+
+
+.cfunc void edgePostMlaaWriteThreshold(
+	qword ptr, 
+	qword length,		// in pixels
+	qword factor,		// as 0.8 fixed
+	qword base)			// minimum value
+		
+
+	shli		base, base, 8
+	
+	.reg		kSelbResultInsertEven, kShufResultInsertOdd, kSplatBh
+		
+	.reg		kExtractReds, kExtractGreens, kExtractBlues
+	il128		kExtractReds,   "0B0b0F0f0J0j0N0n"
+	il128		kExtractGreens, "0C0c0G0g0K0k0O0o"
+	il128		kExtractBlues,  "0D0d0H0h0L0l0P0p"
+	
+.if SCALE_FROM_ALPHA
+	.reg		kExtractScales
+	il128		kExtractScales,	"0A0a0E0e0I0i0M0m"
+.endif
+
+.if DISABLE_ON_255
+	.reg		kMinusOne
+	il			kMinusOne, -1
+.endif
+	
+	il128		kSelbResultInsertEven,  0xFF000000_FF000000_FF000000_FF000000
+	il128		kShufResultInsertOdd,   "cBCDgFGHkJKLoNOP"
+	il128		kSplatBh,        "BBBBBBBB"
+	
+	.reg		kShufMuliplies
+	il128		kShufMuliplies, "BbDdFfHh"
+
+.if !SCALE_FROM_ALPHA
+	shufb		factor, factor, factor, kSplatBh
+.endif	
+	shufb		base, base, base, kSplatBh
+	
+	ai			length, length, 0x3F
+	.reg		length_mask
+	il32		length_mask, 0xFFFFFC0
+	and			length, length, length_mask
+
+loop:
+	
+	
+	.reg		ptr_fork
+	mvo			ptr_fork, ptr
+	
+	// this now gets unrolled a bunch of times to get the instruction
+	// latencies out of the way.
+	// I admit, it's a bit heavy-handed.
+	RELATIVE_THRESHOLD2(0x00,0x10)
+	RELATIVE_THRESHOLD2(0x20,0x30)
+	RELATIVE_THRESHOLD2(0x40,0x50)
+	RELATIVE_THRESHOLD2(0x60,0x70)
+	
+	RELATIVE_THRESHOLD2(0x80,0x90)
+	RELATIVE_THRESHOLD2(0xA0,0xB0)
+	RELATIVE_THRESHOLD2(0xC0,0xD0)
+	RELATIVE_THRESHOLD2(0xE0,0xF0)
+
+
+	ai			ptr, ptr, 0x100
+	ai			length, length, -0x40
+
+	brnz		length, loop 
+.endfunc

@@ -1,0 +1,92 @@
+/*
+	boss_result.txt
+	boss_resultの仕組み
+
+	2001/11/01	S.Kobayashi
+	$Id: boss_result.txt,v 1.1.1.3 2002/11/19 11:50:04 Yoshizawa1 Exp $
+
+*/
+
+0 説明
+	ボスラッシュの結果を表示する
+
+1 処理手順
+	初期化 各種変数の初期化
+		↓
+	L2Dアニメーションを再生
+	時間の計算をする
+		↓
+	表示、ボタンが押されるまで表示す続ける。
+		↓
+		↓ ボタンが押された
+		↓
+	終了
+
+
+2 関数説明
+	void SK_BossTimeAfterWrite( void )
+		シナリオから結果を後書する関数
+
+	void SK_BossResultChenge( void )
+		シナリオからストリームを変更する関数
+
+	void *SK_BossResultWakeup_Sub( int mode )
+	void SK_BossResultWakeup( void )
+		Sleep -> Wakeup状態にする
+
+	void *NewSK_BossResult( int name )
+		本体
+
+	static int GetResources( Work *work )
+		初期化関数
+
+	static void Die( Work *work )
+		終了処理関数
+
+	static void Act( Work *pWork )
+		通常実行関数
+
+	static int Signal( void *work, int signal, int value )
+		L2D用シグナル受取関数
+
+	static void DifShow( Work *pWork )
+		難度表記する関数
+
+	static void ClearCodeDisp( Work *pWork )
+		クリアコードを表示する関数
+
+	static long64 TimeLimitCheck( long64 time )
+		リミットをチェックする関数
+
+	static int AnimationAct( Work *pWork )
+		アニメーション実行関数
+
+	static void StreamRetry( Work *pWork )
+		ストリーム再生関数(リトライ機能付き)
+
+	static void SK_StreamControl( Work *pWork )
+		ストリーム管理関数
+
+	static void NormalAct( Work *pWork )
+		通常時メイン関数
+
+	static void EscapeAct( Work *pWork )
+		終了時メイン関数
+
+	static void PadAct( Work *pWork )
+		パッド管理関数
+
+	static void PadControlNormal( Work *pWork )
+		通常時パッドコントロール関数
+
+	static void AllAlphaControl( Work *pWork )
+		全てのαを管理する関数
+
+	static void PlayTimeDisp( Work *pWork , int mode )
+		闘った時間を表示する関数
+
+	static void SK_SpritePosition( SPR_OBJ **spr , float x , float y , int max )
+		L2Dスプライトオブジェに指定の場所を設定する関数
+
+	static int SprInit( Work *pWork )
+		L2DSprite初期化

@@ -1,0 +1,503 @@
+/*
+	e11c.gcl                     
+	    フォーチュン戦(E3バージョン)
+
+	2001/01/18 H.Yoshiike         
+	$Id: e11c.gcl,v 1.11 2001/05/05 12:56:20 usr03682 Exp $                      
+
+	
+*/
+
+// 各種スイッチ用define
+// ------------------------------------
+// ステージ
+#define		ST_NAME_W11C	1		// 共通プロック切り分け用
+// サウンド
+#define		SOUND			1		// サウンドデータは最初に呼ぶ
+#define		BGM				0		// BGMは敵兵コマンダーの後に呼ぶ
+// デモ
+#define		DEMO			0
+// キャラクター関係
+#define		RAIDEN			1		// SNAKEとは排他
+// ドア
+#define		SLIDE_DOOR		1		// スライドドア
+// 入出トラップ
+#define		LOAD_TRAP		1
+#define		STAGE_END		1		// ステージ終了時処理を使用可にする
+// フォグ
+#define		FOG				1
+// エフェクト関係
+#define		F_LIGHT			1		// 床照り返し管理
+// 天井
+#define		CHARA_CEIL		1		// 天井君
+// 透明壁
+#define		TR_WALL			0		// シナリオ置きの透明壁
+// ライト関係
+#define		SPOT_LIGHT		0		// スポットライト
+#define		CHARA_LIGHT		1		// キャラ専用ライト
+// オブジェ関係
+// アイテム
+#define		ITEM			0		// アイテム
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+	#define		DEBUG_MODE		0		// デバッグ開発環境
+	#define		NO_POLYDEMO		0		// ポリデモなしフラグ
+#else
+	#define		DEBUG_CHARA		1		// デバッグキャラ全体
+	#define		DEBUG_MODE		0		// デバッグ開発環境
+	#define		NO_POLYDEMO		1		// ポリデモなしフラグ
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			1		// USBキーボード
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME		w11c
+#define		KMS_NAME		w11c2
+#define		WALL_NAME1		w11c2_southwall
+#define		CEIL_NAME2		w11c2r
+#define		DOOR_NAME1		w02a_dr
+#define		LT2_NAME		w11
+#define		R_MT_FILE		rai_w11c
+
+// キャラクター関係
+#if d:RAIDEN
+	#define		PLAYER		スネーク	// モーションができるまで名前はスネーク
+#else
+	#define		PLAYER		スネーク
+#endif
+
+// ローカル変数
+
+
+// include
+// ------------------------------------
+#include "rai_w11c.mh"		// 強制モーションリスト
+#include "stdch.h"
+#include "sload.h"
+#include "jump.h"
+#include "sound.h"
+#include "item_info.h"
+#include "w11abc_common.h"
+#include "w11bc_common.h"
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+
+// マップ設定
+// ------------------------------------
+chara マップ 昇降機ホール -k d:KMS_NAME -h d:HZX_NAME,0 -l d:LT2_NAME
+
+eval($s:d_num = not_demo);
+
+// ボス用gclのinclude
+#include "e11c_boss.h"
+
+command マップ設定 昇降機ホール -set {
+	// デモじゃないときはこっちをセット
+	// ゲームのみ使用
+	// サウンド、キャラクターのセット
+	// ------------------------------------
+	#if d:SOUND	
+		@サウンド設定				// データは最初に呼ぶ。w11abc_common.hで定義
+	#endif
+		@常駐キャラ設定				// stdch.hで定義
+		@ローカル変数初期化			// w11abc_common.hで定義
+		@設定値変更					// w11abc_common.hで定義
+		@スネーク設定				
+		@E3撮影用 
+		@ボスフォーチュン			// w11c_boss.hで定義
+		@共通シネマスクリーンセット	// w11c_boss.hで定義
+		@フォーチュン戦オイル燃え	// w11c_boss.hで定義
+	#if d:BGM	
+		@ＢＧＭ設定					// プレイヤー→敵兵→BGMの順で呼ぶ。w11abc_common.hで定義
+	#endif
+	// ステージ、オブジェクト関連
+	// ------------------------------------
+	#if d:ITEM
+		@アイテム設置				// w11abc_common.hで定義
+	#endif
+	#if d:F_LIGHT
+		@床照り返し設定				// リニアガンが出るなら必要
+	#endif
+
+		@カメラセット				// w11abc_common.hで定義
+		@昇降機ホールカメラ設定
+
+	#if d:CHARA_LIGHT
+		@キャラ用ライト設置			// w11abc_common.hで定義
+	#endif
+
+	#if d:DEBUG_CHARA
+	//	@デバッグキャラセット
+		@ＵＳＢキーボードセット
+		@遠近ぼかしセット
+	#endif
+
+
+	// ゲームとデモ両方で使用
+	// ------------------------------------
+	// マップ切り替え、ロード、ドア
+	// ------------------------------------
+#if d:SLIDE_DOOR
+	@ドア設置					// w11abc_common.hで定義
+#endif
+	// ステージ、オブジェクト関連
+	// ------------------------------------
+#if d:CHARA_CEIL
+	@昇降機ホール天井設置			// w11abc_common.hで定義
+	@天井崩れ						// w11bc_common.hで定義
+#endif
+	@昇降機ホール揺れライト設定		// w11abc_common.hで定義
+	@昇降機ホール壁ライト設定		// w11abc_common.hで定義
+	@昇降機ホール壁スポットライト	// w11abc_common.hで定義
+	@昇降機ホールオブジェ設置 0		// w11bc_common.hで定義
+//	@昇降機ホールスポットライト設定 // w11abc_common.hで定義
+	@昇降機							// w11c_boss.hで定義
+#if d:FOG
+	@フォグ設定					// w11abc_common.hで定義
+#endif
+}
+
+if($s:d_num == not_demo) {
+	// 無線用include ※位置は動かさないこと
+	#include "cdc_common.h"
+}
+
+
+// 全てのセットが終わったところでフェードイン
+if( $s:登場ポイント == sp_w11b_w11c_0 ) {
+	//初期マップの表示
+	command マップ表示 -show 昇降機ホール
+	// 全てのセットが終わったところでフェードイン
+	@ステージ開始時処理 d:LOAD_TYPE:NO_MOVE_TYPE フォーチュン戦スタート位置 0 d:M_TYPE:WALK_CHANGE
+}
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// 全マップ共通
+	// エフェクト関係
+	// -----------------------------------
+	proc 床照り返し設定 {
+		#if d:DEBUG_PRINT
+			print 'f_light_set'
+		#endif
+
+		chara 床照り返し管理 床照り返し
+	}
+
+
+
+// 各マップ別設定
+// ------------------------------------
+// 昇降機ホール
+	// 各種カメラの設定
+	// ------------------------------------
+	proc 昇降機ホールカメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w11c_camera_set'
+		#endif
+
+		// 通常カメラ
+		trap ca021 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 3250 2250 200 400
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b -3000,-41700,0 3000,d:CAM_MAX,10250 \
+					-l -3000,-43750,-6750 3000,d:CAM_MAX,4326 \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 6500 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-s $3
+			}
+
+		// 荷物の裏の匍匐時カメラ
+		trap ca022 d:PLAYER \
+			-mask ？ \
+			-state 1,2 \	//しゃがみor匍匐
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 0 \	
+					-b -2500,-40000,0 2500,d:CAM_MAX,10500 \
+					-l -2500,d:CAM_MIN,-6750 2500,d:CAM_MAX,3181 \
+					-r 800,2048,0 \
+					-f 6000 \
+					-a 200 \
+					-i 3 -1 0 0 \
+					-s $3
+			}
+
+		// 手前の壁に張りついたときのカメラ
+		trap ca023 d:PLAYER \
+			-mask ？ \
+			-state 4 \	// 張りつき
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 0 \	
+					-b -2500,-40000,0 5438,d:CAM_MAX,5438 \
+					-l -2500,d:CAM_MIN,4081 2500,d:CAM_MAX,4081 \
+					-r 897,2048,0 \
+					-f 7000 \
+					-a 200 \
+					-i 1 -1 0 0 \
+					-s $3
+			}
+	}
+
+
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+// 以下仮キャラ用proc
+// -----------------------------------------------------------------------------------
+// 仮キャラ
+// ------------------------------------
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+	// プレイヤー 
+	// ------------------------------------
+	proc スネーク設定 {
+		#if d:DEBUG_PRINT
+			print 'player_set'
+		#endif
+
+		chara プレイヤー d:PLAYER \
+			-p $i:プレイヤー初期Ｘ位置,$i:プレイヤー初期Ｙ位置,$i:プレイヤー初期Ｚ位置 \
+//			-p 0, -46000, 23000 \
+			-d 0,$i:プレイヤー初期方向,0 \
+			-s 0 \
+			-m sna_def -a snake -o rai_common
+
+		//バンダナ
+		chara ロープモデル３ バンダナ１ \
+			-n sna_bdn1 \
+			-d 1 \
+			-y スネーク \
+			-z 12 \
+			-x 0,60,-90 \
+			-m 12 \
+			-p 250 \
+			-k 350 \
+			-o 110 \
+			-f 1
+
+		chara ロープモデル３ バンダナ２ \
+			-n sna_bdn2 \
+			-d 1 \
+			-y スネーク \
+			-z 12 \
+			-x 0,50,-90 \
+			-m 22 \
+			-p 250 \
+			-k 350 \
+			-o 110 \
+			-f 1
+
+			// はりつき時のみＬＯＤを使用する
+//			chara ＬＯＤ制御 プレイヤーＬＯＤ \
+//					-name d:PLAYER \
+//					-type 0 \
+//					-model sna_def_sh \
+//					-value d:TRP_STATE_BEHINDCAMERA_ENABLE
+	}
+
+	proc E3撮影用 {
+		chara マルチウェイトキャラ マルチ \
+			-name d:PLAYER \
+			-model sna_def_mh
+
+		chara 臨時顔アニメキャラ アニメキャラ \
+			-chara	d:PLAYER
+	}
+
+	proc ＵＳＢキーボードセット {
+		chara USBキーボード実行 ＵＳＢキーボード \
+			-e d:KBD_R	{ 	command メニュー設定 -menu on -gage on -radar on -subwin on	} \
+			-e d:KBD_T	{	command メニュー設定 -menu off -gage off -radar off -subwin off	} \
+			-e d:KBD_F9 {
+				//mesg 警備兵 警備兵Ａ ルート変更 27 -5000,3000,-9000 １Fリフレッシュルーム
+			} \
+			-e d:KPD_0	{ /* restart */ } \
+			-e d:KPD_PLUS		{ mesg  プットオブジェ 空中文字 on } \
+			-e d:KPD_MINUS		{ mesg  プットオブジェ 空中文字 off } \
+			-e d:KPD_ENTER		{ /* mesg Ｃ４ Ｃ４ bomb */ } \
+			-e d:KBD_ESC {	mesg 臨時顔アニメキャラ アニメキャラ モーション再生 normal 30
+							mesg delay カメラディレイ kill
+							mesg 臨時顔アニメキャラ アニメキャラ 視線変更 -1
+							mesg 遠景ぼかし 遠景ぼかし１ off
+							mesg 遠景ぼかし 遠景ぼかし２ off
+							mesg 遠景ぼかし 遠景ぼかし３ off
+							mesg 近景ぼかし 近景ぼかし１ off
+							mesg 近景ぼかし 近景ぼかし２ off
+							mesg 近景ぼかし 近景ぼかし３ off
+						} \
+			-e d:KBD_F1	{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_speech_a 30 } \
+			-e d:KBD_F2 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_speech_i 30 } \
+			-e d:KBD_F3 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_speech_u 30 } \
+			-e d:KBD_F4 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_speech_e 30 } \
+			-e d:KBD_F5 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_speech_o 30 } \
+			-e d:KBD_F6 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_speech_n 30 } \
+			-e d:KBD_F7 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_teeth 30 } \
+			-e d:KBD_F8 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_scream 0 } \
+			-e d:KBD_F9 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_relax 30 } \
+			-e d:KBD_F10{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_surprise 30 } \
+			-e d:KBD_F11{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_sigh 30 } \
+			-e d:KBD_F12{ mesg 臨時顔アニメキャラ アニメキャラ 視線変更 2 } \
+			-e d:KBD_Q	{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_tension 30 } \
+			-e d:KBD_W	{
+						  chara delay カメラディレイ \
+							-time 1 \
+							-exec {
+								mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_exciting 30
+								return 60
+							}
+						} \
+			-e d:KBD_E	{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_pain 30 } \
+			-e d:KBD_R	{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_T12a1D71 30 } \
+			-e d:KBD_T	{
+							mesg 臨時顔アニメキャラ アニメキャラ 視線変更 0 120 -7707,-3929,-14119
+							chara delay カメラディレイ \
+								-time 90 \
+								-exec {
+									mesg 臨時顔アニメキャラ アニメキャラ 視線変更 0 60 6710,-3960,-18261
+								}
+						} \
+			-e d:KBD_Y	{
+						mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_sneeze 0
+						//mesg プレイヤー d:PLAYER motion d:モーションリスト:sna_m9_behind_squat_r_sneez_e3 \
+						//	 -1 -1 -1 0x00000004
+						} \
+			-e d:KBD_U	{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_teeth 30
+						  chara delay カメラディレイ \
+							-time 20 \
+							-exec {
+									mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_surprise 20
+							}
+						  chara delay カメラディレイ \
+							-time 40 \
+							-exec {
+									mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_teeth 20
+							}
+						} \
+			-e d:KBD_I	{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_teeth 20
+						  chara delay カメラディレイ \
+							-time 30 \
+							-exec {
+									mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_relax 20
+							}
+						  chara delay カメラディレイ \
+							-time 60 \
+							-exec {
+									mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_surprise 20
+							}
+						  chara delay カメラディレイ \
+							-time 90 \
+							-exec {
+									mesg 臨時顔アニメキャラ アニメキャラ モーション再生  normal 20
+							}
+						} \
+			-e d:KBD_O	{
+							mesg 臨時顔アニメキャラ アニメキャラ 視線変更 0 90 \
+									($i:プレイヤー位置Ｘ-1000),($i:プレイヤー位置Ｙ-200),($i:プレイヤー位置Ｚ+3000)
+							chara delay カメラディレイ \
+								-time 90 \
+								-exec {
+									mesg 臨時顔アニメキャラ アニメキャラ 視線変更 0 90 \
+									($i:プレイヤー位置Ｘ+1000),($i:プレイヤー位置Ｙ-200),($i:プレイヤー位置Ｚ+3000)
+								}
+							chara delay カメラディレイ \
+								-time 180 \
+								-exec {
+									mesg 臨時顔アニメキャラ アニメキャラ 視線変更 -1
+								}
+						} \
+			-e d:KBD_P	{
+						  chara delay カメラディレイ \
+							-time 1 \
+							-exec {
+									command ゲット敵兵座標 敵兵:01 $i:敵兵Ｘ $i:敵兵Ｙ $i:敵兵Ｚ
+									mesg 臨時顔アニメキャラ アニメキャラ 視線変更 0 5 $i:敵兵Ｘ $i:敵兵Ｙ $i:敵兵Ｚ
+									return 5
+							}
+						} \
+			-e d:KBD_1 { mesg 遠景ぼかし 遠景ぼかし１ on } \
+			-e d:KBD_2 { mesg 遠景ぼかし 遠景ぼかし２ on } \
+			-e d:KBD_3 { mesg 遠景ぼかし 遠景ぼかし３ on } \
+			-e d:KBD_4 { mesg 近景ぼかし 近景ぼかし１ on } \
+			-e d:KBD_5 { mesg 近景ぼかし 近景ぼかし２ on } \
+			-e d:KBD_6 { mesg 近景ぼかし 近景ぼかし３ on } \
+			-e d:KPD_MINUS {
+//							mesg プレイヤー スネーク position \
+//							2966 2000 -15180
+						} \
+			-e d:KPD_NUMLOCK {
+//					mesg プット大ガラスオブジェ でかガラス 割れる
+			} \
+			-e d:KPD_7 {
+				mesg プレイヤー d:PLAYER shadow 1
+			} \
+			-e d:KPD_8 {
+				mesg プレイヤー d:PLAYER shadow 0
+			} \
+			-e d:KPD_9 {
+				mesg コマンダー 敵兵セット 視界オン
+			} \
+
+			-e d:KBD_L {
+								mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_teeth 40
+								chara delay カメラディレイ \
+									-time 20 \
+									-exec {
+											mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_tension 30
+									}
+			} \
+			-e d:KBD_A {
+//				mesg プレイヤー d:PLAYER position 1000 1000 5000
+				command プレイヤー無敵セット
+			 } \
+			-e d:KBD_B {
+				mesg コマンダー 敵兵セット 視界オフ
+			} \
+			-e d:KBD_0 { /* restart */}
+	}
+
+	proc 遠近ぼかしセット {
+		chara 遠景ぼかし 遠景ぼかし１ \
+			-plane 4 -near 1000 -far 5000
+
+		chara 遠景ぼかし 遠景ぼかし２ \
+			-plane 4 -near 5000 -far 10000
+
+		chara 遠景ぼかし 遠景ぼかし３ \
+			-plane 4 -near 10000 -far 15000
+
+		chara 近景ぼかし 近景ぼかし１ \
+			-plane 3 -near 0 -far 1000
+
+		chara 近景ぼかし 近景ぼかし２ \
+			-plane 3 -near 0 -far 3000
+
+		chara 近景ぼかし 近景ぼかし３ \
+			-plane 3 -near 0 -far 5000
+	}

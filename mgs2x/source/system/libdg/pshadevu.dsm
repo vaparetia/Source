@@ -1,0 +1,444 @@
+;
+;	pshadevu.dsm
+;	プリシェード用マイクロサブルーチン
+;
+;	1999/09/29 K.Takabe
+;	$Id: pshadevu.dsm,v 1.1.1.3 2002/11/19 11:42:22 Yoshizawa1 Exp $
+;
+
+; ================================================================
+
+.global PreshadeVu0
+.global PreshadeVu0_Func
+
+; プログラム呼び出しＶＩＦコード一覧
+PreshadeVu0_Func:
+	.word	( StartPreshade / 8 )
+	.word	( PointLightCalc / 8 )
+
+.data
+.DmaPackVif 0			; タグ中のＶＩＦコード無効
+
+; プログラム転送ＤＭＡタグ定義
+PreshadeVu0:			; マイクロプログラム読み込み用タグ記憶ポインタ
+	DMAref *, _vu_prog	; DMArefによるデータ転送を行う
+	.EndDmaData			; DMAパケットの終了
+
+
+; プログラム記述部
+.DmaData _vu_prog		; DMArefで転送するデータの宣言
+	MPG 0,*				; マイクロプログラム転送VIFcode
+
+.vu
+
+
+; ================================================================
+; vf0:
+; vf1:汎用
+; vf2:定数(x:2*0.75 y:-0.75 z:0 w:0)
+; vf3:定数(x:1 y:1 z:1 w:255)
+; vf4-vf7: オブジェクト座標変換マトリクス（ＣＰＵから設定）
+; vf8:汎用
+; vf9:汎用
+; vf10: 累積カラーベクトル
+; vf11-vf15:空き
+; vf16-vf19:入力データ
+; vf20-vf23:入力データ待避
+; vf24-vf26:平行光源方向ベクトル
+; vf27:平行光源カラー
+; vf28x-vf30x: 座標変換後の法線Ｘ、Ｙ、Ｚ
+; vf31:環境光カラー
+;
+
+; マイクロプログラム分岐テーブル
+;
+;	upper		.					lower		.
+	nop								b			StartPreshade		; 
+	nop								nop								; 
+	nop								b			PointLightCalc		; 
+	nop								nop								; 
+	nop								b			SpotLightCalc		; 
+	nop								nop								; 
+	nop								b			BlackLightCalc		; 
+	nop								nop								; 
+	nop								b			PointLightCalc2		; 
+	nop								nop								; 
+	nop								b			LineLightCalc		; 
+	nop								nop								; 
+	nop[e]							nop								; 
+	nop								nop								; 
+
+; ================================================================
+; 「レジスタ初期化＆グローバル平行光源＆アンビエント計算」
+; μプログラムインターフェイス
+; vf8:変換前頂点（整数）
+; vf9:変換前法線（整数）
+;
+
+StartPreshade:
+	itof0.xyzw	vf8,vf8				nop								; vf8 = 座標変換前頂点座標
+	itof12.xyz	vf9,vf9				nop								; vf9 = 座標変換前法線
+	mulax.xyzw	ACC,vf4,vf8			nop								; 
+	madday.xyzw	ACC,vf5,vf8			nop								; 
+	maddaz.xyzw	ACC,vf6,vf8			nop								; 
+	maddw.xyzw	vf8,vf7,vf0			nop								; vf8 = 頂点座標
+	mulax.xyz	ACC,vf4,vf9			nop								; 
+	madday.xyz	ACC,vf5,vf9			nop								; 
+	maddz.xyz	vf9,vf6,vf9			nop								; vf9 = 法線
+	mulax.x		ACC,vf24,vf9		nop								; 
+	madday.x	ACC,vf25,vf9		nop								; 
+	maddz.x		vf10,vf26,vf9		nop								; vf10x = 平行光源影響度
+	addx.x		vf28,vf0,vf9		nop								; vf28x = 法線Ｘ成分
+	addy.x		vf29,vf0,vf9		nop								; vf29x = 法線Ｙ成分
+	addz.x		vf30,vf0,vf9		nop								; vf30x = 法線Ｚ成分
+	maxx.x		vf10,vf10,vf0		nop								; vf10x = 平行光源影響度＞０
+	addax.xyz	ACC,vf31,vf0		nop								; ACC = アンビエント
+	maddx.xyz	vf10,vf27,vf10		nop								; vf10 = 累積カラー初期化（＝平行光源＋アンビエント）
+	nop[e]							nop								; 
+	nop								nop								; 
+
+; ================================================================
+; 「点光源計算」
+; μプログラムインターフェイス
+; vf16:入力ベクトル
+; vf17:入力パラメータ（x: y:r_range z: w: ）
+; vf18:入力カラー
+; ＜計算内容について＞
+; len = VecLength( vec ) ;
+; scale = ( r_range - len ) / r_range ;
+; vec = VecNormalize( vec ) ;
+; force = VecInnerProduct( normal , vec ) ;
+; if ( force < 0 ) force = 0 ;
+; total_color += color * force * 1.5 ;
+; 以上の計算を最適化したもの
+;
+PointLightCalc:
+	mul.yz		vf19,vf16,vf16		iaddiu			vi2,vi0,0x0040	; vf19y = vf16y^2 ; vf19z = vf16z^2
+	mulax.x		ACC,vf16,vf16		move.xyzw		vf20,vf16		; ACCx = vf16x^2
+	mul.y		vf22,vf17,vf17		nop								; vf22y = range^2 ;
+	;nop	nop
+	madday.x	ACC,vf3,vf19		nop								; ACCx = vf16x^2 + vf16y^2
+	maddz.x		vf19,vf3,vf19		nop								; vf19x = vf16x^2 + vf16y^2 + vf16z^2 = len^2
+	mulax.x		ACC,vf28,vf20		nop								; ACCx = vf16x*vf28x
+	madday.x	ACC,vf29,vf20		nop								; ACCx = vf16x*vf28x+vf16y*vf28y
+	maddz.x		vf20,vf30,vf20		nop								; vf20x = vf16x*vf28x+vf16y*vf28y+vf16z*vf28z
+	subx.y		vf22,vf22,vf19		sqrt			Q,vf19x			; ( r_range ^ 2 - len ^ 2 )計算,Q = len
+	nop								nop								; 
+	nop								nop								; 
+	max.x		vf20,vf20,vf0		nop								; vf20x = ( vf20x < 0 ) ? 0 : vf20x
+	itof0.xyz	vf22,vf18			fmand			vi1,vi2			; ( r_range ^ 2 - len ^ 2 ) < 0 をチェック
+	nop								ibne			vi1,vi0,point_end	; ( r_range ^ 2 - len ^ 2 ) < 0 なら終了
+	mulay.x		ACC,vf2,vf17		nop								; ACCx = 1.5 * ( r_range )
+	msubq.x		vf21,vf2,Q			waitq							; vf21x = 1.5 * ( r_range - len )
+	mulq.y		vf21,vf17,Q			nop								; vf21y = r_range * len
+	nop[m]							nop								; 
+	nop								nop								; 
+	nop								nop								; ( r_range - len ) < 0 をチェック
+	nop								div				Q,vf21x,vf21y	; Q = 1.5 / len * ( r_range - len ) / r_range
+	;nop	nop
+	;nop	nop
+	;nop	nop
+	;nop	nop
+	;nop	nop
+	;nop	nop
+	mulq.x		vf20,vf20,Q			waitq							; vf20 = vf20*正規化補正値 = 光源影響度
+	;nop	nop
+	;nop	nop
+	addax.xyz	ACC,vf10,vf0		nop								; ACC = color
+	maddx.xyz	vf10,vf22,vf20		nop								; vf10 = color + vec * 光源影響度
+point_end:
+
+	nop[e]							nop								; 
+	nop								nop								; 
+
+
+; ================================================================
+; 「スポット光源計算」
+; μプログラムインターフェイス
+; vf16:入力ベクトル
+; vf17:入力パラメータ（x: y:r_range z:umbra w:penumbra ）
+; vf18:入力カラー
+; vf19:スポット方向ベクトル(dir)
+; ＜計算内容について＞
+; len = VecLength( vec ) ;
+; scale = ( r_range - len ) / r_range ;
+; vec = VecNormalize( vec ) ;
+; force = VecInnerProduct( normal , vec ) ;
+; if ( force < 0 ) force = 0 ;
+; cos_angle = VecInnerProduct( dir , vec )
+; if ( cos_angle > umbra ) spot_force = 1.0 ;
+; else if ( cos_angle < penumbra ) spot_force = 0.0 ;
+; else spot_force = ( penumbra - cos_angle ) / ( penumbra - umbra ) ;
+; total_color += color * force * spot_force * 1.5 ;
+; 以上の計算を最適化したもの
+;
+SpotLightCalc:
+	mul.xyz		vf11,vf16,vf19		nop								; vf11 = vf16 * vf19
+	mul.yz		vf15,vf16,vf16		iaddiu			vi2,vi0,0x0040	; vf15y = vf16y^2 ; vf15z = vf16z^2
+	mulax.x		ACC,vf16,vf16		move.xyzw		vf20,vf16		; ACCx = vf16x^2
+	mul.y		vf22,vf17,vf17		move.xyzw		vf21,vf17		; vf22y = range^2, vf21 = vf17
+	subz.w		vf12,vf17,vf17		nop								; vf12w = penumbra - umbra
+	madday.x	ACC,vf3,vf15		nop								; ACCx = vf16x^2 + vf16y^2
+	maddz.x		vf15,vf3,vf15		nop								; vf15x = vf16x^2 + vf16y^2 + vf16z^2 = len^2
+	mulax.x		ACC,vf28,vf20		nop								; ACCx = vf16x*vf28x
+	madday.x	ACC,vf29,vf20		nop								; ACCx = vf16x*vf28x+vf16y*vf28y
+	maddz.x		vf20,vf30,vf20		nop								; vf20x = vf16x*vf28x+vf16y*vf28y+vf16z*vf28z
+	subx.y		vf22,vf22,vf15		sqrt			Q,vf15x			; ( r_range ^ 2 - len ^ 2 )計算,Q = len
+	mulax.w		ACC,vf0,vf11		nop								; ACCw = vf11x
+	madday.w	ACC,vf0,vf11		nop								; ACCw = vf11x + vf11y
+	maddz.w		vf11,vf0,vf11		nop								; vf11w = angle * len = cos( rad ) * len
+	itof0.xyz	vf22,vf18			fmand			vi1,vi2			; ( r_range ^ 2 - len ^ 2 ) < 0 をチェック
+	max.x		vf20,vf20,vf0		ibne			vi1,vi0,spot_end	; ( r_range ^ 2 - len ^ 2 ) < 0 なら終了
+	mulay.x		ACC,vf2,vf17		nop								; ACCx = 1.5 * ( r_range )
+	msubq.x		vf21,vf2,Q			waitq							; vf21x = 1.5 * ( r_range - len )
+	mulq.y		vf21,vf17,Q			nop								; vf21y = r_range * len
+	mulq.zw		vf21,vf21,Q			nop								; vf21z = umbra * len ; vf21w = penumbra * len ;
+	mulq.w		vf12,vf12,Q			nop								; vf12w = ( penumbra - umbra ) * len 
+	;nop	nop
+	nop[m]							div				Q,vf21x,vf21y	; Q = 1.5 / len * ( r_range - len ) / r_range
+	subw.w		vf13,vf11,vf21		iaddiu			vi2,vi0,0x0010	; vf13w = ( angel - penumbra ) * len
+	miniz.w		vf11,vf11,vf21		nop								; if ( angle > umbra ) vf11w = umbra*len
+	nop								nop								; 
+	nop								nop								; 
+	nop								fmand			vi1,vi2			; 
+	subw.w		vf11,vf21,vf11		ibne			vi1,vi0,spot_end; vf11w = ( penumbra - angle ) * len
+	mulq.x		vf20,vf20,Q			waitq							; vf20x = vf20*正規化補正値 = 光源影響度
+	;nop	nop
+	;nop	nop
+	nop								div				Q,vf11w,vf12w	; Q = ( penumbra - angle ) / ( penumbra - umbra )
+	;nop	nop
+	;nop	nop
+	;nop	nop
+	;nop	nop
+	;nop	nop
+	;nop	nop
+	mulq.x		vf20,vf20,Q			waitq							; 
+	;nop	nop
+	;nop	nop
+	addax.xyz	ACC,vf10,vf0		nop								; ACC = color
+	maddx.xyz	vf10,vf22,vf20		nop								; vf10 = color + vec * 光源影響度
+spot_end:
+	nop[e]							nop								; 
+	nop								nop								; 
+
+; ================================================================
+; 「黒点光源計算」
+; μプログラムインターフェイス
+; vf16:入力ベクトル
+; vf17:入力パラメータ（x: y:r_range z: w: ）
+; ＜計算内容について＞
+; len = VecLength( vec ) ;
+; scale = ( r_range - len ) / r_range ;
+; vec = VecNormalize( vec ) ;
+; force = VecInnerProduct( normal , vec ) ;
+; if ( force < 0 ) force = 0 ;
+; total_color *= ( 1.0 - force ) ;
+; 以上の計算を最適化したもの
+;
+
+BlackLightCalc:
+	mul.yz		vf19,vf16,vf16		div				Q,vf0w,vf17y	; vf19y = vf16y^2 ; vf19z = vf16z^2, Q = 1/r_range
+	mulax.x		ACC,vf16,vf16		move.xyzw		vf20,vf16		; ACCx = vf16x^2
+	mul.y		vf22,vf17,vf17		iaddiu			vi2,vi0,0x0040	; vf22y = range^2 ;
+	mulx.xyzw	vf11,vf0,vf0		nop								; vf11 = 0
+	;nop	nop
+	madday.x	ACC,vf3,vf19		nop								; ACCx = vf16x^2 + vf16y^2
+	maddz.x		vf19,vf3,vf19		nop								; vf19x = vf16x^2 + vf16y^2 + vf16z^2 = len^2
+	addq.x		vf22,vf0,Q			waitq							; vf22x = 1 / r_range
+	subx.y		vf22,vf22,vf19		sqrt			Q,vf19x			; ( r_range ^ 2 - len ^ 2 )計算,Q = len
+	addw.xyzw	vf11,vf11,vf0		nop								; vf11 = 1.0
+	nop								nop								; 
+	nop								nop								; 
+	nop								fmand			vi1,vi2			; ( r_range ^ 2 - len ^ 2 ) < 0 をチェック
+	nop								ibne			vi1,vi0,black_end	; ( r_range ^ 2 - len ^ 2 ) < 0 なら終了
+	adday.x		ACC,vf0,vf17		move.y			vf21,vf17		; ACCx = ( r_range ), vf21y = r_range
+	msubq.x		vf21,vf11,Q			waitq							; vf21x = ( r_range - len )
+	mulx[m].xyzw	vf22,vf10,vf22	nop								; vf22 =  total_color / r_ragne
+.if 1
+	; 実はこれは間違っている・・・
+	addax.xyz	ACC,vf10,vf0		nop								; ACC = total_color
+	msubx.xyz	vf10,vf22,vf21		nop								; vf22 = total_color - total_color * force ;
+.else
+	; 本当はこっちの方が正しい・・・
+	mulx.xyz	vf10,vf22,vf21		nop								; vf22 = total_color * force
+.endif
+black_end:
+	nop[e]							nop								; 
+	nop								nop								; 
+
+
+
+; ================================================================
+; 「点光源計算（簡易版）」
+; μプログラムインターフェイス
+; vf16:入力ベクトル
+; vf17:入力パラメータ（x:sq y:r_range z: w: ）
+; vf18:入力カラー
+; 
+PointLightCalc2:
+.if 0
+	mul.yz		vf19,vf16,vf16		nop								; 
+	mulax.x		ACC,vf16,vf16		nop								; 
+	;nop	nop
+	;nop	nop
+	madday.x	ACC,vf3,vf19		nop								; 
+	maddz.x		vf19,vf3,vf19		nop								; vf19x = sq * sq
+	add.y		vf17,vf17,vf17		nop								; vf17y = 2*r_range
+	nop								loi				0.5				; 
+	muli.w		vf17,vf0,I			nop								; vf17w = 0.5
+	itof0[m].xyzw	vf22,vf18		sqrt			Q,vf19x			; vf22 = color
+	addq.x		vf17,vf0,Q			waitq							; vf17x = sq
+	;nop	nop
+	;nop	nop
+	subx.y		vf20,vf17,vf17		div				Q,vf17w,vf17x	; vf20y = 2*r_range - sq, Q = 0.5/sq = 1/(2*sq)
+	nop								nop								;
+	nop								iaddiu			vi2,vi0,0x0040	;
+	nop								nop								;
+	muly.xyzw	vf22,vf22,vf20		fmand			vi1,vi2			;
+	nop								ibne			vi1,vi0,point_end9 ;
+	nop								nop								; 
+	mulq.xyzw	vf22,vf22,Q			waitq							; 
+	add.xyz		vf10,vf10,vf22		nop								; 
+.else
+	mul.yz		vf19,vf16,vf16		div				Q,vf0w,vf17y	; vf19y = vf16y^2 ; vf19z = vf16z^2, Q = 1/r_range
+	mulax.x		ACC,vf16,vf16		move.xyzw		vf20,vf16		; ACCx = vf16x^2
+	mul.y		vf22,vf17,vf17		iaddiu			vi2,vi0,0x0040	; vf22y = range^2 ;
+	;nop	nop
+	;nop	nop
+	madday.x	ACC,vf3,vf19		nop								; ACCx = vf16x^2 + vf16y^2
+	maddz.x		vf19,vf3,vf19		nop								; vf19x = vf16x^2 + vf16y^2 + vf16z^2 = len^2
+	addq.x		vf22,vf0,Q			waitq							; vf22x = 1 / r_range
+	subx.y		vf22,vf22,vf19		sqrt			Q,vf19x			; ( r_range ^ 2 - len ^ 2 )計算,Q = len
+	nop								nop								; 
+	nop								nop								; 
+	nop								nop								; 
+	itof0.xyz	vf18,vf18			fmand			vi1,vi2			; ( r_range ^ 2 - len ^ 2 ) < 0 をチェック
+	nop								ibne			vi1,vi0,point_end	; ( r_range ^ 2 - len ^ 2 ) < 0 なら終了
+	mulay.x		ACC,vf2,vf17		move.y			vf21,vf17		; ACCx = 1.5 * ( r_range ), vf21y = r_range
+	msubq.x		vf21,vf2,Q			waitq							; vf21x = 1.5 * ( r_range - len )
+	mulx[m].xyzw	vf22,vf18,vf22	nop								; vf22 = color / r_ragne
+	nop								nop								; 
+	nop								nop								; ( r_range - len ) < 0 をチェック
+	addax.xyzw	ACC,vf10,vf0		nop								; ACC = total_color
+	maddx.xyzw	vf10,vf22,vf21		nop								; vf10 = total_color + color * force ;
+.endif
+point_end9:
+
+	nop[e]							nop								; 
+	nop								nop								; 
+
+
+
+
+; ================================================================
+; 「線光源計算」
+; μプログラムインターフェイス
+; vf08:頂点座標
+; vf16:始点座標(start_pos)
+; vf17:入力パラメータ（x: y:r_range z: w: ）
+; vf18:入力カラー
+; vf19:線方向ベクトル(dir)
+; ＜計算内容について＞
+; end_pos = start_pos + dir * dir.w ;
+; n1 = VecInnerProduct( start_pos, dir );
+; n2 = VecInnerProduct( end_pos, dir );
+; n3 = VecInnerProduct( pos, dir );
+; if ( n1 > n3 ){
+;  vec = pos - start_pos ;
+; } else if ( n2 < n3 ){
+;  vec = pos - end_pos ;
+; }else {
+;  vec = pos - ( start_pos + dir * ( n3 - n1 ) ) ;
+; }
+; len = VecLength( vec ) ;
+; scale = ( r_range - len ) / r_range ;
+; vec = VecNormalize( vec ) ;
+; force = VecInnerProduct( normal , vec ) ;
+; if ( force < 0 ) force = 0 ;
+; total_color += color * force * 1.5 ;
+; 以上の計算を最適化したもの
+;
+LineLightCalc:
+	addax.xyz	ACC ,vf16,vf00		nop								; 
+	maddw.xyz	vf20,vf19,vf19		nop								; vf20 = end_pos
+	addy.x		vf11,vf00,vf19		nop								; vf11x = dir.y
+	addz.x		vf12,vf00,vf19		nop								; vf12x = dir.z
+	mulax.x		ACC ,vf19,vf16		nop								; 
+	madday.x	ACC ,vf11,vf16		nop								; 
+	maddz.x		vf13,vf12,vf16		nop								; vf13x = n1
+	mulax.x		ACC ,vf19,vf20		nop								; 
+	madday.x	ACC ,vf11,vf20		nop								; 
+	maddz.x		vf14,vf12,vf20		nop								; vf14x = n2
+	mulax.x		ACC ,vf19,vf08		nop								; 
+	madday.x	ACC ,vf11,vf08		nop								; 
+	maddz.x		vf15,vf12,vf08		nop								; vf15x = n3
+
+	sub.x		vf00,vf15,vf13		nop								; n2 - n0
+	nop								nop								; 
+	sub.x		vf00,vf14,vf15		nop								; 
+	nop								iaddiu			vi02,vi00,0x80	; 
+	nop								fmand			vi01,vi02		; 
+	nop								ibne			vi01,vi00,ll0	; if ( n3 < n1 ) goto ll0
+	nop								fmand			vi01,vi02		; 
+	nop								ibne			vi01,vi00,ll1	; 
+	suba.xyz	ACC ,vf08,vf16		nop								; if ( n2 < n3 ) goto ll1
+	msubax.xyz	ACC ,vf19,vf15		b				ll2				; 
+	maddx.xyz	vf16,vf19,vf13		nop								; vf16 = pos - ( start_pos + dir * ( n3 - n1 ) )
+
+ll0:
+	sub.xyz		vf16,vf08,vf16		b				ll2				; vf16 = pos - start_pos
+	nop								nop								; 
+
+ll1:
+	sub.xyz		vf16,vf08,vf20		b				ll2				; vf16 = pos - end_pos
+	nop								nop								; 
+
+ll2:
+	;以下PointLightCalcと同じ
+	mul.yz		vf19,vf16,vf16		iaddiu			vi2,vi0,0x0040	; vf19y = vf16y^2 ; vf19z = vf16z^2
+	mulax.x		ACC,vf16,vf16		move.xyzw		vf20,vf16		; ACCx = vf16x^2
+	mul.y		vf22,vf17,vf17		nop								; vf22y = range^2 ;
+	;nop	nop
+	madday.x	ACC,vf3,vf19		nop								; ACCx = vf16x^2 + vf16y^2
+	maddz.x		vf19,vf3,vf19		nop								; vf19x = vf16x^2 + vf16y^2 + vf16z^2 = len^2
+	mulax.x		ACC,vf28,vf20		nop								; ACCx = vf16x*vf28x
+	madday.x	ACC,vf29,vf20		nop								; ACCx = vf16x*vf28x+vf16y*vf28y
+	maddz.x		vf20,vf30,vf20		nop								; vf20x = vf16x*vf28x+vf16y*vf28y+vf16z*vf28z
+	subx.y		vf22,vf22,vf19		sqrt			Q,vf19x			; ( r_range ^ 2 - len ^ 2 )計算,Q = len
+	nop								nop								; 
+	nop								nop								; 
+	max.x		vf20,vf20,vf0		nop								; vf20x = ( vf20x < 0 ) ? 0 : vf20x
+	itof0.xyz	vf22,vf18			fmand			vi1,vi2			; ( r_range ^ 2 - len ^ 2 ) < 0 をチェック
+	nop								ibne			vi1,vi0,line_end	; ( r_range ^ 2 - len ^ 2 ) < 0 なら終了
+	mulay.x		ACC,vf2,vf17		nop								; ACCx = 1.5 * ( r_range )
+	msubq.x		vf21,vf2,Q			waitq							; vf21x = 1.5 * ( r_range - len )
+	mulq.y		vf21,vf17,Q			nop								; vf21y = r_range * len
+	nop[m]							nop								; 
+	nop								nop								; 
+	nop								nop								; ( r_range - len ) < 0 をチェック
+	nop								div				Q,vf21x,vf21y	; Q = 1.5 / len * ( r_range - len ) / r_range
+	;nop	nop
+	;nop	nop
+	;nop	nop
+	;nop	nop
+	;nop	nop
+	;nop	nop
+	mulq.x		vf20,vf20,Q			waitq							; vf20 = vf20*正規化補正値 = 光源影響度
+	;nop	nop
+	;nop	nop
+	addax.xyz	ACC,vf10,vf0		nop								; ACC = color
+	maddx.xyz	vf10,vf22,vf20		nop								; vf10 = color + vec * 光源影響度
+line_end:
+
+	nop[e]							nop								; 
+	nop								nop								; 
+
+
+.EndMPG					; マイクロプログラム転送の終了
+.EndDmaData				; DMAref転送データの終了
+
+
+
+
+
+

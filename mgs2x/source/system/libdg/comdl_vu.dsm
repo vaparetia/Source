@@ -1,0 +1,276 @@
+;
+;	comdl_vu.dsm
+;	複製オブジェクト処理プログラム
+;
+;	1999/11/16 K.Takabe
+;	$Id: comdl_vu.dsm,v 1.1.1.3 2002/11/19 11:42:04 Yoshizawa1 Exp $
+;
+
+; 固定パラメータ類
+FV_MIN		= 0		; プリミティブ座標クランプ値（最小値）
+FV_MAX		= 1		; プリミティブ座標クランプ値（最大値）
+FV_FOG		= 2		; フォグパラメータ
+FV_PRM		= 3		; 各種定数
+FV_SCN		= 4		; プリミティブ座標へのスケーリングパラメータ
+FV_OFT		= 5		; プリミティブ座標へのオフセット値
+FV_PRM2		= 6		; 各種定数２
+FV_PD2		= 7		; リザーブ
+PERS0		= 8		; 透視変換マトリクス０
+PERS1		= 9		; 透視変換マトリクス１
+PERS2		= 10	; 透視変換マトリクス２
+PERS3		= 11	; 透視変換マトリクス３
+FLIP_PAGE	= 12	; ページフリップフラグ
+; オブジェクト処理パラメータ類
+M_PRS0		= 32	; 透視変換マトリクス０
+M_PRS1		= 33	; 透視変換マトリクス１
+M_PRS2		= 34	; 透視変換マトリクス２
+M_PRS3		= 35	; 透視変換マトリクス３
+
+
+;
+;	浮動小数点レジスタ使用状況
+;	vf0:fix
+;	vf1:定数読み込みベクトル
+;	vf2:tmp
+;	vf3:tmp
+;	vf4~vf7:透視変換マトリクス
+;	vf8~vf11:透視変換合成＆ＲＧＢＡ値保持
+;	vf12:頂点読み込み
+;	vf13:
+;	vf14:ＵＶ値読み込み
+;	vf15:
+;	vf16~19:ワーク
+;	vf20:透視変換直後座標
+;	vf21:
+;	vf22~23:
+;	vf24~27:クリップチェック用
+;	vf28~vf31:ワーク
+;	
+;	整数レジスタ使用状況
+;	vi0:０固定
+;	vi1:フラグ関係
+;	vi2:マトリクスデータ読み込みアドレス
+;	vi3:読み出し頂点処理アドレス
+;	vi4:書き出し頂点処理アドレス
+;	vi5:フォグ値
+;	vi6:ストアするフォグ＆描画キックフラグ
+;	vi7:描画キックフラグの記憶
+;	vi8:頂点数（＝ループカウンタ）
+;	vi9:マトリクス数（＝ループカウンタ）
+;	vi10:クリップカウント
+;	vi11:最上位ビット設定定数
+;	vi12:リザーブ
+;	vi13:XGKICKアドレス
+;	vi14:スタック
+;	vi15:リンクレジスタ
+;	
+
+; メモリ使用構成（ＶＵ１側から見るときには下位４ビットを無視すること）
+; 0x0000~0x01ff	プログラムワーク
+; 0x0200~0x03ff オブジェクトパラメータ設定（透視変換マトリクス等）
+; 0x0400~0x12ff マトリクスデータ読み込みエリア
+; 0x1300~0x21ff xgkick用ＧＩＦパケット展開ダブルバッファ０
+; 0x2200~0x30ff xgkick用ＧＩＦパケット展開ダブルバッファ１
+; 0x3100~0x3fff モデルパケットデータ
+; 0x4000		最終アドレス
+; 
+
+DATAS		= 0x040
+PACKET0		= 0x130
+PACKET1		= 0x220
+MODEL_DATA	= 0x310
+VERTS_DATA	= 0x31a
+
+
+
+; データフォーマット（案）
+; + 0.x    頂点データ数
+; + 0.y    データ開始位置（＝５）
+; + 1.xyzw GIFtag（クリップポリゴン用プリミティブ設定ＧＩＦタグ）
+; + 2.xyzw PRIM
+; + 3.xyzw GIFtag（クリップポリゴン頂点用の転送ＧＩＦタグ）
+; + 4.xyzw GIFtag（テクスチャパラメータ設定ＧＩＦタグ）
+; + 5.xyzw CLAMP_1
+; + 6.xyzw TEX2_1
+; + 7.xyzw TEX0_1
+; + 8.xyzw ALPHA
+; + 9.xyzw GIFtag（頂点の転送ＧＩＦタグ）
+; +10.xyzw 第１ＳＴＱ
+; +11.xyzw 第１ＲＧＢＡ
+; +11.xyzw 第１ＸＹＺＦ
+; +12.xyzw 第２ＳＴＱ
+; +13.xyzw 第２ＲＧＢＡ
+; .
+; .
+; .
+; +f0.xyzw 第１ＶＵデータ
+; +f1.xyzw 第１法線データ
+; +f2.xyzw 第１頂点データ
+; +f3.xyzw 第２ＶＵデータ
+; +f4.xyzw 第１法線データ
+; 
+; 
+; 
+; 
+
+
+.global Vu1DrawComdlObject1
+.global Vu1DrawComdlObject1_Func
+
+; プログラム呼び出しＶＩＦコード一覧
+Vu1DrawComdlObject1_Func:
+	.word	( FirstTransSetup/ 8 )			; セットアップ
+	.word	( ExecTrans/ 8 )				; 
+	.word	( EndVu1Program / 8 )
+
+.data
+.DmaPackVif 1			; タグ中のＶＩＦコード有効
+
+; プログラム転送ＤＭＡタグ定義
+Vu1DrawComdlObject1:	; マイクロプログラム読み込み用タグ記憶ポインタ
+	DMAref *, _trans1	; DMArefによるデータ転送を行う
+
+
+; プログラム記述部
+.DmaData _trans1		; DMArefで転送するデータの宣言
+	MPG 0,*				; マイクロプログラム転送VIFcode
+
+.vu
+
+;	upper		.					lower		.					;
+; モデル描画の為の初期セットアップ
+FirstTransSetup:
+	nop								iaddiu		vi3,vi0,MODEL_DATA	; モデルデータオフセット設定
+	nop								lq.xyzw		vf31,0x9(vi3)		; モデル先頭ＧＩＦＴＡＧコピー 
+	nop								iaddiu		vi12,vi3,0x4		; テクスチャパケットのオフセット設定
+	nop								xgkick		vi12				; テクスチャパケットの設定
+	nop								isw.x		vi0,FLIP_PAGE(vi0)	; ダブルバッファ設定
+	nop								sq.xyzw		vf31,PACKET0(vi0)	; モデル先頭GIFTAGコピー
+	nop								sq.xyzw		vf31,PACKET1(vi0)	; モデル先頭GIFTAGコピー
+	nop[e]							nop								; 
+	nop								nop								; 
+	nop								iaddiu		vi2,vi0,DATAS+1		; vi2 = データ読み込みオフセット
+	nop								ilw.x		vi9,-1(vi2)			; vi9 = マトリクス数
+	nop								iaddi		vi9,vi9,-1			; 
+
+ExecTrans:
+	nop								ilw.x		vi1,FLIP_PAGE(vi0)	; vi1 = フリップページフラグ
+	nop								iaddiu		vi3,vi0,VERTS_DATA	; vi3 = モデルデータオフセット
+	nop								lq.xyzw		vf12,2(vi3)			; 
+	nop								lqi.xyzw	vf28,(vi2++)		; 第１マトリクス読み込み
+	nop								lqi.xyzw	vf29,(vi2++)		; 第１マトリクス読み込み
+	nop								lqi.xyzw	vf30,(vi2++)		; 第１マトリクス読み込み
+	nop								lqi.xyzw	vf31,(vi2++)		; 第１マトリクス読み込み
+	itof0.xyzw	vf12,vf12			lq.xyzw		vf1,FV_FOG(vi0)		; 
+	nop								lq.xyzw		vf2,FV_SCN(vi0)		; 
+	nop								lq.xyzw		vf3,FV_OFT(vi0)		; 
+	nop								lq.xyzw		vf8,PERS0(vi0)		; 透視変換マトリクス読み込み
+	nop								lq.xyzw		vf9,PERS1(vi0)		; 透視変換マトリクス読み込み
+	nop								lq.xyzw		vf10,PERS2(vi0)		; 透視変換マトリクス読み込み
+	nop								lq.xyzw		vf11,PERS3(vi0)		; 透視変換マトリクス読み込み
+	mulax.xyzw	ACC,vf8,vf28		ibeq		vi1,vi0,l00			; 透視変換マトリクス作成,フリップページ設定
+	madday.xyzw	ACC,vf9,vf28		iaddiu		vi13,vi0,PACKET0	; 透視変換マトリクス作成,フリップページ設定
+	nop								iaddiu		vi13,vi0,PACKET1	; ####　　　　　　　　　,フリップページ設定
+l00:maddaz.xyzw	ACC,vf10,vf28		iaddiu		vi4,vi13,1			; 透視変換マトリクス作成,フリップページ設定
+	maddw.xyzw	vf4,vf11,vf28		iaddiu		vi5,vi0,1			; 透視変換マトリクス作成,フリップページ設定
+	mulax.xyzw	ACC,vf8,vf29		isub		vi1,vi5,vi1			; 透視変換マトリクス作成,フリップページ設定
+	madday.xyzw	ACC,vf9,vf29		isw.x		vi1,FLIP_PAGE(vi0)	; 透視変換マトリクス作成,
+	maddaz.xyzw	ACC,vf10,vf29		nop								; 透視変換マトリクス作成,
+	maddw.xyzw	vf5,vf11,vf29		nop								; 透視変換マトリクス作成,
+	mulax.xyzw	ACC,vf8,vf30		nop								; 透視変換マトリクス作成,
+	madday.xyzw	ACC,vf9,vf30		nop								; 透視変換マトリクス作成,
+	maddaz.xyzw	ACC,vf10,vf30		nop								; 透視変換マトリクス作成,
+	maddw.xyzw	vf6,vf11,vf30		nop								; 透視変換マトリクス作成,
+	mulax.xyzw	ACC,vf8,vf31		nop								; 透視変換マトリクス作成,
+	madday.xyzw	ACC,vf9,vf31		nop								; 透視変換マトリクス作成,
+	maddaz.xyzw	ACC,vf10,vf31		nop								; 透視変換マトリクス作成,
+	maddw.xyzw	vf7,vf11,vf31		nop								; 透視変換マトリクス作成,
+	nop								lqi.xyzw	vf8,(vi2++)		; vf8 = ポリゴンカラー
+;	nop								nop								; 
+;	nop								nop								; 
+	mulax.w		ACC,vf7,vf1			nop								; 
+	maddy.w		vf9,vf0,vf1			nop								; フォグ計算
+	mulax.xyzw	ACC,vf4,vf12		nop								;
+	madday.xyzw	ACC,vf5,vf12		nop								;
+	maddaz.xyzw	ACC,vf6,vf12		nop								;
+	maxx.w		vf9,vf9,vf0			loi			255.0				; I = 255 フォグ計算
+	maddw.xyzw	vf16,vf7,vf0		nop								; vf16 = 透視変換後の第１頂点
+;	nop								nop								; 
+;	nop								nop								; 
+	minii.w		vf9,vf9,I			ilw.x		vi8,MODEL_DATA(vi0)	; フォグ計算,モデル頂点数読み込み
+	nop								loi			0.25				; I = 0.25
+	nop								iaddiu		vi11,vi0,0x4000		; 
+	nop								iadd		vi11,vi11,vi11		; 
+	ftoi4.w		vf9,vf9				iadd		vi10,vi0,vi0			; vi10 = クリップカウント
+
+; 固定頂点カラー＆共通フォグ値によるポリゴン描画
+; 但し、頂点が|4w|>=x>=-|4w|,|4w|>=y>=-|4w|,|w|>=z>=-|w|を満たさない場合クリップする
+
+	muli.xy		vf15,vf16,I			ilw.w		vi7,1(vi3)			; vi7 = キックフラグ
+	mulw.zw		vf15,vf16,vf0		mtir		vi5,vf9w			; vi5 = フォグ
+	nop								sq.xyzw		vf8,1(vi4)			; 
+	ftoi4.xyzw	vf20,vf20			lq.xyzw		vf12,2+3(vi3)		; (遅実),(先読)
+	nop								iand		vi7,vi7,vi11		; -,vi5 = フォグ | 0x8000
+	clipw.xyz	vf15,vf15			ior			vi6,vi7,vi5			; 
+	nop								lq.xyzw		vf14,0(vi3)			; 
+	itof0.xyzw	vf12,vf12			div			Q,vf0w,vf16w		; (先実)
+	nop								nop								; -,(遅書)
+	nop								nop								; 
+	itof12.xyz	vf14,vf14			iaddi		vi8,vi8,-1			; 
+	mulax.xyzw	ACC,vf4,vf12		nop								; (先実),
+	madday.xyzw	ACC,vf5,vf12		fcand		vi1,0x003f			; (先実),
+	maddaz.xyzw	ACC,vf6,vf12		ibeq		vi1,vi0,l01			; (先実),
+	mulq.xyzw	vf20,vf16,Q			iaddiu		vi4,vi4,3			; 
+	nop								iaddiu		vi10,vi0,3			; ### vi10 = クリップカウント
+l01:mulq.xyzw	vf18,vf14,Q			iaddiu		vi3,vi3,3			; 
+	maddw.xyzw	vf16,vf7,vf0		iblez		vi10,l02			; (先実),描画チェック
+	nop								iaddi		vi10,vi10,-1		; 
+	nop								ior			vi6,vi6,vi11		; ### 描画キックしないように設定
+l02:mula.xyz	ACC,vf2,vf20		ibgtz		vi8,_local_loop		; 
+	maddw.xyz	vf20,vf3,vf0		sq.xyz		vf18,0-3(vi4)		; 
+
+_local_loop:
+	muli.xy		vf15,vf16,I			ilw.w		vi7,1(vi3)			; vi7 = キックフラグ
+	mulw.zw		vf15,vf16,vf0		nop								; vi5 = フォグ
+	nop								sq.xyzw		vf8,1(vi4)			; 
+	ftoi4.xyzw	vf20,vf20			lq.xyzw		vf12,2+3(vi3)		; (遅実),(先読)
+	nop								isw.w		vi6,2-3(vi4)		; -,(遅書)
+	clipw.xyz	vf15,vf15			iand		vi7,vi7,vi11		; 
+	nop								lq.xyzw		vf14,0(vi3)			; 
+	itof0.xyzw	vf12,vf12			div			Q,vf0w,vf16w		; (先実)
+	nop								sq.xyz		vf20,2-3(vi4)		; -,(遅書)
+	nop								ior			vi6,vi7,vi5			; 
+	itof12.xyz	vf14,vf14			iaddi		vi8,vi8,-1			; 
+	mulax.xyzw	ACC,vf4,vf12		nop								; (先実),
+	madday.xyzw	ACC,vf5,vf12		fcand		vi1,0x003f			; (先実),
+	maddaz.xyzw	ACC,vf6,vf12		ibeq		vi1,vi0,l03			; (先実),
+	mulq.xyzw	vf20,vf16,Q			iaddiu		vi4,vi4,3			; 
+	nop								iaddiu		vi10,vi0,3			; ### vi10 = クリップカウント
+l03:mulq.xyzw	vf18,vf14,Q			iaddiu		vi3,vi3,3			; 
+	maddw.xyzw	vf16,vf7,vf0		iblez		vi10,l04			; (先実),描画チェック
+	nop								iaddi		vi10,vi10,-1		; 
+	nop								ior			vi6,vi6,vi11		; ### 描画キックしないように設定
+l04:mula.xyz	ACC,vf2,vf20		ibgtz		vi8,_local_loop		; 
+	maddw.xyz	vf20,vf3,vf0		sq.xyz		vf18,0-3(vi4)		; 
+
+	ftoi4.xyzw	vf20,vf20			isw.w		vi6,2-3(vi4)		; (遅実),(遅書)
+	nop								sq.xyz		vf20,2-3(vi4)		; -,(遅書)
+
+	nop								xgkick		vi13				; 
+	nop								ibgtz		vi9,ExecTrans		; 
+	nop								iaddi		vi9,vi9,-1			; 
+	nop[e]							nop								; 
+	nop								nop								; 
+	nop								iaddiu		vi2,vi0,DATAS+1		; vi2 = データ読み込みオフセット
+	nop								ilw.x		vi9,-1(vi2)			; vi9 = マトリクス数
+	nop								b			ExecTrans			; ２セット目からはここから実行
+	nop								iaddi		vi9,vi9,-1			; 
+	
+
+
+EndVu1Program:
+
+.EndMPG					; マイクロプログラム転送の終了
+.EndDmaData				; DMAref転送データの終了
+
+

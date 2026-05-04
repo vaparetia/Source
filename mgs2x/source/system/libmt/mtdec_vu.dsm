@@ -1,0 +1,201 @@
+;
+;	mtdec_vu.dsm
+;	モーション再生補助マイクロプログラム(motion.c用)
+;
+;	2000/05/10 K.Takabe
+;	$Id: mtdec_vu.dsm,v 1.1.1.3 2002/11/19 11:42:53 Yoshizawa1 Exp $
+;
+
+.data
+
+.global MotionDecodeVu0
+.global MotionDecodeVu0_Func
+
+; プログラム呼び出しＶＩＦコード一覧
+MotionDecodeVu0_Func:
+	.word	( Slerp / 8 )
+
+
+; 定数宣言
+SinConst	= 0x000
+AtanConst	= 0x002
+
+
+; プログラム転送ＤＭＡタグ定義
+MotionDecodeVu0:	; マイクロプログラム読み込み用タグ記憶ポインタ
+.DmaPackVif 0		; タグ中のＶＩＦコード無効
+DMAref *, _vu_prog	; DMArefによるデータ転送を行う
+
+
+
+; ＤＭＡデータ記述部
+.DmaData _vu_prog		; DMArefで転送するデータの宣言
+
+; 定数の転送
+Unpack 4, 4, V4_32, 0, *
+;SinConst:
+	.int	0x3f800000,0xbe2aaaa4,0x3c08873e,0xb94fb21f
+	.int	0x362e9c14,0,0,0
+;AtanConst:
+	.int	0x3f7ffff5,0xbeaaa61c,0x3e4c40a6,0xbe0e6c63
+	.int	0x3dc577df,0xbd6501c4,0x3cb31652,0xbb84d7e7
+	.int	0x3f490fdb,0x3f490fdb,0x3f490fdb,0x3f490fdb
+	.float	1.570796326795, 1.570796326795, 1.570796326795, 1.570796326795
+.EndUnpack
+
+; マイクロプログラム転送VIFcode
+Mpg 0,*
+.vu
+
+;	upper		.					lower		.
+;	nop								b			Slerp				; 
+;	nop								nop								; 
+
+
+; クォータニオンの球形線形補間処理
+; vf01: クォータニオン１
+; vf02: クォータニオン２
+; vf03: x:1-t y:t
+Slerp:
+	mul.xyzw		vf04,vf01,vf02	iaddiu		vi02,vi00,0x0010			; vf04 = vf01*vf02, mac_flag = w < 0.0
+	nop								nop										; 
+	nop								nop										; 
+	nop								nop										; 
+	mulax.w			ACC ,vf00,vf04	loi			1e-6						; 
+	madday.w		ACC ,vf00,vf04	nop										; 
+	maddaz.w		ACC ,vf00,vf04	nop										; 
+	maddw.w			vf04,vf00,vf04	nop										; vf04w = cosom
+	subw.x			vf04,vf00,vf00	nop										; vf04x = -1.0
+	addax.w			ACC ,vf00,vf00	nop										; ACCw = 1.0
+	nop								nop										; 
+	msub.w			vf05,vf04,vf04	fmand		vi01,vi02					; vf05w = 1.0-cosom^2,符号check
+	nop								ibeq		vi01,vi00,slerp_00			; -,
+	nop								nop										; 
+	; 内積値が負なら符号を反転させる
+	mulx.w			vf04,vf04,vf04	nop										; vf04w = -vf04w
+	mulx.xyzw		vf02,vf02,vf04	nop										; vf02 = -vf02
+slerp_00:
+	subi.w			vf00,vf05,I		sqrt		Q,vf05w						; 最小値チェック,Q = sinom
+	nop								nop										; 
+	nop								nop										; 
+	nop								nop										; 
+	nop								fmand		vi01,vi02					; 
+	nop								ibne		vi01,vi00,slerp_01			; 
+	nop								nop										; 
+
+	; 通常の球形線形用補間パラメータ計算
+	; vf01: クォータニオン１
+	; vf02: クォータニオン２
+	; vf03: x:1-t y:t
+	; vf04w = cosom
+	; Q = sinom
+	mulq.w			vf05,vf00,Q		waitq									; vf05w = sinom
+;	nop								nop										; 
+;	nop								nop										; 
+	addq.w			vf08,vf04,Q		nop										; vf08w = x + y
+	max.w			vf06,vf04,vf05	nop										; vf06w = x
+	mini.w			vf07,vf04,vf05	nop										; vf07w = y
+	; 条件限定版atan2
+	; vf06w: x
+	; vf07w: y
+	; vf08w: x+y
+	; vf09~vf11,vf20~vf30 : work
+	sub.w			vf00,vf04,vf05	nop										; cosom - simom
+	nop								div			Q,vf00w,vf08w				; Q = 1/(x+y)
+	nop								nop										; 
+	sub.w			vf06,vf07,vf06	nop										; vf06w = y-x
+	nop								fmand		vi01,vi02					; 
+	mulq.w			vf06,vf06,Q		waitq									; vf06w = (y-x)/(x+y)
+	nop								lq.xyzw		vf09,AtanConst+0(vi00)		; 
+	nop								lq.xyzw		vf10,AtanConst+1(vi00)		; 
+	nop								lq.xyzw		vf11,AtanConst+2(vi00)		; 
+	mul.xyzw		vf27,vf06,vf06	nop										; vf27 = x^2
+	mulax.xyzw		ACC ,vf06,vf09	nop										; ACC = x * s1
+	mul.xyzw		vf20,vf27,vf06	nop										; vf20 = x^3
+	mul.xyzw		vf28,vf27,vf27	nop										; vf28 = x^4
+	mul.xyzw		vf21,vf20,vf27	nop										; vf21 = x^5
+	mul.xyzw		vf29,vf20,vf20	nop										; vf29 = x^6
+	mul.xyzw		vf30,vf28,vf28	nop										; vf30 = x^8
+	mul.xyzw		vf22,vf28,vf20	nop										; vf22 = x^7
+	mul.xyzw		vf23,vf28,vf21	nop										; vf23 = x^9
+	mul.xyzw		vf24,vf21,vf29	nop										; vf24 = x^11
+	madday.xyzw		ACC ,vf20,vf09	nop										; ACC = ACC + x^3 * s2
+	mul.xyzw		vf25,vf22,vf29	nop										; vf25 = x^13
+	mul.xyzw		vf26,vf22,vf30	nop										; vf26 = x^15
+	maddaz.xyzw		ACC ,vf21,vf09	nop										; ACC = ACC + x^5 * s3
+	maddaw.xyzw		ACC ,vf22,vf09	nop										; ACC = ACC + x^7 * s4
+	maddax.xyzw		ACC ,vf23,vf10	nop										; ACC = ACC + x^9 * s5
+	madday.xyzw		ACC ,vf24,vf10	nop										; ACC = ACC + x^11 * s6
+	maddaz.xyzw		ACC ,vf25,vf10	nop										; ACC = ACC + x^13 * s7
+	maddaw.xyzw		ACC ,vf26,vf10	ibeq		vi01,vi00,atan2_00			; ACC = ACC + x^15 * s8
+	maddw.xyzw		vf06,vf11,vf00	lq.xyzw		vf10,AtanConst+3(vi00)		; vf06 = ACC + PI/4
+	; 長辺と短辺が逆の場合角度を補正する
+;	nop								nop										; 
+;	nop								nop										; 
+;	nop								nop										; 
+	sub.xyzw		vf06,vf10,vf06	nop										; vf06 = PI/2 - vf06
+atan2_00:
+	; 求めた角度から補間パラメータを計算
+	; vf01: クォータニオン１
+	; vf02: クォータニオン２
+	; vf03: x:1-t y:t
+	; vf04w = cosom
+	; vf05w = sinom
+	; vf06w = omega
+	mulw.xy			vf03,vf03,vf06	div			Q,vf00w,vf05w				; vf03 = sin_t_om, Q = 1/sinom
+	; 条件限定版sin
+	; vf03 = sin_t_om
+	; vf07~vf08,vf26~vf30: work
+;	nop								nop										; 
+	nop								lq.xyzw		vf07,SinConst+0(vi00)		; 
+	nop								lq.xyzw		vf08,SinConst+1(vi00)		; 
+	mul.xyzw		vf26,vf03,vf03	nop										; vf26 = x^2
+;	nop								nop										; 
+	mulax.xyzw		ACC ,vf03,vf07	nop										; ACC = x * s1
+;	nop								nop										; 
+	mul.xyzw		vf27,vf26,vf03	nop										; vf27 = x^3
+	mul.xyzw		vf29,vf26,vf26	nop										; vf29 = x^4
+	mulx.xyzw		vf30,vf26,vf08	nop										; vf30 = x^2 * s5
+;	nop								nop										; 
+	mul.xyzw		vf28,vf27,vf26	nop										; vf28 = x^5
+	mul.xyzw		vf29,vf29,vf27	nop										; vf29 = x^7
+	madday.xyzw		ACC ,vf27,vf07	nop										; ACC = ACC + x^3 * s2
+	maddaz.xyzw		ACC ,vf28,vf07	nop										; ACC = ACC + x^5 * s3
+	maddaw.xyzw		ACC ,vf29,vf07	nop										; ACC = ACC + x^7 * s4
+	madd.xyzw		vf03,vf30,vf29	nop										; vf03 = ACC+x^7*x^2*s5 = ACC+x^9*s5
+;	nop								nop										; 
+;	nop								nop										; 
+	mulq.xy			vf03,vf03,Q		nop										; vf03 = sin_t / sinom ;
+
+
+;	nop								b			slerp_02					; 
+;	nop								nop										; 
+
+slerp_01:
+	; 角度が小さすぎるため補間パラメータを線形補間で求める
+	; vf01: クォータニオン１
+	; vf02: クォータニオン２
+	; vf03: x:1-t y:t
+;	nop								b			slerp_02					; 
+;	nop								nop										; 
+
+slerp_02:
+	; 補間処理
+	; vf01: クォータニオン１
+	; vf02: クォータニオン２
+	; vf03: x:param1 y:param2
+	mulax.xyzw		ACC ,vf01,vf03	nop										; 
+	maddy.xyzw		vf01,vf02,vf03	nop										; 
+	nop[e]							nop										; 
+	nop								nop										; 
+
+
+.EndMPG					; マイクロプログラム転送の終了
+
+.EndDmaData				; DMAref転送データの終了
+
+
+
+
+
+

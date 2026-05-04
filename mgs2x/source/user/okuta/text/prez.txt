@@ -1,0 +1,416 @@
+/*
+    prez.txt                                             
+    Metal Gear Solid 2 - SONS OF LIBERTY-                
+    ニキータイベント大統領仕様ログ                                   
+    2001/10/24 Masafumi Okuta                            
+    $Id: prez.txt,v 1.1.1.3 2002/11/19 11:48:12 Yoshizawa1 Exp $                                                 
+*/
+
+w31a - 空気清浄室で発生するニキータイベントの大統領キャラ用のソースコード群
+
+基本システムはsource/user/korekado/npc以下のNPCシステムを用いている。
+大統領は移動可能エリアを８つに区分し、その区分エリアにおけるニキータと大統領の位置関係をみて
+GCLから渡された思考判断テーブルに基づいて行動する。
+                       ↓
+    （ニキータが１にいて大統領が３にいたら５のエリアに逃げ壁に張りつく。といったようなテーブル）
+
+通常時はルート上を移動して、ノック音などが聞こえるとその音の発生地点から一番近い
+聞き耳ポイントに移動して聞き耳を立てます。
+
+prez.h
+    大統領関連用ヘッダ
+
+prez.c
+    ニキータイベント大統領呼出
+        PrezMain( Work* work );
+            大統領メイン処理
+
+        Act( Work* work );
+            動作関数
+
+        Die( Work* work );
+            破棄関数
+
+        GetResources( Work* work, int name, int where );
+            初期化
+
+        NewPrezNikita( int name, int where );
+            呼出
+
+prez.def
+    大統領関連関数の宣言
+
+prezact.c
+    動作処理関連
+
+        ActStandStill( NPCWORK* npc, int time );
+            行動関数:立ち
+
+        ActMove( NPCWORK* npc, int time );
+            行動関数:移動
+
+        ActListen( NPCWORK* npc, int time );
+            行動関数:聞き耳
+
+        ActNotice( NPCWORK* npc, int time );
+            行動関数:注目
+
+        ActFind( NPCWORK* npc, int time );
+            行動関数:ニキータ発見
+
+        ActScared( NPCWORK* npc, int time );
+            行動関数:おびえる
+
+        ActTumble( NPCWORK* npc, int time );
+            行動関数:転ぶ
+
+        ActMutekiOneTime( NPCWORK* npc, int time );
+            行動関数:無敵動作
+
+        ActFootUp( NPCWORK* npc, int time );
+            行動関数:足あげ
+
+        ActBehind( NPCWORK* npc, int time );
+            行動関数:壁張りつき
+
+        ActSleep( NPCWORK* npc, int time );
+            行動関数:ねている
+
+        ActAwake( NPCWORK* npc, int time );
+            行動関数:起きる
+
+        ActOverlook( NPCWORK* npc, int time );
+            行動関数:見渡す
+
+        ActWakeup( NPCWORK* npc, int time );
+            行動関数:起き上がる
+
+        PREZ_CheckPad( NPCWORK* npc );
+            行動更新チェック
+
+        ActFall( NPCWORK* npc, int time );
+            行動関数:倒れる
+
+        ActDead( NPCWORK* npc, int time );
+            行動関数:死亡
+
+        ActDown( NPCWORK* npc, int time );
+            行動関数:ダウン中
+
+        NormCheckDamage( NPCWORK* npc );
+            ダメージ判定
+
+        Action( Work *work );
+            行動関数呼出
+
+prezdata.c
+    データ関連
+
+preznikita.c
+    ニキータ反応処理関連
+        UpdateNikitaInfo(Work* work);
+            ニキータ関連更新
+            
+        FindNikita(Work* work);
+            ニキータ発見時の思考切替え
+            
+prezpre.c
+    思考、動作処理の前後処理
+
+        CheckMessage( Work* work );
+            メッセージ処理
+
+        InfoCheck( Work* work );
+            周辺情報更新
+
+        PreProcess( Work* work );
+            前処理
+
+        AfterProcess( Work* work );
+            後処理
+
+prezthk.c
+    思考処理関連
+        Think3_NormDamageWait( Work* work );
+            思考関数:ダメージ
+
+        Think3_SysDamageWait( Work* work );
+            思考関数:NPCシステム管轄のダメージ
+
+        Think3_WakeUp( Work* work );
+            思考関数:起き上がる
+
+        Think2_Ataraxia( Work* work );
+            思考関数:平静状態
+
+        Think2_Panic( Work* work );
+            思考関数:混乱状態
+
+        Think2_NormalDamage( Work* work );
+            思考関数:ダメージ状態
+
+        Think2_SystemDamage( Work* work );
+            思考関数:NPCシステム管轄のダメージ状態
+
+        DamageCheck( Work* work );
+            ダメージ判定
+
+        Think1_Normal( Work* work );
+            思考関数:通常モード
+
+        Think1_Damage( Work* work );
+            思考関数:ダメージモード
+
+        Think( Work* work );
+            思考関数呼出
+
+        StartThink( Work* work );
+            思考関連ワーク初期化
+
+preznoise.c
+    音反応処理関連
+
+        PREZ_AddNoiseLevel( Work* work, int nTime);
+             ノイズレベル更新
+
+        PREZ_SetKnockMode(Work* work);
+             ノックモード
+
+        PREZ_SetBombMode(Work* work);
+             爆発モード
+
+        PREZ_CheckNoise(Work* work);
+             音チェック：通常
+
+        PREZ_CheckNoiseInListen(Work* work);
+             音チェック：聞き耳
+
+        PREZ_CheckNoiseInSleep(Work* work);
+             音チェック：眠る
+        
+prezatra.c
+    大統領平静時の思考処理関連
+
+        Think3_Stand( Work *work );
+            立ち
+
+        Think3_Move( Work *work );
+            移動
+
+        Think3_RouteStand( Work *work );
+            ルートポイントで立ち
+
+        Think3_RouteMove( Work *work );
+            ルート移動
+
+        Think3_Listen( Work *work );
+            聞き耳に入る
+
+        Think3_ListenWait( Work *work );
+            聞き耳
+
+        Think3_Notice( Work *work );
+            注目
+
+        Think3_Sleep( Work *work );
+            ねてる
+
+        Think3_Awake( Work *work );
+            起きる
+
+        Think3_Overlook( Work *work );
+            見渡す
+
+prezpanic.c
+    大統領混乱時の思考処理関連
+        PREZ_GetPanicPos( Work *work );
+            逃げ位置取得
+        PREZ_SetPanicZone( Work *work );
+            逃げゾーン取得
+        Get_ReactThink( Work* work);
+            反応思考選択
+        Think3_PanicStand( Work *work );
+            立ち
+        PanicMoveReactVEasy( Work* work );
+        PanicMoveReactEasy( Work* work );
+        PanicMoveReactNormal( Work* work );
+        PanicMoveReactHard( Work* work );
+        PanicMoveReactExtream( Work* work );
+            反応            
+        PREZ_EvadeCheck( Work* work);
+            逃げチェック
+
+        Think3_PanicMove( Work *work );
+            混乱走り
+
+        Think3_PanicFind( Work *work );
+            発見
+
+        Think3_PanicScared( Work *work );
+            おびえ
+
+        Think3_PanicTumble( Work *work );
+            転倒
+
+        Think3_PanicSlide( Work *work );
+            スライディング
+
+        Think3_PanicSummer( Work *work );
+            サーマーソルト
+
+        Think3_PanicFootUp( Work *work );
+            足あげ
+
+        Think3_PanicEvadeBack( Work *work );
+            背面避け
+
+        Think3_PanicEvadeLeft( Work *work );
+            左避け
+
+        Think3_PanicEvadeRight( Work *work );
+            右避け
+
+        Think3_PanicSideStepLeft( Work *work );
+            横飛び：左
+
+        Think3_PanicSideStepRight( Work *work );
+            横飛び：右
+
+        PanicReadyVEasy( Work* work );
+        PanicReadyEasy( Work* work );
+        PanicReadyNormal( Work* work );
+        PanicReadyHard( Work* work );
+        PanicReadyExtreme( Work* work );
+            難易度別思考分岐            
+
+        Think3_PanicReady( Work *work );
+            思考分岐            
+        
+prezarea.c
+    大統領エリア処理関連
+        PREZ_GetArea( FVECTOR* pvec);
+            位置からエリア取得	
+
+prezsound.c
+    音関連
+
+        PREZ_SeManager(Work* work);
+             内蔵SEの管理更新
+
+        PREZ_CallSe(Work*    work,	// 大統領ワーク
+		    int      nSeIndex,	// SE番号（インデックス）
+		    FVECTOR* pvecPos,
+		    int      nMode);
+             内蔵SEを再生
+
+        PREZ_Say(Work*    work,
+	  	 int      nSeIndex,	
+		 int      nMode);
+             大統領の頭の位置から内蔵SEを再生
+
+        PREZ_StreamRequest( Work* 	work,	// 大統領ワーク
+			    int 	nIndex);	// ストリームテーブルインデックス      
+             ストリーミング再生のリクエストを送る
+
+        PREZ_StreamRequestJustTime( Work* 	work,	// 大統領ワーク
+			            int         nIndex);	// ストリームテーブルインデックス      
+             ストリーミング再生のリクエストを送る（再生中ならあきらめる）
+
+        PREZ_StreamUpdate( Work* work ); // 大統領ワーク
+	     ストリーミング管理更新
+
+prezparty.c
+    共用関数関連
+
+        PREZ_SetThink1( Work* work,        // ファットマンワーク
+                        int   nNewThink1,  // 新しいルーチン:モードレベル
+                        int   nNewThink2,  // 新しいルーチン:フェーズレベル
+                        int   nNewThink3); // 新しいルーチン:動作レベル
+            モードレベルで思考切替え
+
+        PREZ_SetThink2( Work* work,        // ファットマンワーク
+                        int   nNewThink2,  // 新しいルーチン:フェーズレベル
+                        int   nNewThink3); // 新しいルーチン:動作レベル
+            フェーズレベルで思考切替え
+
+        PREZ_SetThink3( Work* work,        // ファットマンワーク
+                        int   nNewThink3); // 新しいルーチン:動作レベル
+            動作レベルで思考切替え
+
+        PREZ_SetNextThink3( Work* work,        // ファットマンワーク
+                            int   nNewThink3); // 新しいルーチン:動作レベル
+            次の思考を設定
+
+        PREZ_SetThink3FromNext( Work* work,        // ファットマンワーク
+                                int   nNewThink3); // 新しいルーチン:動作レベル
+            次の思考が決まっていたらその思考に、なければ引数の思考に切替え
+
+        PREZ_CheckNearZoneIn( int nCharaAddr,  // 指定キャラのゾーン番号
+                              int nAimAddr);   // 指定ゾーン番号
+            指定する２つのゾーンアドレスが隣接しているか
+
+        NewGclGetPrezLevel( void );
+            GCL上で難度取得
+
+        NewGclGetPrezLife( void );
+            GCL上で耐久値取得
+
+        PREZ_GetWallDir( Work* work);
+            壁方向取得
+
+        PREZ_SetFaceFlag( Work* work, int nMess);
+            顔アニメ設定
+
+        PREZ_SendFaceMess( Work* work, int nType);
+            顔アニメにメッセージを飛ばす
+        
+prezinit.c
+    初期化関連
+
+        PREZ_InitFaceAnime( Work* work );
+            顔アニメワーク初期化
+            
+        PREZ_InitNikitaInfoWork(Work* work);
+            ニキータ情報ワーク初期化
+            
+        PREZ_InitSoundWork( Work* work );
+            音関連ワーク初期化
+            
+        PREZ_WorkInit(Work* work);
+            ワーク初期化関数
+            
+prezdbg.c
+    デバッグ関連
+        PREZ_CallDbgDump(void);
+            ステータスダンプ
+            
+        PREZ_DrawTarget(Work* work);
+            ターゲット描画
+            
+        PREZ_DbgDrawInfo(Work* work);
+            情報ダンプ
+            
+        PREZ_CallDbgLevel(void);
+            デバッグメニュー：レベル
+            
+        PREZ_CallDbgTrg(void);
+            デバッグメニュー：ターゲット表示
+            
+        PREZ_DbgDrawTrgBox( Work* work );
+            ターゲット表示用箱
+            
+        PREZ_DbgSetTrg( Work* work );
+            ターゲット表示更新
+            
+        PREZ_CallDbgMuteki(void);
+            デバッグメニュー：無敵
+            
+        PREZ_DbgSetMuteki( Work* work );
+            無敵更新
+            
+        PREZ_DbgSound(Work* work);
+            デバッグメニュー：サウンドデバッグ
+            
+	PREZ_DbgDrawAimZone( Work* work);
+            目標地点を表示
+            

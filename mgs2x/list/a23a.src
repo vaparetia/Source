@@ -1,0 +1,36 @@
+//
+//	a23a.src（アナザーミッション用）
+//
+//	written by H.Yoshiike 2000.Oct
+//
+//	$Id: a23a.src,v 1.3 2002/07/18 08:20:38 usr03379 Exp $
+
+//	共通データ
+#define		MORNING_SKY		//	朝空
+#include	"a23_common.h"
+
+//	ワールド
+
+//	ＡＢ共通
+world		w23_common/other
+world		w23_common/w23_bg
+
+//	Ａのみ
+world		w23a
+
+//	ライト
+lt2		w23a.lt2
+
+//	海
+option makexti6 -l 256
+pack_all	oil.tri \
+		effect/plant_sea/m_oil_sea_alp_ovl_mod0222.bmp \
+		effect/plant_sea/m_oil_ref_add_alp_ovl_mod1120.bmp
+option makexti6
+
+//	かもめ
+include		kamome.h
+
+
+//	リネーム
+texrename w23_24a.kms w10c_cntw04.bmp w10c_cntw04aaaa.bmp

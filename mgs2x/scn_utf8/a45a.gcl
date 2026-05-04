@@ -1,0 +1,1093 @@
+ /*
+	a45a.gcl
+	円形エレベータ（アナザーミッション用）
+
+	2002/02/05 S.Mukaide
+	$Id: a45a.gcl,v 1.10 2002/07/10 02:12:36 usr03379 Exp $                      
+
+	
+*/
+
+//	ステージ用define
+// ------------------------------------
+#define		STAGE_W45A				1
+	
+#define		STAGE_PLANT				1	//	プラント編
+#define		STAGE_ALT			1	//	オルタナティブ系のステージでは全て定義する。ゲームオーバーなどで使用
+#define		ANOTHER				1	//	VR,オルタナティブ双方で定義。a_stdproc.hで定義されているため、stdch.h内では、使用することができない
+
+// 各種スイッチ用define
+// ------------------------------------
+// サウンド
+#define		SOUND			1		// サウンドデータは最初に呼ぶ
+#define		BGM				1		// BGMは敵兵コマンダーの後に呼ぶ
+// キャラクター関係
+#define		RAIDEN			1		// SNAKEとは排他
+#define		SNAKE			0
+#define		ENEMY			1		// コマンダーと警備兵(敵を出すときは必須)
+#define		SUPPORT			0		// サポート兵
+#define		ATTACKER		0		// 攻撃兵
+#define		SHIELD			0		// 盾兵(1) or 通常攻撃兵(0)
+#define		DOLL			1
+// 監視カメラ関係
+#define		CYPHER			0		// サイファー
+// ドア
+#define		SLIDE_DOOR		1		// スライドドア
+// 入出トラップ
+#define		LOAD_TRAP		1
+#define		STAGE_END		1		// ステージ終了時処理を使用可にする
+// フォグ
+#define		FOG				1
+// エフェクト関係
+#define		EFFECT			0		// エフェクト全般
+#define		BLUR			0		// ブラー
+#define		Z_MANAGER		0		// Ｚフォーカス管理(敵のライト等で仕様)
+#define		BODY_SHADOW		0		// 敵のライトによって出る影
+
+#define		BREATH			1		// 白い息
+// 子画面
+#define		SUB_CAMERA		0
+// カメラ関係
+#define		CLEAR_CAMERA	0		// クリアリング専用カメラ(要子画面)
+
+// 天井
+#define		CHARA_CEIL		0		// 天井君
+// 透明壁
+#define		TR_WALL			0		// シナリオ置きの透明壁
+// ライト関係
+#define		SPOT_LIGHT		0		// スポットライト
+#define		CHARA_LIGHT		1		// キャラ専用ライト
+
+// オブジェ関係
+// アイテム
+#define		ITEM			1
+// 強制モーション
+#define		BY_MOTION		0		// ビヨンドモーション
+
+//	デモ
+#define		POLY_DEMO		1		//	ポリデモ
+
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME			a45a
+#define		KMS_NAME			w45a
+//#define		KMS_NAME0			w44a_dummy
+#define		KMS_NAME0			a44a_dummy	//	アナザー用ダミーモデル
+#define		LT2_NAME			w45a
+//#define		DOOR_NAME_LOAD		w41a_dr_left
+#define		DOOR_NAME_LOAD1A	w45a_dr_left_temae
+#define		DOOR_NAME_LOAD1B	w45a_dr_right_temae
+#define		DOOR_NAME_1A		w45a_dr_left_oku
+#define		DOOR_NAME_1B		w45a_dr_right_oku
+
+
+
+// キャラクター関係
+#if d:RAIDEN
+	#define		PLAYER		ライデン	// モーションができるまで名前はスネーク
+#else
+	#define		PLAYER		スネーク
+#endif
+
+//	薬莢系
+#define		ENE_TNG					1	//	天狗兵
+#define		NPC_SNAKE				1	//	ＮＰＣスネーク
+
+
+#define		POLYDEMO_LOAD		1
+
+// ローカル変数
+//	$f:w45a_天狗兵登場フラグ			天狗兵が登場したかどうか
+
+//	$i:w45a_天狗兵刀ガード回数			天狗兵の連続刀ガードの回数
+//	$i:w45a_天狗兵復活人数				天狗兵の復活人数（総数は＋８人）
+//	$f:w45a_偽ゲームオーバーフラグ		偽ゲームオーバー中かどうか
+
+//	$i:スネークＸ座標変数				スネークの座標
+//	$i:スネークＹ座標変数				スネークの座標
+//	$i:スネークＺ座標変数				スネークの座標
+//	$i:スネークＺ座標変数				スネークの座標
+
+//	$i:w45a_スネークレベル				スネークのレベル
+//	$i:w45a_スネークレーション数		スネークのレーション供給数
+//	$i:w45a_スネークソコム数			スネークのソコム弾供給数
+//	$i:w45a_スネークＭ４数				スネークのＭ４弾供給数
+//	$i:w45a_スネークライフ				スネークのライフ
+
+//	$w:w45a_天狗兵体力					天狗兵ライフ
+//	$w:w45a_天狗兵気絶					天狗兵気絶値
+
+
+
+//	司令官音声
+
+
+
+//	ドア設定用ステージ内ローカル変数(a_mode.hよりも先に定義する)
+dim $$b:ドアフラグ[ 1 ]
+dim $$s:ドアモデル名[ 2 ]
+
+command	配列セット $$b:ドアフラグ[0] {
+	0
+}
+command	配列セット $$s:ドアモデル名[0] {
+	0,	0
+}
+
+
+
+// モーション関係
+// ------------------------------------
+enum スネークモーションリスト {
+	sna_idle = 0,
+	sna_run,
+	sna_fire
+}
+
+// include
+// ------------------------------------
+#include "rai_a45a.mh"		// 強制モーションリスト
+
+#include "stdch.h"
+#include "enevoice.h"
+#include "a_mode.h"	// アナザー各モード別変数設定用ファイル
+
+#include "sload.h"
+#include "sound.h"
+#include "item_info.h"
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+#include "snake_voice.h"
+
+#include "w45a_d_common.h"	//	デモ／ゲーム共通プロック
+
+
+// アナザー用でマップ設定前に設定する
+// ------------------------------------
+@アナザー用マップ定義前設定
+
+// マップ設定
+// ------------------------------------
+chara マップ アーセナルギア小部屋Ｂ	-k d:KMS_NAME \
+									-h d:HZX_NAME,0 \
+									-l d:LT2_NAME
+
+
+command マップ設定 アーセナルギア小部屋Ｂ -set {
+	// サウンド、キャラクターのセット
+	@常駐キャラ設定
+	@ローカル変数初期化
+	@設定値変更
+	@プラグイン設定
+	@A_プレイヤー設定 sna_a45a rai_a45a
+	@亀甲床設定
+}
+
+// アナザー用でマップ設定後に設定する
+// ------------------------------------
+@アナザー用マップ定義後設定
+
+command マップ設定 アーセナルギア小部屋Ｂ -set {
+	@弾痕跳弾設定
+	#if d:ENEMY
+//	@コマンダー設定
+	#endif
+
+// マップ切り替え、ロード、ドア
+// ------------------------------------
+	#if d:SLIDE_DOOR
+	@A_ドア設置
+	#endif
+	#if d:LOAD_TRAP
+	@アーセナルギア小部屋Ｂロード設定
+	#endif
+
+// ステージ、オブジェクト関連
+// ------------------------------------
+	@オブジェクト設定
+	#if d:FOG
+	@フォグ設定			//	w45a_d_common.hに記述
+	#endif
+	#if d:EFFECT
+//	@エフェクト設定
+	#endif
+	@レンズフレア設定
+	#if d:BREATH
+	@息設定
+	#endif
+	@空中文字設定		//	w45a_d_common.hに記述
+
+	@カメラセット
+	@アーセナルギア小部屋Ｂカメラ設定
+	#if d:CHARA_LIGHT
+	@キャラ用ライト設定		// マップ設定の最後に呼ぶ
+	#endif
+
+//	@刀設定
+
+/*
+	if ($f:w41a_ノードフラグ == 1) {
+		@プラント編全体マップ設定 d:アーセナルギアＳ状結腸	//	全体マップ表示
+	} else {
+		@ポーズ時ステージ名表示設定 d:wn_アーセナルギアＳ状結腸	//	ポーズ時ステージ名表示
+	}
+*/
+
+	#if d:DEBUG_CHARA
+//	@デバッグキャラセット
+	#endif
+
+	#if d:USB_KEY
+//	@ＵＳＢキーボードセット
+	#endif
+}
+
+//初期マップの表示
+command マップ表示 -show アーセナルギア小部屋Ｂ
+
+// 全てのセットが終わったところでフェードイン
+@アーセナルギア小部屋Ｂ開始時処理
+
+
+
+//###################################################################################
+//									各proc設定
+//###################################################################################
+
+
+//###################################################################################
+//									全マップ共通
+//###################################################################################
+
+	proc ローカル変数初期化 {
+		#if d:DEBUG_PRINT 
+			print 'localvar_init'
+		#endif
+
+//		eval( $i:w45a_天狗兵刀ガード回数 = 20 )
+		eval( $i:w45a_天狗兵刀ガード回数 = 10 )
+		eval ($f:w45a_偽ゲームオーバーフラグ = d:FALSE)
+
+		//	デモ後特殊装備外す
+		@デモ後武器アイテム制御 d:デモ後前を継続 d:デモ後特殊装備なし
+
+		//	武器をソーコムかＭ９に変える
+		if($f:w45a_天狗兵登場フラグ == d:TRUE ) {
+			//	Ｍ９だったら
+			if ($w:武器 == d:武器:Ｍ９) {
+				eval ($w:武器 = d:武器:Ｍ９)
+				eval ( $w:プレイヤーフラグ = $w:プレイヤーフラグ & ~d:PL_START_STATE_BLADE_OUT )
+			//	Ｍ９以外だったら
+			} else {
+				//	武器をソーコムに変える
+				if ($w:武器 != d:武器:ソコム) {
+					eval ($w:武器 = d:武器:ソコム)
+					eval ( $w:プレイヤーフラグ = $w:プレイヤーフラグ & ~d:PL_START_STATE_BLADE_OUT )
+				}
+			}
+		}
+
+	}
+
+	proc 設定値変更 {
+		#if d:DEBUG_PRINT 
+			print 'status_set'
+		#endif
+
+	//	刀ダメージ値	体のどの部位に当たっても１５００減る
+	//	刀の一降りで理論上最高３回当たるので（間合いがシビア）、計１５００＊３＝４５００となる
+
+	//	刀気絶値		体のどの部位に当たっても６減る
+
+		if ($w:ゲーム設定 == d:LEVEL_VERYEASY) {
+
+			eval ($i:w45a_スネークレベル = 7)
+			eval ($i:w45a_スネークソコム数 = -1)
+			eval ($i:w45a_スネークＭ４数 = -1)
+			eval ($i:w45a_スネークレーション数 = -1)
+			eval ($i:w45a_スネークライフ = 600)
+
+			eval ($i:w45a_天狗兵復活人数 = 42)
+			eval ($w:w45a_天狗兵体力 = 1500)		//	最低１振りで死ぬ
+			eval ($w:w45a_天狗兵気絶 = 3)			//	１振りで気絶
+
+		} else if ($w:ゲーム設定 == d:LEVEL_EASY) {
+
+			eval ($i:w45a_スネークレベル = 5)
+			eval ($i:w45a_スネークソコム数 = 10)
+			eval ($i:w45a_スネークＭ４数 = 10)
+			eval ($i:w45a_スネークレーション数 = -1)
+			eval ($i:w45a_スネークライフ = 600)
+
+			eval ($i:w45a_天狗兵復活人数 = 42)
+			eval ($w:w45a_天狗兵体力 = 1500)		//	最低１振りで死ぬ
+			eval ($w:w45a_天狗兵気絶 = 7)			//	２振りで気絶
+
+		} else if ($w:ゲーム設定 == d:LEVEL_NORMAL) {
+
+			eval ($i:w45a_スネークレベル = 3)
+			eval ($i:w45a_スネークソコム数 = 5)
+			eval ($i:w45a_スネークＭ４数 = 5)
+			eval ($i:w45a_スネークレーション数 = 5)
+			eval ($i:w45a_スネークライフ = 600)
+
+			eval ($i:w45a_天狗兵復活人数 = 58)
+			eval ($w:w45a_天狗兵体力 = 3000)		//	最低２振り（最高１振り）で死ぬ
+			eval ($w:w45a_天狗兵気絶 = 9)			//	２振りで気絶
+
+		} else if ($w:ゲーム設定 == d:LEVEL_HARD) {
+
+			eval ($i:w45a_スネークレベル = 3)
+			eval ($i:w45a_スネークソコム数 = 3)
+			eval ($i:w45a_スネークＭ４数 = 3)
+			eval ($i:w45a_スネークレーション数 = 3)
+			eval ($i:w45a_スネークライフ = 500)
+
+			eval ($i:w45a_天狗兵復活人数 = 90)
+			eval ($w:w45a_天狗兵体力 = 3000)		//	最低２振り（最高１振り）で死ぬ
+			eval ($w:w45a_天狗兵気絶 = 13)			//	３振りで気絶
+
+		} else if ($w:ゲーム設定 >= d:LEVEL_EXTREME) {
+
+			eval ($i:w45a_スネークレベル = 3)
+			eval ($i:w45a_スネークソコム数 = 0)
+			eval ($i:w45a_スネークＭ４数 = 0)
+			//	エクストリームの場合
+			if ($w:ゲーム設定 == d:LEVEL_EXTREME) {
+				//	ステージ開始時のレーション数に依存(最大２個まで)
+				if ($f:w45a_天狗兵登場フラグ == d:FALSE) {
+					if ($w:アイテム数Ｒ[ d:アイテム:レーション ] >= 2) {
+						eval ($i:w45a_スネークレーション数 = 0)
+					} else if ($w:アイテム数Ｒ[ d:アイテム:レーション ] == 1) {
+						eval ($i:w45a_スネークレーション数 = 1)
+					} else if ($w:アイテム数Ｒ[ d:アイテム:レーション ] == 0) {
+						eval ($i:w45a_スネークレーション数 = 2)
+					}
+				}
+			//	ヨーロピアンエクストリームの場合
+			} else {
+				//	レーションは出さない
+				eval ($i:w45a_スネークレーション数 = 0)
+			}
+			eval ($i:w45a_スネークライフ = 500)
+
+			eval ($i:w45a_天狗兵復活人数 = 122)
+			eval ($w:w45a_天狗兵体力 = 4500)		//	最低３振り（最高１振り）で死ぬ
+			eval ($w:w45a_天狗兵気絶 = 17)			//	３振りで気絶
+
+		}
+	}
+
+	proc プラグイン設定 {
+		#if d:DEBUG_PRINT
+			print 'plugin_set'
+		#endif
+
+//		command プラグインはしご
+//		command プラグインブレード -m rai_blade
+	}
+
+	proc 弾痕跳弾設定 {
+		command 弾痕ノーマル -n 0
+		command 弾痕ノーマル -n 1
+		command 弾痕ノーマル -n 3
+
+		command 跳弾ノーマル -n 0
+		command 跳弾ノーマル -n 1
+		command 跳弾ノーマル -n 3
+	}
+
+//###################################################################################
+//								敵兵
+//###################################################################################
+
+	// 敵兵設定
+	proc 天狗兵０ {
+#if d:DEBUG_PRINT
+	print '*** Tengu 0'
+#endif
+
+	// 天狗兵Ｂ
+		chara 天狗兵Ｂ 敵兵:01 \
+			-r 8  \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:w45a_天狗兵体力 -h $w:敵標準聴力 -f $w:w45a_天狗兵気絶 \
+			-type 2
+
+		chara 天狗兵Ｂ 敵兵:02 \
+			-r 9  \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:w45a_天狗兵体力 -h $w:敵標準聴力 -f $w:w45a_天狗兵気絶 \
+			-type 3
+
+		chara 天狗兵Ｂ 敵兵:04 \
+			-r 11 \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:w45a_天狗兵体力 -h $w:敵標準聴力 -f $w:w45a_天狗兵気絶 \
+			-type 3
+
+		chara 天狗兵Ｂ 敵兵:05 \
+			-r 1  \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:w45a_天狗兵体力 -h $w:敵標準聴力 -f $w:w45a_天狗兵気絶 \
+			-type 2
+
+		chara 天狗兵Ｂ 敵兵:07 \
+			-r 1  \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:w45a_天狗兵体力 -h $w:敵標準聴力 -f $w:w45a_天狗兵気絶 \
+			-type 2
+
+		chara 天狗兵Ｂ 敵兵:08 \
+			-r 0  \
+			-i $w:敵潜入視力,$w:敵危険視力,$w:敵回避視力 \
+			-l $w:w45a_天狗兵体力 -h $w:敵標準聴力 -f $w:w45a_天狗兵気絶 \
+			-type 3
+	}
+
+	proc 天狗兵コマンダー {
+#if d:DEBUG_PRINT
+	print '*** Tengu Commander'
+#endif
+
+		chara 天狗兵コマンダー tng_com -e { 天狗兵０ } \
+			-warp ch001 \
+			-sub スネーク \
+			-type 1 \
+			-defense \
+
+			4  0 0 \
+			5  1 0 \
+			6  0 0 \
+			7  1 0 \
+			8  0 0 \
+			9  1 0 \
+			10  0 0 \
+			11  1 0 \
+
+			4  0 0 \
+			5  1 0 \
+			6  0 0 \
+			7  1 0 \
+			8  0 0 \
+			9  1 0 \
+			10  0 0 \
+			11  1 0 \
+			4  0 0 \
+			5  1 0 \
+			6  0 0 \
+			7  1 0 \
+			8  0 0 \
+			9  1 0 \
+			10  0 0 \
+			11  1 0 \
+			4  0 0 \
+			5  1 0 \
+			6  0 0 \
+			7  1 0 \
+			8  0 0 \
+			9  1 0 \
+			10  0 0 \
+			11  1 0 \
+		-final	(0 ),(0),(0) \
+		-res	(-11750) (8000) (-152000) \
+			 	(11750) (8000) (-146500) \
+
+		-proc フォーチュン登場デモ \
+		-guard $i:w45a_天狗兵刀ガード回数 \
+//		-mode d:TNG_COM_DEBUG \		//	デバッグ用
+		-c 0
+	}
+
+	proc コマンダー設定 {
+#if d:DEBUG_PRINT
+	print '*** Enemy Set'
+#endif
+		if ($f:w45a_天狗兵登場フラグ == d:TRUE) {
+			// コマンダー
+			chara コマンダー 敵兵セット \
+				-a 天狗兵コマンダー \
+				-r -11750,8000,-152000 アーセナルギア小部屋Ｂ 11750,8000,-146500 アーセナルギア小部屋Ｂ \
+				-c -11750,8000,-152000 アーセナルギア小部屋Ｂ 11750,8000,-146500 アーセナルギア小部屋Ｂ \
+				-v [ene_plant_voice:01] \
+				-b $i:w45a_天狗兵復活人数 \	// $i:危険モードでの復活人数 
+				-k $i:w45a_天狗兵復活人数 \
+				-s (d:ENE_STAGE_NPC_SNAKE | d:ENE_STAGE_NO_STRM | d:ENE_STAGE_ALERT2SNEAK | d:ENE_STAGE_NO_WC_GOVER) \
+				-m $w:スタートアラートモード \
+				-h $i:標準警戒時間		// 警戒時間
+		}
+	}
+
+//###################################################################################
+//									 ドア＆マップ切り替え
+//###################################################################################
+
+	proc A_ドア設置 {
+		#if d:DEBUG_PRINT
+			print 'slide_door_set'
+		#endif
+/*
+		@ドアモデル名セット $:配列番号 \
+			$:ドア名１				$:ドア名２				$:ドア名３ \
+			$:ドア名４				$:ドア名５
+			d:DOOR_FLAG_CLOSE 		d:DOOR_FLAG_OPEN		d:DOOR_FLAG_ENEMY_ONLY
+			d:DOOR_FLAG_CLOSE_LEVEL	d:DOOR_FLAG_OPEN_LEVEL
+
+		@A_ドア開閉追加設定 $:ドア名 $:フラグ $:ドア位置Ｘ $:ドア位置Ｙ $:ドア位置Ｚ $:ドア回転 $:ドアスライド幅
+*/
+		//	南側ドア
+		//	アーセナルドアは両開きのためフラグ１つでモデル２つを管理する
+		@ドアモデル名セット 0 d:DOOR_NAME_LOAD1A d:DOOR_NAME_LOAD1A d:DOOR_NAME_LOAD1A d:DOOR_NAME_LOAD1A d:DOOR_NAME_LOAD1A
+		switch ( $$b:ドアフラグ[0] ) {
+			case ( d:DOOR_FLAG_CLOSE ) {
+				$$s:ドアモデル名[1] = d:DOOR_NAME_LOAD1B;
+			}
+			case ( d:DOOR_FLAG_OPEN ) {
+				$$s:ドアモデル名[1] = d:DOOR_NAME_LOAD1B;
+			}
+			case ( d:DOOR_FLAG_ENEMY_ONLY ) {
+				$$s:ドアモデル名[1] = d:DOOR_NAME_LOAD1B;
+			}
+			case ( d:DOOR_FLAG_CLOSE_LEVEL ) {
+				$$s:ドアモデル名[1] = d:DOOR_NAME_LOAD1B;
+			}
+			case ( d:DOOR_FLAG_OPEN_LEVEL ) {
+				$$s:ドアモデル名[1] = d:DOOR_NAME_LOAD1B;
+			}
+		}
+
+		@A_ドア開閉追加設定 南側ドア $$b:ドアフラグ[0] 1250 0 -133125 0 d:SD_SLIDE_INSIDE
+
+
+		//	南側ドア
+		chara ドア 南側ドア \
+			-m $$s:ドアモデル名[0] \
+			-d 0,0,0 \
+			-p 1250,0, -133125 \
+			-slide d:SD_SLIDE_ARSENAL_LEFT \
+			-time (d:SD_OPEN_TIME + 10)\
+			-between アーセナルギア小部屋Ｂ アーセナルギア小部屋Ｂ \
+			-w_door $$s:ドアモデル名[1] d:SD_SLIDE_ARSENAL_RIGHT \
+			-h 1500 \
+			-exec {
+				if ( !($:開閉フラグ) ) {
+					mesg プットオブジェ ロードエリア off
+				} else {
+					mesg プットオブジェ ロードエリア on
+				}
+			}
+		//	主観禁止壁設定
+		@主観禁止壁 南側ドア壁 1250 0 -133125 0 d:SD_SLIDE_INSIDE
+
+		trap dr001 ？ \
+			-mask ？ \	
+			-exec {
+				if ($3 == 入る) {
+					mesg ドア 南側ドア open $2
+				} else {
+					mesg ドア 南側ドア close $2
+				}
+			}
+
+		trap dr001 d:PLAYER \
+			-mask ？ \
+			-state d:TRP_STATE_SUBJECT \
+			-exec {
+				if ($3 == 入る) {
+					mesg 透明壁 南側ドア壁 on
+				} else {
+					mesg 透明壁 南側ドア壁 off
+				}
+			}
+	}
+
+//###################################################################################
+//									開始時処理
+//###################################################################################
+
+	proc アーセナルギア小部屋Ｂ開始時処理 {
+		if ($s:登場ポイント == 天狗通路Ｂから) {
+			@ステージ開始時処理（ステージ名表示）\
+			d:LOAD_TYPE:SL_DOOR_TYPE 南側ドア 2000 d:DEFAULT_M_TYPE \
+			d:wn_アーセナルギアＳ状結腸
+//			@ロード時カメラ設定
+			//	ＢＧＭを鳴らす
+			command セットサウンドコード -c d:SNG_PLAY_06
+		}
+}
+
+
+
+//###################################################################################
+//									ロード設定
+//###################################################################################
+
+	proc ロードプロック {
+		#if d:DEBUG_PRINT 
+			print 'load_proc'
+		#endif
+		if ($s:呼び出しプロック == mv_a45a_a44a_0) {
+			// 通路Ｂへ
+			@mv_a45a_a44a_0
+		}
+	}
+	
+	proc アーセナルギア小部屋Ｂロード設定 {
+		trap ld001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if($f:ロードチェックＯＮフラグ == 1) {
+					//	先読み
+					preseek 'a44a'
+					@ステージ終了時処理（ステージ名表示） 2000 0 -132000 0 mv_a45a_a44a_0 \
+					d:DEFAULT_M_TYPE d:wn_アーセナルギア回腸
+				}
+			}
+	}
+
+	proc ロード時カメラ設定 {
+		chara カメラ設定 ロードカメラ \
+			-c 1 \	
+			-p 2051,5699,-133965 -t 2051,1228,-134461 \
+			-r 952,2048,0 -f 4498 \
+			-a 200 \
+			-i 0 1 0 0 \
+			-s 1
+
+		chara プロック連続実行 カメラ戻し管理人 \
+			-proc カメラ戻し管理
+	}
+
+	proc カメラ戻し管理 {
+		command パッドチェック \
+			-no_use
+		if ($status != 1) {
+			chara カメラ設定 ロードカメラ \
+				-s -1
+			mesg プロック連続実行 カメラ戻し管理人 kill
+		}
+	}
+
+//###################################################################################
+//									オブジェクト
+//###################################################################################
+
+	proc オブジェクト設定 {
+		chara プットオブジェ 開きっぱ左ドア \
+			-m d:DOOR_NAME_1A \
+			-r 0,0,0 \
+			-p -1225,0,-139625 -l d:LT2_NAME \
+			-s 100,100,100
+		chara プットオブジェ 開きっぱ右ドア \
+			-m d:DOOR_NAME_1B \
+			-r 0,0,0 \
+			-p 750,0,-139625  -l d:LT2_NAME \
+			-s 100,100,100
+
+		chara プットオブジェ ロードエリア \
+			-m d:KMS_NAME0 \
+			-r 0,0,0 \
+			-p 0,0,0 -l d:LT2_NAME \
+			-s 100,100,100
+		mesg プットオブジェ ロードエリア off
+	}
+
+//###################################################################################
+//									 エフェクト
+//###################################################################################
+
+	proc エフェクト設定 {
+		#if d:DEBUG_PRINT
+			print 'effect_set'
+		#endif
+
+		#if d:BLUR
+			chara ブラー ブラー
+		#endif
+
+		#if d:Z_MANAGER
+			chara Ｚフォーカス管理 Z_manager
+			mesg Ｚフォーカス管理 Z_manager パラメータ 5000 30
+		#endif
+
+		#if d:BODY_SHADOW
+			chara ＯＦＦ制御 off_man
+			mesg ＯＦＦ制御 off_man ボディシャドウＯＦＦ
+		#endif
+	}
+
+	proc キャラ用ライト設定 {
+		#if d:DEBUG_PRINT
+			print 'chara_light_set'
+		#endif
+
+		chara 環境光 環境光源 \
+			 -c 40 90 75
+
+		chara 平行光 平行光源 \
+			 -c 68 113 94 \
+			 -p 1069 -2860 -3958
+	}
+
+	proc 息設定 {
+		#if d:DEBUG_PRINT
+		print 'PLAYER_BREARH'
+		#endif
+		chara 白息 プレイヤー息 \
+			-name d:PLAYER \
+			-object 12 \
+			-shift 0,-30,130 \
+			-interval 136
+		mesg 白息 プレイヤー息 on
+	}
+
+	proc レンズフレア設定 {
+		chara レンズフレア  レンズフレアくん天井 \
+			-pos -4500,15000,-158000 \
+			-size 1 \
+			-alpha 16
+
+		chara レンズフレア  レンズフレアくん地下 \
+			-pos 0,0,-149250 \
+			-size 1 \
+			-alpha 12
+	}
+
+	proc 亀甲床設定 {
+		chara 亀甲床 亀甲床ちゃん \
+				-prims 128 \
+				-alpha 10 \
+				-vertex 10 \
+				-user 32 \
+				-region 0 -149250 7000
+	}
+
+//###################################################################################
+//									カメラ
+//###################################################################################
+
+	proc カメラセット {
+		#if d:DEBUG_PRINT
+			print 'stage_camera_set'
+		#endif
+
+		chara カメラ ステージカメラ		-c 0 -l 3 -p 0 
+		chara カメラ 小部屋カメラ		-c 0 -l 2 -p 40
+		chara カメラ 通路カメラ		-c 0 -l 2 -p 30
+		chara カメラ ロードカメラ		-c 0 -l 2 -p 20
+		chara カメラ モーションカメラ		-c 0 -l 2 -p 10
+		chara カメラ ゲームオーバーカメラ		-c 0 -l 0 -p 5
+
+		// デフォルトカメラ
+		chara カメラ設定 ステージカメラ \
+			-c 0 \	
+			-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-r 425,2048,0 \
+			-f 7500 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s 1
+	}
+	proc アーセナルギア小部屋Ｂカメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'w45a_camera_set'
+		#endif
+
+		// 南側通路
+		trap ca001 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -133750 -139750 900 100
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				chara カメラ設定 通路カメラ \
+					-c 0 \
+					-b  70,d:CAM_MIN,d:CAM_MIN 1935,d:CAM_MAX,-134124 \
+					-l  70,d:CAM_MIN,d:CAM_MIN 1935,d:CAM_MAX,-134303 \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 4500 \
+					-a 200 \
+					-i 0 0 0 0 \
+					-s $3
+			}
+
+		// 大部屋
+		trap ca002 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -140750 -150750 900 450
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				chara カメラ設定 小部屋カメラ \
+					-c 0 \	
+					-b -4000,d:CAM_MIN,d:CAM_MIN 4000,10000,-140750 \
+					-l -4000,d:CAM_MIN,d:CAM_MIN 4000,10000,-141000 \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 9000 \
+					-a 200 \
+					-i 2 -1 0 0 \
+					-s $3
+			}
+	}
+
+//###################################################################################
+//								武器設定
+//###################################################################################
+
+	proc 刀設定 {
+		eval ( $w:武器最大数Ｒ[ d:武器:ブレード ] = 1 )
+		eval ( $w:武器弾数Ｒ[ d:武器:ブレード ] = 1 )
+		eval ( $w:武器最大数[ d:武器:ブレード ] = 1 )
+		eval ( $w:武器弾数[ d:武器:ブレード ] = 1 )
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// FIXデータはここまで
+// -----------------------------------------------------------------------------------
+
+
+
+
+
+
+// 以下仮キャラ用proc
+// -----------------------------------------------------------------------------------
+// 仮キャラ
+// ------------------------------------
+proc 水面セット {
+	#if d:DEBUG_PRINT
+		print 'water_set'
+	#endif
+
+	chara 頂点アニメブラー 仮水面 \
+		-model w11a_sea \
+		-base 10 \
+		-width 1 \
+		-flag 5 \
+		-pos 0,0,0
+}
+
+	proc ゲームオーバー設定 {
+		command システムコールバック \
+			-gameover コンティニュー設定 \
+			-continue コンティニュー設定
+	}
+
+	proc コンティニュー設定 {
+		print '####################################################CONTINYU'
+		command ゲット倒した天狗兵
+		print '####################################################TENGUHEISCORE' $status
+	}
+
+
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------
+proc デバッグキャラセット {
+	#if d:DEBUG_PRINT
+		print 'debug_chara_set'
+	#endif
+
+	#if d:CHARA_CAMERA
+		chara キャラカメラ 敵兵カメラ \
+			-c d:TARGET_CHARA \
+			-s -920,610,200 \
+			-r -200,1024,0 
+	#endif
+
+	#if d:SCREENSHOT
+		chara スクリーンショット shot
+	#endif
+
+	#if d:USB_KEY
+		chara USBキーボード実行 test \
+			-e d:KBD_ESC {	
+				mesg プレイヤー d:PLAYER position -5500, -13000, -500
+			} \
+	#endif
+}
+
+/*
+	proc ＵＳＢキーボードセット {
+			chara USBキーボード実行 ＵＳＢキーボード \
+					-e d:KBD_R	{ 	command メニュー設定 -menu on -gage on -radar on -subwin on	} \
+					-e d:KBD_T	{	command メニュー設定 -menu off -gage off -radar off -subwin off	} \
+					-e d:KBD_F9 {
+						//mesg 警備兵 警備兵Ａ ルート変更 27 -5000,3000,-9000 １Fリフレッシュルーム
+					} \
+					-e d:KPD_0	{ /* restart */ } \
+					-e d:KPD_PLUS		{ mesg  プットオブジェ 空中文字 on } \
+					-e d:KPD_MINUS		{ mesg  プットオブジェ 空中文字 off } \
+					-e d:KPD_ENTER		{ /* mesg Ｃ４ Ｃ４ bomb */ } \
+					-e d:KBD_ESC {	mesg 臨時顔アニメキャラ アニメキャラ モーション再生 normal 30
+									mesg delay カメラディレイ kill
+									mesg 臨時顔アニメキャラ アニメキャラ 視線変更 -1
+									mesg 遠景ぼかし 遠景ぼかし１ off
+									mesg 遠景ぼかし 遠景ぼかし２ off
+									mesg 遠景ぼかし 遠景ぼかし３ off
+									mesg 近景ぼかし 近景ぼかし１ off
+									mesg 近景ぼかし 近景ぼかし２ off
+									mesg 近景ぼかし 近景ぼかし３ off
+								} \
+					-e d:KBD_F1	{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_speech_a 30 } \
+					-e d:KBD_F2 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_speech_i 30 } \
+					-e d:KBD_F3 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_speech_u 30 } \
+					-e d:KBD_F4 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_speech_e 30 } \
+					-e d:KBD_F5 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_speech_o 30 } \
+					-e d:KBD_F6 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_speech_n 30 } \
+					-e d:KBD_F7 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_teeth 30 } \
+					-e d:KBD_F8 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_scream 0 } \
+					-e d:KBD_F9 { mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_relax 30 } \
+					-e d:KBD_F10{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_surprise 30 } \
+					-e d:KBD_F11{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_sigh 30 } \
+					-e d:KBD_F12{ mesg 臨時顔アニメキャラ アニメキャラ 視線変更 2 } \
+					-e d:KBD_Q	{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_tension 30 } \
+					-e d:KBD_W	{
+								  chara delay カメラディレイ \
+									-time 1 \
+									-exec {
+										mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_exciting 30
+										return 60
+									}
+								} \
+					-e d:KBD_E	{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_pain 30 } \
+					-e d:KBD_R	{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_T12a1D71 30 } \
+					-e d:KBD_T	{
+									mesg 臨時顔アニメキャラ アニメキャラ 視線変更 0 120 -7707,-3929,-14119
+									chara delay カメラディレイ \
+										-time 90 \
+										-exec {
+											mesg 臨時顔アニメキャラ アニメキャラ 視線変更 0 60 6710,-3960,-18261
+										}
+								} \
+					-e d:KBD_Y	{
+								mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_sneeze 0
+								//mesg プレイヤー d:PLAYER motion d:モーションリスト:sna_m9_behind_squat_r_sneez_e3 \
+								//	 -1 -1 -1 0x00000004
+								} \
+					-e d:KBD_U	{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_teeth 30
+								  chara delay カメラディレイ \
+									-time 20 \
+									-exec {
+											mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_surprise 20
+									}
+								  chara delay カメラディレイ \
+									-time 40 \
+									-exec {
+											mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_teeth 20
+									}
+								} \
+					-e d:KBD_I	{ mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_teeth 20
+								  chara delay カメラディレイ \
+									-time 30 \
+									-exec {
+											mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_relax 20
+									}
+								  chara delay カメラディレイ \
+									-time 60 \
+									-exec {
+											mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_surprise 20
+									}
+								  chara delay カメラディレイ \
+									-time 90 \
+									-exec {
+											mesg 臨時顔アニメキャラ アニメキャラ モーション再生  normal 20
+									}
+								} \
+					-e d:KBD_O	{
+									mesg 臨時顔アニメキャラ アニメキャラ 視線変更 0 90 \
+											($i:プレイヤー位置Ｘ-1000),($i:プレイヤー位置Ｙ-200),($i:プレイヤー位置Ｚ+3000)
+									chara delay カメラディレイ \
+										-time 90 \
+										-exec {
+											mesg 臨時顔アニメキャラ アニメキャラ 視線変更 0 90 \
+											($i:プレイヤー位置Ｘ+1000),($i:プレイヤー位置Ｙ-200),($i:プレイヤー位置Ｚ+3000)
+										}
+									chara delay カメラディレイ \
+										-time 180 \
+										-exec {
+											mesg 臨時顔アニメキャラ アニメキャラ 視線変更 -1
+										}
+								} \
+					-e d:KBD_P	{
+								  chara delay カメラディレイ \
+									-time 1 \
+									-exec {
+											command ゲット敵兵座標 敵兵:01 $i:敵兵Ｘ $i:敵兵Ｙ $i:敵兵Ｚ
+											mesg 臨時顔アニメキャラ アニメキャラ 視線変更 0 5 $i:敵兵Ｘ $i:敵兵Ｙ $i:敵兵Ｚ
+											return 5
+									}
+								} \
+					-e d:KBD_1 { mesg 遠景ぼかし 遠景ぼかし１ on } \
+					-e d:KBD_2 { mesg 遠景ぼかし 遠景ぼかし２ on } \
+					-e d:KBD_3 { mesg 遠景ぼかし 遠景ぼかし３ on } \
+					-e d:KBD_4 { mesg 近景ぼかし 近景ぼかし１ on } \
+					-e d:KBD_5 { mesg 近景ぼかし 近景ぼかし２ on } \
+					-e d:KBD_6 { mesg 近景ぼかし 近景ぼかし３ on } \
+					-e d:KPD_MINUS {
+//									mesg プレイヤー スネーク position \
+//									2966 2000 -15180
+								} \
+					-e d:KPD_NUMLOCK {
+//							mesg プット大ガラスオブジェ でかガラス 割れる
+					} \
+					-e d:KPD_7 {
+						mesg プレイヤー d:PLAYER shadow 1
+					} \
+					-e d:KPD_8 {
+						mesg プレイヤー d:PLAYER shadow 0
+					} \
+					-e d:KPD_9 {
+						mesg コマンダー 敵兵セット 視界オン
+					} \
+
+					-e d:KBD_L {
+										mesg 臨時顔アニメキャラ アニメキャラ モーション再生  sna_face_teeth 40
+										chara delay カメラディレイ \
+											-time 20 \
+											-exec {
+													mesg 臨時顔アニメキャラ アニメキャラ モーション再生 sna_face_tension 30
+											}
+					} \
+					-e d:KBD_A {
+//						mesg プレイヤー d:PLAYER position 1000 1000 5000
+						command プレイヤー無敵セット
+					 } \
+					-e d:KBD_B {
+						mesg コマンダー 敵兵セット 視界オフ
+					} \
+					-e d:KBD_0 { /* restart */}
+}
+*/

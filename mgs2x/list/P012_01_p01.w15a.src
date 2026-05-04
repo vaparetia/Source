@@ -1,0 +1,228 @@
+//
+//	P012_01_p01.w15a.src
+//
+//	written by Y.Matsuhana 2000.May
+//
+//	$Id: P012_01_p01.w15a.src,v 1.35 2002/05/31 11:51:49 usr02774 Exp $
+
+
+block .use r_plt0
+block .nocache
+block .cache
+
+// 汎用空用テクスチャのためのデファイン（c_effect.h の前で）
+#define MORNING_SKY
+//#define DAY_SKY
+//#define EVENING_SKY
+  
+// 各ステージ共通要素
+include		common.h
+#include		"c_effect.h"
+
+include 	kamome.h
+
+// ワールド
+pack_all	w15a.tri world/w15a
+
+//world/door	w01f_dr.kms
+world/door	w15a_dr00.kms
+world		w15a
+world		w15_common/w15_bg
+lt2			w15a.lt2
+hazard		kmm15a.hzx
+
+// リアル影投影モデル
+world		w15a/w15a_demo/w15demo_sdw00.kms
+
+// 海とオイル
+//include m_surface.h
+option makexti6 -l 256
+pack_all	oil.tri \
+		effect/plant_sea/m_oil_sea_alp_ovl_mod0222.bmp \
+		effect/plant_sea/m_oil_ref_add_alp_ovl_mod1120.bmp
+option makexti6
+
+// キャラクタ
+
+pack_trnall  transparancy.tri \
+	human/for_coat/for_lnr_sling.bmp
+
+// テクスチャ重複を回避するために、フォーチュンを一つに
+pack_all for_def.tri \
+	human/for_def/for_def_sh_mt.dar \
+	human/for_coat/for_parts_lsode_mh.dar \
+	human/for_coat/for_parts_rsode_mh.dar \
+	human/for_coat/for_parts_coat_mh.dar \
+	human/for_coat/for_hair_coat_mh.dar
+human	for_coat/for_parts_lsode_mh.evm
+human	for_coat/for_parts_rsode_mh.evm
+human	for_coat/for_parts_coat_mh.evm
+human	for_coat/for_hair_coat_mh.evm
+
+human for_def/for_def_sh_mt.kms
+
+//フォーチュン指入り
+pack_all for_coat_mh_mt.tri \
+		human/for_coat/for_coat_addhand_mh_mt.dar \
+		human/for_coat/for_coat_mh_mt.dar
+human	for_coat/for_coat_addhand_mh_mt.evm
+human	for_coat/for_coat_mh_mt.evm
+
+human	for_coat/for_coat_bounding.kms
+
+pack_all for_def_weap.tri \
+	human/for_def/for_mag.dar \
+	weapon/linearrifle
+human for_def/for_mag.kms
+weapon	linearrifle
+
+cvd	weapon/linearrifle/lnr.cv2 vn
+
+human	vmp_coat/vmp_coat_mh_mt.evm
+pack_all vamp_coat_mt.tri \
+		human/vmp_coat/vmp_coat_light_mh_mt.dar \
+		human/vmp_coat/vmp_hair_coat_mh_mt.dar
+human	vmp_coat/vmp_parts_coat_mh.evm
+human	vmp_coat
+// ライデン
+human		rai_def/rai_def_mh_mt.evm
+
+// デバッグ用
+
+// 薬莢モデル
+//weapon	fms/fms_emb.kms
+
+// コバ�つ媛� マズルフラッシュ用
+pack_trnall koba4.tri \
+		effect/blood/chi01_msk.bmp \
+        effect/weapon_effect/socom_f_msk.bmp \
+		effect/weapon_effect/muzzlefrash_01_alp.bmp
+
+//かもめモデル（追加：田中修平）
+human	kmo_def/kmo_noalp.kms
+
+//シールズ
+human	sel_def/sel_def.kms
+
+//シールズ顔パーツ（追加：田中修平）
+human	sel_def/sel_eye_a1.kms 
+human	sel_def/sel_eye_a0.kms
+human	sel_def/sel_eye_b1.kms
+human	sel_def/sel_eye_b0.kms
+human	sel_def/sel_eye_c1.kms
+human	sel_def/sel_eye_c0.kms
+human	sel_def/sel_eye_d1.kms
+human	sel_def/sel_eye_d0.kms
+human	sel_def/sel_eye_e1.kms
+human	sel_def/sel_eye_e0.kms
+human	sel_def/sel_eyelittle0.kms
+human	sel_def/sel_eyelittle1.kms
+
+//ヴァンプ
+human	vmp_def/vmp_parts_vkpa_mh.evm
+
+//大統領
+human	jam_def/jam_def_mh_mt.evm
+
+//爆破用橋パーツモデル
+pack_all w15a_pipes.tri \
+		world/w15a/w15a_demo/w15a_pipe01.dar \
+		world/w15a/w15a_demo/w15a_pipe01.dar
+world	w15a/w15a_demo/w15a_pipe01.kms
+world	w15a/w15a_demo/w15a_pipe01.kms 
+
+//爆破エフェクト用テクスチャ
+pack_trnall trn.tri effect/bakuha/bombgas3_alp.bmp
+pack_trnall trn.tri effect/bakuha/bombgas5_alp.bmp
+pack_trnall trn.tri effect/bakuha/bombgas2_alp.bmp
+
+//グレネード用細い煙エフェクトテクスチャ
+pack_trnall trn.tri effect/smoke/smoke_lp1_alp.bmp
+
+//取りあえず
+//今後消したり何なりして♪
+pack_trnall	effect.tri \
+	debug/shibata/sky/sky_1_alp.bmp /* 「chara 天球ドーム」 */\
+	debug/shibata/sky/sky_2_alp.bmp /* 「chara 天球ドーム」 */\
+	debug/shibata/sky/sky_3_alp.bmp /* 「chara 天球ドーム」 */\
+	debug/shibata/sky/sky_4_alp.bmp /* 「chara 天球ドーム」 */
+
+pack_trnall trn.tri effect/sonic/sonic02_alp.bmp
+
+
+// 細かいものをまとめる
+pack_all misc_obj.tri \
+		goods/demo_m4_sel/demo_m4_sel.dar \
+		goods/demo_m4_grn_sel/demo_m4_grn_bul.dar \
+		goods/demo_m4_grn_sel/demo_m4_grn_sel.dar \
+		goods/demo_linearrifle/demo_lnr_trigger.dar \
+		goods/demo_linearrifle/demo_lnr.dar \
+		goods/blackcase/blackcase.dar \
+		goods/demo_dummy/demo_dummy.dar \
+		weapon/m4_rai/m4a_rai_sub.dar \
+		weapon/scm/scm_sub2.dar \
+		weapon/usp/usp_sub.dar \
+		weapon/m92_rai/m92_rai_sub.dar \
+		goods/demo_m4_grn_sna/demo_m4_grn_sna.dar \
+		goods/demo_m4_grn_usm/demo_m4_grn_emb.dar \
+		goods/demo_m4_grn_usm/demo_m4_grn_cartridge.dar \
+		goods/demo_m4_grn_usm/demo_m4_grn_barel_usm.dar \
+		goods/demo_m4_grn_usm/demo_m4_grn_usm.dar
+
+
+// misc_obj.tri の各モデル
+//シールズ用武器
+goods	demo_m4_sel/demo_m4_sel.kms
+goods	demo_m4_grn_sel/demo_m4_grn_bul.kms
+goods	demo_m4_grn_sel/demo_m4_grn_sel.kms
+//リニアガン_モデル置き用
+goods	demo_linearrifle/demo_lnr_trigger.kms
+goods	demo_linearrifle/demo_lnr.kms
+//ブラックケース
+goods	blackcase/blackcase.kms
+// デモダミー
+goods	demo_dummy/demo_dummy.kms
+// M4主観
+weapon	m4_rai/m4a_rai_sub.kms
+// ソコム主観
+weapon	scm/scm_sub2.kms
+// USP主観
+weapon	usp/usp_sub.kms
+// M92主観
+weapon	m92_rai/m92_rai_sub.kms
+//Ｍ４グレネード
+goods	demo_m4_grn_sna/demo_m4_grn_sna.kms
+//グレネード弾類
+goods	demo_m4_grn_usm/demo_m4_grn_emb.kms
+goods	demo_m4_grn_usm/demo_m4_grn_cartridge.kms
+goods	demo_m4_grn_usm/demo_m4_grn_barel_usm.kms
+goods	demo_m4_grn_usm/demo_m4_grn_usm.kms
+
+//レンズフレア
+pack_trnall	flare.tri \
+	effect/flare/flare_b1_msk.bmp /* 2001.05.31 向手追加/レンズフレア */ \
+	effect/flare/flare_b2_msk.bmp \
+	effect/flare/flare_g1_msk.bmp \
+	effect/flare/flare_g2_msk.bmp \
+	effect/flare/flare_r1_msk.bmp \
+	effect/flare/flare_r2_msk.bmp
+
+
+// 振動データ
+// データ数が多すぎてロード時に落ちるステージが出たので、一時的にカット。010729（平野）
+// 振動ファイルは一つにまとまるようになったので組み込み。010803
+vib		demo
+
+/* mgdemo added ----from here (Sun Jun 10 12:26:25 2001) ---- */
+goods	demo_w04b_upwall/demo_w04b_bar.kms
+/* mgdemo added ----upto here ---- */
+
+
+// リネーム
+texrename w15_24a.kms w10c_cntw04.bmp w10c_cntw04x.bmp
+
+/* mgdemo added ----from here (Thu Aug 30 13:04:58 2001) ---- */
+human	for_coat/for_cort_shadow.kms
+human	jam_def/jam_tie.kms
+human	jam_def/jam_bounding.kms
+/* mgdemo added ----upto here ---- */

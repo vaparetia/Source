@@ -1,0 +1,54 @@
+//
+//	a13c.src（スネークテイルズＥ用）
+//
+//	written by Y.Matsuhana 2000.May
+//
+//	$Id: a13c.src,v 1.7 2002/08/28 05:28:14 usr03379 Exp $
+
+#define		TALES_E_STAGE	//	テイルズＥステージ明示（切り分けのため）
+
+//	天狗兵とウォークマン兵とロッカーとトイレとハイテク兵とショットガン兵と盾兵のモーションはいらない
+#define 	ENE_MAR '-DDEL_TNG=DUMMY -DDEL_WALKMAN=DUMMY -DDEL_LOCKER=DUMMY -DDEL_TOILET=DUMMY -DDEL_HIGH=DUMMY -DDEL_SHOTGUN=DUMMY -DDEL_SHIELD=DUMMY'
+
+#include	"a13b.src"
+
+//	アタリ
+hazard		a13c.hzx
+
+//	アイテム
+#define	M9_AM		//	Ｍ９弾薬
+#define	RTN			//	レーション
+#define	CBX			//	ダンボール
+
+#include	"a_item.h"
+
+//	スネークテイルズ用追加
+mtn		gbs_a13a.mls		//	スネークテイルズＥ敵兵登場デモ用モーション
+mtn		org_a13a.mls		//	スネークテイルズＥオルガ登場デモ用モーション
+
+//	オルガ
+human	org_plant/org_plant_mh_mt.evm
+human	org_plant/org_plant_sh_mt.kms
+//	髪の毛
+human	org_plant/org_plant_hair_mh.evm
+human	org_plant/org_plant_dummy.kms
+//	装備品
+goods	demo_org_plant_goods
+
+//	ゴルルゴン
+human	gll_gllgon/gll_def.kms
+mtn		gll_photo.mls
+
+//	ゴルルゴンテロップ
+pack_all	gur.tri \
+	2D/zako_telop/gur_alp_ovl.bmp \
+	2D/zako_telop/gur_e_alp_ovl.bmp
+
+//	ゴルルゴン振動
+vib		gbs/gol_sea_appear_sdemo.vib
+vib		gbs/gol_sea_appear.vib
+vib		gbs/gol_sea_dive.vib
+
+// リネーム
+rename	a13c.hzx	a13a.hzx
+

@@ -1,0 +1,749 @@
+/*
+	radar.vu1
+		レーダー用セグメント描画プログラム
+		1999/09/18	K.Uehara
+		$Id: vuradar.vu1,v 1.1.1.3 2002/11/19 11:43:57 Yoshizawa1 Exp $
+*/
+
+/*
+	定数用領域			0x0000 + size 0x0B00
+
+	ダブルバッファ０	0x0B00 + size 0x1A00
+		HZD_SEGデータ	0x0B00 + ( max 64 * ( 16 * 3 ) = 3072 )
+		描画パケット	0x1800 + size ( max 64 * ( 16 * 3 ) + 16 = 3088 )
+	ダブルバッファ１	0x2500 + size 0x1A00
+		HZD_SEGデータ	0x2500 + ( max 64 * ( 16 * 3 ) = 3072 )
+		描画パケット	0x3200 + ( max 64 * ( 16 * 3 ) + 16 = 3088 )
+*/
+
+/*
+ マトリクスには、X、Zはズーム倍率を掛けて( x, y )に、
+ Yには同一フロアなら-1.0,1.0に収まり、(z)にうつるように設定しておく。
+*/
+
+; 固定パラメータ
+
+RADAR_MATRIX0	= 0		; レーダー描画用マトリクス
+RADAR_MATRIX1	= 1		; 
+RADAR_MATRIX2	= 2		; 
+RADAR_MATRIX3	= 3		; 
+YCLIP_VECTOR	= 4		; Y方向チェック計算用
+RADAR_Z			= 5		; .x = BRIGHT, .y = DARK
+BRIGHT_COLOR	= 6		;
+DARK_COLOR		= 7		;
+DOOR_COLOR		= 8
+GIFTAG			= 9		; GIFTAG
+SIGHT_GIFTAG	= 10	; 視界表示用GIFTAG
+NO_SIGHT_GIFTAG	= 11	; 視界非表示用GIFTAG
+SIGHT_TABLE		= 12	; sight_table_top ( 64 * vector )
+COLOR_TABLE		= SIGHT_TABLE + 64;		(2 vector * n)
+
+SEGDAT0_TOP		= 0x0B00/16		; 176	1vector * 208 seg
+PACKET0_TOP		= 0x1800/16
+
+SEGDAT1_TOP		= 0x2500/16
+PACKET1_TOP		= 0x3200/16
+
+PACKET_OFS = (0x1800 - 0x0B00)/16
+
+/*
+  -------------------------------------------------------------------------
+  壁描画ルーチン
+  hzxのセグメントを直接読んで描画する。
+*/
+
+/*
+レジスタ割り当て
+
+ vf00		: 定数(0,0,0,1)
+ vf01		: p1
+ vf02		: p2
+ vf03		: tmp
+ vf04		: レーダー描画マトリクス0
+ vf05		: レーダー描画マトリクス1
+ vf06		: レーダー描画マトリクス2
+ vf07		: レーダー描画マトリクス3
+ vf08		: Yクリップ計算用ベクトル
+ vf09		: color ( BLIGHT )
+ vf10		: color ( DARK )
+ vf11		:
+ vf12		:
+ vf13		:
+ vf14		:
+ vf15		:
+ vf16		: P1計算結果
+ vf17		: P2計算結果
+ vf18		: tmp
+ vf19		: tmp
+ vf20		: tmp
+ vf21		: tmp
+ vf22		:
+ vf23		:
+ vf24		:
+ vf25		:
+ vf26		:
+ vf27		:
+ vf28		:
+ vf29		:
+ vf30		:
+ vf31		:
+
+ vi00		: 定数(0)
+ vi01		: 
+ vi02		: データトップ
+ vi03		: プリミティブトップ
+ vi04		: 明るいセグメント用Z値
+ vi05		: 暗いセグメント用Z値
+ vi06		: アトリビュート変数
+ vi07		: XGKICK top address
+ vi08		: カウンタ
+ vi09		: no disp radar 0x0800 （不要）
+ vi10		:
+ vi11		:
+ vi12		:
+ vi13		:
+ vi14		: tmp
+ vi15		: 0x8000
+*/
+
+/*
+  入力 SVECTOR->IVECTOR
+		P1
+		P2
+		P3
+		:
+
+  描画パケット
+		GIFTAG | PRIM | EOP
+		RGBAQ
+		XYZ3
+		XYZ2		( スキップするときには XYZ3 )
+		RGBAQ
+		XYZ3
+		XYZ2
+		:
+*/
+
+;;; 通常HZXセグメント。データはストリップで来る。
+
+Vu1RadarDrawStart:
+	; 初期化処理
+
+	; 定数データのロード
+	nop								lq.xyzw		vf31,GIFTAG(vi0)
+	nop								lq.xyzw		vf04,RADAR_MATRIX0(vi0)
+	nop								lq.xyzw		vf05,RADAR_MATRIX1(vi0)
+	nop								lq.xyzw		vf06,RADAR_MATRIX2(vi0)
+	nop								lq.xyzw		vf07,RADAR_MATRIX3(vi0)
+	nop								lq.xyzw		vf08,YCLIP_VECTOR(vi0)
+
+	nop								lq.xyzw		vf09,BRIGHT_COLOR(vi0)
+	nop								lq.xyzw		vf10,DARK_COLOR(vi0)
+	nop								ilw.x		vi04,RADAR_Z(vi0)
+	nop								ilw.y		vi05,RADAR_Z(vi0)
+	nop								iaddiu		vi09,vi00,0
+	nop								iaddiu		vi15,vi00,0x4000
+	nop								iadd		vi15,vi15,vi15	; 0x8000
+
+	; GIFタグのセット
+	nop								move.xyz	vf18,vf00
+	nop								move.xyzw	vf19,vf00
+	nop								sq.xyzw		vf31,PACKET0_TOP(vi0)
+	nop								sq.xyzw		vf31,PACKET1_TOP(vi0)
+	nop								mfir.w		vf18,vi15
+
+Vu1RadarDrawNext:
+	; 描画処理開始
+
+	nop								XTOP		vi02			; vi02 = data_top
+	nop								ilw.x		vi08,0(vi02)	; vi08 = n_points
+	nop								isubiu		vi08, vi08, 1	; vi08 = n_segments 
+	nop								iaddiu		vi07,vi02,PACKET_OFS	; vi07 = xgkick
+	nop								iaddiu		vi03,vi02,PACKET_OFS+1	; vi03 = packet
+	nop								ior			vi14,vi08,vi15	;	EOP = 1
+	nop								isw.x		vi14,0(vi07)	;	giftag NLOOP
+	nop								iaddiu		vi02, vi02, 1   ;
+
+	nop								lq.xyzw		vf01,0(vi02)	; vf01 = p1
+	itof0	vf01xyzw, vf01xyzw		nop
+Loop:
+	nop								lq.xyzw		vf02,1(vi02)	; vf02 = p2
+	itof0   vf02xyzw, vf02xyzw		iaddi		vi02,vi02,1
+
+	; 座標変換P1 ->vf16
+	mulax.xyzw	ACC,vf04,vf01x		isubiu		vi08,vi08,1
+	madday.xyzw	ACC,vf05,vf01y		nop
+	maddaz.xyzw ACC,vf06,vf01z		sq.w		vf18,1(vi03)	; xyz3
+	maddaw.xyzw	ACC,vf07,vf00w		sq.w		vf18,2(vi03)	; xyz3
+	madd.xyzw	vf16,vf08,vf01		nop
+
+	; 座標変換P2 ->vf17
+	mulax.xyzw	ACC,vf04,vf02x		nop
+	madday.xyzw	ACC,vf05,vf02y		nop
+	maddaz.xyzw ACC,vf06,vf02z		nop
+	maddaw.xyzw	ACC,vf07,vf00w		nop
+	madd.xyzw	vf17,vf08,vf02		nop
+
+	; ストア
+
+	ftoi4.xy	vf18,vf16			mr32		vf20,vf16
+	ftoi4.xy	vf19,vf17			mr32		vf21,vf17
+	nop								nop
+	nop								nop
+
+	; Y check
+
+	clipw.xyz	vf20,vf00w			sq.xyw		vf18,1(vi03)		; xy store
+	clipw.xyz	vf21,vf00w			sq.xyw		vf19,2(vi03)		; xy store
+
+	nop								isw.z		vi04,1(vi03)		; bright
+	nop								isw.z		vi04,2(vi03)		; bright
+	nop								sq.xyzw		vf09,0(vi03)		; bright
+
+	nop								fcor		vi01,0xFFF7DF
+									; 1111,11 11,1111 0111,11 01,1111 2回とも-W(-Z)
+	nop								iaddiu		vi14,vi01,0
+	nop								fcor		vi01,0xFFFEFB
+									; 1111,11 11,1111 1110,11 11,1011 2回とも+Z(+Y)
+	nop								ibeq		vi01,vi14,_NEXT	; 両方０の時だけ
+	nop								nop
+
+	; 暗いセグメントの描画処理
+	nop								isw.z		vi05,1(vi03)
+	nop								isw.z		vi05,2(vi03)
+	nop								sq.xyzw		vf10,0(vi03)
+
+_NEXT:
+	; ポインタの更新
+	addx.xyzw vf01, vf02, vf00x		iaddi		vi03,vi03,3
+	nop								ibgtz		vi08,Loop
+	nop								nop
+
+; 描画トリガー
+	nop								XGKICK		vi07
+	nop[E]							nop
+	nop								nop
+
+/*
+ ---------------------------------------------------------------------------
+ DYNAMIC HZXセグメント。データは2頂点ずつ組で来る
+
+	入力
+		attr ( num, 0, 0, 0 )
+		p1
+		p2
+		p1
+		p2
+		:
+	出力は上と同じ。
+	( p1.w & 1 ) の時のみ、
+*/
+
+Vu1RadarDynamicDrawStart:
+	; 初期化処理
+
+	; 定数データのロード
+	nop								lq.xyzw		vf31,GIFTAG(vi0)
+	nop								lq.xyzw		vf04,RADAR_MATRIX0(vi0)
+	nop								lq.xyzw		vf05,RADAR_MATRIX1(vi0)
+	nop								lq.xyzw		vf06,RADAR_MATRIX2(vi0)
+	nop								lq.xyzw		vf07,RADAR_MATRIX3(vi0)
+	nop								lq.xyzw		vf08,YCLIP_VECTOR(vi0)
+
+	nop								lq.xyzw		vf09,BRIGHT_COLOR(vi0)
+	nop								lq.xyzw		vf10,DARK_COLOR(vi0)
+	nop								ilw.x		vi04,RADAR_Z(vi0)
+	nop								ilw.y		vi05,RADAR_Z(vi0)
+	nop								iaddiu		vi09,vi00,0
+	nop								iaddiu		vi15,vi00,0x4000
+	nop								iadd		vi15,vi15,vi15	; 0x8000
+
+	; GIFタグのセット
+	nop								move.xyz	vf18,vf00
+	nop								move.xyzw	vf19,vf00
+	nop								sq.xyzw		vf31,PACKET0_TOP(vi0)
+	nop								sq.xyzw		vf31,PACKET1_TOP(vi0)
+	nop								mfir.w		vf18,vi15
+
+Vu1RadarDynamicDrawNext:
+	; 描画処理開始
+
+	nop								XTOP		vi02			; vi02 = data_top
+	nop								ilw.x		vi08,0(vi02)	; vi08 = n_points
+	nop								iaddiu		vi07,vi02,PACKET_OFS	; vi07 = xgkick
+	nop								iaddiu		vi03,vi02,PACKET_OFS+1	; vi03 = packet
+	nop								ior			vi14,vi08,vi15	;	EOP = 1
+	nop								isw.x		vi14,0(vi07)	;	giftag NLOOP
+	nop								iaddiu		vi02, vi02, 1   ;
+
+D_Loop:
+	nop								lq.xyzw		vf01,0(vi02)	; vf01 = p1
+	itof0	vf01xyzw, vf01xyzw		lq.xyzw		vf02,1(vi02)	; vf02 = p2
+	mul.w	vf30,vf01,vf00w			lq.xyzw		vf11,BRIGHT_COLOR(vi0)
+	abs.w	vf01w,vf01w				iaddiu		vi10,vi00,0x0010	; s.w = 1
+	nop								nop
+	itof0   vf02xyzw, vf02xyzw		nop
+	nop								fmand		vi01,vi10		; minus check
+	nop								ibeq		vi00,vi01,_D_NO_DOOR
+	nop								iaddi		vi02,vi02,2
+
+	nop								lq.xyzw		vf11,DOOR_COLOR(vi0)
+
+_D_NO_DOOR:
+	; 座標変換P2 ->vf17
+	mulax.xyzw	ACC,vf04,vf02x		nop
+	madday.xyzw	ACC,vf05,vf02y		nop
+	maddaz.xyzw ACC,vf06,vf02z		nop
+	maddaw.xyzw	ACC,vf07,vf00w		nop
+	madd.xyzw	vf17,vf08,vf02		nop
+
+	; 座標変換P1 ->vf16
+	mulax.xyzw	ACC,vf04,vf01x		isubiu		vi08,vi08,1
+	madday.xyzw	ACC,vf05,vf01y		nop
+	maddaz.xyzw ACC,vf06,vf01z		sq.w		vf18,1(vi03)	; xyz3
+	maddaw.xyzw	ACC,vf07,vf00w		sq.w		vf18,2(vi03)	; xyz3
+	madd.xyzw	vf16,vf08,vf01		nop
+
+	; ストア
+
+	ftoi4.xy	vf19,vf17			mr32		vf21,vf17
+	ftoi4.xy	vf18,vf16			mr32		vf20,vf16
+	nop								nop
+	nop								nop
+
+	; Y check
+
+	clipw.xyz	vf21,vf00w			sq.xyw		vf19,2(vi03)		; xy store
+	clipw.xyz	vf20,vf00w			sq.xyw		vf18,1(vi03)		; xy store
+
+	nop								isw.z		vi04,1(vi03)		; bright
+	nop								isw.z		vi04,2(vi03)		; bright
+	nop								sq.xyzw		vf11,0(vi03)		; bright
+
+	nop								fcor		vi01,0xFFF7DF
+									; 1111,11 11,1111 0111,11 01,1111 2回とも-W(-Z)
+	nop								iaddiu		vi14,vi01,0
+	nop								fcor		vi01,0xFFFEFB
+									; 1111,11 11,1111 1110,11 11,1011 2回とも+Z(+Y)
+	nop								ibeq		vi01,vi14,D_NEXT	; 両方０の時だけ
+	nop								nop
+
+	; 暗いセグメントの描画処理
+	nop								isw.z		vi05,1(vi03)		; dark
+	nop								isw.z		vi05,2(vi03)		; dark
+	nop								sq.xyzw		vf10,0(vi03)		; dark
+
+D_NEXT:
+	; ポインタの更新
+	nop								iaddi		vi03,vi03,3
+	nop								ibgtz		vi08,D_Loop
+	nop								nop
+
+; 描画トリガー
+	nop								XGKICK		vi07
+	nop[E]							nop
+	nop								nop
+
+
+/*
+  -------------------------------------------------------------------------
+
+ プレイヤー、敵兵位置描画ルーチン
+
+
+ 入力 POSITION DATA  pos.w = color select ( 0 or 1 )
+	pos1
+	atr ( rot, width, col, len )
+	atr ( rev, rate, zoom, center )
+	pos2
+	atr
+	atr
+	pos3
+	atr
+	atr
+	 :
+		６４個以下なので、ダブルバッファ1回のみ。
+		あらかじめセグメント描画を通っているはずなので、それのレジスタはそのまま
+
+	SIGHT_TABLEから各方向に応じて64vectorのsinテーブルがある。
+
+ 描画パケット ダブルバッファにする。
+	GIFTAG | PRIM ( POINT )
+	RGBAQ
+	XYZ2		( スキップするときには XYZ3 )
+	GIFTAG | PRIM ( STRIP_FAN ) | EOP
+	RGBAQ
+	XYZ2
+	RGBAQ
+	XYZ2
+	XYZ2
+	XYZ2
+	XYZ2
+	XYZ2
+
+	32 * 16 のダブルバッファにする。
+*/
+
+; パケットのメモリ上の位置
+;PK_PGTAG = 0
+;PK_PRGBA = 1
+;PK_P_PNT = 2
+
+PK_SGTAG = 0
+PK_SCOL1 = 1
+PK_SPOS0 = 2
+PK_SCOL2 = 3
+PK_SPOS1 = 4
+PK_SPOS2 = 5
+PK_SPOS3 = 6
+PK_SPOS4 = 7
+PK_SPOS5 = 8
+
+/*
+レジスタ割り当て
+
+ vf00		: 定数(0,0,0,1)
+ vf01		: p1
+ vf02		:   視界の長さ(w)
+ vf03		: 
+ vf04		: レーダー描画マトリクス0 (もちこし)
+ vf05		: レーダー描画マトリクス1 (もちこし)
+ vf06		: レーダー描画マトリクス2 (もちこし)
+ vf07		: レーダー描画マトリクス3 (もちこし)
+ vf08		: 
+ vf09		: 
+ vf10		: 
+ vf11		: sight tag
+ vf12		: no sight tag
+ vf13		: range center
+ vf14		:
+ vf15		:
+ vf16		: P1計算結果
+ vf17		: P2計算結果
+ vf18		: tmp ( xy store )
+ vf19		: tmp
+ vf20		: vector load(1)
+ vf21		: vector load(2)
+ vf22		: vector load(3)
+ vf23		: vector load(4)
+ vf24		: vector load(5)
+ vf25		:
+ vf26		: color1
+ vf27		: color2
+ vf28		:
+ vf29		:
+ vf30		:
+ vf31		:
+
+ vi00		: 定数(0)
+ vi01		: 
+ vi02		: データトップ
+ vi03		: プリミティブトップ
+ vi04		: 明るいセグメント用Z値
+ vi05		: 暗いセグメント用Z値
+ vi06		: PRIM DOUBLE BUFFER TOP 
+ vi07		: XGKICK top address
+ vi08		: カウンタ
+ vi09		: which ( 0 or 32 )
+ vi10		:  初期角度
+ vi11		:  角度step
+ vi12		:  angle mask(63)
+ vi13		: color top, color tag
+ vi14		: 定数(32)
+ vi15		: 
+*/
+
+/*
+ レーダー描画マトリクスの構成
+  詳細は知らないが、以下のようなものであると仮定して Hack する。
+
+        vf04   vf05   vf06   vf07
+      +------+------+------+------+
+   .x |vf04.x|vf05.x|vf06.x|vf07.x|
+      +------+------+------+------+
+   .y |vf04.y|vf05.y|vf06.y|vf07.y|
+      +------+------+------+------+
+   .z |vf04.z|vf05.z|vf06.z|vf07.z|
+      +------+------+------+------+
+   .w |vf04.w|vf05.w|vf06.w|vf07.w|
+      +------+------+------+------+
+
+*/
+
+POS_PACKETA		= PACKET_OFS
+POS_PACKETB		= PACKET_OFS + 32
+
+Vu1PosDrawStart:
+	nop								lq.xyzw		vf04,RADAR_MATRIX0(vi0)
+	nop								lq.xyzw		vf05,RADAR_MATRIX1(vi0)
+	nop								lq.xyzw		vf06,RADAR_MATRIX2(vi0)
+	nop								lq.xyzw		vf07,RADAR_MATRIX3(vi0)
+	nop								ilw.x		vi04,RADAR_Z(vi0)
+	nop								ilw.y		vi05,RADAR_Z(vi0)
+
+/*
+ * 初期段階で、各種アドレスをレジスタに設定するなどを行い、GIFtag の
+ * 初期化等を行っている。
+ *
+ *    vi02	VIF の TOP レジスタの内容。概念的には、パケットを
+ *		置くことができるアドレスを指す値が入っている。
+ *
+ *     VU_MEM.xyzw((POS_PACKETA + vi02)* 16) = VU_MEM.xyzw(POS_GIFTAG * 16)
+ *     VU_MEM.xyzw((POS_PACKETB + vi02)* 16) = VU_MEM.xyzw(POS_GIFTAG * 16)
+ *
+ *
+ *    vi14      32
+ *    vf11	SIGHT_GIFTAG の値	視界を表示する際の、視界描画 GIFtag
+ *    vf12	NO_SIGHT_GIFTAG の値	視界を表示しない場合の、視界描画 GIFtag
+ *    vi09 	0
+ *    vi12	63(マスクビット)
+ *    vi08	VU_MEM.x(vi02 * 16) の値(描画する数)
+ *    vi06	パケット先頭の位置(POS_PACKETA)
+ *    vf18.w	0
+ */
+
+	nop					XTOP		vi02			; vi02 = data_top
+
+	; 定数データのロード
+	nop					iaddiu		vi14,vi00,32
+	nop					move.xy		vf13,vf00
+
+	nop					lq.xyzw		vf11,SIGHT_GIFTAG(vi00)
+	nop					lq.xyzw		vf12,NO_SIGHT_GIFTAG(vi00)
+	nop					iaddiu		vi09,vi00,0		; vi09 = 0
+	nop					iaddiu		vi12,vi00,63	; ( angle mask )
+
+	nop					ilw.x		vi08,0(vi02)	; vi08 = n_seg
+	nop					iaddiu		vi06,vi02,POS_PACKETA	; vi06 prim_buffer
+	nop					iaddiu		vi02,vi02,1
+	nop					mfir.w		vf18,vi00
+
+/*
+ *	kira: ここから先が各敵兵の光点と視界の表示と思われる。
+ *	この段階では、vi02 は既に 1 になっている。
+ */
+Loop2:
+	nop					lq.zw		vf13,2(vi02)	; z = zoom, w = center
+	nop					lq.xy		vf09,2(vi02)	; y = same_rate
+	nop					lq.xyzw		vf01,0(vi02)	; vf01 = p1
+	nop					iadd		vi07,vi06,vi09	; vi07 = prim_top
+	nop					ilw.z		vi15,1(vi02)	; color tag
+	nop					ilw.x		vi10,1(vi02)	; angle
+	nop					mr32.z		vf07,vf13		;
+
+/*
+ *	Upper側:
+ *
+ *	◎実際に行っている処理の詳細
+ *	  以下のようなマトリクスにベクトルを乗算する計算を行っている。
+ *
+ *		vf04	マトリクスの列 0
+ *		vf06	マトリクスの列 2
+ *		vf07	マトリクスの列 3
+ *		vf13	レーダー中心点
+ *		vf16	マトリクス計算結果
+ *		vf00w	定数 1
+ *
+ *	| vf01.x | | vf04.x  vf13.x  vf06.x  vf07.x |   | vf16.x |
+ *	|        | |                                |   |        |
+ *	| vf01.y | | vf04.y  vf13.y  vf06.y  vf07.y |   | vf16.y |
+ *	|        | |                                | = |        |
+ *	| vf01.z | | vf04.z  vf13.z  vf06.z  vf07.z |   | vf16.z |
+ *	|        | |                                |   |        |
+ *	|   1    | | vf04.w  vf13.w  vf06.w  vf07.w |   | vf16.w |
+ *
+ *
+ *	Lower側:
+ *	
+ *	  Lower 側の処理は、主に DMA パケット関連であると推測される。
+ *	  
+ *		vi13      = vi15 + COLOR_TABLE
+ *		vf02.w    = VU_MEM.w((vi02 + 1) * 16)
+ *		vi11      = VU_MEM.y((vi02 + 1) * 16)	<-- y の下位16bit
+ *		vf09.xyzw = VU_MEM.xyzw(vi13 * 16)	<-- COLOR_TABLE (明)
+ *		vf10.xyzw = VU_MEM.xyzw((vi13 + 1) * 16)<-- COLOR_TABLE (暗)
+ */
+
+	; 座標変換P1 ->vf16 ( (x, y) に表示座標、Zはプレイヤーからの相対高さ )
+	mulax.xyzw	ACC,vf04,vf01x		iaddiu		vi13,vi15,COLOR_TABLE ; vi13 color table top
+	madday.xyzw	ACC,vf13,vf01y		lq.w		vf02,1(vi02)	; length
+	maddaz.xyzw	ACC,vf06,vf01z		ilw.y		vi11,1(vi02)	; angle_step
+	maddw.xyzw	vf16,vf07,vf00w		nop
+	nop								nop
+
+
+/*
+ * [U] は Upper 命令、[L] は Lower 命令での処理
+ * ※概念的なもの。実際の処理順とは厳密には異なるが、処理概念自体は以下の通り。
+ *
+ *	変換結果の入っている vf16 の、x と y を 小数部4bit の固定小数点数値に
+ *	変換し、vf18.x, vf18.y に格納する
+ *
+ *		vf18.x = float_to_int(vf16.x)
+ *		vf18.y = float_to_int(vf16.y)
+ *	
+ *
+ *	vf18 の値を vi07 で示されるパケット領域にストアする
+ *
+ *		VU_MEM.xyzw((vi07 + PK_P_PNT) * 16) = vf18.xyzw
+ *
+ *
+ *	vf16 と vf00.w でクリッピング判定を行い、結果を CF に反映させ、
+ *	vi01 にまとめる。vf00.w には、定数 1.0 が入っている。
+ *
+ *		vi01 = (CF) ? 1 : 0;
+ *
+ *
+ *	vi10 で示される領域から,vf20, vf21, vf22, vf23, vf24 に順次ベクトルを取得し、vi10 をその直後の位置に更新する。
+ *		
+ *		vf20.xyzw = VU_MEM.xyzw((vi10 + SIGHT_TABLE) * 16)
+ *		vi10 += vi11
+ *		vi10 &= 0x3f  <- 値は、vi12 で与えられる
+ *
+ *		vf21.xyzw = VU_MEM.xyzw((vi10 + SIGHT_TABLE) * 16)
+ *		vi10 += vi11
+ *		vi10 &= 0x3f  <- 値は、vi12 で与えられる
+ *	
+ *		vf22.xyzw = VU_MEM.xyzw((vi10 + SIGHT_TABLE) * 16)
+ *		vi10 += vi11
+ *		vi10 &= 0x3f  <- 値は、vi12 で与えられる
+ *
+ *		vf23.xyzw = VU_MEM.xyzw((vi10 + SIGHT_TABLE) * 16)
+ *		vi10 += vi11
+ *		vi10 &= 0x3f  <- 値は、vi12 で与えられる
+ *
+ *		vf24.xyzw = VU_MEM.xyzw((vi10 + SIGHT_TABLE) * 16)
+ *		vi10 += vi11
+ *		vi10 &= 0x3f  <- 値は、vi12 で与えられる
+ *
+ *
+ *	ベクトル vf20, vf21, vf22, vf23, vf24 を計算し、それぞれ小数部 4bit の固定小数点数に変換する
+ *
+ *		vf20.x = vf20.x * vf02.w + vf16.x
+ *		vf20.y = vf20.y * vf02.w + vf16.y
+ *		vf20.x = float_to_int(vf20.x)
+ *		vf20.y = float_to_int(vf20.y)
+ *
+ *		vf21.x = vf21.x * vf02.w + vf16.x
+ *		vf21.y = vf21.y * vf02.w + vf16.y
+ *		vf21.x = float_to_int(vf21.x)
+ *		vf21.y = float_to_int(vf21.y)
+ *
+ *		vf22.x = vf22.x * vf02.w + vf16.x
+ *		vf22.y = vf22.x * vf02.w + vf16.y
+ *		vf22.x = float_to_int(vf22.x)
+ *		vf22.y = float_to_int(vf22.y)
+ *
+ *		vf23.x = vf23.x * vf02.w + vf16.x
+ *		vf23.y = vf23.x * vf02.w + vf16.y
+ *		vf23.x = float_to_int(vf23.x)
+ *		vf23.y = float_to_int(vf23.y)
+ *
+ *		vf24.x = vf24.x * vf02.w + vf16.x
+ *		vf24.y = vf24.y * vf02.w + vf16.y
+ *		vf24.x = float_to_int(vf24.x)
+ *		vf24.y = float_to_int(vf24.y)
+ *
+ *
+ *	(vi01 != 0) || (vi15 < 0) ならば、_SET_DARK_PERSON に分岐(vi01 は Clipping 結果)
+ *
+ *
+ *	vi07 で示されるアドレスから、GIF packet が開始されている。現在までに計算された各値を、
+ *	パケット中の適切な領域に格納
+ *
+ *
+ *		VU_MEM.xyzw((vi07 + PK_PRGBA) * 16) = vf09.xyzw		; 敵兵などの描画 RGBA 値
+ *		VU_MEM.z   ((vi07 + PK_P_PNT) * 16) = vi04		; ??
+ *
+ *		VU_MEM.xyzw((vi07 + PK_SCOL1) * 16) = vf26.xyzw		; 視界の中心点の色
+ *		VU_MEM.xyzw((vi07 + PK_SPOS0) * 16) = vf18.xyzw		; 視界の中心点(TriangleFanの開始点)
+ *		VU_MEM.xyzw((vi07 + PK_SCOL2) * 16) = vf27.xyzw		; 視界の末端の色
+ *		VU_MEM.xyzw((vi07 + PK_SPOS1) * 16) = vf20.xyzw		; 視界の中心点(TriangleFanの開始点)
+ *		VU_MEM.xyzw((vi07 + PK_SPOS2) * 16) = vf21.xyzw		; 以降、視界の末端の座標点
+ *		VU_MEM.xyzw((vi07 + PK_SPOS3) * 16) = vf22.xyzw
+ *		VU_MEM.xyzw((vi07 + PK_SPOS4) * 16) = vf23.xyzw
+ *		VU_MEM.xyzw((vi07 + PK_SPOS5) * 16) = vf24.xyzw
+ *
+ *	_P_NEXT に無条件分岐
+ *	
+ *	
+ *	
+ *	
+ *	
+ *	
+ */
+	; ストア
+	nop								lq.xyzw		vf20,SIGHT_TABLE(vi10)	; vector table 1
+	nop								iadd		vi10,vi10,vi11			; += step
+	ftoi4.xy	vf18,vf16			iand		vi10,vi10,vi12			; vi10 &= 63
+	nop								lq.xyzw		vf21,SIGHT_TABLE(vi10)	; vector 2
+	clipw.xyz	vf16,vf00w			iadd		vi10,vi10,vi11			; ycheck : += step
+	mulaw.xy	ACC,vf20,vf02w		iand		vi10,vi10,vi12			; vi10 &= 63
+	maddw.xy	vf20,vf16,vf00w		lq.xyzw		vf22,SIGHT_TABLE(vi10)	; vector 3
+	mulaw.xy	ACC,vf21,vf02w		nop
+	maddw.xy	vf21,vf16,vf00w		fcand		vi01,0x000030			;
+												; 0000 00,00 0000, 0000 00,11 0000 +Z or -Z 
+	muly.z		vf15,vf16,vf09y		ibne		vi00,vi01,_SET_DARK_PERSON
+	ftoi4.xy	vf20,vf20			nop									; delay slot
+	nop								ibltz		vi15,_SET_DARK_PERSON
+	nop								nop
+
+	; 同一階のキャラ
+	clipw.xyz	vf15,vf00w			iadd		vi10,vi10,vi11
+	ftoi4.xy	vf21,vf21			iand		vi10,vi10,vi12
+	mulaw.xy	ACC,vf22,vf02w		lq.xyzw		vf23,SIGHT_TABLE(vi10)
+	maddw.xy	vf22,vf16,vf00w		iadd		vi10,vi10,vi11
+	nop								iand		vi10,vi10,vi12
+	nop								lq.xyzw		vf24,SIGHT_TABLE(vi10)
+	mulaw.xy	ACC,vf23,vf02w		sq.xyzw		vf20,PK_SPOS1(vi07)
+	maddw.xy	vf23,vf16,vf00w		sq.xyzw		vf21,PK_SPOS2(vi07)
+	ftoi4.xy	vf22,vf22			fcand		vi01,0x000030
+	mulaw.xy	ACC,vf24,vf02w		lq.xyzw		vf26,0(vi13)		; sight bright 1
+	maddw.xy	vf24,vf16,vf00w		ibeq		vi00,vi01,_SAME_BRIGHT
+	ftoi4.xy	vf23,vf23			lq.xyzw		vf27,1(vi13)		; sight bright 2
+	
+	nop								lq.xyzw		vf26,2(vi13)		; sight dark 1
+	nop								lq.xyzw		vf27,3(vi13)		; sight dark 2
+
+_SAME_BRIGHT:
+	nop								sq.xyzw		vf11,PK_SGTAG(vi07)	; sight gif
+	nop								sq.xyzw		vf22,PK_SPOS3(vi07)
+	nop								sq.xyzw		vf18,PK_SPOS0(vi07)	; xy stor
+	ftoi4.xy	vf24,vf24			sq.xyzw		vf23,PK_SPOS4(vi07)
+	nop								sq.xyzw		vf26,PK_SCOL1(vi07)	; color store
+	nop								sq.xyzw		vf27,PK_SCOL2(vi07)	; color store
+	nop								b			_P_NEXT
+	nop								sq.xyzw		vf24,PK_SPOS5(vi07)
+
+/*
+ * 
+ * 
+ * 
+ * 
+ */
+	; 高さの異なるキャラ
+_SET_DARK_PERSON:
+	nop								isw.z		vi05,2(vi07)		; z store
+	nop								nop
+	nop								sq.xyzw		vf12,PK_SGTAG(vi07)	; no_sight gif
+
+_P_NEXT:
+
+/*
+ * vi07 には、作成された GIFパケットのアドレスが入っているため、
+ * XGKICK 命令でそのパケットを GIF に送出し、GS での描画を行う。
+ *
+ * 
+ *
+ */
+	; ポインタの更新
+	nop								isub		vi09,vi14,vi09	; vi09 = 32 - vi09
+	nop								iaddi		vi08,vi08,-1
+	nop								iaddi		vi02,vi02,3
+	nop								XGKICK		vi07
+	nop								ibgtz		vi08,Loop2
+	nop								nop
+
+	nop[E]							nop
+	nop								nop
+

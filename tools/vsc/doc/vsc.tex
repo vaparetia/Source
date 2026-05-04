@@ -1,0 +1,163 @@
+\documentstyle[11pt]{jarticle}
+\begin{document}
+
+\title{音韻認識の手順と基礎理論についての覚書}
+\author{吉良 理人}
+\maketitle
+
+\newpage
+
+\section{分析フレームの考え方}
+
+音声は非定常的な波形を描く音波であるが、10ms〜20ms の時間的範囲においては、
+ほぼ定常的とみなすことができる。
+
+よって、音声波形をこのような短い時間単位に区切り、分析の素材とする。
+この区切りの単位を{\bf 分析フレーム} と呼称する。また、音声認識の上では
+この分析フレーム単位で考えるケースが多いため、単に{\bf フレーム} と呼んだ
+場合も、この分析フレームを指すものとする。PCM データのフレームを指す場合は
+{\bf PCM フレーム} と呼んで区別する。
+
+
+
+\newpage
+
+\section{音素セグメンテーション}
+
+音素セグメンテーションとは、音声全体を表す波形データの中で、
+音韻を構成する音素の境界点を検出する作業。口パクデータなど、音声における
+音素の時系列データが必要な場合において、必要不可欠と考えられる。
+
+\subsection{音素セグメンテーションに必要なパラメタ計算}
+
+\begin{description}
+
+\item[零次メルケプストラム係数 $c_i$]
+
+ 零次メルケプストラム係数 $c_i$ は $i$ 番目の分析フレームにおける
+メル対数スペクトルの全周波数に対する平均値を表し、短時間区間の音の大きさに
+比例するため、有音と無音のクラス分けに用いられる。
+
+\[ c_i = g_i[0] = \frac{1}{2 \pi} \int_{-\pi}^{\pi}G_i(\tilde{\Omega})d\tilde\Omega \]
+
+
+\item[零交差数 $z_i$]
+
+零交差数 $z_i$ の値は、その分析フレームにおいて、波形曲線が0 と交差する
+点の数を表し、ホワイトノイズ(サーッという音がするノイズ)から構成される
+{\bf 無声摩擦音}の検出に用いられる。
+
+\[z_i = \frac{1}{2} \sum_{n=0}^{N-1}(1 - {\rm sgn}(x[iN + n]) {\rm sgn}(x[iN + n + 1])) \]
+
+
+\item[有声音検出パラメタ $v_i$]
+有声音検出パラメタ $v_i$ は、有声音と無声音のクラス分けのために用いる。
+通常はスペクトル包絡のより 75〜320 Hz 前後の周波数成分を取り出し、
+その平均値がこの値となる。
+
+\[ v_i = \frac{1}{7} \sum_{k=2}^{8}
+	\begin{array}{@{\,}ll}
+		 G' (\Omega k) &
+		\Bigg(\Omega k = \frac{2 \pi k}{N}, N = 256 \Bigg)
+	\end{array}  \]
+
+メル対数スペクトルの形でスペクトル包絡 $G_i(\tilde{\Omega})$ が与えられている
+場合は、 $v_i$ として
+
+\[ v_i = \frac{1}{14}\sum_{k=4}^{17}
+	\begin{array}{@{\,}ll}
+		G_i(\tilde{\Omega}k) &
+		\Bigg(\tilde{\Omega}k = \frac{2 \pi k}{N}, N = 256 \Bigg)
+	\end{array}  \]
+
+を用いることができる。
+
+\item[零次メルケプストラム時間変化 $a_i$]
+
+有声音区間における音素境界検出のために使用される。
+
+\[ a_i = \left(\sum_{k=-L}^{L}\omega_k k^2\right)^{-1}
+	\sum_{k=-L}^{L}
+	\begin{array}{@{\,}ll}
+		 \omega_k kc_{i+k} & (L = 4)
+	\end{array} \]
+		
+
+\item[スペクトル包絡時間変化 $e_i$]
+
+母音連鎖や美母音連鎖部分の音素境界検出に使用される。
+
+\[ s_i[m] = \left( \sum_{k=-L}^{L} \omega_k k^2\right)^{-1}
+	\sum_{k=-L}^{L}
+	\begin{array}{@{\,}ll}
+		 \omega_k kg_{i+k}[m] &	(L=4)
+	\end{array} \]
+
+\[ s_i = \left( \sum_{m=1}^{7} (s_i[m])^2 \right)^\frac{1}{2} \]
+
+\[ \bar{\omega} = \sum_{k=-L}^{L} \omega_k \]
+
+\[ \bar{k}_{\omega}^2 = \frac{1}{\bar{\omega}} \sum_{k=-L}^{L}\omega_k k^2 \]
+
+\[ \bar{s}_{\omega} = \frac{1}{\bar{\omega}}
+	 \sum_{k=-L}^{L} \omega_k s_{i+k} \]
+
+\[ e_i = -\left( \sum_{k=-L}^{L}
+	 \omega_k(k^2 - \bar{k}_{\omega}^2)^2\right)^{-1}
+	\sum_{k=-L}^{L} \omega_k(k^2-\bar{k}_\omega^2)(s_{i+k}-\bar{s}_\omega)
+	\]
+
+
+\item[零交差数時間変化 $f_i$]
+
+無静穏区間における音素境界検出に使用される。
+
+\[ f_i = \left( \sum_{k=-L}^{L} \omega_k k^2 \right)^{-1}
+	\sum_{k=-L}^{L}
+	\begin{array}{@{\,}ll}
+		 \omega_k kz_{i+k} &
+		(L=4)
+	\end{array} \]
+
+
+
+\end{description}
+
+
+
+\subsection{セグメンテーションの手順}
+
+\subsegtion{音素ラベリング}
+
+
+
+
+
+
+
+
+
+\section{特徴ベクトル}
+
+\subsection{特徴ベクトルの抽出}
+
+特徴ベクトルを抽出する分析フレームの組合せには、以下の3つがある。
+
+\begin{enumerate}
+\item 全体型 \\
+音素セグメント全体を6等分し、その境界にある分析フレームから抽出
+
+\item 定常部型 \\
+スペクトル包絡時間変化が最も小さくなる分析フレームを中心として、
+1フレームおきに抽出
+  
+\item 過渡部型 \\
+後続の音素セグメントとの境界となる分析フレームを中心として、1フレームおきに抽出
+\end{enumerate}
+
+
+
+
+
+
+\end{document}

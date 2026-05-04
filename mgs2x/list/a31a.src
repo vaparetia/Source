@@ -1,0 +1,136 @@
+//
+//	a31a.src
+//	シェル２中央棟１Ｆ(アナザーミッション用)
+//
+//	written by H.Yoshiike 2002.Feb
+//
+//	$Id:
+
+#define WN_W31A
+
+block .use r_vr_s
+block .nocache
+block .cache
+
+// 敵兵関連define
+// 敵兵タイプ
+#define ENE_P_GOL		// w31aは都市迷彩攻撃兵
+#define ENE_ATTACKER	// 攻撃兵
+#define ENE_SHIELD		// 盾兵
+#define ENE_SHOT		// ショットガン兵
+#define ENE_HIGH_TECH	// ハイテク兵
+
+// 特殊兵のモーション設定
+#define ENE_MAR '-DDEL_TNG=DUMMY -DDEL_WALKMAN=DUMMY'
+
+// w31共通要素
+// c_effect用define
+#define	EFFECT_CUSTUM			// c_effectのデフォルトdefineを使用しない
+#define	E_GLASS_DANKON			// グラス系弾痕
+#define	E_KOGETUKI				// 壁への焦げ付き
+#define	E_FOOTSTAMP				// 足跡
+#define	E_ENEMY					// 敵兵系
+#define	E_ENEMY_LIGHT			// 敵兵ライト
+#define	E_SLING					// スリング
+#define	E_ENEMY_N_GL_LIGHT		// 敵兵暗視ゴーグル、マンハッタンライト
+#define	E_DOOR_LUMP				// ドアランプ
+#define	E_OTHER1				// 水面、水中、リニアガン、雨、フェード、バルカン人形、ダンボール主観、濁流、ソリダス剣（予定）、カメラ前の水滴
+#define	E_OTHER2				// プラズマ、剣残像、カミナリ、衝撃波、落下物水飛沫
+#define	E_OTHER3				// ドッグタグ、ハリアエフェクト、ソリダスエフェクト
+#define	NODE_LAMP				// ノードディスプレイランプ
+#define E_SKY_NORMAL			// 刀で切られ血
+
+#define E_WATER_MINE			// 爆弾解体ミッションで必要
+
+// 各ステージ共通要素
+#include	"p_common.h"
+#include	"common.h"
+#include	"c_effect.h"
+// オルタナティブミッション用追加エフェクト
+#include	"alt_effect.h"
+
+// 強制モーション
+mtn		rai_a31a.mls
+mtn		sna_a31a.mls	//	むかいで修正
+
+// ワールド
+// マルチテクスチャモデル
+// それ以外のモデル 
+option makexti6 -l 1024 -f PAL8
+pack_all	w31a0.tri world/w31a/w31a0 world/w31a/obj
+pack_all	w31a_other.tri world/elevator/elv_2 world/door/dr_free.dar world/door/w31a_dr00.dar meca/gun_camera
+option makexti6
+
+world		w31a/w31a0
+
+option makexti6 -l 1024 -f PAL8
+world		w31a/w31a1
+option makexti6
+
+
+world		w31a/obj
+world		elevator/elv_2
+world		door/dr_free.kms
+world		door/w31a_dr00.kms
+lt2			w31a.lt2
+hazard		a31a.hzx
+
+// オブジェクト
+pack_all	gun_camera.tri \
+			meca/gun_camera \
+			meca/svc_plant \
+			effect/ray_effect/ray_eye_bonbori_alp.bmp
+
+// プラント用監視カメラ
+meca		svc_plant
+
+// ガンカメラ
+meca		gun_camera
+
+// アイテム
+itembox
+
+// 振動データ
+vib       etc/core_ele_01.vib
+vib       etc/core_ele_02.vib
+vib       etc/core_ele_03.vib
+		
+// キャラクタ
+// 敵兵
+#include	"ene_plant.h"
+mtn		gps_w31a.mls			// ゴル兵モーション
+
+//	テイルズＤ用海軍大佐
+pack_all	zzz.tri human/cap_dead_st/cap_dead_st.dar
+human	cap_dead_st/cap_dead_st.kms
+
+//	テイルズＤ用電撃床破壊ポリデモ
+goods	demo_dummy/demo_dummy.kms
+
+vib	demo/P048_01_p01_effect_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Aug 28 17:10:53 2001) ---- */
+vib	demo/P048_01_p01_effect_01.vib
+/* mgdemo added ----upto here ---- */
+/* mgdemo added ----from here (Tue Aug 28 17:12:26 2001) ---- */
+vib	demo/P048_01_p01_effect_01.vib
+/* mgdemo added ----upto here ---- */
+
+
+// デバッグ用
+// 小さいサイズのテクスチャはまとめておく
+
+
+// リネーム
+rename		gps_w31a.mar	gbsstage.mar
+
+
+// 解体Ｃ４セット 最後に描画させるためにＴＲＩ名にＺをつける
+pack_all	z_object.tri \
+			goods/c4_kaitai_a \
+			goods/c4_kaitai_b
+
+goods		c4_kaitai_a
+goods		c4_kaitai_b
+
+

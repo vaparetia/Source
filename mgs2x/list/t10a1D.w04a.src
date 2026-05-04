@@ -1,0 +1,61 @@
+//
+//	t10a1D.w04a.src
+//
+//	written by Y.Matsuhana 1999.Dec
+//
+//	$Id: t10a1D.w04a.src,v 1.4 2001/08/23 02:13:06 usr04549 Exp $
+
+
+// 常駐データ
+block .use r_tnk0
+
+block .nocache
+block .cache
+
+#define wn_w04a
+
+
+// 各ステージ共通要素
+#include	"common.h"
+#include	"c_effect.h"
+
+// キャラクタ 
+include		marine.h
+
+// ワールド
+world		w04a
+lt2		w04a.lt2
+
+//水密ドア
+goods		demo_w00_sdr/demo_w00_sdr_r.kms
+goods		demo_w00_sdr/demo_w00_sdr_l.kms
+
+//長廊下ライト用
+world		w03
+
+hazard	   	w04a.hzx
+world		door/w04_dr.kms
+world		door/w03esdr_handle.kms
+world		door/w03esdr_body.kms
+world		door/w04_sdr_hnd.kms
+world		door/w04_sdr.kms
+world		w04/hatch.kms
+
+// デバッグ用
+//空中鉄棒
+debug	mogi/w04_test_bou.kms
+debug	mogi/w04_test_bou_pera.kms
+
+world	w04b/w04_box2.kms
+world	w04/w04_box.kms
+
+//プロジェクタリモコン
+goods	remocon/remocon.kms
+
+// デモ用スネーク
+human	sna_def/sna_def_mh.evm
+
+// 振動データ
+// データ数が多すぎてロード時に落ちるステージが出たので、一時的にカット。010729（平野）
+// 振動ファイルは一つにまとまるようになったので組み込み。010803
+vib		demo

@@ -1,0 +1,190 @@
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+
+	void edgePostVignette( void* output, void* input, uint32_t width, uint32_t height );
+	void edgePostVignetteFX16( void* output, void* input, uint32_t width, uint32_t height );
+	
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+.include "edgepost_helpers.inc"
+.include "edgepost_luv_helpers.inc"
+
+.macro CLAMP( x, a, b )
+	.localreg		m0, m1
+	cgt				m0, x, b
+	cgt				m1, a, x
+	selb			x, x, b, m0
+	selb			x, x, a, m1
+.endmacro
+
+.macro VIGNETTE_COEFFICIENT( a, x, y )
+	.localreg		d
+	fm				d, x, x
+	fma				d, y, y, d
+	fnms			a, d, d, kEdgePostFloatOne
+	CLAMP( a, kEdgePostFloatZero, kEdgePostFloatOne )	
+.endmacro
+
+.macro LOAD_ARGB8( input, p0, p1, p2, p3 )
+	.localreg		packed
+	lqd				packed, -0x10( input)
+	EDGEPOST_UNPACK_PIXELS8( p0, p1, p2, p3, packed )
+	EDGEPOST_U8_TO_FLOAT( p0, p0)
+	EDGEPOST_U8_TO_FLOAT( p1, p1)
+	EDGEPOST_U8_TO_FLOAT( p2, p2)
+	EDGEPOST_U8_TO_FLOAT( p3, p3)
+.endmacro
+
+.macro LOAD_FX16( input, p0, p1, p2, p3 )
+	.localreg		pk0, pk1
+	lqd				pk0, -0x20( input)
+	lqd				pk1, -0x10( input)
+	EDGEPOST_UNPACK_PIXELS16( p0, p1, pk0 )
+	EDGEPOST_UNPACK_PIXELS16( p2, p3, pk1 )
+	cuflt			p0, p0, 11
+	cuflt			p1, p1, 11
+	cuflt			p2, p2, 11
+	cuflt			p3, p3, 11
+.endmacro
+
+.macro LOAD_LUV( input, p0, p1, p2, p3 )
+	.localreg		packed
+	lqd				packed, -0x10( input)
+	EDGEPOST_CONVERT_FROM_PACKED_LUV( packed, p0, p1, p2, p3 )
+.endmacro
+
+.macro STORE_ARGB8( output, p0, p1, p2, p3 )
+	.localreg		r
+	EDGEPOST_CLAMP_FLOAT( p0 )
+	EDGEPOST_CLAMP_FLOAT( p1 )
+	EDGEPOST_CLAMP_FLOAT( p2 )
+	EDGEPOST_CLAMP_FLOAT( p3 )
+	EDGEPOST_FLOAT_TO_U8( p0, p0 )
+	EDGEPOST_FLOAT_TO_U8( p1, p1 )
+	EDGEPOST_FLOAT_TO_U8( p2, p2 )
+	EDGEPOST_FLOAT_TO_U8( p3, p3 )
+	EDGEPOST_PACK_PIXELS8( r, p0, p1, p2, p3 )
+	stqd			r, -0x10(output)
+.endmacro
+
+.macro STORE_FX16( output, p0, p1, p2, p3 )
+	.localreg		pk0, pk1
+	cfltu			p0, p0, 11
+	cfltu			p1, p1, 11
+	cfltu			p2, p2, 11
+	cfltu			p3, p3, 11
+	EDGEPOST_PACK_PIXELS16( pk0, p0, p1 )
+	EDGEPOST_PACK_PIXELS16( pk1, p2, p3 )
+	stqd			pk0, -0x20(output)
+	stqd			pk1, -0x10(output)
+.endmacro
+
+.macro STORE_LUV( output, p0, p1, p2, p3 )
+	.localreg		packed
+	EDGEPOST_CONVERT_TO_PACKED_LUV( packed, p0, p1, p2, p3 )
+	stqd			packed, -0x10(output)
+.endmacro
+
+.macro VIGNETTE( output, input, width, height, inputPixelSize, LOAD_MACRO, outputPixelSize, STORE_MACRO )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+
+	// splat inputs
+	shufb			width, width, width, kEdgePostReplicateX
+	shufb			height, height, height, kEdgePostReplicateX
+	shufb			input, input, input, kEdgePostReplicateX
+
+	//	calculate coordinate deltas
+	.localreg		dx, dy, idx, idy
+	cuflt			dx, width, 0
+	cuflt			dy, height, 0
+	frest			idx, dx
+	frest			idy, dy
+	fi				dx, dx, idx
+	fi				dy, dy, idy
+	ilf32			idx, 2.f
+	fm				dx, dx, idx
+	fm				dy, dy, idx
+
+	//	setup x, y, iterators
+	.localreg		x, y, k0123
+	il128			k0123, 0x00000000_00000001_00000002_00000003
+	cuflt			k0123, k0123, 0
+	ilf32			y, -1.f
+	fma				x, dx, k0123, y
+	
+	// increment steps
+	.localreg		x_increment, y_increment, x_reset
+	ilf32			x_increment, 4.f
+	fm				x_increment, dx, x_increment
+	mov				y_increment, dy
+	ilf32			x_reset, -2.f
+	
+	// linearized loop
+	.localreg		count, ix
+	mpy				count, width, height
+	ila				ix, 0
+
+	//stop			0x3fff
+
+loop:
+	ai				count, count, -4
+	ai				output, output, outputPixelSize * 4
+	ai				input, input, inputPixelSize * 4
+	
+	.localreg		a0, a1, a2, a3
+	
+	// load input pixels
+	LOAD_MACRO( input, a0, a1, a2, a3 )
+	
+	// vignette
+	.localreg rs, rs0, rs1, rs2, rs3
+	VIGNETTE_COEFFICIENT( rs, x, y )
+	shufb			rs0, rs, rs, kEdgePostReplicateX
+	shufb			rs1, rs, rs, kEdgePostReplicateY
+	shufb			rs2, rs, rs, kEdgePostReplicateZ
+	shufb			rs3, rs, rs, kEdgePostReplicateW
+	fm				a0, a0, rs0
+	fm				a1, a1, rs1
+	fm				a2, a2, rs2
+	fm				a3, a3, rs3
+		
+	// output result
+	STORE_MACRO( output, a0, a1, a2, a3 )
+
+	// step coordinate iterators
+	.localreg		m, x_1, y_1
+	fa				x, x, x_increment
+	fa				x_1, x, x_reset
+	fa				y_1, y, y_increment
+	ai				ix, ix, 4
+	ceq				m, ix, width
+	selb			x, x, x_1, m
+	selb			y, y, y_1, m
+	ila				y_1, 0
+	selb			ix, ix, y_1, m
+
+	// loop	
+	brnz			count, loop
+.endmacro
+
+
+.cfunc void edgePostVignette( qword output, qword input, qword width, qword height )
+	VIGNETTE( output, input, width, height, 4, LOAD_ARGB8, 4, STORE_ARGB8 )
+.endfunc
+
+.cfunc void edgePostVignetteFX16( qword output, qword input, qword width, qword height )
+	EDGEPOST_DECLARE_LUV_HELPER_CONSTANTS
+	VIGNETTE( output, input, width, height, 8, LOAD_FX16, 8, STORE_FX16 )
+.endfunc

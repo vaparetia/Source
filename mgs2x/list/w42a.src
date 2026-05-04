@@ -1,0 +1,99 @@
+// w42a.src
+// ＡＧ・第一メタルハンガー
+// 2001/02/05 S.Yamashita
+// $Id: w42a.src,v 1.28 2001/08/21 01:17:42 usr03692 Exp $
+
+
+
+// ステージ名
+#define		WN_W42A
+
+
+
+block .use r_plt2
+block .nocache
+block .cache
+
+// 各ステージ共通要素
+#include	"common.h"
+#include	"c_effect.h"
+//include		wp_plant.h
+
+
+
+// キャラクタ
+//include		ene_tng.h
+include		ene_tng42.h
+
+
+
+// 強制モーション
+mtn			rai_w42a.mls
+
+
+
+
+
+// ワールド
+// マルチテクスチャモデル
+
+// それ以外のモデル
+pack_all	apdray.tri \
+				world/w42a/w42a_pdray/w42a_pdray_high.dar \
+				world/w42a/w42a_pdray/w42a_pdray_low.dar
+
+pack_all	zribbon.tri \
+				world/w42a/other/w42a_efct.dar
+
+pack_all	door.tri \
+				world/door/w42a_dr_left.dar \
+				world/door/w42a_dr_right.dar
+
+world		door/w42a_dr_left.kms
+world		door/w42a_dr_right.kms
+
+world		w42a/other
+world		w42a/w42a
+world		w42a/w42a_pdray
+lt2			w42a.lt2
+hazard		w42a.hzx
+
+
+
+
+
+// オブジェクト
+// 小さいサイズのテクスチャはまとめておく
+
+// リボン
+pack_trnall	stage_effect.tri \
+				world/w42a/effect/w42a_efct_disp_01_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_01_scr_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_01_noiz_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_02_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_02_scr_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_02_noiz_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_03_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_03_scr_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_03_noiz_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_04_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_04_scr_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_04_noiz_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_05_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_05_scr_alp_add_ovl.bmp \
+				world/w42a/effect/w42a_efct_disp_05_noiz_alp_add_ovl.bmp
+
+// 監視カメラ
+meca		svc_plant
+
+// カメマップ
+l2d			2D/mapbug/mapbug.l2d
+
+// アイテム
+itembox
+
+
+
+
+
+// リネーム

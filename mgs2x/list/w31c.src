@@ -1,0 +1,133 @@
+//
+//	w31c.src
+//
+//	written by H.Yoshiike 2000.Nov
+//
+//	$Id: w31c.src,v 1.32 2001/10/06 14:19:08 usr03682 Exp $
+
+#define WN_W31C
+
+#ifndef EMMA_STAGE
+#define VAMP_STAGE
+#endif
+
+block .use r_plt0
+block .nocache
+block .cache
+
+#include "w31c_common.h"
+// 特殊ゲームオーバーPICT
+#include	"goverpic.h"
+
+// 強制モーション
+// プレイヤー用
+#ifdef EMMA_STAGE
+mtn		rai_swim.mls
+#endif
+
+mtn		rai_w31c.mls
+
+// ヴァンプ関連一式
+#ifdef VAMP_STAGE
+#include	"w31c_vamp.h"
+#endif
+
+// エマ用
+#ifdef EMMA_STAGE
+#include	"emma.h"
+mtn		emma_w31c.mls
+mtn		emma.mls
+#endif
+
+// アイテム(必要最小限に抑える)
+pack_all	w31c_itembox.tri \
+			itembox/amo/handgun_amo_ibox.dar \
+			itembox/amo/handgun_amo_ibox_sh.dar \
+			itembox/amo/m92_amo_label.dar \
+			itembox/amo/scm_amo_label.dar \
+			itembox/amo/usp_amo_label.dar \
+			itembox/amo/rifle_amo_ibox.dar \
+			itembox/amo/rifle_amo_ibox_sh.dar \
+			itembox/amo/m4_amo_label.dar \
+			itembox/amo/aks_amo_label.dar \
+			itembox/amo/psg_amo_label.dar \
+			itembox/amo/psgT_amo_label.dar \
+			itembox/amo/launcher_amo_ibox.dar \
+			itembox/amo/launcher_amo_ibox_sh.dar \
+			itembox/amo/rgb_amo_label.dar \
+			itembox/amo/stg_amo_label.dar \
+			itembox/weapon/sgr_label.dar \
+			itembox/weapon/gre_label.dar \
+			itembox/weapon/grenade_ibox.dar \
+			itembox/weapon/grenade_ibox_sh.dar \
+			itembox/weapon/cfr_label.dar \
+			itembox/weapon/magazine_ibox.dar \
+			itembox/weapon/magazine_sh.dar \
+			itembox/weapon/magazine_label.dar \
+			itembox/item/ration_ibox.dar \
+			itembox/item/ration_ibox_sh.dar \
+			itembox/item/rtn_label.dar \
+			itembox/item/goggle_ibox.dar \
+			itembox/item/goggle_ibox_sh.dar \
+			itembox/item/tgl_label.dar \
+			itembox/item/box2_ibox.dar \
+			itembox/item/box2_ibox_sh.dar \
+			itembox/item/bam_label.dar \
+			itembox/item/medicine_ibox.dar \
+			itembox/item/medicine_ibox_sh.dar \
+			itembox/item/dzp_label.dar \
+			itembox/item/dzp2_label.dar
+
+itembox		amo/handgun_amo_ibox.kms
+itembox		amo/handgun_amo_ibox_sh.kms
+itembox		amo/m92_amo_label.kms
+itembox		amo/scm_amo_label.kms
+itembox		amo/usp_amo_label.kms
+itembox		amo/rifle_amo_ibox.kms
+itembox		amo/rifle_amo_ibox_sh.kms
+itembox		amo/m4_amo_label.kms
+itembox		amo/aks_amo_label.kms
+itembox		amo/psg_amo_label.kms
+itembox		amo/psgT_amo_label.kms
+itembox		amo/launcher_amo_ibox.kms
+itembox		amo/launcher_amo_ibox_sh.kms
+itembox		amo/rgb_amo_label.kms
+itembox		amo/stg_amo_label.kms
+
+itembox		weapon/sgr_label.kms
+itembox		weapon/gre_label.kms
+itembox		weapon/grenade_ibox.kms
+itembox		weapon/grenade_ibox_sh.kms
+itembox		weapon/cfr_label.kms
+itembox		weapon/magazine_ibox.kms
+itembox		weapon/magazine_sh.kms
+itembox		weapon/magazine_label.kms
+
+itembox		item/ration_ibox.kms
+itembox		item/ration_ibox_sh.kms
+itembox		item/rtn_label.kms
+itembox		item/goggle_ibox.kms
+itembox		item/goggle_ibox_sh.kms
+itembox		item/tgl_label.kms
+itembox		item/box2_ibox.kms
+itembox		item/box2_ibox_sh.kms
+itembox		item/bam_label.kms
+itembox		item/medicine_ibox.kms
+itembox		item/medicine_ibox_sh.kms
+#ifdef MGS2_LANG_ENGLISH
+itembox		item/dzp2_label.kms
+#else
+itembox		item/dzp_label.kms
+#endif
+
+// 水膜
+effect		scr_effect/scr_waterline01.kms
+cvd			effect/scr_effect/scr_waterline01.cv2 vn
+
+//水面落下振動
+vib		etc/drop_sea.vib
+
+#ifndef NO_BOSS_MODE
+// ボスラッシュ用シナリオ(w31cのみ)
+gcx		boss
+#endif

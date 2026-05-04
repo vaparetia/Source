@@ -1,0 +1,186 @@
+プリミティブの詳細
+
+DG_PRIM_TYPE  (← 現在３１種 )
+/*********************************************************************************/
+すべて接頭語として
+
+DG_PRIM_    が つく。
+
+･ 直線とポリゴンタイプ
+    それぞれに５パターンの種類がある。
+
+
+             単色   グロー   テクスチャ     グロー           グローテクスチャ
+                                         テクスチャ      パースペクティブ補正
+               
+直線  LINE_   R2     G2 	T2	    GT2              GTQ2
+
+3角形  POLY_  R3     G3         T3          GT3              GTQ3
+
+四角形 POLY_  R4     G4         T4          GT4              GTQ4
+
+ 例） グローのみ四角形        DG_PRIM_POLY_G4
+
+･スプライトタイプ
+  常にカメラの方向を向く 
+  SPRT3D1:３次元スプライト。頂点配列のvwでサイズを指定（＝正方形のみ）
+  SPRT3D2:３次元スプライト。初期化時に頂点配列と同時にサイズ指定配列を必要とす
+  
+･メニュー表示用
+MENU_SPRT  :メニュー表示用省サイズ型プリミティブ群
+MENU_LINE  :システム側はＤＭＡに繋ぐことしか行なわない（＝２Ｄのみ）
+MENU_LINE_G:パケット自体はPACKEDモードではなくREGLISTモードを使用している
+
+･フリー
+   自分で何もかも指定する。
+   FREEPRIM
+
+･その他
+   VU1
+
+
+/********************************************************************************/
+必要な設定
+○ 直線
+   DG_PRIM_LINE_
+
+      絶対必要なデータ
+         ･ 位置(かならず  ライン数の2倍で  FVECTOR）
+	      GM_MakePrim( , , ,  FVECTOR *pos,NULL) を指定。
+		
+              
+    ･R2
+	必要なデータ
+  	   ･RGBA 指定。 
+	       DG_SET_RGBA1
+
+    ･G2
+        必要なデータ
+  	   ･RGBA 指定。 
+	      DG_SET_RGBA1,DG_SET_RGBA2
+                 
+    ･T2
+	必要なデータ
+           ･色指定
+	      DG_SET_RGBA1		
+           ･テクスチャ情報
+	      DG_SET_STQ1,DG_SET_STQ2;
+           
+    ･GT2
+	必要なデータ
+            ･色         DG_SET_RGBA1,DG_SET_RGBA2
+            ･テクスチャ DG_SET_STQ1,DG_SET_STQ2;
+    ･GTQ2
+	必要なデータ。
+            ･色         DG_SET_RGBA1,DG_SET_RGBA2
+  	    ･テクスチャ 
+                 基本的に DG_SET_STQではなく、
+                GM_MakePrim( , , , , FVECTOR *uvs) で NULLの場所に指定。
+
+                 注 DG_SET_STQで直接パケットに値をいれた場合、
+                     パースペクティブ補正が自動で行われないので注意
+
+○三角形
+   DG_PRIM_POLY_
+      絶対必要なデータ
+         ･ 位置(かならず  ポリゴン数の3倍で  FVECTOR）
+	      GM_MakePrim( , , ,  FVECTOR *pos,NULL) を指定。
+
+    ･R3
+	必要なデータ
+  	   ･RGBA 指定。 
+	       DG_SET_RGBA1
+
+    ･G3
+        必要なデータ
+  	   ･RGBA 指定。 
+	      DG_SET_RGBA1,DG_SET_RGBA2,DG_SET_RGBA3
+                 
+    ･T3
+	必要なデータ
+           ･色指定
+	      DG_SET_RGBA1		
+           ･テクスチャ情報
+	      DG_SET_STQ1,DG_SET_STQ2,DG_SET_STQ3
+           
+    ･GT3
+	必要なデータ
+            ･色         DG_SET_RGBA1,DG_SET_RGBA2,DG_SET_RGBA3
+            ･テクスチャ DG_SET_STQ1,DG_SET_STQ2,DG_SET_STQ3
+    ･GTQ3
+	必要なデータ。
+            ･色         DG_SET_RGBA1,DG_SET_RGBA2,DG_SET_RGBA3
+  	    ･テクスチャ 
+                 基本的に DG_SET_STQではなく、
+                GM_MakePrim( , , , , FVECTOR *uvs) で NULLの場所に指定。 
+                 
+                  注 DG_SET_STQで直接パケットに値をいれた場合、
+                     パースペクティブ補正が自動で行われないので注意
+
+○四角形
+   DG_PRIM_POLY_
+      絶対必要なデータ
+         ･ 位置(かならず  ポリゴン数の4倍で  FVECTOR）
+	      GM_MakePrim( , , ,  FVECTOR *pos,NULL) を指定。
+
+    ･R4
+	必要なデータ
+  	   ･RGBA 指定。 
+	       DG_SET_RGBA1
+
+    ･G4
+        必要なデータ
+  	   ･RGBA 指定。 
+	      DG_SET_RGBA1,DG_SET_RGBA2,DG_SET_RGBA3,DG_SET_RGBA4
+                 
+    ･T4
+	必要なデータ
+           ･色指定
+	      DG_SET_RGBA1		
+	      DG_SET_RGBA2
+           ･テクスチャ情報
+	      DG_SET_STQ1,DG_SET_STQ2,DG_SET_STQ3,DG_SET_STQ4
+           
+    ･GT4
+	必要なデータ
+            ･色         DG_SET_RGBA1,DG_SET_RGBA2,DG_SET_RGBA3,DG_SET_RGBA4
+            ･テクスチャ DG_SET_STQ1,DG_SET_STQ2,DG_SET_STQ3,DG_SET_STQ4
+    ･GTQ4
+	必要なデータ。
+            ･色         DG_SET_RGBA1,DG_SET_RGBA2,DG_SET_RGBA3,DG_SET_RGBA4
+  	    ･テクスチャ 
+                 基本的に DG_SET_STQではなく、
+                GM_MakePrim( , , , , FVECTOR *uvs) で NULLの場所に指定。 
+                 
+                  注 DG_SET_STQで直接パケットに値をいれた場合、
+                     パースペクティブ補正が自動で行われないので注意
+
+○スプライト
+  DG_PRIM_
+  ･SPRT3D1 ：
+	GM_MakePrim( , , ,FVECTOR *pos, NULL ) ;
+
+	必要なデータ 
+           ･位置     posで指定（ スプライトの中心位置 )
+           ･色       RGBA 1個
+           ･サイズ   pos->vw にサイズを入れる。
+	   
+         テクスチャを使用するときは、
+               DG_SET_STQ1,DG_SET_STQ2 で 対角を指定する。            
+	
+  ･SPRT3D2
+        GM_MakePrim( , , ,FVECTOR *pos, FVECTOR *size) ;
+
+        必要なデータ
+           ･位置     posで指定 (スプライトの中心位置)
+	   ･色       RGBA  1個
+           ･サイズ   sizeに代入。
+           
+        テクスチャを使用するときは、
+               SPRT3D1と同じ.
+
+○フリー
+  DG_PRIM_FREEPRIM
+      パケット内を自分で指定。
+
+後 わからないところがあれば、田中 秀幸（通称  ビッグ）まで 質問にきてください。

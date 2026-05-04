@@ -1,0 +1,678 @@
+/*
+	t13a1D.w04c.gcl
+	    デモ海面・タンカー沈没
+
+	$Id: t13a1D.w04c.gcl,v 1.66 2001/11/05 09:01:55 usr10748 Exp $
+
+*/
+
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_TANKER	1		// 共通プロック切り分け用
+#define		DEMO_STAGE		1		// デモステージかどうかで起動するキャラを切り分ける
+
+// 調整用Define
+// ------------------------------------
+
+#define	PLAYER		スネーク
+#define SOUND_FG	1
+#define LD_FADEOUT	1
+#define STAGE_END	1
+#define STAGE_HZX	d00a3
+#define STAGE_LT2	w00a
+#define LT2_SCALE	w00_chinbotsu_scale10
+// 開発中ですデファインを外すときは、中味をきちんと確認。
+#define 開発中です	0
+#define 沈没タンカーぼんぼり臨時 1
+
+// include
+// ------------------------------------
+#include "5sec_bfr_demo.h"
+#include "demo_vardef.h"
+#include "demo_stdch.h"
+#include "demo_stdch2.h"
+#include "story.h"
+#include "sload.h"
+#include "varinit.h"
+#include "ending.rsc"
+
+
+
+// マップ設定
+// ------------------------------------
+chara マップ 海面 -k null 0 0 0 -h d:STAGE_HZX -l d:STAGE_LT2
+if($w:t_story < d:ST_T13a1Dメタルギア逃走ポリゴンデモ開始){
+	command マップ設定 海面 -set {
+		eval($s:d_num = t13a1D)
+		#if d:MGS2_DEMO
+			@t13a1Dデモアクトデバッグ再生時
+		#else
+			eval($f:global_polygon_demo = 1)
+			@デモモデル差し替え処理
+			#if d:デモ前五秒間待ち
+				@global_五秒待ちセット
+				if( $f:global_デバッグポーズ通過 ){ @デモ再生_t13a1D }
+			#else
+				@デモ再生_t13a1D
+			#endif
+			@デモキャンセルチェックプロック
+		#endif
+		@常駐キャラ設定
+		@エフェクト設定
+		@デモ海面セット
+		@空_雷_天球_風制御_雨_霧雨セット
+		@シネマスクリーンセット
+		@沈没タンカーセット
+		@水中のエフェクト
+	}
+} else if($w:t_story == d:ST_T13a1Dメタルギア逃走ポリゴンデモ終了) {
+	@タンカー編終了処理
+} else if($w:t_story == d:ST_PASSクリアコード表示終了) {
+	@プラント編スタート
+}
+//初期マップの表示
+command マップ表示 	-add 海面
+
+
+// デモ再生関係用プロック設定
+// ------------------------------------
+// とりあえずダミープロック
+proc null {}
+
+proc デモキャンセル {
+	// ポーズオフ
+	command メニュー設定 -p off
+	// プログラムで起動しているSEがあれば、ここで切る
+	command セットサウンドコード -c d:SNG_FOUTS_S
+	command セットサウンドコード -c d:SE_JOUCHUU_OFF
+	command StreamStopAll
+}
+
+proc デモキャンセルチェックプロック {
+	chara デモキャンセルチェック デモキャンセル \
+		-p デモキャンセル
+}
+
+
+
+proc シネマスクリーンセット  {
+	chara シネマスクリーン シネマ \
+		-top d:CINEMA_BELT_UPPER \
+		-bottom d:CINEMA_BELT_LOWER \
+		-ftime 60	//デフォルト値（ゼロは駄目）
+	mesg シネマスクリーン シネマ フェードアウト 1
+}
+
+
+// エフェクト設定
+// ------------------------------------
+proc エフェクト設定 {
+}
+
+proc デモ海面セット {
+	chara プラント海面 seaseasea \
+		-single_mode \
+		-light_enable \
+		-tex oil wave06 wave09_alp_ovl \
+		-pos 0,-6500,0 \
+		-details_wave 23 9938 12
+}
+proc 海面高空へ飛ばす {
+	mesg プラント海面 seaseasea 表示位置移動 0,(-6500+0),0
+}
+proc タンカー沈没海面 {
+	mesg プラント海面 seaseasea 表示位置移動 0,(-6500+0),0
+}
+proc 海面元に戻す {
+	mesg プラント海面 seaseasea 表示位置移動 0,(-6500+0),0
+}
+
+#ifdef d:PAL
+// ＰＡＬ版専用。その他のバージョンでは使用されません。
+proc スネーク浮上海面 {
+print 'pppppppppppppppppppppppppppppppppppppppppppppppppppppp'
+	mesg プラント海面 seaseasea 表示位置移動 0,(-6500-1000),0
+}	
+
+proc スネークのまれ海面 {
+print 'tttttttttttttttttttttttttttttttttttttttttttttttttttttt'
+	mesg プラント海面 seaseasea 表示位置移動 0,(-6500+450),0
+}	
+
+proc 初期海面 {
+print 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+	mesg プラント海面 seaseasea 表示位置移動 0,(-6500-250),0
+}	
+
+#endif
+
+proc 海面テクスチャデフォルト {
+	mesg プラント海面 seaseasea テクスチャ変更 wave06
+}
+proc 海面テクスチャ遠景１ {
+	mesg プラント海面 seaseasea テクスチャ変更 wave06long1
+}
+proc 海面テクスチャ遠景２ {
+	mesg プラント海面 seaseasea テクスチャ変更 wave06long2
+}
+
+
+proc 空_雷_天球_風制御_雨_霧雨セット {
+print 'sky_000'
+	chara   新空 嵐空 \
+//		-h 90000 \
+		-m w00_sky
+print 'sky_001'
+	chara   新雷フラッシュ 嵐空
+print 'sky_002'
+
+	chara 天球 背景 \
+		-h 180000 \
+		-b -10000
+
+//	command セットファークリップ 50 (65535 * 40)
+print 'sky_003'
+
+	chara 風制御 wind \
+		-i 100 \
+		-j 300 \
+		-r -1024 1024 0 \
+		-a 4 \
+		-b 300 \
+		-c 150
+
+print 'sky_004'
+	chara 雨 rain \
+		-n 16 \
+		-c 90 \
+		-b -17750 0 -20000 17750 3000 -3000 \
+			-14000 6000 -16000 14000 10000 -13000 \
+			-32000 -10000 -32000 32000 -2600 32000
+
+print 'sky_005'
+	chara 霧雨 fograin
+
+print 'sky_006'
+
+}
+
+proc 雨停止 {
+	mesg 雨 rain パーセンテージ 0
+}
+
+proc 雨開始 {
+	mesg 雨 rain パーセンテージ 100
+}
+
+proc 空消す {
+	mesg 新空 嵐空 消す
+
+print '空消すでたよ空消すでたよ空消すでたよ空消すでたよ'
+
+}
+
+proc 空表示 {
+	mesg 新空 嵐空 表示
+
+print '空表示でたよ空表示でたよ空表示でたよ空表示でたよ'
+
+}
+
+proc 霧雨オフ {
+	mesg 霧雨 fograin オフ
+}
+
+proc 霧雨オン {
+	mesg 霧雨 fograin オン
+}
+
+proc 天球オフ {
+	mesg 天球 背景 オフ
+
+print '天球オフでたよ天球オフでたよ天球オフでたよ天球オフでたよ'
+
+}
+
+proc 天球オン {
+	mesg 天球 背景 オン
+
+print '天球オンでたよ天球オンでたよ天球オンでたよ天球オンでたよ'
+
+}
+
+proc 天球90度回転 {
+	mesg 天球 背景 Ｙ回転 1024
+
+print '天球90度回転でたよ天球90度回転でたよ天球90度回転でたよ天球90度回転でたよ'
+
+}
+proc 天球0度回転 {
+	mesg 天球 背景 Ｙ回転 0
+
+print '天球0度回転でたよ天球0度回転でたよ天球0度回転でたよ天球0度回転でたよ'
+
+}
+
+proc 天球45度回転 {
+	mesg 天球 背景 Ｙ回転 512
+
+print '天球45度回転でたよ天球45度回転でたよ天球45度回転でたよ天球45度回転でたよ'
+
+}
+
+proc 沈没タンカーセット {
+	chara 沈没タンカー tank \
+		-p 12962,0,89330 \
+		-dir 0 \
+		-kms w00_chinbotsu \
+		-mar tnk_sink \
+		-scale 10 \
+		-light d:LT2_SCALE
+#if d:沈没タンカーぼんぼり臨時
+	chara 沈没タンカー tankぼんぼり \
+		-p 12962,0,89330 \
+		-dir 0 \
+		-kms w00_chinbotsu_bonbori \
+		-mar tnk_sink \
+		-scale 10 \
+		-light d:LT2_SCALE
+#endif
+
+	chara 沈没タンカー tank2 \
+		-p 12962,-2000,89330 \
+		-dir 0 \
+		-kms w00_chinbotsu \
+		-mar tnk_sink \
+		-scale 10 \
+		-light d:LT2_SCALE
+	mesg 沈没タンカー tank2 非表示
+#if d:沈没タンカーぼんぼり臨時
+	chara 沈没タンカー tank2ぼんぼり \
+		-p 12962,-2000,89330 \
+		-dir 0 \
+		-kms w00_chinbotsu_bonbori \
+		-mar tnk_sink \
+		-scale 10 \
+		-light d:LT2_SCALE
+	mesg 沈没タンカー tank2ぼんぼり 非表示
+#endif
+}
+
+proc タンカー沈没モーション_breakout_back {
+	mesg 沈没タンカー tank モーション再生 0
+	mesg 沈没タンカー tank2 モーション再生 0
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 0
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 0
+#endif
+}
+proc タンカー沈没モーション_touchdown {
+	mesg 沈没タンカー tank モーション再生 1
+	mesg 沈没タンカー tank2 モーション再生 1
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 1
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 1
+#endif
+}
+proc タンカー沈没モーション_dive2sea {
+	mesg 沈没タンカー tank モーション再生 2
+	mesg 沈没タンカー tank2 モーション再生 2
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 2
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 2
+#endif
+}
+proc タンカー沈没モーション_breakout_back_a {
+	mesg 沈没タンカー tank モーション再生 3
+	mesg 沈没タンカー tank2 モーション再生 3
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 3
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 3
+#endif
+}
+proc タンカー沈没モーション_breakout_back_b {
+	mesg 沈没タンカー tank モーション再生 4
+	mesg 沈没タンカー tank2 モーション再生 4
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 4
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 4
+#endif
+}
+proc タンカー沈没モーション_touchdown_a {
+	mesg 沈没タンカー tank モーション再生 5
+	mesg 沈没タンカー tank2 モーション再生 5
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 5
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 5
+#endif
+}
+proc タンカー沈没モーション_touchdown_b {
+	mesg 沈没タンカー tank モーション再生 6
+	mesg 沈没タンカー tank2 モーション再生 6
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 6
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 6
+#endif
+}
+proc タンカー沈没モーション_touchdown_c {
+	mesg 沈没タンカー tank モーション再生 7
+	mesg 沈没タンカー tank2 モーション再生 7
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 7
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 7
+#endif
+}
+proc タンカー沈没モーション_touchdown_d {
+	mesg 沈没タンカー tank モーション再生 8
+	mesg 沈没タンカー tank2 モーション再生 8
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 8
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 8
+#endif
+}
+proc タンカー沈没モーション_touchdown_e {
+	mesg 沈没タンカー tank モーション再生 9
+	mesg 沈没タンカー tank2 モーション再生 9
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 9
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 9
+#endif
+}
+proc タンカー沈没モーション_touchdown_f {
+	mesg 沈没タンカー tank モーション再生 10
+	mesg 沈没タンカー tank2 モーション再生 10
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 10
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 10
+#endif
+}
+proc タンカー沈没モーション_touchdown_g {
+	mesg 沈没タンカー tank モーション再生 11
+	mesg 沈没タンカー tank2 モーション再生 11
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 11
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 11
+#endif
+}
+proc タンカー沈没モーション_touchdown_h {
+	mesg 沈没タンカー tank モーション再生 12
+	mesg 沈没タンカー tank2 モーション再生 12
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 12
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 12
+#endif
+}
+proc タンカー沈没モーション_touchdown_i {
+	mesg 沈没タンカー tank モーション再生 13
+	mesg 沈没タンカー tank2 モーション再生 13
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 13
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 13
+#endif
+}
+proc タンカー沈没モーション_dive2sea_a {
+	mesg 沈没タンカー tank モーション再生 14
+	mesg 沈没タンカー tank2 モーション再生 14
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 14
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 14
+#endif
+}
+proc タンカー沈没モーション_dive2sea_b {
+	mesg 沈没タンカー tank モーション再生 15
+	mesg 沈没タンカー tank2 モーション再生 15
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 15
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 15
+#endif
+}
+proc タンカー沈没モーション_dive2sea_c {
+	mesg 沈没タンカー tank モーション再生 16
+	mesg 沈没タンカー tank2 モーション再生 16
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 16
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 16
+#endif
+}
+proc タンカー沈没モーション_dive2sea_d {
+	mesg 沈没タンカー tank モーション再生 17
+	mesg 沈没タンカー tank2 モーション再生 17
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 17
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 17
+#endif
+}
+proc タンカー沈没モーション_dive2sea_e {
+	mesg 沈没タンカー tank モーション再生 18
+	mesg 沈没タンカー tank2 モーション再生 18
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 18
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 18
+#endif
+}
+proc タンカー沈没モーション_dive2sea_f {
+	mesg 沈没タンカー tank モーション再生 19
+	mesg 沈没タンカー tank2 モーション再生 19
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり モーション再生 19
+	mesg 沈没タンカー tank2ぼんぼり モーション再生 19
+#endif
+}
+
+proc タンカーオン {
+	mesg 沈没タンカー tank 表示
+}
+proc タンカーオフ {
+	mesg 沈没タンカー tank 非表示
+}
+proc タンカー２オン {
+	mesg 沈没タンカー tank2 表示
+}
+
+proc ぼんぼり１オン {
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり 表示
+#endif
+}
+proc ぼんぼり１オフ {
+#if d:沈没タンカーぼんぼり臨時
+	mesg 沈没タンカー tankぼんぼり 非表示
+#endif
+}
+proc ぼんぼり２オフ {
+#if d:沈没タンカーぼんぼり臨時
+//print '沈没タンカー tank2ぼんぼり 非表示沈没タンカー tank2ぼんぼり 非表示沈没タンカー tank2ぼんぼり 非表示'
+	mesg 沈没タンカー tank2ぼんぼり 非表示
+#endif
+}
+
+
+// ぼかしセット
+// ------------------------------------
+proc ぼかしセット {
+	chara 遠景ぼかし far_deforcus \
+		-plane	4 \
+		-near	6000 \
+		-far	9000
+
+	chara 近景ぼかし near_deforcus \
+		-plane	3 \
+		-near	0 \
+		-far	3000
+}
+
+//水中エフェクト
+proc 水中のエフェクト {
+	command 水位設定 -lv -6500
+/*	chara 水中カメラ ゆらぎマン \
+		-col 128 128 128 \
+		-warp 2
+*/
+	chara カメラ泡 泡ぶくマン  \
+		 -col 64 128 96
+	chara カメラダスト ダストマン  \
+		 -col 32 96 64 \
+		 -n   1
+}
+
+proc 海面ゆらぎ下降 {
+	command 水位設定 -lv -507500
+}
+
+proc 海面ゆらぎ戻し {
+	command 水位設定 -lv -6500
+}
+// プリシェード用ライトの件
+
+/*
+proc スクリーンショット使用 {
+	chara スクリーンショット screenshot
+}
+*/
+
+
+proc デモ再生_t13a1D {
+	eval($w:t_story = d:ST_T13a1Dメタルギア逃走ポリゴンデモ開始)
+	#if d:デモ前五秒間待ち
+		@t13a1Dデモアクトデバッグ再生時
+	#else
+		@t13a1Dデモ再生時
+	#endif
+}
+
+proc t13a1Dデモアクトデバッグ再生時 {
+chara デモアクトデバッグ demodebug  -i t:t13a1D_pal -d 't13a1D_pal' -l  -v 0  \
+			-p タンカー沈没モーション_breakout_back タンカー沈没モーション_touchdown タンカー沈没モーション_dive2sea \
+			   タンカー沈没モーション_breakout_back_a \
+			   タンカー沈没モーション_breakout_back_b \
+			   タンカー沈没モーション_touchdown_a \
+			   タンカー沈没モーション_touchdown_b \
+			   タンカー沈没モーション_touchdown_c \
+			   タンカー沈没モーション_touchdown_d \
+			   タンカー沈没モーション_touchdown_e \
+			   タンカー沈没モーション_touchdown_f \
+			   タンカー沈没モーション_touchdown_g \
+			   タンカー沈没モーション_touchdown_h \
+			   タンカー沈没モーション_touchdown_i \
+			   タンカー沈没モーション_dive2sea_a \
+			   タンカー沈没モーション_dive2sea_b \
+			   タンカー沈没モーション_dive2sea_c \
+			   タンカー沈没モーション_dive2sea_d \
+			   タンカー沈没モーション_dive2sea_e \
+			   タンカー沈没モーション_dive2sea_f \
+			   タンカーオン タンカーオフ タンカー２オン \
+			   ぼんぼり１オン ぼんぼり１オフ ぼんぼり２オフ \
+			   雨停止 雨開始 \
+			   海面高空へ飛ばす タンカー沈没海面 海面元に戻す \
+#ifdef d:PAL
+			   スネーク浮上海面 スネークのまれ海面  初期海面 \
+#endif
+			   空消す 空表示 霧雨オン 霧雨オフ 海面ゆらぎ下降 海面ゆらぎ戻し \
+			   海面テクスチャデフォルト 海面テクスチャ遠景１ 海面テクスチャ遠景２ \
+			   天球オフ 天球オン 天球90度回転 天球0度回転 天球45度回転
+}
+proc t13a1Dデモ再生時 {
+		chara demo デモ再生 \
+			-i t:t13a1D \
+			-p タンカー沈没モーション_breakout_back タンカー沈没モーション_touchdown タンカー沈没モーション_dive2sea \
+			   タンカー沈没モーション_breakout_back_a \
+			   タンカー沈没モーション_breakout_back_b \
+			   タンカー沈没モーション_touchdown_a \
+			   タンカー沈没モーション_touchdown_b \
+			   タンカー沈没モーション_touchdown_c \
+			   タンカー沈没モーション_touchdown_d \
+			   タンカー沈没モーション_touchdown_e \
+			   タンカー沈没モーション_touchdown_f \
+			   タンカー沈没モーション_touchdown_g \
+			   タンカー沈没モーション_touchdown_h \
+			   タンカー沈没モーション_touchdown_i \
+			   タンカー沈没モーション_dive2sea_a \
+			   タンカー沈没モーション_dive2sea_b \
+			   タンカー沈没モーション_dive2sea_c \
+			   タンカー沈没モーション_dive2sea_d \
+			   タンカー沈没モーション_dive2sea_e \
+			   タンカー沈没モーション_dive2sea_f \
+			   タンカーオン タンカーオフ タンカー２オン \
+			   ぼんぼり１オン ぼんぼり１オフ ぼんぼり２オフ \
+			   雨停止 雨開始 \
+			   海面高空へ飛ばす タンカー沈没海面 海面元に戻す \
+#ifdef d:PAL
+			   スネーク浮上海面 スネークのまれ海面  初期海面 \
+#endif
+			   空消す 空表示 霧雨オン 霧雨オフ 海面ゆらぎ下降 海面ゆらぎ戻し\
+			   海面テクスチャデフォルト 海面テクスチャ遠景１ 海面テクスチャ遠景２ \
+			   天球オフ 天球オン 天球90度回転 天球0度回転 天球45度回転 \
+			-next t13a1D終了
+}
+proc t13a1D終了 {
+	mesg デモキャンセルチェック デモキャンセル kill
+	eval($w:t_story = d:ST_T13a1Dメタルギア逃走ポリゴンデモ終了)
+	print '$w:t_story = d:ST_T13a1Dメタルギア逃走ポリゴンデモ終了'
+	eval($f:global_polygon_demo = 0)
+	restart -s ;
+}
+proc タンカー編終了処理 {
+	eval($w:タイトルメニュー設定 = $w:タイトルメニュー設定 | d:TITLE_MENU_TANKER_CLEARD)
+	eval($w:コンフィグ設定 = $w:コンフィグ設定 | d:CONFIG_TANKER_CLEARED)
+	eval($w:タンカー編クリア回数 = $w:タンカー編クリア回数 + 1)
+	print '$w:タンカー編クリア回数は'$w:タンカー編クリア回数'になりました！！！！！！！！！'
+
+	command メニュー設定 -radio off ;
+	command varsave
+	if(($w:タイトルメニュー設定 & d:TITLE_MENU_STORY_SEL_MASK) == d:TITLE_MENU_STORY_SEL_TANKER ) {
+		//タンカー編のみ
+		print 'ending'
+		load "ending"
+	}else{
+		//タンカー&プラント編なのでこれからまだプラント編へ
+		eval( $w:現ステージ番号 = d:ステージ名:プラント編スタート );
+		eval( $w:t_story = d:ST_PASSクリアコード表示終了) ;
+		command varsave ;
+
+		print 'save manager'
+		@セーブ確認ダイアログ表示
+	}
+}
+// -------------------------------------------------------
+// クリア情報のセーブ(確認）
+// -------------------------------------------------------
+proc セーブ確認ダイアログ表示 {
+	chara セーブ確認画面 セーブ確認 \
+		-p セーブダイアログ表示 \
+		-s セーブ確認文
+	// リソース名は、ending.gclでは「セーブ確認文」というのを用意してある。
+	// リソースの内容は、ending.rscに記述してある。
+}
+
+// -------------------------------------------------------
+// クリア情報のセーブ
+// -------------------------------------------------------
+proc セーブダイアログ表示 $:返り値 {
+	if ( $:返り値 == 0 ) {
+		// タンカー編後の情報をセーブする
+		chara セーブゲーム画面マネージャー セーブ画面 \
+			-d save_load \
+			-p セーブダイアログ表示終了 \
+			-i tnkicon
+	} else {
+		@プラント編スタート
+	}
+}
+
+proc セーブダイアログ表示終了 $:返り値 {
+	if( $:返り値 != 0 ){
+		@プラント編スタート
+	} else {
+		@セーブ確認ダイアログ表示
+	}
+}
+
+proc プラント編スタート {
+	@タンカープラントつなぎ設定
+	eval( $w:p_story = d:ST:P001_01_P01オープニング潜入１ポリゴンデモ１開始 )
+	chara delay ディレイ -time 120 -exec{
+		// 歴史博物館ステージへ
+		load "museum" -resident 'r_plt1'
+	}
+}

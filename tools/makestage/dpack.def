@@ -1,0 +1,2294 @@
+#!/usr/bin/perl
+#
+# DataPacking
+#
+# 2000/01/17 r1.16 T.Morita 
+# 2000/01/19 r2.0  T.Morita 
+# 2000/09/05 r2.29 T.Morita 
+# 2000/10/10 r3.9  T.Morita 
+# 2002/03/11 r4.36 T.Morita 
+# $Id: dpack.def,v 5.12 2002/06/20 07:15:03 usr04098 Exp $
+#
+
+#
+# Configuration Term
+# 設定初期化
+#
+$www_dir = "/usr/local/develop/httpd/cgi-bin/msg" ;
+$fix_dir = "/u/develop/mj001data/fix" ;
+$tmp_dir = "/u/develop/mj001data/temporary" ;
+$run_dir = "/u/develop/mj001data/runtime" ;
+
+$work_dir = "__tmp" ;
+
+$cach_file = ".cache" ;
+
+# 定数の初期化（基本的に大文字を定数にしている）
+$FLG_FLUSH_NON = 0 ;
+$FLG_FLUSH_BMP = 1 ;
+$FLG_FLUSH_TRN = 2 ;
+$FLG_FLUSH_CMD = 3 ;
+$MAX_TRI_FILES = 1024 ;
+$MAX_N_FILES   = 60 ;
+
+# 各種初期化
+$qar_flag = 0 ;
+$var_flag = 0 ;
+$bbs_file = $www_dir."/bbs" ;
+$err_flag = 0 ;
+$tri_num  = 0 ;  #TRIに含まれるビットマップの数
+$tri_cnt  = 0 ;  #TRIの数
+
+$cmd_flg = 0 ;   #こモデル用のビットマップがあった
+$trn_flg = 0 ;   #半透明  用のビットマップがあった
+$clr_flg = 0 ;   #置場のディレクトリを空にする
+$cm2_flg = 0 ;   #CM2 を生成する
+
+$anm_flg = "" ;
+
+# Flush out
+$| = 1 ;
+
+#テンポラリファイルの作成は長門にする
+$ENV{'TMPDIR'}="/u/develop/mj001b/exports/tmp" if ( !$ENV{'TMPDIR'} ) ;
+
+#
+# Main Initialization 
+#
+#
+#
+$fix_dir = $ENV{'MGS_FIX'}."/fix"       if ( $ENV{'MGS_FIX'} ) ;
+$tmp_dir = $ENV{'MGS_FIX'}."/temporary" if ( $ENV{'MGS_FIX'} ) ;
+$fix_dir = $ENV{'MGS2_FIXPATH'}         if ( $ENV{'MGS2_FIXPATH'} ) ;
+$run_dir = $ENV{'MGS2_RUNPATH'}         if ( $ENV{'MGS2_RUNPATH'} ) ;
+$src_dir = $fix_dir ;
+$dst_dir  = "." ;
+$lst_flg = 0  ;
+$dfn_flg = "" ;
+
+$option   = "" ;
+$tri_num  = 0 ;
+$qar_name = "data" ;
+$dar_flag = 1 ;
+$gcx_name = "scenerio.gcx\n" ;
+
+#環境変数からデファインを取得
+foreach( keys %ENV )
+{
+    $dfn_flg .= "-D $_='$ENV{$_}' -D $_\_'$ENV{$_}'=1 " if ( $_ =~ "MGS2" && $_ ne "MGS2STAGE" && $_ ne "MGS2_FIXPATH" && $_ ne "MGS2RESIDENT" && $_ ne "MGS2_RUNPATH" ) ;
+}
+
+# 引数がなければ ヘルプ表示
+die "Usage: dpack  [dir] [file.src] [-options...]\noptions:\n",
+    "\t-t             get data from temporary\n",
+    "\t-c 'command'   get data as the command specifies\n",
+    "\t-d             delete all files in the directory of the destination.\n",
+    "\t-D             define the SYMBOL.\n",
+    "\t-no_dar        DAR are not made.\n",
+    "\t-log <logfile> save the warning to logfile.\n",
+    "\t-cm2           leave the cm2-file to <./cm2> directory.\n" if ( $#ARGV == -1 ) ;
+
+# オプションの取得
+for  ( $i=0 ; $i<$#ARGV+1 ; $i++ )
+{
+    $cmd = $ARGV[++$i]     , next if ( $ARGV[$i] eq "-c"   ) ; #コマンドオプション
+    $log_file = $ARGV[++$i], next if ( $ARGV[$i] eq "-log" ) ; #ログファイルの設定
+    $src_dir  = $tmp_dir   , next if ( $ARGV[$i] eq "-t"   ) ; #FIXでなくTEMPORARYからデータを取る
+    $clr_flg  = 1          , next if ( $ARGV[$i] eq "-d"   ) ; #格納先のディレクトリを空にする
+    $lst_flg  = 1          , next if ( $ARGV[$i] eq "-lst" ) ; #ファイルを列挙する
+    $cm2_flg  = 1          , next if ( $ARGV[$i] eq "-cm2" ) ; #CM２を生成する
+    $dar_flag = 0          , next if ( $ARGV[$i] eq "-no_dar" ) ; #darを生成しない
+    $dfn_flg .= "-D ".$ARGV[++$i], next if ( $ARGV[$i] eq "-D"   ) ;
+    $src_file = $ARGV[$i]  , next if ( $ARGV[$i] =~ ".src" ) ; #SRCファイルの設定
+    $dst_dir  = $ARGV[$i] ;                                    #格納先ディレクトリを設定（必須）
+}
+
+# オプション指定 エラーかどうか
+die "Hey!! I cannot find <$src_file>!!\n"       if ( !-e $src_file && $src_file ) ;
+&fork( "rm -rf $dst_dir/*" )                    if ( $clr_flg ) ;
+&fork( "mkdir -p $dst_dir" )                    if ( !-e $dst_dir ) ;
+die "<$dst_dir> is not a directory!! Dammn!!\n" if ( !-d $dst_dir ) ;
+
+# テンポラリディレクトリを作成する
+&fork( "rm -r $work_dir" ) if ( -e $work_dir ) ;
+&fork( "mkdir -p $work_dir/cur" ) and die "Cannot make temp dir here!!\n" ;
+&fork( "mkdir -p $work_dir/dar" ) and die "Cannot make temp dir here!!\n" ;
+&fork( "mkdir -p $work_dir/trn" ) and die "Cannot make temp dir here!!\n" ;
+&fork( "mkdir -p $work_dir/cmd" ) and die "Cannot make temp dir here!!\n" ;
+&fork( "mkdir -p $work_dir/var" ) and die "Cannot make temp dir here!!\n" ;
+unlink( $log_file ) if ( -e $log_file ) ;
+
+# LISTファイルを一旦消す
+&fork( "rm -f $dst_dir/idlist.txt  $dst_dir/trilist.txt" ) ;
+
+# CM2プール用のディレクトリを作る
+&fork( "rm -rf cm2" ) if ( $cm2_flg && -d "cm2" ) ;
+&fork( "mkdir -p cm2" ) if ( $cm2_flg ) ;
+
+open( MYOUT, $lst_flg ? ">& /dev/null" : ">&STDOUT" ) ;
+open( MYERR, $lst_flg ? ">& /dev/null" : ">&STDERR" ) ;
+
+$cach_flg = 0 ;
+$resd_flg = 0 ;
+
+# Main Loop
+if ( $src_file )
+{
+    $src_file_d = $src_file if ( $src_file =~ m/\// ) ;
+    $src_file_d =~ s/\/[^\/]*$/\// ;
+    $src_file =~ s/.*\/([^\/]*)$/$1/ ;
+    $src_file =~ s/.src$// ;
+
+    #キャッシュファイルを設定し直す（ソースディレクトリの中にある物とする）
+    $cach_file = "$src_file_d/.cache" if ( $src_file_d ) ;
+
+    #SRCを読んでrenameの情報を用意する
+    unlink( "$dst_dir/data.tmp" ) if ( -f "$dst_dir/data.tmp" ) ;
+    $cnf_string = "" ;
+    $command_line = "" ;
+    &read_rename( 0, "$src_file.src" ) ;
+
+    &fork( "echo '$src_file.src begin'>> err.log" ) ;
+    &fork( "echo '$src_file.src begin'>> $log_file" )  if ( $log_file ) ;
+
+    #SRCを読んでデータを構築する
+    $command_line = "" ;
+    &read_src( 0, "$src_file.src" ) ;
+    if ( !$err_flag )
+    {
+	#エラーがなければ全てのデータを目的のディレクトリに吐き出す
+	&flush_all( 1 ) ;
+	unlink( "$dst_dir/data.cnf" ) if ( -f "$dst_dir/data.cnf" ) ;
+	&fork( "mv $dst_dir/data.tmp $dst_dir/data.cnf" ) ;
+    }
+    #キャッシュファイルを列挙する
+    &listup_cache() if ( $lst_flg ) ;
+
+    &fork( "echo '$src_file.src end'>> err.log" ) ;
+    &fork( "echo                    >> err.log" ) ;
+    &fork( "echo '$src_file.src end'>> $log_file" )  if ( $log_file ) ;
+
+    #&print_strcode() ;
+}
+elsif( $cmd )
+{
+    command( $cmd ) ;
+    &flush_all( 0 ) ;
+}
+
+&fork( "rm -rf $work_dir .tmperr" ) ;
+print MYOUT "DPACK COMPLETED.\n\n"   if ( !$err_flag ) ;
+print MYOUT "DPACK NOT!!!! NOT!!!! COMPLETED. NONE AT ALLL!!!!!\n\n" if (  $err_flag ) ;
+
+exit( $err_flag ) ;
+
+
+
+
+
+
+
+sub read_rename()
+{
+    local ( $dum, $file ) = @_ ;
+    my $replace ;
+
+#setup for rename
+    $src_file_d = "./" if ( !$src_file_d ) ;
+    open( SRC, "prepro $src_file_d$file | cpp -I$src_file_d $dfn_flg |" ) or die "Cannot open $file\n" ;
+    foreach( <SRC> )
+    {
+	next if ( /^#/ || /^[ \t]*$/ ) ;
+# remove the front spaces
+	s/^[ \t]*// ;
+        s/[\r\n]*$// ;
+
+	&read_rename     ( split(' ') ), next if ( /^include/         ) ;
+	&com_store_rename( split(' ') ), next if ( /^[ \t]*rename/    ) ;
+	&com_store_texrnm( split(' ') ), next if ( /^[ \t]*texrename/ ) ;
+    }
+    close( SRC ) ;
+
+    return $FLG_FLUSH_NON ;
+}
+
+sub read_src()
+{
+    local ( $dum, $file ) = @_ ;
+
+#setup for rename
+    $src_file_d = "./" if ( !$src_file_d ) ;
+    open( SRC, "prepro $src_file_d$file | cpp -I$src_file_d $dfn_flg |" ) or die "Cannot open $file\n" ;
+    foreach( <SRC> )
+    {
+	&command( $_ ) ;
+    }
+    close( SRC ) ;
+
+    return $FLG_FLUSH_NON ;
+}
+
+#
+# スペース毎に字句を切り分け、基本コマンド群を実行するコマンドループ。
+#
+#
+# command search
+sub command()
+{
+    local ( $_ ) = @_ ;
+    local $flg ;
+
+# skip the comments and blank
+    next if ( /^#/ || /^[ \t]*$/ ) ;
+# remove the front spaces
+    s/^[ \t]*// ;
+    s/[\r\n]*$// ;
+
+    $_ = $command_line.$_        if ( $command_line ) ;
+    chop, $command_line=$_, next if ( /\\$/     ) ;
+    $command_line = "" ;
+
+#オプション抽出
+    if ( /'/ )
+    {
+        $option = $_ ;
+        $option =~ s/.*'(.*)'.*/$1/ ;
+    }
+    s/'.*'//g ;
+
+# branches to commands(コマンド分岐)
+    COMMAND:
+    {
+	$flg=&read_src  ( split(' ') ), last COMMAND if ( /^include/   ) ;
+	$flg=&com_block ( split(' ') ), last COMMAND if ( /^block/    ) ;
+	$flg=&com_rename( split(' ') ), last COMMAND if ( /^rename/    ) ;
+	$flg=&com_texrnm( split(' ') ), last COMMAND if ( /^texrename/ ) ;
+	$flg=&com_null  ( split(' ') ), last COMMAND if ( /^null/      ) ;
+	$flg=&com_null  ( split(' ') ), last COMMAND if ( /^demo_gcx/  ) ;
+	$flg=&com_hazard( split(' ') ), last COMMAND if ( /^hazard/    ) ;
+	$flg=&com_cvd   ( split(' ') ), last COMMAND if ( /^cvd/       ) ;
+	$flg=&com_rol   ( split(' ') ), last COMMAND if ( /^rol/       ) ;
+	$flg=&com_fract ( split(' ') ), last COMMAND if ( /^fract/     ) ;
+	$flg=&com_anmtex( split(' ') ), last COMMAND if ( /^anmtex/    ) ;
+	$flg=&com_icon  ( split(' ') ), last COMMAND if ( /^icon/      ) ;
+	$flg=&com_commnd( split(' ') ), last COMMAND if ( /^command/   ) ;
+	$flg=&com_arkms ( split(' ') ), last COMMAND if ( /^arkms/     ) ;
+	$flg=&com_kmsar ( split(' ') ), last COMMAND if ( /^kms_archiver/  ) ;
+	$flg=&com_mipmap( split(' ') ), last COMMAND if ( /^pack_mip/  ) ;
+	$flg=&com_packfl( split(' ') ), last COMMAND if ( /^pack_trnflush/ ) ;
+	$flg=&com_packta( split(' ') ), last COMMAND if ( /^pack_trnall/ ) ;
+	$flg=&com_packtr( split(' ') ), last COMMAND if ( /^pack_trn/  ) ;
+	$flg=&com_packal( split(' ') ), last COMMAND if ( /^pack_all/  ) ;
+	$flg=&com_var   ( split(' ') ), last COMMAND if ( /^var/       ) ;
+	$flg=&com_l2d   ( split(' ') ), last COMMAND if ( /^l2d/       ) ;
+	$flg=&com_mtn   ( split(' ') ), last COMMAND if ( /^mtn/       ) ;
+	$flg=&com_mdl   ( split(' ') ), last COMMAND if ( /^mdl/       ) ;
+	$flg=&com_anm   ( split(' ') ), last COMMAND if ( /^anm/       ) ;
+	$flg=&com_lt2   ( split(' ') ), last COMMAND if ( /^lt2/       ) ;
+	$flg=&com_cloth ( split(' ') ), last COMMAND if ( /^cloth/     ) ;
+	$flg=&com_gcx   ( split(' ') ), last COMMAND if ( /^gcx/       ) ;
+	$flg=&com_option( split(' ') ), last COMMAND if ( /^option/    ) ;
+	
+	$flg=&com_copy2 ( split(' ') ), last COMMAND if ( /^hzm/ || /^hzx/ || /^wvx/ || /^sgt/ || /^aiff/ || /^mar/ ) ;
+	$flg=&com_copy1 ( split(' ') ) ;
+    }
+
+# make proper files
+    &flush_bmp( "$work_dir/cur", "bmp" ) if ( $flg == $FLG_FLUSH_BMP ) ;
+    &flush_bmp( "$work_dir/trn", "trn" ) if ( $flg == $FLG_FLUSH_TRN ) ;
+    &fork( "echo '----------------------------------next-------------------------------'>> $log_file" ) if ( $log_file ) ;
+    $option = "" ;
+}
+
+
+
+#
+# work_dirの中身をフラッシュする。
+#      sub flush_bmp ではプールされたBMPからTRI生成し、プールを空にする。
+#      sub flush_work ではプールされたwork_dirから行き先のディレクトリにコピーし、
+#                    BMP以外のwork_dir内を空にする
+#      sub flush_all では、work_dir内の全てのファイルにたいしてフラッシュし、
+#                    完全にwork_dirを空にする。flush_bmpしてflush_workをしている
+
+# プールされたBMPからTRI生成し、プールを空にする。
+sub flush_bmp
+{
+    local ( $dir, $mode ) = @_ ;
+    local $ls, $log, $cmd, $i ;
+
+    if ( !$lst_flg )
+    {
+	#BMPの数がいくつあるのか
+	open( LS, "dpack_ls $dir |" ) ;
+	for( $ls=0 ; <LS> ; $ls++ ){}
+	close LS ;
+	return if ( $ls==0 ) ;
+
+	if ( -e "$work_dir/$tri_file.tri" &&  $mode eq "bmp" )
+	{
+	    print MYOUT "Error !! TRI Overwrite!! please change name<$tri_file.tri>!!!!\n" ;
+	    &fork( "echo 'Error !! TRI Overwrite!! please change name<$tri_file.tri>!!!!'>> err.log" ) ;
+	}
+
+	if ( ($tri_num += $ls) > $MAX_TRI_FILES )
+	{
+	    #print MYOUT "WARNING !! BMP overflow $tri_num($ls was in this TRI)\n" ;
+	}
+	if ( ++$tri_cnt >= $MAX_N_FILES )
+	{
+	    print MYOUT "ERROR !! Too Many TRI-files!!(max $MAX_N_FILES)\n" ;
+	    $err_flag = 1 ;
+	}
+
+# $tri_file is global
+	print MYOUT "start making $tri_file.tri\n" ;
+	&fork( "echo 'start making $tri_file.tri' >> $log_file" ) if ( $log_file ) ;
+
+#check see if TEXTURE-ID is conflicting
+	if ( $ls >= 2 )
+	{
+	    if ( &fork( "id_check $dir/*.bmp > /dev/null >& .tmperr" ) )
+	    {
+		print MYOUT "Error : Texture ID Batting!!!!!!!!!\n" ;
+		&fork( "cat .tmperr" ) ;
+		&fork( "echo 'Error : Texture ID Batting!!!!!'>> err.log" ) ;
+		&fork( "cat .tmperr >> err.log" ) ;
+		#$err_flag = 1 ;
+	    }
+	    unlink .tmperr ;
+	}
+
+#ＣＭ２を作る。
+	$log = $log_file ? $log_file.".1" : "/dev/null" ;
+	if ( &fork( "makecm2 -i $dir/*.bmp -o $dir/$tri_file.cm2 >& $log" ) )
+	{
+	    print MYOUT "Error makecm2!!:$!\n" ;
+	    $err_flag = 1 ;
+	}
+
+#ＴＲＩを作る。
+	$log = $log_file ? $log_file.".2" : "/dev/null" ;
+	$cmd = "-i $dir/*.cm2 -o $work_dir/$tri_file.tri >& $log" ;
+	$cmd = "make_tri $option    $cmd" if ( $mode eq "bmp" ) ;
+	$cmd = "make_tri $option -t $cmd" if ( $mode ne "bmp" ) ;
+	if ( &fork( $cmd ) )
+	{
+	    print MYOUT "Error make_tri!!:$!\n" if ( $mode eq "bmp" ) ;
+	    $err_flag = 1 ;
+	}
+	&cp( "$tri_file.tri",  $work_dir, $work_dir ) ;
+
+#ＴＲＩの大きさをチェック
+	$i = (stat("$work_dir/$tri_file.tri"))[7] ;
+	if ( $i > 1024*1024 )
+	{
+	    &fork( "echo 'Err: Warning: $tri_file.tri exceed 1M bytes!!'>> err.log" ) ;
+	    printf( MYOUT "Err: Warning: $tri_file.tri exceed 1M bytes(%d bytes)!!\n", $i ) ;
+	}
+
+#リストをとる
+	&list_tri( $dir ) ;
+
+#ワークデータを消去する。
+	&fork( "cp $dir/*.cm2 cm2" ) if ( $cm2_flg ) ;
+	&fork( "rm -f $dir/* $work_dir/dar/*" ) ;
+	if ( $log_file )
+	{
+	    &fork( "cat $log_file.1 $log_file.2 >> $log_file" ) ;
+	    &fork( "echo 'done.' >> $log_file" ) ;
+	}
+	print MYOUT "done. $ls of BMPs are packed in $tri_file.tri.\n" ;
+    }
+
+#strcodeや重なりチェックをクリアする。
+    undef( %tex_checked ) if ( $mode eq "bmp" ) ;
+    undef( %tex_codes )   if ( $mode eq "bmp" ) ;
+    $qar_flag = 1 ;
+}
+
+#
+# プールされたwork_dirから行き先のディレクトリにコピーし、BMP以外の
+# work_dir内を空にする
+#
+sub flush_work()
+{
+    local ( $flag, $cmd_line ) = @_ ;
+    
+    #リストモードだったら処理しない。
+    if ( !$lst_flg )
+    {
+	#qarやdarに固めないモードもある。
+	if ( $flag )
+	{
+	    if ( $qar_flag )
+	    {
+		#テクスチャーをqarフォーマットに固める。
+		&fork( "qar c $work_dir/$qar_name.qar `dpack_ls $work_dir/*.tri`" ) ;
+		&fork( "rm -f $work_dir/*.tri" ) ;
+	    }
+	    if ( $var_flag )
+	    {
+		#振動データをvarフォーマットに固める。
+		&fork( "makevar -o $work_dir/$qar_name.var -l . -d $work_dir/var/*.vib" ) ;
+		&fork( "rm -f $work_dir/var/*" ) ;
+	    }
+
+	    # qar hzx 以外を dar で固める
+	    $cmd_line =  "" ;
+	    open( LS, "dpack_ls -XrpB $work_dir | grep -v / |" ) ;
+	    while( <LS> )
+	    {
+		chop ;
+		$cmd_line .= " $work_dir/$_" if ( !/\.(scn|hzx|qar)$/ ) ;
+	    }
+	    close LS ;
+	    if ( $cmd_line )
+	    {
+		&fork( "dar c  $dst_dir/$qar_name.dar $cmd_line" ) if (  $dar_flag ) ;
+		&fork( "cp $cmd_line $dst_dir" )                   if ( !$dar_flag ) ;
+		&fork( "rm  $cmd_line >& /dev/null" ) ;
+
+		# StrCode をIDリストに吐き出す。
+		&out_strcode( $cmd_line ) ;
+	    }
+
+	    # data.cnfを生成する
+	    open( CNF, ">>$dst_dir/data.tmp" ) or die "Can't open data.tmp\n" ;
+	    print CNF $cnf_string ;
+
+	    open( LS, "dpack_ls -XrpB $work_dir | grep -v / |" ) ;
+	    while( <LS> )
+	    {
+		print CNF "@".$_ if ( /\.qar$/ ) ;
+		print CNF        if ( /\.hzx$/ ) ;
+	    }
+	    close LS ;
+
+	    print CNF "$qar_name.dar\n" if ( $cmd_line && $dar_flag ) ;
+	    print CNF $gcx_name if ( $cach_flg ) ;
+	    close( CNF ) ;
+
+	    # *.qar *.hzx *.scn を移す
+	    &fork( "mv $work_dir/*.{qar,hzx,scn} $dst_dir >& /dev/null" ) if ( $qar_flag ) ;
+	    print MYOUT "\n$tri_num of BMPs are in $qar_name.QAR\n\n" if ( $qar_flag ) ;
+	}
+	else
+	{
+	    &fork( "mv $work_dir/*.* $dst_dir >& /dev/null" ) ;
+	}
+    }
+    $var_flag = 0 ;
+    $qar_flag = 0 ;
+    $tri_num  = 0 ;
+    $cach_flg = 0 ;
+    $resd_flg = 0 ; 
+    $cnf_string = "" ;
+}
+
+# work_dir内の全てのファイルにたいしてフラッシュし、完全にwork_dirを空にする。
+sub flush_all()
+{
+    local ( $flag ) = @_ ;
+
+# コモデルを固める
+    $tri_file = "comdl".$qar_name ;
+    &flush_bmp( "$work_dir/cmd", "bmp" ) if ( $cmd_flg ) ;
+
+# 半透明を固める。
+    $tri_file = "trans".$qar_name ;
+    &flush_bmp( "$work_dir/trn", "trn" ) if ( $trn_flg ) ;
+
+# 全てを出力先に転送する。
+    &flush_work( $flag ) ;
+
+# チェック項目をクリアする。
+    undef( %tex_checked ) ;
+    undef( %tex_codes   ) ;
+    undef( %checked     ) ;
+    $cmd_flg = 0 ;
+    $trn_flg = 0 ;
+}
+
+#TRIのリストを取る。
+sub list_tri()
+{
+    local ( $dir ) = @_ ;
+
+    &fork( "dpack_ls -l $dir | \grep -v '/' | \sed -e 's/^[a-z-]* *[0-9]* [a-zA-Z0-9]* [a-zA-Z0-9]*//' >> $dst_dir/trilist.txt" ) ;
+
+    &out_strcode( "$work_dir/$tri_file.tri $dir/*.bmp" ) ;
+}
+
+
+
+
+
+
+
+
+###########################################
+#
+#
+#
+# COMMAND SUBROUTINES（基本コマンド群）
+#
+# especially starting with "com_" regards as command
+#
+#
+#
+sub com_copy1()
+{
+    local @cmd = @_ ;
+    local $dir, $flg = $FLG_FLUSH_NON, $i, $tmp ;
+
+    $dir  = "$src_dir/$cmd[0]" ;
+    $tri_file =  $cmd[1] if (  $cmd[1] ) ;
+    $tri_file =  $cmd[0] if ( !$cmd[1] ) ;
+    $tri_file =~ s/.*[\/]+([^\/]+)[\/]*$/$1/ ;
+    $tri_file =~ s/\..*// ;
+
+    if (  $#cmd == 0 )
+    {
+	$flg = &dir_cp_work( "$dir" , "-pBR", "all"  ) if ( -e $dir ) ;
+	$flg = &dir_cp_work( "$dir*", "-pB",  "all"  ) if (!-e $dir ) ;
+
+	if ( !-e "$dir" || $cmd[0] =~ m/mdl$/ )
+	{
+	    print "Err: Illeagal Command!!! <$cmd[0]>\n" ;
+	    &fork( "echo 'Err: Illeagal Command!!! <$cmd[0]>'>> err.log" ) ;
+	    &fork( "echo 'Err: Illeagal Command!!! <$cmd[0]>'>> $log_file" )  if ( $log_file ) ;
+	}
+    }
+
+    foreach $i ( 1..$#cmd )
+    {
+	if ( !-e "$dir/$cmd[$i]" || $cmd[$i] =~ m/mdl$/ )
+	{
+	    print "Err: Illeagal Command!!! <$cmd[0]/$cmd[$i]>\n" ;
+	    &fork( "echo 'Err: Illeagal Command!!! <$cmd[0]/$cmd[$i]>'>> err.log" ) ;
+	    &fork( "echo 'Err: Illeagal Command!!! <$cmd[0]/$cmd[$i]>'>> $log_file" )  if ( $log_file ) ;
+	}
+	if ( $cmd[$i] =~ m/\./ )
+	{
+	    $cmd[$i] =~ s/mdl$/kms/ ;
+	    $cmd[$i] =~ s/\.[^\.]*$// ;
+	    $tmp = &dir_cp_work( "$dir/$cmd[$i].*", "-pB", "all" ) ;
+	}
+	elsif ( -d "$dir/$cmd[$i]" )
+	{
+	    $tmp = &dir_cp_work( "$dir/$cmd[$i]"  , "-pBR", "all"  ) ;
+	}
+	else
+	{
+	    $tmp = &dir_cp_work( "$dir/$cmd[$i].*", "-pB",  "all"  ) ;
+	}
+	$flg = $tmp if ( $flg == $FLG_FLUSH_NON && $tmp != $flg ) ;
+    }
+
+    return $flg ;
+}
+
+sub com_copy2()
+{
+    local @cmd = @_ ;
+    local $file, @files, $ext ;
+
+    $ext =substr( $cmd[0], 0, 3 ) ;
+
+    $file  = "$cmd[1].".$ext ;
+    $file  =~ s/\.$ext\.$ext$/\.$ext/ ;
+    die "$file does not exist.\n" if ( not -e "$src_dir/$cmd[0]/$file" ) ;
+    &cp( $file, "$src_dir/$cmd[0]", $work_dir ) ;
+
+    return $FLG_FLUSH_NON ;
+}
+
+#
+# ライトコマンド
+#
+# ライトの分割も行なうためコマンド化されている。 
+# 
+sub com_lt2()
+{
+    local @cmd = @_ ;
+    local $file, $cmd_line ;
+
+    if ( $cmd[1] !~ m/\.lt2/ )
+    {
+	print "Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>\n" ;
+	&fork( "echo 'Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>'>> err.log" ) ;
+	&fork( "echo 'Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>'>> $log_file" )  if ( $log_file ) ;
+    }
+
+    $file  = "$cmd[1].lt2" ;
+    $file  =~ s/\.lt2\.lt2$/\.lt2/ ;
+    print MYOUT "start making $file\n" ;
+
+    $cmd_line = "" ;
+    $cmd_line .= " -d $cmd[2] $cmd[3] $cmd[4]" if ( $#cmd == 5 ) ;
+    print MYOUT "Waring: Need 3 nums for lt2_div options. So did as default!\n" if ( $#cmd==2 || $#cmd==3 ) ;
+
+    die "$file does not exist.\n" if ( not -e "$src_dir/lt2/$file" ) ;
+    $file = &cp( $file, "$src_dir/lt2", $work_dir ) ;
+    &fork( "lt2_div $cmd_line $work_dir/$file > /dev/null" ) ;
+
+    print MYOUT "done.\n" ;
+
+    return $FLG_FLUSH_NON ;
+}
+
+#
+# ブロックコマンド
+#
+# ピリオドで始まるコマンドでデータに直接作用させるものではなく、きりわ
+# けをおこなったりする。データのブロック化を行なう。
+sub com_block()
+{
+    local @cmd = @_ ;
+    local $bin_file ;
+
+    print MYOUT "----------------$cmd[1]-----------------\n" if ( !$lst_flg ) ;
+
+    if ( $cmd[1] eq ".use" )
+    {
+	push( @residents, $cmd[2] ) ;
+
+	#キャッシュファイル(レジデントファイル)をIDチェックする
+	#レジデントが既に作られている必要がある。
+	&check_cache( $cmd[2] ) ;
+    }
+    else
+    {
+	&flush_all( 1 ) ;
+
+	$qar_name =  $cmd[1] ;
+	$qar_name =~ s/\.//g ;
+	$cnf_string .= "$cmd[1]\n" ;
+
+	if ( $cmd[1] eq ".nocache" )
+	{
+	    $bin_file = $src_file ;
+	    $bin_file =~ s/src$// ;
+	    $bin_file =~ s/.*\/([^\/]*)$/$1/ ;
+	    $cnf_string .= "$bin_file.bin\n" ;
+	}
+	elsif ( $cmd[1] eq ".cache" )
+	{
+	    $cach_flg = 1 ;
+	}
+	elsif ( $cmd[1] eq ".resident" )
+	{
+	    $resd_flg = 1  ;
+	    &clear_cache( $src_file ) ;
+	}
+    }
+    return $FLG_FLUSH_NON ;
+}
+
+#
+# 使われていない。
+# 
+#
+sub com_null()
+{
+    return $FLG_FLUSH_NON ;
+}
+
+#
+# モデルを取ってくるコマンド
+# 
+#
+sub com_mdl()
+{
+    local @cmd = @_ ;
+
+    &fork( "cp $run_dir/$cmd[1] $dst_dir" ) ;
+
+    return $FLG_FLUSH_NON ;
+}
+
+#
+# 汎用コマンド
+# 結局使われなかった
+#
+sub com_fract()
+{
+    local @cmd = @_ ;
+    local $command, $tri_file, $i ;
+
+    print MYOUT "fract start.\n" ;
+
+    $cmd[1] =~ s/\[.*\]// ;
+    $cmd[1] .= ".kms" ;
+    $cmd[1] =~ s/\.kms\.kms/.kms/ ;
+
+    $command .= "fract $work_dir/$cmd[1] " ;
+    for ( $i=2 ; $i <= $#cmd ; $i++ )
+    {
+	$tri_file = $cmd[$i] if ( $cmd[$i] =~ m/\.tri$/ ) ;
+	$command .= "$cmd[$i] " ;
+    }
+    &fork( "$command > /dev/null" ) ;
+    $tri_file =~ s/\.tri$// ;
+    $kms_file{$cmd[1]} = $tri_file ;
+    $kms_file{$cmd[1]} = "comdl".$qar_name if ( $tri_file =~ /_cm$/ ) ;
+    &cp( $cmd[1], $work_dir, $work_dir ) ;
+
+    print MYOUT "done.\n" ;
+
+    return $FLG_FLUSH_NON ;
+}
+
+#
+# 汎用コマンド
+# 結局使われなかった
+#
+sub com_commnd()
+{
+    local @cmd = @_ ;
+    local $command = "", @files, $i ;
+
+    die "No command found.\n" if ( $#cmd < 2 ) ;
+
+    print MYOUT "command $cmd[2]\n" ;
+    for ( $i=2 ; $i <= $#cmd ; $i++ )
+    {
+	$command .= "$cmd[$i] " ;
+    }
+    &fork( "$command > /dev/null" ) ;
+
+    @files = split( ',', $cmd[1] ) ;
+    for ( $i=0 ; $i <= $#files ; $i++ )
+    {
+	print MYOUT "\tcreate $files[$i].\n" ;
+	&cp( $files[$i], $work_dir, $work_dir ) ;
+    }
+    print MYOUT "done.\n" ;
+
+    return $FLG_FLUSH_NON ;
+}
+
+
+#
+# layoutデータ（２Ｄデータ）
+# l2dコマンドを作る。
+#
+sub com_l2d()
+{
+    local @cmd = @_ ;
+    local $src_d, $file ;
+    local $i, $cmd_line ;
+
+    print MYOUT "start making l2d $cmd[1]\n" ;
+    if ( $lst_flg )
+    {
+	
+	for ( $i=1 ; $i <= $#cmd ; $i++ )
+	{
+	    $cmd[$i] =~ s/\.l2d$/.o2d/ ;
+	    print "$cmd[$i]\n" ;
+	}
+    }
+    else
+    {
+	$src_d = $cmd[1] ;
+	$src_d =~ s/\/[^\/]+$// ;
+	$cmd_line = "layout2d " ;
+	$cmd_line .= "-cm2 " if ( $cm2_flg ) ;
+	$cmd_line .= "-tri -tex $src_dir/$src_d -o $work_dir $option " ;
+	for ( $i=1 ; $i <= $#cmd ; $i++ )
+	{
+	    $file = $cmd[$i] ;
+	    $file =~ s/\/[^\/]+$// ;
+	    die "l2d は必ず同じディレクトリに入れること\n" if ( $file ne $src_d ) ;
+	    $cmd_line .= "$src_dir/$cmd[$i] " ;
+	}
+
+	&fork( "echo '$cmd_line'>> $log_file" )  if ( $log_file ) ;
+
+	$cmd_line .= " > /dev/null >& .tmperr.log" ;
+	if ( &fork( $cmd_line ) )
+	{
+	    &fork( "cat .tmperr.log >> err.log" ) ;
+	    &fork( "cat .tmperr.log" ) ;
+	    &fork( "rm .tmperr.log" ) ;
+	    print "Error layout2d!!:$!\n" ;
+	    $err_flag = 1 ;
+	    return $FLG_FLUSH_NON ;
+	}
+
+	for ( $i=1 ; $i <= $#cmd ; $i++ )
+	{
+	    $file = $cmd[$i] ;
+	    $file =~ s/\.[^.]+$// ;
+	    $file =~ s/.*\/([^\/]+)$/$1/ ;
+	    &cp( "$file.o2d", $work_dir, $work_dir ) if ( -e "$work_dir/$file.o2d" ) ;
+	}
+
+	#QARをかためる要求
+	$qar_flag = 1 ;
+
+	&fork( "cp $work_dir/*.cm2 cm2" ) if ( $cm2_flg ) ;
+    }
+    print MYOUT "done.\n" ;
+
+    return $FLG_FLUSH_NON ;
+}
+
+#
+# モーションデータ
+# mls から mar を作る。
+#
+sub com_mtn()
+{
+    local @cmd = @_ ;
+    local $log = $log_file, $com ;
+
+    if ( $cmd[1] !~ m/\.mls/ )
+    {
+	print "Err: Illeagal Command!!! <$cmd[0] $cmd[1]>\n" ;
+	&fork( "echo 'Err: Illeagal Command!!! <$cmd[0] $cmd[1]>'>> err.log" ) ;
+	&fork( "echo 'Err: Illeagal Command!!! <$cmd[0] $cmd[1]>'>> $log_file" )  if ( $log_file ) ;
+    }
+    $cmd[1] =~ s/\.mar// ;
+    $cmd[1] =~ s/\.mls// ;
+
+    print MYOUT "start making $cmd[1].mar\n" ;
+    $com = "makemar $option $src_file_d$cmd[1].mls $work_dir/$cmd[1].mar -l $src_dir/mtn/ -s $src_file_d" ;
+    $com .= "default.sls" if ( !$cmd[2] ) ;
+    $com .= "$cmd[2].sls" if (  $cmd[2] ) ;
+    $com =~ s/\.sls\.sls$/.sls/ ;
+    if ( &fork( $com ) )
+    {
+	$err_flag = 1 ;
+	print MYOUT "Error has occured (makemar)!!:$!\n" ; 
+    }
+    &cp( "$cmd[1].mar", "", "" ) if ( $lst_flg ) ;
+    &cp( "$cmd[1].mar", $work_dir, $work_dir ) if ( !$lst_flg ) ;
+    &cp( "$cmd[1].sar", $work_dir, $work_dir ) if ( -e "$work_dir/$cmd[1].sar" ) ;
+    $com = "makevar $src_file_d$cmd[1].mls -o  $work_dir/$cmd[1].var -l $src_dir/vib/" ;
+    if ( &fork( $com ) )
+    {
+	$err_flag = 1 ;
+	print MYOUT "Error has occured (makevar)!!:$!\n" ; 
+    }
+    &cp( "$cmd[1].var", $work_dir, $work_dir ) if ( -e "$work_dir/$cmd[1].var" ) ;
+    print MYOUT "done.\n" ;
+
+    return $FLG_FLUSH_NON ;
+}
+
+#
+# 振動の vls から var を作る。
+#
+#
+sub com_var()
+{
+    local @cmd = @_ ;
+    local $com ;
+
+    print MYOUT "start making $cmd[1].var\n" ;
+    $com = "makevar $src_file_d$cmd[1].vls -o  $work_dir/$cmd[1].var -l $src_dir/vib/" ;
+    if ( &fork( $com ) )
+    {
+	$err_flag = 1 ;
+	print MYOUT "Error has occured (makevar)!!:$!\n" ; 
+    }
+    &cp( "$cmd[1].var", $work_dir, $work_dir ) if ( -e "$work_dir/$cmd[1].var" ) ;
+    print MYOUT "done.\n" ;
+
+    return $FLG_FLUSH_NON ;
+}
+
+
+#
+# テクスチャーアニメーションのコマンド群
+#
+#
+sub com_anmtex()
+{
+    local @cmd = @_ ;
+    local $com, $i ;
+
+    if ( $#cmd <= 1 )
+    {
+	$err_flag = 1 ;
+        print MYOUT "Err: Missing Param !!\n" ; 
+ 	return $FLG_FLUSH_NON ;
+    }
+    if ( $cmd[1] !~ m/\.rat/ )
+    {
+	print "Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>\n" ;
+	&fork( "echo 'Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>'>> err.log" ) ;
+	&fork( "echo 'Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>'>> $log_file" )  if ( $log_file ) ;
+	$err_flag = 1 ;
+ 	return $FLG_FLUSH_NON ;
+    }
+    $cmd[1] =~ s/\.rat// ;
+
+    print MYOUT "start making $cmd[1].rat\n" ;
+    $com = "anmtex_pack $option -o $work_dir/$cmd[1].rat -i " ;
+    for( $i=2 ; $i<=$#cmd ; $i++ )
+    {
+	if ( -d "$src_dir/$cmd[$i]" )
+	{
+	    open( LS, "dpack_ls $src_dir/$cmd[$i]/* |" ) ;
+	    foreach( <LS> )
+	    {
+		chop ;
+		s/[\r\n]*// ;
+		$com .= "$_ " ;
+	    }
+	    close( LS ) ;
+	}
+	elsif ( -e "$src_dir/$cmd[$i]" )
+	{
+	    $com .= "$src_dir/$cmd[$i] " ;
+	}
+	else
+	{
+	    print MYOUT "Warn: No such file<$cmd[$i]>\n" ; 
+	}
+    }
+
+    $com .= "> /dev/null" ;
+    if ( &fork( $com ) )
+    {
+	$err_flag = 1 ;
+        print MYOUT "Error has occured (anmtex_pack)!!:$!\n" ; 
+    }
+    &cp( "$cmd[1].var", $work_dir, $work_dir ) if ( -e "$work_dir/$cmd[1].rat" ) ;
+    print MYOUT "done.\n" ;
+
+    return $FLG_FLUSH_NON ;
+}
+
+#
+# メモリーカード用アイコン
+#
+#
+sub com_icon()
+{
+    local @cmd = @_ ;
+    local $icon ;
+
+    $icon = $cmd[1] ;
+    $icon =~ s/.*\/([^\/]+)$/$1/ ;
+    $icon =~ s/cnf$/ric/ ;
+    print MYOUT "start making iconfiles $icon\n" ;
+
+    if ( &fork( "dpackicon.sh $cmd[1] $work_dir/$icon > /dev/null >& /dev/null" ) )
+    {
+	$err_flag = 1 ;
+        print MYOUT "Error has occured (iconconv)!!\n" ; 
+    }
+    &cp( $icon, $work_dir, $work_dir ) if ( -e "$work_dir/$icon" ) ;
+    print MYOUT "done.\n" ;
+
+    return $FLG_FLUSH_NON ;
+}
+
+#
+# 頂点ストリームコマンド
+#
+#
+sub com_anm()
+{
+    local @cmd = @_, $flag =  $FLG_FLUSH_NON ;
+    local $cmd_line, $i ;
+
+    if ( $cmd[1] !~ m/\.xsi/ )
+    {
+	print "Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>\n" ;
+	&fork( "echo 'Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>'>> err.log" ) ;
+	&fork( "echo 'Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>'>> $log_file" )  if ( $log_file ) ;
+    }
+
+    $cmd[1] =~ s/\.xsi// ;
+    $cmd[1] =~ s/\.mdl// ;
+    $cmd[1] =~ s/\.kms// ;
+    $cmd[1] =~ s/\.anm// ;
+
+    # anmのコマンドフラグをリセットする。
+    $anm_flg = "" ;
+    $anm_flg .= " -n"            if ( ($i = &search_com( "-N", @cmd )) >= 0 ) ;
+    $anm_flg .= " -r $cmd[$i+1]" if ( ($i = &search_com( "-R", @cmd )) >= 0 ) ;
+    $anm_flg .= " -s $cmd[$i+1]" if ( ($i = &search_com( "-S", @cmd )) >= 0 ) ;
+
+    print MYOUT "start making $cmd[1] anm's\n" ;
+    if ( -d "$src_dir/anm/$cmd[1]" )
+    {
+	&dir_cp_work( "$src_dir/anm/$cmd[1]", "-B", "anm" ) ;
+	if ( &search_com( "-n", @cmd ) < 0 )
+	{
+	    $tri_file = $cmd[2] ;
+	    &dar_cp_work( "$src_dir/anm/$cmd[1]/$cmd[2].dar" ) ;
+	    &cp( "$cmd[2].kms", "$src_dir/anm/$cmd[1]", $work_dir ) ;
+	    &cp( "$cmd[2].cv2", "$src_dir/anm/$cmd[1]", $work_dir ) ;
+	    $flag = $FLG_FLUSH_BMP ;
+	}
+    }
+    else
+    {
+	local $sub_d = $cmd[1] ;
+
+	$cmd[1] =~ s/.*\/([^\/]+)$/$1/ ;
+	$sub_d  =~ s/(.*)\/[^\/]+$/$1/ ;
+	print MYOUT "\t$cmd[1].anm " ;
+
+	$cmd_line = "$src_dir/anm/$sub_d/$cmd[1].xsi $work_dir/tmp$cmd[1].anm $src_dir/anm/$sub_d/$cmd[1].cv2" ;
+	&fork( "st_anime $cmd_line $anm_flg | grep frames" ) and die "Error st_anime!!:$!\n" ;
+	&fork( "lzsh e $work_dir/tmp$cmd[1].anm $work_dir/$cmd[1].anm >& /dev/null" ) and die "Error lzsh!!:$!\n" ;
+	&fork( "rm -f $work_dir/tmp$cmd[1].anm" ) ;
+	&cp( "$cmd[1].anm", $work_dir, $work_dir ) ;
+
+	if ( &search_com( "-n", @cmd ) < 0 )
+	{
+	    $tri_file = $cmd[1] ;
+	    &dar_cp_work( "$src_dir/anm/$sub_d/$cmd[1].dar" ) ;
+	    &cp( "$cmd[1].kms", "$src_dir/anm/$sub_d", $work_dir ) ;
+	    &cp( "$cmd[1].cv2", "$src_dir/anm/$sub_d", $work_dir ) ;
+	    $flag = $FLG_FLUSH_BMP ;
+	}
+    }
+    print MYOUT "done.\n" ;
+
+    return $flag ;
+}
+
+
+#
+# 頂点ストリームコマンド
+#
+#
+sub com_cloth()
+{
+    local @cmd = @_, $flag =  $FLG_FLUSH_NON ;
+    local $cmd_line, $i ;
+
+    print MYOUT "start making cloth data for $cmd[1]\n" ;
+
+    if ( $cmd[1] !~ m/\.rwv/ )
+    {
+	print "Err: Illeagal Command!!! ExtensionMiss rwv <$cmd[0] $cmd[1]>\n" ;
+	&fork( "echo 'Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>'>> err.log" ) ;
+	&fork( "echo 'Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>'>> $log_file" )  if ( $log_file ) ;
+    }
+
+    $cmd[1] =~ s/\.cv2// ;
+    $cmd[1] =~ s/\.mdl// ;
+    $cmd[1] =~ s/\.kms// ;
+    $cmd[1] =~ s/\.rwv// ;
+
+    if ( -e "$src_dir/$cmd[1].kms" )
+    {
+	local $sub_d = $cmd[1] ;
+
+	$cmd_line = "$src_dir/$cmd[1].kms $src_dir/$cmd[1].cv2" ;
+
+	$cmd[1] =~ s/.*\/([^\/]+)$/$1/ ;
+	$sub_d  =~ s/(.*)\/[^\/]+$/$1/ ;
+	$cmd_line .= " $work_dir/$cmd[1].rwv" ;
+
+	&fork( "clothdata  $cmd_line" ) and die "Error clothdata!!:$!\n" ;
+	&cp( "$cmd[1].rwv", $work_dir, $work_dir ) ;
+
+	$tri_file = $cmd[1] ;
+	$flag = &dar_cp_work( "$src_dir/$sub_d/$cmd[1].dar" ) ;
+	&cp( "$cmd[1].kms", "$src_dir/$sub_d", $work_dir ) ;
+	&cp( "$cmd[1].cv2", "$src_dir/$sub_d", $work_dir ) ;
+    }
+    print MYOUT "done.\n" ;
+    return $flag ;
+}
+
+
+
+sub com_gcx()
+{
+    local @cmd = @_ ;
+
+    $cmd[1] =~ s/\.gcx// ;
+    $gcx_name .= "$cmd[1].gcx\n" ;
+
+    return $FLG_FLUSH_NON ;
+}
+
+sub com_option()
+{
+    local @cmd = @_ ;
+    my $i ;
+
+    $options{$cmd[1]} = "" ;
+    for( $i=2 ; $i<=$#cmd ; $i++ ) {
+	$options{$cmd[1]} .= " $cmd[$i] " ;
+    }
+
+    return $FLG_FLUSH_NON ;
+}
+
+
+sub com_rename()
+{
+    local @cmd = @_ ;
+
+    if ( $resd_flg )
+    {
+	&add_cache( $src_file, ".rename ".$cmd[1]."->".$cmd[2] ) ;
+    }
+
+    return $FLG_FLUSH_NON ;
+}
+sub com_texrnm()
+{
+    local @cmd = @_ ;
+
+#    if ( !$lst_flg )
+#    {
+#	die "Err: Illeagal arguments in texrename.\n" if ( $#cmd != 3 ) ;
+#	die "Cannot find kms-file<$cmd[1]> to rename.\n" if ( not -e "$work_dir/$cmd[1]" ) ;
+#	&fork( "id_change $work_dir/$cmd[1] -o $cmd[2] -n $cmd[3] >& /dev/null " ) ;
+#    }
+    return $FLG_FLUSH_NON ;
+}
+
+sub com_hazard()
+{
+    local @cmd = @_ ;
+
+    if ( $cmd[1] !~ m/\.hzx/ )
+    {
+	print "Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>\n" ;
+	&fork( "echo 'Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>'>> err.log" ) ;
+	&fork( "echo 'Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>'>> $log_file" )  if ( $log_file ) ;
+    }
+
+    $cmd[1] =~ s/\.hzx$/.scn/ ;
+    $cmd[1] =~ s/\.hzd$/.scn/ ;
+    $cmd[1] .= ".scn" ;
+    $cmd[1] =~ s/\.scn\.scn$/.scn/ ;
+    &cp( $cmd[1], "$run_dir/scn", $work_dir ) if ( !$lst_flg ) ;
+    $cmd[1] =~ s/\.scn$/.hzx/ ;
+    &cp( $cmd[1], "$src_dir/scn", $work_dir ) ;
+
+    return $FLG_FLUSH_NON ;
+}
+sub com_hazard_old()
+{
+    local @cmd = @_ ;
+    local $hzx, $opt, $j ;
+
+    print MYOUT "start making hazard\n" ;
+    $cmd[1] =~ s/\.hzx$/.scn/ ;
+    $cmd[1] =~ s/\.hzd$/.scn/ ;
+    $hzx    = $cmd[1].".hzx" ;
+    $hzx    =~ s/\.scn\.hzx/.hzx/g ;
+
+    for ( $j=2 ; $j <= $#cmd ; $j++ )
+    {
+	if ( $cmd[$j] =~ m/^-/ )
+	{
+	    $opt .= " $cmd[$j++]" ;
+	    $opt .= " $src_dir/scn/$cmd[$j].scn" ;
+	}
+	else
+	{
+	    $opt .= "-i $src_dir/scn/$cmd[$j].scn" ;
+	}
+    }
+    $opt .= " -o $work_dir/$cmd[1].scn " ;
+    $opt =~ s/\.scn\.scn/.scn/g ;
+    print MYOUT "  start mergescene\n" ;
+    &fork( "mergescene $opt > /dev/null" ) and die "mergescene ERROR!\n" ;
+    &cp( $cmd[1], $work_dir, $work_dir ) ;
+    print MYOUT "  done.\n  start scn2hzx\n" ;
+    &fork( "scn2hzx -i $work_dir/$cmd[1].scn -o $work_dir/$hzx > /dev/null" ) and die "scn2hzx ERROR!\n" ;
+    &cp( $hzx, $work_dir, $work_dir ) ;
+
+    print MYOUT "  done.\nhazard done.\n" ;
+
+    return $FLG_FLUSH_NON ;
+}
+
+sub com_cvd()
+{
+    local @cmd = @_ ;
+    local $src = $src_dir ;
+
+    $cmd[1] =~ s/\.cvd$/.cv2/ ;
+    $cmd[1] =~ s/\.kms$/.cv2/ ;
+    print MYOUT "start making cv2 as ($cmd[1])\n" ;
+
+    if ( $cmd[1] =~ m/cvd$/ || $cmd[1] =~ m/kms$/ )
+    {
+	print "Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>\n" ;
+	&fork( "echo 'Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>'>> err.log" ) ;
+	&fork( "echo 'Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>'>> $log_file" )  if ( $log_file ) ;
+    }
+
+    $cvd_opt = "" ;
+    $cvd_opt .= " -v"  if ( $cmd[2] =~ "v" ) ;
+    $cvd_opt .= " -n"  if ( $cmd[2] =~ "n" ) ;
+    $cvd_opt .= " -u"  if ( $cmd[2] =~ "u" ) ;
+    $cvd_opt .= " -vu" if ( $cmd[2] =~ "V" ) ;
+    $cvd_opt .= " -nu" if ( $cmd[2] =~ "N" ) ;
+
+    if ( -d "$src_dir/$cmd[1]" )
+    {
+	&dir_cp_work( "$src_dir/$cmd[1]","-BR", "cvd" ) ;
+    }
+    else
+    {
+	$src .= "/$cmd[1].cv2" ;
+	$src =~ s/\.cv2\.cv2/\.cv2/  ;
+	$src =~ s/\/[^\/]+\.cv2$/\//  ;
+	$cmd[1] =~ s/\.cv2$// ;
+	$cmd[1] =~ s/.*\///g ;
+	die "Err: Illeagal arguments in cv2.\n" if ( $#cmd > 2 ) ;
+	die "Cannot find cv2-file<$cmd[1].cv2>.\n" if ( not -e "$src/$cmd[1].cv2" ) ;
+	&cp( "$cmd[1].cv2", $src, $work_dir ) ;
+	&fork( "cvdcut $cvd_opt $work_dir/$cmd[1].cv2 > /dev/null" ) if ( $cvd_opt ) ;
+    }
+    $cvd_opt = "" ;
+    print MYOUT "done.\n" ;
+
+    return $FLG_FLUSH_NON ;
+}
+
+sub com_rol()
+{
+    local @cmd = @_ ;
+    local $src = $src_dir ;
+
+    if ( $cmd[1] =~ m/kms$/ )
+    {
+	print "Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>\n" ;
+	&fork( "echo 'Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>'>> err.log" ) ;
+	&fork( "echo 'Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>'>> $log_file" )  if ( $log_file ) ;
+    }
+
+    if ( -d "$src_dir/$cmd[1]" )
+    {
+	&dir_cp_work( "$src_dir/$cmd[1]","-BR", "rol" ) ;
+    }
+    else
+    {
+	$src .= "/$cmd[1].rol" ;
+	$src =~ s/\.rol\.rol/\.rol/  ;
+	$src =~ s/\/[^\/]+\.rol$/\//  ;
+	$cmd[1] =~ s/\.rol$// ;
+	$cmd[1] =~ s/.*\///g ;
+
+	&cp( "$cmd[1].rol", $src, $work_dir ) ;
+    }
+    print MYOUT "done.\n" ;
+
+    return $FLG_FLUSH_NON ;
+}
+
+sub com_arkms()
+{
+    local @cmd = @_ ;
+    local $flg = 0, $chk_f, $def_name = "", $src, $makekls ;
+
+    print MYOUT "ARKMS process started.\n" ;
+    die "Must not be directory\n" if ( $cmd[1] =~ m/\/$/ ) ;
+
+    if ( $cmd[1] !~ m/\.kls/ )
+    {
+	print "Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>\n" ;
+	&fork( "echo 'Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>'>> err.log" ) ;
+	&fork( "echo 'Err: Illeagal Command!!! ExtensionMiss <$cmd[0] $cmd[1]>'>> $log_file" )  if ( $log_file ) ;
+    }
+
+    $tri_file = $cmd[1] ;
+    $tri_file =~ s/.*\/([^\/]+)$/$1/ ;
+    $tri_file =~ s/\..*// ;
+
+    $cmd[1] =~ s/.kms$// ;
+    $cmd[1] =~ s/.kls$// ;
+
+    if ( $lst_flg )
+    {
+	print "/$cmd[1].kls\n" ;
+    }
+    else
+    {
+	print MYOUT "\tgathering BMPs started.\n" ;
+	open( ARK, "makekls -c -d $work_dir -s $src_dir/kls -m $src_dir/human $cmd[1].kls -t |" )
+	    if ( $cmd[2] eq "cv2" || $cmd[3] eq "cv2" ) ;
+	open( ARK, "makekls    -d $work_dir -s $src_dir/kls -m $src_dir/human $cmd[1].kls -t |" )
+	    if ( $cmd[2] ne "cv2" && $cmd[3] ne "cv2" ) ;
+	while( <ARK> )
+	{
+	    chop ;
+
+	    $def_name = $_ if ( !$def_name ) ;
+	    $chk_f =  "$_.dar" ;
+	    $chk_f =~ s/.*\/([^\/]+).dar$/$1.kms/ ;
+	    if ( !&dar_cp_work( "$_.dar" ) && $cmd[2] ne "packed" && $cmd[3] ne "packed" )
+	    {
+		print MYOUT "Model $chk_f has already in $kms_file{$chk_f} $ren_file{$chk_f} <".
+		    ($ren_file{$chk_f} ? $kms_file{$ren_file{$chk_f}} : $kms_file{$chk_f}).".tri>\n" ;
+		$flg++ ;
+	    }
+	}
+	close( ARK ) ;
+	die "Error!!! ARKMS must be ONE TRI-FILE!!\n" if ( $flg ) ;
+	&cp( "$cmd[1].kms", $work_dir, $work_dir ) ;
+	print MYOUT "\tgathering BMPs done.\n" ;
+
+	print MYOUT "\tdefault model started.\n" ;
+	die "No default Model($def_name.kms)" if ( !-f "$def_name.kms" ) ;
+	$src = $def_name ;
+	$src =~ s/\/([^\/]+)$// ;
+	$def_name =~ s/.*\/([^\/]+)$/$1/ ;
+	&cp( "$def_name.kms", $src, $work_dir ) ;
+	&cp( "$def_name.cv2", $src, $work_dir ) if ( $cmd[2] eq "cv2" || $cmd[3] eq "cv2" ) ;
+	print MYOUT "\tdefault model done.\n" ;
+
+	print MYOUT "ARKMS done.\n" ;
+    }
+    return $FLG_FLUSH_BMP ;
+}
+
+sub com_kmsar()
+{
+    local @cmd = @_ ;
+    local $command ;
+
+    $cmd[1] =~ s/\.[^\.]$// ;
+    if ( $lst_flg )
+    {
+	print "/$cmd[1].zms\n" ;
+    }
+    else
+    {
+	for( $i=2 ; $i<=$#cmd ; $i++ )
+	{
+	    if ( !-e "$work_dir/$cmd[$i]" )
+	    {
+		print "Err : kms_archiver <$cmd[$i]> not found\n" ;
+		$err_flag = 1 ;
+	    }
+	    else
+	    {
+		$command .= "$work_dir/$cmd[$i] " ; 
+	    }
+	}
+	if ( !$err_flag )
+	{
+	    if ( &fork( "kms_archiver $work_dir/$cmd[1].zms $command > /dev/null" ) )
+	    {
+		die "Error!!! kms_archiver stopped $? \n" ;
+	    }
+	    &fork( "rm $command" ) ;
+	    &cp( "$cmd[1].zms", $work_dir, $work_dir ) ;
+	}
+    }
+
+    return $FLG_FLUSH_NON ;
+}
+
+
+sub com_store_rename()
+{
+    local @cmd = @_ ;
+
+    $ren_file{$cmd[1]} = $cmd[2] ;
+    if ( $lst_flg )
+    {
+	print ".rename ".$cmd[1]."->".$cmd[2]."\n" ;
+    }
+
+    return $FLG_FLUSH_NON ;
+}
+
+sub com_store_texrnm()
+{
+    local @cmd = @_ ;
+
+    $cmd[2] =~ s/[ \t]*//g ;
+    $cmd[3] =~ s/[ \t]*//g ;
+    $txrren_file{$cmd[2]} = $cmd[3] ;
+    return $FLG_FLUSH_NON ;
+}
+
+sub com_mipmap()
+{
+    local @cmd = @_ ;
+    return $FLG_FLUSH_NON ;
+}
+
+sub com_packal()
+{
+    local @cmd = @_ ;
+    local @files, $file, $dir, $src, $dst ;
+
+    $tri_file =  $cmd[1]   ;
+    $tri_file =~ s/[\/]+([^\/]+)[\/]*$/$1/ ;
+    $tri_file =~ s/\..*// ;
+
+    print MYOUT "start packing $tri_file.tri\n" ;
+    &fork( "echo '---------------------------Start Packall ($tri_file.tri)-------------------------'>> $log_file" )  if ( $log_file ) ;
+
+    splice( @cmd, 0, 2 ) ;
+    foreach $file ( @cmd )
+    {
+	$src  = "$src_dir/$file" ;
+	$src  =~ s/\/[^\/]*$// ;
+	$file =~ s/.*\/([^\/]+)$/$1/ ;
+        if ( -d "$src/$file" )
+	{
+            &dir_cp_work( "$src/$file","-BR", "bmp" ) ;
+	}
+        elsif ( -e "$src/$file" )
+	{
+	    &dar_cp_work( "$src/$file" )        if ( $file =~ m/.dar$/ ) ;
+	    &cp( $file, $src, "$work_dir/cur" ) if ( $file =~ m/.bmp$/ && ($file !~ m/_add|_sub|_hlf|_alp|_bld/ || $file =~ m/_ovl/) ) ;
+	    if ( $file =~ m/.bmp$/ &&  $file =~ m/_add|_sub|_hlf|_alp|_bld/ && $file !~ m/_ovl/  )
+	    {
+		&cp( $file, $src, "$work_dir/trn" ) ;
+		$trn_flg = 1 ;
+	    }
+	}
+	else
+	{
+	    print MYOUT "Err: Cannot find $src/$file\n" ;
+	    &fork( "echo 'Err: Cannot find $src/$file'>> err.log" ) ;
+	    &fork( "echo 'Err: Cannot find $src/$file'>> $log_file" )  if ( $log_file ) ;
+	}
+    }
+
+    return $FLG_FLUSH_BMP ;
+}
+
+sub com_packtr()
+{
+    local @cmd = @_ ;
+    local @files, $file, $dir, $src, $dst ;
+
+    $tri_file =  $cmd[1]   ;
+    $tri_file =~ s/[\/]+([^\/]+)[\/]*$/$1/ ;
+    $tri_file =~ s/\..*// ;
+
+    print MYOUT "start packing $tri_file.tri as tranparency.\n" ;
+    &fork( "echo '---------------------------Start Packtrn ($tri_file.tri)-------------------------'>> $log_file" )  if ( $log_file ) ;
+
+    splice( @cmd, 0, 2 ) ;
+    foreach $file ( @cmd )
+    {
+	$src = "$src_dir/$file" ;
+	$src  =~ s/\/[^\/]*$// ;
+	$file =~ s/.*\/([^\/]+)$/$1/ ;
+	if ( -d "$src/$file" )
+	{
+	    &dir_cp_work( "$src/$file","-BR", "trn" ) ;
+	}
+	elsif ( -e "$src/$file" )
+	{
+	    &dar_cp_work( "$src/$file" )         if ( $file =~ m/.dar$/ ) ;
+	    if ( $file =~ m/.bmp$/ && $file =~ m/_add|_sub|_hlf|_alp|_bld/ && $file !~ m/_ovl/ )
+	    {
+		&cp( $file, $src, "$work_dir/trn" ) ;
+		$trn_flg = 1 ;
+	    }
+	}
+	else
+	{
+	    print MYOUT "Err: Cannot find $src/$file\n" ;
+	    &fork( "echo 'Err: Cannot find $src/$file'>> err.log" ) ;
+	    &fork( "echo 'Err: Cannot find $src/$file'>> $log_file" )  if ( $log_file ) ;
+	}
+    }
+    &fork( "rm -f $work_dir/cur/*" ) ;
+
+    return $FLG_FLUSH_NON ;
+}
+
+
+sub com_packfl()
+{
+    local @cmd = @_ ;
+    local @files, $file, $dir, $src, $dst ;
+
+    $tri_file =  $cmd[1]   ;
+    $tri_file =~ s/[\/]+([^\/]+)[\/]*$/$1/ ;
+    $tri_file =~ s/\..*// ;
+
+    print MYOUT "start packing $tri_file.tri as tranparency with flush.\n" ;
+    &fork( "echo '---------------------------Start PacktrnFlush ($tri_file.tri)-------------------------'>> $log_file" )  if ( $log_file ) ;
+
+    splice( @cmd, 0, 2 ) ;
+    foreach $file ( @cmd )
+    {
+	$src = "$src_dir/$file" ;
+	$src  =~ s/\/[^\/]*$// ;
+	$file =~ s/.*\/([^\/]+)$/$1/ ;
+	if ( -d "$src/$file" )
+	{
+	    &dir_cp_work( "$src/$file","-BR", "trn" ) ;
+	}
+	elsif ( -e "$src/$file" )
+	{
+	    &dar_cp_work( "$src/$file" ) if ( $file =~ m/.dar$/ ) ;
+	    if ( $file =~ m/.bmp$/ && $file =~ m/_add|_sub|_hlf|_alp|_bld/ && $file !~ m/_ovl/ )
+	    {
+		&cp( $file, $src, "$work_dir/trn" ) ;
+		$trn_flg = 1 ;
+	    }
+	}
+	else
+	{
+	    print MYOUT "Err: Cannot find $src/$file\n" ;
+	    &fork( "echo 'Err: Cannot find $src/$file'>> err.log" ) ;
+	    &fork( "echo 'Err: Cannot find $src/$file'>> $log_file" )  if ( $log_file ) ;
+	}
+    }
+    &fork( "rm -f $work_dir/cur/*" ) ;
+
+    return $FLG_FLUSH_TRN ;
+}
+
+sub com_packta()
+{
+    local @cmd = @_ ;
+    local @files, $file, $dir, $src, $dst ;
+
+    $tri_file =  $cmd[1]   ;
+    $tri_file =~ s/[\/]+([^\/]+)[\/]*$/$1/ ;
+    $tri_file =~ s/\..*// ;
+
+    print MYOUT "start packing $tri_file.tri as tranparency.\n" ;
+    &fork( "echo '------------------------Start Packtrnall ($tri_file.tri)------------------------'>> $log_file" )  if ( $log_file ) ;
+
+    splice( @cmd, 0, 2 ) ;
+    foreach $file ( @cmd )
+    {
+	$src = "$src_dir/$file" ;
+	$src  =~ s/\/[^\/]*$// ;
+	$file =~ s/.*\/([^\/]+)$/$1/ ;
+	if ( -d "$src/$file" )
+	{
+	    &dir_cp_work( "$src/$file", "-BR", "tra" ) ;
+	}
+	elsif ( -e "$src/$file" )
+	{
+	    if ( $file =~ m/.dar$/ )
+	    {
+		&dar_cp_work( "$src/$file" ) ;
+		$trn_flg = 1 ;
+	    }
+	    if ( $file =~ m/.bmp$/ )
+	    {
+		&cp( $file, $src, "$work_dir/trn" ) ;
+		$trn_flg = 1 ;
+	    }
+	}
+	else
+	{
+	    print MYOUT "Err: Cannot find $src/$file\n" ;
+	    &fork( "echo 'Err: Cannot find $src/$file'>> err.log" ) ;
+	    &fork( "echo 'Err: Cannot find $src/$file'>> $log_file" )  if ( $log_file ) ;
+	}
+    }
+    print MYOUT "done.\n" ;
+
+    return $FLG_FLUSH_NON ;
+}
+
+
+
+
+
+
+
+
+
+###########################################
+#
+#
+#
+# SUBROUTINES
+# コピールーチン群
+# 
+#
+#
+#
+sub cp()
+{
+    local( $src, $src_d, $dst_d ) = @_ ;
+    local $ext=$src ;
+
+    $ext  =~ s/^.*\.// ;
+    return "" if ( $ext eq "kls" ) ;
+    $dst = &cp_bmp( $src, $src_d, $dst_d ) if ( $ext eq "bmp" ) ;
+    $dst = &cp_oth( $src, $src_d, $dst_d ) if ( $ext ne "bmp" ) ;
+
+    return $dst ;
+}
+
+#Copy a file
+sub cp_oth()
+{
+    local( $src, $src_d, $dst_d ) = @_ ;
+    local $dst=$src, $file=$src, $ext=$src ;
+
+    $ext  =~ s/^.*\.// ;
+    $file =~ s/\..*$// ;
+
+# Check Rename
+    $dst = $ren_file{$dst} if ( $ren_file{$dst} ) ;
+
+# File already existed, do not copy
+    if ( $checked{$dst} == 1 )
+    {
+	&fork( "echo '<<<<Already checked file ($dst)>>>>' >> $log_file" ) if ( $log_file ) ;
+	return "" ;
+    }
+    $checked{$dst} = 1 ;
+
+# Check same resident file or not
+    if ( &search_cache( $dst ) )
+    {
+	printf( "Warning: <$dst> are already in resident\n" ) ;
+    }
+# Check StrCode
+    else
+    {
+	&chk_strcode( $file, $ext ) ;
+    }
+
+    if ( $lst_flg )
+    {
+	print "$src_d/$dst\n" ;
+    }
+    else
+    {
+# Copy the file
+#	die "<$dst> has already existed.Duplicate name.\n" if ( -e "$dst_d/$dst" && $src_d ne $dst_d ) ;
+	&fork( "mv $src_d/$src $dst_d/$dst" ) if ( $src_d eq $dst_d && $src ne $dst ) ;
+	&fork( "echo 'mv $src_d/$src $dst_d/$dst' >> $log_file" ) if ( $src_d eq $dst_d && $src ne $dst && $log_file ) ;
+	&fork( "cp $src_d/$src $dst_d/$dst" ) if ( $src_d ne $dst_d ) ;
+	&fork( "echo 'cp $src_d/$src $dst_d/$dst' >> $log_file" ) if ( $src_d ne $dst_d && $log_file ) ;
+
+# Combine Kms and Tri
+	if ( $ext eq "kms" ||  $ext eq "evm" )
+	{
+	    local $head, $log ;
+
+	    $log = $log_file ? $log_file : "/dev/null" ;
+	    $head = $ext eq "kms" ? "KMS" : "EVM" ;
+	    print MYOUT "$head<$dst> TRI<$tri_file>\n"       if ( !$kms_file{$dst} ) ;
+	    print MYOUT "$head<$dst> TRI<$kms_file{$dst}>\n" if (  $kms_file{$dst} ) ;
+	    &fork( "kms_util -t $tri_file $dst_d/$dst >> $log"     ) if ( !$kms_file{$dst} ) ;
+	    &fork( "kms_util -t $kms_file{$dst} $dst_d/$dst >>$log") if (  $kms_file{$dst} ) ;
+
+	}
+
+#IDバッティングを回避
+	if ( $ext eq "kms" && $txrcmd_file{$dst} )
+	{
+	    #print "id_change $work_dir/$dst $txrcmd_file{$dst}\n" ;
+	    &fork( "id_change $work_dir/$dst $txrcmd_file{$dst}" ) ;
+	}
+#EVMを新フォーマットに変換
+	if ( $ext eq "evm" )
+	{
+	    &fork( "evm_conv $work_dir/$dst" ) ;
+	}
+    }
+
+# .residentフラグが立っている
+    &add_cache( $src_file, $dst ) if ( $resd_flg ) ;
+
+    return $dst ;
+}
+
+#Copy a file
+sub cp_bmp()
+{
+    local( $src, $src_d, $dst_d ) = @_ ;
+    local $dst=$src, $file=$src, $ext=$src ;
+
+    $ext  =~ s/^.*\.// ;
+    $file =~ s/\..*$// ;
+
+# Check Rename
+    if ( $txrren_file{$dst} )
+    {
+	print "\tTEX($dst -> $txrren_file{$dst})\n" ;
+
+	$txrcmd_file{$tri_file} = "-o $dst -n $txrren_file{$dst} >& /dev/null";
+	$dst = $txrren_file{$dst} ;
+    }
+
+# File already existed, do not copy
+    if ( $src_d !~ "/dar" )
+    {
+	if ( $checked{$dst} == 1 )
+	{
+	    &fork( "echo '<<<<Warning checked file ($dst)>>>>' >> $log_file" ) if ( $log_file ) ;
+	    # return "" ; とりあえずイラナそうなのでとった 2001.6.6
+	}
+	$checked{$dst} = 1 ;
+    }
+    else
+    {
+	if ( $tex_checked{"$dst_d/$dst"} == 1 )
+	{
+	    &fork( "echo '<<<<Warning checked file ($dst)>>>>' >> $log_file" ) if ( $log_file ) ;
+	    # return ; とりあえずイラナそうなのでとった 2001.6.6
+	}
+	$tex_checked{"$dst_d/$dst"} = 1 ;
+    }
+# Check StrCode
+    &chk_strcode( $file, $ext ) ;
+
+    if ( $lst_flg )
+    {
+	print "$src_d/$src\n" ;
+    }
+    else
+    {
+# Copy the file
+	&fork( "mv $src_d/$src $dst_d/$dst" ) if ( $src_d eq $dst_d && $src ne $dst ) ;
+	&fork( "echo 'mv $src_d/$src $dst_d/$dst' >> $log_file" ) if ( $src_d eq $dst_d && $src ne $dst && $log_file ) ;
+	&fork( "cp $src_d/$src $dst_d/$dst" ) if ( $src_d ne $dst_d ) ;
+	&fork( "echo 'cp $src_d/$src $dst_d/$dst' >> $log_file" ) if ( $src_d ne $dst_d && $log_file ) ;
+    }
+    return $dst ;
+}
+
+
+
+
+###########################################
+#
+#
+#
+# SUBROUTINES
+# キャッシュ ルーチン群（階層ごとすべてをコピー）
+# 
+#
+#
+#
+
+sub add_cache()
+{
+    local ( $file, $string ) = @_ ;
+    local $flg = 1 ;
+
+    $string =~ s/^[ \t]+// ;
+    $string =~ s/[ \t]+$// ;
+    open( CACH_OLD, $cach_file ) ;
+    open( CACH_NEW, "> $cach_file.new" ) ;
+    foreach( <CACH_OLD> )
+    {
+	print( CACH_NEW ) ;
+	print( CACH_NEW "$string\n") , $flg=0 if ( $flg &&  $_ =~ $file ) ;
+    }
+    close( CACH_OLD ) ;
+    close( CACH_NEW ) ;
+    &fork( "mv $cach_file.new $cach_file" ) ;
+}
+
+
+sub clear_cache()
+{
+    local ( $file ) = @_ ;
+    local $flg = 0, $new = 0 ;
+
+    &fork( "touch $cach_file" ) if ( ! -e $cach_file ) ;
+
+    open( CACH_OLD, $cach_file ) ;
+    open( CACH_NEW, "> $cach_file.new" ) ;
+    foreach( <CACH_OLD> )
+    {
+	next if ( $flg>=2 && $_ =~ $file ) ;
+	$flg |=2, if ( $flg==1 && $_ =~ $file && $_ =~ "end" ) ;
+	print CACH_NEW if ( $flg != 1 ) ;
+	$flg |=1, if ( $flg==0 && $_ =~ $file && $_ =~ "begin" ) ;
+    }
+    print CACH_NEW "  $file -- begin --  \n" if ( !($flg & 1) ) ;
+    print CACH_NEW "  $file -- end --  \n"   if ( !($flg & 2) ) ;
+    close( CACH_OLD ) ;
+    close( CACH_NEW ) ;
+    &fork( "mv $cach_file.new $cach_file" ) ;
+}
+
+sub search_cache()
+{
+    local ( $pattern ) = @_ ;
+    local $cmd_line ;
+
+    die "There is no residents-file (.cache) !!\nPlease, make it first.\n" if ( ! -e $cach_file ) ;
+
+    foreach( @residents )
+    {
+	$cmd_line  = "sed -n -e '/$_.*begin/,/$_.*end/p' $cach_file |" ;
+	$cmd_line .= "grep $pattern |" ;
+
+	open( CACH, $cmd_line ) ;
+	foreach( <CACH> )
+	{
+	    return 1 if ( !/^ / && /^$pattern/ ) ;
+	}
+	close( CACH ) ;
+    }
+
+    return  0 ;
+}
+
+#レジデントをチェック用に入れる
+sub check_cache()
+{
+    local ( $res_name ) = @_ ;
+    local $cmd_line, $file, $ext ;
+    local $no_res = 1 ;
+
+    die "There is no residents-file (.cache) !!\nPlease, make it first.\n" if ( ! -e $cach_file ) ;
+
+    $cmd_line  = "sed -n -e '/$res_name .*begin/,/$res_name .*end/p' $cach_file |" ;
+    open( CACH, $cmd_line ) ;
+    foreach( <CACH> )
+    {
+	if ( !/^ / && ! /^\./ )
+	{
+	    chop( $_ ) ;
+	    $ext  = $_ ;
+	    $file = $_ ;
+
+	    $ext  =~ s/^.*\.// ;
+	    $file =~ s/\..*$// ;
+
+	    &chk_strcode_res( $file, $ext ) ;
+	    $no_res = 0 ;
+	}
+    }
+    close( CACH ) ;
+    die "Err: No resident named <$res_name>. Please make <$res_name>\n" if ( $no_res ) ;
+
+    return  0 ;
+}
+
+sub listup_cache()
+{
+    die "There is no residents-file (.cache) !!\nPlease, make it first.\n" if ( ! -e $cach_file ) ;
+
+    foreach( @residents )
+    {
+	open( CACH, "sed -n -e '/$_.*begin/,/$_.*end/p' $cach_file |" ) ;
+	foreach( <CACH> )
+	{
+	    print if ( !m/--/ ) ;
+	}
+	close( CACH ) ;
+    }
+
+    return  0 ;
+}
+
+
+
+
+###########################################
+#
+#
+#
+# SUBROUTINES
+# dir_cp_??? ルーチン群（階層ごとすべてをコピー）
+# 
+#
+#
+#
+
+
+#Copy DAR directories
+sub dar_cp_work()
+{
+    local ( $src ) = @_ ;
+    local $kms = $src ;
+    local $evm = $src ;
+    local $flg = $FLG_FLUSH_NON ;
+    local $temp ;
+
+#TRIとKMSを結びつけるためにkms_texとkms_fileで記憶する。
+    $kms =~ s/.*\/([^\/]+).dar$/$1.kms/ ;
+    return 0 if ( $kms_tex{$kms} ) ;
+    $evm =~ s/.*\/([^\/]+).dar$/$1.evm/ ;
+    return 0 if ( $kms_tex{$evm} ) ;
+#マークしておく（これで2度と同じ名前では来ない）
+    $kms_tex{$evm} = $kms_tex{$kms} = 1 ;
+
+    #コモデル用のテクスチャー？
+    if ( $src =~ /_cm.dar$/ || $tri_file =~ /_cm$/ )
+    {
+	$kms_file{$ren_file{$kms}} = "comdl".$qar_name if (  $ren_file{$kms} ) ;
+	$kms_file{          $kms } = "comdl".$qar_name if ( !$ren_file{$kms} ) ;
+	$kms_file{$ren_file{$evm}} = "comdl".$qar_name if (  $ren_file{$evm} ) ;
+	$kms_file{          $evm } = "comdl".$qar_name if ( !$ren_file{$evm} ) ;
+	&fork( "dar xl$work_dir/dar $src" ) ;
+	$flg = &dir_cp_work( "$work_dir/dar", "-B", "cmd" ) if ( !$lst_flg ) ;
+	&fork( "rm -f $work_dir/dar/*" ) ;
+    }
+    else
+    {
+	#このDARファイルがIDバッティングを回避するためのものかどうか
+	foreach $bmp ( keys %txrren_file )
+	{
+	    open( CHECK, "dar tv $src | grep $bmp |" ) ;
+	    $temp = "-o $bmp -n $txrren_file{$bmp} >& /dev/null";
+	    if ( <CHECK> )
+	    {
+		$txrcmd_file{$ren_file{$kms}} = $temp if (  $ren_file{$kms} ) ;
+		$txrcmd_file{          $kms } = $temp if ( !$ren_file{$kms} ) ;
+		$txrcmd_file{$ren_file{$evm}} = $temp if (  $ren_file{$evm} ) ;
+		$txrcmd_file{          $evm } = $temp if ( !$ren_file{$evm} ) ;
+	    }
+	    close( CHECK ) ;
+	}
+
+	#リネーム対処
+	$kms_file{$ren_file{$kms}} = $tri_file if (  $ren_file{$kms} ) ;
+	$kms_file{          $kms } = $tri_file if ( !$ren_file{$kms} ) ;
+	$kms_file{$ren_file{$evm}} = $tri_file if (  $ren_file{$evm} ) ;
+	$kms_file{          $evm } = $tri_file if ( !$ren_file{$evm} ) ;
+
+	#DARのテンポラリディレクトリへの展開
+	&fork( "dar xl$work_dir/dar $src" ) ;
+
+	#BMPをテンポラリディレクトリから然るべきディレクトリに振り分け
+	$flg = &dir_cp_work( "$work_dir/dar", "-B", "all" ) if ( !$lst_flg ) ;
+
+	#テンポラリディレクトリを掃除
+	&fork( "rm -f $work_dir/dar/*" ) ;
+    }
+    return $flg ;
+}
+
+#Copy directories
+sub dir_cp_work()
+{
+    local ( $dir, $ls_opt, $mode ) = @_ ;
+    local $l_dir = "" , $src, $i ;
+    local $flg = $FLG_FLUSH_NON ;
+
+    open( LST, "dpack_ls $ls_opt $dir | grep -v '/\$' |" ) ;
+
+    $dir =~ s/\/[^\/]*\*$// ;
+    foreach $i ( <LST> )
+    {
+	chop( $_ = $i ) ;
+	next if ( m/^[ \t]*$/ ) ;
+
+	$l_dir = $_, $l_dir =~ s/:$//, next if ( $_ =~ /:$/ ) ;
+	$src = $l_dir ? $l_dir : $dir ;
+	s/.*\/([^\/]+)$/$1/ ;
+
+	$flg = &mode_cp_anm( $_, $src, $flg ) if ( $mode eq "anm" ) ; #XSI→ANMを生成してコピー
+	$flg = &mode_cp_cvd( $_, $src, $flg ) if ( $mode eq "cvd" ) ; #CV2のコピー
+	$flg = &mode_cp_rol( $_, $src, $flg ) if ( $mode eq "rol" ) ; #CV2のコピー
+	next if ( /\.xsi$/ ) ;
+
+# 11/24/99 K.Kano
+	next if ( /\.cvd$/ ) ;
+	next if ( /\.cv2$/ ) ;
+	next if ( /\.rol$/ ) ;
+	next if ( /\.l2d$/ ) ;
+
+	next if ( /\.cvx$/ ) ;
+	next if ( /\.evx$/ ) ;
+	next if ( /\.kmx$/ ) ;
+
+	next if ( /\.cvy$/ ) ;
+	next if ( /\.evy$/ ) ;
+	next if ( /\.kmy$/ ) ;
+
+	$flg = &mode_cp_trn( $_, $src, $flg ) if ( $mode eq "trn" ) ; #半透明のTRIを作る
+	$flg = &mode_cp_tra( $_, $src, $flg ) if ( $mode eq "tra" ) ; #強制半透明のTRIを作る
+	$flg = &mode_cp_bmp( $_, $src, $flg ) if ( $mode eq "bmp" ) ; #自動的に判別してTRIを作る
+	$flg = &mode_cp_cmd( $_, $src, $flg ) if ( $mode eq "cmd" ) ; #コモデル用のTRIを作る
+	$flg = &mode_cp_all( $_, $src, $flg ) if ( $mode eq "all" ) ; #そのほか全てのコピー
+    }
+    close LST ;
+    return $flg ;
+}
+
+#Copy a CVD file
+sub mode_cp_cvd()
+{
+    local ( $file, $src, $flg ) = @_ ;
+
+    $_ = $file ;
+
+    &cp( $_, $src, $work_dir ) if ( /\.cv2$/ ) ;
+    return $flg ;
+}
+
+
+#Copy a ROL file
+sub mode_cp_rol()
+{
+    local ( $file, $src, $flg ) = @_ ;
+
+    $_ = $file ;
+
+    &cp( $_, $src, $work_dir ) if ( /\.rol$/ ) ;
+    return $flg ;
+}
+
+
+#Copy a ANM file
+sub mode_cp_anm()
+{
+    local ( $file, $src, $flg ) = @_ ;
+
+    $_ = $file ;
+    if ( /\.xsi$/ )
+    {
+	s/\.xsi// ;
+	print MYOUT "\t$_.anm  " ;
+	&fork( "st_anime $src/$_.xsi $work_dir/tmp$_.anm $src/$_.cv2 $anm_flg | grep frames" ) and
+	    die "Error st_anime!!:$!\n" ;
+	&fork( "lzsh e $work_dir/tmp$_.anm $work_dir/$_.anm >& /dev/null" ) and die "Error lzsh!!:$!\n" ;
+	&fork( "rm -f $work_dir/tmp$_.anm" ) ;
+	&cp( "$_.anm", $work_dir, $work_dir ) ;
+    }
+    return $flg ;
+}
+
+#Copy a BMP file as transparacy
+sub mode_cp_trn()
+{
+    local ( $_, $src, $flg ) = @_ ;
+
+    if ( /\.dar$/ )
+    {
+	&dar_cp_work( "$src/$_" ) ;
+	$flg = $FLG_FLUSH_TRN ;
+    }
+    elsif ( /\.bmp$/ && /_add|_sub|_hlf|_alp|_bld/ && !/_ovl/ )
+    {
+	&cp( $_, $src, "$work_dir/trn" ) ;
+	$trn_flg = 1 ;
+	$flg = $FLG_FLUSH_TRN ;
+    }
+    return $flg ;
+}
+
+#Copy a BMP file as transparacy(from trnall command)
+sub mode_cp_tra()
+{
+    local ( $_, $src, $flg ) = @_ ;
+
+    if ( /\.dar$/ )
+    {
+	$trn_flg = 1 ;
+	&dar_cp_work( "$src/$_" ) ;
+	$flg = $FLG_FLUSH_TRN ;
+    }
+    elsif ( /\.bmp$/ )
+    {
+	&cp( $_, $src, "$work_dir/trn" ) ;
+	$trn_flg = 1 ;
+	$flg = $FLG_FLUSH_TRN ;
+    }
+    return $flg ;
+}
+
+#Copy a BMP file as Co-Model TRI
+sub mode_cp_cmd()
+{
+    local ( $_, $src, $flg ) = @_ ;
+
+    if ( /\.dar$/ )
+    {
+	&dar_cp_work( "$src/$_" ) ;
+    }
+    elsif ( /\.bmp$/ )
+    {
+	&cp( $_, $src, "$work_dir/cmd" ) ;
+	$cmd_flg = 1 ;
+	$flg = $FLG_FLUSH_CMD ;
+    }
+    return $flg ;
+}
+
+#Copy a BMP file.
+sub mode_cp_bmp()
+{
+    local ( $_, $src, $flg ) = @_ ;
+
+    if ( /\.dar$/ )
+    {
+	&dar_cp_work( "$src/$_" ) ;
+	$flg = $FLG_FLUSH_BMP ;
+    }
+    elsif ( /\.bmp$/ )
+    {
+	&cp( $_, $src, "$work_dir/cur" )             if (  /_ovl/ || !/_add|_sub|_hlf|_alp|_bld/ ) ;
+	&cp( $_, $src, "$work_dir/trn" ), $trn_flg=1 if ( !/_ovl/ &&  /_add|_sub|_hlf|_alp|_bld/ ) ;
+	$flg = $FLG_FLUSH_BMP ;
+    }
+    return $flg ;
+}
+
+
+#Copy files.
+sub mode_cp_all()
+{
+    local ( $_, $src, $flg ) = @_ ;
+
+    if ( /\.vib$/ )
+    {
+	$var_flag = 1 ;
+	&cp( $_, $src, "$work_dir/var" ) ;
+    }
+    elsif ( /\.dar$/ )
+    {
+	&dar_cp_work( "$src/$_" ) ;
+	$flg = $FLG_FLUSH_BMP ;
+    }
+    elsif ( /\.bmp$/ )
+    {
+	&cp( $_, $src, "$work_dir/cur" )             if (  /_ovl/ || !/_add|_sub|_hlf|_alp|_bld/ ) ;
+	&cp( $_, $src, "$work_dir/trn" ), $trn_flg=1 if ( !/_ovl/ &&  /_add|_sub|_hlf|_alp|_bld/ ) ;
+	$flg = $FLG_FLUSH_BMP ;
+    }
+    else
+    {
+	&cp( $_, $src, $work_dir ) ;
+    }
+    return $flg ;
+}
+
+
+###########################################
+#
+#
+#
+# StrCode Output SUBROUTINES
+# サブルーチン群
+# 
+#
+#
+#
+sub out_strcode()
+{
+    my ( $dir ) = @_ ;
+
+    &fork( "id_check $dir | sed -e 's/^.*\\///' >> $dst_dir/idlist.txt" ) ;
+}
+
+
+###########################################
+#
+#
+#
+# SUBROUTINES
+# サブルーチン群
+# 
+#
+#
+#
+sub chk_strcode()
+{
+    local ( $file, $ext ) = @_ ;
+    local %codes, $code ;
+
+    $code = &strcode($file) ;
+#print MYOUT "$file($ext) stcode = $code\n" ;
+    die "$codes{$code.$ext} and $_[0] have same strcode($code)\n" if ( $codes{$code.$ext} ) ;
+    die "$res_codes{$code.$ext} in resident and $_[0] have same strcode($code)\n" if ( $res_codes{$code.$ext} ) ;
+    $codes{$code.$ext} = $_[0] ;
+}
+
+sub chk_strcode_res()
+{
+    local ( $file, $ext ) = @_ ;
+    local %codes, $code ;
+
+    $code = &strcode($file) ;
+#print MYOUT "$file($ext) stcode = $code\n" ;
+    die "$res_codes{$code.$ext} in resident and $_[0] have same strcode($code)\n" if ( $res_codes{$code.$ext} ) ;
+    $res_codes{$code.$ext} = $_[0] ;
+}
+
+sub print_strcode()
+{
+    foreach( keys %res_codes )
+    {
+	print "$res_codes{$_} : $_\n" ;
+    }
+
+    foreach( keys %codes )
+    {
+	print "$codes{$_} : $_\n" ;
+    }
+}
+
+sub strcode()
+{
+    local ( $string ) = @_ ;
+    local $len, $BITLEN = 24 ;
+    local $id, $mask ;
+
+    $id  = 0 ;
+    $len = length( $string )-1 ;
+    $mask = (1 << $BITLEN)-1 ;
+    foreach $i (0..$len)
+    {
+	$id = ( $id << 5 ) | ($id >> ($BITLEN-5) ) ;
+	$id += ord( substr( $string, $i,1 ) ) ;
+	$id &= $mask ;
+    }
+    $id = 1 if ( $id == 0 ) ;
+
+    return $id ;
+}
+
+
+sub id_rename
+{
+    foreach( keys %txrcmd_file )
+    {
+	if ( not -e "$work_dir/$_" )
+	{
+	    die "Cannot find kms-file<$_> to rename.\n" ;
+	}
+	&fork( "id_change $work_dir/$_ $txrcmd_file{$_} >& /dev/null" ) ;
+    }
+}
+
+sub fork
+{
+    local $pid ;
+
+    return 0 if ( $lst_flg && $_[0] !~ m/^rm/ ) ;
+    unless ( $pid = fork )
+    {
+        exec( $_[0] ) ;
+        exit 0 ;
+    }
+    waitpid( $pid, 0 ) ;
+
+    if ( $log_file ne "" ) {
+	open( LOG, ">>$log_file" ) ;
+	print LOG "com($_[0])\n" ;
+	close( LOG ) ;
+    }
+
+    return $? ;
+}
+
+sub search_com()
+{
+    local ( $string, @cmd ) = @_, $i ;
+
+    for( $i=0 ; $i <= $#cmd ; $i++ )
+    {
+	return $i if ( $cmd[$i] eq $string ) ;
+    }
+    return -1 ;
+}

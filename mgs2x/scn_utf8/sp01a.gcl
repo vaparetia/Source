@@ -1,0 +1,2163 @@
+/*
+	sp01a.gcl
+		バラエティ アスレチックステージ
+
+	2002/05/13 H.Yoshiike         
+	$Id: sp01a.gcl,v 1.18 2002/08/29 05:50:10 usr03682 Exp $                      
+
+	
+*/
+
+// ------------------------------------
+// 各gclで必要なdefine
+// ------------------------------------
+// モード
+#define		STAGE_VR		1		// 共通プロック切り分け用
+#define		STAGE_START		1	//	ゲーム開始直後処理を有効にするため
+// ステージ名
+#define		STAGE_SP01A		1		// 共通プロック切り分け用
+// オブジェクト
+#define		SD_LOCKER_FLR	4		// ロッカー扉SE番号(倒れバージョン)
+#define		SD_LOCKER_HZD	4		// ロッカー扉SE番号(扉バージョン)
+
+// ------------------------------------
+// 各種スイッチ用define
+// ------------------------------------
+// デバッグ関係
+#ifdef	d:FIX_MODE
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体(FIX時は0)
+#else
+	#define		DEBUG_CHARA		0		// デバッグキャラ全体
+#endif
+#define		CHARA_CAMERA	0		// キャラ追従カメラ
+#define		TARGET_CHARA	敵兵:01	// キャラ追従カメラのターゲット
+#define		SCREENSHOT		0		// スクリーンショット
+#define		USB_KEY			0		// USBキーボード
+
+
+// ------------------------------------
+// 各種設定用define
+// ------------------------------------
+// マップ関係
+#define		HZX_NAME			sp01a
+#define		KMS_NAME			sp01a
+#define		TONBO_KMS_NAME		sp01a_tonbo
+#define		LINE_KMS_NAME		sp01a_line
+
+// キャラクター関係
+#define		PLAYER		ライデン
+
+
+// ------------------------------------
+// ゴールの位置
+// ------------------------------------
+#define	GOAL_POS_SP01A		21000 0 -47000
+
+// ------------------------------------
+// ＶＲウィンドウのリソース等
+// ------------------------------------
+#define	SP01A_1_WINDOW_RES	 [VRMSG_J:VRM_VRT_sp01a_1] [VRMSG_E:VRM_VRT_sp01a_1] [VRMSG_G:VRM_VRT_sp01a_1] \	// 日、英、独
+							 [VRMSG_F:VRM_VRT_sp01a_1] [VRMSG_I:VRM_VRT_sp01a_1] [VRMSG_S:VRM_VRT_sp01a_1] \	// 仏、伊、西
+							 [VRMSG_K:VRM_VRT_sp01a_1] \															// 韓
+							 p:ＶＲステージ開始時処理		// 終了プロック
+
+#define	SP01A_2_WINDOW_RES	 [VRMSG_J:VRM_VRT_sp01a_2] [VRMSG_E:VRM_VRT_sp01a_2] [VRMSG_G:VRM_VRT_sp01a_2] \	// 日、英、独
+							 [VRMSG_F:VRM_VRT_sp01a_2] [VRMSG_I:VRM_VRT_sp01a_2] [VRMSG_S:VRM_VRT_sp01a_2] \	// 仏、伊、西
+							 [VRMSG_K:VRM_VRT_sp01a_2] \															// 韓
+							 p:ＶＲステージ開始時処理		// 終了プロック
+
+
+// ------------------------------------
+// アイテムのポジション
+// ------------------------------------
+#define	ITEM_POS_01		 2000	 5000	 -36000		// 橋の中継地点
+#define	ITEM_POS_02		 6500	 7000	 -32500		// ローリングしていく１つ目の島、階段上がったところ
+#define	ITEM_POS_03		 13000	 7000	 -34500		// ローリングしていく２つ目の島の中央
+#define	ITEM_POS_04		 17000	 5000	 -43000		// 橋を渡りきったところ
+#define	ITEM_POS_05		 18000	 5000	 -39000		// エルード柵の前
+#define	ITEM_POS_06		 21000	 0		 -39000		// エルード降りた島の南
+#define	ITEM_POS_07		 22500	 0		 -38500		// エルード降りた島の南東
+
+
+// ------------------------------------
+// include
+// ------------------------------------
+#include "rai_sp01a.mh"		// 強制モーションリスト
+#include "stdch.h"
+#include "a_stdproc.h"			// アナザーミッション設定ファイル
+#include "sload.h"
+#include "sound.h"
+#include "jump.h"
+#include "fall.h"
+#include "beyond.h"
+#include "beyond3.h"
+#include "item_info.h"
+#include "vr_common.h"		// ＶＲステージ共通で使用するプロック
+
+#if d:USB_KEY
+	#include "usbkbd.h"
+#endif
+
+// ------------------------------------
+// マップ設定
+// ------------------------------------
+chara マップ アスレチック -k d:KMS_NAME -h d:HZX_NAME,0 -l $s:ＶＲライトファイル名
+
+command マップ設定 アスレチック -set {
+	// ローカルの初期化
+	// ------------------------------------
+	@ローカル変数初期化		// ローカルで使用する変数で初期化をする場合はここで
+	// 設定値を変更する場合は以下のプロック内で設定
+	// ------------------------------------
+	@設定値変更				// 敵兵や的のパラメータをステージ限定で変える時はここで
+
+	// ＶＲで必要な基本プロックのセット(vr_common.hで定義)
+	// サウンドの基本パック、ＶＲの基本システム、プレイヤー、ゴール等を設定します
+	// ※このプロックを使用する時は「ＶＲクリア時処理」というプロックが必要です
+	// ＶＲ共通プロックセット	$:スネークファイル $:雷電ファイル $:クリア条件フラグ
+	//							$:ゴールＸ $:ゴールＹ $:ゴールＺ $:タイマー初期値
+	//	VR_GOAL_TARGET	/*的全滅でゴールが開く*/
+	//	VR_GOAL_FREE	/*ゴールが最初から開いてる*/
+	//	VR_GOAL_ENEMY	/*敵全滅でゴールが開く*/
+	//	VR_GOAL_SNEAK	/*潜入モード中はゴールが開く*/
+	//	VR_GOAL_TIME	/*タイマーがゼロになるとゴールが開く*/
+	// ------------------------------------
+	if ( $b:ステージ番号 == 1 ) {
+		// 一面は機雷バージョン
+		@ＶＲ共通プロックセット sna_sp01a rai_sp01a d:VR_GOAL_FREE d:GOAL_POS_SP01A
+	} else {
+		// 二面は的破壊バージョン
+		@ＶＲ共通プロックセット sna_sp01a rai_sp01a d:VR_GOAL_TARGET d:GOAL_POS_SP01A
+	}
+
+	// ＶＲウィンドウの設定
+	// ------------------------------------
+	@アスレチックＶＲウィンドウ設定
+
+	// クリア時に呼ばれるものの設定
+	// ------------------------------------
+	if ( $b:ステージ番号 == 1 ) {
+		@ＶＲクリア設定 p:load_sp01a_02 p:A_ＲＥＴＲＹプロック
+	} else {
+		@ＶＲクリア設定 p:load_sp02a p:A_ＲＥＴＲＹプロック
+	}
+
+	// ステージに引かれるライン
+	// ------------------------------------
+	@ＶＲアウトライン d:KMS_NAME d:TONBO_KMS_NAME d:LINE_KMS_NAME
+
+	// プレイヤーの設定
+	// ------------------------------------
+	@プラグイン設定			// プレイヤーのプラグインがいる時はここで
+	@ジャンプ設定
+	@橋上トラップチェック
+	@エルード設定
+
+	// 敵兵・的関係の設定
+	// ------------------------------------
+	if ( $b:ステージ番号 == 1 ) {
+		// 一面は機雷バージョン
+		@ＶＲ機雷設定
+	} else {
+		// 二面は的破壊バージョン
+		@ＶＲ的設定
+		@アスレチックステージＶＲ的設定
+	}
+
+	// ＢＧＭの設定(プレイヤー→敵兵→BGMの順で呼ぶ)
+	// ------------------------------------
+	@ＢＧＭ設定
+
+	// アイテムの設定
+	// ------------------------------------
+	if ( $b:ステージ番号 == 2 ) {
+		// 的破壊の時は武器を拾っていく
+		@アイテム設定
+	}
+
+	// 光源、オブジェクト、カメラ関連の設定
+	// ------------------------------------
+	@落下死処理設定
+	@落とし穴設置
+	@ＶＲフォグ設定 -7000 70000 -5000 55000 -5000 55000
+	@カメラセット					// chara カメラとベースのカメラを設定
+	@アスレチックカメラ設定		// ステージ固有のカメラ設定がいる時はこのプロックで
+	@ＶＲキャラ用ライト設置				// 必ず最後に設定
+#if d:DEBUG_CHARA
+	@デバッグキャラセット
+#endif
+}
+
+//初期マップの表示
+command マップ表示 -show アスレチック
+
+
+
+// 各proc設定
+//-------------------------------------------------------------------------------------
+// 全マップ共通
+	//------------------------------------------------------------
+	// ＶＲウィンドウの設定と表示
+	//------------------------------------------------------------
+	proc アスレチックＶＲウィンドウ設定 {
+		#if d:DEBUG_PRINT
+			print 'vr_window_set'
+		#endif
+
+		if ( $b:ステージ番号 == 1 ) {
+			@ＶＲウィンドウ設定	d:SP01A_1_WINDOW_RES
+		} else {
+			@ＶＲウィンドウ設定	d:SP01A_2_WINDOW_RES
+		}
+
+
+		// ＶＲウィンドウを表示する
+		mesg ＶＲウィンドウ ＶＲウィンドウ君 開く
+
+		// スタート時とクリア時に使用するカットインカメラ
+		chara カメラ カットインカメラ		-c 0 -l 0 -p  0
+
+		// スタート時のカメラ(必要な場合)
+		chara カメラ設定 カットインカメラ \
+			-c 1 \	
+			-p 21000,7186,-44776 -t 21000,-15,-46948 \
+			-r 833,2048,0 -f 7521 \
+			-a 200 \
+			-i 0 -1 0 0 \
+			-s 1
+	}
+
+	//------------------------------------------------------------
+	// ステージ開始時処理
+	//------------------------------------------------------------
+	proc ＶＲステージ開始時処理 {
+		#if d:DEBUG_PRINT
+			print 'game_start!!!!!'
+		#endif
+
+		// プレイヤーやパッドの制御等を行う a_stdproc.hで定義
+		@全ミッション共通ステージ開始時処理
+
+		// カメラワークスタート(必要な場合)
+		// 全体図
+		chara カメラ設定 カットインカメラ \
+			-c 1 \	
+			-p 2759,49129,9563 -t 2759,41369,5024 \
+			-r 679,2048,0 -f 8990 \
+			-a 200 \
+			-i 4 4 d:START_CAMERA_CHANGE_TIME d:START_CAMERA_CHANGE_TIME \
+			-s 1
+
+		chara delay ディレイ \
+			-time d:START_CAMERA_CHANGE_TIME \
+			-exec {
+				chara カメラ設定 カットインカメラ -s -1
+			}
+	}
+
+	proc ゲーム開始直後処理 {
+		if ( $b:ステージ番号 == 2 ) {
+			mesg ＶＲ的共通 三角的 移動開始
+			mesg ＶＲ的共通 壁 移動開始
+		}
+	}
+
+	// ------------------------------------
+	// クリア時の処理
+	// ------------------------------------
+	proc ＶＲクリア時処理 {
+		#if d:DEBUG_PRINT 
+			print 'clear'
+		#endif
+
+		// 強制モーションを発動
+		@全ミッション共通クリアモーション発動 d:モーションリスト:non_mclr_1 2048
+
+		// クリア時にカメラアングルを変える
+		if ( $b:ステージ番号 == 1 ) {
+			chara カメラ設定 クリア時カメラ \
+				-c 1 \	
+				-p 24382,463,-50007 -t 20659,1109,-46132 \
+				-r -78,3597,0 -f 5412 \
+				-a 200 \
+				-i 1 0 0 0 \
+				-s 1
+		} else {
+			chara カメラ設定 クリア時カメラ \
+				-c 1 \	
+				-p 22625,716,-51053 -t 20965,906,-45923 \
+				-r -23,3892,0 -f 5395 \
+				-a 200 \
+				-i 1 0 0 0 \
+				-s 1
+		}
+	}
+
+
+
+	// ------------------------------------
+	// パラメータ系の変更
+	// ------------------------------------
+	// ローカル変数初期化
+	// ------------------------------------
+	proc ローカル変数初期化 {
+		#if d:DEBUG_PRINT 
+			print 'localvar_init'
+		#endif
+
+		// このステージで使用するローカル変数
+		$$s:橋上トラップ名 = ev000;
+	}
+
+
+
+	// 設定値を変更
+	// ------------------------------------
+	proc 設定値変更 {
+		#if d:DEBUG_PRINT 
+			print 'status_set'
+		#endif
+
+		// 初期装備の設定
+		if ( $b:ステージ番号 == 2 ) {
+			if ( $s:選択プレイヤー == ライデン ) {
+				// ライデンの初期装備
+				eval ( $w:武器弾数Ｒ[ d:武器:ソコム ] = 25 )
+				eval ( $w:武器= d:武器:ソコム );
+			} else if ( $s:選択プレイヤー == スネーク ) {
+				// スネークの初期装備
+				eval ( $w:武器弾数Ｒ[ d:武器:ＵＳＰ ] = 16 )
+				eval ( $w:武器= d:武器:ＵＳＰ );
+			}
+		}
+
+		command 配列セット $w:スネークグリップ最大[0] {
+			1000, 3600, 5400, 0
+		}
+
+		command 配列セット $w:ライデングリップ最大[0] {
+			1300, 3600, 5400, 0
+		}
+	}
+
+
+
+	// ------------------------------------
+	// プレイヤーに関する設定
+	//-------------------------------------
+	// プラグインプログラム
+	// ------------------------------------
+	proc プラグイン設定 {
+		#if d:DEBUG_PRINT
+			print 'plugin_set'
+		#endif
+
+		command プラグイン自動ジャンプ
+		command プラグイン落下
+	}
+	//-------------------------------------
+	// 台登り
+	// ------------------------------------
+	proc ジャンプ設定 {
+		#if d:DEBUG_PRINT
+			print 'jump_set'
+		#endif
+
+		trap ky001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				@ジャンプ発動 ky001 1000 10
+			}
+	}
+
+	//-------------------------------------
+	// エルードする方向を確定するために橋のどこにいるか位置を調査する
+	// ------------------------------------
+	proc 橋上トラップチェック {
+		#if d:DEBUG_PRINT
+			print 'beyond_set'
+		#endif
+
+		command foreach -argc 1 -repeat 16 \
+			-data { \
+					{ ev001 } \
+					{ ev002 } \
+					{ ev003 } \
+					{ ev004 } \
+					{ ev005 } \
+					{ ev006 } \
+					{ ev007 } \
+					{ ev008 } \
+					{ ev009 } \
+					{ ev010 } \
+					{ ev011 } \
+					{ ev012 } \
+					{ ev013 } \
+					{ ev014 } \
+					{ ev015 } \
+					{ ev016 } \
+				} \
+				-exec { \
+					trap $1 d:PLAYER \
+						-mask 入る \
+						-exec {
+							$$s:橋上トラップ名 = $1;
+							print '$$s:橋上トラップ名'$$s:橋上トラップ名
+						}
+				}
+		
+	}
+
+
+	//-------------------------------------
+	// エルード
+	// ------------------------------------
+	// エルードで使用する共通プロック
+	// タイプ 0:南北方向に向かってエルード 1:東西方向に向かってエルード
+#define エルードカメラセット１	trap TRAPNAME d:PLAYER \
+									-mask いる \
+									-state 6 \
+									-dir DIR_1 256 \
+									-camera \
+									-exec { \
+										@エルード時共通カメラ１ DIR_1 \
+									}
+
+#define エルードカメラセット２	trap TRAPNAME d:PLAYER \
+									-mask ？ \
+									-state 5 \
+									-dir DIR_1 256 \
+									-camera \
+									-exec { \
+										@エルード時共通カメラ２ DIR_1 $3 \
+									}
+
+
+	
+	
+	proc エルード移動範囲設定 $:p_タイプ $:p_柵座標 $:p_トラップ端１ $:p_トラップ端２ {
+		if ( $:p_タイプ == 0 ) {
+			command エルード移動範囲設定 \
+				-x_range ($:p_トラップ端１+250) ($:p_トラップ端２-250) -z_range ($:p_柵座標-500) ($:p_柵座標+500)
+		} else {
+			command エルード移動範囲設定 \
+				-x_range ($:p_柵座標-500) ($:p_柵座標+500) -z_range ($:p_トラップ端１+250) ($:p_トラップ端２-250)
+		}
+	}
+
+	proc エルード時共通カメラ１ $:p_方向 {
+		switch ( $:p_方向 ) {
+			case ( 0 ) {
+				// 南からきたときのカメラ
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,10000,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 575,2139,0 -f 5004 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+			case ( 1024 ) {
+				// 東からきたときのカメラ
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,10000,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 728,1843,0 -f 5138 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+			case ( 2048 ) {
+				// 北からきたときのカメラ
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,10000,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 546,2191,0 -f 5067 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+			case ( 3072 ) {
+				// 西からきたときのカメラ
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,10000,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 537,2284,0 -f 5053 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		}
+	}
+
+	// エルードした後のカメラ方向の数値が逆になる
+	proc エルード時共通カメラ２ $:p_方向 $:p_入る出るフラグ {
+		switch ( $:p_方向 ) {
+			case ( 0 ) {
+				// 北からきたときのカメラ
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,10000,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 931,1927,0 -f 7000 \
+					-a 250 \
+					-i 3 2 0 0 \
+					-s $:p_入る出るフラグ \
+					-z d:CAMERA_NO_CUSHION
+			}
+			case ( 1024 ) {
+				// 西からきたときのカメラ
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,10000,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 700,1874,0 -f 7500 \
+					-a 275 \
+					-i 3 2 0 0 \
+					-s $:p_入る出るフラグ \
+					-z d:CAMERA_NO_CUSHION
+			}
+			case ( 2048 ) {
+				// 南からきたときのカメラ
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,10000,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 713,1956,0 -f 7000 \
+					-a 250 \
+					-i 3 2 0 0 \
+					-s $:p_入る出るフラグ \
+					-z d:CAMERA_NO_CUSHION
+			}
+			case ( 3072 ) {
+				// 東からきたときのカメラ
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,10000,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 685,2198,0 -f 7500 \
+					-a 275 \
+					-i 3 2 0 0 \
+					-s $:p_入る出るフラグ \
+					-z d:CAMERA_NO_CUSHION
+			}
+		}
+	}
+
+
+	proc エルード設定 {
+		#if d:DEBUG_PRINT
+			print 'beyond_set'
+		#endif
+
+		// 最初の山部分のエルード
+		//---------------------------------
+		// 三段目
+		trap by001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					@東向き柵なしビヨンド発動 by001 3000 $6 -29000 -27000 3000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+					@エルード移動範囲設定 1 3000 -29000 -27000
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by001/","/DIR_1/1024/");
+		d:エルードカメラセット２("/TRAPNAME/by001/","/DIR_1/3072/");
+
+
+		// 五段目
+		trap by002 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					@東向き柵なしビヨンド発動 by002 3000 $6 -30000 -29000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+					@エルード移動範囲設定 1 3000 -30000 -29000
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by002/","/DIR_1/1024/");
+		d:エルードカメラセット２("/TRAPNAME/by002/","/DIR_1/3072/");
+
+
+		// 四段目東側
+		trap by003 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					@東向き柵なしビヨンド発動 by003 3000 $6 -32000 -30000 4000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+					@エルード移動範囲設定 1 3000 -32000 -30000
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by003/","/DIR_1/1024/");
+		d:エルードカメラセット２("/TRAPNAME/by003/","/DIR_1/3072/");
+
+
+		// 四段目北側
+		trap by004 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					@北向き柵なしビヨンド発動 by004 -32000 $4 2000 3000 4000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+					@エルード移動範囲設定 0 -32000 2000 3000
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by004/","/DIR_1/2048/");
+		d:エルードカメラセット２("/TRAPNAME/by004/","/DIR_1/0/");
+
+
+		// 五段目北側
+		trap by005 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					@北向き柵なしビヨンド発動 by005 -32000 $4 1000 2000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+					@エルード移動範囲設定 0 -32000 1000 2000
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by005/","/DIR_1/2048/");
+		d:エルードカメラセット２("/TRAPNAME/by005/","/DIR_1/0/");
+
+
+		// 橋部分のエルード
+		//---------------------------------
+		// ev001南側
+		trap by101 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev001 ) {
+						@南向き柵なしビヨンド発動 by101 -42000 $4 -6000 -4000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 0 -42000 -6000 -4000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by101/","/DIR_1/0/");
+		d:エルードカメラセット２("/TRAPNAME/by101/","/DIR_1/2048/");
+
+
+		// ev002西側
+		trap by102 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev002 || $$s:橋上トラップ名 == ev003 ) {
+						@西向き柵なしビヨンド発動 by102 -4000 $6 -42000 -39000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 1 -4000 -42000 -39000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by102/","/DIR_1/3072/");
+		d:エルードカメラセット２("/TRAPNAME/by102/","/DIR_1/1024/");
+
+
+		// ev003南側
+		trap by103 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev003 ) {
+						@南向き柵なしビヨンド発動 by103 -39000 $4 -4000 -2000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 0 -39000 -4000 -2000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by103/","/DIR_1/0/");
+		d:エルードカメラセット２("/TRAPNAME/by103/","/DIR_1/2048/");
+
+
+		// ev004西側
+		trap by104 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev004 || $$s:橋上トラップ名 == ev005 ) {
+						@西向き柵なしビヨンド発動 by104 -2000 $6 -39000 -35000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 1 -2000 -39000 -35000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by104/","/DIR_1/3072/");
+		d:エルードカメラセット２("/TRAPNAME/by104/","/DIR_1/1024/");
+
+
+		// ev005,ev006南側(中央踊り場)
+		trap by105 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev005 || $$s:橋上トラップ名 == ev006 ) {
+						@南向き柵なしビヨンド発動 by105 -35000 $4 -2000 3000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 0 -35000 -2000 3000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by105/","/DIR_1/0/");
+		d:エルードカメラセット２("/TRAPNAME/by105/","/DIR_1/2048/");
+
+
+		// ev006,ev007東側
+		trap by106 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev006 || $$s:橋上トラップ名 == ev007 ) {
+						@東向き柵なしビヨンド発動 by106 3000 $6 -39000 -35000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 1 3000 -39000 -35000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by106/","/DIR_1/1024/");
+		d:エルードカメラセット２("/TRAPNAME/by106/","/DIR_1/3072/");
+
+
+		// ev008南側
+		trap by107 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev008 ) {
+						@南向き柵なしビヨンド発動 by107 -39000 $4 3000 5000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 0 -39000 3000 5000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by107/","/DIR_1/0/");
+		d:エルードカメラセット２("/TRAPNAME/by107/","/DIR_1/2048/");
+
+
+		// ev008,ev009東側
+		trap by108 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev008 || $$s:橋上トラップ名 == ev009 ) {
+						@東向き柵なしビヨンド発動 by108 5000 $6 -41000 -39000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 1 5000 -41000 -39000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by108/","/DIR_1/1024/");
+		d:エルードカメラセット２("/TRAPNAME/by108/","/DIR_1/3072/");
+
+
+		// ev010南側
+		trap by109 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev010 ) {
+						@南向き柵なしビヨンド発動 by109 -41000 $4 5000 8000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 0 -41000 5000 8000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by109/","/DIR_1/0/");
+		d:エルードカメラセット２("/TRAPNAME/by109/","/DIR_1/2048/");
+
+
+		// ev011西側
+		trap by110 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev011 ) {
+						@西向き柵なしビヨンド発動 by110 8000 $6 -41000 -39000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 1 8000 -41000 -39000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by110/","/DIR_1/3072/");
+		d:エルードカメラセット２("/TRAPNAME/by110/","/DIR_1/1024/");
+
+
+		// ev011-ev013南側
+		trap by111 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev011 || $$s:橋上トラップ名 == ev012 || $$s:橋上トラップ名 == ev013 ) {
+						@南向き柵なしビヨンド発動 by111 -39000 $4 8000 13000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 0 -39000 8000 13000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by111/","/DIR_1/0/");
+		d:エルードカメラセット２("/TRAPNAME/by111/","/DIR_1/2048/");
+
+
+		// ev013東側
+		trap by112 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev013 ) {
+						@東向き柵なしビヨンド発動 by112 13000 $6 -42000 -39000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 1 13000 -42000 -39000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by112/","/DIR_1/1024/");
+		d:エルードカメラセット２("/TRAPNAME/by112/","/DIR_1/3072/");
+
+
+		// ev014,ev015南側
+		trap by113 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev014 || $$s:橋上トラップ名 == ev015 ) {
+						@南向き柵なしビヨンド発動 by113 -42000 $4 13000 16000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 0 -42000 13000 16000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by113/","/DIR_1/0/");
+		d:エルードカメラセット２("/TRAPNAME/by113/","/DIR_1/2048/");
+
+
+		// ev016西側(東側の踊り場)
+		trap by114 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev016 ) {
+						@西向き柵なしビヨンド発動 by114 16000 $6 -42000 -38000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 1 16000 -42000 -38000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by114/","/DIR_1/3072/");
+		d:エルードカメラセット２("/TRAPNAME/by114/","/DIR_1/1024/");
+
+
+		// ev016南側(東側の踊り場)
+		trap by115 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev016 ) {
+						@南向き柵なしビヨンド発動 by115 -38000 $4 16000 19000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 0 -38000 16000 19000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by115/","/DIR_1/0/");
+		d:エルードカメラセット２("/TRAPNAME/by115/","/DIR_1/2048/");
+
+
+		// ev014北側
+		trap by121 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev013 || $$s:橋上トラップ名 == ev014 ) {
+						@北向き柵なしビヨンド発動 by121 -43000 $4 12000 15000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 0 -43000 12000 15000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by121/","/DIR_1/2048/");
+		d:エルードカメラセット２("/TRAPNAME/by121/","/DIR_1/0/");
+
+
+		// ev013西側
+		trap by122 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev013 ) {
+						@西向き柵なしビヨンド発動 by122 12000 $6 -43000 -40000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 1 12000 -43000 -40000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by122/","/DIR_1/3072/");
+		d:エルードカメラセット２("/TRAPNAME/by122/","/DIR_1/1024/");
+
+
+		// ev012北側
+		trap by123 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev012 ) {
+						@北向き柵なしビヨンド発動 by123 -40000 $4 9000 12000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 0 -40000 9000 12000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by123/","/DIR_1/2048/");
+		d:エルードカメラセット２("/TRAPNAME/by123/","/DIR_1/0/");
+
+
+		// ev011東側
+		trap by124 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev011 ) {
+						@東向き柵なしビヨンド発動 by124 9000 $6 -42000 -40000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 1 9000 -42000 -40000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by124/","/DIR_1/1024/");
+		d:エルードカメラセット２("/TRAPNAME/by124/","/DIR_1/3072/");
+
+
+		// ev009-ev011北側
+		trap by125 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev009 || $$s:橋上トラップ名 == ev010 || $$s:橋上トラップ名 == ev011 ) {
+						@北向き柵なしビヨンド発動 by125 -42000 $4 4000 9000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 0 -42000 4000 9000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by125/","/DIR_1/2048/");
+		d:エルードカメラセット２("/TRAPNAME/by125/","/DIR_1/0/");
+
+
+		// ev009西側
+		trap by126 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev009 ) {
+						@西向き柵なしビヨンド発動 by126 4000 $6 -42000 -40000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 1 4000 -42000 -40000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by126/","/DIR_1/3072/");
+		d:エルードカメラセット２("/TRAPNAME/by126/","/DIR_1/1024/");
+
+
+		// ev008北側
+		trap by127 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev008 ) {
+						@北向き柵なしビヨンド発動 by127 -40000 $4 2000 4000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 0 -40000 2000 4000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by127/","/DIR_1/2048/");
+		d:エルードカメラセット２("/TRAPNAME/by127/","/DIR_1/0/");
+
+
+		// ev007,ev008西側
+		trap by128 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev007 || $$s:橋上トラップ名 == ev008 ) {
+						@西向き柵なしビヨンド発動 by128 2000 $6 -40000 -37000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 1 2000 -40000 -37000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by128/","/DIR_1/3072/");
+		d:エルードカメラセット２("/TRAPNAME/by128/","/DIR_1/1024/");
+
+
+		// ev006北側(中央踊り場)
+		trap by129 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev006 ) {
+						@北向き柵なしビヨンド発動 by129 -37000 $4 1000 2000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 0 -37000 1000 2000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by129/","/DIR_1/2048/");
+		d:エルードカメラセット２("/TRAPNAME/by129/","/DIR_1/0/");
+
+
+		// ev006西側(中央踊り場)
+		trap by130 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev006 ) {
+						@西向き柵なしビヨンド発動 by130 1000 $6 -37000 -36000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 1 1000 -37000 -36000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by130/","/DIR_1/3072/");
+		d:エルードカメラセット２("/TRAPNAME/by130/","/DIR_1/1024/");
+
+
+		// ev005北側(中央踊り場)
+		trap by131 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev005 ) {
+						@北向き柵なしビヨンド発動 by131 -36000 $4 -1000 1000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 0 -36000 -1000 1000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by131/","/DIR_1/2048/");
+		d:エルードカメラセット２("/TRAPNAME/by131/","/DIR_1/0/");
+
+
+		// ev003,ev004東側
+		trap by132 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev003 || $$s:橋上トラップ名 == ev004 ) {
+						@東向き柵なしビヨンド発動 by132 -1000 $6 -40000 -36000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 1 -1000 -40000 -36000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by132/","/DIR_1/1024/");
+		d:エルードカメラセット２("/TRAPNAME/by132/","/DIR_1/3072/");
+
+
+		// ev003北側
+		trap by133 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev003 ) {
+						@北向き柵なしビヨンド発動 by133 -40000 $4 -3000 -1000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 0 -40000 -3000 -1000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by133/","/DIR_1/2048/");
+		d:エルードカメラセット２("/TRAPNAME/by133/","/DIR_1/0/");
+
+
+		// ev001,ev002東側
+		trap by134 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev001 || $$s:橋上トラップ名 == ev002 ) {
+						@東向き柵なしビヨンド発動 by134 -3000 $6 -43000 -40000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 1 -3000 -43000 -40000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by134/","/DIR_1/1024/");
+		d:エルードカメラセット２("/TRAPNAME/by134/","/DIR_1/3072/");
+
+
+		// ev001北側
+		trap by135 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					if ( $$s:橋上トラップ名 == ev001 ) {
+						@北向き柵なしビヨンド発動 by135 -43000 $4 -8000 -3000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+						@エルード移動範囲設定 0 -43000 -8000 -3000
+					}
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by135/","/DIR_1/2048/");
+		d:エルードカメラセット２("/TRAPNAME/by135/","/DIR_1/0/");
+
+
+		// 第一の浮島
+		//---------------------------------
+		// 浮島の西側一番南
+		trap by201 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					@西向き柵なしビヨンド発動 by201 5000 $6 -30000 -28000 3000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+					@エルード移動範囲設定 1 5000 -30000 -28000
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by201/","/DIR_1/3072/");
+		d:エルードカメラセット２("/TRAPNAME/by201/","/DIR_1/1024/");
+
+
+		// 浮島の西側真ん中
+		trap by202 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					@西向き柵なしビヨンド発動 by202 5000 $6 -31000 -30000 4000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+					@エルード移動範囲設定 1 5000 -31000 -30000
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by202/","/DIR_1/3072/");
+		d:エルードカメラセット２("/TRAPNAME/by202/","/DIR_1/1024/");
+
+
+		// 浮島の西側北側
+		trap by203 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					@西向き柵なしビヨンド発動 by203 5000 $6 -32000 -31000 5000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+					@エルード移動範囲設定 1 5000 -32000 -31000
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by203/","/DIR_1/3072/");
+		d:エルードカメラセット２("/TRAPNAME/by203/","/DIR_1/1024/");
+
+
+		// 浮島の北東
+		trap by204 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					@東向き柵なしビヨンド発動 by204 9000 $6 -34000 -33000 7000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+					@エルード移動範囲設定 1 9000 -34000 -33000
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by204/","/DIR_1/1024/");
+		d:エルードカメラセット２("/TRAPNAME/by204/","/DIR_1/3072/");
+
+
+		// 第二の浮島
+		//---------------------------------
+		// 浮島の西側
+		trap by301 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					@西向き柵なしビヨンド発動 by301 12000 $6 -36000 -33000 7000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+					@エルード移動範囲設定 1 12000 -36000 -33000
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by301/","/DIR_1/3072/");
+		d:エルードカメラセット２("/TRAPNAME/by301/","/DIR_1/1024/");
+
+
+		// 浮島の南側
+		trap by302 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					@南向き柵なしビヨンド発動 by302 -33000 $4 12000 14000 7000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+					@エルード移動範囲設定 0 -33000 12000 14000
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by302/","/DIR_1/0/");
+		d:エルードカメラセット２("/TRAPNAME/by302/","/DIR_1/2048/");
+
+
+		// 浮島の東側
+		trap by303 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					@東向き柵なしビヨンド発動 by303 14000 $6 -36000 -33000 7000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+					@エルード移動範囲設定 1 14000 -36000 -33000
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by303/","/DIR_1/1024/");
+		d:エルードカメラセット２("/TRAPNAME/by303/","/DIR_1/3072/");
+
+
+		// 浮島の南側
+		trap by304 d:PLAYER \
+			-mask 入る \
+			-exec {
+				command プレイヤー状態取得 ;
+				if( ($status == 0) || ($status & d:PFLAG_WALK) || \
+					($status & d:PFLAG_DAMAGED) || ($status & d:PFLAG_SUBJECT) ) {
+					@北向き柵なしビヨンド発動 by304 -36000 $4 12000 14000 7000 (d:BY_NOFOOTSHADOW | d:BY_NO_STAMP)
+					@エルード移動範囲設定 0 -36000 12000 14000
+				}
+			}
+		d:エルードカメラセット１("/TRAPNAME/by304/","/DIR_1/2048/");
+		d:エルードカメラセット２("/TRAPNAME/by304/","/DIR_1/0/");
+
+
+
+		// 橋渡った先のエルード
+		//---------------------------------
+		trap by401 d:PLAYER \
+			-mask いる \
+			-key d:PAD_ACTION \	//アクションボタン
+			-state 0,4 \		//立ち状態or張り付き
+			-exec {
+				@東向きビヨンド発動 by401 19000 $6 -40000 -38000 d:BY_NOFOOTSHADOW
+				@エルード移動範囲設定 1 19000 -40000 -38000
+			}
+		trap by401 d:PLAYER \
+			-mask いる \
+			-state 6 \
+			-dir 1024 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+					-r 419,2418,0 -f 5432 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+		trap by401 d:PLAYER \
+			-mask ？ \
+			-state 5 \
+			-dir 3072 256 \	//方向指定
+			-camera \			//カメラトラップであることを明示
+			-exec {
+				chara カメラ設定 モーションカメラ \
+					-c 0 \
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-36277 \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-38874 \
+					-r 742,2270,0 -f 6573 \
+					-a 250 \
+					-i 3 2 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+	}
+
+
+
+	// ------------------------------------
+	// 敵兵や的の処理
+	// ------------------------------------
+	proc ＶＲ機雷設定 {
+		#if d:DEBUG_PRINT 
+			print 'vr_bomb_set'
+		#endif
+
+		if ( $s:選択プレイヤー == ライデン ) {
+			command foreach -argc 3 -repeat 13 \
+				-data { \
+						{ 機雷:01, 0 0 } \
+						{ 機雷:02, 1 0 } \
+						{ 機雷:03, 2 0 } \
+						{ 機雷:04, 3 0 } \
+						{ 機雷:05, 4 0 } \
+						{ 機雷:06, 5 0 } \
+						{ 機雷:07, 6 0 } \
+						{ 機雷:08, 7 0 } \
+						{ 機雷:09, 8 0 } \
+						{ 機雷:10, 9 0 } \
+						{ 機雷:11, 9 2 } \
+						{ 機雷:12, 9 4 } \
+						{ 機雷:13, 9 6 } \
+					} \
+					-exec { \
+						chara	ＶＲ移動的 $1 \
+							-flag ( d:VR_TRG_MINE | d:VR_TRG_FL_MARK ) \
+							-route $2 $3 \
+							-speed 50
+					}
+		} else {
+			command foreach -argc 3 -repeat 15 \
+				-data { \
+						{ 機雷:01, 11 0 } \
+						{ 機雷:02, 12 0 } \
+						{ 機雷:03, 13 3 } \
+						{ 機雷:04, 14 1 } \
+						{ 機雷:05, 15 3 } \
+						{ 機雷:06, 16 0 } \
+						{ 機雷:07, 17 0 } \
+						{ 機雷:08, 18 0 } \
+						{ 機雷:09, 19 0 } \
+						{ 機雷:10, 20 0 } \
+						{ 機雷:10, 20 2 } \
+						{ 機雷:11, 21 0 } \
+						{ 機雷:12, 22 3 } \
+						{ 機雷:13, 23 2 } \
+						{ 機雷:14, 24 2 } \
+					} \
+					-exec { \
+						chara	ＶＲ移動的 $1 \
+							-flag ( d:VR_TRG_MINE | d:VR_TRG_FL_MARK ) \
+							-route $2 $3 \
+							-speed 50
+					}
+		}
+	}
+
+	proc アスレチックステージＶＲ的設定 {
+		#if d:DEBUG_PRINT 
+			print 'vr_bomb_set'
+		#endif
+
+		if ( $s:選択プレイヤー == ライデン ) {
+		// ライデンバージョンの的配置
+			command foreach -argc 4 -repeat 14 \
+				-data { \
+						{ 三角的:01, d:VR_TRG_DIR 31 0 } \
+						{ 三角的:02, d:VR_TRG_DIR 32 0 } \
+						{ 三角的:03, d:VR_TRG_DIR 33 0 } \
+						{ 三角的:04, d:VR_TRG_DIR 34 0 } \
+						{ 三角的:05, d:VR_TRG_DIR 35 0 } \
+						{ 三角的:06, d:VR_TRG_DIR 36 0 } \
+						{ 三角的:07, d:VR_TRG_DIR 37 0 } \
+						{ 三角的:08, d:VR_TRG_DIR 38 0 } \
+						{ 三角的:09, d:VR_TRG_DIR 39 0 } \
+						{ 三角的:10, d:VR_TRG_DIR 40 0 } \
+						{ 三角的:11, d:VR_TRG_DIR 41 0 } \
+						{ 三角的:12, d:VR_TRG_DIR 42 0 } \
+						{ 三角的:13, d:VR_TRG_DIR 43 0 } \
+						{ 三角的:14, d:VR_TRG_DIR 44 0 } \
+					} \
+					-exec { \
+						chara	ＶＲ移動的 $1 \
+							-flag ( d:VR_TRG_ONE_TRI | d:VR_TRG_WAIT | $2 ) \
+							-route $3 $4 \
+							-speed 50
+					}
+
+			command foreach -argc 2 -repeat 4 \
+				-data { \
+						{ 壁:01, -40000 } \
+						{ 壁:02, -42000 } \
+						{ 壁:03, -44000 } \
+						{ 壁:03, -46000 } \
+					} \
+					-exec { \
+						chara ＶＲ壁 $1 \
+							-flag ( d:VR_TRG_NORMAL | d:VR_TRG_WAIT ) \
+							-pos	21000 0 $2 \
+							-dir	0	/*Ｘ軸に平行 １＝Ｚ軸に平行*/
+					}
+		} else {
+		// スネークバージョンの的配置
+			command foreach -argc 4 -repeat 17 \
+				-data { \
+						{ 三角的:01, d:VR_TRG_DIR 51 0 } \
+						{ 三角的:02, d:VR_TRG_DIR 52 0 } \
+						{ 三角的:03, d:VR_TRG_P_DIR 53 0 } \
+						{ 三角的:04, d:VR_TRG_DIR 54 0 } \
+						{ 三角的:05, d:VR_TRG_DIR 55 0 } \
+						{ 三角的:06, d:VR_TRG_DIR 56 0 } \
+						{ 三角的:07, d:VR_TRG_DIR 57 0 } \
+						{ 三角的:08, d:VR_TRG_P_DIR 58 0 } \
+						{ 三角的:09, d:VR_TRG_P_DIR 59 0 } \
+						{ 三角的:10, d:VR_TRG_P_DIR 60 0 } \
+						{ 三角的:11, d:VR_TRG_P_DIR 61 0 } \
+						{ 三角的:12, d:VR_TRG_P_DIR 62 0 } \
+						{ 三角的:13, d:VR_TRG_DIR 63 0 } \
+						{ 三角的:14, d:VR_TRG_DIR 64 0 } \
+						{ 三角的:15, d:VR_TRG_DIR 64 1 } \
+						{ 三角的:16, d:VR_TRG_DIR 64 2 } \
+						{ 三角的:17, d:VR_TRG_DIR 64 3 } \
+					} \
+					-exec { \
+						chara	ＶＲ移動的 $1 \
+							-flag ( d:VR_TRG_ONE_TRI | d:VR_TRG_WAIT | $2 ) \
+							-route $3 $4 \
+							-speed 50
+					}
+
+			command foreach -argc 4 -repeat 6 \
+				-data { \
+						{ 壁:01, 21000 -41000 0 } \
+						{ 壁:02, 21000 -42000 0 } \
+						{ 壁:03, 21000 -43000 0 } \
+						{ 壁:04, 21000 -44000 0 } \
+						{ 壁:05, 21000 -45000 0 } \
+						{ 壁:06, 21000 -46000 0 } \
+//						{ 壁:07, -3000 -7000 1 } \
+					} \
+					-exec { \
+						chara ＶＲ壁 $1 \
+							-flag ( d:VR_TRG_NORMAL | d:VR_TRG_WAIT ) \
+							-pos	$2 0 $3 \
+							-dir	$4	/*Ｘ軸に平行 １＝Ｚ軸に平行*/
+					}
+		}
+	}
+
+	// ------------------------------------
+	// ＢＧＭの設定
+	// ------------------------------------
+	proc ＢＧＭ設定 {
+		#if d:DEBUG_PRINT 
+			print 'bgm_set'
+		#endif
+
+		chara ＢＧＭマネージャー ＢＧＭマネ
+	}
+
+
+	// ------------------------------------
+	// アイテムの設定
+	// ------------------------------------
+	// 再発生が必要な時は以下のプロックの中を記述する
+	// ------------------------------------
+	proc アイテム取得時番号設定 $:ボックス名 {
+		#if d:DEBUG_PRINT
+			print 'item_no_set'
+		#endif
+	}
+	// アイテムの設置
+	// ------------------------------------
+	proc アイテム設定 {
+		#if d:DEBUG_PRINT 
+			print 'item_set'
+		#endif
+
+		if ( $s:選択プレイヤー == ライデン ) {
+		// ライデンのアイテム配置
+			@弾薬_ソコム_初期設置 ソコム弾 d:ITEM_POS_01 0
+			@ジアゼパム_初期設置 ジアゼパム d:ITEM_POS_02 0
+			@ＰＳＧ１_初期設置 ＰＳＧ１本体 d:ITEM_POS_03 0 なし
+			@ＡＫＳ_初期設置 ＡＫＳ本体 d:ITEM_POS_05 0 なし
+			@弾薬_ＡＫＳ_初期設置 ＡＫＳ弾 d:ITEM_POS_07 0
+		} else {
+		// スネークのアイテム配置
+			@弾薬_ＵＳＰ_初期設置 ＵＳＰ弾 d:ITEM_POS_01 0
+			@ＰＳＧ１_初期設置 ＰＳＧ１本体 d:ITEM_POS_04 0 なし
+			@ジアゼパム_初期設置 ジアゼパム d:ITEM_POS_05 0
+			@Ｍ４_初期設置 Ｍ４本体 d:ITEM_POS_06 0 なし
+		}
+		
+	}
+
+
+
+	// ------------------------------------
+	// その他オブジェクト関係
+	// ------------------------------------
+
+	// ------------------------------------
+	// 下に落下したときの処理
+	// ------------------------------------
+#define	プレイヤー落下時移動Ｘ	if ( $4 < X_MIN ) { \
+									mesg プレイヤー d:PLAYER position2 0 X_MIN \
+								} else if ( $4 > X_MAX ) { \
+									mesg プレイヤー d:PLAYER position2 0 X_MAX \
+								}
+
+#define	プレイヤー落下時移動Ｚ	if ( $6 < Z_MIN ) { \
+									mesg プレイヤー d:PLAYER position2 2 Z_MIN \
+								} else if ( $6 > Z_MAX ) { \
+									mesg プレイヤー d:PLAYER position2 2 Z_MAX \
+								}
+
+	proc 落下死カメラ $:p_トラップ下端 {
+		chara delay ディレイ \
+			-time 1 \
+			-arg $:p_トラップ下端 \
+			-exec {
+				#if d:DEBUG_PRINT
+					print 'fall camera set'
+				#endif
+				
+				chara カメラ設定 落下死カメラ \
+					-c 0 \	
+					-b d:CAM_MIN,10000,d:CAM_MIN		 d:CAM_MAX,d:CAM_MAX,$1 \
+					-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,($1-700) \
+					-r 945,2150,0 -f 5627 \
+					-a 200 \
+					-z d:CAMERA_NO_CUSHION \
+					-i 0 0 0 0 \
+					-s 1
+			}
+	}
+	
+	
+	proc 落下死処理設定 {
+		#if d:DEBUG_PRINT
+			print 'fall_proc_set'
+		#endif
+
+		trap de001 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					d:プレイヤー落下時移動Ｘ("/X_MIN/-9000/","/X_MAX/14000/");
+					d:プレイヤー落下時移動Ｚ("/Z_MIN/-50000/","/Z_MAX/-44000/");
+
+					@ジャンプ落下死発動 0x0004 -10000
+				}
+				@落下死カメラ -43000
+			}
+
+		trap de002 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					d:プレイヤー落下時移動Ｘ("/X_MIN/-2500/","/X_MAX/3000/");
+					d:プレイヤー落下時移動Ｚ("/Z_MIN/-42500/","/Z_MAX/-41000/");
+
+					@ジャンプ落下死発動 0x0004 -10000
+				}
+				@落下死カメラ -40000
+			}
+
+		trap de003 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					d:プレイヤー落下時移動Ｘ("/X_MIN/4500/","/X_MAX/8500/");
+					d:プレイヤー落下時移動Ｚ("/Z_MIN/-42950/","/Z_MAX/-42900/");
+
+					@ジャンプ落下死発動 0x0004 -10000
+				}
+				@落下死カメラ -42000
+			}
+
+		trap de004 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					d:プレイヤー落下時移動Ｘ("/X_MIN/9500/","/X_MAX/11000/");
+					d:プレイヤー落下時移動Ｚ("/Z_MIN/-42500/","/Z_MAX/-41000/");
+
+					@ジャンプ落下死発動 0x0004 -10000
+				}
+				@落下死カメラ -40000
+			}
+
+		trap de005 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					d:プレイヤー落下時移動Ｘ("/X_MIN/-500/","/X_MAX/1000/");
+					d:プレイヤー落下時移動Ｚ("/Z_MIN/-39500/","/Z_MAX/-38000/");
+
+					@ジャンプ落下死発動 0x0004 -10000
+				}
+				@落下死カメラ -37000
+			}
+
+		trap de006 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					d:プレイヤー落下時移動Ｘ("/X_MIN/-500/","/X_MAX/0/");
+					d:プレイヤー落下時移動Ｚ("/Z_MIN/-36950/","/Z_MAX/-36900/");
+
+					@ジャンプ落下死発動 0x0004 -10000
+				}
+				@落下死カメラ -36000
+			}
+
+		trap de007 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					d:プレイヤー落下時移動Ｘ("/X_MIN/-5000/","/X_MAX/-5000/");
+					d:プレイヤー落下時移動Ｚ("/Z_MIN/-41500/","/Z_MAX/-33000/");
+
+					@ジャンプ落下死発動 0x0004 -10000
+				}
+				@落下死カメラ -32000
+			}
+
+		trap de008 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					d:プレイヤー落下時移動Ｘ("/X_MIN/-3500/","/X_MAX/-3000/");
+					d:プレイヤー落下時移動Ｚ("/Z_MIN/-38500/","/Z_MAX/-33000/");
+
+					@ジャンプ落下死発動 0x0004 -10000
+				}
+				@落下死カメラ -32000
+			}
+
+		trap de009 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					d:プレイヤー落下時移動Ｘ("/X_MIN/-1500/","/X_MAX/2500/");
+					d:プレイヤー落下時移動Ｚ("/Z_MIN/-34500/","/Z_MAX/-33000/");
+
+					@ジャンプ落下死発動 0x0004 -10000
+				}
+				@落下死カメラ -32000
+			}
+
+		trap de010 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					d:プレイヤー落下時移動Ｘ("/X_MIN/4000/","/X_MAX/5000/");
+					d:プレイヤー落下時移動Ｚ("/Z_MIN/-38500/","/Z_MAX/-33000/");
+
+					@ジャンプ落下死発動 0x0004 -10000
+				}
+				@落下死カメラ -32000
+			}
+
+		trap de011 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					d:プレイヤー落下時移動Ｘ("/X_MIN/5500/","/X_MAX/7000/");
+					d:プレイヤー落下時移動Ｚ("/Z_MIN/-40500/","/Z_MAX/-39500/");
+
+					@ジャンプ落下死発動 0x0004 -10000
+				}
+				@落下死カメラ -38000
+			}
+
+		trap de012 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					d:プレイヤー落下時移動Ｘ("/X_MIN/6500/","/X_MAX/11000/");
+					d:プレイヤー落下時移動Ｚ("/Z_MIN/-38500/","/Z_MAX/-35000/");
+
+					@ジャンプ落下死発動 0x0004 -10000
+				}
+				@落下死カメラ -34000
+			}
+
+		trap de013 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					d:プレイヤー落下時移動Ｘ("/X_MIN/12500/","/X_MAX/15000/");
+					d:プレイヤー落下時移動Ｚ("/Z_MIN/-38500/","/Z_MAX/-37000/");
+
+					@ジャンプ落下死発動 0x0004 -10000
+				}
+				@落下死カメラ -36000
+			}
+
+		trap de014 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					d:プレイヤー落下時移動Ｘ("/X_MIN/13500/","/X_MAX/15000/");
+					d:プレイヤー落下時移動Ｚ("/Z_MIN/-41500/","/Z_MAX/-39500/");
+
+					@ジャンプ落下死発動 0x0004 -10000
+				}
+				@落下死カメラ -38000
+			}
+
+		trap de015 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					d:プレイヤー落下時移動Ｘ("/X_MIN/15000/","/X_MAX/23000/");
+					d:プレイヤー落下時移動Ｚ("/Z_MIN/-37000/","/Z_MAX/-19000/");
+
+					@ジャンプ落下死発動 0x0004 -10000
+				}
+				@落下死カメラ -18000
+			}
+
+		trap de016 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					d:プレイヤー落下時移動Ｘ("/X_MIN/10000/","/X_MAX/11000/");
+					d:プレイヤー落下時移動Ｚ("/Z_MIN/-33950/","/Z_MAX/-33900/");
+
+					@ジャンプ落下死発動 0x0004 -10000
+				}
+				@落下死カメラ -33000
+			}
+
+		trap de017 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					d:プレイヤー落下時移動Ｘ("/X_MIN/12000/","/X_MAX/13500/");
+					d:プレイヤー落下時移動Ｚ("/Z_MIN/-32000/","/Z_MAX/-19000/");
+
+					@ジャンプ落下死発動 0x0004 -10000
+				}
+				@落下死カメラ -18000
+			}
+
+		trap de018 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					d:プレイヤー落下時移動Ｘ("/X_MIN/4000/","/X_MAX/4000/");
+					d:プレイヤー落下時移動Ｚ("/Z_MIN/-31500/","/Z_MAX/-20000/");
+
+					@ジャンプ落下死発動 0x0004 -10000
+				}
+				@落下死カメラ -19000
+			}
+
+		// 本来このトラップに入る前にゲームオーバーになると思われるが、万が一の保険のため用意する
+		trap de100 d:PLAYER \
+			-mask 入る \
+			-exec {
+				if ( `%ゲームオーバーチェック` == 0 ) {
+					#if d:DEBUG_PRINT
+						print '$i:プレイヤー位置Ｘ $i:プレイヤー位置Ｙ $i:プレイヤー位置Ｚ='$i:プレイヤー位置Ｘ $i:プレイヤー位置Ｙ $i:プレイヤー位置Ｚ
+					#endif
+					command assert ( d:FALSE ) 'trap error  (scenario err) 最終トラップに引っかかりました。'
+					@ジャンプ落下死発動 0x0004 -34000
+				}
+				@落下死カメラ -19000
+			}
+
+	}
+
+
+
+	// ------------------------------------
+	// 落とし穴
+	// ------------------------------------
+	proc 落とし穴設置 {
+		#if d:DEBUG_PRINT
+			print 'pitfall_set'
+		#endif
+
+		command foreach -argc 3 -repeat 10 \
+			-data { \
+					{ 落とし穴:01, 2000, -3000 } \
+					{ 落とし穴:02, 2000, -5000 } \
+					{ 落とし穴:03, 2000, -7000 } \
+					{ 落とし穴:04, 0, -7000 } \
+					{ 落とし穴:05, -2000, -7000 } \
+					{ 落とし穴:06, -4000, -7000 } \
+					{ 落とし穴:07, -4000, -9000 } \
+					{ 落とし穴:08, -4000, -11000 } \
+					{ 落とし穴:09, -2000, -11000 } \
+					{ 落とし穴:10, 0, -11000 } \
+				} \
+				-exec { \
+					chara ＶＲ落とし穴 $1 \
+						-position $2, 0, $3 \
+						-rotate 0,0,0 \
+						-map アスレチック \
+						-model vr2_pitfall_a0 vr2_pitfall_a0 \
+						-hazard	($2-1000), 0, ($3-1000) \	/*min maz の2点指定 */
+								($2+1000), 0, ($3+1000) \
+						-fall_time 40 \
+						-fall_pattern 7 \
+						-status 0 \
+						-proc 落し穴落下時処理
+				}
+	}
+
+	proc 落し穴落下時処理 {
+		#if d:DEBUG_PRINT
+			print 'pitfall_gameover'
+		#endif
+
+		switch ( $1 ) {
+			case ( 落とし穴:01 ) {
+				mesg プレイヤー d:PLAYER position 2000,$i:プレイヤー位置Ｙ,-3000
+				@落とし穴落下時カメラセット 2000 0 -3000
+				@ジャンプ落下死発動 0x0004 -10000
+				mesg ＶＲ落とし穴 落とし穴:01 fall
+			}
+			case ( 落とし穴:02 ) {
+				mesg プレイヤー d:PLAYER position 2000,$i:プレイヤー位置Ｙ,-5000
+				@落とし穴落下時カメラセット 2000 0 -5000
+				@ジャンプ落下死発動 0x0004 -10000
+				mesg ＶＲ落とし穴 落とし穴:02 fall
+			}
+			case ( 落とし穴:03 ) {
+				mesg プレイヤー d:PLAYER position 2000,$i:プレイヤー位置Ｙ,-7000
+				@落とし穴落下時カメラセット 2000 0 -7000
+				@ジャンプ落下死発動 0x0004 -10000
+				mesg ＶＲ落とし穴 落とし穴:03 fall
+			}
+			case ( 落とし穴:04 ) {
+				mesg プレイヤー d:PLAYER position 0,$i:プレイヤー位置Ｙ,-7000
+				@落とし穴落下時カメラセット 0 0 -7000
+				@ジャンプ落下死発動 0x0004 -10000
+				mesg ＶＲ落とし穴 落とし穴:04 fall
+			}
+			case ( 落とし穴:05 ) {
+				mesg プレイヤー d:PLAYER position -2000,$i:プレイヤー位置Ｙ,-7000
+				@落とし穴落下時カメラセット -2000 0 -7000
+				@ジャンプ落下死発動 0x0004 -10000
+				mesg ＶＲ落とし穴 落とし穴:05 fall
+			}
+			case ( 落とし穴:06 ) {
+				mesg プレイヤー d:PLAYER position -4000,$i:プレイヤー位置Ｙ,-7000
+				@落とし穴落下時カメラセット -4000 0 -7000
+				@ジャンプ落下死発動 0x0004 -10000
+				mesg ＶＲ落とし穴 落とし穴:06 fall
+			}
+			case ( 落とし穴:07 ) {
+				mesg プレイヤー d:PLAYER position -4000,$i:プレイヤー位置Ｙ,-9000
+				@落とし穴落下時カメラセット -4000 0 -9000
+				@ジャンプ落下死発動 0x0004 -10000
+				mesg ＶＲ落とし穴 落とし穴:07 fall
+			}
+			case ( 落とし穴:08 ) {
+				mesg プレイヤー d:PLAYER position -4000,$i:プレイヤー位置Ｙ,-11000
+				@落とし穴落下時カメラセット -4000 0 -11000
+				@ジャンプ落下死発動 0x0004 -10000
+				mesg ＶＲ落とし穴 落とし穴:08 fall
+			}
+			case ( 落とし穴:09 ) {
+				mesg プレイヤー d:PLAYER position -2000,$i:プレイヤー位置Ｙ,-11000
+				@落とし穴落下時カメラセット -2000 0 -11000
+				@ジャンプ落下死発動 0x0004 -10000
+				mesg ＶＲ落とし穴 落とし穴:01 fall
+			}
+			case ( 落とし穴:10 ) {
+				mesg プレイヤー d:PLAYER position 0,$i:プレイヤー位置Ｙ,-11000
+				@落とし穴落下時カメラセット 0 0 -11000
+				@ジャンプ落下死発動 0x0004 -10000
+				mesg ＶＲ落とし穴 落とし穴:10 fall
+			}
+		}
+	}
+
+	// 落下したときに出るカメラ(落とし穴中心のＸＹＺを入力)
+	proc 落とし穴落下時カメラセット $:p_Ｘ $:p_Ｙ $:p_Ｚ {
+		chara delay ディレイ \
+			-time 1 \
+			-arg $:p_Ｘ $:p_Ｙ $:p_Ｚ \
+			-exec {
+				#if d:DEBUG_PRINT
+					print 'fall camera set'
+				#endif
+
+				chara カメラ設定 クリア時カメラ \
+					-c 1 \
+					-p ($1+160),5115,($3+1072) \ 
+					-t ($1-58),1987,($3+78) \
+					-r 819,2189,0 -f 3289 \
+					-a 200 \
+					-i 0 -1 0 0 \
+					-s 1
+			}
+	}
+
+	// ジャンプ落下死発動から呼ばれるプロック
+	proc ジャンプ落下死開始処理 {
+		#if d:DEBUG_PRINT
+			print 'jump_gameover_start'
+		#endif
+
+		@ゲームオーバー開始処理
+	}
+
+	// 最終的に落ちたときに呼ばれるプロック（サウンドや振動を呼ぶ）
+	proc ゲームオーバー終了処理 {
+	}
+
+
+	// ------------------------------------
+	// 光源関係
+	// ------------------------------------
+
+
+	// ------------------------------------
+	// カメラ関係の設定 
+	// ------------------------------------
+	// ステージカメラ設定 
+	// ------------------------------------
+	proc カメラセット {
+		#if d:DEBUG_PRINT
+			print 'chara_camera & stage_camera_set'
+		#endif
+
+		chara カメラ ステージカメラ		-c 0 -l 3 -p 0 
+		chara カメラ メインカメラ		-c 0 -l 2 -p 40
+		chara カメラ サブカメラ			-c 0 -l 2 -p 30
+		chara カメラ モーションカメラ	-c 0 -l 1 -p 1 
+		chara カメラ 落下死カメラ		-c 0 -l 0 -p 15
+		chara カメラ クリア時カメラ		-c 0 -l 0 -p 10
+
+		// デフォルトカメラ
+		chara カメラ設定 ステージカメラ \
+			-c 0 \	
+			-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-l d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,d:CAM_MAX \
+			-r 740,2048,0 \
+			-f 9000 \
+			-a 200 \
+			-i 2 2 0 0 \
+			-s 1
+	}
+	// ステージ固有のカメラ設定 
+	// ------------------------------------
+	proc アスレチックカメラ設定 {
+		#if d:DEBUG_PRINT
+			print 'stage_camera_set'
+		#endif
+
+		// スタート地点から落とし穴までのカメラ
+		trap ca001 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b d:CAM_MIN,2000,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,4000 \
+					-l d:CAM_MIN,1500,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-1000 \
+					-r 650,2048,0 \
+					-f 9000 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-s $3
+			}
+
+		// 落とし穴地帯のカメラ
+		trap ca002 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -4000 -6000 650 800
+				$i:補完ＲＸ = $i:CS_結果１;
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b -3000,2000,d:CAM_MIN	 1000,d:CAM_MAX,d:CAM_MAX \
+					-l -3000,1500,d:CAM_MIN	 1000,d:CAM_MAX,d:CAM_MAX \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 9000 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+		// 落とし穴地帯～イントルード地帯のカメラ
+		trap ca003 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -12000 -15500 800 500
+				$i:補完ＲＸ = $i:CS_結果１;
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b -3000,2000,d:CAM_MIN	 1000,d:CAM_MAX,d:CAM_MAX \
+					-l -3000,1500,d:CAM_MIN	 1000,d:CAM_MAX,d:CAM_MAX \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 9000 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-s $3
+			}
+
+		// イントルード地帯出た部分のカメラ
+		trap ca004 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				@CS_スムーズカメラ降順 $6 -18500 -20500 750 500
+				eval( $i:補完ＲＸ = $i:CS_結果１ );
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b d:CAM_MIN,2000,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-17000 \
+					-l d:CAM_MIN,1500,d:CAM_MIN	 d:CAM_MAX,d:CAM_MAX,-20500 \
+					-r $i:補完ＲＸ,2048,0 \
+					-f 9000 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-s $3
+			}
+
+		// イントルード地帯出た後、メインとなるカメラ
+		trap ca005 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b -6000,2000,d:CAM_MIN	 20500,d:CAM_MAX,-17000 \
+					-l -6000,1500,d:CAM_MIN	 20500,d:CAM_MAX,-20500 \
+					-r 500,2048,0 \
+					-f 9000 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-s $3
+			}
+
+		// 橋地帯のカメラ
+		trap ca006 d:PLAYER \
+			-mask ＊ \
+			-camera \
+			-exec {
+				if ( $4 < 0 ) {
+					@CS_スムーズカメラ昇順 $4 -6000 -3000 500 750
+					$i:補完ＲＸ = $i:CS_結果１;
+					@CS_スムーズカメラ昇順 $4 -6000 -3000 9000 10000
+					$w:補完距離 = $i:CS_結果１;
+				} else {
+					@CS_スムーズカメラ昇順 $4 12000 15000 750 500
+					$i:補完ＲＸ = $i:CS_結果１;
+					@CS_スムーズカメラ昇順 $4 12000 15000 10000 9000
+					$w:補完距離 = $i:CS_結果１;
+				}
+				
+
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b -6000,2000,d:CAM_MIN	 20500,d:CAM_MAX,-17000 \
+					-l -6000,1500,d:CAM_MIN	 20500,d:CAM_MAX,-20500 \
+					-r $i:補完ＲＸ,2048,0 \
+					-f $w:補完距離 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+
+
+		// ゴール付近のカメラ
+		trap ca007 d:PLAYER \
+			-mask ？ \
+			-camera \
+			-exec {
+				chara カメラ設定 メインカメラ \
+					-c 0 \	
+					-b 20000,2000,d:CAM_MIN	 22000,d:CAM_MAX,-34000 \
+					-l 20000,1500,d:CAM_MIN	 22000,d:CAM_MAX,-39250 \
+					-r 500,2048,0 \
+					-f 7000 \
+					-a 200 \
+					-i 2 2 0 0 \
+					-s $3
+			}
+
+		// 手すりの張り付きカメラ
+		trap ca101 d:PLAYER \
+			-mask ？ \
+			-dir 3072 512 \
+			-state d:TRP_STATE_CAUTION \
+			-camera \
+			-exec {
+				chara カメラ設定 サブカメラ \
+					-c 0 \	
+					-b d:CAM_MIN,d:CAM_MIN,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-37500 \
+					-l d:CAM_MIN,6500,d:CAM_MIN d:CAM_MAX,d:CAM_MAX,-39000 \
+					-r 787,2048,0 -f 4585 \
+					-a 200 \
+					-i 3 3 0 0 \
+					-z d:CAMERA_NO_CUSHION \
+					-s $3
+			}
+	}
+
+
+
+
+
+// -----------------------------------------------------------------------------------
+// 以下デバッグ専用proc
+// -----------------------------------------------------------------------------------
+// デバッグキャラ
+// ------------------------------------
+proc デバッグキャラセット {
+	#if d:DEBUG_PRINT
+		print 'debug_chara_set'
+	#endif
+
+	#if d:CHARA_CAMERA
+		chara キャラカメラ 敵兵カメラ \
+			-c d:TARGET_CHARA \
+			-s -920,610,200 \
+			-r -200,1024,0 
+	#endif
+
+	#if d:SCREENSHOT
+		chara スクリーンショット shot
+	#endif
+
+	#if d:USB_KEY
+		chara USBキーボード実行 test \
+			-e d:KBD_ESC {	
+				mesg プレイヤー d:PLAYER position 13000, 8000, -34500
+			} \
+	#endif
+}
