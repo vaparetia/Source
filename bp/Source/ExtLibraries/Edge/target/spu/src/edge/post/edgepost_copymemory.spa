@@ -1,29 +1,29 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2009 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-//--------------------------------------------------------------------------------------------------
-//  FUNCTION DEFINITION
-//--------------------------------------------------------------------------------------------------
-
-//--------------------------------------------------------------------------------------------------
-/**
-	@fn			extern "C" void edgePostMemCopy( qword output, qword input, qword count )
-**/
-//--------------------------------------------------------------------------------------------------
-
-
-.cfunc void edgePostMemCopy( qword output, qword input, qword count )
-	
-loop:
-	ai			output, output, 0x10
-	ai			input, input, 0x10
-	ai			count, count, -16
-	.reg		s0
-	lqd			s0, -0x10( input )
-	stqd		s0, -0x10( output )
-	brnz		count, loop
-.endfunc
-
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+	@fn			extern "C" void edgePostMemCopy( qword output, qword input, qword count )
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+.cfunc void edgePostMemCopy( qword output, qword input, qword count )
+	
+loop:
+	ai			output, output, 0x10
+	ai			input, input, 0x10
+	ai			count, count, -16
+	.reg		s0
+	lqd			s0, -0x10( input )
+	stqd		s0, -0x10( output )
+	brnz		count, loop
+.endfunc
+

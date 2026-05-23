@@ -1,17 +1,17 @@
-//----------------------------------------------------------------------------
-// CAnimationSystem_Helper.h
-// Bluepoint
-// Copyright 2009
-//----------------------------------------------------------------------------
-
-#pragma once
-
-//----------------------------------------------------------------------------
-
-struct EdgeAnimJointTransform;
-
-//----------------------------------------------------------------------------
-
-void edgeAnimJointsToMatrices4x3(void* outputMatrices /*(CMatrix34*)*/, const EdgeAnimJointTransform* inputJoints, int count);
-
+//----------------------------------------------------------------------------
+// CAnimationSystem_Helper.h
+// Bluepoint
+// Copyright 2009
+//----------------------------------------------------------------------------
+
+#pragma once
+
+//----------------------------------------------------------------------------
+
+struct EdgeAnimJointTransform;
+
+//----------------------------------------------------------------------------
+
+void edgeAnimJointsToMatrices4x3(void* outputMatrices /*(CMatrix34*)*/, const EdgeAnimJointTransform* inputJoints, int count);
+
 //----------------------------------------------------------------------------

@@ -1,157 +1,157 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2009 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-//--------------------------------------------------------------------------------------------------
-//  FUNCTION DEFINITION
-//--------------------------------------------------------------------------------------------------
-
-//--------------------------------------------------------------------------------------------------
-/**
-
-	void edgePostFP16HiToFloats( void* output, void* input, uint32_t count );
-	void edgePostFP16LoToFloats( void* output, void* input, uint32_t count );
-	void edgePostFP16ToFloats( void* output, void* input, uint32_t count );
-	
-	void edgePostFloatsToFP16( void* output, void* input, uint32_t count );
-	void edgePostFX16ToFP16( void* output, void* input, uint32_t count );
-	
-**/
-//--------------------------------------------------------------------------------------------------
-
-
-.include "edgepost_helpers.inc"
-
-
-.cfunc void edgePostFP16HiToFloats( qword output, qword input, qword count )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-
-	.reg		kMask
-	il128		kMask, 0xffff0000_ffff0000_ffff0000_ffff0000
-	
-loop:
-	ai			output, output, 0x10
-	ai			input, input, 0x10
-	ai			count, count, -4
-	
-	// Load source
-	.reg		s0
-	lqd			s0, -0x10( input )
-	
-	// Convert
-	and			s0, s0, kMask
-	EDGEPOST_FP16_TO_FLOAT( s0, s0)
-	
-	// Store
-	stqd		s0, -0x10( output )
-	brnz		count, loop
-.endfunc
-
-
-.cfunc void edgePostFP16LoToFloats( qword output, qword input, qword count )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-
-loop:
-	ai			output, output, 0x10
-	ai			input, input, 0x10
-	ai			count, count, -4
-	
-	// Load source
-	.reg		s0
-	lqd			s0, -0x10( input )
-	
-	// Convert
-	shli		s0, s0, 16
-	EDGEPOST_FP16_TO_FLOAT( s0, s0)
-	
-	// Store
-	stqd		s0, -0x10( output )
-	brnz		count, loop
-.endfunc
-
-.cfunc void edgePostFP16ToFloats( qword output, qword input, qword count )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-
-	.reg		shuf_A0B0C0D0, shuf_E0F0G0H0
-	il128		shuf_A0B0C0D0, "A0B0C0D0"
-	il128		shuf_E0F0G0H0, "E0F0G0H0"
-
-	// Do conversion backwards so that it can be done in-place
-	.reg		backoutput, backinput
-	mpyui		backoutput, count, 0x10
-	mpyui		backinput, count, 0x08
-	a			backoutput, backoutput, output
-	a			backinput, backinput, input
-
-loop:
-	ai			backoutput, backoutput, -0x20
-	ai			backinput, backinput, -0x10
-	ai			count, count, -2
-
-	// Load source
-	.reg		s0
-	lqd			s0, 0x00( backinput )
-
-	// move 8 fp16 into high nibbles of two qword
-	.reg		hi, lo
-	shufb		hi, s0, s0, shuf_A0B0C0D0
-	shufb		lo, s0, s0, shuf_E0F0G0H0
-
-	// Convert
-	EDGEPOST_FP16_TO_FLOAT( hi, hi)
-	EDGEPOST_FP16_TO_FLOAT( lo, lo)
-
-	// Store
-	stqd		hi, 0x00( backoutput )
-	stqd		lo, 0x10( backoutput )
-	brnz		count, loop
-.endfunc
-
-.cfunc void edgePostFloatsToFP16( qword output, qword input, qword count )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-loop:
-	ai			output, output, 0x10
-	ai			input, input, 0x20
-	ai			count, count, -2
-	
-	// Load source
-	.reg		s0, s1
-	lqd			s0, -0x20( input )
-	lqd			s1, -0x10( input )
-	
-	// pack to fp16	
-	.reg		packed
-	EDGEPOST_PACK_TWO_FP16( packed, s0, s1 )
-	
-	// Store
-	stqd		packed, -0x10( output )
-	brnz		count, loop
-.endfunc
-
-
-.cfunc void edgePostFX16ToFP16( qword output, qword input, qword count )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-loop:
-	ai			output, output, 0x10
-	ai			input, input, 0x10
-	ai			count, count, -2
-	
-	// Load source
-	.reg		s, s0, s1
-	lqd			s, -0x10( input )
-	
-	// expand input to floats
-	EDGEPOST_UNPACK_PIXELS16( s0, s1, s )
-	cuflt		s0, s0, 11
-	cuflt		s1, s1, 11
-	
-	// pack to fp16	
-	.reg		packed
-	EDGEPOST_PACK_TWO_FP16( packed, s0, s1 )
-	
-	// Store
-	stqd		packed, -0x10( output )
-	brnz		count, loop
-.endfunc
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+
+	void edgePostFP16HiToFloats( void* output, void* input, uint32_t count );
+	void edgePostFP16LoToFloats( void* output, void* input, uint32_t count );
+	void edgePostFP16ToFloats( void* output, void* input, uint32_t count );
+	
+	void edgePostFloatsToFP16( void* output, void* input, uint32_t count );
+	void edgePostFX16ToFP16( void* output, void* input, uint32_t count );
+	
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+.include "edgepost_helpers.inc"
+
+
+.cfunc void edgePostFP16HiToFloats( qword output, qword input, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+
+	.reg		kMask
+	il128		kMask, 0xffff0000_ffff0000_ffff0000_ffff0000
+	
+loop:
+	ai			output, output, 0x10
+	ai			input, input, 0x10
+	ai			count, count, -4
+	
+	// Load source
+	.reg		s0
+	lqd			s0, -0x10( input )
+	
+	// Convert
+	and			s0, s0, kMask
+	EDGEPOST_FP16_TO_FLOAT( s0, s0)
+	
+	// Store
+	stqd		s0, -0x10( output )
+	brnz		count, loop
+.endfunc
+
+
+.cfunc void edgePostFP16LoToFloats( qword output, qword input, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+
+loop:
+	ai			output, output, 0x10
+	ai			input, input, 0x10
+	ai			count, count, -4
+	
+	// Load source
+	.reg		s0
+	lqd			s0, -0x10( input )
+	
+	// Convert
+	shli		s0, s0, 16
+	EDGEPOST_FP16_TO_FLOAT( s0, s0)
+	
+	// Store
+	stqd		s0, -0x10( output )
+	brnz		count, loop
+.endfunc
+
+.cfunc void edgePostFP16ToFloats( qword output, qword input, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+
+	.reg		shuf_A0B0C0D0, shuf_E0F0G0H0
+	il128		shuf_A0B0C0D0, "A0B0C0D0"
+	il128		shuf_E0F0G0H0, "E0F0G0H0"
+
+	// Do conversion backwards so that it can be done in-place
+	.reg		backoutput, backinput
+	mpyui		backoutput, count, 0x10
+	mpyui		backinput, count, 0x08
+	a			backoutput, backoutput, output
+	a			backinput, backinput, input
+
+loop:
+	ai			backoutput, backoutput, -0x20
+	ai			backinput, backinput, -0x10
+	ai			count, count, -2
+
+	// Load source
+	.reg		s0
+	lqd			s0, 0x00( backinput )
+
+	// move 8 fp16 into high nibbles of two qword
+	.reg		hi, lo
+	shufb		hi, s0, s0, shuf_A0B0C0D0
+	shufb		lo, s0, s0, shuf_E0F0G0H0
+
+	// Convert
+	EDGEPOST_FP16_TO_FLOAT( hi, hi)
+	EDGEPOST_FP16_TO_FLOAT( lo, lo)
+
+	// Store
+	stqd		hi, 0x00( backoutput )
+	stqd		lo, 0x10( backoutput )
+	brnz		count, loop
+.endfunc
+
+.cfunc void edgePostFloatsToFP16( qword output, qword input, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+loop:
+	ai			output, output, 0x10
+	ai			input, input, 0x20
+	ai			count, count, -2
+	
+	// Load source
+	.reg		s0, s1
+	lqd			s0, -0x20( input )
+	lqd			s1, -0x10( input )
+	
+	// pack to fp16	
+	.reg		packed
+	EDGEPOST_PACK_TWO_FP16( packed, s0, s1 )
+	
+	// Store
+	stqd		packed, -0x10( output )
+	brnz		count, loop
+.endfunc
+
+
+.cfunc void edgePostFX16ToFP16( qword output, qword input, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+loop:
+	ai			output, output, 0x10
+	ai			input, input, 0x10
+	ai			count, count, -2
+	
+	// Load source
+	.reg		s, s0, s1
+	lqd			s, -0x10( input )
+	
+	// expand input to floats
+	EDGEPOST_UNPACK_PIXELS16( s0, s1, s )
+	cuflt		s0, s0, 11
+	cuflt		s1, s1, 11
+	
+	// pack to fp16	
+	.reg		packed
+	EDGEPOST_PACK_TWO_FP16( packed, s0, s1 )
+	
+	// Store
+	stqd		packed, -0x10( output )
+	brnz		count, loop
+.endfunc

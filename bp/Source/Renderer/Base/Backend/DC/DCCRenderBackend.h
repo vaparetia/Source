@@ -7,12 +7,14 @@
 
 //----------------------------------------------------------------------------
 
+#include "Renderer/Base/Backend/CRenderBackend.h"
 #include "Renderer/Base/Backend/CRenderHWAllocator.h"
 #include "Renderer/Base/Primitive/CIndexBuffer.h"
 #include "Renderer/Base/Primitive/CVertexBuffer.h"
 #include "Renderer/Base/Frontend/RenderTypes.h"
 #include "Engine/System/CSyncCriticalSection.h"
 #include "Renderer/Base/Backend/DC/DCCTexture.h"
+#include "Renderer/Base/Material/CShaderVertexDataBinding.h"
 
 //----------------------------------------------------------------------------
 

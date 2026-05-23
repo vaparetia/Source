@@ -1,285 +1,285 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2009 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-//--------------------------------------------------------------------------------------------------
-//  FUNCTION DEFINITION
-//--------------------------------------------------------------------------------------------------
-
-//--------------------------------------------------------------------------------------------------
-/**
-	@fn			extern "C" void edgePostHorizontalGauss8
-									(
-										const vec_char16* __restrict pOutputScanline,
-										const vec_char16* __restrict pInputScanline,
-										const u16 count,
-										const vec_float4 weights
-									)
-	
-	@param		pOutputScanline		pointer to result
-	@param		pInputScanline		pointer to input scanline
-	@param		count				scanline size
-	@param		weights				gauss filter weights
-		
-
-	NOTE: this function blurs 20 pixel per loop .
-**/
-//--------------------------------------------------------------------------------------------------
-
-.include "edgepost_helpers.inc"
-
-.macro EDGEPOST_GAUSSIANBLUR_F( r, p0, p1, p2, p3, p4, p5, p6)
-	
-	fm			r, p0, w3
-	fma			r, p1, w2, r
-	fma			r, p2, w1, r
-	fma			r, p3, w0, r
-	fma			r, p4, w1, r
-	fma			r, p5, w2, r
-	fma			r, p6, w3, r
-.endmacro
-
-
-.macro HORIZONTALGAUSS8_START
-
-	// Declared constants
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-
-	// gauss constants	
-	.reg		w0, w1, w2, w3
-	shufb		w0, weights, weights, kEdgePostReplicateX
-	shufb		w1, weights, weights, kEdgePostReplicateY
-	shufb		w2, weights, weights, kEdgePostReplicateZ
-	shufb		w3, weights, weights, kEdgePostReplicateW
-
-loop:	
-	
-	ai		pOutput, pOutput, 0x50
-	ai		pInput, pInput, 0x50
-	ai		count, count, -20				
-	
-	// Load input pixels
-	.reg	s0, s1, s2, s3, s4, s5, s6
-	
-	lqd		s0, -0x60( pInput)
-	lqd		s1, -0x50( pInput)
-	lqd		s2, -0x40( pInput)
-	lqd		s3, -0x30( pInput)
-	lqd		s4, -0x20( pInput)
-	lqd		s5, -0x10( pInput)
-	lqd		s6, -0x00( pInput)
-
-	// Unpack individual pixels
-	.reg	p0, p27 : readoptional	//these two will be optimized out. They just allow us to use the same macro.
-	.reg	p1, p2, p3
-	.reg	p4, p5, p6, p7
-	.reg	p8, p9, p10, p11
-	.reg	p12, p13, p14, p15
-	.reg	p16, p17, p18, p19
-	.reg	p20, p21, p22, p23
-	.reg	p24, p25, p26
-	
-	EDGEPOST_UNPACK_PIXELS8( p0, p1, p2, p3, s0 )
-	EDGEPOST_UNPACK_PIXELS8( p4, p5, p6, p7, s1 )
-	EDGEPOST_UNPACK_PIXELS8( p8, p9, p10, p11, s2 )
-	EDGEPOST_UNPACK_PIXELS8( p12, p13, p14, p15, s3 )
-	EDGEPOST_UNPACK_PIXELS8( p16, p17, p18, p19, s4 )
-	EDGEPOST_UNPACK_PIXELS8( p20, p21, p22, p23, s5 )
-	EDGEPOST_UNPACK_PIXELS8( p24, p25, p26, p27, s6 )
-	
-	// Blur pixels
-	.reg	r0, r1, r2, r3
-	.reg	r4, r5, r6, r7
-	.reg	r8, r9, r10, r11
-	.reg	r12, r13, r14, r15
-	.reg	r16, r17, r18, r19
-	
-.endmacro
-
-.macro HORIZONTALGAUSS8_END
-	
-	// Pack pixels
-	.reg rs0, rs1, rs2, rs3, rs4
-	EDGEPOST_PACK_PIXELS8( rs0, r0, r1, r2, r3)
-	EDGEPOST_PACK_PIXELS8( rs1, r4, r5, r6, r7)
-	EDGEPOST_PACK_PIXELS8( rs2, r8, r9, r10, r11)
-	EDGEPOST_PACK_PIXELS8( rs3, r12, r13, r14, r15)
-	EDGEPOST_PACK_PIXELS8( rs4, r16, r17, r18, r19)
-	
-	// Store back result
-	stqd	rs0, -0x50( pOutput)
-	stqd	rs1, -0x40( pOutput)
-	stqd	rs2, -0x30( pOutput)
-	stqd	rs3, -0x20( pOutput)
-	stqd	rs4, -0x10( pOutput)
-											
-	// Loop									
-	brnz	count, loop 
-.endmacro
-
-
-.cfunc void edgePostGauss7x1_8( qword pOutput, qword pInput, qword count, qword weights )
-
-	HORIZONTALGAUSS8_START
-	EDGEPOST_U8_TO_FLOAT( p1, p1 )
-	EDGEPOST_U8_TO_FLOAT( p2, p2 )
-	EDGEPOST_U8_TO_FLOAT( p3, p3 )
-	EDGEPOST_U8_TO_FLOAT( p4, p4 )
-	EDGEPOST_U8_TO_FLOAT( p5, p5 )
-	EDGEPOST_U8_TO_FLOAT( p6, p6 )
-	EDGEPOST_U8_TO_FLOAT( p7, p7 )
-	EDGEPOST_U8_TO_FLOAT( p8, p8 )
-	EDGEPOST_U8_TO_FLOAT( p9, p9 )
-	EDGEPOST_U8_TO_FLOAT( p10, p10 )
-	EDGEPOST_U8_TO_FLOAT( p11, p11 )
-	EDGEPOST_U8_TO_FLOAT( p12, p12 )
-	EDGEPOST_U8_TO_FLOAT( p13, p13 )
-	EDGEPOST_U8_TO_FLOAT( p14, p14 )
-	EDGEPOST_U8_TO_FLOAT( p15, p15 )
-	EDGEPOST_U8_TO_FLOAT( p16, p16 )
-	EDGEPOST_U8_TO_FLOAT( p17, p17 )
-	EDGEPOST_U8_TO_FLOAT( p18, p18 )
-	EDGEPOST_U8_TO_FLOAT( p19, p19 )
-	EDGEPOST_U8_TO_FLOAT( p20, p20 )
-	EDGEPOST_U8_TO_FLOAT( p21, p21 )
-	EDGEPOST_U8_TO_FLOAT( p22, p22 )
-	EDGEPOST_U8_TO_FLOAT( p23, p23 )
-	EDGEPOST_U8_TO_FLOAT( p24, p24 )
-	EDGEPOST_U8_TO_FLOAT( p25, p25 )
-	EDGEPOST_U8_TO_FLOAT( p26, p26 )
-	EDGEPOST_GAUSSIANBLUR_F( r0, p1, p2, p3, p4, p5, p6, p7)
-	EDGEPOST_GAUSSIANBLUR_F( r1, p2, p3, p4, p5, p6, p7, p8)
-	EDGEPOST_GAUSSIANBLUR_F( r2, p3, p4, p5, p6, p7, p8, p9)
-	EDGEPOST_GAUSSIANBLUR_F( r3, p4, p5, p6, p7, p8, p9, p10)
-	EDGEPOST_GAUSSIANBLUR_F( r4, p5, p6, p7, p8, p9, p10, p11)
-	EDGEPOST_GAUSSIANBLUR_F( r5, p6, p7, p8, p9, p10, p11, p12)
-	EDGEPOST_GAUSSIANBLUR_F( r6, p7, p8, p9, p10, p11, p12, p13)
-	EDGEPOST_GAUSSIANBLUR_F( r7, p8, p9, p10, p11, p12, p13, p14)
-	EDGEPOST_GAUSSIANBLUR_F( r8, p9, p10, p11, p12, p13, p14, p15)
-	EDGEPOST_GAUSSIANBLUR_F( r9, p10, p11, p12, p13, p14, p15, p16)
-	EDGEPOST_GAUSSIANBLUR_F( r10, p11, p12, p13, p14, p15, p16, p17)
-	EDGEPOST_GAUSSIANBLUR_F( r11, p12, p13, p14, p15, p16, p17, p18)
-	EDGEPOST_GAUSSIANBLUR_F( r12, p13, p14, p15, p16, p17, p18, p19)
-	EDGEPOST_GAUSSIANBLUR_F( r13, p14, p15, p16, p17, p18, p19, p20)
-	EDGEPOST_GAUSSIANBLUR_F( r14, p15, p16, p17, p18, p19, p20, p21)
-	EDGEPOST_GAUSSIANBLUR_F( r15, p16, p17, p18, p19, p20, p21, p22)
-	EDGEPOST_GAUSSIANBLUR_F( r16, p17, p18, p19, p20, p21, p22, p23)
-	EDGEPOST_GAUSSIANBLUR_F( r17, p18, p19, p20, p21, p22, p23, p24)
-	EDGEPOST_GAUSSIANBLUR_F( r18, p19, p20, p21, p22, p23, p24, p25)
-	EDGEPOST_GAUSSIANBLUR_F( r19, p20, p21, p22, p23, p24, p25, p26)
-	EDGEPOST_FLOAT_TO_U8( r0, r0 )
-	EDGEPOST_FLOAT_TO_U8( r1, r1 )
-	EDGEPOST_FLOAT_TO_U8( r2, r2 )
-	EDGEPOST_FLOAT_TO_U8( r3, r3 )
-	EDGEPOST_FLOAT_TO_U8( r4, r4 )
-	EDGEPOST_FLOAT_TO_U8( r5, r5 )
-	EDGEPOST_FLOAT_TO_U8( r6, r6 )
-	EDGEPOST_FLOAT_TO_U8( r7, r7 )
-	EDGEPOST_FLOAT_TO_U8( r8, r8 )
-	EDGEPOST_FLOAT_TO_U8( r9, r9 )
-	EDGEPOST_FLOAT_TO_U8( r10, r10 )
-	EDGEPOST_FLOAT_TO_U8( r11, r11 )
-	EDGEPOST_FLOAT_TO_U8( r12, r12 )
-	EDGEPOST_FLOAT_TO_U8( r13, r13 )
-	EDGEPOST_FLOAT_TO_U8( r14, r14 )
-	EDGEPOST_FLOAT_TO_U8( r15, r15 )
-	EDGEPOST_FLOAT_TO_U8( r16, r16 )
-	EDGEPOST_FLOAT_TO_U8( r17, r17 )
-	EDGEPOST_FLOAT_TO_U8( r18, r18 )
-	EDGEPOST_FLOAT_TO_U8( r19, r19 )
-	HORIZONTALGAUSS8_END
-.endfunc
-
-
-
-
-.if 0
-////////////////////////////////////////////////////////////////////
-// 16 bit version does 10 pixels a time
-
-.macro HorizontalGauss16_Start
-    // Inputs
-    .input  $3-$5
-    
-    // ABI  
-    .input  $1, $80-$127
-    .output $1, $80-$127
-
-	// Parameters
-	.reg	pOutput, pInput, count
-	mov		pOutput, $3
-	mov		pInput, $4
-	mov		count, $5
-	
-	// Constants
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-	
-loop:	
-	
-	ai		pOutput, pOutput, 0x50
-	ai		pInput, pInput, 0x50
-	ai		count, count, -10				
-	
-	// Load input pixels
-	.reg	s0, s1, s2, s3, s4, s5, s6, s7, s8
-	
-	lqd		s0, -0x70( pInput)
-	lqd		s1, -0x60( pInput)
-	
-	lqd		s2, -0x50( pInput)
-	lqd		s3, -0x40( pInput)
-	lqd		s4, -0x30( pInput)
-	lqd		s5, -0x20( pInput)
-	lqd		s6, -0x10( pInput)
-	
-	lqd		s7, 0x00( pInput)
-	lqd		s8, 0x10( pInput)
-	
-	// Unpack individual pixels
-	.reg	p0, p1, p2, p3
-	.reg	p4, p5, p6, p7, p8, p9, p10, p11, p12, p13
-	.reg	p14, p15, p16, p17
-	
-	EDGEPOST_UNPACK_PIXELS16( p0, p1, s0 )
-	EDGEPOST_UNPACK_PIXELS16( p2, p3, s1 )
-	EDGEPOST_UNPACK_PIXELS16( p4, p5, s2 )
-	EDGEPOST_UNPACK_PIXELS16( p6, p7, s3 )
-	EDGEPOST_UNPACK_PIXELS16( p8, p9, s4 )
-	EDGEPOST_UNPACK_PIXELS16( p10, p11, s5 )
-	EDGEPOST_UNPACK_PIXELS16( p12, p13, s6 )
-	EDGEPOST_UNPACK_PIXELS16( p14, p15, s7 )
-	EDGEPOST_UNPACK_PIXELS16( p16, p17, s8 )
-	
-	// Blur pixels
-	.reg	r0, r1, r2, r3
-	.reg	r4, r5, r6, r7
-	.reg	r8, r9
-.endmacro
-
-.macro HorizontalGauss16_End
-	
-	// Pack pixels
-	.reg rs0, rs1, rs2, rs3, rs4
-	EDGEPOST_PACK_PIXELS16( rs0, r0, r1)
-	EDGEPOST_PACK_PIXELS16( rs1, r2, r3)
-	EDGEPOST_PACK_PIXELS16( rs2, r4, r5)
-	EDGEPOST_PACK_PIXELS16( rs3, r6, r7)
-	EDGEPOST_PACK_PIXELS16( rs4, r8, r9)
-	
-	// Store back result
-	stqd	rs0, -0x50( pOutput)
-	stqd	rs1, -0x40( pOutput)
-	stqd	rs2, -0x30( pOutput)
-	stqd	rs3, -0x20( pOutput)
-	stqd	rs4, -0x10( pOutput)
-											
-	// Loop									
-	brnz	count, loop 
-.endmacro
-
-.endif
-
-
-	
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+	@fn			extern "C" void edgePostHorizontalGauss8
+									(
+										const vec_char16* __restrict pOutputScanline,
+										const vec_char16* __restrict pInputScanline,
+										const u16 count,
+										const vec_float4 weights
+									)
+	
+	@param		pOutputScanline		pointer to result
+	@param		pInputScanline		pointer to input scanline
+	@param		count				scanline size
+	@param		weights				gauss filter weights
+		
+
+	NOTE: this function blurs 20 pixel per loop .
+**/
+//--------------------------------------------------------------------------------------------------
+
+.include "edgepost_helpers.inc"
+
+.macro EDGEPOST_GAUSSIANBLUR_F( r, p0, p1, p2, p3, p4, p5, p6)
+	
+	fm			r, p0, w3
+	fma			r, p1, w2, r
+	fma			r, p2, w1, r
+	fma			r, p3, w0, r
+	fma			r, p4, w1, r
+	fma			r, p5, w2, r
+	fma			r, p6, w3, r
+.endmacro
+
+
+.macro HORIZONTALGAUSS8_START
+
+	// Declared constants
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+
+	// gauss constants	
+	.reg		w0, w1, w2, w3
+	shufb		w0, weights, weights, kEdgePostReplicateX
+	shufb		w1, weights, weights, kEdgePostReplicateY
+	shufb		w2, weights, weights, kEdgePostReplicateZ
+	shufb		w3, weights, weights, kEdgePostReplicateW
+
+loop:	
+	
+	ai		pOutput, pOutput, 0x50
+	ai		pInput, pInput, 0x50
+	ai		count, count, -20				
+	
+	// Load input pixels
+	.reg	s0, s1, s2, s3, s4, s5, s6
+	
+	lqd		s0, -0x60( pInput)
+	lqd		s1, -0x50( pInput)
+	lqd		s2, -0x40( pInput)
+	lqd		s3, -0x30( pInput)
+	lqd		s4, -0x20( pInput)
+	lqd		s5, -0x10( pInput)
+	lqd		s6, -0x00( pInput)
+
+	// Unpack individual pixels
+	.reg	p0, p27 : readoptional	//these two will be optimized out. They just allow us to use the same macro.
+	.reg	p1, p2, p3
+	.reg	p4, p5, p6, p7
+	.reg	p8, p9, p10, p11
+	.reg	p12, p13, p14, p15
+	.reg	p16, p17, p18, p19
+	.reg	p20, p21, p22, p23
+	.reg	p24, p25, p26
+	
+	EDGEPOST_UNPACK_PIXELS8( p0, p1, p2, p3, s0 )
+	EDGEPOST_UNPACK_PIXELS8( p4, p5, p6, p7, s1 )
+	EDGEPOST_UNPACK_PIXELS8( p8, p9, p10, p11, s2 )
+	EDGEPOST_UNPACK_PIXELS8( p12, p13, p14, p15, s3 )
+	EDGEPOST_UNPACK_PIXELS8( p16, p17, p18, p19, s4 )
+	EDGEPOST_UNPACK_PIXELS8( p20, p21, p22, p23, s5 )
+	EDGEPOST_UNPACK_PIXELS8( p24, p25, p26, p27, s6 )
+	
+	// Blur pixels
+	.reg	r0, r1, r2, r3
+	.reg	r4, r5, r6, r7
+	.reg	r8, r9, r10, r11
+	.reg	r12, r13, r14, r15
+	.reg	r16, r17, r18, r19
+	
+.endmacro
+
+.macro HORIZONTALGAUSS8_END
+	
+	// Pack pixels
+	.reg rs0, rs1, rs2, rs3, rs4
+	EDGEPOST_PACK_PIXELS8( rs0, r0, r1, r2, r3)
+	EDGEPOST_PACK_PIXELS8( rs1, r4, r5, r6, r7)
+	EDGEPOST_PACK_PIXELS8( rs2, r8, r9, r10, r11)
+	EDGEPOST_PACK_PIXELS8( rs3, r12, r13, r14, r15)
+	EDGEPOST_PACK_PIXELS8( rs4, r16, r17, r18, r19)
+	
+	// Store back result
+	stqd	rs0, -0x50( pOutput)
+	stqd	rs1, -0x40( pOutput)
+	stqd	rs2, -0x30( pOutput)
+	stqd	rs3, -0x20( pOutput)
+	stqd	rs4, -0x10( pOutput)
+											
+	// Loop									
+	brnz	count, loop 
+.endmacro
+
+
+.cfunc void edgePostGauss7x1_8( qword pOutput, qword pInput, qword count, qword weights )
+
+	HORIZONTALGAUSS8_START
+	EDGEPOST_U8_TO_FLOAT( p1, p1 )
+	EDGEPOST_U8_TO_FLOAT( p2, p2 )
+	EDGEPOST_U8_TO_FLOAT( p3, p3 )
+	EDGEPOST_U8_TO_FLOAT( p4, p4 )
+	EDGEPOST_U8_TO_FLOAT( p5, p5 )
+	EDGEPOST_U8_TO_FLOAT( p6, p6 )
+	EDGEPOST_U8_TO_FLOAT( p7, p7 )
+	EDGEPOST_U8_TO_FLOAT( p8, p8 )
+	EDGEPOST_U8_TO_FLOAT( p9, p9 )
+	EDGEPOST_U8_TO_FLOAT( p10, p10 )
+	EDGEPOST_U8_TO_FLOAT( p11, p11 )
+	EDGEPOST_U8_TO_FLOAT( p12, p12 )
+	EDGEPOST_U8_TO_FLOAT( p13, p13 )
+	EDGEPOST_U8_TO_FLOAT( p14, p14 )
+	EDGEPOST_U8_TO_FLOAT( p15, p15 )
+	EDGEPOST_U8_TO_FLOAT( p16, p16 )
+	EDGEPOST_U8_TO_FLOAT( p17, p17 )
+	EDGEPOST_U8_TO_FLOAT( p18, p18 )
+	EDGEPOST_U8_TO_FLOAT( p19, p19 )
+	EDGEPOST_U8_TO_FLOAT( p20, p20 )
+	EDGEPOST_U8_TO_FLOAT( p21, p21 )
+	EDGEPOST_U8_TO_FLOAT( p22, p22 )
+	EDGEPOST_U8_TO_FLOAT( p23, p23 )
+	EDGEPOST_U8_TO_FLOAT( p24, p24 )
+	EDGEPOST_U8_TO_FLOAT( p25, p25 )
+	EDGEPOST_U8_TO_FLOAT( p26, p26 )
+	EDGEPOST_GAUSSIANBLUR_F( r0, p1, p2, p3, p4, p5, p6, p7)
+	EDGEPOST_GAUSSIANBLUR_F( r1, p2, p3, p4, p5, p6, p7, p8)
+	EDGEPOST_GAUSSIANBLUR_F( r2, p3, p4, p5, p6, p7, p8, p9)
+	EDGEPOST_GAUSSIANBLUR_F( r3, p4, p5, p6, p7, p8, p9, p10)
+	EDGEPOST_GAUSSIANBLUR_F( r4, p5, p6, p7, p8, p9, p10, p11)
+	EDGEPOST_GAUSSIANBLUR_F( r5, p6, p7, p8, p9, p10, p11, p12)
+	EDGEPOST_GAUSSIANBLUR_F( r6, p7, p8, p9, p10, p11, p12, p13)
+	EDGEPOST_GAUSSIANBLUR_F( r7, p8, p9, p10, p11, p12, p13, p14)
+	EDGEPOST_GAUSSIANBLUR_F( r8, p9, p10, p11, p12, p13, p14, p15)
+	EDGEPOST_GAUSSIANBLUR_F( r9, p10, p11, p12, p13, p14, p15, p16)
+	EDGEPOST_GAUSSIANBLUR_F( r10, p11, p12, p13, p14, p15, p16, p17)
+	EDGEPOST_GAUSSIANBLUR_F( r11, p12, p13, p14, p15, p16, p17, p18)
+	EDGEPOST_GAUSSIANBLUR_F( r12, p13, p14, p15, p16, p17, p18, p19)
+	EDGEPOST_GAUSSIANBLUR_F( r13, p14, p15, p16, p17, p18, p19, p20)
+	EDGEPOST_GAUSSIANBLUR_F( r14, p15, p16, p17, p18, p19, p20, p21)
+	EDGEPOST_GAUSSIANBLUR_F( r15, p16, p17, p18, p19, p20, p21, p22)
+	EDGEPOST_GAUSSIANBLUR_F( r16, p17, p18, p19, p20, p21, p22, p23)
+	EDGEPOST_GAUSSIANBLUR_F( r17, p18, p19, p20, p21, p22, p23, p24)
+	EDGEPOST_GAUSSIANBLUR_F( r18, p19, p20, p21, p22, p23, p24, p25)
+	EDGEPOST_GAUSSIANBLUR_F( r19, p20, p21, p22, p23, p24, p25, p26)
+	EDGEPOST_FLOAT_TO_U8( r0, r0 )
+	EDGEPOST_FLOAT_TO_U8( r1, r1 )
+	EDGEPOST_FLOAT_TO_U8( r2, r2 )
+	EDGEPOST_FLOAT_TO_U8( r3, r3 )
+	EDGEPOST_FLOAT_TO_U8( r4, r4 )
+	EDGEPOST_FLOAT_TO_U8( r5, r5 )
+	EDGEPOST_FLOAT_TO_U8( r6, r6 )
+	EDGEPOST_FLOAT_TO_U8( r7, r7 )
+	EDGEPOST_FLOAT_TO_U8( r8, r8 )
+	EDGEPOST_FLOAT_TO_U8( r9, r9 )
+	EDGEPOST_FLOAT_TO_U8( r10, r10 )
+	EDGEPOST_FLOAT_TO_U8( r11, r11 )
+	EDGEPOST_FLOAT_TO_U8( r12, r12 )
+	EDGEPOST_FLOAT_TO_U8( r13, r13 )
+	EDGEPOST_FLOAT_TO_U8( r14, r14 )
+	EDGEPOST_FLOAT_TO_U8( r15, r15 )
+	EDGEPOST_FLOAT_TO_U8( r16, r16 )
+	EDGEPOST_FLOAT_TO_U8( r17, r17 )
+	EDGEPOST_FLOAT_TO_U8( r18, r18 )
+	EDGEPOST_FLOAT_TO_U8( r19, r19 )
+	HORIZONTALGAUSS8_END
+.endfunc
+
+
+
+
+.if 0
+////////////////////////////////////////////////////////////////////
+// 16 bit version does 10 pixels a time
+
+.macro HorizontalGauss16_Start
+    // Inputs
+    .input  $3-$5
+    
+    // ABI  
+    .input  $1, $80-$127
+    .output $1, $80-$127
+
+	// Parameters
+	.reg	pOutput, pInput, count
+	mov		pOutput, $3
+	mov		pInput, $4
+	mov		count, $5
+	
+	// Constants
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	
+loop:	
+	
+	ai		pOutput, pOutput, 0x50
+	ai		pInput, pInput, 0x50
+	ai		count, count, -10				
+	
+	// Load input pixels
+	.reg	s0, s1, s2, s3, s4, s5, s6, s7, s8
+	
+	lqd		s0, -0x70( pInput)
+	lqd		s1, -0x60( pInput)
+	
+	lqd		s2, -0x50( pInput)
+	lqd		s3, -0x40( pInput)
+	lqd		s4, -0x30( pInput)
+	lqd		s5, -0x20( pInput)
+	lqd		s6, -0x10( pInput)
+	
+	lqd		s7, 0x00( pInput)
+	lqd		s8, 0x10( pInput)
+	
+	// Unpack individual pixels
+	.reg	p0, p1, p2, p3
+	.reg	p4, p5, p6, p7, p8, p9, p10, p11, p12, p13
+	.reg	p14, p15, p16, p17
+	
+	EDGEPOST_UNPACK_PIXELS16( p0, p1, s0 )
+	EDGEPOST_UNPACK_PIXELS16( p2, p3, s1 )
+	EDGEPOST_UNPACK_PIXELS16( p4, p5, s2 )
+	EDGEPOST_UNPACK_PIXELS16( p6, p7, s3 )
+	EDGEPOST_UNPACK_PIXELS16( p8, p9, s4 )
+	EDGEPOST_UNPACK_PIXELS16( p10, p11, s5 )
+	EDGEPOST_UNPACK_PIXELS16( p12, p13, s6 )
+	EDGEPOST_UNPACK_PIXELS16( p14, p15, s7 )
+	EDGEPOST_UNPACK_PIXELS16( p16, p17, s8 )
+	
+	// Blur pixels
+	.reg	r0, r1, r2, r3
+	.reg	r4, r5, r6, r7
+	.reg	r8, r9
+.endmacro
+
+.macro HorizontalGauss16_End
+	
+	// Pack pixels
+	.reg rs0, rs1, rs2, rs3, rs4
+	EDGEPOST_PACK_PIXELS16( rs0, r0, r1)
+	EDGEPOST_PACK_PIXELS16( rs1, r2, r3)
+	EDGEPOST_PACK_PIXELS16( rs2, r4, r5)
+	EDGEPOST_PACK_PIXELS16( rs3, r6, r7)
+	EDGEPOST_PACK_PIXELS16( rs4, r8, r9)
+	
+	// Store back result
+	stqd	rs0, -0x50( pOutput)
+	stqd	rs1, -0x40( pOutput)
+	stqd	rs2, -0x30( pOutput)
+	stqd	rs3, -0x20( pOutput)
+	stqd	rs4, -0x10( pOutput)
+											
+	// Loop									
+	brnz	count, loop 
+.endmacro
+
+.endif
+
+
+	

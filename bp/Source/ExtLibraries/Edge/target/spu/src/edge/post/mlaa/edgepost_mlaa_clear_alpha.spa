@@ -1,46 +1,46 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2010 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
- 
-/*
- * If a specific value in the alpha-channel is desired, this function can be used to write it.
- * It is enabled with CLEAR_ALPHA in edgepost_mlaa.cpp
- */
-
-.macro ITERATION(offset)
-	.localreg	pixels
-	lqd			pixels, offset(buffer)
-	selb		pixels, value, pixels, mask
-	stqd		pixels, offset(buffer1)
-.endmacro
-
-.cfunc void edgePostMlaaClearAlpha(
-	qword buffer,
-	qword size,
-	qword value)
-	
-	brz		size, end
-	
-	.reg	mask, buffer1
-	il32	mask, 0x00FFFFFF
-	mov		buffer1, buffer
-	
-	.reg	kSplatD000D000D000D000
-	il128	kSplatD000D000D000D000, "D000D000D000D000"
-	
-	shufb	value, value, value, kSplatD000D000D000D000
-	
-loop:
-	ai		buffer, buffer, 0x40
-	ai		buffer1, buffer1, 0x40
-	ai		size, size, -0x40	
-	ITERATION(-0x10)
-	ITERATION(-0x20)
-	ITERATION(-0x30)
-	ITERATION(-0x40)
-	brnz	size, loop
-	
-end:	
-.endfunc
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2010 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+ 
+/*
+ * If a specific value in the alpha-channel is desired, this function can be used to write it.
+ * It is enabled with CLEAR_ALPHA in edgepost_mlaa.cpp
+ */
+
+.macro ITERATION(offset)
+	.localreg	pixels
+	lqd			pixels, offset(buffer)
+	selb		pixels, value, pixels, mask
+	stqd		pixels, offset(buffer1)
+.endmacro
+
+.cfunc void edgePostMlaaClearAlpha(
+	qword buffer,
+	qword size,
+	qword value)
+	
+	brz		size, end
+	
+	.reg	mask, buffer1
+	il32	mask, 0x00FFFFFF
+	mov		buffer1, buffer
+	
+	.reg	kSplatD000D000D000D000
+	il128	kSplatD000D000D000D000, "D000D000D000D000"
+	
+	shufb	value, value, value, kSplatD000D000D000D000
+	
+loop:
+	ai		buffer, buffer, 0x40
+	ai		buffer1, buffer1, 0x40
+	ai		size, size, -0x40	
+	ITERATION(-0x10)
+	ITERATION(-0x20)
+	ITERATION(-0x30)
+	ITERATION(-0x40)
+	brnz	size, loop
+	
+end:	
+.endfunc

@@ -1,604 +1,604 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2010 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
- 
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-
-.set WRITE_BLENDED, 0	// if set to one, all pixels changed by blend will be colored red
-.setswp sms 0		// we deactivate pipelining here, as the trip counts are usually too small.
-.setswp ims 0
-
-/*
- * The blend functions work on lists of blend jobs, to remove the overhead of function calls.
- * This was actually a major speed-up.
- * The current implementations use 8bit fixed-point blending, but the blend coefficients are
- * iterated in 16 bits. This givs plenty of resolution, even for full-width features.
- */
-
-.macro REC(r,d)
-	.localreg	y0, t0
-	frest		y0, d
-	fi			y0, d, y0
-	fnms		t0, d, y0, fOne
-	fma			r, t0, y0, y0	
-.endmacro
-
-.macro MAKE_8BIT(t,a)
-	rotmi		t, a, -8
-.endmacro
-
-.macro MPYAU(r,b,c,d)
-	.localreg	temp
-	mpyu		temp, b, c
-	a			r, temp, d
-.endmacro
-
-.cfunc void edgePostMlaaBlendZ
-	(	qword buffer,
-		qword jobs,
-		qword unalignedTable)
-	
-	.reg		kExtractX0, kExtractX1, kExtractH0, kExtractH1, kExtractLine0, kExtractLine1
-	
-	il128		kExtractX0,		"0A0A0A0A"
-	il128		kExtractX1,		"0B0B0B0B"
-	il128		kExtractH0,		"0C0C0C0C"
-	il128		kExtractH1,		"0D0D0D0D"
-	il128		kExtractLine0,	"EFEFEFEF"
-	il128		kExtractLine1,	"GHGHGHGH"
-	
-	
-	// a bunch of shuffle masks
-	.reg		shuf_000B000F000J000N, shuf_000C000G000K000O, shuf_000D000H000L000P
-	il128		shuf_000B000F000J000N, "000B000F000J000N"
-	il128		shuf_000C000G000K000O, "000C000G000K000O"
-	il128		shuf_000D000H000L000P, "000D000H000L000P"
-	
-	.reg		shuf_AcCDEgGHIkKLMoOP, shuf_ABcDEFgHIJkLMNoP, shuf_ABCcEFGgIJKkMNOo
-	il128		shuf_AcCDEgGHIkKLMoOP, "AcCDEgGHIkKLMoOP"
-	il128		shuf_ABcDEFgHIJkLMNoP, "ABcDEFgHIJkLMNoP"
-	il128		shuf_ABCcEFGgIJKkMNOo, "ABCcEFGgIJKkMNOo"
-	
-	// a bunch of consts
-	.reg		fTwo, fZero, kFour
-	ilf32		fTwo, 2.f
-	ilf32		fZero, .0f
-	il			kFour, 4
-	
-	.reg		k0123, kOneFixed, kZero, k256, k00FF : readoptional
-	il128		k0123, 0x00000000_00000001_00000002_00000003
-	il32		kOneFixed, 0xffff			//16 bits
-	il			kZero, 0
-	il			k256, 256
-	il32		k00FF, 0x00FF00FF
-	
-	
-	
-outer_loop:	
-
-
-	// load and unpack
-	
-	.reg		param
-	lqd			param,	0x00(buffer)
-	ai			buffer, buffer, -0x20
-	
-	.reg		x0, x1, h0, h1, line0, line1	
-	
-	shufb		x0, param, param, kExtractX0
-	shufb		x1, param, param, kExtractX1
-	shufb		h0, param, param, kExtractH0
-	shufb		h1, param, param, kExtractH1
-	shufb		line0, param, param, kExtractLine0
-	shufb		line1, param, param, kExtractLine1
-
-	.reg		fh0, fh1
-	cuflt		fh0, h0, 16
-	cuflt		fh1, h1, 16
-	rotmi		x0, x0, -2
-	rotmi		x1, x1, -2
-	
-	// check for h0==0 or h1==0
-	.reg		h0IsZero, h1IsZero
-	ceq			h0IsZero, h0, kZero
-	ceq			h1IsZero, h1, kZero
-
-	// compute middle
-	.reg		middle
-	a			middle, x0, x1
-	rotmi		middle, middle, -1
-		
-	// get length of segment to be blended
-	.reg		flen, iflen
-	sf			flen, x0, x1
-	ai			flen, flen, 1
-	cuflt		flen, flen, 0
-
-	frest		iflen, flen
-	fi			iflen, flen, iflen
-
-
-	// change feature sizes according to missing heights
-	selb		x0, x0, middle, h0IsZero
-	selb		x1, x1, middle, h1IsZero
-
-	// recalculate length as it might have changed
-	.reg		len
-	sf			len, x0, x1
-	ai			len, len, 1
-	
-	// calculate DHs
-	.reg		dh0, dh1
-	fnms		dh0, fh0, fTwo, fTwo
-	fnms		dh1, fh1, fTwo, fTwo
-	fm			dh0, dh0, iflen
-	fm			dh1, dh1, iflen
-	
-	selb		dh0, dh0, fZero, h0IsZero
-	selb		dh1, dh1, fZero, h1IsZero
-	
-	cfltu		dh0, dh0, 16
-	cfltu		dh1, dh1, 16
-	
-	// get middle point
-	.reg		isOdd
-	andi		isOdd, middle, 0x01
-	ceqi		isOdd, isOdd, 0x01
-	
-	
-	// setup area
-	.reg		area0, area1
-	rotmi		area0, dh0, -1
-	a			area0, area0, h0
-	rotmi		area1, dh1, -1
-	selb		area0, area0, kOneFixed, h0IsZero
-	selb		area1, area1, dh1, isOdd
-	selb		area1, area1, kOneFixed, h1IsZero
-	
-	// calculate addresses and load unaligned shuffle mayem
-	.reg		address0, address1, tabIndex0, tabIndex1, tabIndex2
-	.reg		shufUnalignedLoad, shufUnalignedStore0, shufUnalignedStore1
-	andi		tabIndex0, x0, 0x03
-	shli		tabIndex0, tabIndex0, 4
-	ai			tabIndex1, tabIndex0, 0x40
-	ai			tabIndex2, tabIndex0, 0x80
-	lqx			shufUnalignedLoad, unalignedTable, tabIndex0
-	lqx			shufUnalignedStore0, unalignedTable, tabIndex1
-	lqx			shufUnalignedStore1, unalignedTable, tabIndex2
-	MPYAU(address0, x0, kFour, line0)
-	MPYAU(address1, x0, kFour, line1)
-
-	// calculate weights for middle case
-	.reg		middleWeight0, middleWeight1
-	rotmi		middleWeight0, dh0, -3
-	rotmi		middleWeight1, dh1, -3
-	sf			middleWeight0, middleWeight0, kOneFixed
-	sf			middleWeight1, middleWeight1, kOneFixed
-
-	// rearrange variables for SIMD loop
-	.reg		secondHalfBase
-	ai			secondHalfBase, middle, 1
-	MPYAU(area0, dh0, k0123, area0)
-	
-	.reg		current_x0
-	a			current_x0, x0, k0123
-	shli		dh0, dh0, 2
-	
-	// compute loop count
-	.reg		count
-	ai			count, len, 3
-	rotmi		count, count, -2
-	
-	// loop
-	.reg		pixel0_a, pixel1_a
-	.reg		pixel0_b, pixel1_b
-	.reg		pixel0, pixel1
-	lqd			pixel0_a, 0x00(address0)
-	lqd			pixel1_a, 0x00(address1)
-
-loop:
-	ai			count, count, -1
-	ai			address0, address0, 0x10
-	ai			address1, address1, 0x10
-	lqd			pixel0_b, 0x00(address0)
-	lqd			pixel1_b, 0x00(address1)
-	shufb		pixel0, pixel0_a, pixel0_b, shufUnalignedLoad
-	shufb		pixel1, pixel1_a, pixel1_b, shufUnalignedLoad
-	
-	// calculate blend weights based on current feature position 
-	.reg		isGreater, isInTheMiddle
-	cgt			isGreater, current_x0, middle
-	ceq			isInTheMiddle, current_x0, middle
-	and			isInTheMiddle, isInTheMiddle, isOdd
-	
-	// setup weights as if we were in the first half
-	.reg		blendWeight0, blendWeight1
-
-	// update weights if we were right in the middle
-	selb		blendWeight0, area0, middleWeight0, isInTheMiddle
-	selb		blendWeight1, kOneFixed, middleWeight1, isInTheMiddle
-
-	// add 4*dh to each element in area0, for the next iteration.
-	a			area0, area0, dh0
-		
-	// setup weights if we were in the second half
-	.reg		secHalfOfs, secHalfWgt, inv_area1
-	selb		blendWeight0, blendWeight0, kOneFixed, isGreater
-	sf			secHalfOfs, secondHalfBase, current_x0	
-	MPYAU(secHalfWgt, secHalfOfs, dh1, area1)
-	sf			inv_area1, secHalfWgt, kOneFixed
-	selb		blendWeight1, blendWeight1, inv_area1, isGreater
-	
-	// invalidate pixels past teh end of this feature
-	.reg		invalidPixels
-	clgt		invalidPixels, current_x0, x1
-	selb		blendWeight0, blendWeight0, kOneFixed, invalidPixels
-	selb		blendWeight1, blendWeight1, kOneFixed, invalidPixels
-	
-	// advance pixel index by 4
-	ai			current_x0, current_x0, 4
-	
-	//	unpack pixels
-	.reg		red0, red1, blu0, blu1, gre0, gre1
-	shufb		red0, pixel0, pixel0, shuf_000B000F000J000N
-	shufb		red1, pixel1, pixel1, shuf_000B000F000J000N
-	shufb		gre0, pixel0, pixel0, shuf_000C000G000K000O
-	shufb		gre1, pixel1, pixel1, shuf_000C000G000K000O
-	shufb		blu0, pixel0, pixel0, shuf_000D000H000L000P
-	shufb		blu1, pixel1, pixel1, shuf_000D000H000L000P
-		
-	// blend
-	.reg		r0, g0, b0
-	.reg		r1, g1, b1
-	
-	.reg		blendWeight8Bit0, blendWeight8Bit1
-	MAKE_8BIT(blendWeight8Bit0, blendWeight0)
-	MAKE_8BIT(blendWeight8Bit1, blendWeight1)
-	
-	sf			r0, red1, red0
-	sf			g0, gre1, gre0
-	sf			b0, blu1, blu0
-
-	mpya		r0, r0, blendWeight8Bit0, r0
-	mpya		g0, g0, blendWeight8Bit0, g0
-	mpya		b0, b0, blendWeight8Bit0, b0
-	
-	mpya		r0, red1, k256, r0
-	mpya		g0, gre1, k256, g0
-	mpya		b0, blu1, k256, b0
-
-	sf			r1, red0, red1
-	sf			g1, gre0, gre1
-	sf			b1, blu0, blu1
-
-	mpya		r1, r1, blendWeight8Bit1, r1
-	mpya		g1, g1, blendWeight8Bit1, g1
-	mpya		b1, b1, blendWeight8Bit1, b1
-	
-	mpya		r1, red0, k256, r1
-	mpya		g1, gre0, k256, g1
-	mpya		b1, blu0, k256, b1
-	
-	.reg		area0_cap
-	cgt			area0_cap, area0, kOneFixed
-	selb		area0, area0, kOneFixed, area0_cap
-
-
-.if 0
-	// repack pixels and preserving the alpha channel
-	.reg		pixel0_tmp, pixel1_tmp
-	
-	shufb		pixel0, pixel0, r0, shuf_AcCDEgGHIkKLMoOP
-	shufb		pixel0_tmp, g0, b0, shuf_00Cc00Gg00Kk00Oo
-	selb		pixel0, pixel0, pixel0_tmp, kSelb0000FFFF
-	
-	shufb		pixel1, pixel1, r1, shuf_AcCDEgGHIkKLMoOP
-	shufb		pixel1_tmp, g1, b1, shuf_00Cc00Gg00Kk00Oo
-	selb		pixel1, pixel1, pixel1_tmp, kSelb0000FFFF
-.else
-	shufb		pixel0, pixel0, r0, shuf_AcCDEgGHIkKLMoOP
-	shufb		pixel0, pixel0, g0, shuf_ABcDEFgHIJkLMNoP
-	shufb		pixel0, pixel0, b0, shuf_ABCcEFGgIJKkMNOo
-	shufb		pixel1, pixel1, r1, shuf_AcCDEgGHIkKLMoOP
-	shufb		pixel1, pixel1, g1, shuf_ABcDEFgHIJkLMNoP
-	shufb		pixel1, pixel1, b1, shuf_ABCcEFGgIJKkMNOo
-.endif	
-
-	
-.if WRITE_BLENDED	
-	.reg		RED, valid0, valid1, alphaMask
-	il32		RED, 0x00FF0000
-	il32		alphaMask, 0x00FFFFFF
-	ceqi		valid0, blendWeight8Bit0, 255
-	ceqi		valid1, blendWeight8Bit1, 255
-	andc		valid0, alphaMask, valid0
-	andc		valid1, alphaMask, valid1
-	selb		pixel0, pixel0, RED, valid0
-	selb		pixel1, pixel1, RED, valid1
-.endif	
-
-	
-	// reshuffle and store pixels
-	shufb		pixel0_a, pixel0_a, pixel0, shufUnalignedStore0
-	shufb		pixel1_a, pixel1_a, pixel1, shufUnalignedStore0
-	stqd		pixel0_a, -0x10(address0)
-	stqd		pixel1_a, -0x10(address1)
-	
-	shufb		pixel0_a, pixel0_b, pixel0, shufUnalignedStore1
-	shufb		pixel1_a, pixel1_b, pixel1, shufUnalignedStore1
-
-
-	// loop
-	brnz		count, loop
-	
-	// store the last bits
-	stqd		pixel0_a, 0x00(address0)
-	stqd		pixel1_a, 0x00(address1)
-	
-	// continue with outer loop
-	ai			jobs, jobs, -1
-	brnz		jobs, outer_loop
-	
-.endfunc
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-.cfunc void edgePostMlaaBlendU
-	(	qword buffer,
-		qword jobs,
-		qword unalignedTable)	
-	
-	.reg		kExtractX0, kExtractX1, kExtractH0, kExtractH1, kExtractLine0, kExtractLine1
-	
-	il128		kExtractX0,		"0A0A0A0A"
-	il128		kExtractX1,		"0B0B0B0B"
-	il128		kExtractH0,		"0C0C0C0C"
-	il128		kExtractH1,		"0D0D0D0D"
-	il128		kExtractLine0,	"EFEFEFEF"
-	il128		kExtractLine1,	"GHGHGHGH"
-
-	// a bunch of shuffle masks
-	.reg		shuf_000B000F000J000N, shuf_000C000G000K000O, shuf_000D000H000L000P
-	il128		shuf_000B000F000J000N, "000B000F000J000N"
-	il128		shuf_000C000G000K000O, "000C000G000K000O"
-	il128		shuf_000D000H000L000P, "000D000H000L000P"
-	
-	.reg		shuf_AcCDEgGHIkKLMoOP, shuf_ABcDEFgHIJkLMNoP, shuf_ABCcEFGgIJKkMNOo
-	il128		shuf_AcCDEgGHIkKLMoOP, "AcCDEgGHIkKLMoOP"
-	il128		shuf_ABcDEFgHIJkLMNoP, "ABcDEFgHIJkLMNoP"
-	il128		shuf_ABCcEFGgIJKkMNOo, "ABCcEFGgIJKkMNOo"
-	
-	// a bunch of consts
-	.reg		fTwo, fZero, kFour, k00FF : readoptional
-	ilf32		fTwo, 2.f
-	ilf32		fZero, .0f
-	il			kFour, 4
-	il32		k00FF, 0x00FF00FF
-	
-	.reg		k0123, kOneFixed, kZero, k256
-	il128		k0123, 0x00000000_00000001_00000002_00000003
-	il32		kOneFixed, 0xffff			//16 bits
-	il			kZero, 0
-	il			k256, 256
-	
-	
-outer_loop:	
-
-	// load and unpack
-	
-	.reg		param
-	lqd			param,	0x00(buffer)
-	ai			buffer, buffer, -0x20
-
-	.reg		x0, x1, h0, h1, line0, line1	
-	shufb		x0, param, param, kExtractX0
-	shufb		x1, param, param, kExtractX1
-	shufb		h0, param, param, kExtractH0
-	shufb		h1, param, param, kExtractH1
-	shufb		line0, param, param, kExtractLine0
-	shufb		line1, param, param, kExtractLine1
-	
-	.reg		fh0, fh1
-	cuflt		fh0, h0, 16
-	cuflt		fh1, h1, 16
-	rotmi		x0, x0, -2
-	rotmi		x1, x1, -2
-	
-	// check for h0==0 or h1==0
-	.reg		h0IsZero, h1IsZero
-	ceq			h0IsZero, h0, kZero
-	ceq			h1IsZero, h1, kZero
-
-	// compute middle
-	.reg		middle
-	a			middle, x0, x1
-	rotmi		middle, middle, -1
-		
-	// get length of segment to be blended
-	.reg		flen, iflen
-	sf			flen, x0, x1
-	ai			flen, flen, 1
-	cuflt		flen, flen, 0
-
-	frest		iflen, flen
-	fi			iflen, flen, iflen
-
-
-	// change feature sizes according to missing heights
-	selb		x0, x0, middle, h0IsZero
-	selb		x1, x1, middle, h1IsZero
-
-	// recalculate length, as it might have changed
-	.reg		len
-	sf			len, x0, x1
-	ai			len, len, 1
-	
-	// calculate DHs
-	.reg		dh0, dh1
-	fnms		dh0, fh0, fTwo, fTwo
-	fnms		dh1, fh1, fTwo, fTwo
-	fm			dh0, dh0, iflen
-	fm			dh1, dh1, iflen
-	
-	selb		dh0, dh0, fZero, h0IsZero
-	selb		dh1, dh1, fZero, h1IsZero
-		
-	cfltu		dh0, dh0, 16
-	cfltu		dh1, dh1, 16
-	
-	// get middle point
-	.reg		isOdd
-	andi		isOdd, middle, 0x01
-	ceqi		isOdd, isOdd, 0x01
-	
-	
-	// setup area
-	.reg		area0, area1
-	rotmi		area0, dh0, -1
-	a			area0, area0, h0
-	rotmi		area1, dh1, -1
-	selb		area0, area0, kOneFixed, h0IsZero
-	selb		area1, area1, dh1, isOdd
-	sf			area1, area1, kOneFixed
-	sf			dh1, dh1, kZero
-	selb		area1, area1, kOneFixed, h1IsZero
-
-	// calculate addresses and load unaligned shuffle mayem
-	.reg		address0, address1, tabIndex0, tabIndex1, tabIndex2
-	.reg		shufUnalignedLoad, shufUnalignedStore0, shufUnalignedStore1
-	andi		tabIndex0, x0, 0x03
-	shli		tabIndex0, tabIndex0, 4
-	ai			tabIndex1, tabIndex0, 0x40
-	ai			tabIndex2, tabIndex0, 0x80
-	lqx			shufUnalignedLoad, unalignedTable, tabIndex0
-	lqx			shufUnalignedStore0, unalignedTable, tabIndex1
-	lqx			shufUnalignedStore1, unalignedTable, tabIndex2
-	mpya		address0, x0, kFour, line0
-	mpya		address1, x0, kFour, line1
-
-	// calculate weights for middle case
-	.reg		middleWeight0
-	rotmi		middleWeight0, dh0, -3
-	sf			middleWeight0, middleWeight0, kOneFixed
-
-	// rearrange variables for SIMD loop
-	.reg		secondHalfBase
-	ai			secondHalfBase, middle, 1
-	mpya		area0, dh0, k0123, area0
-	
-	.reg		current_x0
-	a			current_x0, x0, k0123
-	shli		dh0, dh0, 2
-	
-	// compute loop count
-	.reg		count
-	ai			count, len, 3
-	rotmi		count, count, -2
-	
-	// loop
-	.reg		pixel0_a, pixel1_a
-	.reg		pixel0_b, pixel1_b
-	.reg		pixel0, pixel1
-	lqd			pixel0_a, 0x00(address0)
-	lqd			pixel1_a, 0x00(address1)
-loop:
-	ai			count, count, -1
-	ai			address0, address0, 0x10
-	ai			address1, address1, 0x10
-	lqd			pixel0_b, 0x00(address0)
-	lqd			pixel1_b, 0x00(address1)
-	shufb		pixel0, pixel0_a, pixel0_b, shufUnalignedLoad
-	shufb		pixel1, pixel1_a, pixel1_b, shufUnalignedLoad
-	
-	// calculate blend weights based on current feature position 
-	.reg		isGreater, isInTheMiddle
-	cgt			isGreater, current_x0, middle
-	ceq			isInTheMiddle, current_x0, middle
-	and			isInTheMiddle, isInTheMiddle, isOdd
-	
-	// setup weights as if we were in the first half
-	.reg		blendWeight0
-
-	// update weights if we were right in the middle
-	selb		blendWeight0, area0, middleWeight0, isInTheMiddle
-	a			area0, area0, dh0
-	.reg		area0_cap
-	cgt			area0_cap, area0, kOneFixed
-	selb		area0, area0, kOneFixed, area0_cap
-
-
-	// setup weights if we were in the second half
-	.reg		secHalfOfs, secHalfWgt
-	sf			secHalfOfs, secondHalfBase, current_x0
-	mpya		secHalfWgt, secHalfOfs, dh1, area1
-	selb		blendWeight0, blendWeight0, secHalfWgt, isGreater
-	
-	// invalidate pixels past teh end of this feature
-	.reg		invalidPixels
-	clgt		invalidPixels, current_x0, x1
-	selb		blendWeight0, blendWeight0, kOneFixed, invalidPixels
-
-	// advance pixel index by 4
-	ai			current_x0, current_x0, 4
-	
-	//	unpack pixels
-	.reg		red0, red1, blu0, blu1, gre0, gre1
-	shufb		red0, pixel0, pixel0, shuf_000B000F000J000N
-	shufb		red1, pixel1, pixel1, shuf_000B000F000J000N
-	shufb		gre0, pixel0, pixel0, shuf_000C000G000K000O
-	shufb		gre1, pixel1, pixel1, shuf_000C000G000K000O
-	shufb		blu0, pixel0, pixel0, shuf_000D000H000L000P
-	shufb		blu1, pixel1, pixel1, shuf_000D000H000L000P
-	
-	
-	.reg		blendWeight8Bit0
-	MAKE_8BIT(blendWeight8Bit0, blendWeight0)
-	
-	.reg		r, g, b
-	sf			r, red1, red0
-	sf			g, gre1, gre0
-	sf			b, blu1, blu0		
-	// blend
-	
-	mpya		r, r, blendWeight8Bit0, r
-	mpya		g, g, blendWeight8Bit0, g
-	mpya		b, b, blendWeight8Bit0, b
-	
-	mpya		r, red1, k256, r
-	mpya		g, gre1, k256, g
-	mpya		b, blu1, k256, b
-			
-	// repack pixels and preserving the alpha channel
-	shufb		pixel0, pixel0, r, shuf_AcCDEgGHIkKLMoOP
-	shufb		pixel0, pixel0, g, shuf_ABcDEFgHIJkLMNoP
-	shufb		pixel0, pixel0, b, shuf_ABCcEFGgIJKkMNOo
-	
-.if WRITE_BLENDED	
-	.reg		GREEN, valid0, alphaMask
-	il32		GREEN, 0x0000FF00	
-	il32		alphaMask, 0x00FFFFFF
-	ceqi		valid0, blendWeight8Bit0, 255
-	andc		valid0, alphaMask, valid0
-	selb		pixel0, pixel0, GREEN, valid0
-.endif			
-	
-	// reshuffle and store pixels
-	shufb		pixel0_a, pixel0_a, pixel0, shufUnalignedStore0	
-	stqd		pixel0_a, -0x10(address0)
-	shufb		pixel0_a, pixel0_b, pixel0, shufUnalignedStore1
-	
-	// loop
-	brnz		count, loop
-	
-	// store the last bits
-	stqd		pixel0_a, 0x00(address0)
-
-	// continue with outer loop
-	ai			jobs, jobs, -1
-	brnz		jobs, outer_loop
-		
-.endfunc
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2010 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+ 
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+.set WRITE_BLENDED, 0	// if set to one, all pixels changed by blend will be colored red
+.setswp sms 0		// we deactivate pipelining here, as the trip counts are usually too small.
+.setswp ims 0
+
+/*
+ * The blend functions work on lists of blend jobs, to remove the overhead of function calls.
+ * This was actually a major speed-up.
+ * The current implementations use 8bit fixed-point blending, but the blend coefficients are
+ * iterated in 16 bits. This givs plenty of resolution, even for full-width features.
+ */
+
+.macro REC(r,d)
+	.localreg	y0, t0
+	frest		y0, d
+	fi			y0, d, y0
+	fnms		t0, d, y0, fOne
+	fma			r, t0, y0, y0	
+.endmacro
+
+.macro MAKE_8BIT(t,a)
+	rotmi		t, a, -8
+.endmacro
+
+.macro MPYAU(r,b,c,d)
+	.localreg	temp
+	mpyu		temp, b, c
+	a			r, temp, d
+.endmacro
+
+.cfunc void edgePostMlaaBlendZ
+	(	qword buffer,
+		qword jobs,
+		qword unalignedTable)
+	
+	.reg		kExtractX0, kExtractX1, kExtractH0, kExtractH1, kExtractLine0, kExtractLine1
+	
+	il128		kExtractX0,		"0A0A0A0A"
+	il128		kExtractX1,		"0B0B0B0B"
+	il128		kExtractH0,		"0C0C0C0C"
+	il128		kExtractH1,		"0D0D0D0D"
+	il128		kExtractLine0,	"EFEFEFEF"
+	il128		kExtractLine1,	"GHGHGHGH"
+	
+	
+	// a bunch of shuffle masks
+	.reg		shuf_000B000F000J000N, shuf_000C000G000K000O, shuf_000D000H000L000P
+	il128		shuf_000B000F000J000N, "000B000F000J000N"
+	il128		shuf_000C000G000K000O, "000C000G000K000O"
+	il128		shuf_000D000H000L000P, "000D000H000L000P"
+	
+	.reg		shuf_AcCDEgGHIkKLMoOP, shuf_ABcDEFgHIJkLMNoP, shuf_ABCcEFGgIJKkMNOo
+	il128		shuf_AcCDEgGHIkKLMoOP, "AcCDEgGHIkKLMoOP"
+	il128		shuf_ABcDEFgHIJkLMNoP, "ABcDEFgHIJkLMNoP"
+	il128		shuf_ABCcEFGgIJKkMNOo, "ABCcEFGgIJKkMNOo"
+	
+	// a bunch of consts
+	.reg		fTwo, fZero, kFour
+	ilf32		fTwo, 2.f
+	ilf32		fZero, .0f
+	il			kFour, 4
+	
+	.reg		k0123, kOneFixed, kZero, k256, k00FF : readoptional
+	il128		k0123, 0x00000000_00000001_00000002_00000003
+	il32		kOneFixed, 0xffff			//16 bits
+	il			kZero, 0
+	il			k256, 256
+	il32		k00FF, 0x00FF00FF
+	
+	
+	
+outer_loop:	
+
+
+	// load and unpack
+	
+	.reg		param
+	lqd			param,	0x00(buffer)
+	ai			buffer, buffer, -0x20
+	
+	.reg		x0, x1, h0, h1, line0, line1	
+	
+	shufb		x0, param, param, kExtractX0
+	shufb		x1, param, param, kExtractX1
+	shufb		h0, param, param, kExtractH0
+	shufb		h1, param, param, kExtractH1
+	shufb		line0, param, param, kExtractLine0
+	shufb		line1, param, param, kExtractLine1
+
+	.reg		fh0, fh1
+	cuflt		fh0, h0, 16
+	cuflt		fh1, h1, 16
+	rotmi		x0, x0, -2
+	rotmi		x1, x1, -2
+	
+	// check for h0==0 or h1==0
+	.reg		h0IsZero, h1IsZero
+	ceq			h0IsZero, h0, kZero
+	ceq			h1IsZero, h1, kZero
+
+	// compute middle
+	.reg		middle
+	a			middle, x0, x1
+	rotmi		middle, middle, -1
+		
+	// get length of segment to be blended
+	.reg		flen, iflen
+	sf			flen, x0, x1
+	ai			flen, flen, 1
+	cuflt		flen, flen, 0
+
+	frest		iflen, flen
+	fi			iflen, flen, iflen
+
+
+	// change feature sizes according to missing heights
+	selb		x0, x0, middle, h0IsZero
+	selb		x1, x1, middle, h1IsZero
+
+	// recalculate length as it might have changed
+	.reg		len
+	sf			len, x0, x1
+	ai			len, len, 1
+	
+	// calculate DHs
+	.reg		dh0, dh1
+	fnms		dh0, fh0, fTwo, fTwo
+	fnms		dh1, fh1, fTwo, fTwo
+	fm			dh0, dh0, iflen
+	fm			dh1, dh1, iflen
+	
+	selb		dh0, dh0, fZero, h0IsZero
+	selb		dh1, dh1, fZero, h1IsZero
+	
+	cfltu		dh0, dh0, 16
+	cfltu		dh1, dh1, 16
+	
+	// get middle point
+	.reg		isOdd
+	andi		isOdd, middle, 0x01
+	ceqi		isOdd, isOdd, 0x01
+	
+	
+	// setup area
+	.reg		area0, area1
+	rotmi		area0, dh0, -1
+	a			area0, area0, h0
+	rotmi		area1, dh1, -1
+	selb		area0, area0, kOneFixed, h0IsZero
+	selb		area1, area1, dh1, isOdd
+	selb		area1, area1, kOneFixed, h1IsZero
+	
+	// calculate addresses and load unaligned shuffle mayem
+	.reg		address0, address1, tabIndex0, tabIndex1, tabIndex2
+	.reg		shufUnalignedLoad, shufUnalignedStore0, shufUnalignedStore1
+	andi		tabIndex0, x0, 0x03
+	shli		tabIndex0, tabIndex0, 4
+	ai			tabIndex1, tabIndex0, 0x40
+	ai			tabIndex2, tabIndex0, 0x80
+	lqx			shufUnalignedLoad, unalignedTable, tabIndex0
+	lqx			shufUnalignedStore0, unalignedTable, tabIndex1
+	lqx			shufUnalignedStore1, unalignedTable, tabIndex2
+	MPYAU(address0, x0, kFour, line0)
+	MPYAU(address1, x0, kFour, line1)
+
+	// calculate weights for middle case
+	.reg		middleWeight0, middleWeight1
+	rotmi		middleWeight0, dh0, -3
+	rotmi		middleWeight1, dh1, -3
+	sf			middleWeight0, middleWeight0, kOneFixed
+	sf			middleWeight1, middleWeight1, kOneFixed
+
+	// rearrange variables for SIMD loop
+	.reg		secondHalfBase
+	ai			secondHalfBase, middle, 1
+	MPYAU(area0, dh0, k0123, area0)
+	
+	.reg		current_x0
+	a			current_x0, x0, k0123
+	shli		dh0, dh0, 2
+	
+	// compute loop count
+	.reg		count
+	ai			count, len, 3
+	rotmi		count, count, -2
+	
+	// loop
+	.reg		pixel0_a, pixel1_a
+	.reg		pixel0_b, pixel1_b
+	.reg		pixel0, pixel1
+	lqd			pixel0_a, 0x00(address0)
+	lqd			pixel1_a, 0x00(address1)
+
+loop:
+	ai			count, count, -1
+	ai			address0, address0, 0x10
+	ai			address1, address1, 0x10
+	lqd			pixel0_b, 0x00(address0)
+	lqd			pixel1_b, 0x00(address1)
+	shufb		pixel0, pixel0_a, pixel0_b, shufUnalignedLoad
+	shufb		pixel1, pixel1_a, pixel1_b, shufUnalignedLoad
+	
+	// calculate blend weights based on current feature position 
+	.reg		isGreater, isInTheMiddle
+	cgt			isGreater, current_x0, middle
+	ceq			isInTheMiddle, current_x0, middle
+	and			isInTheMiddle, isInTheMiddle, isOdd
+	
+	// setup weights as if we were in the first half
+	.reg		blendWeight0, blendWeight1
+
+	// update weights if we were right in the middle
+	selb		blendWeight0, area0, middleWeight0, isInTheMiddle
+	selb		blendWeight1, kOneFixed, middleWeight1, isInTheMiddle
+
+	// add 4*dh to each element in area0, for the next iteration.
+	a			area0, area0, dh0
+		
+	// setup weights if we were in the second half
+	.reg		secHalfOfs, secHalfWgt, inv_area1
+	selb		blendWeight0, blendWeight0, kOneFixed, isGreater
+	sf			secHalfOfs, secondHalfBase, current_x0	
+	MPYAU(secHalfWgt, secHalfOfs, dh1, area1)
+	sf			inv_area1, secHalfWgt, kOneFixed
+	selb		blendWeight1, blendWeight1, inv_area1, isGreater
+	
+	// invalidate pixels past teh end of this feature
+	.reg		invalidPixels
+	clgt		invalidPixels, current_x0, x1
+	selb		blendWeight0, blendWeight0, kOneFixed, invalidPixels
+	selb		blendWeight1, blendWeight1, kOneFixed, invalidPixels
+	
+	// advance pixel index by 4
+	ai			current_x0, current_x0, 4
+	
+	//	unpack pixels
+	.reg		red0, red1, blu0, blu1, gre0, gre1
+	shufb		red0, pixel0, pixel0, shuf_000B000F000J000N
+	shufb		red1, pixel1, pixel1, shuf_000B000F000J000N
+	shufb		gre0, pixel0, pixel0, shuf_000C000G000K000O
+	shufb		gre1, pixel1, pixel1, shuf_000C000G000K000O
+	shufb		blu0, pixel0, pixel0, shuf_000D000H000L000P
+	shufb		blu1, pixel1, pixel1, shuf_000D000H000L000P
+		
+	// blend
+	.reg		r0, g0, b0
+	.reg		r1, g1, b1
+	
+	.reg		blendWeight8Bit0, blendWeight8Bit1
+	MAKE_8BIT(blendWeight8Bit0, blendWeight0)
+	MAKE_8BIT(blendWeight8Bit1, blendWeight1)
+	
+	sf			r0, red1, red0
+	sf			g0, gre1, gre0
+	sf			b0, blu1, blu0
+
+	mpya		r0, r0, blendWeight8Bit0, r0
+	mpya		g0, g0, blendWeight8Bit0, g0
+	mpya		b0, b0, blendWeight8Bit0, b0
+	
+	mpya		r0, red1, k256, r0
+	mpya		g0, gre1, k256, g0
+	mpya		b0, blu1, k256, b0
+
+	sf			r1, red0, red1
+	sf			g1, gre0, gre1
+	sf			b1, blu0, blu1
+
+	mpya		r1, r1, blendWeight8Bit1, r1
+	mpya		g1, g1, blendWeight8Bit1, g1
+	mpya		b1, b1, blendWeight8Bit1, b1
+	
+	mpya		r1, red0, k256, r1
+	mpya		g1, gre0, k256, g1
+	mpya		b1, blu0, k256, b1
+	
+	.reg		area0_cap
+	cgt			area0_cap, area0, kOneFixed
+	selb		area0, area0, kOneFixed, area0_cap
+
+
+.if 0
+	// repack pixels and preserving the alpha channel
+	.reg		pixel0_tmp, pixel1_tmp
+	
+	shufb		pixel0, pixel0, r0, shuf_AcCDEgGHIkKLMoOP
+	shufb		pixel0_tmp, g0, b0, shuf_00Cc00Gg00Kk00Oo
+	selb		pixel0, pixel0, pixel0_tmp, kSelb0000FFFF
+	
+	shufb		pixel1, pixel1, r1, shuf_AcCDEgGHIkKLMoOP
+	shufb		pixel1_tmp, g1, b1, shuf_00Cc00Gg00Kk00Oo
+	selb		pixel1, pixel1, pixel1_tmp, kSelb0000FFFF
+.else
+	shufb		pixel0, pixel0, r0, shuf_AcCDEgGHIkKLMoOP
+	shufb		pixel0, pixel0, g0, shuf_ABcDEFgHIJkLMNoP
+	shufb		pixel0, pixel0, b0, shuf_ABCcEFGgIJKkMNOo
+	shufb		pixel1, pixel1, r1, shuf_AcCDEgGHIkKLMoOP
+	shufb		pixel1, pixel1, g1, shuf_ABcDEFgHIJkLMNoP
+	shufb		pixel1, pixel1, b1, shuf_ABCcEFGgIJKkMNOo
+.endif	
+
+	
+.if WRITE_BLENDED	
+	.reg		RED, valid0, valid1, alphaMask
+	il32		RED, 0x00FF0000
+	il32		alphaMask, 0x00FFFFFF
+	ceqi		valid0, blendWeight8Bit0, 255
+	ceqi		valid1, blendWeight8Bit1, 255
+	andc		valid0, alphaMask, valid0
+	andc		valid1, alphaMask, valid1
+	selb		pixel0, pixel0, RED, valid0
+	selb		pixel1, pixel1, RED, valid1
+.endif	
+
+	
+	// reshuffle and store pixels
+	shufb		pixel0_a, pixel0_a, pixel0, shufUnalignedStore0
+	shufb		pixel1_a, pixel1_a, pixel1, shufUnalignedStore0
+	stqd		pixel0_a, -0x10(address0)
+	stqd		pixel1_a, -0x10(address1)
+	
+	shufb		pixel0_a, pixel0_b, pixel0, shufUnalignedStore1
+	shufb		pixel1_a, pixel1_b, pixel1, shufUnalignedStore1
+
+
+	// loop
+	brnz		count, loop
+	
+	// store the last bits
+	stqd		pixel0_a, 0x00(address0)
+	stqd		pixel1_a, 0x00(address1)
+	
+	// continue with outer loop
+	ai			jobs, jobs, -1
+	brnz		jobs, outer_loop
+	
+.endfunc
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+.cfunc void edgePostMlaaBlendU
+	(	qword buffer,
+		qword jobs,
+		qword unalignedTable)	
+	
+	.reg		kExtractX0, kExtractX1, kExtractH0, kExtractH1, kExtractLine0, kExtractLine1
+	
+	il128		kExtractX0,		"0A0A0A0A"
+	il128		kExtractX1,		"0B0B0B0B"
+	il128		kExtractH0,		"0C0C0C0C"
+	il128		kExtractH1,		"0D0D0D0D"
+	il128		kExtractLine0,	"EFEFEFEF"
+	il128		kExtractLine1,	"GHGHGHGH"
+
+	// a bunch of shuffle masks
+	.reg		shuf_000B000F000J000N, shuf_000C000G000K000O, shuf_000D000H000L000P
+	il128		shuf_000B000F000J000N, "000B000F000J000N"
+	il128		shuf_000C000G000K000O, "000C000G000K000O"
+	il128		shuf_000D000H000L000P, "000D000H000L000P"
+	
+	.reg		shuf_AcCDEgGHIkKLMoOP, shuf_ABcDEFgHIJkLMNoP, shuf_ABCcEFGgIJKkMNOo
+	il128		shuf_AcCDEgGHIkKLMoOP, "AcCDEgGHIkKLMoOP"
+	il128		shuf_ABcDEFgHIJkLMNoP, "ABcDEFgHIJkLMNoP"
+	il128		shuf_ABCcEFGgIJKkMNOo, "ABCcEFGgIJKkMNOo"
+	
+	// a bunch of consts
+	.reg		fTwo, fZero, kFour, k00FF : readoptional
+	ilf32		fTwo, 2.f
+	ilf32		fZero, .0f
+	il			kFour, 4
+	il32		k00FF, 0x00FF00FF
+	
+	.reg		k0123, kOneFixed, kZero, k256
+	il128		k0123, 0x00000000_00000001_00000002_00000003
+	il32		kOneFixed, 0xffff			//16 bits
+	il			kZero, 0
+	il			k256, 256
+	
+	
+outer_loop:	
+
+	// load and unpack
+	
+	.reg		param
+	lqd			param,	0x00(buffer)
+	ai			buffer, buffer, -0x20
+
+	.reg		x0, x1, h0, h1, line0, line1	
+	shufb		x0, param, param, kExtractX0
+	shufb		x1, param, param, kExtractX1
+	shufb		h0, param, param, kExtractH0
+	shufb		h1, param, param, kExtractH1
+	shufb		line0, param, param, kExtractLine0
+	shufb		line1, param, param, kExtractLine1
+	
+	.reg		fh0, fh1
+	cuflt		fh0, h0, 16
+	cuflt		fh1, h1, 16
+	rotmi		x0, x0, -2
+	rotmi		x1, x1, -2
+	
+	// check for h0==0 or h1==0
+	.reg		h0IsZero, h1IsZero
+	ceq			h0IsZero, h0, kZero
+	ceq			h1IsZero, h1, kZero
+
+	// compute middle
+	.reg		middle
+	a			middle, x0, x1
+	rotmi		middle, middle, -1
+		
+	// get length of segment to be blended
+	.reg		flen, iflen
+	sf			flen, x0, x1
+	ai			flen, flen, 1
+	cuflt		flen, flen, 0
+
+	frest		iflen, flen
+	fi			iflen, flen, iflen
+
+
+	// change feature sizes according to missing heights
+	selb		x0, x0, middle, h0IsZero
+	selb		x1, x1, middle, h1IsZero
+
+	// recalculate length, as it might have changed
+	.reg		len
+	sf			len, x0, x1
+	ai			len, len, 1
+	
+	// calculate DHs
+	.reg		dh0, dh1
+	fnms		dh0, fh0, fTwo, fTwo
+	fnms		dh1, fh1, fTwo, fTwo
+	fm			dh0, dh0, iflen
+	fm			dh1, dh1, iflen
+	
+	selb		dh0, dh0, fZero, h0IsZero
+	selb		dh1, dh1, fZero, h1IsZero
+		
+	cfltu		dh0, dh0, 16
+	cfltu		dh1, dh1, 16
+	
+	// get middle point
+	.reg		isOdd
+	andi		isOdd, middle, 0x01
+	ceqi		isOdd, isOdd, 0x01
+	
+	
+	// setup area
+	.reg		area0, area1
+	rotmi		area0, dh0, -1
+	a			area0, area0, h0
+	rotmi		area1, dh1, -1
+	selb		area0, area0, kOneFixed, h0IsZero
+	selb		area1, area1, dh1, isOdd
+	sf			area1, area1, kOneFixed
+	sf			dh1, dh1, kZero
+	selb		area1, area1, kOneFixed, h1IsZero
+
+	// calculate addresses and load unaligned shuffle mayem
+	.reg		address0, address1, tabIndex0, tabIndex1, tabIndex2
+	.reg		shufUnalignedLoad, shufUnalignedStore0, shufUnalignedStore1
+	andi		tabIndex0, x0, 0x03
+	shli		tabIndex0, tabIndex0, 4
+	ai			tabIndex1, tabIndex0, 0x40
+	ai			tabIndex2, tabIndex0, 0x80
+	lqx			shufUnalignedLoad, unalignedTable, tabIndex0
+	lqx			shufUnalignedStore0, unalignedTable, tabIndex1
+	lqx			shufUnalignedStore1, unalignedTable, tabIndex2
+	mpya		address0, x0, kFour, line0
+	mpya		address1, x0, kFour, line1
+
+	// calculate weights for middle case
+	.reg		middleWeight0
+	rotmi		middleWeight0, dh0, -3
+	sf			middleWeight0, middleWeight0, kOneFixed
+
+	// rearrange variables for SIMD loop
+	.reg		secondHalfBase
+	ai			secondHalfBase, middle, 1
+	mpya		area0, dh0, k0123, area0
+	
+	.reg		current_x0
+	a			current_x0, x0, k0123
+	shli		dh0, dh0, 2
+	
+	// compute loop count
+	.reg		count
+	ai			count, len, 3
+	rotmi		count, count, -2
+	
+	// loop
+	.reg		pixel0_a, pixel1_a
+	.reg		pixel0_b, pixel1_b
+	.reg		pixel0, pixel1
+	lqd			pixel0_a, 0x00(address0)
+	lqd			pixel1_a, 0x00(address1)
+loop:
+	ai			count, count, -1
+	ai			address0, address0, 0x10
+	ai			address1, address1, 0x10
+	lqd			pixel0_b, 0x00(address0)
+	lqd			pixel1_b, 0x00(address1)
+	shufb		pixel0, pixel0_a, pixel0_b, shufUnalignedLoad
+	shufb		pixel1, pixel1_a, pixel1_b, shufUnalignedLoad
+	
+	// calculate blend weights based on current feature position 
+	.reg		isGreater, isInTheMiddle
+	cgt			isGreater, current_x0, middle
+	ceq			isInTheMiddle, current_x0, middle
+	and			isInTheMiddle, isInTheMiddle, isOdd
+	
+	// setup weights as if we were in the first half
+	.reg		blendWeight0
+
+	// update weights if we were right in the middle
+	selb		blendWeight0, area0, middleWeight0, isInTheMiddle
+	a			area0, area0, dh0
+	.reg		area0_cap
+	cgt			area0_cap, area0, kOneFixed
+	selb		area0, area0, kOneFixed, area0_cap
+
+
+	// setup weights if we were in the second half
+	.reg		secHalfOfs, secHalfWgt
+	sf			secHalfOfs, secondHalfBase, current_x0
+	mpya		secHalfWgt, secHalfOfs, dh1, area1
+	selb		blendWeight0, blendWeight0, secHalfWgt, isGreater
+	
+	// invalidate pixels past teh end of this feature
+	.reg		invalidPixels
+	clgt		invalidPixels, current_x0, x1
+	selb		blendWeight0, blendWeight0, kOneFixed, invalidPixels
+
+	// advance pixel index by 4
+	ai			current_x0, current_x0, 4
+	
+	//	unpack pixels
+	.reg		red0, red1, blu0, blu1, gre0, gre1
+	shufb		red0, pixel0, pixel0, shuf_000B000F000J000N
+	shufb		red1, pixel1, pixel1, shuf_000B000F000J000N
+	shufb		gre0, pixel0, pixel0, shuf_000C000G000K000O
+	shufb		gre1, pixel1, pixel1, shuf_000C000G000K000O
+	shufb		blu0, pixel0, pixel0, shuf_000D000H000L000P
+	shufb		blu1, pixel1, pixel1, shuf_000D000H000L000P
+	
+	
+	.reg		blendWeight8Bit0
+	MAKE_8BIT(blendWeight8Bit0, blendWeight0)
+	
+	.reg		r, g, b
+	sf			r, red1, red0
+	sf			g, gre1, gre0
+	sf			b, blu1, blu0		
+	// blend
+	
+	mpya		r, r, blendWeight8Bit0, r
+	mpya		g, g, blendWeight8Bit0, g
+	mpya		b, b, blendWeight8Bit0, b
+	
+	mpya		r, red1, k256, r
+	mpya		g, gre1, k256, g
+	mpya		b, blu1, k256, b
+			
+	// repack pixels and preserving the alpha channel
+	shufb		pixel0, pixel0, r, shuf_AcCDEgGHIkKLMoOP
+	shufb		pixel0, pixel0, g, shuf_ABcDEFgHIJkLMNoP
+	shufb		pixel0, pixel0, b, shuf_ABCcEFGgIJKkMNOo
+	
+.if WRITE_BLENDED	
+	.reg		GREEN, valid0, alphaMask
+	il32		GREEN, 0x0000FF00	
+	il32		alphaMask, 0x00FFFFFF
+	ceqi		valid0, blendWeight8Bit0, 255
+	andc		valid0, alphaMask, valid0
+	selb		pixel0, pixel0, GREEN, valid0
+.endif			
+	
+	// reshuffle and store pixels
+	shufb		pixel0_a, pixel0_a, pixel0, shufUnalignedStore0	
+	stqd		pixel0_a, -0x10(address0)
+	shufb		pixel0_a, pixel0_b, pixel0, shufUnalignedStore1
+	
+	// loop
+	brnz		count, loop
+	
+	// store the last bits
+	stqd		pixel0_a, 0x00(address0)
+
+	// continue with outer loop
+	ai			jobs, jobs, -1
+	brnz		jobs, outer_loop
+		
+.endfunc

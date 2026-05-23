@@ -1,377 +1,377 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2010 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-.cfunc void _edgeAnimEvaluateUser(vec_uint4 intraUserBitsAdrv,
-                                  vec_uchar16 bitMaskXXXX,
-                                  vec_uchar16 bitMaskYYYY,
-                                  vec_uchar16 bitMaskZZZZ,
-                                  vec_uchar16 bitMaskWWWW,
-                                  vec_uchar16 prevBitMaskXXXX,
-                                  vec_uchar16 prevBitMaskYYYY,
-                                  vec_uchar16 prevBitMaskZZZZ,
-                                  vec_uchar16 prevBitMaskWWWW,
-                                  vec_uint4 frameIntegerv,
-                                  vec_float4 frameFractionv,
-                                  vec_uint4 intraUserAdrv,
-                                  vec_uint4 initialUserAdrv,
-                                  vec_uint4 finalUserAdrv,
-                                  uint32_t count, 
-                                  float* userOutput,
-                                  const uint16_t* __restrict__ channelIds,
-                                  uint32_t intraFrameCount)
-
-
-    .reg	count4, fOne, zero
-    .reg	allOnes, shufAaBb, shufBbAa, shufCcDd, shufDdCc, shufCDab, shufABcd, shuf0A0B0C0D
-    .reg	shufAAAA, shufBBBB, shufCCCC, shufDDDD
-    .reg	shufDHLPDHLPDHLPDHLP, shufd000Dh00DHl0DHLp, mask_0X0X0X0X 
-    .reg	tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7	
-    .reg	bitAdr, bitOfs, bitAdr1, bitAdr2, bitAdr3, bitOfs1, bitOfs2, bitOfs3
-    .reg	d0a, d0b, d1a, d1b, d2a, d2b, d3a, d3b 
-    .reg	d0as, d0bs, d1as, d1bs, d2as, d2bs, d3as, d3bs 
-    .reg	d0as0, d0bs0, d1as0, d1bs0, d2as0, d2bs0, d3as0, d3bs0 
-    .reg	msk0a, msk1a, msk2a, msk3a 
-    .reg	msk0b, msk1b, msk2b, msk3b 
-    .reg	ib0, ib1, ib2, ib3
-    .reg	ibs0, ibs1, ibs2, ibs3, ibx, iby, ibz, ibw, bx, by, bz, bw, pbx, pby, pbz, pbw
-    .reg	nbx, nby, nbz, nbw, npbx, npby, npbz, npbw, sumbx, sumby, sumbz, sumbw, numBits, numPrevBits
-    .reg	tz0, tz1, tz2, tz3, tzc0, tzc1, tzc2, tzc3, tzm1, tzm2, tzs1, tzs2, tzs3, bBits
-    .reg	lz0, lz1, lz2, lz3, lzc0, lzc1, lzc2, lzm1, lzm2, lzs1, lzs2, lzs3, aBits
-    .reg	numShuf, numSum, intraOfs, leftIntraAdr, rightIntraAdr
-    .reg	leftSelMask, rightSelMask, leftAdr, rightAdr
-    .reg	aBitsf, bBitsf, tween0, tween1, tween
-    .reg	left1Adr, left2Adr, left3Adr, right1Adr, right2Adr, right3Adr 
-    .reg	q0a, q1a, q2a, q3a, q4a, q5a, q6a, q7a
-    .reg	left0, left1, left2, left3
-    .reg	right0, right1, right2, right3
-    .reg	t0, t1, t2, t3
-    .reg	out0, out1, out2, out3
-    .reg	outOfs, outOfs1, outOfs2, outOfs3
-    .reg	intraInc
-    
- 	//----------------------------------------------------------------------------------------------
-	// Early out
-	//----------------------------------------------------------------------------------------------    
-    
-    brz		count, NoLoop
-
-    //----------------------------------------------------------------------------------------------
-    // Init code
-    //----------------------------------------------------------------------------------------------        
-            
-    il128	shuf0A0B0C0D, "0A0B0C0D"
-    il128	shufAAAA, "AAAA"
-    il128	shufBBBB, "BBBB"
-    il128	shufCCCC, "CCCC"
-    il128	shufDDDD, "DDDD"
-    il128	shufAaBb, "AaBb"
-    il128	shufBbAa, "BbAa"
-    il128	shufCcDd, "CcDd"
-    il128	shufDdCc, "DdCc"
-    il128	shufCDab, "CDab"
-    il128	shufABcd, "ABcd"
-    il128	shufDHLPDHLPDHLPDHLP, "DHLPDHLPDHLPDHLP"
-    il128	shufd000Dh00DHl0DHLp, "d000Dh00DHl0DHLp"
-    ila		zero, 0
-    fsmbi	allOnes, 0xffff
-    fsmbi	mask_0X0X0X0X, 0x3333
-    
-    ilhu    fOne, 0x3f800000@h								//  1.0
-    ai		count4, count, 3
-    rotmi	count4, count4, -2
-
-    shufb	intraFrameCount, intraFrameCount, intraFrameCount, shufAAAA	
-    
-    //----------------------------------------------------------------------------------------------
-    // Loop
-    //----------------------------------------------------------------------------------------------        
-    
-Loop:
-    ai      count4, count4, -1
-        
-    rotmi	bitAdr, intraUserBitsAdrv, -3
-    andi	bitOfs, intraUserBitsAdrv, 127
-    
-    // Get intra frame user bits for 4 channels, left justified
-    // Note: Currently assuming a limit of 128 intra frames
-    shlqbyi	bitAdr1, bitAdr, 4
-    shlqbyi	bitAdr2, bitAdr, 8
-    shlqbyi	bitAdr3, bitAdr, 12
-    
-    shlqbyi	bitOfs1, bitOfs, 4
-    shlqbyi	bitOfs2, bitOfs, 8
-    shlqbyi	bitOfs3, bitOfs, 12
-    
-    lqd		d0a, 0x00(bitAdr)
-    lqd		d0b, 0x10(bitAdr)
-    lqd		d1a, 0x00(bitAdr1)
-    lqd		d1b, 0x10(bitAdr1)
-    lqd		d2a, 0x00(bitAdr2)
-    lqd		d2b, 0x10(bitAdr2)
-    lqd		d3a, 0x00(bitAdr3)
-    lqd		d3b, 0x10(bitAdr3)
-
-    rotqbybi	d0as, d0a, bitOfs
-    rotqbybi	d0bs, d0b, bitOfs
-    rotqbybi	d1as, d1a, bitOfs1
-    rotqbybi	d1bs, d1b, bitOfs1
-    rotqbybi	d2as, d2a, bitOfs2
-    rotqbybi	d2bs, d2b, bitOfs2
-    rotqbybi	d3as, d3a, bitOfs3
-    rotqbybi	d3bs, d3b, bitOfs3
-    
-    rotqbi	d0as0, d0as, bitOfs
-    rotqbi	d0bs0, d0bs, bitOfs
-    rotqbi	d1as0, d1as, bitOfs1
-    rotqbi	d1bs0, d1bs, bitOfs1
-    rotqbi	d2as0, d2as, bitOfs2
-    rotqbi	d2bs0, d2bs, bitOfs2
-    rotqbi	d3as0, d3as, bitOfs3
-    rotqbi	d3bs0, d3bs, bitOfs3
-
-    shlqbybi	msk0a, allOnes, bitOfs
-    shlqbybi	msk1a, allOnes, bitOfs1
-    shlqbybi	msk2a, allOnes, bitOfs2
-    shlqbybi	msk3a, allOnes, bitOfs3
-        
-    shlqbi	msk0b, msk0a, bitOfs	    
-    shlqbi	msk1b, msk1a, bitOfs1	    
-    shlqbi	msk2b, msk2a, bitOfs2	    
-    shlqbi	msk3b, msk3a, bitOfs3	    
-    
-    selb	ib0, d0bs0, d0as0, msk0b
-    selb	ib1, d1bs0, d1as0, msk1b
-    selb	ib2, d2bs0, d2as0, msk2b
-    selb	ib3, d3bs0, d3as0, msk3b
-
-    // swizzle -> xxxx yyyy zzzz wwww
-    shufb	ibs0, ib0, ib1, shufAaBb
-    shufb	ibs1, ib0, ib1, shufCcDd
-    shufb	ibs2, ib2, ib3, shufBbAa
-    shufb	ibs3, ib2, ib3, shufDdCc
-    shufb	ibx, ibs0, ibs2, shufABcd
-    shufb	iby, ibs0, ibs2, shufCDab
-    shufb	ibz, ibs1, ibs3, shufABcd
-    shufb	ibw, ibs1, ibs3, shufCDab
-    
-    // Clear invalid bits (if intra frame count is less than 128)
-    and		bx, ibx, bitMaskXXXX
-    and		by, iby, bitMaskYYYY
-    and		bz, ibz, bitMaskZZZZ
-    and		bw, ibw, bitMaskWWWW
-
-    // Get bits prior to current frame
-    and		pbx, ibx, prevBitMaskXXXX
-    and		pby, iby, prevBitMaskYYYY
-    and		pbz, ibz, prevBitMaskZZZZ
-    and		pbw, ibw, prevBitMaskWWWW
-    
-    // Count enabled bits
-    cntb	nbx, bx
-    cntb	nby, by
-    cntb	nbz, bz
-    cntb	nbw, bw
-    cntb	npbx, pbx
-    cntb	npby, pby
-    cntb	npbz, pbz
-    cntb	npbw, pbw
-    sumb	sumbx, nbx, npbx
-    sumb	sumby, nby, npby
-    sumb	sumbz, nbz, npbz
-    sumb	sumbw, nbw, npbw
-    a		numBits, sumbx, sumby
-    a		numBits, numBits, sumbz
-    a		numBits, numBits, sumbw
-    rotmi	numPrevBits, numBits, -16
-    and		numBits, numBits, mask_0X0X0X0X
-    
-    // Get number of contiguously disabled bits before (and including) current frame
-    // i.e. the number of trailing zeros of prb.
-    sfi		tmp0, pbx, 0
-    sfi		tmp1, pby, 0
-    sfi		tmp2, pbz, 0
-    sfi		tmp3, pbw, 0
-    and		tmp4, pbx, tmp0
-    and		tmp5, pby, tmp1
-    and		tmp6, pbz, tmp2
-    and		tmp7, pbw, tmp3
-    clz		tz0, tmp4
-    clz		tz1, tmp5
-    clz		tz2, tmp6
-    clz		tz3, tmp7
-    ceqi	tzc0, tz0, 32
-    ceqi	tzc1, tz1, 32
-    ceqi	tzc2, tz2, 32
-    ceqi	tzc3, tz3, 32
-    sfi		tmp0, tz0, 31
-    sfi		tmp1, tz1, 31
-    sfi		tmp2, tz2, 31
-    sfi		tmp3, tz3, 31
-    selb	tz0, tmp0, tz0, tzc0
-    selb	tz1, tmp1, tz1, tzc1
-    selb	tz2, tmp2, tz2, tzc2
-    selb	tz3, tmp3, tz3, tzc3
-    and		tzm1, tzc3, tzc2
-    and		tzm2, tzm1, tzc1
-    and		tmp0, tz2, tzc3
-    and		tmp1, tz1, tzm1
-    and		tmp2, tz0, tzm2
-    a		tzs1, tz3, tmp0
-    a		tzs2, tzs1, tmp1
-    a		tzs3, tzs2, tmp2
-    sfi		tmp0, frameIntegerv, 128
-    sf		bBits, tmp0, tzs3
-    
-    // Get number of contiguously disabled bits after (but not including) current frame
-    // i.e. the number of leading zeros of rb
-    andc	tmp0, bx, prevBitMaskXXXX
-    andc	tmp1, by, prevBitMaskYYYY
-    andc	tmp2, bz, prevBitMaskZZZZ
-    andc	tmp3, bw, prevBitMaskWWWW
-    orc		tmp4, tmp0, bitMaskXXXX
-    orc		tmp5, tmp1, bitMaskYYYY
-    orc		tmp6, tmp2, bitMaskZZZZ
-    orc		tmp7, tmp3, bitMaskWWWW
-    clz		lz0, tmp4
-    clz		lz1, tmp5
-    clz		lz2, tmp6
-    clz		lz3, tmp7
-    ceqi	lzc0, lz0, 32
-    ceqi	lzc1, lz1, 32
-    ceqi	lzc2, lz2, 32
-    and		lzm1, lzc0, lzc1
-    and		lzm2, lzm1, lzc2
-    and		tmp0, lz1, lzc0
-    and		tmp1, lz2, lzm1
-    and		tmp2, lz3, lzm2
-    a		lzs1, lz0, tmp0
-    a		lzs2, lzs1, tmp1
-    a		lzs3, lzs2, tmp2
-    ai		tmp0, lzs3, 1
-    sf		aBits, frameIntegerv, tmp0
-    
-    // Get addresses of the intra frame data bracketing each channel
-    shufb	numShuf, numBits, numPrevBits, shufd000Dh00DHl0DHLp
-    sumb	numSum, numShuf, zero
-    shli	intraOfs, numSum, 2
-    a		rightIntraAdr, intraUserAdrv, intraOfs
-    ai		leftIntraAdr, rightIntraAdr, -4
-    
-    // If there is no left/right intra frame data, use initial/final data
-    clgti	leftSelMask, numPrevBits, 0
-    ceq		rightSelMask, numPrevBits, numBits
-    selb	leftAdr, initialUserAdrv, leftIntraAdr, leftSelMask
-    selb	rightAdr, rightIntraAdr, finalUserAdrv, rightSelMask
-    
-    // Compute tweening factors
-    cuflt	bBitsf, bBits, 0
-    cuflt	aBitsf, aBits, 0
-    fa		tween0, frameFractionv, bBitsf
-    fa		tmp0, bBitsf, aBitsf
-    frest	tmp1, tmp0
-	fi		tmp2, tmp0, tmp1
-	fnms	tmp3, tmp0, tmp2, fOne
-	fma		tween1, tmp3, tmp2, tmp2
-	fm		tween, tween0, tween1
-
-    // Get user data pointers
-    shlqbyi	left1Adr, leftAdr, 4
-    shlqbyi	left2Adr, leftAdr, 8
-    shlqbyi	left3Adr, leftAdr, 12
-    shlqbyi	right1Adr, rightAdr, 4
-    shlqbyi	right2Adr, rightAdr, 8
-    shlqbyi	right3Adr, rightAdr, 12
-
-    lqd		q0a, 0x00(leftAdr)
-    lqd		q1a, 0x00(left1Adr)
-    lqd		q2a, 0x00(left2Adr)
-    lqd		q3a, 0x00(left3Adr)
-    lqd		q4a, 0x00(rightAdr)
-    lqd		q5a, 0x00(right1Adr)
-    lqd		q6a, 0x00(right2Adr)
-    lqd		q7a, 0x00(right3Adr)
-
-    rotqby	left0,  q0a, leftAdr
-    rotqby	left1,  q1a, left1Adr
-    rotqby	left2,  q2a, left2Adr
-    rotqby	left3,  q3a, left3Adr
- 	rotqby	right0, q4a, rightAdr
- 	rotqby	right1, q5a, right1Adr
- 	rotqby	right2, q6a, right2Adr
- 	rotqby	right3, q7a, right3Adr
-    
-    // Lerp
-	shufb	t0, tween, tween, shufAAAA
-	shufb	t1, tween, tween, shufBBBB
-	shufb	t2, tween, tween, shufCCCC
-	shufb	t3, tween, tween, shufDDDD
-	
-	fma		out0, right0, t0, left0
-	fma		out1, right1, t1, left1
-	fma		out2, right2, t2, left2
-	fma		out3, right3, t3, left3
-
-	fnms	out0, left0, t0, out0
-	fnms	out1, left1, t1, out1
-	fnms	out2, left2, t2, out2
-	fnms	out3, left3, t3, out3
-
-    // Write results (x4) 
-    lqd		outOfs, 0x00(channelIds)
-    rotqby	outOfs, outOfs, channelIds
-    shufb	outOfs, outOfs, outOfs, shuf0A0B0C0D
-    shli	outOfs, outOfs, 2
-    shlqbyi	outOfs1, outOfs, 4
-    shlqbyi	outOfs2, outOfs, 8
-    shlqbyi	outOfs3, outOfs, 12
-
-    .reg		storeMask0, storeMask1, storeMask2, storeMask3 
-    .reg		store0, store1, store2, store3
-
-	.memgroup	outputchans
-    cwx			storeMask0, userOutput, outOfs
-    lqx			[outputchans] store0, userOutput, outOfs
-    shufb		out0, out0, store0, storeMask0
-    stqx		[outputchans] out0, userOutput, outOfs
-    
-    cwx			storeMask1, userOutput, outOfs1
-    lqx			[outputchans] store1, userOutput, outOfs1
-    shufb		out1, out1, store1, storeMask1
-    stqx		[outputchans] out1, userOutput, outOfs1
-
-    cwx			storeMask2, userOutput, outOfs2
-    lqx			[outputchans] store2, userOutput, outOfs2
-    shufb		out2, out2, store2, storeMask2
-    stqx		[outputchans] out2, userOutput, outOfs2
-
-    cwx			storeMask3, userOutput, outOfs3
-    lqx			[outputchans] store3, userOutput, outOfs3
-    shufb		out3, out3, store3, storeMask3
-    stqx		[outputchans] out3, userOutput, outOfs3
-    
-    // Advance pointers
-    shufb	intraInc, numBits, numBits, shufDHLPDHLPDHLPDHLP
-    sumb	intraInc, intraInc, zero
-    shli	intraInc, intraInc, 2
-    
-    shli	tmp0, intraFrameCount, 2
-    a		intraUserBitsAdrv, intraUserBitsAdrv, tmp0
-    ai		initialUserAdrv, initialUserAdrv, 4*4
-    a		intraUserAdrv, intraUserAdrv, intraInc
-    ai		finalUserAdrv, finalUserAdrv, 4*4
-    ai		channelIds, channelIds, 2*4
-        
-    //----------------------------------------------------------------------------------------------        
-    // Loop
-    //----------------------------------------------------------------------------------------------
-
-    brnz    count4, Loop
-
-
-NoLoop:
-
-.endfunc
-         
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2010 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+.cfunc void _edgeAnimEvaluateUser(vec_uint4 intraUserBitsAdrv,
+                                  vec_uchar16 bitMaskXXXX,
+                                  vec_uchar16 bitMaskYYYY,
+                                  vec_uchar16 bitMaskZZZZ,
+                                  vec_uchar16 bitMaskWWWW,
+                                  vec_uchar16 prevBitMaskXXXX,
+                                  vec_uchar16 prevBitMaskYYYY,
+                                  vec_uchar16 prevBitMaskZZZZ,
+                                  vec_uchar16 prevBitMaskWWWW,
+                                  vec_uint4 frameIntegerv,
+                                  vec_float4 frameFractionv,
+                                  vec_uint4 intraUserAdrv,
+                                  vec_uint4 initialUserAdrv,
+                                  vec_uint4 finalUserAdrv,
+                                  uint32_t count, 
+                                  float* userOutput,
+                                  const uint16_t* __restrict__ channelIds,
+                                  uint32_t intraFrameCount)
+
+
+    .reg	count4, fOne, zero
+    .reg	allOnes, shufAaBb, shufBbAa, shufCcDd, shufDdCc, shufCDab, shufABcd, shuf0A0B0C0D
+    .reg	shufAAAA, shufBBBB, shufCCCC, shufDDDD
+    .reg	shufDHLPDHLPDHLPDHLP, shufd000Dh00DHl0DHLp, mask_0X0X0X0X 
+    .reg	tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7	
+    .reg	bitAdr, bitOfs, bitAdr1, bitAdr2, bitAdr3, bitOfs1, bitOfs2, bitOfs3
+    .reg	d0a, d0b, d1a, d1b, d2a, d2b, d3a, d3b 
+    .reg	d0as, d0bs, d1as, d1bs, d2as, d2bs, d3as, d3bs 
+    .reg	d0as0, d0bs0, d1as0, d1bs0, d2as0, d2bs0, d3as0, d3bs0 
+    .reg	msk0a, msk1a, msk2a, msk3a 
+    .reg	msk0b, msk1b, msk2b, msk3b 
+    .reg	ib0, ib1, ib2, ib3
+    .reg	ibs0, ibs1, ibs2, ibs3, ibx, iby, ibz, ibw, bx, by, bz, bw, pbx, pby, pbz, pbw
+    .reg	nbx, nby, nbz, nbw, npbx, npby, npbz, npbw, sumbx, sumby, sumbz, sumbw, numBits, numPrevBits
+    .reg	tz0, tz1, tz2, tz3, tzc0, tzc1, tzc2, tzc3, tzm1, tzm2, tzs1, tzs2, tzs3, bBits
+    .reg	lz0, lz1, lz2, lz3, lzc0, lzc1, lzc2, lzm1, lzm2, lzs1, lzs2, lzs3, aBits
+    .reg	numShuf, numSum, intraOfs, leftIntraAdr, rightIntraAdr
+    .reg	leftSelMask, rightSelMask, leftAdr, rightAdr
+    .reg	aBitsf, bBitsf, tween0, tween1, tween
+    .reg	left1Adr, left2Adr, left3Adr, right1Adr, right2Adr, right3Adr 
+    .reg	q0a, q1a, q2a, q3a, q4a, q5a, q6a, q7a
+    .reg	left0, left1, left2, left3
+    .reg	right0, right1, right2, right3
+    .reg	t0, t1, t2, t3
+    .reg	out0, out1, out2, out3
+    .reg	outOfs, outOfs1, outOfs2, outOfs3
+    .reg	intraInc
+    
+ 	//----------------------------------------------------------------------------------------------
+	// Early out
+	//----------------------------------------------------------------------------------------------    
+    
+    brz		count, NoLoop
+
+    //----------------------------------------------------------------------------------------------
+    // Init code
+    //----------------------------------------------------------------------------------------------        
+            
+    il128	shuf0A0B0C0D, "0A0B0C0D"
+    il128	shufAAAA, "AAAA"
+    il128	shufBBBB, "BBBB"
+    il128	shufCCCC, "CCCC"
+    il128	shufDDDD, "DDDD"
+    il128	shufAaBb, "AaBb"
+    il128	shufBbAa, "BbAa"
+    il128	shufCcDd, "CcDd"
+    il128	shufDdCc, "DdCc"
+    il128	shufCDab, "CDab"
+    il128	shufABcd, "ABcd"
+    il128	shufDHLPDHLPDHLPDHLP, "DHLPDHLPDHLPDHLP"
+    il128	shufd000Dh00DHl0DHLp, "d000Dh00DHl0DHLp"
+    ila		zero, 0
+    fsmbi	allOnes, 0xffff
+    fsmbi	mask_0X0X0X0X, 0x3333
+    
+    ilhu    fOne, 0x3f800000@h								//  1.0
+    ai		count4, count, 3
+    rotmi	count4, count4, -2
+
+    shufb	intraFrameCount, intraFrameCount, intraFrameCount, shufAAAA	
+    
+    //----------------------------------------------------------------------------------------------
+    // Loop
+    //----------------------------------------------------------------------------------------------        
+    
+Loop:
+    ai      count4, count4, -1
+        
+    rotmi	bitAdr, intraUserBitsAdrv, -3
+    andi	bitOfs, intraUserBitsAdrv, 127
+    
+    // Get intra frame user bits for 4 channels, left justified
+    // Note: Currently assuming a limit of 128 intra frames
+    shlqbyi	bitAdr1, bitAdr, 4
+    shlqbyi	bitAdr2, bitAdr, 8
+    shlqbyi	bitAdr3, bitAdr, 12
+    
+    shlqbyi	bitOfs1, bitOfs, 4
+    shlqbyi	bitOfs2, bitOfs, 8
+    shlqbyi	bitOfs3, bitOfs, 12
+    
+    lqd		d0a, 0x00(bitAdr)
+    lqd		d0b, 0x10(bitAdr)
+    lqd		d1a, 0x00(bitAdr1)
+    lqd		d1b, 0x10(bitAdr1)
+    lqd		d2a, 0x00(bitAdr2)
+    lqd		d2b, 0x10(bitAdr2)
+    lqd		d3a, 0x00(bitAdr3)
+    lqd		d3b, 0x10(bitAdr3)
+
+    rotqbybi	d0as, d0a, bitOfs
+    rotqbybi	d0bs, d0b, bitOfs
+    rotqbybi	d1as, d1a, bitOfs1
+    rotqbybi	d1bs, d1b, bitOfs1
+    rotqbybi	d2as, d2a, bitOfs2
+    rotqbybi	d2bs, d2b, bitOfs2
+    rotqbybi	d3as, d3a, bitOfs3
+    rotqbybi	d3bs, d3b, bitOfs3
+    
+    rotqbi	d0as0, d0as, bitOfs
+    rotqbi	d0bs0, d0bs, bitOfs
+    rotqbi	d1as0, d1as, bitOfs1
+    rotqbi	d1bs0, d1bs, bitOfs1
+    rotqbi	d2as0, d2as, bitOfs2
+    rotqbi	d2bs0, d2bs, bitOfs2
+    rotqbi	d3as0, d3as, bitOfs3
+    rotqbi	d3bs0, d3bs, bitOfs3
+
+    shlqbybi	msk0a, allOnes, bitOfs
+    shlqbybi	msk1a, allOnes, bitOfs1
+    shlqbybi	msk2a, allOnes, bitOfs2
+    shlqbybi	msk3a, allOnes, bitOfs3
+        
+    shlqbi	msk0b, msk0a, bitOfs	    
+    shlqbi	msk1b, msk1a, bitOfs1	    
+    shlqbi	msk2b, msk2a, bitOfs2	    
+    shlqbi	msk3b, msk3a, bitOfs3	    
+    
+    selb	ib0, d0bs0, d0as0, msk0b
+    selb	ib1, d1bs0, d1as0, msk1b
+    selb	ib2, d2bs0, d2as0, msk2b
+    selb	ib3, d3bs0, d3as0, msk3b
+
+    // swizzle -> xxxx yyyy zzzz wwww
+    shufb	ibs0, ib0, ib1, shufAaBb
+    shufb	ibs1, ib0, ib1, shufCcDd
+    shufb	ibs2, ib2, ib3, shufBbAa
+    shufb	ibs3, ib2, ib3, shufDdCc
+    shufb	ibx, ibs0, ibs2, shufABcd
+    shufb	iby, ibs0, ibs2, shufCDab
+    shufb	ibz, ibs1, ibs3, shufABcd
+    shufb	ibw, ibs1, ibs3, shufCDab
+    
+    // Clear invalid bits (if intra frame count is less than 128)
+    and		bx, ibx, bitMaskXXXX
+    and		by, iby, bitMaskYYYY
+    and		bz, ibz, bitMaskZZZZ
+    and		bw, ibw, bitMaskWWWW
+
+    // Get bits prior to current frame
+    and		pbx, ibx, prevBitMaskXXXX
+    and		pby, iby, prevBitMaskYYYY
+    and		pbz, ibz, prevBitMaskZZZZ
+    and		pbw, ibw, prevBitMaskWWWW
+    
+    // Count enabled bits
+    cntb	nbx, bx
+    cntb	nby, by
+    cntb	nbz, bz
+    cntb	nbw, bw
+    cntb	npbx, pbx
+    cntb	npby, pby
+    cntb	npbz, pbz
+    cntb	npbw, pbw
+    sumb	sumbx, nbx, npbx
+    sumb	sumby, nby, npby
+    sumb	sumbz, nbz, npbz
+    sumb	sumbw, nbw, npbw
+    a		numBits, sumbx, sumby
+    a		numBits, numBits, sumbz
+    a		numBits, numBits, sumbw
+    rotmi	numPrevBits, numBits, -16
+    and		numBits, numBits, mask_0X0X0X0X
+    
+    // Get number of contiguously disabled bits before (and including) current frame
+    // i.e. the number of trailing zeros of prb.
+    sfi		tmp0, pbx, 0
+    sfi		tmp1, pby, 0
+    sfi		tmp2, pbz, 0
+    sfi		tmp3, pbw, 0
+    and		tmp4, pbx, tmp0
+    and		tmp5, pby, tmp1
+    and		tmp6, pbz, tmp2
+    and		tmp7, pbw, tmp3
+    clz		tz0, tmp4
+    clz		tz1, tmp5
+    clz		tz2, tmp6
+    clz		tz3, tmp7
+    ceqi	tzc0, tz0, 32
+    ceqi	tzc1, tz1, 32
+    ceqi	tzc2, tz2, 32
+    ceqi	tzc3, tz3, 32
+    sfi		tmp0, tz0, 31
+    sfi		tmp1, tz1, 31
+    sfi		tmp2, tz2, 31
+    sfi		tmp3, tz3, 31
+    selb	tz0, tmp0, tz0, tzc0
+    selb	tz1, tmp1, tz1, tzc1
+    selb	tz2, tmp2, tz2, tzc2
+    selb	tz3, tmp3, tz3, tzc3
+    and		tzm1, tzc3, tzc2
+    and		tzm2, tzm1, tzc1
+    and		tmp0, tz2, tzc3
+    and		tmp1, tz1, tzm1
+    and		tmp2, tz0, tzm2
+    a		tzs1, tz3, tmp0
+    a		tzs2, tzs1, tmp1
+    a		tzs3, tzs2, tmp2
+    sfi		tmp0, frameIntegerv, 128
+    sf		bBits, tmp0, tzs3
+    
+    // Get number of contiguously disabled bits after (but not including) current frame
+    // i.e. the number of leading zeros of rb
+    andc	tmp0, bx, prevBitMaskXXXX
+    andc	tmp1, by, prevBitMaskYYYY
+    andc	tmp2, bz, prevBitMaskZZZZ
+    andc	tmp3, bw, prevBitMaskWWWW
+    orc		tmp4, tmp0, bitMaskXXXX
+    orc		tmp5, tmp1, bitMaskYYYY
+    orc		tmp6, tmp2, bitMaskZZZZ
+    orc		tmp7, tmp3, bitMaskWWWW
+    clz		lz0, tmp4
+    clz		lz1, tmp5
+    clz		lz2, tmp6
+    clz		lz3, tmp7
+    ceqi	lzc0, lz0, 32
+    ceqi	lzc1, lz1, 32
+    ceqi	lzc2, lz2, 32
+    and		lzm1, lzc0, lzc1
+    and		lzm2, lzm1, lzc2
+    and		tmp0, lz1, lzc0
+    and		tmp1, lz2, lzm1
+    and		tmp2, lz3, lzm2
+    a		lzs1, lz0, tmp0
+    a		lzs2, lzs1, tmp1
+    a		lzs3, lzs2, tmp2
+    ai		tmp0, lzs3, 1
+    sf		aBits, frameIntegerv, tmp0
+    
+    // Get addresses of the intra frame data bracketing each channel
+    shufb	numShuf, numBits, numPrevBits, shufd000Dh00DHl0DHLp
+    sumb	numSum, numShuf, zero
+    shli	intraOfs, numSum, 2
+    a		rightIntraAdr, intraUserAdrv, intraOfs
+    ai		leftIntraAdr, rightIntraAdr, -4
+    
+    // If there is no left/right intra frame data, use initial/final data
+    clgti	leftSelMask, numPrevBits, 0
+    ceq		rightSelMask, numPrevBits, numBits
+    selb	leftAdr, initialUserAdrv, leftIntraAdr, leftSelMask
+    selb	rightAdr, rightIntraAdr, finalUserAdrv, rightSelMask
+    
+    // Compute tweening factors
+    cuflt	bBitsf, bBits, 0
+    cuflt	aBitsf, aBits, 0
+    fa		tween0, frameFractionv, bBitsf
+    fa		tmp0, bBitsf, aBitsf
+    frest	tmp1, tmp0
+	fi		tmp2, tmp0, tmp1
+	fnms	tmp3, tmp0, tmp2, fOne
+	fma		tween1, tmp3, tmp2, tmp2
+	fm		tween, tween0, tween1
+
+    // Get user data pointers
+    shlqbyi	left1Adr, leftAdr, 4
+    shlqbyi	left2Adr, leftAdr, 8
+    shlqbyi	left3Adr, leftAdr, 12
+    shlqbyi	right1Adr, rightAdr, 4
+    shlqbyi	right2Adr, rightAdr, 8
+    shlqbyi	right3Adr, rightAdr, 12
+
+    lqd		q0a, 0x00(leftAdr)
+    lqd		q1a, 0x00(left1Adr)
+    lqd		q2a, 0x00(left2Adr)
+    lqd		q3a, 0x00(left3Adr)
+    lqd		q4a, 0x00(rightAdr)
+    lqd		q5a, 0x00(right1Adr)
+    lqd		q6a, 0x00(right2Adr)
+    lqd		q7a, 0x00(right3Adr)
+
+    rotqby	left0,  q0a, leftAdr
+    rotqby	left1,  q1a, left1Adr
+    rotqby	left2,  q2a, left2Adr
+    rotqby	left3,  q3a, left3Adr
+ 	rotqby	right0, q4a, rightAdr
+ 	rotqby	right1, q5a, right1Adr
+ 	rotqby	right2, q6a, right2Adr
+ 	rotqby	right3, q7a, right3Adr
+    
+    // Lerp
+	shufb	t0, tween, tween, shufAAAA
+	shufb	t1, tween, tween, shufBBBB
+	shufb	t2, tween, tween, shufCCCC
+	shufb	t3, tween, tween, shufDDDD
+	
+	fma		out0, right0, t0, left0
+	fma		out1, right1, t1, left1
+	fma		out2, right2, t2, left2
+	fma		out3, right3, t3, left3
+
+	fnms	out0, left0, t0, out0
+	fnms	out1, left1, t1, out1
+	fnms	out2, left2, t2, out2
+	fnms	out3, left3, t3, out3
+
+    // Write results (x4) 
+    lqd		outOfs, 0x00(channelIds)
+    rotqby	outOfs, outOfs, channelIds
+    shufb	outOfs, outOfs, outOfs, shuf0A0B0C0D
+    shli	outOfs, outOfs, 2
+    shlqbyi	outOfs1, outOfs, 4
+    shlqbyi	outOfs2, outOfs, 8
+    shlqbyi	outOfs3, outOfs, 12
+
+    .reg		storeMask0, storeMask1, storeMask2, storeMask3 
+    .reg		store0, store1, store2, store3
+
+	.memgroup	outputchans
+    cwx			storeMask0, userOutput, outOfs
+    lqx			[outputchans] store0, userOutput, outOfs
+    shufb		out0, out0, store0, storeMask0
+    stqx		[outputchans] out0, userOutput, outOfs
+    
+    cwx			storeMask1, userOutput, outOfs1
+    lqx			[outputchans] store1, userOutput, outOfs1
+    shufb		out1, out1, store1, storeMask1
+    stqx		[outputchans] out1, userOutput, outOfs1
+
+    cwx			storeMask2, userOutput, outOfs2
+    lqx			[outputchans] store2, userOutput, outOfs2
+    shufb		out2, out2, store2, storeMask2
+    stqx		[outputchans] out2, userOutput, outOfs2
+
+    cwx			storeMask3, userOutput, outOfs3
+    lqx			[outputchans] store3, userOutput, outOfs3
+    shufb		out3, out3, store3, storeMask3
+    stqx		[outputchans] out3, userOutput, outOfs3
+    
+    // Advance pointers
+    shufb	intraInc, numBits, numBits, shufDHLPDHLPDHLPDHLP
+    sumb	intraInc, intraInc, zero
+    shli	intraInc, intraInc, 2
+    
+    shli	tmp0, intraFrameCount, 2
+    a		intraUserBitsAdrv, intraUserBitsAdrv, tmp0
+    ai		initialUserAdrv, initialUserAdrv, 4*4
+    a		intraUserAdrv, intraUserAdrv, intraInc
+    ai		finalUserAdrv, finalUserAdrv, 4*4
+    ai		channelIds, channelIds, 2*4
+        
+    //----------------------------------------------------------------------------------------------        
+    // Loop
+    //----------------------------------------------------------------------------------------------
+
+    brnz    count4, Loop
+
+
+NoLoop:
+
+.endfunc
+         

@@ -1,194 +1,194 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2007 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-.cfunc void edgeAnimJointsToMatrices4x4(void* __restrict__ outputMatrices, 
-										const EdgeAnimJointTransform* __restrict__ inputJoints, 
-										unsigned int count)
-
-    //----------------------------------------------------------------------------------------------
-    // Early out
-    //----------------------------------------------------------------------------------------------    
-
-   	brz		count, NoLoop
-
-    //----------------------------------------------------------------------------------------------
-    // Constants
-    //----------------------------------------------------------------------------------------------    
-    
-	// Constants
-	.reg	kHalf, kOne, kTwo, kZero
-	ilhu	kHalf,0x3f000000@h
-	ilhu	kOne, 0x3f800000@h
-	ilhu	kTwo, 0x40000000@h
-	ila		kZero, 0
-	
-	// Shuffle masks
-	.reg	shufAaBb, shufBbAa, shufCcDd, shufDdCc, shufCDab
-	il128	shufAaBb, "AaBb"
-	il128	shufBbAa, "BbAa"
-	il128	shufCcDd, "CcDd"
-	il128	shufDdCc, "DdCc"	
-	il128	shufCDab, "CDab"
-	
-	// Select masks
-	.reg	selABcd, selABCd
-	fsmbi	selABcd, 0x00FF
-	fsmbi	selABCd, 0x000F 
-	
-    //----------------------------------------------------------------------------------------------
-    // Loop
-    //----------------------------------------------------------------------------------------------    
-	
-	.reg	count4, countTmp
-	ai		countTmp, count, 3
-	rotmi	count4, countTmp, -2	
-
-	.reg	kx100
-	il		kx100, 0x100
-
-Loop:
-	ai		count4, count4, -1
-	ai		inputJoints, inputJoints, 0xC0
-	a		outputMatrices, outputMatrices, kx100
-	
-	// Load
-	.reg	r0, r1, r2, r3
-	lqd		r0, -0xC0(inputJoints)
-	lqd		r1, -0x90(inputJoints)
-	lqd		r2, -0x60(inputJoints)
-	lqd		r3, -0x30(inputJoints)
-	
-	.reg	t0, t1, t2, t3
-	lqd		t0, -0xB0(inputJoints)
-	lqd		t1, -0x80(inputJoints)
-	lqd		t2, -0x50(inputJoints)
-	lqd		t3, -0x20(inputJoints)
-	
-	.reg	s0, s1, s2, s3
-	lqd		s0, -0xA0(inputJoints)
-	lqd		s1, -0x70(inputJoints)
-	lqd		s2, -0x40(inputJoints)
-	lqd		s3, -0x10(inputJoints)
-	
-	// Swizzle rotations
-	.reg	rs0, rs1, rs2, rs3
-	shufb	rs0, r0, r1, shufAaBb
-	shufb	rs1, r0, r1, shufCcDd
-	shufb	rs2, r2, r3, shufBbAa
-	shufb	rs3, r2, r3, shufDdCc
-	.reg	rx, ry, rz, rw
-	selb	rx, rs0, rs2, selABcd
-	shufb	ry, rs0, rs2, shufCDab
-	selb	rz, rs1, rs3, selABcd
-	shufb	rw, rs1, rs3, shufCDab
-	
-	// Swizzle scales / premultiply by two
-	.reg	ss0, ss1, ss2, ss3
-	shufb	ss0, s0, s1, shufAaBb
-	shufb	ss1, s0, s1, shufCcDd
-	shufb	ss2, s2, s3, shufBbAa
-	shufb	ss3, s2, s3, shufDdCc
-	.reg	stx, sty, stz
-	selb	stx, ss0, ss2, selABcd
-	shufb	sty, ss0, ss2, shufCDab
-	selb	stz, ss1, ss3, selABcd
-	.reg	sx, sy, sz
-	fm		sx, stx, kTwo
-	fm		sy, sty, kTwo
-	fm		sz, stz, kTwo
-	
-	// Construct rotation matrix
-	.reg	mrxx, mryy, rxy, rxz, ryz, m00tmp, m01tmp, m02tmp
-	.reg	m10tmp, m11tmp, m12tmp, m20tmp, m21tmp, m22tmp		
-    fnms	mrxx, rx, rx, kHalf
-    fnms	mryy, ry, ry, kHalf
-    fm		rxy, rx, ry
-    fm		rxz, rx, rz
-    fm		ryz, ry, rz
-    fnms	m00tmp, rz, rz, mryy
-    fma 	m01tmp, rw, rz, rxy
-    fnms	m02tmp, rw, ry, rxz
-    fnms	m10tmp, rw, rz, rxy
-    fnms	m11tmp, rz, rz, mrxx
-    fma 	m12tmp, rw, rx, ryz
-    fma 	m20tmp, rw, ry, rxz
-    fnms	m21tmp, rw, rx, ryz
-    fnms	m22tmp, ry, ry, mrxx
-    
-    .reg	m00, m01, m02, m10, m11, m12, m20, m21, m22    	
-    fm		m00, m00tmp, sx
-    fm		m01, m01tmp, sx
-    fm		m02, m02tmp, sx
-    fm		m10, m10tmp, sy
-    fm		m11, m11tmp, sy
-    fm		m12, m12tmp, sy
-    fm		m20, m20tmp, sz
-    fm		m21, m21tmp, sz
-    fm		m22, m22tmp, sz
-    
-    // Deswizzle / store top 3 matrix rows
-    .reg	smx0, smx1, smx2, smx3, mat0row0, mat1row0, mat2row0, mat3row0        
-    shufb	smx0, m00, m01, shufAaBb
-    shufb	smx1, m00, m01, shufCcDd
-    shufb	smx2, m02, kZero, shufBbAa
-    shufb	smx3, m02, kZero, shufDdCc
-    selb	mat0row0, smx0, smx2, selABcd
-    shufb	mat1row0, smx0, smx2, shufCDab
-    selb	mat2row0, smx1, smx3, selABcd
-    shufb	mat3row0, smx1, smx3, shufCDab
-        
-    stqd	mat0row0, -0x100(outputMatrices)
-    stqd	mat1row0, -0x0C0(outputMatrices)
-	stqd	mat2row0, -0x080(outputMatrices)
-	stqd	mat3row0, -0x040(outputMatrices)
-
-    .reg	smy0, smy1, smy2, smy3, mat0row1, mat1row1, mat2row1, mat3row1        
-    shufb	smy0, m10, m11, shufAaBb
-    shufb	smy1, m10, m11, shufCcDd
-    shufb	smy2, m12, kZero, shufBbAa
-    shufb	smy3, m12, kZero, shufDdCc
-    selb	mat0row1, smy0, smy2, selABcd
-    shufb	mat1row1, smy0, smy2, shufCDab
-    selb	mat2row1, smy1, smy3, selABcd
-    shufb	mat3row1, smy1, smy3, shufCDab
-
-    stqd	mat0row1, -0x0F0(outputMatrices)
-    stqd	mat1row1, -0x0B0(outputMatrices)
-	stqd	mat2row1, -0x070(outputMatrices)
-	stqd	mat3row1, -0x030(outputMatrices)
-
-    .reg	smz0, smz1, smz2, smz3, mat0row2, mat1row2, mat2row2, mat3row2        
-    shufb	smz0, m20, m21, shufAaBb
-    shufb	smz1, m20, m21, shufCcDd
-    shufb	smz2, m22, kZero, shufBbAa
-    shufb	smz3, m22, kZero, shufDdCc
-    selb	mat0row2, smz0, smz2, selABcd
-    shufb	mat1row2, smz0, smz2, shufCDab
-    selb	mat2row2, smz1, smz3, selABcd
-    shufb	mat3row2, smz1, smz3, shufCDab
-
-    stqd	mat0row2, -0x0E0(outputMatrices)
-    stqd	mat1row2, -0x0A0(outputMatrices)
-	stqd	mat2row2, -0x060(outputMatrices)
-	stqd	mat3row2, -0x020(outputMatrices)
-
-    // Translations   
-    .reg	mat0row3, mat1row3, mat2row3, mat3row3         
-    selb	mat0row3, t0, kOne, selABCd
-	selb	mat1row3, t1, kOne, selABCd
-    selb	mat2row3, t2, kOne, selABCd
-    selb	mat3row3, t3, kOne, selABCd
-
-    stqd	mat0row3, -0x0D0(outputMatrices)
-    stqd	mat1row3, -0x090(outputMatrices)
-	stqd	mat2row3, -0x050(outputMatrices)
-	stqd	mat3row3, -0x010(outputMatrices)
-
-    brnz	count4, Loop
-
-NoLoop:
-
-.endfunc
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2007 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+.cfunc void edgeAnimJointsToMatrices4x4(void* __restrict__ outputMatrices, 
+										const EdgeAnimJointTransform* __restrict__ inputJoints, 
+										unsigned int count)
+
+    //----------------------------------------------------------------------------------------------
+    // Early out
+    //----------------------------------------------------------------------------------------------    
+
+   	brz		count, NoLoop
+
+    //----------------------------------------------------------------------------------------------
+    // Constants
+    //----------------------------------------------------------------------------------------------    
+    
+	// Constants
+	.reg	kHalf, kOne, kTwo, kZero
+	ilhu	kHalf,0x3f000000@h
+	ilhu	kOne, 0x3f800000@h
+	ilhu	kTwo, 0x40000000@h
+	ila		kZero, 0
+	
+	// Shuffle masks
+	.reg	shufAaBb, shufBbAa, shufCcDd, shufDdCc, shufCDab
+	il128	shufAaBb, "AaBb"
+	il128	shufBbAa, "BbAa"
+	il128	shufCcDd, "CcDd"
+	il128	shufDdCc, "DdCc"	
+	il128	shufCDab, "CDab"
+	
+	// Select masks
+	.reg	selABcd, selABCd
+	fsmbi	selABcd, 0x00FF
+	fsmbi	selABCd, 0x000F 
+	
+    //----------------------------------------------------------------------------------------------
+    // Loop
+    //----------------------------------------------------------------------------------------------    
+	
+	.reg	count4, countTmp
+	ai		countTmp, count, 3
+	rotmi	count4, countTmp, -2	
+
+	.reg	kx100
+	il		kx100, 0x100
+
+Loop:
+	ai		count4, count4, -1
+	ai		inputJoints, inputJoints, 0xC0
+	a		outputMatrices, outputMatrices, kx100
+	
+	// Load
+	.reg	r0, r1, r2, r3
+	lqd		r0, -0xC0(inputJoints)
+	lqd		r1, -0x90(inputJoints)
+	lqd		r2, -0x60(inputJoints)
+	lqd		r3, -0x30(inputJoints)
+	
+	.reg	t0, t1, t2, t3
+	lqd		t0, -0xB0(inputJoints)
+	lqd		t1, -0x80(inputJoints)
+	lqd		t2, -0x50(inputJoints)
+	lqd		t3, -0x20(inputJoints)
+	
+	.reg	s0, s1, s2, s3
+	lqd		s0, -0xA0(inputJoints)
+	lqd		s1, -0x70(inputJoints)
+	lqd		s2, -0x40(inputJoints)
+	lqd		s3, -0x10(inputJoints)
+	
+	// Swizzle rotations
+	.reg	rs0, rs1, rs2, rs3
+	shufb	rs0, r0, r1, shufAaBb
+	shufb	rs1, r0, r1, shufCcDd
+	shufb	rs2, r2, r3, shufBbAa
+	shufb	rs3, r2, r3, shufDdCc
+	.reg	rx, ry, rz, rw
+	selb	rx, rs0, rs2, selABcd
+	shufb	ry, rs0, rs2, shufCDab
+	selb	rz, rs1, rs3, selABcd
+	shufb	rw, rs1, rs3, shufCDab
+	
+	// Swizzle scales / premultiply by two
+	.reg	ss0, ss1, ss2, ss3
+	shufb	ss0, s0, s1, shufAaBb
+	shufb	ss1, s0, s1, shufCcDd
+	shufb	ss2, s2, s3, shufBbAa
+	shufb	ss3, s2, s3, shufDdCc
+	.reg	stx, sty, stz
+	selb	stx, ss0, ss2, selABcd
+	shufb	sty, ss0, ss2, shufCDab
+	selb	stz, ss1, ss3, selABcd
+	.reg	sx, sy, sz
+	fm		sx, stx, kTwo
+	fm		sy, sty, kTwo
+	fm		sz, stz, kTwo
+	
+	// Construct rotation matrix
+	.reg	mrxx, mryy, rxy, rxz, ryz, m00tmp, m01tmp, m02tmp
+	.reg	m10tmp, m11tmp, m12tmp, m20tmp, m21tmp, m22tmp		
+    fnms	mrxx, rx, rx, kHalf
+    fnms	mryy, ry, ry, kHalf
+    fm		rxy, rx, ry
+    fm		rxz, rx, rz
+    fm		ryz, ry, rz
+    fnms	m00tmp, rz, rz, mryy
+    fma 	m01tmp, rw, rz, rxy
+    fnms	m02tmp, rw, ry, rxz
+    fnms	m10tmp, rw, rz, rxy
+    fnms	m11tmp, rz, rz, mrxx
+    fma 	m12tmp, rw, rx, ryz
+    fma 	m20tmp, rw, ry, rxz
+    fnms	m21tmp, rw, rx, ryz
+    fnms	m22tmp, ry, ry, mrxx
+    
+    .reg	m00, m01, m02, m10, m11, m12, m20, m21, m22    	
+    fm		m00, m00tmp, sx
+    fm		m01, m01tmp, sx
+    fm		m02, m02tmp, sx
+    fm		m10, m10tmp, sy
+    fm		m11, m11tmp, sy
+    fm		m12, m12tmp, sy
+    fm		m20, m20tmp, sz
+    fm		m21, m21tmp, sz
+    fm		m22, m22tmp, sz
+    
+    // Deswizzle / store top 3 matrix rows
+    .reg	smx0, smx1, smx2, smx3, mat0row0, mat1row0, mat2row0, mat3row0        
+    shufb	smx0, m00, m01, shufAaBb
+    shufb	smx1, m00, m01, shufCcDd
+    shufb	smx2, m02, kZero, shufBbAa
+    shufb	smx3, m02, kZero, shufDdCc
+    selb	mat0row0, smx0, smx2, selABcd
+    shufb	mat1row0, smx0, smx2, shufCDab
+    selb	mat2row0, smx1, smx3, selABcd
+    shufb	mat3row0, smx1, smx3, shufCDab
+        
+    stqd	mat0row0, -0x100(outputMatrices)
+    stqd	mat1row0, -0x0C0(outputMatrices)
+	stqd	mat2row0, -0x080(outputMatrices)
+	stqd	mat3row0, -0x040(outputMatrices)
+
+    .reg	smy0, smy1, smy2, smy3, mat0row1, mat1row1, mat2row1, mat3row1        
+    shufb	smy0, m10, m11, shufAaBb
+    shufb	smy1, m10, m11, shufCcDd
+    shufb	smy2, m12, kZero, shufBbAa
+    shufb	smy3, m12, kZero, shufDdCc
+    selb	mat0row1, smy0, smy2, selABcd
+    shufb	mat1row1, smy0, smy2, shufCDab
+    selb	mat2row1, smy1, smy3, selABcd
+    shufb	mat3row1, smy1, smy3, shufCDab
+
+    stqd	mat0row1, -0x0F0(outputMatrices)
+    stqd	mat1row1, -0x0B0(outputMatrices)
+	stqd	mat2row1, -0x070(outputMatrices)
+	stqd	mat3row1, -0x030(outputMatrices)
+
+    .reg	smz0, smz1, smz2, smz3, mat0row2, mat1row2, mat2row2, mat3row2        
+    shufb	smz0, m20, m21, shufAaBb
+    shufb	smz1, m20, m21, shufCcDd
+    shufb	smz2, m22, kZero, shufBbAa
+    shufb	smz3, m22, kZero, shufDdCc
+    selb	mat0row2, smz0, smz2, selABcd
+    shufb	mat1row2, smz0, smz2, shufCDab
+    selb	mat2row2, smz1, smz3, selABcd
+    shufb	mat3row2, smz1, smz3, shufCDab
+
+    stqd	mat0row2, -0x0E0(outputMatrices)
+    stqd	mat1row2, -0x0A0(outputMatrices)
+	stqd	mat2row2, -0x060(outputMatrices)
+	stqd	mat3row2, -0x020(outputMatrices)
+
+    // Translations   
+    .reg	mat0row3, mat1row3, mat2row3, mat3row3         
+    selb	mat0row3, t0, kOne, selABCd
+	selb	mat1row3, t1, kOne, selABCd
+    selb	mat2row3, t2, kOne, selABCd
+    selb	mat3row3, t3, kOne, selABCd
+
+    stqd	mat0row3, -0x0D0(outputMatrices)
+    stqd	mat1row3, -0x090(outputMatrices)
+	stqd	mat2row3, -0x050(outputMatrices)
+	stqd	mat3row3, -0x010(outputMatrices)
+
+    brnz	count4, Loop
+
+NoLoop:
+
+.endfunc

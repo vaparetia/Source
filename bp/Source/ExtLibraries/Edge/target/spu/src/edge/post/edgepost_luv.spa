@@ -1,166 +1,166 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2009 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-//--------------------------------------------------------------------------------------------------
-//  FUNCTION DEFINITION
-//--------------------------------------------------------------------------------------------------
-
-//--------------------------------------------------------------------------------------------------
-/**
-
-	void edgePostLuvToFloats( void* output, void* input, uint32_t count );
-	void edgePostLuvToFX16( void* output, void* input, uint32_t count );
-	void edgePostLuvToArgb( void* output, void* input, uint32_t count );
-	void edgePostFloatsToLuv( void* output, void* input, uint32_t count );
-	void edgePostFX16toLuv( void* output, void* input, uint32_t count );
-	
-**/
-//--------------------------------------------------------------------------------------------------
-
-
-.include "edgepost_helpers.inc"
-.include "edgepost_math_helpers.inc"
-.include "edgepost_luv_helpers.inc"
-
-
-// generate main loop for conversion from LUV to RGB
-.macro EDGEPOST_CONVERTFROMLUV( OUTPIXELSIZE )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-	EDGEPOST_DECLARE_LUV_HELPER_CONSTANTS
-	
-	// Convert backwards.
-	.reg		backoutput, backinput
-	mpyui		backoutput, count, OUTPIXELSIZE
-	mpyui		backinput, count, 4
-	a			backoutput, backoutput, output
-	a			backinput, backinput, input
-
-loop:
-	ai			backoutput, backoutput, -( OUTPIXELSIZE * 4)
-	ai			backinput, backinput, -0x10
-	ai			count, count, -4
-	
-	// Load luv pixel and convert
-	.reg		luv, rgb0, rgb1, rgb2, rgb3
-	lqd			luv, 0x00( backinput )
-	EDGEPOST_CONVERT_FROM_PACKED_LUV( luv, rgb0, rgb1, rgb2, rgb3 )
-.endmacro
-
-
-// generate main loop for conversion from RGB to LUV
-.macro EDGEPOST_CONVERTTOLUV( INPIXELSIZE, UNPACK_PIXEL_MACRO )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-	EDGEPOST_DECLARE_LUV_HELPER_CONSTANTS
-	
-loop:
-	ai			output, output, 0x10
-	ai			input, input, ( INPIXELSIZE * 4)
-	ai			count, count, -4
-	
-	// Load input pixels
-	.reg		r, g, b, luv
-	UNPACK_PIXEL_MACRO( input, r, g, b )
-	EDGEPOST_CONVERT_TO_PACKED_LUV_SIMD( luv, r, g, b )
-	
-	stqd		luv, -0x10( output )
-	brnz		count, loop
-.endmacro
-
-
-.cfunc void edgePostLuvToFloats( qword output, qword input, qword count )
-	EDGEPOST_CONVERTFROMLUV( 16 )
-	stqd		rgb0, 0x00( backoutput )
-	stqd		rgb1, 0x10( backoutput )
-	stqd		rgb2, 0x20( backoutput )
-	stqd		rgb3, 0x30( backoutput )
-	brnz		count, loop
-.endfunc
-
-.cfunc void edgePostLuvToFX16( qword output, qword input, qword count )
-	EDGEPOST_CONVERTFROMLUV( 8 )
-	
-	// convert to fixed 0:5:11
-	cfltu		rgb0, rgb0, 11
-	cfltu		rgb1, rgb1, 11
-	cfltu		rgb2, rgb2, 11
-	cfltu		rgb3, rgb3, 11
-	
-	// pack and store
-	.reg		out_color0, out_color1
-	EDGEPOST_PACK_PIXELS16( out_color0, rgb0, rgb1)
-	EDGEPOST_PACK_PIXELS16( out_color1, rgb2, rgb3)
-	stqd		out_color0, 0x00( backoutput )
-	stqd		out_color1, 0x10( backoutput )
-	brnz		count, loop
-.endfunc
-
-.cfunc void edgePostLuvToArgb( qword output, qword input, qword count )
-	EDGEPOST_CONVERTFROMLUV( 4 )
-	
-	EDGEPOST_CLAMP_FLOAT( rgb0 )
-	EDGEPOST_CLAMP_FLOAT( rgb1 )
-	EDGEPOST_CLAMP_FLOAT( rgb2 )
-	EDGEPOST_CLAMP_FLOAT( rgb3 )
-	EDGEPOST_FLOAT_TO_U8( rgb0, rgb0 )
-	EDGEPOST_FLOAT_TO_U8( rgb1, rgb1 )
-	EDGEPOST_FLOAT_TO_U8( rgb2, rgb2 )
-	EDGEPOST_FLOAT_TO_U8( rgb3, rgb3 )
-	 
-	// pack and store
-	.reg		out_color
-	EDGEPOST_PACK_PIXELS8( out_color, rgb0, rgb1, rgb2, rgb3 )
-	stqd		out_color, 0x00( backoutput )
-	brnz		count, loop
-.endfunc
-
-.macro UNPACK_PIXEL_MACRO_F4( input, r, g, b )
-	.localreg	s0, s1, s2, s3, r1, g1, b1
-	lqd			s0, -0x40( input )
-	lqd			s1, -0x30( input )
-	lqd			s2, -0x20( input )
-	lqd			s3, -0x10( input )
-	shufb		r, s0, s1, kShuf0
-	shufb		g, s0, s1, kShuf1
-	shufb		b, s0, s1, kShuf2
-	shufb		r1, s2, s3, kShuf3
-	shufb		g1, s2, s3, kShuf4
-	shufb		b1, s2, s3, kShuf5
-	or			r, r, r1
-	or			g, g, g1
-	or			b, b, b1
-.endmacro
-
-.macro UNPACK_PIXEL_MACRO_FX16( input, r, g, b )
-	.localreg	s0, s1
-	lqd			s0, -0x20( input )
-	lqd			s1, -0x10( input )
-	shufb		r, s0, s1, kShuf0
-	shufb		g, s0, s1, kShuf1
-	shufb		b, s0, s1, kShuf2
-	cuflt		r, r, 11
-	cuflt		g, g, 11
-	cuflt		b, b, 11
-.endmacro
-
-.cfunc void edgePostFloatsToLuv( qword output, qword input, qword count )
-	.reg		kShuf0, kShuf1, kShuf2
-	.reg		kShuf3, kShuf4, kShuf5
-	il128		kShuf0, "Bb00"
-	il128		kShuf1, "Cc00"
-	il128		kShuf2, "Dd00"
-	il128		kShuf3, "00Bb"
-	il128		kShuf4, "00Cc"
-	il128		kShuf5, "00Dd"
-	EDGEPOST_CONVERTTOLUV( 16, UNPACK_PIXEL_MACRO_F4 )
-.endfunc
-
-.cfunc void edgePostFX16ToLuv( qword output, qword input, qword count )
-	.reg		kShuf0, kShuf1, kShuf2
-	il128		kShuf0, "0B0F0b0f"
-	il128		kShuf1, "0C0G0c0g"
-	il128		kShuf2, "0D0H0d0h"
-	EDGEPOST_CONVERTTOLUV( 8, UNPACK_PIXEL_MACRO_FX16 )
-.endfunc
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+
+	void edgePostLuvToFloats( void* output, void* input, uint32_t count );
+	void edgePostLuvToFX16( void* output, void* input, uint32_t count );
+	void edgePostLuvToArgb( void* output, void* input, uint32_t count );
+	void edgePostFloatsToLuv( void* output, void* input, uint32_t count );
+	void edgePostFX16toLuv( void* output, void* input, uint32_t count );
+	
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+.include "edgepost_helpers.inc"
+.include "edgepost_math_helpers.inc"
+.include "edgepost_luv_helpers.inc"
+
+
+// generate main loop for conversion from LUV to RGB
+.macro EDGEPOST_CONVERTFROMLUV( OUTPIXELSIZE )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	EDGEPOST_DECLARE_LUV_HELPER_CONSTANTS
+	
+	// Convert backwards.
+	.reg		backoutput, backinput
+	mpyui		backoutput, count, OUTPIXELSIZE
+	mpyui		backinput, count, 4
+	a			backoutput, backoutput, output
+	a			backinput, backinput, input
+
+loop:
+	ai			backoutput, backoutput, -( OUTPIXELSIZE * 4)
+	ai			backinput, backinput, -0x10
+	ai			count, count, -4
+	
+	// Load luv pixel and convert
+	.reg		luv, rgb0, rgb1, rgb2, rgb3
+	lqd			luv, 0x00( backinput )
+	EDGEPOST_CONVERT_FROM_PACKED_LUV( luv, rgb0, rgb1, rgb2, rgb3 )
+.endmacro
+
+
+// generate main loop for conversion from RGB to LUV
+.macro EDGEPOST_CONVERTTOLUV( INPIXELSIZE, UNPACK_PIXEL_MACRO )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	EDGEPOST_DECLARE_LUV_HELPER_CONSTANTS
+	
+loop:
+	ai			output, output, 0x10
+	ai			input, input, ( INPIXELSIZE * 4)
+	ai			count, count, -4
+	
+	// Load input pixels
+	.reg		r, g, b, luv
+	UNPACK_PIXEL_MACRO( input, r, g, b )
+	EDGEPOST_CONVERT_TO_PACKED_LUV_SIMD( luv, r, g, b )
+	
+	stqd		luv, -0x10( output )
+	brnz		count, loop
+.endmacro
+
+
+.cfunc void edgePostLuvToFloats( qword output, qword input, qword count )
+	EDGEPOST_CONVERTFROMLUV( 16 )
+	stqd		rgb0, 0x00( backoutput )
+	stqd		rgb1, 0x10( backoutput )
+	stqd		rgb2, 0x20( backoutput )
+	stqd		rgb3, 0x30( backoutput )
+	brnz		count, loop
+.endfunc
+
+.cfunc void edgePostLuvToFX16( qword output, qword input, qword count )
+	EDGEPOST_CONVERTFROMLUV( 8 )
+	
+	// convert to fixed 0:5:11
+	cfltu		rgb0, rgb0, 11
+	cfltu		rgb1, rgb1, 11
+	cfltu		rgb2, rgb2, 11
+	cfltu		rgb3, rgb3, 11
+	
+	// pack and store
+	.reg		out_color0, out_color1
+	EDGEPOST_PACK_PIXELS16( out_color0, rgb0, rgb1)
+	EDGEPOST_PACK_PIXELS16( out_color1, rgb2, rgb3)
+	stqd		out_color0, 0x00( backoutput )
+	stqd		out_color1, 0x10( backoutput )
+	brnz		count, loop
+.endfunc
+
+.cfunc void edgePostLuvToArgb( qword output, qword input, qword count )
+	EDGEPOST_CONVERTFROMLUV( 4 )
+	
+	EDGEPOST_CLAMP_FLOAT( rgb0 )
+	EDGEPOST_CLAMP_FLOAT( rgb1 )
+	EDGEPOST_CLAMP_FLOAT( rgb2 )
+	EDGEPOST_CLAMP_FLOAT( rgb3 )
+	EDGEPOST_FLOAT_TO_U8( rgb0, rgb0 )
+	EDGEPOST_FLOAT_TO_U8( rgb1, rgb1 )
+	EDGEPOST_FLOAT_TO_U8( rgb2, rgb2 )
+	EDGEPOST_FLOAT_TO_U8( rgb3, rgb3 )
+	 
+	// pack and store
+	.reg		out_color
+	EDGEPOST_PACK_PIXELS8( out_color, rgb0, rgb1, rgb2, rgb3 )
+	stqd		out_color, 0x00( backoutput )
+	brnz		count, loop
+.endfunc
+
+.macro UNPACK_PIXEL_MACRO_F4( input, r, g, b )
+	.localreg	s0, s1, s2, s3, r1, g1, b1
+	lqd			s0, -0x40( input )
+	lqd			s1, -0x30( input )
+	lqd			s2, -0x20( input )
+	lqd			s3, -0x10( input )
+	shufb		r, s0, s1, kShuf0
+	shufb		g, s0, s1, kShuf1
+	shufb		b, s0, s1, kShuf2
+	shufb		r1, s2, s3, kShuf3
+	shufb		g1, s2, s3, kShuf4
+	shufb		b1, s2, s3, kShuf5
+	or			r, r, r1
+	or			g, g, g1
+	or			b, b, b1
+.endmacro
+
+.macro UNPACK_PIXEL_MACRO_FX16( input, r, g, b )
+	.localreg	s0, s1
+	lqd			s0, -0x20( input )
+	lqd			s1, -0x10( input )
+	shufb		r, s0, s1, kShuf0
+	shufb		g, s0, s1, kShuf1
+	shufb		b, s0, s1, kShuf2
+	cuflt		r, r, 11
+	cuflt		g, g, 11
+	cuflt		b, b, 11
+.endmacro
+
+.cfunc void edgePostFloatsToLuv( qword output, qword input, qword count )
+	.reg		kShuf0, kShuf1, kShuf2
+	.reg		kShuf3, kShuf4, kShuf5
+	il128		kShuf0, "Bb00"
+	il128		kShuf1, "Cc00"
+	il128		kShuf2, "Dd00"
+	il128		kShuf3, "00Bb"
+	il128		kShuf4, "00Cc"
+	il128		kShuf5, "00Dd"
+	EDGEPOST_CONVERTTOLUV( 16, UNPACK_PIXEL_MACRO_F4 )
+.endfunc
+
+.cfunc void edgePostFX16ToLuv( qword output, qword input, qword count )
+	.reg		kShuf0, kShuf1, kShuf2
+	il128		kShuf0, "0B0F0b0f"
+	il128		kShuf1, "0C0G0c0g"
+	il128		kShuf2, "0D0H0d0h"
+	EDGEPOST_CONVERTTOLUV( 8, UNPACK_PIXEL_MACRO_FX16 )
+.endfunc

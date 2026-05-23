@@ -1,205 +1,205 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2009 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-//--------------------------------------------------------------------------------------------------
-//  FUNCTION DEFINITION
-//--------------------------------------------------------------------------------------------------
-
-//--------------------------------------------------------------------------------------------------
-/**
-
-	void edgePostMotionBlur( void* output, void* input, void* motion, vec_uint4 stride, uint32_t count );
-	
-**/
-//--------------------------------------------------------------------------------------------------
-
-
-.include "edgepost_helpers.inc"
-
-
-.macro EDGEPOST_MOTIONBLUR_SAMPLE
-
-	// calculate relative offsets
-	.localreg	dx, dy
-	cflts		dx, uvx, 0
-	cflts		dy, uvy, 0
-	mpya		dx, dx, kSixteenI, kPixelOffsets
-	mpya		dx, dy, stride, dx
-	
-	// gather 4 samples
-	.localreg 	s0, s1, s2, s3
-	rotqbyi		s1, dx, 4
-	rotqbyi		s2, dx, 8
-	rotqbyi		s3, dx, 12
-	lqx			s0, dx, input
-	lqx			s1, s1, input
-	lqx			s2, s2, input
-	lqx			s3, s3, input
-		
-	// accumulate
-	fa			c0, c0, s0
-	fa			c1, c1, s1
-	fa			c2, c2, s2
-	fa			c3, c3, s3
-	
-	// move to next sample
-	fa			uvx, uvx, motionx
-	fa			uvy, uvy, motiony
-	
-.endmacro
-
-.macro EDGEPOST_MOTIONBLUR( OUTPIXELSIZE )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-	
-	.reg		kTwoF, kMinusOneF, kUnpackMX, kUnpackMY
-	.reg		kAlphaShuf0, kAlphaShuf1
-	.reg		kSixteenI, kPixelOffsets, kOneOverNumSamplesF, kHalfF
-	
-	ilf32		kTwoF, 2.f
-	ilf32		kMinusOneF, -1.f
-	il128		kUnpackMX, "000A000E000I000M"
-	il128		kUnpackMY, "000B000F000J000N"
-	il128		kAlphaShuf0, "Aa00"
-	il128		kAlphaShuf1, "00Aa"
-	ila			kSixteenI, 16
-	il128		kPixelOffsets, 0x00000000_00000010_00000020_00000030
-	ilf32		kOneOverNumSamplesF, 1.f / 15.f
-	ilf32		kHalfF, .5f
-
-	.reg		kInsertAlpha0, kInsertAlpha1, kInsertAlpha2, kInsertAlpha3
-	il128		kInsertAlpha0, "aBCD"
-	il128		kInsertAlpha1, "bBCD"
-	il128		kInsertAlpha2, "cBCD"
-	il128		kInsertAlpha3, "dBCD"
-
-	//	splat stride
-	shufb	stride, stride, stride, kEdgePostReplicateX
-	
-loop:
-	ai		output, output, OUTPIXELSIZE
-	ai		motion, motion, 0x10
-	ai		count, count, -4
-	
-	// load four center pixels
-	.reg		c0, c1, c2, c3
-	lqd			c0, 0x00( input )
-	lqd			c1, 0x10( input )
-	lqd			c2, 0x20( input )
-	lqd			c3, 0x30( input )
-	
-	// save and combine alpha of original pixel
-	.reg		src_alpha, a0, a1
-	shufb		a0, c0, c1, kAlphaShuf0
-	shufb		a1, c2, c3, kAlphaShuf1
-	or			src_alpha, a0, a1
-	
-	// load motion vectors and unpack to float
-	.reg		packed_motions, motionx, motiony
-	lqd			packed_motions, -0x10( motion )
-	shufb		motionx, packed_motions, packed_motions, kUnpackMX
-	shufb		motiony, packed_motions, packed_motions, kUnpackMY
-	EDGEPOST_U8_TO_FLOAT( motionx, motionx )
-	EDGEPOST_U8_TO_FLOAT( motiony, motiony )
-	fma			motionx, motionx, kTwoF, kMinusOneF
-	fma			motiony, motiony, kTwoF, kMinusOneF
-	fm			motionx, motionx, kTwoF
-	fm			motiony, motiony, kTwoF
-	
-	.reg		uvx, uvy : readoptional //these provide the "glue" between the operations and are thus discarded for the last one.
-	ilf32		uvx, .0f
-	ilf32		uvy, .0f
-	
-	// fwd sample
-	EDGEPOST_MOTIONBLUR_SAMPLE
-	EDGEPOST_MOTIONBLUR_SAMPLE
-	EDGEPOST_MOTIONBLUR_SAMPLE
-	EDGEPOST_MOTIONBLUR_SAMPLE
-	EDGEPOST_MOTIONBLUR_SAMPLE
-	EDGEPOST_MOTIONBLUR_SAMPLE
-	EDGEPOST_MOTIONBLUR_SAMPLE
-	
-	// bwd sample
-	ilf32		uvx, .0f
-	ilf32		uvy, .0f
-	fm			motionx, motionx, kMinusOneF
-	fm			motiony, motiony, kMinusOneF
-	EDGEPOST_MOTIONBLUR_SAMPLE
-	EDGEPOST_MOTIONBLUR_SAMPLE
-	EDGEPOST_MOTIONBLUR_SAMPLE
-	EDGEPOST_MOTIONBLUR_SAMPLE
-	EDGEPOST_MOTIONBLUR_SAMPLE
-	EDGEPOST_MOTIONBLUR_SAMPLE
-	EDGEPOST_MOTIONBLUR_SAMPLE
-	
-	// normalize
-	fm			c0, c0, kOneOverNumSamplesF
-	fm			c1, c1, kOneOverNumSamplesF
-	fm			c2, c2, kOneOverNumSamplesF
-	fm			c3, c3, kOneOverNumSamplesF
-	
-	// advance input
-	ai			input, input, 0x40
-	
-	// calculate motion amount
-	// 186*n+140 cycles
-	fm			motionx, motionx, kHalfF
-	fm			motiony, motiony, kHalfF
-
-	// sqrt( x*x + y*y )	
-	fm			motionx, motionx, motionx
-	fma			motionx, motiony, motiony, motionx
-	frsqest		motiony, motionx
-	fi			motionx, motionx, motiony
-	frest		motiony, motionx
-	fi			motionx, motionx, motiony
-	
-	// get max between src_alpha and calculated motion amount
-	.reg		m
-	fcgt		m, src_alpha, motionx
-	selb		src_alpha, motionx, src_alpha, m
-	EDGEPOST_CLAMP_FLOAT( src_alpha )
-	
-	// insert alpha into results
-	shufb		c0, c0, src_alpha, kInsertAlpha0
-	shufb		c1, c1, src_alpha, kInsertAlpha1
-	shufb		c2, c2, src_alpha, kInsertAlpha2
-	shufb		c3, c3, src_alpha, kInsertAlpha3
-.endmacro
-
-
-
-.cfunc void edgePostMotionblur( qword output, qword input, qword motion, qword stride, qword count )
-	EDGEPOST_MOTIONBLUR( 0x10 )
-	
-	// convert pixel to integer
-	.reg		result
-	EDGEPOST_FLOAT_TO_U8( c0, c0)
-	EDGEPOST_FLOAT_TO_U8( c1, c1)
-	EDGEPOST_FLOAT_TO_U8( c2, c2)
-	EDGEPOST_FLOAT_TO_U8( c3, c3)	
-	EDGEPOST_PACK_PIXELS8( result, c0, c1, c2, c3)
-	
-	stqd		result, -0x10( output )
-	brnz		count, loop
-.endfunc
-
-.cfunc void edgePostMotionblur_FX16( qword output, qword input, qword motion, qword stride, qword count )
-	EDGEPOST_MOTIONBLUR( 0x20 )
-	
-	// convert to fixed 0:5:11
-	cfltu		c0, c0, 11
-	cfltu		c1, c1, 11
-	cfltu		c2, c2, 11
-	cfltu		c3, c3, 11
-	
-	// pack and store
-	.reg		out_color0, out_color1
-	EDGEPOST_PACK_PIXELS16( out_color0, c0, c1)
-	EDGEPOST_PACK_PIXELS16( out_color1, c2, c3)
-	stqd		out_color0, -0x20( output )
-	stqd		out_color1, -0x10( output )
-	brnz		count, loop
-.endfunc
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+
+	void edgePostMotionBlur( void* output, void* input, void* motion, vec_uint4 stride, uint32_t count );
+	
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+.include "edgepost_helpers.inc"
+
+
+.macro EDGEPOST_MOTIONBLUR_SAMPLE
+
+	// calculate relative offsets
+	.localreg	dx, dy
+	cflts		dx, uvx, 0
+	cflts		dy, uvy, 0
+	mpya		dx, dx, kSixteenI, kPixelOffsets
+	mpya		dx, dy, stride, dx
+	
+	// gather 4 samples
+	.localreg 	s0, s1, s2, s3
+	rotqbyi		s1, dx, 4
+	rotqbyi		s2, dx, 8
+	rotqbyi		s3, dx, 12
+	lqx			s0, dx, input
+	lqx			s1, s1, input
+	lqx			s2, s2, input
+	lqx			s3, s3, input
+		
+	// accumulate
+	fa			c0, c0, s0
+	fa			c1, c1, s1
+	fa			c2, c2, s2
+	fa			c3, c3, s3
+	
+	// move to next sample
+	fa			uvx, uvx, motionx
+	fa			uvy, uvy, motiony
+	
+.endmacro
+
+.macro EDGEPOST_MOTIONBLUR( OUTPIXELSIZE )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	
+	.reg		kTwoF, kMinusOneF, kUnpackMX, kUnpackMY
+	.reg		kAlphaShuf0, kAlphaShuf1
+	.reg		kSixteenI, kPixelOffsets, kOneOverNumSamplesF, kHalfF
+	
+	ilf32		kTwoF, 2.f
+	ilf32		kMinusOneF, -1.f
+	il128		kUnpackMX, "000A000E000I000M"
+	il128		kUnpackMY, "000B000F000J000N"
+	il128		kAlphaShuf0, "Aa00"
+	il128		kAlphaShuf1, "00Aa"
+	ila			kSixteenI, 16
+	il128		kPixelOffsets, 0x00000000_00000010_00000020_00000030
+	ilf32		kOneOverNumSamplesF, 1.f / 15.f
+	ilf32		kHalfF, .5f
+
+	.reg		kInsertAlpha0, kInsertAlpha1, kInsertAlpha2, kInsertAlpha3
+	il128		kInsertAlpha0, "aBCD"
+	il128		kInsertAlpha1, "bBCD"
+	il128		kInsertAlpha2, "cBCD"
+	il128		kInsertAlpha3, "dBCD"
+
+	//	splat stride
+	shufb	stride, stride, stride, kEdgePostReplicateX
+	
+loop:
+	ai		output, output, OUTPIXELSIZE
+	ai		motion, motion, 0x10
+	ai		count, count, -4
+	
+	// load four center pixels
+	.reg		c0, c1, c2, c3
+	lqd			c0, 0x00( input )
+	lqd			c1, 0x10( input )
+	lqd			c2, 0x20( input )
+	lqd			c3, 0x30( input )
+	
+	// save and combine alpha of original pixel
+	.reg		src_alpha, a0, a1
+	shufb		a0, c0, c1, kAlphaShuf0
+	shufb		a1, c2, c3, kAlphaShuf1
+	or			src_alpha, a0, a1
+	
+	// load motion vectors and unpack to float
+	.reg		packed_motions, motionx, motiony
+	lqd			packed_motions, -0x10( motion )
+	shufb		motionx, packed_motions, packed_motions, kUnpackMX
+	shufb		motiony, packed_motions, packed_motions, kUnpackMY
+	EDGEPOST_U8_TO_FLOAT( motionx, motionx )
+	EDGEPOST_U8_TO_FLOAT( motiony, motiony )
+	fma			motionx, motionx, kTwoF, kMinusOneF
+	fma			motiony, motiony, kTwoF, kMinusOneF
+	fm			motionx, motionx, kTwoF
+	fm			motiony, motiony, kTwoF
+	
+	.reg		uvx, uvy : readoptional //these provide the "glue" between the operations and are thus discarded for the last one.
+	ilf32		uvx, .0f
+	ilf32		uvy, .0f
+	
+	// fwd sample
+	EDGEPOST_MOTIONBLUR_SAMPLE
+	EDGEPOST_MOTIONBLUR_SAMPLE
+	EDGEPOST_MOTIONBLUR_SAMPLE
+	EDGEPOST_MOTIONBLUR_SAMPLE
+	EDGEPOST_MOTIONBLUR_SAMPLE
+	EDGEPOST_MOTIONBLUR_SAMPLE
+	EDGEPOST_MOTIONBLUR_SAMPLE
+	
+	// bwd sample
+	ilf32		uvx, .0f
+	ilf32		uvy, .0f
+	fm			motionx, motionx, kMinusOneF
+	fm			motiony, motiony, kMinusOneF
+	EDGEPOST_MOTIONBLUR_SAMPLE
+	EDGEPOST_MOTIONBLUR_SAMPLE
+	EDGEPOST_MOTIONBLUR_SAMPLE
+	EDGEPOST_MOTIONBLUR_SAMPLE
+	EDGEPOST_MOTIONBLUR_SAMPLE
+	EDGEPOST_MOTIONBLUR_SAMPLE
+	EDGEPOST_MOTIONBLUR_SAMPLE
+	
+	// normalize
+	fm			c0, c0, kOneOverNumSamplesF
+	fm			c1, c1, kOneOverNumSamplesF
+	fm			c2, c2, kOneOverNumSamplesF
+	fm			c3, c3, kOneOverNumSamplesF
+	
+	// advance input
+	ai			input, input, 0x40
+	
+	// calculate motion amount
+	// 186*n+140 cycles
+	fm			motionx, motionx, kHalfF
+	fm			motiony, motiony, kHalfF
+
+	// sqrt( x*x + y*y )	
+	fm			motionx, motionx, motionx
+	fma			motionx, motiony, motiony, motionx
+	frsqest		motiony, motionx
+	fi			motionx, motionx, motiony
+	frest		motiony, motionx
+	fi			motionx, motionx, motiony
+	
+	// get max between src_alpha and calculated motion amount
+	.reg		m
+	fcgt		m, src_alpha, motionx
+	selb		src_alpha, motionx, src_alpha, m
+	EDGEPOST_CLAMP_FLOAT( src_alpha )
+	
+	// insert alpha into results
+	shufb		c0, c0, src_alpha, kInsertAlpha0
+	shufb		c1, c1, src_alpha, kInsertAlpha1
+	shufb		c2, c2, src_alpha, kInsertAlpha2
+	shufb		c3, c3, src_alpha, kInsertAlpha3
+.endmacro
+
+
+
+.cfunc void edgePostMotionblur( qword output, qword input, qword motion, qword stride, qword count )
+	EDGEPOST_MOTIONBLUR( 0x10 )
+	
+	// convert pixel to integer
+	.reg		result
+	EDGEPOST_FLOAT_TO_U8( c0, c0)
+	EDGEPOST_FLOAT_TO_U8( c1, c1)
+	EDGEPOST_FLOAT_TO_U8( c2, c2)
+	EDGEPOST_FLOAT_TO_U8( c3, c3)	
+	EDGEPOST_PACK_PIXELS8( result, c0, c1, c2, c3)
+	
+	stqd		result, -0x10( output )
+	brnz		count, loop
+.endfunc
+
+.cfunc void edgePostMotionblur_FX16( qword output, qword input, qword motion, qword stride, qword count )
+	EDGEPOST_MOTIONBLUR( 0x20 )
+	
+	// convert to fixed 0:5:11
+	cfltu		c0, c0, 11
+	cfltu		c1, c1, 11
+	cfltu		c2, c2, 11
+	cfltu		c3, c3, 11
+	
+	// pack and store
+	.reg		out_color0, out_color1
+	EDGEPOST_PACK_PIXELS16( out_color0, c0, c1)
+	EDGEPOST_PACK_PIXELS16( out_color1, c2, c3)
+	stqd		out_color0, -0x20( output )
+	stqd		out_color1, -0x10( output )
+	brnz		count, loop
+.endfunc

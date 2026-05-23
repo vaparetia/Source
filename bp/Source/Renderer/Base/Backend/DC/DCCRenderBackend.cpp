@@ -6,7 +6,7 @@
 // See docs_and_planning/05_IMPLEMENTATION_ROADMAP.md Phase 2 for the plan.
 //------------------------------------------------------------------------------------------
 
-#include "Engine/Stdafx.h"
+#include "Engine/StdAfx.h"
 #include "Renderer/Base/Backend/DC/DCCRenderBackend.h"
 
 //----------------------------------------------------------------------------

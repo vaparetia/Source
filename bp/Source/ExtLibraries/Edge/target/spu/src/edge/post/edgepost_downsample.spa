@@ -1,189 +1,189 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2009 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-//--------------------------------------------------------------------------------------------------
-//  FUNCTION DEFINITION
-//--------------------------------------------------------------------------------------------------
-
-//--------------------------------------------------------------------------------------------------
-/**
-	@fn			extern "C" void edgePostDownsample8( qword output, qword input, qword stride, qword count )
-	@fn			extern "C" void edgePostDownsampleF( qword output, qword input, qword stride, qword count )
-	@fn			extern "C" void edgePostNearestDownsample( qword output, qword input, qword count )
-	@fn			extern "C" void edgePostDownsample16( qword output, qword input, qword stride, qword count )
-**/
-//--------------------------------------------------------------------------------------------------
-
-
-
-.cfunc void edgePostDownsample8( qword output, qword input, qword stride, qword count )
-	.reg	input0, input1
-	.reg	kShufMask0, kShufMask1
-	
-	ori		input0, input, 0
-	a		input1, input, stride
-	il128	kShufMask0, 0x00010203_08090a0b_10111213_18191a1b
-	il128	kShufMask1, 0x04050607_0c0d0e0f_14151617_1c1d1e1f
-	
-loop:
-	ai		output, output, 0x10
-	ai		input0, input0, 0x20
-	ai		input1, input1, 0x20
-	ai		count, count, -4
-	
-	.reg	p00, p01, p10, p11
-	
-	// Load four pixels
-	lqd		p00, -0x20( input0 )
-	lqd		p01, -0x10( input0 )
-	lqd		p10, -0x20( input1 )
-	lqd		p11, -0x10( input1 )
-	
-	// Filter two rows into one
-	avgb	p00, p00, p10
-	avgb	p01, p01, p11
-
-	// Shuffle 
-	.reg	aceg, bdfh
-	shufb	aceg, p00, p01, kShufMask0
-	shufb	bdfh, p00, p01, kShufMask1
-	
-	// Filter odd and even pixels together to get the result
-	avgb	p00, aceg, bdfh
-	
-	// Store
-	stqd	p00, -0x10( output )
-	brnz	count, loop
-.endfunc
-
-.cfunc void edgePostDownsampleF( qword output, qword input, qword stride, qword count )
-	.reg	input0, input1, kHalf
-	.reg	kShufMask0, kShufMask1
-	
-	ori		input0, input, 0
-	a		input1, input, stride
-	il128	kShufMask0, 0x00010203_08090a0b_10111213_18191a1b
-	il128	kShufMask1, 0x04050607_0c0d0e0f_14151617_1c1d1e1f
-	ilf32	kHalf, .5f
-	
-loop:
-	ai		output, output, 0x10
-	ai		input0, input0, 0x20
-	ai		input1, input1, 0x20
-	ai		count, count, -4
-	
-	.reg	p00, p01, p10, p11
-	
-	// Load four pixels
-	lqd		p00, -0x20( input0 )
-	lqd		p01, -0x10( input0 )
-	lqd		p10, -0x20( input1 )
-	lqd		p11, -0x10( input1 )
-	
-	// Filter two rows into one
-	fa		p00, p00, p10
-	fa		p01, p01, p11
-	fm		p00, p00, kHalf
-	fm		p01, p01, kHalf
-	
-	// Shuffle 
-	.reg	aceg, bdfh
-	shufb	aceg, p00, p01, kShufMask0
-	shufb	bdfh, p00, p01, kShufMask1
-	
-	// Filter odd and even pixels together to get the result
-	fa		p00, aceg, bdfh
-	fm		p00, p00, kHalf
-	
-	// Store
-	stqd	p00, -0x10( output )
-	brnz	count, loop
-.endfunc
-
-.cfunc void edgePostNearestDownsample( qword output, qword input, qword count )
-	.reg	input0, kRecombShuf
-	
-	il128	kRecombShuf, "ACac"
-	ori		input0, input, 0
-	
-loop:
-	ai		output, output, 0x10
-	ai		input0, input0, 0x20
-	ai		count, count, -4
-	
-	.reg	p00, p01
-	
-	// Load two pixels
-	lqd		p00, -0x20( input0 )
-	lqd		p01, -0x10( input0 )
-	
-	// recombine	
-	shufb	p00, p00, p01, kRecombShuf
-	
-	// Store
-	stqd	p00, -0x10( output )
-	brnz	count, loop
-.endfunc
-
-.macro Mix( r, _a, b)
-	a		r, _a, b
-	rotmi	r, r, -1
-.endmacro
-
-.macro UnpackPixels16( p0, p1, s )
-	shufb	p0, s, s, kUnpack0_16
-	shufb	p1, s, s, kUnpack1_16
-.endmacro
-
-.macro PackPixels16( r, p0, p1 )
-	shufb	r, p0, p1, kPack_16
-.endmacro
-
-.cfunc void edgePostDownsample16( qword output, qword input, qword stride, qword count )
-	.reg	input0, input1
-	ori		input0, input, 0
-	a		input1, input, stride
-	
-	.reg	kUnpack0_16, kUnpack1_16, kPack_16
-	il128	kUnpack0_16, "0a0b0c0d"
-	il128	kUnpack1_16, "0e0f0g0h"
-	il128	kPack_16, 0x02030607_0a0b0e0f_12131617_1a1b1e1f
-	
-loop:
-	ai		output, output, 0x10
-	ai		input0, input0, 0x20
-	ai		input1, input1, 0x20
-	ai		count, count, -2
-	
-	// Load two pixels
-	.reg	s00, s01, s10, s11
-	lqd		s00, -0x20( input0 )
-	lqd		s10, -0x10( input0 )
-	lqd		s01, -0x20( input1 )
-	lqd		s11, -0x10( input1 )
-	
-	// Unpack pixels
-	.reg	p00, p01, p10, p11, p20, p21, p30, p31
-	UnpackPixels16( p00, p10, s00)
-	UnpackPixels16( p20, p30, s10)
-	UnpackPixels16( p01, p11, s01)
-	UnpackPixels16( p21, p31, s11)
-	
-	// Combine adjacent pixels vertically
-	Mix(p00, p00, p01)
-	Mix(p10, p10, p11)
-	Mix(p20, p20, p21)
-	Mix(p30, p30, p31)
-	
-	// Combine adjacent pixels horizontally
-	Mix(p00, p00, p10)
-	Mix(p10, p20, p30)
-		
-	.reg	r
-	PackPixels16( r, p00, p10 )
-	stqd	r, -0x10( output )
-	brnz	count, loop
-.endfunc
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+	@fn			extern "C" void edgePostDownsample8( qword output, qword input, qword stride, qword count )
+	@fn			extern "C" void edgePostDownsampleF( qword output, qword input, qword stride, qword count )
+	@fn			extern "C" void edgePostNearestDownsample( qword output, qword input, qword count )
+	@fn			extern "C" void edgePostDownsample16( qword output, qword input, qword stride, qword count )
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+
+.cfunc void edgePostDownsample8( qword output, qword input, qword stride, qword count )
+	.reg	input0, input1
+	.reg	kShufMask0, kShufMask1
+	
+	ori		input0, input, 0
+	a		input1, input, stride
+	il128	kShufMask0, 0x00010203_08090a0b_10111213_18191a1b
+	il128	kShufMask1, 0x04050607_0c0d0e0f_14151617_1c1d1e1f
+	
+loop:
+	ai		output, output, 0x10
+	ai		input0, input0, 0x20
+	ai		input1, input1, 0x20
+	ai		count, count, -4
+	
+	.reg	p00, p01, p10, p11
+	
+	// Load four pixels
+	lqd		p00, -0x20( input0 )
+	lqd		p01, -0x10( input0 )
+	lqd		p10, -0x20( input1 )
+	lqd		p11, -0x10( input1 )
+	
+	// Filter two rows into one
+	avgb	p00, p00, p10
+	avgb	p01, p01, p11
+
+	// Shuffle 
+	.reg	aceg, bdfh
+	shufb	aceg, p00, p01, kShufMask0
+	shufb	bdfh, p00, p01, kShufMask1
+	
+	// Filter odd and even pixels together to get the result
+	avgb	p00, aceg, bdfh
+	
+	// Store
+	stqd	p00, -0x10( output )
+	brnz	count, loop
+.endfunc
+
+.cfunc void edgePostDownsampleF( qword output, qword input, qword stride, qword count )
+	.reg	input0, input1, kHalf
+	.reg	kShufMask0, kShufMask1
+	
+	ori		input0, input, 0
+	a		input1, input, stride
+	il128	kShufMask0, 0x00010203_08090a0b_10111213_18191a1b
+	il128	kShufMask1, 0x04050607_0c0d0e0f_14151617_1c1d1e1f
+	ilf32	kHalf, .5f
+	
+loop:
+	ai		output, output, 0x10
+	ai		input0, input0, 0x20
+	ai		input1, input1, 0x20
+	ai		count, count, -4
+	
+	.reg	p00, p01, p10, p11
+	
+	// Load four pixels
+	lqd		p00, -0x20( input0 )
+	lqd		p01, -0x10( input0 )
+	lqd		p10, -0x20( input1 )
+	lqd		p11, -0x10( input1 )
+	
+	// Filter two rows into one
+	fa		p00, p00, p10
+	fa		p01, p01, p11
+	fm		p00, p00, kHalf
+	fm		p01, p01, kHalf
+	
+	// Shuffle 
+	.reg	aceg, bdfh
+	shufb	aceg, p00, p01, kShufMask0
+	shufb	bdfh, p00, p01, kShufMask1
+	
+	// Filter odd and even pixels together to get the result
+	fa		p00, aceg, bdfh
+	fm		p00, p00, kHalf
+	
+	// Store
+	stqd	p00, -0x10( output )
+	brnz	count, loop
+.endfunc
+
+.cfunc void edgePostNearestDownsample( qword output, qword input, qword count )
+	.reg	input0, kRecombShuf
+	
+	il128	kRecombShuf, "ACac"
+	ori		input0, input, 0
+	
+loop:
+	ai		output, output, 0x10
+	ai		input0, input0, 0x20
+	ai		count, count, -4
+	
+	.reg	p00, p01
+	
+	// Load two pixels
+	lqd		p00, -0x20( input0 )
+	lqd		p01, -0x10( input0 )
+	
+	// recombine	
+	shufb	p00, p00, p01, kRecombShuf
+	
+	// Store
+	stqd	p00, -0x10( output )
+	brnz	count, loop
+.endfunc
+
+.macro Mix( r, _a, b)
+	a		r, _a, b
+	rotmi	r, r, -1
+.endmacro
+
+.macro UnpackPixels16( p0, p1, s )
+	shufb	p0, s, s, kUnpack0_16
+	shufb	p1, s, s, kUnpack1_16
+.endmacro
+
+.macro PackPixels16( r, p0, p1 )
+	shufb	r, p0, p1, kPack_16
+.endmacro
+
+.cfunc void edgePostDownsample16( qword output, qword input, qword stride, qword count )
+	.reg	input0, input1
+	ori		input0, input, 0
+	a		input1, input, stride
+	
+	.reg	kUnpack0_16, kUnpack1_16, kPack_16
+	il128	kUnpack0_16, "0a0b0c0d"
+	il128	kUnpack1_16, "0e0f0g0h"
+	il128	kPack_16, 0x02030607_0a0b0e0f_12131617_1a1b1e1f
+	
+loop:
+	ai		output, output, 0x10
+	ai		input0, input0, 0x20
+	ai		input1, input1, 0x20
+	ai		count, count, -2
+	
+	// Load two pixels
+	.reg	s00, s01, s10, s11
+	lqd		s00, -0x20( input0 )
+	lqd		s10, -0x10( input0 )
+	lqd		s01, -0x20( input1 )
+	lqd		s11, -0x10( input1 )
+	
+	// Unpack pixels
+	.reg	p00, p01, p10, p11, p20, p21, p30, p31
+	UnpackPixels16( p00, p10, s00)
+	UnpackPixels16( p20, p30, s10)
+	UnpackPixels16( p01, p11, s01)
+	UnpackPixels16( p21, p31, s11)
+	
+	// Combine adjacent pixels vertically
+	Mix(p00, p00, p01)
+	Mix(p10, p10, p11)
+	Mix(p20, p20, p21)
+	Mix(p30, p30, p31)
+	
+	// Combine adjacent pixels horizontally
+	Mix(p00, p00, p10)
+	Mix(p10, p20, p30)
+		
+	.reg	r
+	PackPixels16( r, p00, p10 )
+	stqd	r, -0x10( output )
+	brnz	count, loop
+.endfunc

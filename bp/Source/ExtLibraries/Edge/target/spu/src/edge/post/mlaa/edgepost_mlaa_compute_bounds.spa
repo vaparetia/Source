@@ -1,446 +1,446 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2010 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-/*
- * This is where the slopes of features are estimated.
- */
-
-// Basically, we use the SIMD to compute forward and backward, both upper and lower for a pixel at a time.
-// (upper_forward, upper_backward, lower_forward, lower_backward)
-// Enjoy.
-
-.rodata
-LOAD_TRIPLET_LOOK_UP_TABLE:
-// this is the look up table for LOAD_TRIPLET. The are formed by starting with "ABC0" but with half-words swapped.
-// then for each further element, 4 is added to each byte of the first 3 words. This can be done on EVEN, but we need it on ODD.
-// Thus the LUT.
-.quad "HGbadc00", "BADCFE00", "DCFEHG00", "FEHGba00"
-
-.macro GET_LOAD_TRIPLET_LUT_BASE(result)
-	.localreg	picoffset, lut_address
-	ila			lut_address, LOAD_TRIPLET_LOOK_UP_TABLE	// this will give a warning, but we add the gpo, so this is actually PIC.
-	gpo			picoffset
-	a			result, picoffset, lut_address
-.endmacro
-
-// for this, ptr must be 128bit aligned!
-.macro LOADX(d, offset, ptr)
-	lqx			d, offset, ptr
-	rotqby		d, d, offset
-.endmacro
-
-// gets the current position in the current sep-line (or -1) from current_param
-.macro GET_POSITION(result,i)
-	LOADX(result,i,current_param)
-	shufb		result, result, result, kPositionSplat
-.endmacro
-
-// gets the length of the current sep-line
-.macro GET_LINE_LENGTH(result,i)
-	lqx			result, i, lineLength
-	shufb		result, result, result, kLengthSplat	
-.endmacro	
-
-// gets the start offset a sep-line (the next one, to be precise)
-.macro GET_LINE_OFFSET	(result,i)
-	lqx			result, i, lineLength
-	shufb		result, result, result, kStartSplat
-.endmacro
-
-.macro LOAD_TRIPLET(result, ptr, pos)
-	
-	// we may need two qwords, so load them
-	.localreg	x, y
-	lqx			x, ptr, i_minus_one
-	lqx			y, ptr, i_plus_one		
-	shufb		result, x, y, blockLoadShuf
-	
-.endmacro
-
-// This is where all samples are loaded.
-// The corresponding registers are encoded as
-// s_[line](_[p|m]_1)
-// e.g. next_line[i-1] is stored in s_next_m_1
-
-.macro LOAD_SAMPLES	
-	mvo			i, pixel_index
-	a			i_minus_one, i, kMinusFourPlusFour
-	rotqbyi		i_plus_one, i_minus_one, 4
-	
-	
-	// we want to only have the lower 4 bits, but that's not possible with just a shufb, so we rotate first.
-	rotqbii		blockOffset, i, 4
-	// we now zero everything except the lowest byte of the first word
-	shufb		blockOffset, blockOffset, blockOffset, kShufTripletOffsetSplat	
-	// we now have two options, either we provide a 16 element LUT and keep the offset as is,
-	// or we shift it down 2 bits and use a 4 element LUT.
-	rotqmbii	blockOffset, blockOffset, -2
-	lqx			blockLoadShuf, tripletLoadLookUpTable, blockOffset
-	
-	LOAD_TRIPLET(previous_samples,previous_param,i)
-	LOAD_TRIPLET(current_samples,current_param,i)
-	LOAD_TRIPLET(next_samples,next_param,i)
-	LOAD_TRIPLET(second_next_samples,second_next_param,i)
-
-.endmacro
-
-
-// put all samples (i.e. sumb-values) for the height computation together
-.macro SHUFFLE_HEIGHT_SAMPLES(a,b,c,d,di)
-	shufb		a, current_samples, next_samples, kShufBCbc
-	.localreg	b_first, b_second, c_first, c_second
-	shufb		b_first, next_samples, previous_samples, kShufBc00
-	shufb		b_second, current_samples, second_next_samples, kShufBc00
-	shufb		b, b_first, b_second, kShufABab
-	shufb		c_first, previous_samples, next_samples, kShufAb00
-	shufb		c_second, second_next_samples, current_samples, kShufAb00
-	shufb		c, c_first, c_second, kShufABab
-	
-	//now, remove everything but the sumb
-	and			a, a, kSumbMask
-	and			b, b, kSumbMask
-	and			c, c, kSumbMask
-	and			d, di, kSumbMask	
-.endmacro
-
-.macro DIV(r, n, d)
-	.localreg	t0
-	frest		r, d
-	fi			r, d, r
-	fnms		t0, d, r, fOnePlusULP
-	fma			r, t0, r, r
-	fm			r, r, n
-.endmacro
-
-
-.macro GET_HEIGHT(r,len,first_alpha_samples)
-	.localreg	cc, cu, pc, pu
-	.localreg	n, d, pc_cu, cc_cu, pc_pu, cc_cu_minus_pc_pu, cc_cu_plus_pc_pu
-	SHUFFLE_HEIGHT_SAMPLES(cc,cu,pc,pu,first_alpha_samples)
-	sf			pc_cu, cu, pc
-	sf			cc_cu, cu, cc
-	sf			pc_pu, pu, pc
-	sf			cc_cu_minus_pc_pu, pc_pu, cc_cu
-	a			cc_cu_plus_pc_pu, cc_cu, pc_pu
-	mpya		n, pc_cu, len, cc_cu_minus_pc_pu
-	mpya		d, cc_cu_plus_pc_pu, len, cc_cu_minus_pc_pu
-
-	csflt		n, n, 0
-	csflt		d, d, 0
-	DIV(r, n, d)
-.endmacro
-
-// put the samples for the alpha test together
-.macro SHUFFLE_ALPHA(first,second)
-	//.localreg	new_first, new_second
-	shufb		first, current_samples, next_samples, kShufABab
-	shufb		second, previous_samples, next_samples, kShufACac
-.endmacro
-
-
-.macro NEW_LOAD_CONSTANTS
-	.reg		kShufACac, kShufBCbc, kShufBc00, kShufABab, kShufAb00
-	il128		kShufACac, "ACac"
-	il128		kShufBCbc, "BCbc"
-	il128		kShufBc00, "Bc00"
-	il128		kShufABab, "ABab"
-	il128		kShufAb00, "Ab00"
-	
-	.reg		kShufTripletOffsetSplat
-	il128		kShufTripletOffsetSplat,"000d000000000000"
-
-	.reg		tripletLoadLookUpTable
-	GET_LOAD_TRIPLET_LUT_BASE(tripletLoadLookUpTable)
-	
-	.reg		kMinusFourPlusFour	
-	il128		kMinusFourPlusFour, 0xFFFFFFFC_00000004_00000000_00000000
-	
-	.reg		i, i_minus_one, i_plus_one
-	.reg		blockLoadShuf, blockOffset
-	.reg	previous_samples, current_samples, next_samples, second_next_samples
-	
-.endmacro
-
-// used to write single-pixel debug output.
-.macro DEBUG_OUT(reg)
-
-	.localreg	kShufDebug
-	il128		kShufDebug, "AEIM000000000000"
-	//il128		kShufDebug, "BFJN000000000000"
-	//il128		kShufDebug, "CGKO000000000000"
-	//il128		kShufDebug, "DHLP000000000000"
-
-	.localreg	temp, mask, compressed
-	.memgroup	debug_memory
-	shufb		compressed,reg,reg,kShufDebug
-	lqx			[debug_memory] temp,i,debug_line
-	cwx			mask,i,debug_line
-	shufb		temp, compressed, temp, mask
-	stqx		[debug_memory] temp,i,debug_line
-	
-.endmacro
-
-.macro ITERATION
-	ai			valid_pixels, valid_pixels, -1			// update iteration counter
-	
-	//this puts all samples into the prefered word of the sample registers	
-	
-	.localreg		pos_in_line					// position in the scanline, with a twist	
-	GET_POSITION(pos_in_line,pixel_index)	// get the current position from the high-halfword
-	
-	.localreg	is_line_start
-	ceqi		is_line_start, pos_in_line, 0
-
-	.localreg	is_line_start_mask
-	selb		is_line_start_mask, kShufSelbUpper, kShufSelbLower, is_line_start
-	shufb		s, s, st_reset, is_line_start_mask
-	shufb		t, t, st_reset, is_line_start_mask
-	shufb		h, h, h_reset, is_line_start_mask
-
-	//get the current line length	
-	.localreg	current_line_length
-	GET_LINE_LENGTH(current_line_length,line_index)		// this is actually line_length -1!!!
-	
-	.localreg	len_minus_pos
-	sf			len_minus_pos, pos_in_line, current_line_length
-	
-	.localreg	line_ended					//determine if we need to write the blend job
-	ceq			line_ended, pos_in_line, current_line_length
-	
-	LOAD_SAMPLES
-	
-	// test for candidates
-	.localreg	first_alpha_samples, second_alpha_samples
-	SHUFFLE_ALPHA(first_alpha_samples, second_alpha_samples)
-	.localreg	first_alpha_test, second_alpha_test
-	and			first_alpha_test, first_alpha_samples, first_alpha_flags
-	and			second_alpha_test, second_alpha_samples, second_alpha_flags
-	ceq			first_alpha_test, first_alpha_test, first_alpha_flags
-	ceq			second_alpha_test, second_alpha_test, second_alpha_flags
-
-	.localreg	is_candidate
-	and			is_candidate, first_alpha_test, second_alpha_test
-	
-	.localreg	length_for_height	
-	shufb		length_for_height, len_minus_pos, pos_in_line, kShufAaAa
-	ai			length_for_height, length_for_height, 1
-	
-	// compute 4 heights for each pixel
-	.localreg	candidate_height
-	GET_HEIGHT(candidate_height, length_for_height, first_alpha_samples)
-	
-	// check if height 0.f<=candidate_height<1.f
-	// The sign bit makes this work.
-	.localreg	height_in_range
-	clgt		height_in_range, fOne, candidate_height
-
-	// now check if h has already been set for the forward loops
-	// kHCompareValue is 1 for forward and 7fffffff for backward lanes.
-	// I.e. the result is -1 if forward is 0 and always -1 for backward.
-	.localreg	masked_h_not_set
-	clgt		masked_h_not_set, kHCompareValue, h
-
-	
-	// update h and s if all checks out.
-	.localreg	valid_height	
-	and			valid_height, is_candidate, height_in_range
-	and			valid_height, valid_height, masked_h_not_set
-	selb		h, h, candidate_height, valid_height
-	selb		s, s, i, valid_height
-
-
-	
-	// check for t update
-	// all needed alpha tests are in first_alpha_test
-	
-	// only the forward loop need to check if t is already set.
-	.localreg	masked_t_not_set
-
-	// kTCompareValue is 0 for the forward lanes and 7fffffff for backward.
-	// i.e. forward lanes are true when t is -1 and backward lanes are always true.
-	cgt			masked_t_not_set, kTCompareValue, t
-
-
-	.localreg	update_t
-	and			update_t, first_alpha_test, masked_t_not_set
-
-	selb		t, t, i, update_t
-	
-	// the last thing to deal with is the end of a line.
-	// we already have the inverted t-check in t_not_set
-	// so let's see if s was set.
-
-	.localreg	s_not_set
-	ceq			s_not_set, s, st_reset
-	
-	// we now need to refresh t_not_set, as it may have changed.
-	.localreg	new_t_not_set
-	ceq			new_t_not_set, t, st_reset
-	
-	.localreg	s_not_set_and_t_set
-	andc		s_not_set_and_t_set, s_not_set, new_t_not_set
-	
-	.localreg	no_candidate_found
-	and			no_candidate_found, line_ended, s_not_set_and_t_set
-
-	// we move this partiall over to ODD.
-	.localreg	no_candidate_found_mask
-	selb		no_candidate_found_mask, kShufSelbUpper, kShufSelbLower, no_candidate_found
-	shufb		h, h, fOneHalf, no_candidate_found_mask
-	shufb		s, s, t, no_candidate_found_mask
-
-	//compress results and store
-	.localreg	h_compressed, compressed
-	cfltu		h_compressed, h, 16
-	shufb		compressed, s, h_compressed, kCompressionShuf
-	stqd		compressed, 0x00(blendJobs)
-
-	// Conditionally update pointers. 
-	// It seems as if blendJobs and line_index need to be split to prevent
-	// massive recurrence contraintes
-	mpya		blendJobs, kMinusSixteen, line_ended, blendJobs
-	mpya		line_index, kMinusSixteen, line_ended, line_index
-	
-	// get the offset of the next line, if we're at the end of the current one
-	.localreg	next_line_offset
-	GET_LINE_OFFSET(next_line_offset,line_index)
-
-
-	// either pick next pixel or jump to next sep-line
-	.localreg	next_pixel
-	ai			next_pixel, pixel_index, 4
-	selb		pixel_index, next_pixel, next_line_offset, line_ended
-
-.endmacro
-
-.cfunc qword edgePostMlaaComputeBounds(
-		qword previous_param,
-		qword current_param,
-		qword next_param,
-		qword second_next_param,
-		qword lineLength,
-		qword blendJobs,
-		qword mode,
-		qword valid_pixels,
-		qword width)
-
-	// constants
-	
-	.reg		kZero : readoptional
-	il			kZero, 0
-
-	.reg		horizontal_flag, vertical_flag, kSumbMask, fOnePlusULP, fOne, fOneHalf
-	il128		horizontal_flag, 0x00008000_00008000_00008000_00008000
-	il128		vertical_flag,   0x00004000_00004000_00004000_00004000
-	il128		kSumbMask, 0x00003fff_00003fff_00003fff_00003fff
-	il128		fOnePlusULP, 0x3f800001_3f800001_3f800001_3f800001
-	ilf32		fOne, 1.f
-	ilf32		fOneHalf, 0.5f
-	
-	// constants for pointer updates
-	.reg		kMinusSixteen
-	il			kMinusSixteen, -16
-	
-	.reg		kPositionSplat, kShufAa00, kShuf00Aa, kShufAAAA, kShufAAAa, kShufAaAa, kShufABcd, kStartSplat, kLengthSplat, kCompressionShuf : readoptional
-	il128		kPositionSplat, "00CD00CD00CD00CD" //splat the upper halfword into the words
-	il128		kShufAa00, "Aa00"
-	il128		kShuf00Aa, "00Aa"
-	il128		kShufAAAA, "AAAA"
-	il128		kShufAAAa, "AAAa"
-	il128		kShufAaAa, "AaAa"
-	il128		kShufABcd, "ABcd"
-	il128		kCompressionShuf, "BDFHbdfh"
-	
-	il128		kStartSplat, "00AB00AB00AB00AB"
-	il128		kLengthSplat, "00CD00CD00CD00CD"
-	
-	// depending on which line in a block of four we are, our masks look a bit different.
-	.reg		lineIndex, kLineIndexExtract, kLineIndexRemove
-	il128		kLineIndexExtract, "00AA00AA00AA00AA"
-	il128		kLineIndexRemove,  "0BCD0FGH0JKL0NOP"
-	shufb		lineIndex, valid_pixels, valid_pixels, kLineIndexExtract	// the line index is stored in the first byte of valid_pixels
-	shufb		valid_pixels, valid_pixels, valid_pixels, kLineIndexRemove	// remove the line index now.
-	
-	shli		lineIndex, lineIndex, 2										// multiply by 4 to get byte offsets
-	a			kStartSplat, kStartSplat, lineIndex				// and add to shuffle masks.
-	a			kLengthSplat, kLengthSplat, lineIndex
-
-
-	
-	.reg		kTCompareValue, kHCompareValue
-	il128		kTCompareValue, 0x00000000_7FFFFFFF_00000000_7FFFFFFF
-	il128		kHCompareValue, 0x00000001_7FFFFFFF_00000001_7FFFFFFF
-	
-	
-	//for selb replacement
-	.reg		kShufSelbUpper, kShufSelbLower
-	il128		kShufSelbUpper, "ABCD"
-	il128		kShufSelbLower, "abcd"
-
-	.reg		st_reset, h_reset
-	il			st_reset, -1
-	ilf32		h_reset, 0.f
-
-	// setup	
-	.reg		s, t, h
-	
-	mov			s, st_reset
-	mov			t, st_reset
-	mov			h, h_reset
-				
-	.reg		pixel_index, line_index	
-	il			line_index, 0
-	GET_LINE_OFFSET(pixel_index,line_index)
-	
-	.reg		is_horizontal_pass
-	ceqi		is_horizontal_pass, mode, 1
-	shufb		is_horizontal_pass, is_horizontal_pass, is_horizontal_pass, kShufAAAA //splat
-	
-	.reg		FO, FC
-	selb		FO, horizontal_flag, vertical_flag, is_horizontal_pass
-	selb		FC, vertical_flag, horizontal_flag, is_horizontal_pass
-	
-	.reg		first_alpha_flags, second_alpha_flags
-	shufb		first_alpha_flags,  FO, FO, kShufAAAA
-	shufb		second_alpha_flags, FC, FO, kShufAAAa
-	
-	NEW_LOAD_CONSTANTS
-	
-	// for the first iteration, we cannot look to the left, as that would be outside the buffers.
-	.reg		clampedLoadOffsets
-	il128		clampedLoadOffsets, 0x00000000_00000004_00000000_00000000
-	.reg		mustClampLeft
-	ceqi		mustClampLeft, pixel_index, 0
-	selb		kMinusFourPlusFour, kMinusFourPlusFour, clampedLoadOffsets, mustClampLeft
-		
-	ITERATION
-	brz			valid_pixels, end
-	
-	ai			valid_pixels, valid_pixels, -1
-	brz			valid_pixels, last
-	il128		kMinusFourPlusFour, 0xFFFFFFFC_00000004_00000000_00000000
-	
-	// splat early so we need only one register (assuming kSplatAAAA is no longer used)
-	shufb		width, width, width, kShufAAAA
-	
-loop:
-	ITERATION
-	brnz		valid_pixels, loop : $mintrip<1>
-	
-last:
-	// for the last iteration, we again need to prevent fetching outside the buffer
-	il128		clampedLoadOffsets, 0xFFFFFFFC_00000000_00000000_00000000
-	.reg		mustClampRight
-	ai			width, width, -8
-	cgt			mustClampRight, pixel_index, width
-	selb		kMinusFourPlusFour, kMinusFourPlusFour, clampedLoadOffsets, mustClampRight
-	
-	ITERATION
-	
-end:	
-	mov			@result, blendJobs //let the C side do the difference.
-	
-.endfunc
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2010 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+/*
+ * This is where the slopes of features are estimated.
+ */
+
+// Basically, we use the SIMD to compute forward and backward, both upper and lower for a pixel at a time.
+// (upper_forward, upper_backward, lower_forward, lower_backward)
+// Enjoy.
+
+.rodata
+LOAD_TRIPLET_LOOK_UP_TABLE:
+// this is the look up table for LOAD_TRIPLET. The are formed by starting with "ABC0" but with half-words swapped.
+// then for each further element, 4 is added to each byte of the first 3 words. This can be done on EVEN, but we need it on ODD.
+// Thus the LUT.
+.quad "HGbadc00", "BADCFE00", "DCFEHG00", "FEHGba00"
+
+.macro GET_LOAD_TRIPLET_LUT_BASE(result)
+	.localreg	picoffset, lut_address
+	ila			lut_address, LOAD_TRIPLET_LOOK_UP_TABLE	// this will give a warning, but we add the gpo, so this is actually PIC.
+	gpo			picoffset
+	a			result, picoffset, lut_address
+.endmacro
+
+// for this, ptr must be 128bit aligned!
+.macro LOADX(d, offset, ptr)
+	lqx			d, offset, ptr
+	rotqby		d, d, offset
+.endmacro
+
+// gets the current position in the current sep-line (or -1) from current_param
+.macro GET_POSITION(result,i)
+	LOADX(result,i,current_param)
+	shufb		result, result, result, kPositionSplat
+.endmacro
+
+// gets the length of the current sep-line
+.macro GET_LINE_LENGTH(result,i)
+	lqx			result, i, lineLength
+	shufb		result, result, result, kLengthSplat	
+.endmacro	
+
+// gets the start offset a sep-line (the next one, to be precise)
+.macro GET_LINE_OFFSET	(result,i)
+	lqx			result, i, lineLength
+	shufb		result, result, result, kStartSplat
+.endmacro
+
+.macro LOAD_TRIPLET(result, ptr, pos)
+	
+	// we may need two qwords, so load them
+	.localreg	x, y
+	lqx			x, ptr, i_minus_one
+	lqx			y, ptr, i_plus_one		
+	shufb		result, x, y, blockLoadShuf
+	
+.endmacro
+
+// This is where all samples are loaded.
+// The corresponding registers are encoded as
+// s_[line](_[p|m]_1)
+// e.g. next_line[i-1] is stored in s_next_m_1
+
+.macro LOAD_SAMPLES	
+	mvo			i, pixel_index
+	a			i_minus_one, i, kMinusFourPlusFour
+	rotqbyi		i_plus_one, i_minus_one, 4
+	
+	
+	// we want to only have the lower 4 bits, but that's not possible with just a shufb, so we rotate first.
+	rotqbii		blockOffset, i, 4
+	// we now zero everything except the lowest byte of the first word
+	shufb		blockOffset, blockOffset, blockOffset, kShufTripletOffsetSplat	
+	// we now have two options, either we provide a 16 element LUT and keep the offset as is,
+	// or we shift it down 2 bits and use a 4 element LUT.
+	rotqmbii	blockOffset, blockOffset, -2
+	lqx			blockLoadShuf, tripletLoadLookUpTable, blockOffset
+	
+	LOAD_TRIPLET(previous_samples,previous_param,i)
+	LOAD_TRIPLET(current_samples,current_param,i)
+	LOAD_TRIPLET(next_samples,next_param,i)
+	LOAD_TRIPLET(second_next_samples,second_next_param,i)
+
+.endmacro
+
+
+// put all samples (i.e. sumb-values) for the height computation together
+.macro SHUFFLE_HEIGHT_SAMPLES(a,b,c,d,di)
+	shufb		a, current_samples, next_samples, kShufBCbc
+	.localreg	b_first, b_second, c_first, c_second
+	shufb		b_first, next_samples, previous_samples, kShufBc00
+	shufb		b_second, current_samples, second_next_samples, kShufBc00
+	shufb		b, b_first, b_second, kShufABab
+	shufb		c_first, previous_samples, next_samples, kShufAb00
+	shufb		c_second, second_next_samples, current_samples, kShufAb00
+	shufb		c, c_first, c_second, kShufABab
+	
+	//now, remove everything but the sumb
+	and			a, a, kSumbMask
+	and			b, b, kSumbMask
+	and			c, c, kSumbMask
+	and			d, di, kSumbMask	
+.endmacro
+
+.macro DIV(r, n, d)
+	.localreg	t0
+	frest		r, d
+	fi			r, d, r
+	fnms		t0, d, r, fOnePlusULP
+	fma			r, t0, r, r
+	fm			r, r, n
+.endmacro
+
+
+.macro GET_HEIGHT(r,len,first_alpha_samples)
+	.localreg	cc, cu, pc, pu
+	.localreg	n, d, pc_cu, cc_cu, pc_pu, cc_cu_minus_pc_pu, cc_cu_plus_pc_pu
+	SHUFFLE_HEIGHT_SAMPLES(cc,cu,pc,pu,first_alpha_samples)
+	sf			pc_cu, cu, pc
+	sf			cc_cu, cu, cc
+	sf			pc_pu, pu, pc
+	sf			cc_cu_minus_pc_pu, pc_pu, cc_cu
+	a			cc_cu_plus_pc_pu, cc_cu, pc_pu
+	mpya		n, pc_cu, len, cc_cu_minus_pc_pu
+	mpya		d, cc_cu_plus_pc_pu, len, cc_cu_minus_pc_pu
+
+	csflt		n, n, 0
+	csflt		d, d, 0
+	DIV(r, n, d)
+.endmacro
+
+// put the samples for the alpha test together
+.macro SHUFFLE_ALPHA(first,second)
+	//.localreg	new_first, new_second
+	shufb		first, current_samples, next_samples, kShufABab
+	shufb		second, previous_samples, next_samples, kShufACac
+.endmacro
+
+
+.macro NEW_LOAD_CONSTANTS
+	.reg		kShufACac, kShufBCbc, kShufBc00, kShufABab, kShufAb00
+	il128		kShufACac, "ACac"
+	il128		kShufBCbc, "BCbc"
+	il128		kShufBc00, "Bc00"
+	il128		kShufABab, "ABab"
+	il128		kShufAb00, "Ab00"
+	
+	.reg		kShufTripletOffsetSplat
+	il128		kShufTripletOffsetSplat,"000d000000000000"
+
+	.reg		tripletLoadLookUpTable
+	GET_LOAD_TRIPLET_LUT_BASE(tripletLoadLookUpTable)
+	
+	.reg		kMinusFourPlusFour	
+	il128		kMinusFourPlusFour, 0xFFFFFFFC_00000004_00000000_00000000
+	
+	.reg		i, i_minus_one, i_plus_one
+	.reg		blockLoadShuf, blockOffset
+	.reg	previous_samples, current_samples, next_samples, second_next_samples
+	
+.endmacro
+
+// used to write single-pixel debug output.
+.macro DEBUG_OUT(reg)
+
+	.localreg	kShufDebug
+	il128		kShufDebug, "AEIM000000000000"
+	//il128		kShufDebug, "BFJN000000000000"
+	//il128		kShufDebug, "CGKO000000000000"
+	//il128		kShufDebug, "DHLP000000000000"
+
+	.localreg	temp, mask, compressed
+	.memgroup	debug_memory
+	shufb		compressed,reg,reg,kShufDebug
+	lqx			[debug_memory] temp,i,debug_line
+	cwx			mask,i,debug_line
+	shufb		temp, compressed, temp, mask
+	stqx		[debug_memory] temp,i,debug_line
+	
+.endmacro
+
+.macro ITERATION
+	ai			valid_pixels, valid_pixels, -1			// update iteration counter
+	
+	//this puts all samples into the prefered word of the sample registers	
+	
+	.localreg		pos_in_line					// position in the scanline, with a twist	
+	GET_POSITION(pos_in_line,pixel_index)	// get the current position from the high-halfword
+	
+	.localreg	is_line_start
+	ceqi		is_line_start, pos_in_line, 0
+
+	.localreg	is_line_start_mask
+	selb		is_line_start_mask, kShufSelbUpper, kShufSelbLower, is_line_start
+	shufb		s, s, st_reset, is_line_start_mask
+	shufb		t, t, st_reset, is_line_start_mask
+	shufb		h, h, h_reset, is_line_start_mask
+
+	//get the current line length	
+	.localreg	current_line_length
+	GET_LINE_LENGTH(current_line_length,line_index)		// this is actually line_length -1!!!
+	
+	.localreg	len_minus_pos
+	sf			len_minus_pos, pos_in_line, current_line_length
+	
+	.localreg	line_ended					//determine if we need to write the blend job
+	ceq			line_ended, pos_in_line, current_line_length
+	
+	LOAD_SAMPLES
+	
+	// test for candidates
+	.localreg	first_alpha_samples, second_alpha_samples
+	SHUFFLE_ALPHA(first_alpha_samples, second_alpha_samples)
+	.localreg	first_alpha_test, second_alpha_test
+	and			first_alpha_test, first_alpha_samples, first_alpha_flags
+	and			second_alpha_test, second_alpha_samples, second_alpha_flags
+	ceq			first_alpha_test, first_alpha_test, first_alpha_flags
+	ceq			second_alpha_test, second_alpha_test, second_alpha_flags
+
+	.localreg	is_candidate
+	and			is_candidate, first_alpha_test, second_alpha_test
+	
+	.localreg	length_for_height	
+	shufb		length_for_height, len_minus_pos, pos_in_line, kShufAaAa
+	ai			length_for_height, length_for_height, 1
+	
+	// compute 4 heights for each pixel
+	.localreg	candidate_height
+	GET_HEIGHT(candidate_height, length_for_height, first_alpha_samples)
+	
+	// check if height 0.f<=candidate_height<1.f
+	// The sign bit makes this work.
+	.localreg	height_in_range
+	clgt		height_in_range, fOne, candidate_height
+
+	// now check if h has already been set for the forward loops
+	// kHCompareValue is 1 for forward and 7fffffff for backward lanes.
+	// I.e. the result is -1 if forward is 0 and always -1 for backward.
+	.localreg	masked_h_not_set
+	clgt		masked_h_not_set, kHCompareValue, h
+
+	
+	// update h and s if all checks out.
+	.localreg	valid_height	
+	and			valid_height, is_candidate, height_in_range
+	and			valid_height, valid_height, masked_h_not_set
+	selb		h, h, candidate_height, valid_height
+	selb		s, s, i, valid_height
+
+
+	
+	// check for t update
+	// all needed alpha tests are in first_alpha_test
+	
+	// only the forward loop need to check if t is already set.
+	.localreg	masked_t_not_set
+
+	// kTCompareValue is 0 for the forward lanes and 7fffffff for backward.
+	// i.e. forward lanes are true when t is -1 and backward lanes are always true.
+	cgt			masked_t_not_set, kTCompareValue, t
+
+
+	.localreg	update_t
+	and			update_t, first_alpha_test, masked_t_not_set
+
+	selb		t, t, i, update_t
+	
+	// the last thing to deal with is the end of a line.
+	// we already have the inverted t-check in t_not_set
+	// so let's see if s was set.
+
+	.localreg	s_not_set
+	ceq			s_not_set, s, st_reset
+	
+	// we now need to refresh t_not_set, as it may have changed.
+	.localreg	new_t_not_set
+	ceq			new_t_not_set, t, st_reset
+	
+	.localreg	s_not_set_and_t_set
+	andc		s_not_set_and_t_set, s_not_set, new_t_not_set
+	
+	.localreg	no_candidate_found
+	and			no_candidate_found, line_ended, s_not_set_and_t_set
+
+	// we move this partiall over to ODD.
+	.localreg	no_candidate_found_mask
+	selb		no_candidate_found_mask, kShufSelbUpper, kShufSelbLower, no_candidate_found
+	shufb		h, h, fOneHalf, no_candidate_found_mask
+	shufb		s, s, t, no_candidate_found_mask
+
+	//compress results and store
+	.localreg	h_compressed, compressed
+	cfltu		h_compressed, h, 16
+	shufb		compressed, s, h_compressed, kCompressionShuf
+	stqd		compressed, 0x00(blendJobs)
+
+	// Conditionally update pointers. 
+	// It seems as if blendJobs and line_index need to be split to prevent
+	// massive recurrence contraintes
+	mpya		blendJobs, kMinusSixteen, line_ended, blendJobs
+	mpya		line_index, kMinusSixteen, line_ended, line_index
+	
+	// get the offset of the next line, if we're at the end of the current one
+	.localreg	next_line_offset
+	GET_LINE_OFFSET(next_line_offset,line_index)
+
+
+	// either pick next pixel or jump to next sep-line
+	.localreg	next_pixel
+	ai			next_pixel, pixel_index, 4
+	selb		pixel_index, next_pixel, next_line_offset, line_ended
+
+.endmacro
+
+.cfunc qword edgePostMlaaComputeBounds(
+		qword previous_param,
+		qword current_param,
+		qword next_param,
+		qword second_next_param,
+		qword lineLength,
+		qword blendJobs,
+		qword mode,
+		qword valid_pixels,
+		qword width)
+
+	// constants
+	
+	.reg		kZero : readoptional
+	il			kZero, 0
+
+	.reg		horizontal_flag, vertical_flag, kSumbMask, fOnePlusULP, fOne, fOneHalf
+	il128		horizontal_flag, 0x00008000_00008000_00008000_00008000
+	il128		vertical_flag,   0x00004000_00004000_00004000_00004000
+	il128		kSumbMask, 0x00003fff_00003fff_00003fff_00003fff
+	il128		fOnePlusULP, 0x3f800001_3f800001_3f800001_3f800001
+	ilf32		fOne, 1.f
+	ilf32		fOneHalf, 0.5f
+	
+	// constants for pointer updates
+	.reg		kMinusSixteen
+	il			kMinusSixteen, -16
+	
+	.reg		kPositionSplat, kShufAa00, kShuf00Aa, kShufAAAA, kShufAAAa, kShufAaAa, kShufABcd, kStartSplat, kLengthSplat, kCompressionShuf : readoptional
+	il128		kPositionSplat, "00CD00CD00CD00CD" //splat the upper halfword into the words
+	il128		kShufAa00, "Aa00"
+	il128		kShuf00Aa, "00Aa"
+	il128		kShufAAAA, "AAAA"
+	il128		kShufAAAa, "AAAa"
+	il128		kShufAaAa, "AaAa"
+	il128		kShufABcd, "ABcd"
+	il128		kCompressionShuf, "BDFHbdfh"
+	
+	il128		kStartSplat, "00AB00AB00AB00AB"
+	il128		kLengthSplat, "00CD00CD00CD00CD"
+	
+	// depending on which line in a block of four we are, our masks look a bit different.
+	.reg		lineIndex, kLineIndexExtract, kLineIndexRemove
+	il128		kLineIndexExtract, "00AA00AA00AA00AA"
+	il128		kLineIndexRemove,  "0BCD0FGH0JKL0NOP"
+	shufb		lineIndex, valid_pixels, valid_pixels, kLineIndexExtract	// the line index is stored in the first byte of valid_pixels
+	shufb		valid_pixels, valid_pixels, valid_pixels, kLineIndexRemove	// remove the line index now.
+	
+	shli		lineIndex, lineIndex, 2										// multiply by 4 to get byte offsets
+	a			kStartSplat, kStartSplat, lineIndex				// and add to shuffle masks.
+	a			kLengthSplat, kLengthSplat, lineIndex
+
+
+	
+	.reg		kTCompareValue, kHCompareValue
+	il128		kTCompareValue, 0x00000000_7FFFFFFF_00000000_7FFFFFFF
+	il128		kHCompareValue, 0x00000001_7FFFFFFF_00000001_7FFFFFFF
+	
+	
+	//for selb replacement
+	.reg		kShufSelbUpper, kShufSelbLower
+	il128		kShufSelbUpper, "ABCD"
+	il128		kShufSelbLower, "abcd"
+
+	.reg		st_reset, h_reset
+	il			st_reset, -1
+	ilf32		h_reset, 0.f
+
+	// setup	
+	.reg		s, t, h
+	
+	mov			s, st_reset
+	mov			t, st_reset
+	mov			h, h_reset
+				
+	.reg		pixel_index, line_index	
+	il			line_index, 0
+	GET_LINE_OFFSET(pixel_index,line_index)
+	
+	.reg		is_horizontal_pass
+	ceqi		is_horizontal_pass, mode, 1
+	shufb		is_horizontal_pass, is_horizontal_pass, is_horizontal_pass, kShufAAAA //splat
+	
+	.reg		FO, FC
+	selb		FO, horizontal_flag, vertical_flag, is_horizontal_pass
+	selb		FC, vertical_flag, horizontal_flag, is_horizontal_pass
+	
+	.reg		first_alpha_flags, second_alpha_flags
+	shufb		first_alpha_flags,  FO, FO, kShufAAAA
+	shufb		second_alpha_flags, FC, FO, kShufAAAa
+	
+	NEW_LOAD_CONSTANTS
+	
+	// for the first iteration, we cannot look to the left, as that would be outside the buffers.
+	.reg		clampedLoadOffsets
+	il128		clampedLoadOffsets, 0x00000000_00000004_00000000_00000000
+	.reg		mustClampLeft
+	ceqi		mustClampLeft, pixel_index, 0
+	selb		kMinusFourPlusFour, kMinusFourPlusFour, clampedLoadOffsets, mustClampLeft
+		
+	ITERATION
+	brz			valid_pixels, end
+	
+	ai			valid_pixels, valid_pixels, -1
+	brz			valid_pixels, last
+	il128		kMinusFourPlusFour, 0xFFFFFFFC_00000004_00000000_00000000
+	
+	// splat early so we need only one register (assuming kSplatAAAA is no longer used)
+	shufb		width, width, width, kShufAAAA
+	
+loop:
+	ITERATION
+	brnz		valid_pixels, loop : $mintrip<1>
+	
+last:
+	// for the last iteration, we again need to prevent fetching outside the buffer
+	il128		clampedLoadOffsets, 0xFFFFFFFC_00000000_00000000_00000000
+	.reg		mustClampRight
+	ai			width, width, -8
+	cgt			mustClampRight, pixel_index, width
+	selb		kMinusFourPlusFour, kMinusFourPlusFour, clampedLoadOffsets, mustClampRight
+	
+	ITERATION
+	
+end:	
+	mov			@result, blendJobs //let the C side do the difference.
+	
+.endfunc

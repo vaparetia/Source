@@ -1,91 +1,91 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2009 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-//--------------------------------------------------------------------------------------------------
-//  FUNCTION DEFINITION
-//--------------------------------------------------------------------------------------------------
-
-//--------------------------------------------------------------------------------------------------
-/**
-	@fn			extern "C" void edgePostExtractDepth( qword output, qword input, qword count, qword near, qword far )
-**/
-//--------------------------------------------------------------------------------------------------
-
-.include "edgepost_helpers.inc"
-
-.cfunc void edgePostExtractDepth( qword output, qword input, qword count, qword near, qword far )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-
-	.reg	kDepthRangeMultiplier, kMinusOneF, kMinusTwoF, kTwoF, kOneF, kZeroF : readoptional
-	ilf32	kDepthRangeMultiplier, 1.f / 16777215.f
-	ilf32	kOneF, 1.f
-	ilf32	kZeroF, .0f
-	ilf32	kMinusOneF, -1.f
-	ilf32	kMinusTwoF, -2.f
-	ilf32	kTwoF, 2.f
-	
-	// splat inputs
-	shufb	near, near, near, kEdgePostReplicateX
-	shufb	far, far, far, kEdgePostReplicateX
-	
-	// Linearize factors
-	.reg	ka, kc, st0, zLineariseOffset, zLineariseScale
-	fm		ka, near, far
-	fs		kc, near, far
-	frest	st0, kc
-	fi		kc, kc, st0
-	fm		zLineariseOffset, far, kc
-	fm		zLineariseScale, ka, kc
-	
-	// k2 = 1 / ( far - near )
-	.reg	k2
-	fs		k2, far, near
-	frest	st0, k2
-	fi		k2, k2, st0
-	
-	//	stop	0x3fff
-	
-loop:
-	ai		output, output, 0x10
-	ai		input, input, 0x10
-	ai		count, count, -4
-	
-	// Load pixels
-	.reg	s0
-	lqd		s0, -0x10( input )
-	
-	// discard stencil bit
-	rotmi	s0, s0, -8
-	
-	// convert to float
-	cuflt	s0, s0, 0
-	
-	// convert to linear Z
-	.reg	is0, st1, t0
-	fma		s0, s0, kDepthRangeMultiplier, zLineariseOffset
-	frest	st1, s0
-	fi		is0, s0, st1
-	fnms	t0, is0, s0, kTwoF
-	fm		is0, t0, is0
-	fm		s0, is0, zLineariseScale
-	
-	// compress into 0..1
-	fs		s0, s0, near
-	fm		s0, s0, k2
-	
-	// clamp
-	.reg	m
-	fcgt	m, s0, kOneF
-	selb	s0, s0, kOneF, m
-	fcgt	m, s0, kZeroF
-	selb	s0, kZeroF, s0, m
-	
-	// Store
-	stqd	s0, -0x10( output )
-	brnz	count, loop
-	
-.endfunc
-
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+	@fn			extern "C" void edgePostExtractDepth( qword output, qword input, qword count, qword near, qword far )
+**/
+//--------------------------------------------------------------------------------------------------
+
+.include "edgepost_helpers.inc"
+
+.cfunc void edgePostExtractDepth( qword output, qword input, qword count, qword near, qword far )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+
+	.reg	kDepthRangeMultiplier, kMinusOneF, kMinusTwoF, kTwoF, kOneF, kZeroF : readoptional
+	ilf32	kDepthRangeMultiplier, 1.f / 16777215.f
+	ilf32	kOneF, 1.f
+	ilf32	kZeroF, .0f
+	ilf32	kMinusOneF, -1.f
+	ilf32	kMinusTwoF, -2.f
+	ilf32	kTwoF, 2.f
+	
+	// splat inputs
+	shufb	near, near, near, kEdgePostReplicateX
+	shufb	far, far, far, kEdgePostReplicateX
+	
+	// Linearize factors
+	.reg	ka, kc, st0, zLineariseOffset, zLineariseScale
+	fm		ka, near, far
+	fs		kc, near, far
+	frest	st0, kc
+	fi		kc, kc, st0
+	fm		zLineariseOffset, far, kc
+	fm		zLineariseScale, ka, kc
+	
+	// k2 = 1 / ( far - near )
+	.reg	k2
+	fs		k2, far, near
+	frest	st0, k2
+	fi		k2, k2, st0
+	
+	//	stop	0x3fff
+	
+loop:
+	ai		output, output, 0x10
+	ai		input, input, 0x10
+	ai		count, count, -4
+	
+	// Load pixels
+	.reg	s0
+	lqd		s0, -0x10( input )
+	
+	// discard stencil bit
+	rotmi	s0, s0, -8
+	
+	// convert to float
+	cuflt	s0, s0, 0
+	
+	// convert to linear Z
+	.reg	is0, st1, t0
+	fma		s0, s0, kDepthRangeMultiplier, zLineariseOffset
+	frest	st1, s0
+	fi		is0, s0, st1
+	fnms	t0, is0, s0, kTwoF
+	fm		is0, t0, is0
+	fm		s0, is0, zLineariseScale
+	
+	// compress into 0..1
+	fs		s0, s0, near
+	fm		s0, s0, k2
+	
+	// clamp
+	.reg	m
+	fcgt	m, s0, kOneF
+	selb	s0, s0, kOneF, m
+	fcgt	m, s0, kZeroF
+	selb	s0, kZeroF, s0, m
+	
+	// Store
+	stqd	s0, -0x10( output )
+	brnz	count, loop
+	
+.endfunc
+

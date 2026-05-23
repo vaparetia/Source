@@ -1,44 +1,44 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2009 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-//--------------------------------------------------------------------------------------------------
-//  FUNCTION DEFINITION
-//--------------------------------------------------------------------------------------------------
-
-//--------------------------------------------------------------------------------------------------
-/**
-	@fn			extern "C" void edgePostFloatToGrayscale( qword output, qword input, qword count, qword near, qword far )
-**/
-//--------------------------------------------------------------------------------------------------
-
-.include "edgepost_helpers.inc"
-
-.cfunc void edgePostFloatToGrayscale( qword output, qword input, qword count )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-
-	.reg		kShufRgb
-	il128		kShufRgb, "0DDD0HHH0LLL0PPP"
-	
-loop:
-	ai			output, output, 0x10
-	ai			input, input, 0x10
-	ai			count, count, -4
-	
-	// Load depth
-	.reg		s0
-	lqd			s0, -0x10( input )
-	
-	// Convert
-	EDGEPOST_FLOAT_TO_U8( s0, s0)
-	
-	// shuffle to r,g,b
-	shufb		s0, s0, s0, kShufRgb	
-	
-	// Store
-	stqd		s0, -0x10( output )
-	brnz		count, loop
-.endfunc
-
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+	@fn			extern "C" void edgePostFloatToGrayscale( qword output, qword input, qword count, qword near, qword far )
+**/
+//--------------------------------------------------------------------------------------------------
+
+.include "edgepost_helpers.inc"
+
+.cfunc void edgePostFloatToGrayscale( qword output, qword input, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+
+	.reg		kShufRgb
+	il128		kShufRgb, "0DDD0HHH0LLL0PPP"
+	
+loop:
+	ai			output, output, 0x10
+	ai			input, input, 0x10
+	ai			count, count, -4
+	
+	// Load depth
+	.reg		s0
+	lqd			s0, -0x10( input )
+	
+	// Convert
+	EDGEPOST_FLOAT_TO_U8( s0, s0)
+	
+	// shuffle to r,g,b
+	shufb		s0, s0, s0, kShufRgb	
+	
+	// Store
+	stqd		s0, -0x10( output )
+	brnz		count, loop
+.endfunc
+

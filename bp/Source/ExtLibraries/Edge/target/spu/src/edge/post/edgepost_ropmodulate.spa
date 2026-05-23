@@ -1,176 +1,176 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2009 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-//--------------------------------------------------------------------------------------------------
-//  FUNCTION DEFINITION
-//--------------------------------------------------------------------------------------------------
-
-//--------------------------------------------------------------------------------------------------
-/**
-	// output = input0 * input1
-	void edgePostModulate8( void* output, void* input0, void* input1, vec_uint4 multiplier, uint32_t count );
-	
-**/
-//--------------------------------------------------------------------------------------------------
-
-
-.include "edgepost_helpers.inc"
-
-
-
-.macro EDGEPOST_MODULATE( r, p0, p1 )
-	//for the fix point math to no limit our range to [0,254], we need to increment one of the by one.
-	.localreg	tmp
-	ai			tmp,p0,1 //it is actually important to take p0 here.
-	mpyu		r, p1, tmp
-	rotmai		r, r, -8
-	EDGEPOST_CLAMP_PIXEL8( r )
-.endmacro
-
-
-.cfunc void edgePostModulate8( qword output, qword input0, qword shuffle0, qword input1, qword shuffle1, qword count )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-	
-loop:
-	ai		output, output, 0x10
-	ai		input0, input0, 0x10
-	ai		input1, input1, 0x10
-	ai		count, count, -4
-	
-	// Load pixels
-	.reg	s0, s1
-	lqd		s0, -0x10( input0 )
-	lqd		s1, -0x10( input1 )
-	
-	// Shuffle
-	shufb	s0, s0, s0, shuffle0
-	shufb	s1, s1, s1, shuffle1
-	
-	// Unpack
-	.reg	p00, p01, p02, p03
-	.reg	p10, p11, p12, p13
-	EDGEPOST_UNPACK_PIXELS8( p00, p01, p02, p03, s0 )
-	EDGEPOST_UNPACK_PIXELS8( p10, p11, p12, p13, s1 )
-	
-	.reg	r0, r1, r2, r3
-	EDGEPOST_MODULATE( r0, p00, p10 )
-	EDGEPOST_MODULATE( r1, p01, p11 )
-	EDGEPOST_MODULATE( r2, p02, p12 )
-	EDGEPOST_MODULATE( r3, p03, p13 )
-	
-	.reg	r
-	EDGEPOST_PACK_PIXELS8( r, r0, r1, r2, r3)
-	
-	stqd	r, -0x10( output )
-	brnz	count, loop
-.endfunc
-
-.cfunc void edgePostConstantModulate8( qword output, qword input0, qword shuffle0, qword constant, qword count )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-	
-loop:
-	ai		output, output, 0x10
-	ai		input0, input0, 0x10
-	ai		count, count, -4
-	
-	// Load pixels
-	.reg	s0
-	lqd		s0, -0x10( input0 )
-	
-	// Shuffle
-	shufb	s0, s0, s0, shuffle0
-	
-	// Unpack
-	.reg	p00, p01, p02, p03
-	EDGEPOST_UNPACK_PIXELS8( p00, p01, p02, p03, s0 )
-	
-	.reg	r0, r1, r2, r3
-	EDGEPOST_MODULATE( r0, p00, constant )
-	EDGEPOST_MODULATE( r1, p01, constant )
-	EDGEPOST_MODULATE( r2, p02, constant )
-	EDGEPOST_MODULATE( r3, p03, constant )
-	
-	.reg	r
-	EDGEPOST_PACK_PIXELS8( r, r0, r1, r2, r3)
-	
-	stqd	r, -0x10( output )
-	brnz	count, loop
-.endfunc
-
-.cfunc void edgePostModulateFX16( qword output, qword input0, qword shuffle0, qword input1, qword shuffle1, qword count )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-	
-loop:
-	ai		output, output, 0x20
-	ai		input0, input0, 0x20
-	ai		input1, input1, 0x20
-	ai		count, count, -4
-	
-	// Load pixels
-	.reg	s0, s1, s2, s3
-	lqd		s0, -0x20( input0 )
-	lqd		s1, -0x10( input0 )
-	lqd		s2, -0x20( input1 )
-	lqd		s3, -0x10( input1 )
-	
-	// Unpack
-	.reg		p00, p01, p02, p03
-	.reg		p10, p11, p12, p13
-	EDGEPOST_UNPACK_PIXELS16( p00, p01, s0 )
-	EDGEPOST_UNPACK_PIXELS16( p02, p03, s1 )
-	EDGEPOST_UNPACK_PIXELS16( p10, p11, s2 )
-	EDGEPOST_UNPACK_PIXELS16( p12, p13, s3 )
-
-	// convert to float
-	cuflt		p00, p00, 11
-	cuflt		p01, p01, 11
-	cuflt		p02, p02, 11
-	cuflt		p03, p03, 11
-	cuflt		p10, p10, 11
-	cuflt		p11, p11, 11
-	cuflt		p12, p12, 11
-	cuflt		p13, p13, 11
-	
-	// Shuffle
-	shufb	p00, p00, p00, shuffle0
-	shufb	p01, p01, p01, shuffle0
-	shufb	p02, p02, p02, shuffle0
-	shufb	p03, p03, p03, shuffle0
-	
-	shufb	p10, p10, p10, shuffle1
-	shufb	p11, p11, p11, shuffle1
-	shufb	p12, p12, p12, shuffle1
-	shufb	p13, p13, p13, shuffle1
-	
-	fm		p00, p00, p10
-	fm		p01, p01, p11
-	fm		p02, p02, p12
-	fm		p03, p03, p13
-		
-	// back to fixed
-	cfltu		p00, p00, 11
-	cfltu		p01, p01, 11
-	cfltu		p02, p02, 11
-	cfltu		p03, p03, 11
-	
-	.reg		p0, p1
-	EDGEPOST_PACK_PIXELS16( p0, p00, p01)
-	EDGEPOST_PACK_PIXELS16( p1, p02, p03)
-	
-	stqd		p0, -0x20( output )
-	stqd		p1, -0x10( output )
-	brnz		count, loop
-.endfunc
-
-
-
-
-
-
-
-
-
-
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+	// output = input0 * input1
+	void edgePostModulate8( void* output, void* input0, void* input1, vec_uint4 multiplier, uint32_t count );
+	
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+.include "edgepost_helpers.inc"
+
+
+
+.macro EDGEPOST_MODULATE( r, p0, p1 )
+	//for the fix point math to no limit our range to [0,254], we need to increment one of the by one.
+	.localreg	tmp
+	ai			tmp,p0,1 //it is actually important to take p0 here.
+	mpyu		r, p1, tmp
+	rotmai		r, r, -8
+	EDGEPOST_CLAMP_PIXEL8( r )
+.endmacro
+
+
+.cfunc void edgePostModulate8( qword output, qword input0, qword shuffle0, qword input1, qword shuffle1, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	
+loop:
+	ai		output, output, 0x10
+	ai		input0, input0, 0x10
+	ai		input1, input1, 0x10
+	ai		count, count, -4
+	
+	// Load pixels
+	.reg	s0, s1
+	lqd		s0, -0x10( input0 )
+	lqd		s1, -0x10( input1 )
+	
+	// Shuffle
+	shufb	s0, s0, s0, shuffle0
+	shufb	s1, s1, s1, shuffle1
+	
+	// Unpack
+	.reg	p00, p01, p02, p03
+	.reg	p10, p11, p12, p13
+	EDGEPOST_UNPACK_PIXELS8( p00, p01, p02, p03, s0 )
+	EDGEPOST_UNPACK_PIXELS8( p10, p11, p12, p13, s1 )
+	
+	.reg	r0, r1, r2, r3
+	EDGEPOST_MODULATE( r0, p00, p10 )
+	EDGEPOST_MODULATE( r1, p01, p11 )
+	EDGEPOST_MODULATE( r2, p02, p12 )
+	EDGEPOST_MODULATE( r3, p03, p13 )
+	
+	.reg	r
+	EDGEPOST_PACK_PIXELS8( r, r0, r1, r2, r3)
+	
+	stqd	r, -0x10( output )
+	brnz	count, loop
+.endfunc
+
+.cfunc void edgePostConstantModulate8( qword output, qword input0, qword shuffle0, qword constant, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	
+loop:
+	ai		output, output, 0x10
+	ai		input0, input0, 0x10
+	ai		count, count, -4
+	
+	// Load pixels
+	.reg	s0
+	lqd		s0, -0x10( input0 )
+	
+	// Shuffle
+	shufb	s0, s0, s0, shuffle0
+	
+	// Unpack
+	.reg	p00, p01, p02, p03
+	EDGEPOST_UNPACK_PIXELS8( p00, p01, p02, p03, s0 )
+	
+	.reg	r0, r1, r2, r3
+	EDGEPOST_MODULATE( r0, p00, constant )
+	EDGEPOST_MODULATE( r1, p01, constant )
+	EDGEPOST_MODULATE( r2, p02, constant )
+	EDGEPOST_MODULATE( r3, p03, constant )
+	
+	.reg	r
+	EDGEPOST_PACK_PIXELS8( r, r0, r1, r2, r3)
+	
+	stqd	r, -0x10( output )
+	brnz	count, loop
+.endfunc
+
+.cfunc void edgePostModulateFX16( qword output, qword input0, qword shuffle0, qword input1, qword shuffle1, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	
+loop:
+	ai		output, output, 0x20
+	ai		input0, input0, 0x20
+	ai		input1, input1, 0x20
+	ai		count, count, -4
+	
+	// Load pixels
+	.reg	s0, s1, s2, s3
+	lqd		s0, -0x20( input0 )
+	lqd		s1, -0x10( input0 )
+	lqd		s2, -0x20( input1 )
+	lqd		s3, -0x10( input1 )
+	
+	// Unpack
+	.reg		p00, p01, p02, p03
+	.reg		p10, p11, p12, p13
+	EDGEPOST_UNPACK_PIXELS16( p00, p01, s0 )
+	EDGEPOST_UNPACK_PIXELS16( p02, p03, s1 )
+	EDGEPOST_UNPACK_PIXELS16( p10, p11, s2 )
+	EDGEPOST_UNPACK_PIXELS16( p12, p13, s3 )
+
+	// convert to float
+	cuflt		p00, p00, 11
+	cuflt		p01, p01, 11
+	cuflt		p02, p02, 11
+	cuflt		p03, p03, 11
+	cuflt		p10, p10, 11
+	cuflt		p11, p11, 11
+	cuflt		p12, p12, 11
+	cuflt		p13, p13, 11
+	
+	// Shuffle
+	shufb	p00, p00, p00, shuffle0
+	shufb	p01, p01, p01, shuffle0
+	shufb	p02, p02, p02, shuffle0
+	shufb	p03, p03, p03, shuffle0
+	
+	shufb	p10, p10, p10, shuffle1
+	shufb	p11, p11, p11, shuffle1
+	shufb	p12, p12, p12, shuffle1
+	shufb	p13, p13, p13, shuffle1
+	
+	fm		p00, p00, p10
+	fm		p01, p01, p11
+	fm		p02, p02, p12
+	fm		p03, p03, p13
+		
+	// back to fixed
+	cfltu		p00, p00, 11
+	cfltu		p01, p01, 11
+	cfltu		p02, p02, 11
+	cfltu		p03, p03, 11
+	
+	.reg		p0, p1
+	EDGEPOST_PACK_PIXELS16( p0, p00, p01)
+	EDGEPOST_PACK_PIXELS16( p1, p02, p03)
+	
+	stqd		p0, -0x20( output )
+	stqd		p1, -0x10( output )
+	brnz		count, loop
+.endfunc
+
+
+
+
+
+
+
+
+
+

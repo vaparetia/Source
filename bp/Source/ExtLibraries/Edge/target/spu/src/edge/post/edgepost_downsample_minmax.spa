@@ -1,105 +1,105 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2009 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-//--------------------------------------------------------------------------------------------------
-//  FUNCTION DEFINITION
-//--------------------------------------------------------------------------------------------------
-
-//--------------------------------------------------------------------------------------------------
-/**
-	@fn			extern "C" void edgePostDownsampleFloatMin( qword output, qword input, qword stride, qword count )
-	@fn			extern "C" void edgePostDownsampleFloatMax( qword output, qword input, qword stride, qword count )
-**/
-//--------------------------------------------------------------------------------------------------
-
-
-// Choose min sample
-.cfunc void edgePostDownsampleFloatMin( qword output, qword input, qword stride, qword count )
-	.reg	input0, input1, kACac, kBDbd
-	
-	il128	kACac, "ACac"
-	il128	kBDbd, "BDbd"
-	ori		input0, input, 0
-	a		input1, input, stride
-	
-loop:
-	ai		output, output, 0x10
-	ai		input0, input0, 0x20
-	ai		input1, input1, 0x20
-	ai		count, count, -4
-	
-	.reg	p00, p10, p01, p11
-	
-	// Load 4 quads
-	lqd		p00, -0x20( input0 )
-	lqd		p10, -0x10( input0 )
-	lqd		p01, -0x20( input1 )
-	lqd		p11, -0x10( input1 )
-	
-	// Chose closer
-	.reg	m0, m1
-	fcgt	m0, p00, p01
-	fcgt	m1, p10, p11
-	selb	p00, p00, p01, m0
-	selb	p10, p10, p11, m1
-	
-	// Combine
-	.reg	ACac, BDbd
-	shufb	ACac, p00, p10, kACac
-	shufb	BDbd, p00, p10, kBDbd
-	
-	// Chose closer
-	fcgt	m0, ACac, BDbd
-	selb	p00, ACac, BDbd, m0
-	
-	// Store
-	stqd	p00, -0x10( output )
-	brnz	count, loop
-.endfunc
-
-// Choose min sample
-.cfunc void edgePostDownsampleFloatMax( qword output, qword input, qword stride, qword count )
-	.reg	input0, input1, kACac, kBDbd
-	
-	il128	kACac, "ACac"
-	il128	kBDbd, "BDbd"
-	ori		input0, input, 0
-	a		input1, input, stride
-	
-loop:
-	ai		output, output, 0x10
-	ai		input0, input0, 0x20
-	ai		input1, input1, 0x20
-	ai		count, count, -4
-	
-	.reg	p00, p10, p01, p11
-	
-	// Load 4 quads
-	lqd		p00, -0x20( input0 )
-	lqd		p10, -0x10( input0 )
-	lqd		p01, -0x20( input1 )
-	lqd		p11, -0x10( input1 )
-	
-	// Chose closer
-	.reg	m0, m1
-	fcgt	m0, p00, p01
-	fcgt	m1, p10, p11
-	selb	p00, p01, p00, m0
-	selb	p10, p11, p10, m1
-	
-	// Combine
-	.reg	ACac, BDbd
-	shufb	ACac, p00, p10, kACac
-	shufb	BDbd, p00, p10, kBDbd
-	
-	// Chose closer
-	fcgt	m0, ACac, BDbd
-	selb	p00, BDbd, ACac, m0
-	
-	// Store
-	stqd	p00, -0x10( output )
-	brnz	count, loop
-.endfunc
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+	@fn			extern "C" void edgePostDownsampleFloatMin( qword output, qword input, qword stride, qword count )
+	@fn			extern "C" void edgePostDownsampleFloatMax( qword output, qword input, qword stride, qword count )
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+// Choose min sample
+.cfunc void edgePostDownsampleFloatMin( qword output, qword input, qword stride, qword count )
+	.reg	input0, input1, kACac, kBDbd
+	
+	il128	kACac, "ACac"
+	il128	kBDbd, "BDbd"
+	ori		input0, input, 0
+	a		input1, input, stride
+	
+loop:
+	ai		output, output, 0x10
+	ai		input0, input0, 0x20
+	ai		input1, input1, 0x20
+	ai		count, count, -4
+	
+	.reg	p00, p10, p01, p11
+	
+	// Load 4 quads
+	lqd		p00, -0x20( input0 )
+	lqd		p10, -0x10( input0 )
+	lqd		p01, -0x20( input1 )
+	lqd		p11, -0x10( input1 )
+	
+	// Chose closer
+	.reg	m0, m1
+	fcgt	m0, p00, p01
+	fcgt	m1, p10, p11
+	selb	p00, p00, p01, m0
+	selb	p10, p10, p11, m1
+	
+	// Combine
+	.reg	ACac, BDbd
+	shufb	ACac, p00, p10, kACac
+	shufb	BDbd, p00, p10, kBDbd
+	
+	// Chose closer
+	fcgt	m0, ACac, BDbd
+	selb	p00, ACac, BDbd, m0
+	
+	// Store
+	stqd	p00, -0x10( output )
+	brnz	count, loop
+.endfunc
+
+// Choose min sample
+.cfunc void edgePostDownsampleFloatMax( qword output, qword input, qword stride, qword count )
+	.reg	input0, input1, kACac, kBDbd
+	
+	il128	kACac, "ACac"
+	il128	kBDbd, "BDbd"
+	ori		input0, input, 0
+	a		input1, input, stride
+	
+loop:
+	ai		output, output, 0x10
+	ai		input0, input0, 0x20
+	ai		input1, input1, 0x20
+	ai		count, count, -4
+	
+	.reg	p00, p10, p01, p11
+	
+	// Load 4 quads
+	lqd		p00, -0x20( input0 )
+	lqd		p10, -0x10( input0 )
+	lqd		p01, -0x20( input1 )
+	lqd		p11, -0x10( input1 )
+	
+	// Chose closer
+	.reg	m0, m1
+	fcgt	m0, p00, p01
+	fcgt	m1, p10, p11
+	selb	p00, p01, p00, m0
+	selb	p10, p11, p10, m1
+	
+	// Combine
+	.reg	ACac, BDbd
+	shufb	ACac, p00, p10, kACac
+	shufb	BDbd, p00, p10, kBDbd
+	
+	// Chose closer
+	fcgt	m0, ACac, BDbd
+	selb	p00, BDbd, ACac, m0
+	
+	// Store
+	stqd	p00, -0x10( output )
+	brnz	count, loop
+.endfunc

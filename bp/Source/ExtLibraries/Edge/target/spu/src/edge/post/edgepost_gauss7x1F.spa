@@ -1,96 +1,96 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2009 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-//--------------------------------------------------------------------------------------------------
-//  FUNCTION DEFINITION
-//--------------------------------------------------------------------------------------------------
-
-//--------------------------------------------------------------------------------------------------
-/**
-	@fn			extern "C" void edgePostGauss7x1F
-									(
-										const vec_char16* __restrict pOutputScanline,
-										const vec_char16* __restrict pInputScanline,
-										const u16 count,
-										const vec_float4 weights
-									)
-	
-	@param		pOutputScanline		pointer to result
-	@param		pInputScanline		pointer to input scanline
-	@param		count				scanline size
-	@param		weights				gauss weights
-		
-**/
-//--------------------------------------------------------------------------------------------------
-
-.include "edgepost_helpers.inc"
-
-
-
-///////////////////////////////////////////////////////////////////
-// single channel float horizontal gauss blur
-.cfunc void edgePostGauss7x1F( qword pOutput, qword pInput, qword count, qword weights )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-	
-	// shuffle masks
-	.reg		kShuf1, kShuf2, kShuf3
-	il128		kShuf1, "BCDa"
-	il128		kShuf2, "CDab"
-	il128		kShuf3, "Dabc"
-	
-	// gauss constants	
-	.reg		w0, w1, w2, w3
-	shufb		w0, weights, weights, kEdgePostReplicateX
-	shufb		w1, weights, weights, kEdgePostReplicateY
-	shufb		w2, weights, weights, kEdgePostReplicateZ
-	shufb		w3, weights, weights, kEdgePostReplicateW
-
-/*	
-	ilf32		k0, 0.3125f * 2.f
-	ilf32		k1, 0.234375f * 2.f
-	ilf32		k2, 0.09375f * 2.f
-	ilf32		k3, 0.015625f * 2.f
-*/
-	
-loop:
-	ai			count, count, -4
-	ai			pOutput, pOutput, 0x10
-	ai			pInput, pInput, 0x10
-	
-	// load input
-	.reg		o0, o1, o2
-	lqd			o0, -0x20(pInput)
-	lqd			o1, -0x10(pInput)
-	lqd			o2, -0x00(pInput)
-	
-	// shuffle to get operands
-	.reg		s0, s1, s2, s4, s5, s6
-	shufb		s0, o0, o1, kShuf1
-	shufb		s1, o0, o1, kShuf2
-	shufb		s2, o0, o1, kShuf3
-	shufb		s4, o1, o2, kShuf1
-	shufb		s5, o1, o2, kShuf2
-	shufb		s6, o1, o2, kShuf3
-	
-	// filter
-	.reg		result
-	fm			result, s0, w3
-	fma			result, s1, w2, result
-	fma			result, s2, w1, result
-	fma			result, o1, w0, result
-	fma			result, s4, w1, result
-	fma			result, s5, w2, result
-	fma			result, s6, w3, result
-	
-	.reg		m
-	fcgt		m, result, kEdgePostFloatOne
-	selb		result, result, kEdgePostFloatOne, m
-	
-	// Store	
-	stqd		result, -0x10( pOutput )
-	brnz		count, loop
-.endfunc	
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+	@fn			extern "C" void edgePostGauss7x1F
+									(
+										const vec_char16* __restrict pOutputScanline,
+										const vec_char16* __restrict pInputScanline,
+										const u16 count,
+										const vec_float4 weights
+									)
+	
+	@param		pOutputScanline		pointer to result
+	@param		pInputScanline		pointer to input scanline
+	@param		count				scanline size
+	@param		weights				gauss weights
+		
+**/
+//--------------------------------------------------------------------------------------------------
+
+.include "edgepost_helpers.inc"
+
+
+
+///////////////////////////////////////////////////////////////////
+// single channel float horizontal gauss blur
+.cfunc void edgePostGauss7x1F( qword pOutput, qword pInput, qword count, qword weights )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	
+	// shuffle masks
+	.reg		kShuf1, kShuf2, kShuf3
+	il128		kShuf1, "BCDa"
+	il128		kShuf2, "CDab"
+	il128		kShuf3, "Dabc"
+	
+	// gauss constants	
+	.reg		w0, w1, w2, w3
+	shufb		w0, weights, weights, kEdgePostReplicateX
+	shufb		w1, weights, weights, kEdgePostReplicateY
+	shufb		w2, weights, weights, kEdgePostReplicateZ
+	shufb		w3, weights, weights, kEdgePostReplicateW
+
+/*	
+	ilf32		k0, 0.3125f * 2.f
+	ilf32		k1, 0.234375f * 2.f
+	ilf32		k2, 0.09375f * 2.f
+	ilf32		k3, 0.015625f * 2.f
+*/
+	
+loop:
+	ai			count, count, -4
+	ai			pOutput, pOutput, 0x10
+	ai			pInput, pInput, 0x10
+	
+	// load input
+	.reg		o0, o1, o2
+	lqd			o0, -0x20(pInput)
+	lqd			o1, -0x10(pInput)
+	lqd			o2, -0x00(pInput)
+	
+	// shuffle to get operands
+	.reg		s0, s1, s2, s4, s5, s6
+	shufb		s0, o0, o1, kShuf1
+	shufb		s1, o0, o1, kShuf2
+	shufb		s2, o0, o1, kShuf3
+	shufb		s4, o1, o2, kShuf1
+	shufb		s5, o1, o2, kShuf2
+	shufb		s6, o1, o2, kShuf3
+	
+	// filter
+	.reg		result
+	fm			result, s0, w3
+	fma			result, s1, w2, result
+	fma			result, s2, w1, result
+	fma			result, o1, w0, result
+	fma			result, s4, w1, result
+	fma			result, s5, w2, result
+	fma			result, s6, w3, result
+	
+	.reg		m
+	fcgt		m, result, kEdgePostFloatOne
+	selb		result, result, kEdgePostFloatOne, m
+	
+	// Store	
+	stqd		result, -0x10( pOutput )
+	brnz		count, loop
+.endfunc	
 	

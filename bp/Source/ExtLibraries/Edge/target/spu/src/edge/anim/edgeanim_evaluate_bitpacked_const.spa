@@ -1,517 +1,517 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2007 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-	
-.cfunc void _edgeAnimEvaluateBitPackedConst(uint32_t keysAdr, 
-											uint32_t count, 
-											vec_float4* output, 
-											const uint16_t* channelIds, 
-											const uint32_t* specAdr, 
-											bool isRotation)
-
-	//----------------------------------------------------------------------------------------------
-	// Early out
-	//----------------------------------------------------------------------------------------------    
-    
-    brz			count, NoLoop
-    
-    //----------------------------------------------------------------------------------------------
-    // Init code
-    //----------------------------------------------------------------------------------------------        
-           
-     .reg		shuf0A0B0C0D, shufAAAA, shufDDDD, shufAaBb, shufBbAa, shufCcDd, shufDdCc, shufCDab, shufABcd, shufAa00, shuf00Aa
-     .reg		_EEEE, zero, one, allOnes, k7FFFFFFF
-    il128		shuf0A0B0C0D, "0A0B0C0D"
-    il128		shufAAAA, "AAAA"
-    il128		shufDDDD, "DDDD"
-    il128		shufAaBb, "AaBb"
-    il128		shufBbAa, "BbAa"
-    il128		shufCcDd, "CcDd"
-    il128		shufDdCc, "DdCc"
-    il128		shufCDab, "CDab"
-    il128		shufABcd, "ABcd"
-    il128		shufAa00, "Aa00"
-    il128		shuf00Aa, "00Aa"
-    il128		_EEEE, 0xE0000000_E0000000_E0000000_E0000000
-    ila			zero, 0
-    ila			one, 1
-    fsmbi		allOnes, 0xffff
-    il128		k7FFFFFFF, 0x7FFFFFFF_7FFFFFFF_7FFFFFFF_7FFFFFFF
-
-    .reg		fOne, fHalf, count4
-    ilhu    	fOne, 0x3f800000@h								//  1.0
-	ilhu		fHalf,  0x3F000000@h							//	0.5f
-    ai			count4, count, 3
-    rotmi		count4, count4, -2
-
-    // convert keyframe addresses to bit addresses
-    shli		keysAdr, keysAdr, 3
-    shufb		keysAdr, keysAdr, keysAdr, shufAAAA
-    
-    // form select mask from bool
-    .reg		rotSelectMask
-    fsm			rotSelectMask, isRotation
-    shufb		rotSelectMask, rotSelectMask, rotSelectMask, shufDDDD
-    
-  
-   	//----------------------------------------------------------------
-   	// load packing spec
-	//----------------------------------------------------------------
-
-    .reg		ps0, ps1, specs, sshift0, sshift1
-    lqd			ps0, 0x00(specAdr)
-    lqd			ps1, 0x10(specAdr)
-    andi		sshift0, specAdr, 15
-    ai			sshift1, sshift0, -16
-    shlqby		ps0, ps0, sshift0
-    rotqmby		ps1, ps1, sshift1
-    or			specs, ps0, ps1
-    shufb		specs, specs, specs, shufAAAA
-
-	// expand packing specs
-	.reg		specSx, specSy, specSz
-	rotmi		specSx, specs, -31
-	rotmi		specSy, specs, -21
-	rotmi		specSz, specs, -11
-	andi		specSx, specSx, 1
-	andi		specSy, specSy, 1
-	andi		specSz, specSz, 1
-
-	.reg		specEx, specEy, specEz
-	rotmi		specEx, specs, -27
-	rotmi		specEy, specs, -17
-	rotmi		specEz, specs, -7
-	andi		specEx, specEx, 0xf
-	andi		specEy, specEy, 0xf
-	andi		specEz, specEz, 0xf
-
-	.reg		specMx, specMy, specMz
-	rotmi		specMx, specs, -22
-	rotmi		specMy, specs, -12
-	rotmi		specMz, specs, -2
-	andi		specMx, specMx, 0x1f
-	andi		specMy, specMy, 0x1f
-	andi		specMz, specMz, 0x1f
-	
-	// get component strides
-	.reg		sumSpecX, sumSpecY, sumSpecZ
-	a			sumSpecX, specSx, specEx
-	a			sumSpecX, sumSpecX, specMx
-	a			sumSpecY, specSy, specEy
-	a			sumSpecY, sumSpecY, specMy
-	a			sumSpecZ, specSz, specEz
-	a			sumSpecZ, sumSpecZ, specMz
-	
-	// get keyframe stride
-	.reg		keyStride
-	a			keyStride, sumSpecX, sumSpecY
-	a			keyStride, keyStride, sumSpecZ
-
-	// get addresses of the 4 keys
-    .reg		key0BitAdr, key1BitAdr, key2BitAdr, key3BitAdr, strideSum
-	mov			key0BitAdr, keysAdr
-	a			key1BitAdr, key0BitAdr, keyStride
-	a			key2BitAdr, key1BitAdr, keyStride
-	a			key3BitAdr, key2BitAdr, keyStride
-	shli		strideSum, keyStride, 2
-
-    //----------------------------------------------------------------------------------------------
-    // Loop
-    //----------------------------------------------------------------------------------------------        
-    
-   	.reg		tmp0, tmp1, tmp2, tmp3, tmp4
-
-Loop:
-    ai			count4, count4, -1
-
-    .reg		key0ByteAdr, key1ByteAdr, key2ByteAdr, key3ByteAdr
-    rotmi		key0ByteAdr, key0BitAdr, -3
-    rotmi		key1ByteAdr, key1BitAdr, -3
-    rotmi		key2ByteAdr, key2BitAdr, -3
-    rotmi		key3ByteAdr, key3BitAdr, -3
-    
-   	//-------------------------------------------------------------------------
-	// load the bitpacked keysframes (x8) and extract sign, exponent, mantissa
-	//-------------------------------------------------------------------------
-
-    .reg		key0Qw0, key0Qw1, key1Qw0, key1Qw1, key2Qw0, key2Qw1, key3Qw0, key3Qw1
-    lqd			key0Qw0, 0x00(key0ByteAdr)
-    lqd			key0Qw1, 0x10(key0ByteAdr)
-    lqd			key1Qw0, 0x00(key1ByteAdr)
-    lqd			key1Qw1, 0x10(key1ByteAdr)
-    lqd			key2Qw0, 0x00(key2ByteAdr)
-    lqd			key2Qw1, 0x10(key2ByteAdr)
-    lqd			key3Qw0, 0x00(key3ByteAdr)
-    lqd			key3Qw1, 0x10(key3ByteAdr)
-
-	// left justify
-	rotqbybi	key0Qw0, key0Qw0, key0BitAdr
-	rotqbybi	key0Qw1, key0Qw1, key0BitAdr
-	rotqbybi	key1Qw0, key1Qw0, key1BitAdr
-	rotqbybi	key1Qw1, key1Qw1, key1BitAdr
-	rotqbybi	key2Qw0, key2Qw0, key2BitAdr
-	rotqbybi	key2Qw1, key2Qw1, key2BitAdr
-	rotqbybi	key3Qw0, key3Qw0, key3BitAdr
-	rotqbybi	key3Qw1, key3Qw1, key3BitAdr
-	
-	rotqbi		key0Qw0, key0Qw0, key0BitAdr
-	rotqbi		key0Qw1, key0Qw1, key0BitAdr
-	rotqbi		key1Qw0, key1Qw0, key1BitAdr
-	rotqbi		key1Qw1, key1Qw1, key1BitAdr
-	rotqbi		key2Qw0, key2Qw0, key2BitAdr
-	rotqbi		key2Qw1, key2Qw1, key2BitAdr
-	rotqbi		key3Qw0, key3Qw0, key3BitAdr
-	rotqbi		key3Qw1, key3Qw1, key3BitAdr
-
-	// todo: is there a way to avoid this?
-	.reg		key0ShiftMask, key1ShiftMask, key2ShiftMask, key3ShiftMask
-	andi		key0ShiftMask, key0BitAdr, 0x7f
-	andi		key1ShiftMask, key1BitAdr, 0x7f
-	andi		key2ShiftMask, key2BitAdr, 0x7f
-	andi		key3ShiftMask, key3BitAdr, 0x7f
-			
-	.reg		key0Msk, key1Msk, key2Msk, key3Msk 
-	shlqbybi	key0Msk, allOnes, key0ShiftMask
-	shlqbybi	key1Msk, allOnes, key1ShiftMask
-	shlqbybi	key2Msk, allOnes, key2ShiftMask
-	shlqbybi	key3Msk, allOnes, key3ShiftMask
-
-	shlqbi		key0Msk, key0Msk, key0ShiftMask
-	shlqbi		key1Msk, key1Msk, key1ShiftMask
-	shlqbi		key2Msk, key2Msk, key2ShiftMask
-	shlqbi		key3Msk, key3Msk, key3ShiftMask
-	
-	.reg		key0Packed, key1Packed, key2Packed, key3Packed
-	selb		key0Packed, key0Qw1, key0Qw0, key0Msk
-	selb		key1Packed, key1Qw1, key1Qw0, key1Msk
-	selb		key2Packed, key2Qw1, key2Qw0, key2Msk
-	selb		key3Packed, key3Qw1, key3Qw0, key3Msk
-
-	// shift packed x,y,z into preferred word
-	.reg		sumSpecX0, sumSpecY0, sumSpecX1, sumSpecY1, sumSpecX2, sumSpecY2, sumSpecX3, sumSpecY3 
-	mov			sumSpecX0, sumSpecX
-	mov			sumSpecY0, sumSpecY
-	shlqbyi		sumSpecX1, sumSpecX, 4
-	shlqbyi		sumSpecY1, sumSpecY, 4
-	shlqbyi		sumSpecX2, sumSpecX, 8
-	shlqbyi		sumSpecY2, sumSpecY, 8
-	shlqbyi		sumSpecX3, sumSpecX, 12
-	shlqbyi		sumSpecY3, sumSpecY, 12
-	
-	.reg		key0x, key0y, key0z
-	mov			key0x, key0Packed
-	shlqbybi	key0y, key0Packed, sumSpecX0
-	shlqbi		key0y, key0y, sumSpecX0
-	shlqbybi	key0z, key0y, sumSpecY0
-	shlqbi		key0z, key0z, sumSpecY0
-
-	.reg		key1x, key1y, key1z
-	mov			key1x, key1Packed
-	shlqbybi	key1y, key1Packed, sumSpecX1
-	shlqbi		key1y, key1y, sumSpecX1
-	shlqbybi	key1z, key1y, sumSpecY1
-	shlqbi		key1z, key1z, sumSpecY1
-
-	.reg		key2x, key2y, key2z
-	mov			key2x, key2Packed
-	shlqbybi	key2y, key2Packed, sumSpecX2
-	shlqbi		key2y, key2y, sumSpecX2
-	shlqbybi	key2z, key2y, sumSpecY2
-	shlqbi		key2z, key2z, sumSpecY2
-
-	.reg		key3x, key3y, key3z
-	mov			key3x, key3Packed
-	shlqbybi	key3y, key3Packed, sumSpecX3
-	shlqbi		key3y, key3y, sumSpecX3
-	shlqbybi	key3z, key3y, sumSpecY3
-	shlqbi		key3z, key3z, sumSpecY3
-
-	// swizzle -> xxxx yyyy zzzz
-	.reg		keyx, keyy, keyz 
-	shufb		tmp0, key0x, key1x, shufAa00
-	shufb		tmp1, key2x, key3x, shuf00Aa
-	shufb		keyx, tmp0, tmp1, shufABcd
-	shufb		tmp0, key0y, key1y, shufAa00
-	shufb		tmp1, key2y, key3y, shuf00Aa
-	shufb		keyy, tmp0, tmp1, shufABcd
-	shufb		tmp0, key0z, key1z, shufAa00
-	shufb		tmp1, key2z, key3z, shuf00Aa
-	shufb		keyz, tmp0, tmp1, shufABcd
-
-	// extract s,e,m
-	.reg		keySx, keyEx, keyMx, keySy, keyEy, keyMy, keySz, keyEz, keyMz
-	rot			keySx, keyx, specSx
-	rot			keyEx, keySx, specEx
-	rot			keyMx, keyEx, specMx
-	rot			keySy, keyy, specSy
-	rot			keyEy, keySy, specEy
-	rot			keyMy, keyEy, specMy
-	rot			keySz, keyz, specSz
-	rot			keyEz, keySz, specEz
-	rot			keyMz, keyEz, specMz
-	
-	.reg		maskShftSx, maskShftEx, maskShftMx, maskShftSy, maskShftEy, maskShftMy, maskShftSz, maskShftEz, maskShftMz
-	ai			maskShftSx, specSx, -32
-	ai			maskShftEx, specEx, -32
-	ai			maskShftMx, specMx, -32
-	ai			maskShftSy, specSy, -32
-	ai			maskShftEy, specEy, -32
-	ai			maskShftMy, specMy, -32
-	ai			maskShftSz, specSz, -32
-	ai			maskShftEz, specEz, -32
-	ai			maskShftMz, specMz, -32
-	
-	.reg		maskSx, maskEx, maskMx, maskSy, maskEy, maskMy, maskSz, maskEz, maskMz
-	rotm		maskSx, allOnes, maskShftSx
-	rotm		maskEx, allOnes, maskShftEx
-	rotm		maskMx, allOnes, maskShftMx
-	rotm		maskSy, allOnes, maskShftSy
-	rotm		maskEy, allOnes, maskShftEy
-	rotm		maskMy, allOnes, maskShftMy
-	rotm		maskSz, allOnes, maskShftSz
-	rotm		maskEz, allOnes, maskShftEz
-	rotm		maskMz, allOnes, maskShftMz
-
-	and			keySx, keySx, maskSx
-	and			keyEx, keyEx, maskEx
-	and			keyMx, keyMx, maskMx
-	and			keySy, keySy, maskSy
-	and			keyEy, keyEy, maskEy
-	and			keyMy, keyMy, maskMy
-	and			keySz, keySz, maskSz
-	and			keyEz, keyEz, maskEz
-	and			keyMz, keyMz, maskMz
-	
-	//----------------------------------------------------------------
-	// expand as float
-	//----------------------------------------------------------------
-	
-	// bias exponent (	 128 - ( 1U << ( numExponentBits - 1 ) )	
-	.reg		expBiasX, expBiasY, expBiasZ
-	ai			expBiasX, specEx, -1
-	ai			expBiasY, specEy, -1
-	ai			expBiasZ, specEz, -1
-	shl			expBiasX, one, expBiasX
-	shl			expBiasY, one, expBiasY
-	shl			expBiasZ, one, expBiasZ
-	sfi			expBiasX, expBiasX, 128
-	sfi			expBiasY, expBiasY, 128
-	sfi			expBiasZ, expBiasZ, 128
-	
-	.reg		keyEx0, keyEy0, keyEz0
-	a			keyEx0, keyEx, expBiasX
-	a			keyEy0, keyEy, expBiasY
-	a			keyEz0, keyEz, expBiasZ
-	shli		keyEx0, keyEx0, 23
-	shli		keyEy0, keyEy0, 23
-	shli		keyEz0, keyEz0, 23
-	
-	// mantissa keyshift by 23 - numBitsMantissa		
-	.reg		shiftMx, shiftMy, shiftMz
-	sfi			shiftMx, specMx, 23
-	sfi			shiftMy, specMy, 23
-	sfi			shiftMz, specMz, 23
-
-	.reg		keyMx0, keyMy0, keyMz0
-	shl			keyMx0, keyMx, shiftMx
-	shl			keyMy0, keyMy, shiftMy
-	shl			keyMz0, keyMz, shiftMz
-	
-	// sign
-	.reg		keySx0, keySy0, keySz0
-	shli		keySx0, keySx, 31
-	shli		keySy0, keySy, 31
-	shli		keySz0, keySz, 31
-
-	// combine
-	.reg		keyFloatX, keyFloatY, keyFloatZ
-	or			keyFloatX, keyEx0, keyMx0
-	or			keyFloatY, keyEy0, keyMy0
-	or			keyFloatZ, keyEz0, keyMz0
-	or			keyFloatX, keyFloatX, keySx0
-	or			keyFloatY, keyFloatY, keySy0
-	or			keyFloatZ, keyFloatZ, keySz0
-
-	//----------------------------------------------------------------
-	// expand as signed integer
-	//----------------------------------------------------------------
-	
-	.reg		intShiftX, intShiftY, intShiftZ
-	ai			intShiftX, specMx, -31
-	ai			intShiftY, specMy, -31
-	ai			intShiftZ, specMz, -31
-	
-	// sign extend
-	.reg		keySignExtendX, keySignExtendY, keySignExtendZ
-	.reg		keySignedIntLX, keySignedIntLY, keySignedIntLZ
-	shli		keySignExtendX, keySx, 31
-	shli		keySignExtendY, keySy, 31
-	shli		keySignExtendZ, keySz, 31
-	rotma		keySignExtendX, keySignExtendX, intShiftX
-	rotma		keySignExtendY, keySignExtendY, intShiftY
-	rotma		keySignExtendZ, keySignExtendZ, intShiftZ
-	or			keySignedIntLX, keyMx, keySignExtendX
-	or			keySignedIntLY, keyMy, keySignExtendY
-	or			keySignedIntLZ, keyMz, keySignExtendZ
-
-	.reg		keyIntX, keyIntY, keyIntZ
-	csflt		keyIntX, keySignedIntLX, 0
-	csflt		keyIntY, keySignedIntLY, 0
-	csflt		keyIntZ, keySignedIntLZ, 0
-
-	// scale factor
-	.reg		scaleFactorX, scaleFactorY, scaleFactorZ
-	rotm		scaleFactorX, k7FFFFFFF, intShiftX
-	rotm		scaleFactorY, k7FFFFFFF, intShiftY
-	rotm		scaleFactorZ, k7FFFFFFF, intShiftZ
-	cuflt		scaleFactorX, scaleFactorX, 0
-	cuflt		scaleFactorY, scaleFactorY, 0
-	cuflt		scaleFactorZ, scaleFactorZ, 0
-	
-	// invert
-	.reg		scaleFactorX0, scaleFactorY0, scaleFactorZ0
-	frest		tmp0, scaleFactorX
-	fi			tmp1, scaleFactorX, tmp0
-	fnms		tmp2, scaleFactorX, tmp1, fOne
-	fma			scaleFactorX0, tmp2, tmp1, tmp1
-	
-	frest		tmp0, scaleFactorY
-	fi			tmp1, scaleFactorY, tmp0
-	fnms		tmp2, scaleFactorY, tmp1, fOne
-	fma			scaleFactorY0, tmp2, tmp1, tmp1
-
-	frest		tmp0, scaleFactorZ
-	fi			tmp1, scaleFactorZ, tmp0
-	fnms		tmp2, scaleFactorZ, tmp1, fOne
-	fma			scaleFactorZ0, tmp2, tmp1, tmp1
-
-	// divide by zero guard
-	ceqi		tmp0, scaleFactorX, 0
-	ceqi		tmp1, scaleFactorY, 0
-	ceqi		tmp2, scaleFactorZ, 0
-	selb		scaleFactorX, scaleFactorX0, zero, tmp0
-	selb		scaleFactorY, scaleFactorY0, zero, tmp1
-	selb		scaleFactorZ, scaleFactorZ0, zero, tmp2
-	
-	// scale
-	fm			keyIntX, keyIntX, scaleFactorX
-	fm			keyIntY, keyIntY, scaleFactorY
-	fm			keyIntZ, keyIntZ, scaleFactorZ
-	
-	//----------------------------------------------------------------
-	// select integer if num exponent bits = 0, otherwise float
-	//----------------------------------------------------------------
-
-	.reg		selIntX, selIntY, selIntZ
-	ceqi		selIntX, specEx, 0
-	ceqi		selIntY, specEy, 0
-	ceqi		selIntZ, specEz, 0
-	
-	.reg		keyX0, keyY0, keyZ0
-	selb		keyX0, keyFloatX, keyIntX, selIntX
-	selb		keyY0, keyFloatY, keyIntY, selIntY
-	selb		keyZ0, keyFloatZ, keyIntZ, selIntZ
-	
-	//----------------------------------------------------------------
-	// compute derived value (rotations only)
-	//----------------------------------------------------------------
-	
-	// w = sqrt(1 - x*x + y*y + z*z)
-	.reg		keyWSq, keyWsqr, keyW0
-	fnms		keyWSq, keyX0, keyX0, fOne
-	fnms		keyWSq, keyY0, keyY0, keyWSq
-	fnms		keyWSq, keyZ0, keyZ0, keyWSq
-
-	// clamp positive
-	fcgt		tmp0, zero, keyWSq
-	selb		keyWSq, keyWSq, zero, tmp0			
-
-	frsqest		tmp0, keyWSq
-	fi			tmp1, keyWSq, tmp0
-	fm			tmp2, keyWSq, tmp1
-	fm			tmp3, tmp1, fHalf
-	fnms		tmp4, tmp2, tmp1, fOne
-	fma			keyWsqr, tmp3, tmp4, tmp1
-	fm			keyW0, keyWsqr, keyWSq
-	
-	// for translation/scale, w = 1.0f
-	selb		keyW0, fOne, keyW0, rotSelectMask
-	
-    // Now shuffle w into the correct component (as defined by the packing spec)
-    // Using selects rather than deswizzle+shuffle as I want to keep the keys in swizzled form for the slerp...
-    // Note: rebuild index is always 3 for translations/scales
-    .reg		rebuildIndex, sel0a, sel0b, sel0c, selMsk0a, selMsk0b, selMsk0c
-	nor			rebuildIndex, specs, specs
-	andi		rebuildIndex, rebuildIndex, 3
-    shl			sel0a, _EEEE, rebuildIndex
-    a			sel0b, sel0a, sel0a
-    a			sel0c, sel0b, sel0b
-    rotmai		selMsk0a, sel0a, -31
-    rotmai		selMsk0b, sel0b, -31
-    rotmai		selMsk0c, sel0c, -31
-   
-    .reg		keyX, keyY, keyZ, keyW
-    selb		keyY, keyX0, keyW0, selMsk0a
-    selb		keyX, keyW0, keyX0, selMsk0a
-    selb		keyZ, keyY0, keyY, selMsk0b
-    selb		keyY, keyY, keyY0, selMsk0b
-    selb		keyW, keyZ0, keyZ, selMsk0c
-    selb		keyZ, keyZ, keyZ0, selMsk0c
-    
-    .reg		outX, outY, outZ, outW
-    mov			outX, keyX
-    mov			outY, keyY
-    mov			outZ, keyZ
-    mov			outW, keyW
-    
-   	//----------------------------------------------------------------
-    // deswizzle and store
-	//----------------------------------------------------------------
-
-    // (X0X1X2X3 Y0Y1Y2Y3 Z0Z1Z2Z3 W0W1W2W3 -> X0Y0Z0W0 X1Y1Z1W1 X2Y2Z2W2 X3Y3Z3W3)
-    .reg		outX0Y0X1Y1, outZ1W1Z0W0, outX2Y2X3Y3, outZ3W3Z2W2, out0, out1, out2, out3
-    shufb		outX0Y0X1Y1, outX, outY, shufAaBb
-    shufb		outZ1W1Z0W0, outZ, outW, shufBbAa
-    shufb		out0, outX0Y0X1Y1, outZ1W1Z0W0, shufABcd
-    shufb		out1, outX0Y0X1Y1, outZ1W1Z0W0, shufCDab
-    shufb		outX2Y2X3Y3, outX, outY, shufCcDd
-    shufb		outZ3W3Z2W2, outZ, outW, shufDdCc
-    shufb		out2, outX2Y2X3Y3, outZ3W3Z2W2, shufABcd
-    shufb		out3, outX2Y2X3Y3, outZ3W3Z2W2, shufCDab
-    
-	.reg		outOfs, outOfs1, outOfs2, outOfs3
-    lqd			outOfs, 0x00(channelIds)
-    rotqby		outOfs, outOfs, channelIds
-    shufb		outOfs, outOfs, outOfs, shuf0A0B0C0D
-    shli		tmp0, outOfs, 4
-    shli		outOfs, outOfs, 5
-    a			outOfs, outOfs, tmp0
-    shlqbyi		outOfs1, outOfs, 4
-    shlqbyi		outOfs2, outOfs, 8
-    shlqbyi		outOfs3, outOfs, 12
-    stqx		out0, output, outOfs
-    stqx		out1, output, outOfs1
-    stqx		out2, output, outOfs2
-    stqx		out3, output, outOfs3
-	
-    ai			channelIds, channelIds, 8
-
-    // increment keys address for the next loop
-	a			key0BitAdr, key0BitAdr, strideSum
-	a			key1BitAdr, key1BitAdr, strideSum
-	a			key2BitAdr, key2BitAdr, strideSum
-	a			key3BitAdr, key3BitAdr, strideSum
-	
-    //----------------------------------------------------------------------------------------------        
-    // Loop
-    //----------------------------------------------------------------------------------------------
-
-    brnz		count4, Loop
-
-NoLoop:
-
-.endfunc
-         
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2007 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+	
+.cfunc void _edgeAnimEvaluateBitPackedConst(uint32_t keysAdr, 
+											uint32_t count, 
+											vec_float4* output, 
+											const uint16_t* channelIds, 
+											const uint32_t* specAdr, 
+											bool isRotation)
+
+	//----------------------------------------------------------------------------------------------
+	// Early out
+	//----------------------------------------------------------------------------------------------    
+    
+    brz			count, NoLoop
+    
+    //----------------------------------------------------------------------------------------------
+    // Init code
+    //----------------------------------------------------------------------------------------------        
+           
+     .reg		shuf0A0B0C0D, shufAAAA, shufDDDD, shufAaBb, shufBbAa, shufCcDd, shufDdCc, shufCDab, shufABcd, shufAa00, shuf00Aa
+     .reg		_EEEE, zero, one, allOnes, k7FFFFFFF
+    il128		shuf0A0B0C0D, "0A0B0C0D"
+    il128		shufAAAA, "AAAA"
+    il128		shufDDDD, "DDDD"
+    il128		shufAaBb, "AaBb"
+    il128		shufBbAa, "BbAa"
+    il128		shufCcDd, "CcDd"
+    il128		shufDdCc, "DdCc"
+    il128		shufCDab, "CDab"
+    il128		shufABcd, "ABcd"
+    il128		shufAa00, "Aa00"
+    il128		shuf00Aa, "00Aa"
+    il128		_EEEE, 0xE0000000_E0000000_E0000000_E0000000
+    ila			zero, 0
+    ila			one, 1
+    fsmbi		allOnes, 0xffff
+    il128		k7FFFFFFF, 0x7FFFFFFF_7FFFFFFF_7FFFFFFF_7FFFFFFF
+
+    .reg		fOne, fHalf, count4
+    ilhu    	fOne, 0x3f800000@h								//  1.0
+	ilhu		fHalf,  0x3F000000@h							//	0.5f
+    ai			count4, count, 3
+    rotmi		count4, count4, -2
+
+    // convert keyframe addresses to bit addresses
+    shli		keysAdr, keysAdr, 3
+    shufb		keysAdr, keysAdr, keysAdr, shufAAAA
+    
+    // form select mask from bool
+    .reg		rotSelectMask
+    fsm			rotSelectMask, isRotation
+    shufb		rotSelectMask, rotSelectMask, rotSelectMask, shufDDDD
+    
+  
+   	//----------------------------------------------------------------
+   	// load packing spec
+	//----------------------------------------------------------------
+
+    .reg		ps0, ps1, specs, sshift0, sshift1
+    lqd			ps0, 0x00(specAdr)
+    lqd			ps1, 0x10(specAdr)
+    andi		sshift0, specAdr, 15
+    ai			sshift1, sshift0, -16
+    shlqby		ps0, ps0, sshift0
+    rotqmby		ps1, ps1, sshift1
+    or			specs, ps0, ps1
+    shufb		specs, specs, specs, shufAAAA
+
+	// expand packing specs
+	.reg		specSx, specSy, specSz
+	rotmi		specSx, specs, -31
+	rotmi		specSy, specs, -21
+	rotmi		specSz, specs, -11
+	andi		specSx, specSx, 1
+	andi		specSy, specSy, 1
+	andi		specSz, specSz, 1
+
+	.reg		specEx, specEy, specEz
+	rotmi		specEx, specs, -27
+	rotmi		specEy, specs, -17
+	rotmi		specEz, specs, -7
+	andi		specEx, specEx, 0xf
+	andi		specEy, specEy, 0xf
+	andi		specEz, specEz, 0xf
+
+	.reg		specMx, specMy, specMz
+	rotmi		specMx, specs, -22
+	rotmi		specMy, specs, -12
+	rotmi		specMz, specs, -2
+	andi		specMx, specMx, 0x1f
+	andi		specMy, specMy, 0x1f
+	andi		specMz, specMz, 0x1f
+	
+	// get component strides
+	.reg		sumSpecX, sumSpecY, sumSpecZ
+	a			sumSpecX, specSx, specEx
+	a			sumSpecX, sumSpecX, specMx
+	a			sumSpecY, specSy, specEy
+	a			sumSpecY, sumSpecY, specMy
+	a			sumSpecZ, specSz, specEz
+	a			sumSpecZ, sumSpecZ, specMz
+	
+	// get keyframe stride
+	.reg		keyStride
+	a			keyStride, sumSpecX, sumSpecY
+	a			keyStride, keyStride, sumSpecZ
+
+	// get addresses of the 4 keys
+    .reg		key0BitAdr, key1BitAdr, key2BitAdr, key3BitAdr, strideSum
+	mov			key0BitAdr, keysAdr
+	a			key1BitAdr, key0BitAdr, keyStride
+	a			key2BitAdr, key1BitAdr, keyStride
+	a			key3BitAdr, key2BitAdr, keyStride
+	shli		strideSum, keyStride, 2
+
+    //----------------------------------------------------------------------------------------------
+    // Loop
+    //----------------------------------------------------------------------------------------------        
+    
+   	.reg		tmp0, tmp1, tmp2, tmp3, tmp4
+
+Loop:
+    ai			count4, count4, -1
+
+    .reg		key0ByteAdr, key1ByteAdr, key2ByteAdr, key3ByteAdr
+    rotmi		key0ByteAdr, key0BitAdr, -3
+    rotmi		key1ByteAdr, key1BitAdr, -3
+    rotmi		key2ByteAdr, key2BitAdr, -3
+    rotmi		key3ByteAdr, key3BitAdr, -3
+    
+   	//-------------------------------------------------------------------------
+	// load the bitpacked keysframes (x8) and extract sign, exponent, mantissa
+	//-------------------------------------------------------------------------
+
+    .reg		key0Qw0, key0Qw1, key1Qw0, key1Qw1, key2Qw0, key2Qw1, key3Qw0, key3Qw1
+    lqd			key0Qw0, 0x00(key0ByteAdr)
+    lqd			key0Qw1, 0x10(key0ByteAdr)
+    lqd			key1Qw0, 0x00(key1ByteAdr)
+    lqd			key1Qw1, 0x10(key1ByteAdr)
+    lqd			key2Qw0, 0x00(key2ByteAdr)
+    lqd			key2Qw1, 0x10(key2ByteAdr)
+    lqd			key3Qw0, 0x00(key3ByteAdr)
+    lqd			key3Qw1, 0x10(key3ByteAdr)
+
+	// left justify
+	rotqbybi	key0Qw0, key0Qw0, key0BitAdr
+	rotqbybi	key0Qw1, key0Qw1, key0BitAdr
+	rotqbybi	key1Qw0, key1Qw0, key1BitAdr
+	rotqbybi	key1Qw1, key1Qw1, key1BitAdr
+	rotqbybi	key2Qw0, key2Qw0, key2BitAdr
+	rotqbybi	key2Qw1, key2Qw1, key2BitAdr
+	rotqbybi	key3Qw0, key3Qw0, key3BitAdr
+	rotqbybi	key3Qw1, key3Qw1, key3BitAdr
+	
+	rotqbi		key0Qw0, key0Qw0, key0BitAdr
+	rotqbi		key0Qw1, key0Qw1, key0BitAdr
+	rotqbi		key1Qw0, key1Qw0, key1BitAdr
+	rotqbi		key1Qw1, key1Qw1, key1BitAdr
+	rotqbi		key2Qw0, key2Qw0, key2BitAdr
+	rotqbi		key2Qw1, key2Qw1, key2BitAdr
+	rotqbi		key3Qw0, key3Qw0, key3BitAdr
+	rotqbi		key3Qw1, key3Qw1, key3BitAdr
+
+	// todo: is there a way to avoid this?
+	.reg		key0ShiftMask, key1ShiftMask, key2ShiftMask, key3ShiftMask
+	andi		key0ShiftMask, key0BitAdr, 0x7f
+	andi		key1ShiftMask, key1BitAdr, 0x7f
+	andi		key2ShiftMask, key2BitAdr, 0x7f
+	andi		key3ShiftMask, key3BitAdr, 0x7f
+			
+	.reg		key0Msk, key1Msk, key2Msk, key3Msk 
+	shlqbybi	key0Msk, allOnes, key0ShiftMask
+	shlqbybi	key1Msk, allOnes, key1ShiftMask
+	shlqbybi	key2Msk, allOnes, key2ShiftMask
+	shlqbybi	key3Msk, allOnes, key3ShiftMask
+
+	shlqbi		key0Msk, key0Msk, key0ShiftMask
+	shlqbi		key1Msk, key1Msk, key1ShiftMask
+	shlqbi		key2Msk, key2Msk, key2ShiftMask
+	shlqbi		key3Msk, key3Msk, key3ShiftMask
+	
+	.reg		key0Packed, key1Packed, key2Packed, key3Packed
+	selb		key0Packed, key0Qw1, key0Qw0, key0Msk
+	selb		key1Packed, key1Qw1, key1Qw0, key1Msk
+	selb		key2Packed, key2Qw1, key2Qw0, key2Msk
+	selb		key3Packed, key3Qw1, key3Qw0, key3Msk
+
+	// shift packed x,y,z into preferred word
+	.reg		sumSpecX0, sumSpecY0, sumSpecX1, sumSpecY1, sumSpecX2, sumSpecY2, sumSpecX3, sumSpecY3 
+	mov			sumSpecX0, sumSpecX
+	mov			sumSpecY0, sumSpecY
+	shlqbyi		sumSpecX1, sumSpecX, 4
+	shlqbyi		sumSpecY1, sumSpecY, 4
+	shlqbyi		sumSpecX2, sumSpecX, 8
+	shlqbyi		sumSpecY2, sumSpecY, 8
+	shlqbyi		sumSpecX3, sumSpecX, 12
+	shlqbyi		sumSpecY3, sumSpecY, 12
+	
+	.reg		key0x, key0y, key0z
+	mov			key0x, key0Packed
+	shlqbybi	key0y, key0Packed, sumSpecX0
+	shlqbi		key0y, key0y, sumSpecX0
+	shlqbybi	key0z, key0y, sumSpecY0
+	shlqbi		key0z, key0z, sumSpecY0
+
+	.reg		key1x, key1y, key1z
+	mov			key1x, key1Packed
+	shlqbybi	key1y, key1Packed, sumSpecX1
+	shlqbi		key1y, key1y, sumSpecX1
+	shlqbybi	key1z, key1y, sumSpecY1
+	shlqbi		key1z, key1z, sumSpecY1
+
+	.reg		key2x, key2y, key2z
+	mov			key2x, key2Packed
+	shlqbybi	key2y, key2Packed, sumSpecX2
+	shlqbi		key2y, key2y, sumSpecX2
+	shlqbybi	key2z, key2y, sumSpecY2
+	shlqbi		key2z, key2z, sumSpecY2
+
+	.reg		key3x, key3y, key3z
+	mov			key3x, key3Packed
+	shlqbybi	key3y, key3Packed, sumSpecX3
+	shlqbi		key3y, key3y, sumSpecX3
+	shlqbybi	key3z, key3y, sumSpecY3
+	shlqbi		key3z, key3z, sumSpecY3
+
+	// swizzle -> xxxx yyyy zzzz
+	.reg		keyx, keyy, keyz 
+	shufb		tmp0, key0x, key1x, shufAa00
+	shufb		tmp1, key2x, key3x, shuf00Aa
+	shufb		keyx, tmp0, tmp1, shufABcd
+	shufb		tmp0, key0y, key1y, shufAa00
+	shufb		tmp1, key2y, key3y, shuf00Aa
+	shufb		keyy, tmp0, tmp1, shufABcd
+	shufb		tmp0, key0z, key1z, shufAa00
+	shufb		tmp1, key2z, key3z, shuf00Aa
+	shufb		keyz, tmp0, tmp1, shufABcd
+
+	// extract s,e,m
+	.reg		keySx, keyEx, keyMx, keySy, keyEy, keyMy, keySz, keyEz, keyMz
+	rot			keySx, keyx, specSx
+	rot			keyEx, keySx, specEx
+	rot			keyMx, keyEx, specMx
+	rot			keySy, keyy, specSy
+	rot			keyEy, keySy, specEy
+	rot			keyMy, keyEy, specMy
+	rot			keySz, keyz, specSz
+	rot			keyEz, keySz, specEz
+	rot			keyMz, keyEz, specMz
+	
+	.reg		maskShftSx, maskShftEx, maskShftMx, maskShftSy, maskShftEy, maskShftMy, maskShftSz, maskShftEz, maskShftMz
+	ai			maskShftSx, specSx, -32
+	ai			maskShftEx, specEx, -32
+	ai			maskShftMx, specMx, -32
+	ai			maskShftSy, specSy, -32
+	ai			maskShftEy, specEy, -32
+	ai			maskShftMy, specMy, -32
+	ai			maskShftSz, specSz, -32
+	ai			maskShftEz, specEz, -32
+	ai			maskShftMz, specMz, -32
+	
+	.reg		maskSx, maskEx, maskMx, maskSy, maskEy, maskMy, maskSz, maskEz, maskMz
+	rotm		maskSx, allOnes, maskShftSx
+	rotm		maskEx, allOnes, maskShftEx
+	rotm		maskMx, allOnes, maskShftMx
+	rotm		maskSy, allOnes, maskShftSy
+	rotm		maskEy, allOnes, maskShftEy
+	rotm		maskMy, allOnes, maskShftMy
+	rotm		maskSz, allOnes, maskShftSz
+	rotm		maskEz, allOnes, maskShftEz
+	rotm		maskMz, allOnes, maskShftMz
+
+	and			keySx, keySx, maskSx
+	and			keyEx, keyEx, maskEx
+	and			keyMx, keyMx, maskMx
+	and			keySy, keySy, maskSy
+	and			keyEy, keyEy, maskEy
+	and			keyMy, keyMy, maskMy
+	and			keySz, keySz, maskSz
+	and			keyEz, keyEz, maskEz
+	and			keyMz, keyMz, maskMz
+	
+	//----------------------------------------------------------------
+	// expand as float
+	//----------------------------------------------------------------
+	
+	// bias exponent (	 128 - ( 1U << ( numExponentBits - 1 ) )	
+	.reg		expBiasX, expBiasY, expBiasZ
+	ai			expBiasX, specEx, -1
+	ai			expBiasY, specEy, -1
+	ai			expBiasZ, specEz, -1
+	shl			expBiasX, one, expBiasX
+	shl			expBiasY, one, expBiasY
+	shl			expBiasZ, one, expBiasZ
+	sfi			expBiasX, expBiasX, 128
+	sfi			expBiasY, expBiasY, 128
+	sfi			expBiasZ, expBiasZ, 128
+	
+	.reg		keyEx0, keyEy0, keyEz0
+	a			keyEx0, keyEx, expBiasX
+	a			keyEy0, keyEy, expBiasY
+	a			keyEz0, keyEz, expBiasZ
+	shli		keyEx0, keyEx0, 23
+	shli		keyEy0, keyEy0, 23
+	shli		keyEz0, keyEz0, 23
+	
+	// mantissa keyshift by 23 - numBitsMantissa		
+	.reg		shiftMx, shiftMy, shiftMz
+	sfi			shiftMx, specMx, 23
+	sfi			shiftMy, specMy, 23
+	sfi			shiftMz, specMz, 23
+
+	.reg		keyMx0, keyMy0, keyMz0
+	shl			keyMx0, keyMx, shiftMx
+	shl			keyMy0, keyMy, shiftMy
+	shl			keyMz0, keyMz, shiftMz
+	
+	// sign
+	.reg		keySx0, keySy0, keySz0
+	shli		keySx0, keySx, 31
+	shli		keySy0, keySy, 31
+	shli		keySz0, keySz, 31
+
+	// combine
+	.reg		keyFloatX, keyFloatY, keyFloatZ
+	or			keyFloatX, keyEx0, keyMx0
+	or			keyFloatY, keyEy0, keyMy0
+	or			keyFloatZ, keyEz0, keyMz0
+	or			keyFloatX, keyFloatX, keySx0
+	or			keyFloatY, keyFloatY, keySy0
+	or			keyFloatZ, keyFloatZ, keySz0
+
+	//----------------------------------------------------------------
+	// expand as signed integer
+	//----------------------------------------------------------------
+	
+	.reg		intShiftX, intShiftY, intShiftZ
+	ai			intShiftX, specMx, -31
+	ai			intShiftY, specMy, -31
+	ai			intShiftZ, specMz, -31
+	
+	// sign extend
+	.reg		keySignExtendX, keySignExtendY, keySignExtendZ
+	.reg		keySignedIntLX, keySignedIntLY, keySignedIntLZ
+	shli		keySignExtendX, keySx, 31
+	shli		keySignExtendY, keySy, 31
+	shli		keySignExtendZ, keySz, 31
+	rotma		keySignExtendX, keySignExtendX, intShiftX
+	rotma		keySignExtendY, keySignExtendY, intShiftY
+	rotma		keySignExtendZ, keySignExtendZ, intShiftZ
+	or			keySignedIntLX, keyMx, keySignExtendX
+	or			keySignedIntLY, keyMy, keySignExtendY
+	or			keySignedIntLZ, keyMz, keySignExtendZ
+
+	.reg		keyIntX, keyIntY, keyIntZ
+	csflt		keyIntX, keySignedIntLX, 0
+	csflt		keyIntY, keySignedIntLY, 0
+	csflt		keyIntZ, keySignedIntLZ, 0
+
+	// scale factor
+	.reg		scaleFactorX, scaleFactorY, scaleFactorZ
+	rotm		scaleFactorX, k7FFFFFFF, intShiftX
+	rotm		scaleFactorY, k7FFFFFFF, intShiftY
+	rotm		scaleFactorZ, k7FFFFFFF, intShiftZ
+	cuflt		scaleFactorX, scaleFactorX, 0
+	cuflt		scaleFactorY, scaleFactorY, 0
+	cuflt		scaleFactorZ, scaleFactorZ, 0
+	
+	// invert
+	.reg		scaleFactorX0, scaleFactorY0, scaleFactorZ0
+	frest		tmp0, scaleFactorX
+	fi			tmp1, scaleFactorX, tmp0
+	fnms		tmp2, scaleFactorX, tmp1, fOne
+	fma			scaleFactorX0, tmp2, tmp1, tmp1
+	
+	frest		tmp0, scaleFactorY
+	fi			tmp1, scaleFactorY, tmp0
+	fnms		tmp2, scaleFactorY, tmp1, fOne
+	fma			scaleFactorY0, tmp2, tmp1, tmp1
+
+	frest		tmp0, scaleFactorZ
+	fi			tmp1, scaleFactorZ, tmp0
+	fnms		tmp2, scaleFactorZ, tmp1, fOne
+	fma			scaleFactorZ0, tmp2, tmp1, tmp1
+
+	// divide by zero guard
+	ceqi		tmp0, scaleFactorX, 0
+	ceqi		tmp1, scaleFactorY, 0
+	ceqi		tmp2, scaleFactorZ, 0
+	selb		scaleFactorX, scaleFactorX0, zero, tmp0
+	selb		scaleFactorY, scaleFactorY0, zero, tmp1
+	selb		scaleFactorZ, scaleFactorZ0, zero, tmp2
+	
+	// scale
+	fm			keyIntX, keyIntX, scaleFactorX
+	fm			keyIntY, keyIntY, scaleFactorY
+	fm			keyIntZ, keyIntZ, scaleFactorZ
+	
+	//----------------------------------------------------------------
+	// select integer if num exponent bits = 0, otherwise float
+	//----------------------------------------------------------------
+
+	.reg		selIntX, selIntY, selIntZ
+	ceqi		selIntX, specEx, 0
+	ceqi		selIntY, specEy, 0
+	ceqi		selIntZ, specEz, 0
+	
+	.reg		keyX0, keyY0, keyZ0
+	selb		keyX0, keyFloatX, keyIntX, selIntX
+	selb		keyY0, keyFloatY, keyIntY, selIntY
+	selb		keyZ0, keyFloatZ, keyIntZ, selIntZ
+	
+	//----------------------------------------------------------------
+	// compute derived value (rotations only)
+	//----------------------------------------------------------------
+	
+	// w = sqrt(1 - x*x + y*y + z*z)
+	.reg		keyWSq, keyWsqr, keyW0
+	fnms		keyWSq, keyX0, keyX0, fOne
+	fnms		keyWSq, keyY0, keyY0, keyWSq
+	fnms		keyWSq, keyZ0, keyZ0, keyWSq
+
+	// clamp positive
+	fcgt		tmp0, zero, keyWSq
+	selb		keyWSq, keyWSq, zero, tmp0			
+
+	frsqest		tmp0, keyWSq
+	fi			tmp1, keyWSq, tmp0
+	fm			tmp2, keyWSq, tmp1
+	fm			tmp3, tmp1, fHalf
+	fnms		tmp4, tmp2, tmp1, fOne
+	fma			keyWsqr, tmp3, tmp4, tmp1
+	fm			keyW0, keyWsqr, keyWSq
+	
+	// for translation/scale, w = 1.0f
+	selb		keyW0, fOne, keyW0, rotSelectMask
+	
+    // Now shuffle w into the correct component (as defined by the packing spec)
+    // Using selects rather than deswizzle+shuffle as I want to keep the keys in swizzled form for the slerp...
+    // Note: rebuild index is always 3 for translations/scales
+    .reg		rebuildIndex, sel0a, sel0b, sel0c, selMsk0a, selMsk0b, selMsk0c
+	nor			rebuildIndex, specs, specs
+	andi		rebuildIndex, rebuildIndex, 3
+    shl			sel0a, _EEEE, rebuildIndex
+    a			sel0b, sel0a, sel0a
+    a			sel0c, sel0b, sel0b
+    rotmai		selMsk0a, sel0a, -31
+    rotmai		selMsk0b, sel0b, -31
+    rotmai		selMsk0c, sel0c, -31
+   
+    .reg		keyX, keyY, keyZ, keyW
+    selb		keyY, keyX0, keyW0, selMsk0a
+    selb		keyX, keyW0, keyX0, selMsk0a
+    selb		keyZ, keyY0, keyY, selMsk0b
+    selb		keyY, keyY, keyY0, selMsk0b
+    selb		keyW, keyZ0, keyZ, selMsk0c
+    selb		keyZ, keyZ, keyZ0, selMsk0c
+    
+    .reg		outX, outY, outZ, outW
+    mov			outX, keyX
+    mov			outY, keyY
+    mov			outZ, keyZ
+    mov			outW, keyW
+    
+   	//----------------------------------------------------------------
+    // deswizzle and store
+	//----------------------------------------------------------------
+
+    // (X0X1X2X3 Y0Y1Y2Y3 Z0Z1Z2Z3 W0W1W2W3 -> X0Y0Z0W0 X1Y1Z1W1 X2Y2Z2W2 X3Y3Z3W3)
+    .reg		outX0Y0X1Y1, outZ1W1Z0W0, outX2Y2X3Y3, outZ3W3Z2W2, out0, out1, out2, out3
+    shufb		outX0Y0X1Y1, outX, outY, shufAaBb
+    shufb		outZ1W1Z0W0, outZ, outW, shufBbAa
+    shufb		out0, outX0Y0X1Y1, outZ1W1Z0W0, shufABcd
+    shufb		out1, outX0Y0X1Y1, outZ1W1Z0W0, shufCDab
+    shufb		outX2Y2X3Y3, outX, outY, shufCcDd
+    shufb		outZ3W3Z2W2, outZ, outW, shufDdCc
+    shufb		out2, outX2Y2X3Y3, outZ3W3Z2W2, shufABcd
+    shufb		out3, outX2Y2X3Y3, outZ3W3Z2W2, shufCDab
+    
+	.reg		outOfs, outOfs1, outOfs2, outOfs3
+    lqd			outOfs, 0x00(channelIds)
+    rotqby		outOfs, outOfs, channelIds
+    shufb		outOfs, outOfs, outOfs, shuf0A0B0C0D
+    shli		tmp0, outOfs, 4
+    shli		outOfs, outOfs, 5
+    a			outOfs, outOfs, tmp0
+    shlqbyi		outOfs1, outOfs, 4
+    shlqbyi		outOfs2, outOfs, 8
+    shlqbyi		outOfs3, outOfs, 12
+    stqx		out0, output, outOfs
+    stqx		out1, output, outOfs1
+    stqx		out2, output, outOfs2
+    stqx		out3, output, outOfs3
+	
+    ai			channelIds, channelIds, 8
+
+    // increment keys address for the next loop
+	a			key0BitAdr, key0BitAdr, strideSum
+	a			key1BitAdr, key1BitAdr, strideSum
+	a			key2BitAdr, key2BitAdr, strideSum
+	a			key3BitAdr, key3BitAdr, strideSum
+	
+    //----------------------------------------------------------------------------------------------        
+    // Loop
+    //----------------------------------------------------------------------------------------------
+
+    brnz		count4, Loop
+
+NoLoop:
+
+.endfunc
+         

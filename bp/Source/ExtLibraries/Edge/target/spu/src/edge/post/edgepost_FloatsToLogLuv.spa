@@ -1,276 +1,276 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2009 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-//--------------------------------------------------------------------------------------------------
-//  FUNCTION DEFINITION
-//--------------------------------------------------------------------------------------------------
-
-//--------------------------------------------------------------------------------------------------
-/**
-
-	void edgePostFloatsToLogLuv( void* output, void* input, uint32_t count );
-	
-**/
-//--------------------------------------------------------------------------------------------------
-
-
-.include "edgepost_helpers.inc"
-.include "edgepost_math_helpers.inc"
-.include "edgepost_luv_helpers.inc"
-
-.cfunc void edgePostFloatsToLogLuv( qword output, qword input, qword count )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-	EDGEPOST_DECLARE_MATH_HELPER_CONSTANTS
-	
-	// color space transformation matrix
-	.reg		M01, M02, M03
-	.reg		M11, M12, M13
-	.reg		M21, M22, M23
-	ilf32		M01, 0.2209f
-	ilf32		M02, 0.1138f
-	ilf32		M03, 0.0102f
-	ilf32		M11, 0.3390f
-	ilf32		M12, 0.6780f
-	ilf32		M13, 0.1130f
-	ilf32		M21, 0.4184f
-	ilf32		M22, 0.7319f
-	ilf32		M23, 0.2969f
-	
-	.reg		kClampValue, k2F, k127F, k255F, ki255F
-	ilf32		kClampValue, .000001f
-	ilf32		k2F, 2.f
-	ilf32		k127F, 127.f
-	ilf32		k255F, 255.f
-	ilf32		ki255F, 1.f / 255.f
-	
-	.reg		kShuf0, kShuf1, kShuf2
-	.reg		kShuf3, kShuf4, kShuf5
-	il128		kShuf0, "Bb00"
-	il128		kShuf1, "Cc00"
-	il128		kShuf2, "Dd00"
-	il128		kShuf3, "00Bb"
-	il128		kShuf4, "00Cc"
-	il128		kShuf5, "00Dd"
-	
-	.reg		kShuf6, kShuf7
-	il128		kShuf6, "Dd00Hh00Ll00Pp00"
-	il128		kShuf7, "00Dd00Hh00Ll00Pp"
-	
-loop:
-	ai			output, output, 0x10
-	ai			input, input, 0x40
-	ai			count, count, -4
-	
-	// Load input pixels
-	.reg		s0, s1, s2, s3
-	lqd			s0, -0x40( input )
-	lqd			s1, -0x30( input )
-	lqd			s2, -0x20( input )
-	lqd			s3, -0x10( input )
-
-	// Simdify
-	.reg		r, g, b
-	.reg		r1, g1, b1
-	shufb		r, s0, s1, kShuf0
-	shufb		g, s0, s1, kShuf1
-	shufb		b, s0, s1, kShuf2
-	shufb		r1, s2, s3, kShuf3
-	shufb		g1, s2, s3, kShuf4
-	shufb		b1, s2, s3, kShuf5
-	or			r, r, r1
-	or			g, g, g1
-	or			b, b, b1
-	
-	// Color space transformation
-	.reg		Xp_Y_XYZp_x, Xp_Y_XYZp_y, Xp_Y_XYZp_z
-	fm			Xp_Y_XYZp_x, r, M01
-	fma			Xp_Y_XYZp_x, g, M02, Xp_Y_XYZp_x
-	fma			Xp_Y_XYZp_x, b, M03, Xp_Y_XYZp_x
-	fm			Xp_Y_XYZp_y, r, M11
-	fma			Xp_Y_XYZp_y, g, M12, Xp_Y_XYZp_y
-	fma			Xp_Y_XYZp_y, b, M13, Xp_Y_XYZp_y
-	fm			Xp_Y_XYZp_z, r, M21
-	fma			Xp_Y_XYZp_z, g, M22, Xp_Y_XYZp_z
-	fma			Xp_Y_XYZp_z, b, M23, Xp_Y_XYZp_z
-
-	// clamp
-	.reg		m0, m1, m2
-	fcgt		m0, Xp_Y_XYZp_x, kClampValue
-	fcgt		m1, Xp_Y_XYZp_y, kClampValue
-	fcgt		m2, Xp_Y_XYZp_z, kClampValue
-	selb		Xp_Y_XYZp_x, kClampValue, Xp_Y_XYZp_x, m0
-	selb		Xp_Y_XYZp_y, kClampValue, Xp_Y_XYZp_y, m1
-	selb		Xp_Y_XYZp_z, kClampValue, Xp_Y_XYZp_z, m2
-
-	// calculate U & V
-	.reg		iz, U, V
-	frest		iz, Xp_Y_XYZp_z
-	fi			Xp_Y_XYZp_z, Xp_Y_XYZp_z, iz
-	fm			V, Xp_Y_XYZp_y, Xp_Y_XYZp_z
-	fm			U, Xp_Y_XYZp_x, Xp_Y_XYZp_z
-	
-	// calculate luminance
-	.reg		Le, W, Z
-	EDGEPOST_LOG2( Le, Xp_Y_XYZp_y )
-	fma			Le, Le, k2F, k127F
-	
-	// W = frac(Le);
-	cfltu		W, Le, 0
-	cuflt		W, W, 0
-	fs			W, Le, W
-
-	// Z = (Le - (floor(vResult.w*255.0f))/255.0f)/255.0f;
-	fm			Z, W, k255F
-	cfltu		Z, Z, 0
-	cuflt		Z, Z, 0
-	fm			Z, Z, ki255F
-	fs			Z, Le, Z
-	fm			Z, Z, ki255F
-	
-	// clamp
-	EDGEPOST_CLAMP_FLOAT( U )
-	EDGEPOST_CLAMP_FLOAT( V )
-	EDGEPOST_CLAMP_FLOAT( Z )
-	EDGEPOST_CLAMP_FLOAT( W )
-	
-	// convert to int
-	EDGEPOST_FLOAT_TO_U8( U, U)
-	EDGEPOST_FLOAT_TO_U8( V, V)
-	EDGEPOST_FLOAT_TO_U8( Z, Z)
-	EDGEPOST_FLOAT_TO_U8( W, W)
-	
-	// assemble result, order is (wxyz)
-	.reg		logluv, logluv1
-	shufb		logluv, W, U, kShuf6
-	shufb		logluv1, V, Z, kShuf7
-	or			logluv, logluv, logluv1
-	
-	// Store
-	stqd		logluv, -0x10( output )
-	brnz		count, loop
-.endfunc
-
-.cfunc void edgePostFX16ToLogLuv( qword output, qword input, qword count )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-	EDGEPOST_DECLARE_MATH_HELPER_CONSTANTS
-	
-	// color space transformation matrix
-	.reg		M01, M02, M03
-	.reg		M11, M12, M13
-	.reg		M21, M22, M23
-	ilf32		M01, 0.2209f
-	ilf32		M02, 0.1138f
-	ilf32		M03, 0.0102f
-	ilf32		M11, 0.3390f
-	ilf32		M12, 0.6780f
-	ilf32		M13, 0.1130f
-	ilf32		M21, 0.4184f
-	ilf32		M22, 0.7319f
-	ilf32		M23, 0.2969f
-	
-	.reg		kClampValue, k2F, k127F, k255F, ki255F
-	ilf32		kClampValue, .000001f
-	ilf32		k2F, 2.f
-	ilf32		k127F, 127.f
-	ilf32		k255F, 255.f
-	ilf32		ki255F, 1.f / 255.f
-	
-	.reg		kUnpackR, kUnpackG, kUnpackB
-	il128		kUnpackR, "0B0F0b0f"
-	il128		kUnpackG, "0C0G0c0g"
-	il128		kUnpackB, "0D0H0d0h"
-	
-	.reg		kShuf6, kShuf7
-	il128		kShuf6, "Dd00Hh00Ll00Pp00"
-	il128		kShuf7, "00Dd00Hh00Ll00Pp"
-	
-loop:
-	ai			output, output, 0x10
-	ai			input, input, 0x20
-	ai			count, count, -4
-	
-	// Load input pixels
-	.reg		s0, s1
-	lqd			s0, -0x20( input )
-	lqd			s1, -0x10( input )
-
-	// Simdify
-	.reg		r, g, b
-	shufb		r, s0, s1, kUnpackR
-	shufb		g, s0, s1, kUnpackG
-	shufb		b, s0, s1, kUnpackB
-	cuflt		r, r, 11
-	cuflt		g, g, 11
-	cuflt		b, b, 11
-	
-	// Color space transformation
-	.reg		Xp_Y_XYZp_x, Xp_Y_XYZp_y, Xp_Y_XYZp_z
-	fm			Xp_Y_XYZp_x, r, M01
-	fma			Xp_Y_XYZp_x, g, M02, Xp_Y_XYZp_x
-	fma			Xp_Y_XYZp_x, b, M03, Xp_Y_XYZp_x
-	fm			Xp_Y_XYZp_y, r, M11
-	fma			Xp_Y_XYZp_y, g, M12, Xp_Y_XYZp_y
-	fma			Xp_Y_XYZp_y, b, M13, Xp_Y_XYZp_y
-	fm			Xp_Y_XYZp_z, r, M21
-	fma			Xp_Y_XYZp_z, g, M22, Xp_Y_XYZp_z
-	fma			Xp_Y_XYZp_z, b, M23, Xp_Y_XYZp_z
-
-	// clamp
-	.reg		m0, m1, m2
-	fcgt		m0, Xp_Y_XYZp_x, kClampValue
-	fcgt		m1, Xp_Y_XYZp_y, kClampValue
-	fcgt		m2, Xp_Y_XYZp_z, kClampValue
-	selb		Xp_Y_XYZp_x, kClampValue, Xp_Y_XYZp_x, m0
-	selb		Xp_Y_XYZp_y, kClampValue, Xp_Y_XYZp_y, m1
-	selb		Xp_Y_XYZp_z, kClampValue, Xp_Y_XYZp_z, m2
-
-	// calculate U & V
-	.reg		iz, U, V
-	frest		iz, Xp_Y_XYZp_z
-	fi			Xp_Y_XYZp_z, Xp_Y_XYZp_z, iz
-	fm			V, Xp_Y_XYZp_y, Xp_Y_XYZp_z
-	fm			U, Xp_Y_XYZp_x, Xp_Y_XYZp_z
-	
-	// calculate luminance
-	.reg		Le, W, Z
-	EDGEPOST_LOG2( Le, Xp_Y_XYZp_y )
-	fma			Le, Le, k2F, k127F
-	
-	// W = frac(Le);
-	cfltu		W, Le, 0
-	cuflt		W, W, 0
-	fs			W, Le, W
-
-	// Z = (Le - (floor(vResult.w*255.0f))/255.0f)/255.0f;
-	fm			Z, W, k255F
-	cfltu		Z, Z, 0
-	cuflt		Z, Z, 0
-	fm			Z, Z, ki255F
-	fs			Z, Le, Z
-	fm			Z, Z, ki255F
-	
-	// clamp
-	EDGEPOST_CLAMP_FLOAT( U )
-	EDGEPOST_CLAMP_FLOAT( V )
-	EDGEPOST_CLAMP_FLOAT( Z )
-	EDGEPOST_CLAMP_FLOAT( W )
-	
-	// convert to int
-	EDGEPOST_FLOAT_TO_U8( U, U)
-	EDGEPOST_FLOAT_TO_U8( V, V)
-	EDGEPOST_FLOAT_TO_U8( Z, Z)
-	EDGEPOST_FLOAT_TO_U8( W, W)
-	
-	// assemble result, order is (wxyz)
-	.reg		logluv, logluv1
-	shufb		logluv, W, U, kShuf6
-	shufb		logluv1, V, Z, kShuf7
-	or			logluv, logluv, logluv1
-	
-	// Store
-	stqd		logluv, -0x10( output )
-	brnz		count, loop
-.endfunc
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+
+	void edgePostFloatsToLogLuv( void* output, void* input, uint32_t count );
+	
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+.include "edgepost_helpers.inc"
+.include "edgepost_math_helpers.inc"
+.include "edgepost_luv_helpers.inc"
+
+.cfunc void edgePostFloatsToLogLuv( qword output, qword input, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	EDGEPOST_DECLARE_MATH_HELPER_CONSTANTS
+	
+	// color space transformation matrix
+	.reg		M01, M02, M03
+	.reg		M11, M12, M13
+	.reg		M21, M22, M23
+	ilf32		M01, 0.2209f
+	ilf32		M02, 0.1138f
+	ilf32		M03, 0.0102f
+	ilf32		M11, 0.3390f
+	ilf32		M12, 0.6780f
+	ilf32		M13, 0.1130f
+	ilf32		M21, 0.4184f
+	ilf32		M22, 0.7319f
+	ilf32		M23, 0.2969f
+	
+	.reg		kClampValue, k2F, k127F, k255F, ki255F
+	ilf32		kClampValue, .000001f
+	ilf32		k2F, 2.f
+	ilf32		k127F, 127.f
+	ilf32		k255F, 255.f
+	ilf32		ki255F, 1.f / 255.f
+	
+	.reg		kShuf0, kShuf1, kShuf2
+	.reg		kShuf3, kShuf4, kShuf5
+	il128		kShuf0, "Bb00"
+	il128		kShuf1, "Cc00"
+	il128		kShuf2, "Dd00"
+	il128		kShuf3, "00Bb"
+	il128		kShuf4, "00Cc"
+	il128		kShuf5, "00Dd"
+	
+	.reg		kShuf6, kShuf7
+	il128		kShuf6, "Dd00Hh00Ll00Pp00"
+	il128		kShuf7, "00Dd00Hh00Ll00Pp"
+	
+loop:
+	ai			output, output, 0x10
+	ai			input, input, 0x40
+	ai			count, count, -4
+	
+	// Load input pixels
+	.reg		s0, s1, s2, s3
+	lqd			s0, -0x40( input )
+	lqd			s1, -0x30( input )
+	lqd			s2, -0x20( input )
+	lqd			s3, -0x10( input )
+
+	// Simdify
+	.reg		r, g, b
+	.reg		r1, g1, b1
+	shufb		r, s0, s1, kShuf0
+	shufb		g, s0, s1, kShuf1
+	shufb		b, s0, s1, kShuf2
+	shufb		r1, s2, s3, kShuf3
+	shufb		g1, s2, s3, kShuf4
+	shufb		b1, s2, s3, kShuf5
+	or			r, r, r1
+	or			g, g, g1
+	or			b, b, b1
+	
+	// Color space transformation
+	.reg		Xp_Y_XYZp_x, Xp_Y_XYZp_y, Xp_Y_XYZp_z
+	fm			Xp_Y_XYZp_x, r, M01
+	fma			Xp_Y_XYZp_x, g, M02, Xp_Y_XYZp_x
+	fma			Xp_Y_XYZp_x, b, M03, Xp_Y_XYZp_x
+	fm			Xp_Y_XYZp_y, r, M11
+	fma			Xp_Y_XYZp_y, g, M12, Xp_Y_XYZp_y
+	fma			Xp_Y_XYZp_y, b, M13, Xp_Y_XYZp_y
+	fm			Xp_Y_XYZp_z, r, M21
+	fma			Xp_Y_XYZp_z, g, M22, Xp_Y_XYZp_z
+	fma			Xp_Y_XYZp_z, b, M23, Xp_Y_XYZp_z
+
+	// clamp
+	.reg		m0, m1, m2
+	fcgt		m0, Xp_Y_XYZp_x, kClampValue
+	fcgt		m1, Xp_Y_XYZp_y, kClampValue
+	fcgt		m2, Xp_Y_XYZp_z, kClampValue
+	selb		Xp_Y_XYZp_x, kClampValue, Xp_Y_XYZp_x, m0
+	selb		Xp_Y_XYZp_y, kClampValue, Xp_Y_XYZp_y, m1
+	selb		Xp_Y_XYZp_z, kClampValue, Xp_Y_XYZp_z, m2
+
+	// calculate U & V
+	.reg		iz, U, V
+	frest		iz, Xp_Y_XYZp_z
+	fi			Xp_Y_XYZp_z, Xp_Y_XYZp_z, iz
+	fm			V, Xp_Y_XYZp_y, Xp_Y_XYZp_z
+	fm			U, Xp_Y_XYZp_x, Xp_Y_XYZp_z
+	
+	// calculate luminance
+	.reg		Le, W, Z
+	EDGEPOST_LOG2( Le, Xp_Y_XYZp_y )
+	fma			Le, Le, k2F, k127F
+	
+	// W = frac(Le);
+	cfltu		W, Le, 0
+	cuflt		W, W, 0
+	fs			W, Le, W
+
+	// Z = (Le - (floor(vResult.w*255.0f))/255.0f)/255.0f;
+	fm			Z, W, k255F
+	cfltu		Z, Z, 0
+	cuflt		Z, Z, 0
+	fm			Z, Z, ki255F
+	fs			Z, Le, Z
+	fm			Z, Z, ki255F
+	
+	// clamp
+	EDGEPOST_CLAMP_FLOAT( U )
+	EDGEPOST_CLAMP_FLOAT( V )
+	EDGEPOST_CLAMP_FLOAT( Z )
+	EDGEPOST_CLAMP_FLOAT( W )
+	
+	// convert to int
+	EDGEPOST_FLOAT_TO_U8( U, U)
+	EDGEPOST_FLOAT_TO_U8( V, V)
+	EDGEPOST_FLOAT_TO_U8( Z, Z)
+	EDGEPOST_FLOAT_TO_U8( W, W)
+	
+	// assemble result, order is (wxyz)
+	.reg		logluv, logluv1
+	shufb		logluv, W, U, kShuf6
+	shufb		logluv1, V, Z, kShuf7
+	or			logluv, logluv, logluv1
+	
+	// Store
+	stqd		logluv, -0x10( output )
+	brnz		count, loop
+.endfunc
+
+.cfunc void edgePostFX16ToLogLuv( qword output, qword input, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	EDGEPOST_DECLARE_MATH_HELPER_CONSTANTS
+	
+	// color space transformation matrix
+	.reg		M01, M02, M03
+	.reg		M11, M12, M13
+	.reg		M21, M22, M23
+	ilf32		M01, 0.2209f
+	ilf32		M02, 0.1138f
+	ilf32		M03, 0.0102f
+	ilf32		M11, 0.3390f
+	ilf32		M12, 0.6780f
+	ilf32		M13, 0.1130f
+	ilf32		M21, 0.4184f
+	ilf32		M22, 0.7319f
+	ilf32		M23, 0.2969f
+	
+	.reg		kClampValue, k2F, k127F, k255F, ki255F
+	ilf32		kClampValue, .000001f
+	ilf32		k2F, 2.f
+	ilf32		k127F, 127.f
+	ilf32		k255F, 255.f
+	ilf32		ki255F, 1.f / 255.f
+	
+	.reg		kUnpackR, kUnpackG, kUnpackB
+	il128		kUnpackR, "0B0F0b0f"
+	il128		kUnpackG, "0C0G0c0g"
+	il128		kUnpackB, "0D0H0d0h"
+	
+	.reg		kShuf6, kShuf7
+	il128		kShuf6, "Dd00Hh00Ll00Pp00"
+	il128		kShuf7, "00Dd00Hh00Ll00Pp"
+	
+loop:
+	ai			output, output, 0x10
+	ai			input, input, 0x20
+	ai			count, count, -4
+	
+	// Load input pixels
+	.reg		s0, s1
+	lqd			s0, -0x20( input )
+	lqd			s1, -0x10( input )
+
+	// Simdify
+	.reg		r, g, b
+	shufb		r, s0, s1, kUnpackR
+	shufb		g, s0, s1, kUnpackG
+	shufb		b, s0, s1, kUnpackB
+	cuflt		r, r, 11
+	cuflt		g, g, 11
+	cuflt		b, b, 11
+	
+	// Color space transformation
+	.reg		Xp_Y_XYZp_x, Xp_Y_XYZp_y, Xp_Y_XYZp_z
+	fm			Xp_Y_XYZp_x, r, M01
+	fma			Xp_Y_XYZp_x, g, M02, Xp_Y_XYZp_x
+	fma			Xp_Y_XYZp_x, b, M03, Xp_Y_XYZp_x
+	fm			Xp_Y_XYZp_y, r, M11
+	fma			Xp_Y_XYZp_y, g, M12, Xp_Y_XYZp_y
+	fma			Xp_Y_XYZp_y, b, M13, Xp_Y_XYZp_y
+	fm			Xp_Y_XYZp_z, r, M21
+	fma			Xp_Y_XYZp_z, g, M22, Xp_Y_XYZp_z
+	fma			Xp_Y_XYZp_z, b, M23, Xp_Y_XYZp_z
+
+	// clamp
+	.reg		m0, m1, m2
+	fcgt		m0, Xp_Y_XYZp_x, kClampValue
+	fcgt		m1, Xp_Y_XYZp_y, kClampValue
+	fcgt		m2, Xp_Y_XYZp_z, kClampValue
+	selb		Xp_Y_XYZp_x, kClampValue, Xp_Y_XYZp_x, m0
+	selb		Xp_Y_XYZp_y, kClampValue, Xp_Y_XYZp_y, m1
+	selb		Xp_Y_XYZp_z, kClampValue, Xp_Y_XYZp_z, m2
+
+	// calculate U & V
+	.reg		iz, U, V
+	frest		iz, Xp_Y_XYZp_z
+	fi			Xp_Y_XYZp_z, Xp_Y_XYZp_z, iz
+	fm			V, Xp_Y_XYZp_y, Xp_Y_XYZp_z
+	fm			U, Xp_Y_XYZp_x, Xp_Y_XYZp_z
+	
+	// calculate luminance
+	.reg		Le, W, Z
+	EDGEPOST_LOG2( Le, Xp_Y_XYZp_y )
+	fma			Le, Le, k2F, k127F
+	
+	// W = frac(Le);
+	cfltu		W, Le, 0
+	cuflt		W, W, 0
+	fs			W, Le, W
+
+	// Z = (Le - (floor(vResult.w*255.0f))/255.0f)/255.0f;
+	fm			Z, W, k255F
+	cfltu		Z, Z, 0
+	cuflt		Z, Z, 0
+	fm			Z, Z, ki255F
+	fs			Z, Le, Z
+	fm			Z, Z, ki255F
+	
+	// clamp
+	EDGEPOST_CLAMP_FLOAT( U )
+	EDGEPOST_CLAMP_FLOAT( V )
+	EDGEPOST_CLAMP_FLOAT( Z )
+	EDGEPOST_CLAMP_FLOAT( W )
+	
+	// convert to int
+	EDGEPOST_FLOAT_TO_U8( U, U)
+	EDGEPOST_FLOAT_TO_U8( V, V)
+	EDGEPOST_FLOAT_TO_U8( Z, Z)
+	EDGEPOST_FLOAT_TO_U8( W, W)
+	
+	// assemble result, order is (wxyz)
+	.reg		logluv, logluv1
+	shufb		logluv, W, U, kShuf6
+	shufb		logluv1, V, Z, kShuf7
+	or			logluv, logluv, logluv1
+	
+	// Store
+	stqd		logluv, -0x10( output )
+	brnz		count, loop
+.endfunc

@@ -1,147 +1,147 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2010 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
- 
- /* This function splits z- and u-shapes and removes invalid blend jobs.
-  * Optionally, it can disregard minimal size features to improve performance
-  * at the cost of image quality.
-  */
- 
- 
- // this can be set to 1 to remove feature of just one pixel
- // it has most of its impact on diagonals and should not 
- // provide a significant speed boost.
-.set SKIP_ZER0_LENGTH_FEATURES, 0
-
-.macro ITERATION(parameter)
-	
-	.localreg	bounds, invalid
-	shufb		bounds, parameter, parameter, kShuf0A0B0C0D		// decompress the s-values (pixel offsets)
-	ceq			invalid, bounds, kInvalidOffsets				// check if offsets	are 0xffff, which is -1
-	
-	// build conditionals
-	.localreg	t0, t1, t2, valid, m0, m1, m2, v
-	shufb		t0,	bounds, bounds, kT0Shuf
-	shufb		t1,	bounds, bounds, kT1Shuf
-	nand		valid, invalid, invalid
-	shufb		m0, valid, valid, kT0Shuf
-	shufb		m1, valid, valid, kT1Shuf
-	and			m2, m0, m1
-.if SKIP_ZER0_LENGTH_FEATURES
-	clgt		t2, t1, t0
-	and			v, m2, t2
-.else
-	clgt		t2, t0, t1						// this is inverted t1>=t0!	
-	andc		v, m2, t2
-.endif	
-	
-	//splat conditionals
-	.reg		c0, c1, c2, c3, zShape
-	shufb		c0, v, v, kSplatX
-	shufb		c1, v, v, kSplatY
-	
-	//determine if z-shape oder u-shape
-	or			zShape, c0, c1
-	shufb		c2, v, v, kSplatZ
-	shufb		c3, v, v, kSplatW
-	andc		c2, c2, zShape
-	andc		c3, c3, zShape
-	
-	.reg		zShape0, zShape1, uShape0, uShape1
-	shufb		zShape0, parameter, kLines, kShufZ0
-	shufb		zShape1, parameter, kLines, kShufZ1
-	shufb		uShape0, parameter, kLines, kShufU0
-	shufb		uShape1, parameter, kLines, kShufU1
-	
-	stqx		zShape0, zIndex, buffer
-	mpya		zIndex, kThirtytwo, c0, zIndex
-	stqx		zShape1, zIndex, buffer
-	mpya		zIndex, kThirtytwo, c1, zIndex
-	
-	stqx		uShape0, uIndex, buffer
-	mpya		uIndex, kThirtytwo, c2, uIndex
-	stqx		uShape1, uIndex, buffer
-	mpya		uIndex, kThirtytwo, c3, uIndex
-	
-.endmacro
-
-
-.cfunc qword edgePostMlaaFilterBlendJobs(qword buffer, qword jobs, qword line0, qword line1, qword maxJobs)
-
-	// shuffle masks for building the blend-jobs
-	.reg		kShufZ0, kShufZ1, kShufU0, kShufU1
-	il128		kShufZ0, "ADEHabcd"
-	il128		kShufZ1, "CBGFcdab"
-	il128		kShufU0, "ABEFabcd"
-	il128		kShufU1, "CDGHcdab"
-	
-	// shuffle masks for decompressing the parameters
-	.reg		kShuf0A0B0C0D
-	il128		kShuf0A0B0C0D, "0A0B0C0D"
-	
-	// constants used during iterations
-	.reg		kInvalidOffsets
-	il32		kInvalidOffsets, 0xffff
-	
-	// shuffle masks for the conditionals
-	.reg		kT0Shuf, kT1Shuf
-	il128		kT0Shuf, "ACAC"
-	il128		kT1Shuf, "DBBD"
-	
-	// splats
-	.reg		kSplatX, kSplatY, kSplatZ, kSplatW
-	il128		kSplatX, "AAAA"
-	il128		kSplatY, "BBBB"
-	il128		kSplatZ, "CCCC"
-	il128		kSplatW, "DDDD"
-	
-	.reg		kZero, kThirtytwo : readoptional
-	il			kZero, 0
-	il			kThirtytwo, 32
-	
-	.reg		kShufCombineLines, kLines
-	il128		kShufCombineLines, "Aa00"
-	shufb		kLines, line0, line1, kShufCombineLines
-	
-	.reg		zIndex, uIndex, maxJobsMinusOne
-	ai			maxJobsMinusOne, maxJobs, -1
-	shli		zIndex, maxJobsMinusOne, 5
-	shli		uIndex, maxJobsMinusOne, 5
-	ai			uIndex, uIndex, 16
-	
-	//now save these for later
-	.reg		zStart, uStart
-	mov			zStart, zIndex
-	mov			uStart, uIndex
-	
-	//the counter is also used as the read offset for jobs
-	.reg		counter
-	shli		counter, jobs, 4 
-	
-loop:
-	ai			counter, counter, -0x10
-	.reg		parameter
-	lqx			parameter, counter, buffer
-	
-	ITERATION(parameter)
-	
-	brnz		counter, loop
-	
-	// now get the number of jobs found.
-	.reg		z_count, u_count
-	sf			z_count, zIndex, zStart
-	sf			u_count, uIndex, uStart
-	
-	// divide by 32 to get from bytes to double qwords to counts.
-	rotmi		z_count, z_count, -5
-	rotmi		u_count, u_count, -5
-	
-	.reg		kShufAa00
-	il128		kShufAa00, "Aa00"
-	shufb		@result, z_count, u_count, kShufAa00
-	
-	
-.endfunc
-
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2010 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+ 
+ /* This function splits z- and u-shapes and removes invalid blend jobs.
+  * Optionally, it can disregard minimal size features to improve performance
+  * at the cost of image quality.
+  */
+ 
+ 
+ // this can be set to 1 to remove feature of just one pixel
+ // it has most of its impact on diagonals and should not 
+ // provide a significant speed boost.
+.set SKIP_ZER0_LENGTH_FEATURES, 0
+
+.macro ITERATION(parameter)
+	
+	.localreg	bounds, invalid
+	shufb		bounds, parameter, parameter, kShuf0A0B0C0D		// decompress the s-values (pixel offsets)
+	ceq			invalid, bounds, kInvalidOffsets				// check if offsets	are 0xffff, which is -1
+	
+	// build conditionals
+	.localreg	t0, t1, t2, valid, m0, m1, m2, v
+	shufb		t0,	bounds, bounds, kT0Shuf
+	shufb		t1,	bounds, bounds, kT1Shuf
+	nand		valid, invalid, invalid
+	shufb		m0, valid, valid, kT0Shuf
+	shufb		m1, valid, valid, kT1Shuf
+	and			m2, m0, m1
+.if SKIP_ZER0_LENGTH_FEATURES
+	clgt		t2, t1, t0
+	and			v, m2, t2
+.else
+	clgt		t2, t0, t1						// this is inverted t1>=t0!	
+	andc		v, m2, t2
+.endif	
+	
+	//splat conditionals
+	.reg		c0, c1, c2, c3, zShape
+	shufb		c0, v, v, kSplatX
+	shufb		c1, v, v, kSplatY
+	
+	//determine if z-shape oder u-shape
+	or			zShape, c0, c1
+	shufb		c2, v, v, kSplatZ
+	shufb		c3, v, v, kSplatW
+	andc		c2, c2, zShape
+	andc		c3, c3, zShape
+	
+	.reg		zShape0, zShape1, uShape0, uShape1
+	shufb		zShape0, parameter, kLines, kShufZ0
+	shufb		zShape1, parameter, kLines, kShufZ1
+	shufb		uShape0, parameter, kLines, kShufU0
+	shufb		uShape1, parameter, kLines, kShufU1
+	
+	stqx		zShape0, zIndex, buffer
+	mpya		zIndex, kThirtytwo, c0, zIndex
+	stqx		zShape1, zIndex, buffer
+	mpya		zIndex, kThirtytwo, c1, zIndex
+	
+	stqx		uShape0, uIndex, buffer
+	mpya		uIndex, kThirtytwo, c2, uIndex
+	stqx		uShape1, uIndex, buffer
+	mpya		uIndex, kThirtytwo, c3, uIndex
+	
+.endmacro
+
+
+.cfunc qword edgePostMlaaFilterBlendJobs(qword buffer, qword jobs, qword line0, qword line1, qword maxJobs)
+
+	// shuffle masks for building the blend-jobs
+	.reg		kShufZ0, kShufZ1, kShufU0, kShufU1
+	il128		kShufZ0, "ADEHabcd"
+	il128		kShufZ1, "CBGFcdab"
+	il128		kShufU0, "ABEFabcd"
+	il128		kShufU1, "CDGHcdab"
+	
+	// shuffle masks for decompressing the parameters
+	.reg		kShuf0A0B0C0D
+	il128		kShuf0A0B0C0D, "0A0B0C0D"
+	
+	// constants used during iterations
+	.reg		kInvalidOffsets
+	il32		kInvalidOffsets, 0xffff
+	
+	// shuffle masks for the conditionals
+	.reg		kT0Shuf, kT1Shuf
+	il128		kT0Shuf, "ACAC"
+	il128		kT1Shuf, "DBBD"
+	
+	// splats
+	.reg		kSplatX, kSplatY, kSplatZ, kSplatW
+	il128		kSplatX, "AAAA"
+	il128		kSplatY, "BBBB"
+	il128		kSplatZ, "CCCC"
+	il128		kSplatW, "DDDD"
+	
+	.reg		kZero, kThirtytwo : readoptional
+	il			kZero, 0
+	il			kThirtytwo, 32
+	
+	.reg		kShufCombineLines, kLines
+	il128		kShufCombineLines, "Aa00"
+	shufb		kLines, line0, line1, kShufCombineLines
+	
+	.reg		zIndex, uIndex, maxJobsMinusOne
+	ai			maxJobsMinusOne, maxJobs, -1
+	shli		zIndex, maxJobsMinusOne, 5
+	shli		uIndex, maxJobsMinusOne, 5
+	ai			uIndex, uIndex, 16
+	
+	//now save these for later
+	.reg		zStart, uStart
+	mov			zStart, zIndex
+	mov			uStart, uIndex
+	
+	//the counter is also used as the read offset for jobs
+	.reg		counter
+	shli		counter, jobs, 4 
+	
+loop:
+	ai			counter, counter, -0x10
+	.reg		parameter
+	lqx			parameter, counter, buffer
+	
+	ITERATION(parameter)
+	
+	brnz		counter, loop
+	
+	// now get the number of jobs found.
+	.reg		z_count, u_count
+	sf			z_count, zIndex, zStart
+	sf			u_count, uIndex, uStart
+	
+	// divide by 32 to get from bytes to double qwords to counts.
+	rotmi		z_count, z_count, -5
+	rotmi		u_count, u_count, -5
+	
+	.reg		kShufAa00
+	il128		kShufAa00, "Aa00"
+	shufb		@result, z_count, u_count, kShufAa00
+	
+	
+.endfunc
+

@@ -1,613 +1,613 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2007 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-.cfunc void _edgeAnimEvaluateR(	vec_uint4 intraRBitsAdrv, 
-								vec_uchar16 bitMaskXXXX, 
-								vec_uchar16 bitMaskYYYY, 
-								vec_uchar16 bitMaskZZZZ, 
-								vec_uchar16 bitMaskWWWW, 
-								vec_uchar16 prevBitMaskXXXX, 
-								vec_uchar16 prevBitMaskYYYY, 
-								vec_uchar16 prevBitMaskZZZZ, 
-								vec_uchar16 prevBitMaskWWWW, 
-								vec_uint4 frameIntegerv, 
-								vec_float4 frameFractionv, 
-								vec_uint4 intraRAdrv, 
-								vec_uint4 initialRAdrv, 
-								vec_uint4 finalRAdrv, 
-								uint32_t count, 
-								vec_float4* output, 
-								const uint16_t* __restrict__ channelIds, 
-								uint32_t intraFrameCount)
-
-
-    .reg	count4, acos0, acos1, acos2, acos3, sin0, sin1, sin2, sin3, fOneMinusEpsilon, fOne, fMinusOne, quatScale, quatBias, zero, fHalf
-    .reg	allOnes, shufAaBb, shufBbAa, shufCcDd, shufDdCc, shufCDab, shufABcd, shufABCD, shufabcd, shuf0A0a0000, shuf0A0B0C0D, shufAAAA
-    .reg	shuf00000A0a, shufBCbc0000, shuf0000BCbc, shufDHLPDHLPDHLPDHLP, shufd000Dh00DHl0DHLp, selABcd, mask_0X0X0X0X 
-    .reg	tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7	
-    .reg	bitAdr, bitOfs, bitAdr1, bitAdr2, bitAdr3, bitOfs1, bitOfs2, bitOfs3
-    .reg	d0a, d0b, d1a, d1b, d2a, d2b, d3a, d3b 
-    .reg	d0as, d0bs, d1as, d1bs, d2as, d2bs, d3as, d3bs 
-    .reg	d0as0, d0bs0, d1as0, d1bs0, d2as0, d2bs0, d3as0, d3bs0 
-    .reg	msk0a, msk1a, msk2a, msk3a 
-    .reg	msk0b, msk1b, msk2b, msk3b 
-    .reg	ib0, ib1, ib2, ib3
-    .reg	ibs0, ibs1, ibs2, ibs3, ibx, iby, ibz, ibw, bx, by, bz, bw, pbx, pby, pbz, pbw
-    .reg	nbx, nby, nbz, nbw, npbx, npby, npbz, npbw, sumbx, sumby, sumbz, sumbw, numBits, numPrevBits
-    .reg	tz0, tz1, tz2, tz3, tzc0, tzc1, tzc2, tzc3, tzm1, tzm2, tzs1, tzs2, tzs3, bBits
-    .reg	lz0, lz1, lz2, lz3, lzc0, lzc1, lzc2, lzm1, lzm2, lzs1, lzs2, lzs3, aBits
-    .reg	numShuf, numSum, intraOfs, leftIntraAdr, rightIntraAdr
-    .reg	leftSelMask, rightSelMask, leftAdr, rightAdr
-    .reg	aBitsf, bBitsf, tween0, tween1, tween
-    .reg	left1Adr, left2Adr, left3Adr, right1Adr, right2Adr, right3Adr 
-    .reg	q0a, q0b, q1a, q1b, q2a, q2b, q3a, q3b, q4a, q4b, q5a, q5b, q6a, q6b, q7a, q7b 
-    .reg	shift1, shift2, shift3, shift5, shift6, shift7
-    .reg	shift1b, shift2b, shift3b, shift5b, shift6b, shift7b
-    .reg	q0, q1, q2, q3, q4, q5, q6, q7
-    .reg	a0i, a4i, bc0i, bc4i, b0i, b4i, c0i, c4i, a0, a4, b0, b4, c0, c4
-    .reg	d0sqr0, d0sqr1, d0sqr2, d0inv, d0
-    .reg	d4sqr0, d4sqr1, d4sqr2, d4inv, d4
-    .reg	idx0, idx4
-    .reg	sel0a, sel0b, sel0c, selMsk0a, selMsk0b, selMsk0c
-    .reg	sel4a, sel4b, sel4c, selMsk4a, selMsk4b, selMsk4c
-    .reg	leftRotX, leftRotY, leftRotZ, leftRotW, rightRotX, rightRotY, rightRotZ, rightRotW
-    .reg	dotRotX, dotRotXY, dotRotXYZ, dotRot, floatSign, targetRotX, targetRotY, targetRotZ, targetRotW, cosAngle
-    .reg	oneMinusCosAngle, rsqTmp, evalTmp, acosEval0, acosEval1, acosEval2, acosEval3, angle
-    .reg	sqAngle, sinaEval0, sinaEval1, sinaEval2, sinaEval3, sina
-    .reg	tAngle, sqTAngle, sinbEval0, sinbEval1, sinbEval2, sinbEval3, sinb
-    .reg	oneMinusT, oneMinusTAngle, sqOneMinusTAngle, sincEval0, sincEval1, sincEval2, sincEval3, sinc
-    .reg	invSina, fLeftTmp, fRightTmp
-    .reg	shufRange, fLeft, fRight
-    .reg	tmpRotX, tmpRotY, tmpRotZ, tmpRotW, outRotX, outRotY, outRotZ, outRotW
-    .reg	outRotX0Y0X1Y1, outRotZ1W1Z0W0, outRotX2Y2X3Y3, outRotZ3W3Z2W2, outRot0, outRot1, outRot2, outRot3
-    .reg	outOfs, outOfs1, outOfs2, outOfs3
-    .reg	intraRInc0, intraRInc
-    .reg	_7FFF, _EEEE
-    .reg	shiftl, shiftr, shiftlb, shiftrb												
-    
- 	//----------------------------------------------------------------------------------------------
-	// Early out
-	//----------------------------------------------------------------------------------------------    
-    
-    brz		count, NoLoop
-
-    //----------------------------------------------------------------------------------------------
-    // Init code
-    //----------------------------------------------------------------------------------------------        
-            
-    il128	shuf0A0B0C0D, "0A0B0C0D"
-    il128	shufAAAA, "AAAA"
-    il128	shufAaBb, "AaBb"
-    il128	shufBbAa, "BbAa"
-    il128	shufCcDd, "CcDd"
-    il128	shufDdCc, "DdCc"
-    il128	shufCDab, "CDab"
-    il128	shufABcd, "ABcd"
-    il128	shufABCD, "ABCD"
-    il128	shufabcd, "abcd"
-    il128	shuf0A0a0000, "0A0a0000"
-    il128	shuf00000A0a, "00000A0a"
-    il128	shufBCbc0000, "BCbc0000"
-    il128	shuf0000BCbc, "0000BCbc"
-    il128	shufDHLPDHLPDHLPDHLP, "DHLPDHLPDHLPDHLP"
-    il128	shufd000Dh00DHl0DHLp, "d000Dh00DHl0DHLp"
-    fsmbi	selABcd, 0x00ff
-    il128	_EEEE, 0xE0000000_E0000000_E0000000_E0000000
-    ila		_7FFF, 0x7fff
-    ila		zero, 0
-    fsmbi	allOnes, 0xffff
-    fsmbi	mask_0X0X0X0X, 0x3333
-
-    // MacLaurin - Acos
-    il128	acos0, 0x3FC90FDA_3FC90FDA_3FC90FDA_3FC90FDA	//  1.5707963050
-    il128	acos1, 0x3E5BBFCA_3E5BBFCA_3E5BBFCA_3E5BBFCA	//  0.2145988016
-    il128	acos2, 0x3DB63A9E_3DB63A9E_3DB63A9E_3DB63A9E	//  0.0889789874
-    il128	acos3, 0x3D4D8392_3D4D8392_3D4D8392_3D4D8392	//  0.0501743046
-
-    // Taylor - sin
-    il128	sin0, 0xBE2AAAAB_BE2AAAAB_BE2AAAAB_BE2AAAAB		// -0.1666666664
-    il128	sin1, 0x3C088887_3C088887_3C088887_3C088887		//  0.0083333315
-    il128	sin2, 0xB9500C03_B9500C03_B9500C03_B9500C03		// -0.000198409
-    il128	sin3, 0x3638B94F_3638B94F_3638B94F_3638B94F		//  0.0000027526
-    
-    ilhu    fOne, 0x3f800000@h								//  1.0
-    ilhu    fMinusOne, 0xbf800000@h							// -1.0
-	ilhu	fHalf,  0x3F000000@h							//	0.5f
-    ilhu    fOneMinusEpsilon, 0x3F7FBE77@h					//  0.999
-    iohl    fOneMinusEpsilon, 0x3F7FBE77@l					//  0.999
-    ilhu    quatScale, 0x3FB504F3@h							//  1.4142135624
-    iohl    quatScale, 0x3FB504F3@l							//  1.4142135624
-    ilhu    quatBias, 0xbf000000@h							// -0.5
-    fm		quatBias, quatBias, quatScale
-    ai		count4, count, 3
-    rotmi	count4, count4, -2
-
-    shufb	intraFrameCount, intraFrameCount, intraFrameCount, shufAAAA	
-    
-    //----------------------------------------------------------------------------------------------
-    // Loop
-    //----------------------------------------------------------------------------------------------        
-    
-Loop:
-    ai      count4, count4, -1
-        
-    rotmi	bitAdr, intraRBitsAdrv, -3
-    andi	bitOfs, intraRBitsAdrv, 127
-    
-    // Get intra frame rotation bits for 4 joints, left justified
-    // Note: Currently assuming a limit of 128 intra frames
-    shlqbyi	bitAdr1, bitAdr, 4
-    shlqbyi	bitAdr2, bitAdr, 8
-    shlqbyi	bitAdr3, bitAdr, 12
-    
-    shlqbyi	bitOfs1, bitOfs, 4
-    shlqbyi	bitOfs2, bitOfs, 8
-    shlqbyi	bitOfs3, bitOfs, 12
-    
-    lqd		d0a, 0x00(bitAdr)
-    lqd		d0b, 0x10(bitAdr)
-    lqd		d1a, 0x00(bitAdr1)
-    lqd		d1b, 0x10(bitAdr1)
-    lqd		d2a, 0x00(bitAdr2)
-    lqd		d2b, 0x10(bitAdr2)
-    lqd		d3a, 0x00(bitAdr3)
-    lqd		d3b, 0x10(bitAdr3)
-
-    rotqbybi	d0as, d0a, bitOfs
-    rotqbybi	d0bs, d0b, bitOfs
-    rotqbybi	d1as, d1a, bitOfs1
-    rotqbybi	d1bs, d1b, bitOfs1
-    rotqbybi	d2as, d2a, bitOfs2
-    rotqbybi	d2bs, d2b, bitOfs2
-    rotqbybi	d3as, d3a, bitOfs3
-    rotqbybi	d3bs, d3b, bitOfs3
-    
-    rotqbi	d0as0, d0as, bitOfs
-    rotqbi	d0bs0, d0bs, bitOfs
-    rotqbi	d1as0, d1as, bitOfs1
-    rotqbi	d1bs0, d1bs, bitOfs1
-    rotqbi	d2as0, d2as, bitOfs2
-    rotqbi	d2bs0, d2bs, bitOfs2
-    rotqbi	d3as0, d3as, bitOfs3
-    rotqbi	d3bs0, d3bs, bitOfs3
-
-    shlqbybi	msk0a, allOnes, bitOfs
-    shlqbybi	msk1a, allOnes, bitOfs1
-    shlqbybi	msk2a, allOnes, bitOfs2
-    shlqbybi	msk3a, allOnes, bitOfs3
-        
-    shlqbi	msk0b, msk0a, bitOfs	    
-    shlqbi	msk1b, msk1a, bitOfs1	    
-    shlqbi	msk2b, msk2a, bitOfs2	    
-    shlqbi	msk3b, msk3a, bitOfs3	    
-    
-    selb	ib0, d0bs0, d0as0, msk0b
-    selb	ib1, d1bs0, d1as0, msk1b
-    selb	ib2, d2bs0, d2as0, msk2b
-    selb	ib3, d3bs0, d3as0, msk3b
-
-    // swizzle -> xxxx yyyy zzzz wwww
-    shufb	ibs0, ib0, ib1, shufAaBb
-    shufb	ibs1, ib0, ib1, shufCcDd
-    shufb	ibs2, ib2, ib3, shufBbAa
-    shufb	ibs3, ib2, ib3, shufDdCc
-    selb	ibx, ibs0, ibs2, selABcd
-    shufb	iby, ibs0, ibs2, shufCDab
-    selb	ibz, ibs1, ibs3, selABcd
-    shufb	ibw, ibs1, ibs3, shufCDab
-    
-    // Clear invalid bits (if intra frame count is less than 128)
-    and		bx, ibx, bitMaskXXXX
-    and		by, iby, bitMaskYYYY
-    and		bz, ibz, bitMaskZZZZ
-    and		bw, ibw, bitMaskWWWW
-
-    // Get rotation bits prior to current frame
-    and		pbx, ibx, prevBitMaskXXXX
-    and		pby, iby, prevBitMaskYYYY
-    and		pbz, ibz, prevBitMaskZZZZ
-    and		pbw, ibw, prevBitMaskWWWW
-    
-    // Count enabled bits
-    cntb	nbx, bx
-    cntb	nby, by
-    cntb	nbz, bz
-    cntb	nbw, bw
-    cntb	npbx, pbx
-    cntb	npby, pby
-    cntb	npbz, pbz
-    cntb	npbw, pbw
-    sumb	sumbx, nbx, npbx
-    sumb	sumby, nby, npby
-    sumb	sumbz, nbz, npbz
-    sumb	sumbw, nbw, npbw
-    a		numBits, sumbx, sumby
-    a		numBits, numBits, sumbz
-    a		numBits, numBits, sumbw
-    rotmi	numPrevBits, numBits, -16
-    and		numBits, numBits, mask_0X0X0X0X
-    
-    // Get number of contiguously disabled bits before (and including) current frame
-    // i.e. the number of trailing zeros of prb.
-    sfi		tmp0, pbx, 0
-    sfi		tmp1, pby, 0
-    sfi		tmp2, pbz, 0
-    sfi		tmp3, pbw, 0
-    and		tmp4, pbx, tmp0
-    and		tmp5, pby, tmp1
-    and		tmp6, pbz, tmp2
-    and		tmp7, pbw, tmp3
-    clz		tz0, tmp4
-    clz		tz1, tmp5
-    clz		tz2, tmp6
-    clz		tz3, tmp7
-    ceqi	tzc0, tz0, 32
-    ceqi	tzc1, tz1, 32
-    ceqi	tzc2, tz2, 32
-    ceqi	tzc3, tz3, 32
-    sfi		tmp0, tz0, 31
-    sfi		tmp1, tz1, 31
-    sfi		tmp2, tz2, 31
-    sfi		tmp3, tz3, 31
-    selb	tz0, tmp0, tz0, tzc0
-    selb	tz1, tmp1, tz1, tzc1
-    selb	tz2, tmp2, tz2, tzc2
-    selb	tz3, tmp3, tz3, tzc3
-    and		tzm1, tzc3, tzc2
-    and		tzm2, tzm1, tzc1
-    and		tmp0, tz2, tzc3
-    and		tmp1, tz1, tzm1
-    and		tmp2, tz0, tzm2
-    a		tzs1, tz3, tmp0
-    a		tzs2, tzs1, tmp1
-    a		tzs3, tzs2, tmp2
-    sfi		tmp0, frameIntegerv, 128
-    sf		bBits, tmp0, tzs3
-    
-    // Get number of contiguously disabled bits after (but not including) current frame
-    // i.e. the number of leading zeros of rb
-    andc	tmp0, bx, prevBitMaskXXXX
-    andc	tmp1, by, prevBitMaskYYYY
-    andc	tmp2, bz, prevBitMaskZZZZ
-    andc	tmp3, bw, prevBitMaskWWWW
-    orc		tmp4, tmp0, bitMaskXXXX
-    orc		tmp5, tmp1, bitMaskYYYY
-    orc		tmp6, tmp2, bitMaskZZZZ
-    orc		tmp7, tmp3, bitMaskWWWW
-    clz		lz0, tmp4
-    clz		lz1, tmp5
-    clz		lz2, tmp6
-    clz		lz3, tmp7
-    ceqi	lzc0, lz0, 32
-    ceqi	lzc1, lz1, 32
-    ceqi	lzc2, lz2, 32
-    and		lzm1, lzc0, lzc1
-    and		lzm2, lzm1, lzc2
-    and		tmp0, lz1, lzc0
-    and		tmp1, lz2, lzm1
-    and		tmp2, lz3, lzm2
-    a		lzs1, lz0, tmp0
-    a		lzs2, lzs1, tmp1
-    a		lzs3, lzs2, tmp2
-    ai		tmp0, lzs3, 1
-    sf		aBits, frameIntegerv, tmp0
-    
-    // Get addresses of the intra frame data bracketing each joint
-    shufb	numShuf, numBits, numPrevBits, shufd000Dh00DHl0DHLp
-    sumb	numSum, numShuf, zero
-    shli	tmp0, numSum, 2
-    shli	tmp1, numSum, 1
-    a		intraOfs, tmp0, tmp1
-    a		rightIntraAdr, intraRAdrv, intraOfs
-    ai		leftIntraAdr, rightIntraAdr, -6
-    
-    // If there is no left/right intra frame data, use initial/final data
-    clgti	leftSelMask, numPrevBits, 0
-    ceq		rightSelMask, numPrevBits, numBits
-    selb	leftAdr, initialRAdrv, leftIntraAdr, leftSelMask
-    selb	rightAdr, rightIntraAdr, finalRAdrv, rightSelMask
-    
-     // Compute tweening factors
-    cuflt	bBitsf, bBits, 0
-    cuflt	aBitsf, aBits, 0
-    fa		tween0, frameFractionv, bBitsf
-    fa		tmp0, bBitsf, aBitsf
-    frest	tmp1, tmp0
-	fi		tmp2, tmp0, tmp1
-	fnms	tmp3, tmp0, tmp2, fOne
-	fma		tween1, tmp3, tmp2, tmp2
-	fm		tween, tween0, tween1
-
-    // Get rotation data pointers
-    shlqbyi	left1Adr, leftAdr, 4
-    shlqbyi	left2Adr, leftAdr, 8
-    shlqbyi	left3Adr, leftAdr, 12
-    shlqbyi	right1Adr, rightAdr, 4
-    shlqbyi	right2Adr, rightAdr, 8
-    shlqbyi	right3Adr, rightAdr, 12
-    
-    // Decompress the 8 rotation quaternions to float 4
-    // Compression is 'smallest 3' (15.15.15.2)
-    lqd		q0a, 0x00(leftAdr)
-    lqd		q0b, 0x10(leftAdr)
-    lqd		q1a, 0x00(left1Adr)
-    lqd		q1b, 0x10(left1Adr)
-    lqd		q2a, 0x00(left2Adr)
-    lqd		q2b, 0x10(left2Adr)
-    lqd		q3a, 0x00(left3Adr)
-    lqd		q3b, 0x10(left3Adr)
-    lqd		q4a, 0x00(rightAdr)
-    lqd		q4b, 0x10(rightAdr)
-    lqd		q5a, 0x00(right1Adr)
-    lqd		q5b, 0x10(right1Adr)
-    lqd		q6a, 0x00(right2Adr)
-    lqd		q6b, 0x10(right2Adr)
-    lqd		q7a, 0x00(right3Adr)
-    lqd		q7b, 0x10(right3Adr)
-
-    andi	shiftl, leftAdr, 15
-    andi	shiftr, rightAdr, 15
-    ai		shiftlb, shiftl, -16
-    ai		shiftrb, shiftr, -16
-    shlqbyi	shift1, shiftl, 4
-    shlqbyi	shift2, shiftl, 8
-    shlqbyi	shift3, shiftl, 12
-    shlqbyi	shift5, shiftr, 4
-    shlqbyi	shift6, shiftr, 8
-    shlqbyi	shift7, shiftr, 12
-    shlqbyi	shift1b, shiftlb, 4
-    shlqbyi	shift2b, shiftlb, 8
-    shlqbyi	shift3b, shiftlb, 12
-    shlqbyi	shift5b, shiftrb, 4
-    shlqbyi	shift6b, shiftrb, 8
-    shlqbyi	shift7b, shiftrb, 12
-
-    // Left justify each compressed quat
-    shlqby	tmp0, q0a, shiftl
-    rotqmby	tmp1, q0b, shiftlb
-    or		q0, tmp0, tmp1
-    shlqby	tmp0, q1a, shift1
-    rotqmby	tmp1, q1b, shift1b
-    or		q1, tmp0, tmp1
-    shlqby	tmp0, q2a, shift2
-    rotqmby	tmp1, q2b, shift2b
-    or		q2, tmp0, tmp1
-    shlqby	tmp0, q3a, shift3
-    rotqmby	tmp1, q3b, shift3b
-    or		q3, tmp0, tmp1
-    shlqby	tmp0, q4a, shiftr
-    rotqmby	tmp1, q4b, shiftrb
-    or		q4, tmp0, tmp1
-    shlqby	tmp0, q5a, shift5
-    rotqmby	tmp1, q5b, shift5b
-    or		q5, tmp0, tmp1
-    shlqby	tmp0, q6a, shift6
-    rotqmby	tmp1, q6b, shift6b
-    or		q6, tmp0, tmp1
-    shlqby	tmp0, q7a, shift7
-    rotqmby	tmp1, q7b, shift7b
-    or		q7, tmp0, tmp1
-    
-    // Unpack 15-bit components
-    shufb	tmp0, q0, q1, shuf0A0a0000
-    shufb	tmp1, q2, q3, shuf00000A0a
-    shufb	a0i, tmp0, tmp1, shufABcd
-    shufb	tmp0, q4, q5, shuf0A0a0000
-    shufb	tmp1, q6, q7, shuf00000A0a
-    shufb	a4i, tmp0, tmp1, shufABcd
-
-    shufb	tmp0, q0, q1, shufBCbc0000
-    shufb	tmp1, q2, q3, shuf0000BCbc
-    shufb	bc0i, tmp0, tmp1, shufABcd
-    shufb	tmp0, q4, q5, shufBCbc0000
-    shufb	tmp1, q6, q7, shuf0000BCbc
-    shufb	bc4i, tmp0, tmp1, shufABcd
-    
-    rotmi	tmp0, bc0i, -17
-    rotmi	tmp1, bc4i, -17
-    rotmi	tmp2, bc0i, -2
-    rotmi	tmp3, bc4i, -2
-    and		b0i, tmp0, _7FFF  
-    and		b4i, tmp1, _7FFF
-    and		c0i, tmp2, _7FFF
-    and		c4i, tmp3, _7FFF
-    
-    cuflt	tmp0, a0i, 15
-    cuflt	tmp1, a4i, 15
-    cuflt	tmp2, b0i, 15
-    cuflt	tmp3, b4i, 15
-    cuflt	tmp4, c0i, 15
-    cuflt	tmp5, c4i, 15
-    fma		a0, tmp0, quatScale, quatBias
-    fma		a4, tmp1, quatScale, quatBias
-    fma		b0, tmp2, quatScale, quatBias
-    fma		b4, tmp3, quatScale, quatBias
-    fma		c0, tmp4, quatScale, quatBias
-    fma		c4, tmp5, quatScale, quatBias
-    
-    // Derived value, d = sqrt(1 - a^2 - b^2 - c^2)
-    fnms	d0sqr0, a0, a0, fOne
-    fnms	d0sqr1, b0, b0, d0sqr0
-    fnms	d0sqr2, c0, c0, d0sqr1
-	frsqest	tmp0, d0sqr2
-	fi		tmp1, d0sqr2, tmp0
-	fm		tmp2, d0sqr2, tmp1
-	fm		tmp3, tmp1, fHalf
-	fnms	tmp4, tmp2, tmp1, fOne
-	fma		d0inv, tmp3, tmp4, tmp1
-	fm		d0, d0inv, d0sqr2
-
-    fnms	d4sqr0, a4, a4, fOne
-    fnms	d4sqr1, b4, b4, d4sqr0
-    fnms	d4sqr2, c4, c4, d4sqr1
-	frsqest	tmp0, d4sqr2
-	fi		tmp1, d4sqr2, tmp0
-	fm		tmp2, d4sqr2, tmp1
-	fm		tmp3, tmp1, fHalf
-	fnms	tmp4, tmp2, tmp1, fOne
-	fma		d4inv, tmp3, tmp4, tmp1
-	fm		d4, d4inv, d4sqr2
-
-    // Get 2-bit derived value index
-    nor		tmp0, bc0i, bc0i
-    nor		tmp1, bc4i, bc4i
-    andi	idx0, tmp0, 3
-    andi	idx4, tmp1, 3
-    
-    // Now shuffle components to insert the derived value.
-    // Using selects rather than deswizzle+shuffle as I want to keep the quats in swizzled form for the slerp...
-    shl		sel0a, _EEEE, idx0
-    a		sel0b, sel0a, sel0a
-    a		sel0c, sel0b, sel0b
-    rotmai	selMsk0a, sel0a, -31
-    rotmai	selMsk0b, sel0b, -31
-    rotmai	selMsk0c, sel0c, -31
-    selb	leftRotY, a0, d0, selMsk0a
-    selb	leftRotX, d0, a0, selMsk0a
-    selb	leftRotZ, b0, leftRotY, selMsk0b
-    selb	leftRotY, leftRotY, b0, selMsk0b
-    selb	leftRotW, c0, leftRotZ, selMsk0c
-    selb	leftRotZ, leftRotZ, c0, selMsk0c
-
-    shl		sel4a, _EEEE, idx4
-    a		sel4b, sel4a, sel4a
-    a		sel4c, sel4b, sel4b
-    rotmai	selMsk4a, sel4a, -31
-    rotmai	selMsk4b, sel4b, -31
-    rotmai	selMsk4c, sel4c, -31
-    selb	rightRotY, a4, d4, selMsk4a
-    selb	rightRotX, d4, a4, selMsk4a
-    selb	rightRotZ, b4, rightRotY, selMsk4b
-    selb	rightRotY, rightRotY, b4, selMsk4b
-    selb	rightRotW, c4, rightRotZ, selMsk4c
-    selb	rightRotZ, rightRotZ, c4, selMsk4c
-    
-    // Slerp each (left, right) rotation pair with the tweening factors computed earlier
-
-    // Slerp rotations : compute dot product
-    fm		dotRotX, leftRotX, rightRotX
-    fma		dotRotXY, leftRotY, rightRotY, dotRotX
-    fma		dotRotXYZ, leftRotZ, rightRotZ, dotRotXY
-    fma		dotRot, leftRotW, rightRotW, dotRotXYZ
-    fcgt	tmp0, zero, dotRot
-    selb	floatSign, fOne, fMinusOne, tmp0
-    
-    // Slerp rotations : determine target rotation (right or -right)
-    fm		targetRotX, rightRotX, floatSign
-    fm		targetRotY, rightRotY, floatSign
-    fm		targetRotZ, rightRotZ, floatSign
-    fm		targetRotW, rightRotW, floatSign
-    fm		cosAngle, dotRot, floatSign
-    
-    // Slerp rotations : evaluate angle = acos(cosAngle) (MacLaurin)
-    fs		oneMinusCosAngle, fOne, cosAngle
-    frsqest	rsqTmp, oneMinusCosAngle
-    fi		rsqTmp, oneMinusCosAngle, rsqTmp
-    fnms	evalTmp, rsqTmp, cosAngle, rsqTmp
-    fm		acosEval3, cosAngle, acos3
-    fnms	acosEval2, cosAngle, acosEval3, acos2
-    fnms	acosEval1, cosAngle, acosEval2, acos1
-    fnms	acosEval0, cosAngle, acosEval1, acos0
-    fm		angle, acosEval0, evalTmp
-    
-    // Slerp rotations : evaluate sina = sin(angle) (Taylor)
-    fm		sqAngle, angle, angle
-    fma		sinaEval3, sin3, sqAngle, sin2
-    fma		sinaEval2, sinaEval3, sqAngle, sin1
-    fma		sinaEval1, sinaEval2, sqAngle, sin0
-    fma		sinaEval0, sinaEval1, sqAngle, fOne
-    fm		sina, sinaEval0, angle
-    
-    // Slerp rotations : evaluate sinb = sin(t*angle) (Taylor)
-    fm		tAngle, tween, angle
-    fm		sqTAngle, tAngle, tAngle
-    fma		sinbEval3, sin3, sqTAngle, sin2
-    fma		sinbEval2, sinbEval3, sqTAngle, sin1
-    fma		sinbEval1, sinbEval2, sqTAngle, sin0
-    fma		sinbEval0, sinbEval1, sqTAngle, fOne
-    fm		sinb, sinbEval0, tAngle
-    
-    // Slerp rotations : evaluate sinc = sin((1-t)*angle) (Taylor)
-    fs		oneMinusT, fOne, tween
-    fm		oneMinusTAngle, oneMinusT, angle
-    fm		sqOneMinusTAngle, oneMinusTAngle, oneMinusTAngle
-    fma		sincEval3, sin3, sqOneMinusTAngle, sin2
-    fma		sincEval2, sincEval3, sqOneMinusTAngle, sin1
-    fma		sincEval1, sincEval2, sqOneMinusTAngle, sin0
-    fma		sincEval0, sincEval1, sqOneMinusTAngle, fOne
-    fm		sinc, sincEval0, oneMinusTAngle
-    
-    // Select either sinc/sina or sinb/sina depending on the quadrant
-    frest	invSina, sina
-    fi		invSina, sina, invSina
-    fm		fLeftTmp, sinc, invSina
-    fm		fRightTmp, sinb, invSina
-    fcgt	tmp0, cosAngle, fOneMinusEpsilon
-    selb	shufRange, shufABCD, shufabcd, tmp0
-    shufb	fLeft, fLeftTmp, oneMinusT, shufRange
-    shufb	fRight, fRightTmp, tween, shufRange
-    
-    // Actual blend
-    fm		tmpRotX, leftRotX, fLeft
-    fm		tmpRotY, leftRotY, fLeft
-    fm		tmpRotZ, leftRotZ, fLeft
-    fm		tmpRotW, leftRotW, fLeft
-    fma		outRotX, targetRotX, fRight, tmpRotX
-    fma		outRotY, targetRotY, fRight, tmpRotY
-    fma		outRotZ, targetRotZ, fRight, tmpRotZ
-    fma		outRotW, targetRotW, fRight, tmpRotW
-
-    // Unswizzle output rotation
-    // (X0X1X2X3 Y0Y1Y2Y3 Z0Z1Z2Z3 W0W1W2W3 -> X0Y0Z0W0 X1Y1Z1W1 X2Y2Z2W2 X3Y3Z3W3)
-    shufb	outRotX0Y0X1Y1, outRotX, outRotY, shufAaBb
-    shufb	outRotZ1W1Z0W0, outRotZ, outRotW, shufBbAa
-    shufb	outRot0, outRotX0Y0X1Y1, outRotZ1W1Z0W0, shufABcd
-    shufb	outRot1, outRotX0Y0X1Y1, outRotZ1W1Z0W0, shufCDab
-    shufb	outRotX2Y2X3Y3, outRotX, outRotY, shufCcDd
-    shufb	outRotZ3W3Z2W2, outRotZ, outRotW, shufDdCc
-    shufb	outRot2, outRotX2Y2X3Y3, outRotZ3W3Z2W2, shufABcd
-    shufb	outRot3, outRotX2Y2X3Y3, outRotZ3W3Z2W2, shufCDab
-    
-    // Write results (x4) 
-    lqd		outOfs, 0x00(channelIds)
-    rotqby	outOfs, outOfs, channelIds
-    shufb	outOfs, outOfs, outOfs, shuf0A0B0C0D
-    shli	tmp0, outOfs, 4
-    shli	outOfs, outOfs, 5
-    a		outOfs, outOfs, tmp0
-    shlqbyi	outOfs1, outOfs, 4
-    shlqbyi	outOfs2, outOfs, 8
-    shlqbyi	outOfs3, outOfs, 12
-    stqx	outRot0, output, outOfs
-    stqx	outRot1, output, outOfs1
-    stqx	outRot2, output, outOfs2
-    stqx	outRot3, output, outOfs3
-    
-    // Advance pointers
-    shufb	tmp0, numBits, numBits, shufDHLPDHLPDHLPDHLP
-    sumb	intraRInc0, tmp0, zero
-    shli	tmp0, intraRInc0, 1
-    shli	tmp1, intraRInc0, 2
-    a		intraRInc, tmp0, tmp1
-    
-    shli	tmp0, intraFrameCount, 2
-    a		intraRBitsAdrv, intraRBitsAdrv, tmp0
-    ai		initialRAdrv, initialRAdrv, 6*4
-    a		intraRAdrv, intraRAdrv, intraRInc
-    ai		finalRAdrv, finalRAdrv, 6*4
-    ai		channelIds, channelIds, 8
-        
-    //----------------------------------------------------------------------------------------------        
-    // Loop
-    //----------------------------------------------------------------------------------------------
-
-    brnz    count4, Loop
-
-
-NoLoop:
-
-.endfunc
-         
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2007 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+.cfunc void _edgeAnimEvaluateR(	vec_uint4 intraRBitsAdrv, 
+								vec_uchar16 bitMaskXXXX, 
+								vec_uchar16 bitMaskYYYY, 
+								vec_uchar16 bitMaskZZZZ, 
+								vec_uchar16 bitMaskWWWW, 
+								vec_uchar16 prevBitMaskXXXX, 
+								vec_uchar16 prevBitMaskYYYY, 
+								vec_uchar16 prevBitMaskZZZZ, 
+								vec_uchar16 prevBitMaskWWWW, 
+								vec_uint4 frameIntegerv, 
+								vec_float4 frameFractionv, 
+								vec_uint4 intraRAdrv, 
+								vec_uint4 initialRAdrv, 
+								vec_uint4 finalRAdrv, 
+								uint32_t count, 
+								vec_float4* output, 
+								const uint16_t* __restrict__ channelIds, 
+								uint32_t intraFrameCount)
+
+
+    .reg	count4, acos0, acos1, acos2, acos3, sin0, sin1, sin2, sin3, fOneMinusEpsilon, fOne, fMinusOne, quatScale, quatBias, zero, fHalf
+    .reg	allOnes, shufAaBb, shufBbAa, shufCcDd, shufDdCc, shufCDab, shufABcd, shufABCD, shufabcd, shuf0A0a0000, shuf0A0B0C0D, shufAAAA
+    .reg	shuf00000A0a, shufBCbc0000, shuf0000BCbc, shufDHLPDHLPDHLPDHLP, shufd000Dh00DHl0DHLp, selABcd, mask_0X0X0X0X 
+    .reg	tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7	
+    .reg	bitAdr, bitOfs, bitAdr1, bitAdr2, bitAdr3, bitOfs1, bitOfs2, bitOfs3
+    .reg	d0a, d0b, d1a, d1b, d2a, d2b, d3a, d3b 
+    .reg	d0as, d0bs, d1as, d1bs, d2as, d2bs, d3as, d3bs 
+    .reg	d0as0, d0bs0, d1as0, d1bs0, d2as0, d2bs0, d3as0, d3bs0 
+    .reg	msk0a, msk1a, msk2a, msk3a 
+    .reg	msk0b, msk1b, msk2b, msk3b 
+    .reg	ib0, ib1, ib2, ib3
+    .reg	ibs0, ibs1, ibs2, ibs3, ibx, iby, ibz, ibw, bx, by, bz, bw, pbx, pby, pbz, pbw
+    .reg	nbx, nby, nbz, nbw, npbx, npby, npbz, npbw, sumbx, sumby, sumbz, sumbw, numBits, numPrevBits
+    .reg	tz0, tz1, tz2, tz3, tzc0, tzc1, tzc2, tzc3, tzm1, tzm2, tzs1, tzs2, tzs3, bBits
+    .reg	lz0, lz1, lz2, lz3, lzc0, lzc1, lzc2, lzm1, lzm2, lzs1, lzs2, lzs3, aBits
+    .reg	numShuf, numSum, intraOfs, leftIntraAdr, rightIntraAdr
+    .reg	leftSelMask, rightSelMask, leftAdr, rightAdr
+    .reg	aBitsf, bBitsf, tween0, tween1, tween
+    .reg	left1Adr, left2Adr, left3Adr, right1Adr, right2Adr, right3Adr 
+    .reg	q0a, q0b, q1a, q1b, q2a, q2b, q3a, q3b, q4a, q4b, q5a, q5b, q6a, q6b, q7a, q7b 
+    .reg	shift1, shift2, shift3, shift5, shift6, shift7
+    .reg	shift1b, shift2b, shift3b, shift5b, shift6b, shift7b
+    .reg	q0, q1, q2, q3, q4, q5, q6, q7
+    .reg	a0i, a4i, bc0i, bc4i, b0i, b4i, c0i, c4i, a0, a4, b0, b4, c0, c4
+    .reg	d0sqr0, d0sqr1, d0sqr2, d0inv, d0
+    .reg	d4sqr0, d4sqr1, d4sqr2, d4inv, d4
+    .reg	idx0, idx4
+    .reg	sel0a, sel0b, sel0c, selMsk0a, selMsk0b, selMsk0c
+    .reg	sel4a, sel4b, sel4c, selMsk4a, selMsk4b, selMsk4c
+    .reg	leftRotX, leftRotY, leftRotZ, leftRotW, rightRotX, rightRotY, rightRotZ, rightRotW
+    .reg	dotRotX, dotRotXY, dotRotXYZ, dotRot, floatSign, targetRotX, targetRotY, targetRotZ, targetRotW, cosAngle
+    .reg	oneMinusCosAngle, rsqTmp, evalTmp, acosEval0, acosEval1, acosEval2, acosEval3, angle
+    .reg	sqAngle, sinaEval0, sinaEval1, sinaEval2, sinaEval3, sina
+    .reg	tAngle, sqTAngle, sinbEval0, sinbEval1, sinbEval2, sinbEval3, sinb
+    .reg	oneMinusT, oneMinusTAngle, sqOneMinusTAngle, sincEval0, sincEval1, sincEval2, sincEval3, sinc
+    .reg	invSina, fLeftTmp, fRightTmp
+    .reg	shufRange, fLeft, fRight
+    .reg	tmpRotX, tmpRotY, tmpRotZ, tmpRotW, outRotX, outRotY, outRotZ, outRotW
+    .reg	outRotX0Y0X1Y1, outRotZ1W1Z0W0, outRotX2Y2X3Y3, outRotZ3W3Z2W2, outRot0, outRot1, outRot2, outRot3
+    .reg	outOfs, outOfs1, outOfs2, outOfs3
+    .reg	intraRInc0, intraRInc
+    .reg	_7FFF, _EEEE
+    .reg	shiftl, shiftr, shiftlb, shiftrb												
+    
+ 	//----------------------------------------------------------------------------------------------
+	// Early out
+	//----------------------------------------------------------------------------------------------    
+    
+    brz		count, NoLoop
+
+    //----------------------------------------------------------------------------------------------
+    // Init code
+    //----------------------------------------------------------------------------------------------        
+            
+    il128	shuf0A0B0C0D, "0A0B0C0D"
+    il128	shufAAAA, "AAAA"
+    il128	shufAaBb, "AaBb"
+    il128	shufBbAa, "BbAa"
+    il128	shufCcDd, "CcDd"
+    il128	shufDdCc, "DdCc"
+    il128	shufCDab, "CDab"
+    il128	shufABcd, "ABcd"
+    il128	shufABCD, "ABCD"
+    il128	shufabcd, "abcd"
+    il128	shuf0A0a0000, "0A0a0000"
+    il128	shuf00000A0a, "00000A0a"
+    il128	shufBCbc0000, "BCbc0000"
+    il128	shuf0000BCbc, "0000BCbc"
+    il128	shufDHLPDHLPDHLPDHLP, "DHLPDHLPDHLPDHLP"
+    il128	shufd000Dh00DHl0DHLp, "d000Dh00DHl0DHLp"
+    fsmbi	selABcd, 0x00ff
+    il128	_EEEE, 0xE0000000_E0000000_E0000000_E0000000
+    ila		_7FFF, 0x7fff
+    ila		zero, 0
+    fsmbi	allOnes, 0xffff
+    fsmbi	mask_0X0X0X0X, 0x3333
+
+    // MacLaurin - Acos
+    il128	acos0, 0x3FC90FDA_3FC90FDA_3FC90FDA_3FC90FDA	//  1.5707963050
+    il128	acos1, 0x3E5BBFCA_3E5BBFCA_3E5BBFCA_3E5BBFCA	//  0.2145988016
+    il128	acos2, 0x3DB63A9E_3DB63A9E_3DB63A9E_3DB63A9E	//  0.0889789874
+    il128	acos3, 0x3D4D8392_3D4D8392_3D4D8392_3D4D8392	//  0.0501743046
+
+    // Taylor - sin
+    il128	sin0, 0xBE2AAAAB_BE2AAAAB_BE2AAAAB_BE2AAAAB		// -0.1666666664
+    il128	sin1, 0x3C088887_3C088887_3C088887_3C088887		//  0.0083333315
+    il128	sin2, 0xB9500C03_B9500C03_B9500C03_B9500C03		// -0.000198409
+    il128	sin3, 0x3638B94F_3638B94F_3638B94F_3638B94F		//  0.0000027526
+    
+    ilhu    fOne, 0x3f800000@h								//  1.0
+    ilhu    fMinusOne, 0xbf800000@h							// -1.0
+	ilhu	fHalf,  0x3F000000@h							//	0.5f
+    ilhu    fOneMinusEpsilon, 0x3F7FBE77@h					//  0.999
+    iohl    fOneMinusEpsilon, 0x3F7FBE77@l					//  0.999
+    ilhu    quatScale, 0x3FB504F3@h							//  1.4142135624
+    iohl    quatScale, 0x3FB504F3@l							//  1.4142135624
+    ilhu    quatBias, 0xbf000000@h							// -0.5
+    fm		quatBias, quatBias, quatScale
+    ai		count4, count, 3
+    rotmi	count4, count4, -2
+
+    shufb	intraFrameCount, intraFrameCount, intraFrameCount, shufAAAA	
+    
+    //----------------------------------------------------------------------------------------------
+    // Loop
+    //----------------------------------------------------------------------------------------------        
+    
+Loop:
+    ai      count4, count4, -1
+        
+    rotmi	bitAdr, intraRBitsAdrv, -3
+    andi	bitOfs, intraRBitsAdrv, 127
+    
+    // Get intra frame rotation bits for 4 joints, left justified
+    // Note: Currently assuming a limit of 128 intra frames
+    shlqbyi	bitAdr1, bitAdr, 4
+    shlqbyi	bitAdr2, bitAdr, 8
+    shlqbyi	bitAdr3, bitAdr, 12
+    
+    shlqbyi	bitOfs1, bitOfs, 4
+    shlqbyi	bitOfs2, bitOfs, 8
+    shlqbyi	bitOfs3, bitOfs, 12
+    
+    lqd		d0a, 0x00(bitAdr)
+    lqd		d0b, 0x10(bitAdr)
+    lqd		d1a, 0x00(bitAdr1)
+    lqd		d1b, 0x10(bitAdr1)
+    lqd		d2a, 0x00(bitAdr2)
+    lqd		d2b, 0x10(bitAdr2)
+    lqd		d3a, 0x00(bitAdr3)
+    lqd		d3b, 0x10(bitAdr3)
+
+    rotqbybi	d0as, d0a, bitOfs
+    rotqbybi	d0bs, d0b, bitOfs
+    rotqbybi	d1as, d1a, bitOfs1
+    rotqbybi	d1bs, d1b, bitOfs1
+    rotqbybi	d2as, d2a, bitOfs2
+    rotqbybi	d2bs, d2b, bitOfs2
+    rotqbybi	d3as, d3a, bitOfs3
+    rotqbybi	d3bs, d3b, bitOfs3
+    
+    rotqbi	d0as0, d0as, bitOfs
+    rotqbi	d0bs0, d0bs, bitOfs
+    rotqbi	d1as0, d1as, bitOfs1
+    rotqbi	d1bs0, d1bs, bitOfs1
+    rotqbi	d2as0, d2as, bitOfs2
+    rotqbi	d2bs0, d2bs, bitOfs2
+    rotqbi	d3as0, d3as, bitOfs3
+    rotqbi	d3bs0, d3bs, bitOfs3
+
+    shlqbybi	msk0a, allOnes, bitOfs
+    shlqbybi	msk1a, allOnes, bitOfs1
+    shlqbybi	msk2a, allOnes, bitOfs2
+    shlqbybi	msk3a, allOnes, bitOfs3
+        
+    shlqbi	msk0b, msk0a, bitOfs	    
+    shlqbi	msk1b, msk1a, bitOfs1	    
+    shlqbi	msk2b, msk2a, bitOfs2	    
+    shlqbi	msk3b, msk3a, bitOfs3	    
+    
+    selb	ib0, d0bs0, d0as0, msk0b
+    selb	ib1, d1bs0, d1as0, msk1b
+    selb	ib2, d2bs0, d2as0, msk2b
+    selb	ib3, d3bs0, d3as0, msk3b
+
+    // swizzle -> xxxx yyyy zzzz wwww
+    shufb	ibs0, ib0, ib1, shufAaBb
+    shufb	ibs1, ib0, ib1, shufCcDd
+    shufb	ibs2, ib2, ib3, shufBbAa
+    shufb	ibs3, ib2, ib3, shufDdCc
+    selb	ibx, ibs0, ibs2, selABcd
+    shufb	iby, ibs0, ibs2, shufCDab
+    selb	ibz, ibs1, ibs3, selABcd
+    shufb	ibw, ibs1, ibs3, shufCDab
+    
+    // Clear invalid bits (if intra frame count is less than 128)
+    and		bx, ibx, bitMaskXXXX
+    and		by, iby, bitMaskYYYY
+    and		bz, ibz, bitMaskZZZZ
+    and		bw, ibw, bitMaskWWWW
+
+    // Get rotation bits prior to current frame
+    and		pbx, ibx, prevBitMaskXXXX
+    and		pby, iby, prevBitMaskYYYY
+    and		pbz, ibz, prevBitMaskZZZZ
+    and		pbw, ibw, prevBitMaskWWWW
+    
+    // Count enabled bits
+    cntb	nbx, bx
+    cntb	nby, by
+    cntb	nbz, bz
+    cntb	nbw, bw
+    cntb	npbx, pbx
+    cntb	npby, pby
+    cntb	npbz, pbz
+    cntb	npbw, pbw
+    sumb	sumbx, nbx, npbx
+    sumb	sumby, nby, npby
+    sumb	sumbz, nbz, npbz
+    sumb	sumbw, nbw, npbw
+    a		numBits, sumbx, sumby
+    a		numBits, numBits, sumbz
+    a		numBits, numBits, sumbw
+    rotmi	numPrevBits, numBits, -16
+    and		numBits, numBits, mask_0X0X0X0X
+    
+    // Get number of contiguously disabled bits before (and including) current frame
+    // i.e. the number of trailing zeros of prb.
+    sfi		tmp0, pbx, 0
+    sfi		tmp1, pby, 0
+    sfi		tmp2, pbz, 0
+    sfi		tmp3, pbw, 0
+    and		tmp4, pbx, tmp0
+    and		tmp5, pby, tmp1
+    and		tmp6, pbz, tmp2
+    and		tmp7, pbw, tmp3
+    clz		tz0, tmp4
+    clz		tz1, tmp5
+    clz		tz2, tmp6
+    clz		tz3, tmp7
+    ceqi	tzc0, tz0, 32
+    ceqi	tzc1, tz1, 32
+    ceqi	tzc2, tz2, 32
+    ceqi	tzc3, tz3, 32
+    sfi		tmp0, tz0, 31
+    sfi		tmp1, tz1, 31
+    sfi		tmp2, tz2, 31
+    sfi		tmp3, tz3, 31
+    selb	tz0, tmp0, tz0, tzc0
+    selb	tz1, tmp1, tz1, tzc1
+    selb	tz2, tmp2, tz2, tzc2
+    selb	tz3, tmp3, tz3, tzc3
+    and		tzm1, tzc3, tzc2
+    and		tzm2, tzm1, tzc1
+    and		tmp0, tz2, tzc3
+    and		tmp1, tz1, tzm1
+    and		tmp2, tz0, tzm2
+    a		tzs1, tz3, tmp0
+    a		tzs2, tzs1, tmp1
+    a		tzs3, tzs2, tmp2
+    sfi		tmp0, frameIntegerv, 128
+    sf		bBits, tmp0, tzs3
+    
+    // Get number of contiguously disabled bits after (but not including) current frame
+    // i.e. the number of leading zeros of rb
+    andc	tmp0, bx, prevBitMaskXXXX
+    andc	tmp1, by, prevBitMaskYYYY
+    andc	tmp2, bz, prevBitMaskZZZZ
+    andc	tmp3, bw, prevBitMaskWWWW
+    orc		tmp4, tmp0, bitMaskXXXX
+    orc		tmp5, tmp1, bitMaskYYYY
+    orc		tmp6, tmp2, bitMaskZZZZ
+    orc		tmp7, tmp3, bitMaskWWWW
+    clz		lz0, tmp4
+    clz		lz1, tmp5
+    clz		lz2, tmp6
+    clz		lz3, tmp7
+    ceqi	lzc0, lz0, 32
+    ceqi	lzc1, lz1, 32
+    ceqi	lzc2, lz2, 32
+    and		lzm1, lzc0, lzc1
+    and		lzm2, lzm1, lzc2
+    and		tmp0, lz1, lzc0
+    and		tmp1, lz2, lzm1
+    and		tmp2, lz3, lzm2
+    a		lzs1, lz0, tmp0
+    a		lzs2, lzs1, tmp1
+    a		lzs3, lzs2, tmp2
+    ai		tmp0, lzs3, 1
+    sf		aBits, frameIntegerv, tmp0
+    
+    // Get addresses of the intra frame data bracketing each joint
+    shufb	numShuf, numBits, numPrevBits, shufd000Dh00DHl0DHLp
+    sumb	numSum, numShuf, zero
+    shli	tmp0, numSum, 2
+    shli	tmp1, numSum, 1
+    a		intraOfs, tmp0, tmp1
+    a		rightIntraAdr, intraRAdrv, intraOfs
+    ai		leftIntraAdr, rightIntraAdr, -6
+    
+    // If there is no left/right intra frame data, use initial/final data
+    clgti	leftSelMask, numPrevBits, 0
+    ceq		rightSelMask, numPrevBits, numBits
+    selb	leftAdr, initialRAdrv, leftIntraAdr, leftSelMask
+    selb	rightAdr, rightIntraAdr, finalRAdrv, rightSelMask
+    
+     // Compute tweening factors
+    cuflt	bBitsf, bBits, 0
+    cuflt	aBitsf, aBits, 0
+    fa		tween0, frameFractionv, bBitsf
+    fa		tmp0, bBitsf, aBitsf
+    frest	tmp1, tmp0
+	fi		tmp2, tmp0, tmp1
+	fnms	tmp3, tmp0, tmp2, fOne
+	fma		tween1, tmp3, tmp2, tmp2
+	fm		tween, tween0, tween1
+
+    // Get rotation data pointers
+    shlqbyi	left1Adr, leftAdr, 4
+    shlqbyi	left2Adr, leftAdr, 8
+    shlqbyi	left3Adr, leftAdr, 12
+    shlqbyi	right1Adr, rightAdr, 4
+    shlqbyi	right2Adr, rightAdr, 8
+    shlqbyi	right3Adr, rightAdr, 12
+    
+    // Decompress the 8 rotation quaternions to float 4
+    // Compression is 'smallest 3' (15.15.15.2)
+    lqd		q0a, 0x00(leftAdr)
+    lqd		q0b, 0x10(leftAdr)
+    lqd		q1a, 0x00(left1Adr)
+    lqd		q1b, 0x10(left1Adr)
+    lqd		q2a, 0x00(left2Adr)
+    lqd		q2b, 0x10(left2Adr)
+    lqd		q3a, 0x00(left3Adr)
+    lqd		q3b, 0x10(left3Adr)
+    lqd		q4a, 0x00(rightAdr)
+    lqd		q4b, 0x10(rightAdr)
+    lqd		q5a, 0x00(right1Adr)
+    lqd		q5b, 0x10(right1Adr)
+    lqd		q6a, 0x00(right2Adr)
+    lqd		q6b, 0x10(right2Adr)
+    lqd		q7a, 0x00(right3Adr)
+    lqd		q7b, 0x10(right3Adr)
+
+    andi	shiftl, leftAdr, 15
+    andi	shiftr, rightAdr, 15
+    ai		shiftlb, shiftl, -16
+    ai		shiftrb, shiftr, -16
+    shlqbyi	shift1, shiftl, 4
+    shlqbyi	shift2, shiftl, 8
+    shlqbyi	shift3, shiftl, 12
+    shlqbyi	shift5, shiftr, 4
+    shlqbyi	shift6, shiftr, 8
+    shlqbyi	shift7, shiftr, 12
+    shlqbyi	shift1b, shiftlb, 4
+    shlqbyi	shift2b, shiftlb, 8
+    shlqbyi	shift3b, shiftlb, 12
+    shlqbyi	shift5b, shiftrb, 4
+    shlqbyi	shift6b, shiftrb, 8
+    shlqbyi	shift7b, shiftrb, 12
+
+    // Left justify each compressed quat
+    shlqby	tmp0, q0a, shiftl
+    rotqmby	tmp1, q0b, shiftlb
+    or		q0, tmp0, tmp1
+    shlqby	tmp0, q1a, shift1
+    rotqmby	tmp1, q1b, shift1b
+    or		q1, tmp0, tmp1
+    shlqby	tmp0, q2a, shift2
+    rotqmby	tmp1, q2b, shift2b
+    or		q2, tmp0, tmp1
+    shlqby	tmp0, q3a, shift3
+    rotqmby	tmp1, q3b, shift3b
+    or		q3, tmp0, tmp1
+    shlqby	tmp0, q4a, shiftr
+    rotqmby	tmp1, q4b, shiftrb
+    or		q4, tmp0, tmp1
+    shlqby	tmp0, q5a, shift5
+    rotqmby	tmp1, q5b, shift5b
+    or		q5, tmp0, tmp1
+    shlqby	tmp0, q6a, shift6
+    rotqmby	tmp1, q6b, shift6b
+    or		q6, tmp0, tmp1
+    shlqby	tmp0, q7a, shift7
+    rotqmby	tmp1, q7b, shift7b
+    or		q7, tmp0, tmp1
+    
+    // Unpack 15-bit components
+    shufb	tmp0, q0, q1, shuf0A0a0000
+    shufb	tmp1, q2, q3, shuf00000A0a
+    shufb	a0i, tmp0, tmp1, shufABcd
+    shufb	tmp0, q4, q5, shuf0A0a0000
+    shufb	tmp1, q6, q7, shuf00000A0a
+    shufb	a4i, tmp0, tmp1, shufABcd
+
+    shufb	tmp0, q0, q1, shufBCbc0000
+    shufb	tmp1, q2, q3, shuf0000BCbc
+    shufb	bc0i, tmp0, tmp1, shufABcd
+    shufb	tmp0, q4, q5, shufBCbc0000
+    shufb	tmp1, q6, q7, shuf0000BCbc
+    shufb	bc4i, tmp0, tmp1, shufABcd
+    
+    rotmi	tmp0, bc0i, -17
+    rotmi	tmp1, bc4i, -17
+    rotmi	tmp2, bc0i, -2
+    rotmi	tmp3, bc4i, -2
+    and		b0i, tmp0, _7FFF  
+    and		b4i, tmp1, _7FFF
+    and		c0i, tmp2, _7FFF
+    and		c4i, tmp3, _7FFF
+    
+    cuflt	tmp0, a0i, 15
+    cuflt	tmp1, a4i, 15
+    cuflt	tmp2, b0i, 15
+    cuflt	tmp3, b4i, 15
+    cuflt	tmp4, c0i, 15
+    cuflt	tmp5, c4i, 15
+    fma		a0, tmp0, quatScale, quatBias
+    fma		a4, tmp1, quatScale, quatBias
+    fma		b0, tmp2, quatScale, quatBias
+    fma		b4, tmp3, quatScale, quatBias
+    fma		c0, tmp4, quatScale, quatBias
+    fma		c4, tmp5, quatScale, quatBias
+    
+    // Derived value, d = sqrt(1 - a^2 - b^2 - c^2)
+    fnms	d0sqr0, a0, a0, fOne
+    fnms	d0sqr1, b0, b0, d0sqr0
+    fnms	d0sqr2, c0, c0, d0sqr1
+	frsqest	tmp0, d0sqr2
+	fi		tmp1, d0sqr2, tmp0
+	fm		tmp2, d0sqr2, tmp1
+	fm		tmp3, tmp1, fHalf
+	fnms	tmp4, tmp2, tmp1, fOne
+	fma		d0inv, tmp3, tmp4, tmp1
+	fm		d0, d0inv, d0sqr2
+
+    fnms	d4sqr0, a4, a4, fOne
+    fnms	d4sqr1, b4, b4, d4sqr0
+    fnms	d4sqr2, c4, c4, d4sqr1
+	frsqest	tmp0, d4sqr2
+	fi		tmp1, d4sqr2, tmp0
+	fm		tmp2, d4sqr2, tmp1
+	fm		tmp3, tmp1, fHalf
+	fnms	tmp4, tmp2, tmp1, fOne
+	fma		d4inv, tmp3, tmp4, tmp1
+	fm		d4, d4inv, d4sqr2
+
+    // Get 2-bit derived value index
+    nor		tmp0, bc0i, bc0i
+    nor		tmp1, bc4i, bc4i
+    andi	idx0, tmp0, 3
+    andi	idx4, tmp1, 3
+    
+    // Now shuffle components to insert the derived value.
+    // Using selects rather than deswizzle+shuffle as I want to keep the quats in swizzled form for the slerp...
+    shl		sel0a, _EEEE, idx0
+    a		sel0b, sel0a, sel0a
+    a		sel0c, sel0b, sel0b
+    rotmai	selMsk0a, sel0a, -31
+    rotmai	selMsk0b, sel0b, -31
+    rotmai	selMsk0c, sel0c, -31
+    selb	leftRotY, a0, d0, selMsk0a
+    selb	leftRotX, d0, a0, selMsk0a
+    selb	leftRotZ, b0, leftRotY, selMsk0b
+    selb	leftRotY, leftRotY, b0, selMsk0b
+    selb	leftRotW, c0, leftRotZ, selMsk0c
+    selb	leftRotZ, leftRotZ, c0, selMsk0c
+
+    shl		sel4a, _EEEE, idx4
+    a		sel4b, sel4a, sel4a
+    a		sel4c, sel4b, sel4b
+    rotmai	selMsk4a, sel4a, -31
+    rotmai	selMsk4b, sel4b, -31
+    rotmai	selMsk4c, sel4c, -31
+    selb	rightRotY, a4, d4, selMsk4a
+    selb	rightRotX, d4, a4, selMsk4a
+    selb	rightRotZ, b4, rightRotY, selMsk4b
+    selb	rightRotY, rightRotY, b4, selMsk4b
+    selb	rightRotW, c4, rightRotZ, selMsk4c
+    selb	rightRotZ, rightRotZ, c4, selMsk4c
+    
+    // Slerp each (left, right) rotation pair with the tweening factors computed earlier
+
+    // Slerp rotations : compute dot product
+    fm		dotRotX, leftRotX, rightRotX
+    fma		dotRotXY, leftRotY, rightRotY, dotRotX
+    fma		dotRotXYZ, leftRotZ, rightRotZ, dotRotXY
+    fma		dotRot, leftRotW, rightRotW, dotRotXYZ
+    fcgt	tmp0, zero, dotRot
+    selb	floatSign, fOne, fMinusOne, tmp0
+    
+    // Slerp rotations : determine target rotation (right or -right)
+    fm		targetRotX, rightRotX, floatSign
+    fm		targetRotY, rightRotY, floatSign
+    fm		targetRotZ, rightRotZ, floatSign
+    fm		targetRotW, rightRotW, floatSign
+    fm		cosAngle, dotRot, floatSign
+    
+    // Slerp rotations : evaluate angle = acos(cosAngle) (MacLaurin)
+    fs		oneMinusCosAngle, fOne, cosAngle
+    frsqest	rsqTmp, oneMinusCosAngle
+    fi		rsqTmp, oneMinusCosAngle, rsqTmp
+    fnms	evalTmp, rsqTmp, cosAngle, rsqTmp
+    fm		acosEval3, cosAngle, acos3
+    fnms	acosEval2, cosAngle, acosEval3, acos2
+    fnms	acosEval1, cosAngle, acosEval2, acos1
+    fnms	acosEval0, cosAngle, acosEval1, acos0
+    fm		angle, acosEval0, evalTmp
+    
+    // Slerp rotations : evaluate sina = sin(angle) (Taylor)
+    fm		sqAngle, angle, angle
+    fma		sinaEval3, sin3, sqAngle, sin2
+    fma		sinaEval2, sinaEval3, sqAngle, sin1
+    fma		sinaEval1, sinaEval2, sqAngle, sin0
+    fma		sinaEval0, sinaEval1, sqAngle, fOne
+    fm		sina, sinaEval0, angle
+    
+    // Slerp rotations : evaluate sinb = sin(t*angle) (Taylor)
+    fm		tAngle, tween, angle
+    fm		sqTAngle, tAngle, tAngle
+    fma		sinbEval3, sin3, sqTAngle, sin2
+    fma		sinbEval2, sinbEval3, sqTAngle, sin1
+    fma		sinbEval1, sinbEval2, sqTAngle, sin0
+    fma		sinbEval0, sinbEval1, sqTAngle, fOne
+    fm		sinb, sinbEval0, tAngle
+    
+    // Slerp rotations : evaluate sinc = sin((1-t)*angle) (Taylor)
+    fs		oneMinusT, fOne, tween
+    fm		oneMinusTAngle, oneMinusT, angle
+    fm		sqOneMinusTAngle, oneMinusTAngle, oneMinusTAngle
+    fma		sincEval3, sin3, sqOneMinusTAngle, sin2
+    fma		sincEval2, sincEval3, sqOneMinusTAngle, sin1
+    fma		sincEval1, sincEval2, sqOneMinusTAngle, sin0
+    fma		sincEval0, sincEval1, sqOneMinusTAngle, fOne
+    fm		sinc, sincEval0, oneMinusTAngle
+    
+    // Select either sinc/sina or sinb/sina depending on the quadrant
+    frest	invSina, sina
+    fi		invSina, sina, invSina
+    fm		fLeftTmp, sinc, invSina
+    fm		fRightTmp, sinb, invSina
+    fcgt	tmp0, cosAngle, fOneMinusEpsilon
+    selb	shufRange, shufABCD, shufabcd, tmp0
+    shufb	fLeft, fLeftTmp, oneMinusT, shufRange
+    shufb	fRight, fRightTmp, tween, shufRange
+    
+    // Actual blend
+    fm		tmpRotX, leftRotX, fLeft
+    fm		tmpRotY, leftRotY, fLeft
+    fm		tmpRotZ, leftRotZ, fLeft
+    fm		tmpRotW, leftRotW, fLeft
+    fma		outRotX, targetRotX, fRight, tmpRotX
+    fma		outRotY, targetRotY, fRight, tmpRotY
+    fma		outRotZ, targetRotZ, fRight, tmpRotZ
+    fma		outRotW, targetRotW, fRight, tmpRotW
+
+    // Unswizzle output rotation
+    // (X0X1X2X3 Y0Y1Y2Y3 Z0Z1Z2Z3 W0W1W2W3 -> X0Y0Z0W0 X1Y1Z1W1 X2Y2Z2W2 X3Y3Z3W3)
+    shufb	outRotX0Y0X1Y1, outRotX, outRotY, shufAaBb
+    shufb	outRotZ1W1Z0W0, outRotZ, outRotW, shufBbAa
+    shufb	outRot0, outRotX0Y0X1Y1, outRotZ1W1Z0W0, shufABcd
+    shufb	outRot1, outRotX0Y0X1Y1, outRotZ1W1Z0W0, shufCDab
+    shufb	outRotX2Y2X3Y3, outRotX, outRotY, shufCcDd
+    shufb	outRotZ3W3Z2W2, outRotZ, outRotW, shufDdCc
+    shufb	outRot2, outRotX2Y2X3Y3, outRotZ3W3Z2W2, shufABcd
+    shufb	outRot3, outRotX2Y2X3Y3, outRotZ3W3Z2W2, shufCDab
+    
+    // Write results (x4) 
+    lqd		outOfs, 0x00(channelIds)
+    rotqby	outOfs, outOfs, channelIds
+    shufb	outOfs, outOfs, outOfs, shuf0A0B0C0D
+    shli	tmp0, outOfs, 4
+    shli	outOfs, outOfs, 5
+    a		outOfs, outOfs, tmp0
+    shlqbyi	outOfs1, outOfs, 4
+    shlqbyi	outOfs2, outOfs, 8
+    shlqbyi	outOfs3, outOfs, 12
+    stqx	outRot0, output, outOfs
+    stqx	outRot1, output, outOfs1
+    stqx	outRot2, output, outOfs2
+    stqx	outRot3, output, outOfs3
+    
+    // Advance pointers
+    shufb	tmp0, numBits, numBits, shufDHLPDHLPDHLPDHLP
+    sumb	intraRInc0, tmp0, zero
+    shli	tmp0, intraRInc0, 1
+    shli	tmp1, intraRInc0, 2
+    a		intraRInc, tmp0, tmp1
+    
+    shli	tmp0, intraFrameCount, 2
+    a		intraRBitsAdrv, intraRBitsAdrv, tmp0
+    ai		initialRAdrv, initialRAdrv, 6*4
+    a		intraRAdrv, intraRAdrv, intraRInc
+    ai		finalRAdrv, finalRAdrv, 6*4
+    ai		channelIds, channelIds, 8
+        
+    //----------------------------------------------------------------------------------------------        
+    // Loop
+    //----------------------------------------------------------------------------------------------
+
+    brnz    count4, Loop
+
+
+NoLoop:
+
+.endfunc
+         

@@ -1,142 +1,142 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2009 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-//--------------------------------------------------------------------------------------------------
-//  FUNCTION DEFINITION
-//--------------------------------------------------------------------------------------------------
-
-//--------------------------------------------------------------------------------------------------
-/**
-	@fn			extern "C" void edgePostVerticalGauss8
-									(
-										vec_char16* __restrict pOutputScanline,
-										const vec_char16* __restrict pInputScanline,
-										const u16 count,
-										vec_float4 weights
-									)
-	
-	@param		pOutputScanline		pointer to result
-	@param		pInputScanline		pointer to input scanline
-	@param		count				scanline size
-	@param		weights				gauss filter weights
-		
-**/
-//--------------------------------------------------------------------------------------------------
-
-.include "edgepost_helpers.inc"
-
-
-.macro EDGEPOST_GAUSSIANBLUR_F( r, p0, p1, p2, p3, p4, p5, p6)
-	
-	fm			r, p0, w3
-	fma			r, p1, w2, r
-	fma			r, p2, w1, r
-	fma			r, p3, w0, r
-	fma			r, p4, w1, r
-	fma			r, p5, w2, r
-	fma			r, p6, w3, r
-.endmacro
-
-.macro VERTICALBLUR8_START
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-	
-	.reg		u1, u2, u3, kZero, d1, d2, d3
-	ila			kZero, 0
-	mpyi		u3, stride, -3
-	mpyi		u2, stride, -2
-	mpyi		u1, stride, -1
-	mpyi		d1, stride, 1
-	mpyi		d2, stride, 2
-	mpyi		d3, stride, 3
-	
-	// gauss constants	
-	.reg		w0, w1, w2, w3
-	shufb		w0, weights, weights, kEdgePostReplicateX
-	shufb		w1, weights, weights, kEdgePostReplicateY
-	shufb		w2, weights, weights, kEdgePostReplicateZ
-	shufb		w3, weights, weights, kEdgePostReplicateW
-	
-loop:
-	ai			count, count, -4
-	ai			pOutput, pOutput, 0x10
-
-	// Load pixels
-	.reg		s0 ## @@, s1 ## @@, s2 ## @@, s3 ## @@, s4 ## @@, s5 ## @@, s6 ## @@
-	lqx			s0 ## @@, pInput, u3
-	lqx			s1 ## @@, pInput, u2
-	lqx			s2 ## @@, pInput, u1
-	lqx			s3 ## @@, pInput, kZero
-	lqx			s4 ## @@, pInput, d1
-	lqx			s5 ## @@, pInput, d2
-	lqx			s6 ## @@, pInput, d3
-
-	// Unpack
-	.reg		p10, p20, p30, p40, p50, p60, p70
-	.reg		p11, p21, p31, p41, p51, p61, p71
-	.reg		p12, p22, p32, p42, p52, p62, p72
-	.reg		p13, p23, p33, p43, p53, p63, p73
-	EDGEPOST_UNPACK_PIXELS8( p10, p11, p12, p13, s0 ## @@ )
-	EDGEPOST_UNPACK_PIXELS8( p20, p21, p22, p23, s1 ## @@ )
-	EDGEPOST_UNPACK_PIXELS8( p30, p31, p32, p33, s2 ## @@ )
-	EDGEPOST_UNPACK_PIXELS8( p40, p41, p42, p43, s3 ## @@ )
-	EDGEPOST_UNPACK_PIXELS8( p50, p51, p52, p53, s4 ## @@ )
-	EDGEPOST_UNPACK_PIXELS8( p60, p61, p62, p63, s5 ## @@ )
-	EDGEPOST_UNPACK_PIXELS8( p70, p71, p72, p73, s6 ## @@ )
-	
-	// Result registers
-	.reg		r0, r1, r2, r3
-.endmacro
-
-.macro VERTICALBLUR8_END
-	.reg		r
-	EDGEPOST_PACK_PIXELS8( r, r0, r1, r2, r3)
-	stqd		r, -0x10( pOutput )
-	ai			pInput, pInput, 0x10
-	brnz		count, loop 
-.endmacro
-
-.cfunc void edgePostGauss1x7_8( qword pOutput, qword pInput, qword stride, qword count, qword weights )
-	VERTICALBLUR8_START
-	EDGEPOST_U8_TO_FLOAT( p10, p10 )
-	EDGEPOST_U8_TO_FLOAT( p20, p20 )
-	EDGEPOST_U8_TO_FLOAT( p30, p30 )
-	EDGEPOST_U8_TO_FLOAT( p40, p40 )
-	EDGEPOST_U8_TO_FLOAT( p50, p50 )
-	EDGEPOST_U8_TO_FLOAT( p60, p60 )
-	EDGEPOST_U8_TO_FLOAT( p70, p70 )
-	EDGEPOST_U8_TO_FLOAT( p11, p11 )
-	EDGEPOST_U8_TO_FLOAT( p21, p21 )
-	EDGEPOST_U8_TO_FLOAT( p31, p31 )
-	EDGEPOST_U8_TO_FLOAT( p41, p41 )
-	EDGEPOST_U8_TO_FLOAT( p51, p51 )
-	EDGEPOST_U8_TO_FLOAT( p61, p61 )
-	EDGEPOST_U8_TO_FLOAT( p71, p71 )
-	EDGEPOST_U8_TO_FLOAT( p12, p12 )
-	EDGEPOST_U8_TO_FLOAT( p22, p22 )
-	EDGEPOST_U8_TO_FLOAT( p32, p32 )
-	EDGEPOST_U8_TO_FLOAT( p42, p42 )
-	EDGEPOST_U8_TO_FLOAT( p52, p52 )
-	EDGEPOST_U8_TO_FLOAT( p62, p62 )
-	EDGEPOST_U8_TO_FLOAT( p72, p72 )
-	EDGEPOST_U8_TO_FLOAT( p13, p13 )
-	EDGEPOST_U8_TO_FLOAT( p23, p23 )
-	EDGEPOST_U8_TO_FLOAT( p33, p33 )
-	EDGEPOST_U8_TO_FLOAT( p43, p43 )
-	EDGEPOST_U8_TO_FLOAT( p53, p53 )
-	EDGEPOST_U8_TO_FLOAT( p63, p63 )
-	EDGEPOST_U8_TO_FLOAT( p73, p73 )
-	EDGEPOST_GAUSSIANBLUR_F( r0, p10, p20, p30, p40, p50, p60, p70)
-	EDGEPOST_GAUSSIANBLUR_F( r1, p11, p21, p31, p41, p51, p61, p71)
-	EDGEPOST_GAUSSIANBLUR_F( r2, p12, p22, p32, p42, p52, p62, p72)
-	EDGEPOST_GAUSSIANBLUR_F( r3, p13, p23, p33, p43, p53, p63, p73)
-	EDGEPOST_FLOAT_TO_U8( r0, r0 )
-	EDGEPOST_FLOAT_TO_U8( r1, r1 )
-	EDGEPOST_FLOAT_TO_U8( r2, r2 )
-	EDGEPOST_FLOAT_TO_U8( r3, r3 )
-	VERTICALBLUR8_END
-.endfunc
-
-
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+	@fn			extern "C" void edgePostVerticalGauss8
+									(
+										vec_char16* __restrict pOutputScanline,
+										const vec_char16* __restrict pInputScanline,
+										const u16 count,
+										vec_float4 weights
+									)
+	
+	@param		pOutputScanline		pointer to result
+	@param		pInputScanline		pointer to input scanline
+	@param		count				scanline size
+	@param		weights				gauss filter weights
+		
+**/
+//--------------------------------------------------------------------------------------------------
+
+.include "edgepost_helpers.inc"
+
+
+.macro EDGEPOST_GAUSSIANBLUR_F( r, p0, p1, p2, p3, p4, p5, p6)
+	
+	fm			r, p0, w3
+	fma			r, p1, w2, r
+	fma			r, p2, w1, r
+	fma			r, p3, w0, r
+	fma			r, p4, w1, r
+	fma			r, p5, w2, r
+	fma			r, p6, w3, r
+.endmacro
+
+.macro VERTICALBLUR8_START
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	
+	.reg		u1, u2, u3, kZero, d1, d2, d3
+	ila			kZero, 0
+	mpyi		u3, stride, -3
+	mpyi		u2, stride, -2
+	mpyi		u1, stride, -1
+	mpyi		d1, stride, 1
+	mpyi		d2, stride, 2
+	mpyi		d3, stride, 3
+	
+	// gauss constants	
+	.reg		w0, w1, w2, w3
+	shufb		w0, weights, weights, kEdgePostReplicateX
+	shufb		w1, weights, weights, kEdgePostReplicateY
+	shufb		w2, weights, weights, kEdgePostReplicateZ
+	shufb		w3, weights, weights, kEdgePostReplicateW
+	
+loop:
+	ai			count, count, -4
+	ai			pOutput, pOutput, 0x10
+
+	// Load pixels
+	.reg		s0 ## @@, s1 ## @@, s2 ## @@, s3 ## @@, s4 ## @@, s5 ## @@, s6 ## @@
+	lqx			s0 ## @@, pInput, u3
+	lqx			s1 ## @@, pInput, u2
+	lqx			s2 ## @@, pInput, u1
+	lqx			s3 ## @@, pInput, kZero
+	lqx			s4 ## @@, pInput, d1
+	lqx			s5 ## @@, pInput, d2
+	lqx			s6 ## @@, pInput, d3
+
+	// Unpack
+	.reg		p10, p20, p30, p40, p50, p60, p70
+	.reg		p11, p21, p31, p41, p51, p61, p71
+	.reg		p12, p22, p32, p42, p52, p62, p72
+	.reg		p13, p23, p33, p43, p53, p63, p73
+	EDGEPOST_UNPACK_PIXELS8( p10, p11, p12, p13, s0 ## @@ )
+	EDGEPOST_UNPACK_PIXELS8( p20, p21, p22, p23, s1 ## @@ )
+	EDGEPOST_UNPACK_PIXELS8( p30, p31, p32, p33, s2 ## @@ )
+	EDGEPOST_UNPACK_PIXELS8( p40, p41, p42, p43, s3 ## @@ )
+	EDGEPOST_UNPACK_PIXELS8( p50, p51, p52, p53, s4 ## @@ )
+	EDGEPOST_UNPACK_PIXELS8( p60, p61, p62, p63, s5 ## @@ )
+	EDGEPOST_UNPACK_PIXELS8( p70, p71, p72, p73, s6 ## @@ )
+	
+	// Result registers
+	.reg		r0, r1, r2, r3
+.endmacro
+
+.macro VERTICALBLUR8_END
+	.reg		r
+	EDGEPOST_PACK_PIXELS8( r, r0, r1, r2, r3)
+	stqd		r, -0x10( pOutput )
+	ai			pInput, pInput, 0x10
+	brnz		count, loop 
+.endmacro
+
+.cfunc void edgePostGauss1x7_8( qword pOutput, qword pInput, qword stride, qword count, qword weights )
+	VERTICALBLUR8_START
+	EDGEPOST_U8_TO_FLOAT( p10, p10 )
+	EDGEPOST_U8_TO_FLOAT( p20, p20 )
+	EDGEPOST_U8_TO_FLOAT( p30, p30 )
+	EDGEPOST_U8_TO_FLOAT( p40, p40 )
+	EDGEPOST_U8_TO_FLOAT( p50, p50 )
+	EDGEPOST_U8_TO_FLOAT( p60, p60 )
+	EDGEPOST_U8_TO_FLOAT( p70, p70 )
+	EDGEPOST_U8_TO_FLOAT( p11, p11 )
+	EDGEPOST_U8_TO_FLOAT( p21, p21 )
+	EDGEPOST_U8_TO_FLOAT( p31, p31 )
+	EDGEPOST_U8_TO_FLOAT( p41, p41 )
+	EDGEPOST_U8_TO_FLOAT( p51, p51 )
+	EDGEPOST_U8_TO_FLOAT( p61, p61 )
+	EDGEPOST_U8_TO_FLOAT( p71, p71 )
+	EDGEPOST_U8_TO_FLOAT( p12, p12 )
+	EDGEPOST_U8_TO_FLOAT( p22, p22 )
+	EDGEPOST_U8_TO_FLOAT( p32, p32 )
+	EDGEPOST_U8_TO_FLOAT( p42, p42 )
+	EDGEPOST_U8_TO_FLOAT( p52, p52 )
+	EDGEPOST_U8_TO_FLOAT( p62, p62 )
+	EDGEPOST_U8_TO_FLOAT( p72, p72 )
+	EDGEPOST_U8_TO_FLOAT( p13, p13 )
+	EDGEPOST_U8_TO_FLOAT( p23, p23 )
+	EDGEPOST_U8_TO_FLOAT( p33, p33 )
+	EDGEPOST_U8_TO_FLOAT( p43, p43 )
+	EDGEPOST_U8_TO_FLOAT( p53, p53 )
+	EDGEPOST_U8_TO_FLOAT( p63, p63 )
+	EDGEPOST_U8_TO_FLOAT( p73, p73 )
+	EDGEPOST_GAUSSIANBLUR_F( r0, p10, p20, p30, p40, p50, p60, p70)
+	EDGEPOST_GAUSSIANBLUR_F( r1, p11, p21, p31, p41, p51, p61, p71)
+	EDGEPOST_GAUSSIANBLUR_F( r2, p12, p22, p32, p42, p52, p62, p72)
+	EDGEPOST_GAUSSIANBLUR_F( r3, p13, p23, p33, p43, p53, p63, p73)
+	EDGEPOST_FLOAT_TO_U8( r0, r0 )
+	EDGEPOST_FLOAT_TO_U8( r1, r1 )
+	EDGEPOST_FLOAT_TO_U8( r2, r2 )
+	EDGEPOST_FLOAT_TO_U8( r3, r3 )
+	VERTICALBLUR8_END
+.endfunc
+
+

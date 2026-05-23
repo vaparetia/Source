@@ -1,0 +1,254 @@
+# Makefile.dc — KallistiOS build for the MGS2 Dreamcast port
+#
+# Prerequisites:
+#   A working KallistiOS toolchain with environ.sh sourced, e.g.:
+#     source /opt/toolchains/dc/kos/environ.sh
+#
+# Usage:
+#   make -f Makefile.dc          # build
+#   make -f Makefile.dc clean    # clean
+#
+# Phase 1 goal: Engine + Renderer layers compile clean for sh-elf-g++.
+# Game logic (bp/shared, mgs2x/) is added in Phase 2+.
+
+TARGET  := mgs2dc.elf
+OBJDIR  := build/dc
+BPE_ROOT := $(CURDIR)/bp
+
+# -----------------------------------------------------------------------
+# Compiler — provided by KOS environ.sh
+# -----------------------------------------------------------------------
+CXX     := $(KOS_CCPLUS)
+CC      := $(KOS_CC)
+OBJCOPY := $(KOS_OBJCOPY)
+
+# -----------------------------------------------------------------------
+# Flags
+# -----------------------------------------------------------------------
+INCS := \
+    -I$(BPE_ROOT)/Source \
+    -I$(BPE_ROOT)/Source/Engine \
+    -I$(BPE_ROOT)/Source/ExtLibraries/Boost/include
+
+DEFS := \
+    -DMGS_VERSION=2 \
+    -DENGINE_EXPORTS \
+    -DRENDERER_EXPORTS
+
+# KOS_CFLAGS contains the SH-4 target flags (-ml -m4-single -O2 etc.) set by environ.sh.
+# KOS uses a single KOS_CFLAGS for both C and C++; we add -fno-exceptions -fno-rtti here.
+# -w suppresses warnings from the engine codebase (not our Dreamcast stubs) for Phase 1.
+CXXFLAGS := $(KOS_CFLAGS) -fno-exceptions -fno-rtti -w $(INCS) $(DEFS)
+CFLAGS   := $(KOS_CFLAGS) -w $(INCS) $(DEFS)
+
+# -----------------------------------------------------------------------
+# Engine sources
+# -----------------------------------------------------------------------
+ENG := $(BPE_ROOT)/Source/Engine
+
+ENG_SRCS := \
+    $(ENG)/StdAfx.cpp \
+    \
+    $(ENG)/Basics/BPEAssert.cpp \
+    $(ENG)/Basics/CEventLog.cpp \
+    $(ENG)/Basics/CStringExtras.cpp \
+    \
+    $(ENG)/System/CDirList.cpp \
+    $(ENG)/System/CFileUtils.cpp \
+    $(ENG)/System/CGuid.cpp \
+    $(ENG)/System/COsContext.cpp \
+    $(ENG)/System/CProfileMarker.cpp \
+    $(ENG)/System/CStopWatch.cpp \
+    $(ENG)/System/CSyncEvent.cpp \
+    $(ENG)/System/CSystemVar.cpp \
+    $(ENG)/System/CTaskQueue.cpp \
+    $(ENG)/System/CThread.cpp \
+    $(ENG)/System/DCCOsContext.cpp \
+    $(ENG)/System/DCCStopWatch.cpp \
+    $(ENG)/System/DCCSyncCriticalSection.cpp \
+    \
+    $(ENG)/Math/CAxisAngle.cpp \
+    $(ENG)/Math/CFilteredRandom.cpp \
+    $(ENG)/Math/CHalfFloat.cpp \
+    $(ENG)/Math/CMatrix34.cpp \
+    $(ENG)/Math/CMatrix3.cpp \
+    $(ENG)/Math/CMatrix4.cpp \
+    $(ENG)/Math/CMayaSpline.cpp \
+    $(ENG)/Math/CPerlinNoise.cpp \
+    $(ENG)/Math/CQuaternion.cpp \
+    $(ENG)/Math/CRandom.cpp \
+    $(ENG)/Math/CSpline.cpp \
+    $(ENG)/Math/CVector2.cpp \
+    $(ENG)/Math/CVector3.cpp \
+    $(ENG)/Math/CVector4.cpp \
+    $(ENG)/Math/MathUtils.cpp \
+    $(ENG)/Math/NEulerAngles.cpp \
+    \
+    $(ENG)/Graphics/CColor.cpp \
+    $(ENG)/Graphics/CColorf.cpp \
+    $(ENG)/Graphics/CFrustumPlanes.cpp \
+    $(ENG)/Graphics/CIndexArray.cpp \
+    $(ENG)/Graphics/CLight.cpp \
+    $(ENG)/Graphics/CMatrixStack.cpp \
+    $(ENG)/Graphics/CSphericalHarmonics.cpp \
+    $(ENG)/Graphics/CSphericalHarmonics3.cpp \
+    $(ENG)/Graphics/CSphericalHarmonicsHelper.cpp \
+    $(ENG)/Graphics/CTextureUtil.cpp \
+    $(ENG)/Graphics/CVertexArray.cpp \
+    \
+    $(ENG)/Memory/CMemoryAllocator.cpp \
+    \
+    $(ENG)/Mechanics/CCRC.cpp \
+    $(ENG)/Mechanics/CStringTable.cpp \
+    $(ENG)/Mechanics/HashUtils.cpp \
+    $(ENG)/Mechanics/TinyXml/tinystr.cpp \
+    $(ENG)/Mechanics/TinyXml/tinyxml.cpp \
+    $(ENG)/Mechanics/TinyXml/tinyxmlerror.cpp \
+    $(ENG)/Mechanics/TinyXml/tinyxmlparser.cpp \
+    \
+    $(ENG)/Resource/CBaseResourceFactoryLoadItem.cpp \
+    $(ENG)/Resource/CResId.cpp \
+    $(ENG)/Resource/CResourceCache.cpp \
+    $(ENG)/Resource/CResourceFactory.cpp \
+    $(ENG)/Resource/CResourceManager.cpp \
+    $(ENG)/Resource/CResourcePool.cpp \
+    $(ENG)/Resource/IResourcePool.cpp \
+    \
+    $(ENG)/Streams/CDiskInputStream.cpp \
+    $(ENG)/Streams/CDiskOutputStream.cpp \
+    $(ENG)/Streams/CGrowableMemoryOutStream.cpp \
+    $(ENG)/Streams/CInputStream.cpp \
+    $(ENG)/Streams/CLabeledOffsetStream.cpp \
+    $(ENG)/Streams/CLinearCopyStream.cpp \
+    $(ENG)/Streams/CMemoryInputStream.cpp \
+    $(ENG)/Streams/COutputStream.cpp \
+    \
+    $(ENG)/Collision/CCollisionMesh.cpp \
+    \
+    $(ENG)/Primitives/BPEIntersection.cpp \
+    $(ENG)/Primitives/CAABox.cpp \
+    \
+    $(ENG)/GameObjectSystem/CBaseGameManager.cpp \
+    $(ENG)/GameObjectSystem/CGameObject.cpp \
+    $(ENG)/GameObjectSystem/CGameObjectComponent.cpp \
+    $(ENG)/GameObjectSystem/CGameObjectComponentProperties.cpp \
+    $(ENG)/GameObjectSystem/CGameObjectDebugLog.cpp \
+    $(ENG)/GameObjectSystem/CGameObjectGlobalData.cpp \
+    $(ENG)/GameObjectSystem/CGameObjectMessage.cpp \
+    $(ENG)/GameObjectSystem/CGameObjectMessageHandler.cpp \
+    $(ENG)/GameObjectSystem/CGameObjectMessageProperties.cpp \
+    $(ENG)/GameObjectSystem/CGameObjectProperties.cpp \
+    $(ENG)/GameObjectSystem/CGameObjectPropertiesPackage.cpp \
+    $(ENG)/GameObjectSystem/CGameObjectPropertiesPackageEntry.cpp \
+    $(ENG)/GameObjectSystem/CGameObjectRegisteredComponentGroupObjectFactories.cpp \
+    $(ENG)/GameObjectSystem/CGameObjectRegisteredMessageObjectFactories.cpp \
+    $(ENG)/GameObjectSystem/CObjectList.cpp \
+    $(ENG)/GameObjectSystem/GameObjectUtils.cpp \
+    $(ENG)/GameObjectSystem/TGameObjectTypes.cpp \
+    \
+    $(ENG)/Input/CInputGenerator.cpp
+
+# -----------------------------------------------------------------------
+# Renderer sources
+# -----------------------------------------------------------------------
+RND := $(BPE_ROOT)/Source/Renderer/Base
+
+RND_SRCS := \
+    $(RND)/StdAfx.cpp \
+    \
+    $(RND)/Backend/CRenderBackend.cpp \
+    $(RND)/Backend/CRenderHWAllocator.cpp \
+    $(RND)/Backend/CTexture.cpp \
+    $(RND)/Backend/DC/DCCRenderBackend.cpp \
+    $(RND)/Backend/DC/DCCTexture.cpp \
+    \
+    $(RND)/Frontend/CLightState.cpp \
+    $(RND)/Frontend/CRenderer.cpp \
+    $(RND)/Frontend/CRenderViewport.cpp \
+    $(RND)/Frontend/RenderObject/CDrawableMasterRenderEntity.cpp \
+    $(RND)/Frontend/RenderObject/CDrawableRenderEntity.cpp \
+    $(RND)/Frontend/RenderObject/CLightRenderEntity.cpp \
+    $(RND)/Frontend/RenderObject/CMeshChunkRenderEntity.cpp \
+    $(RND)/Frontend/RenderObject/CMeshRenderEntity.cpp \
+    $(RND)/Frontend/RenderObject/CRenderBounds.cpp \
+    $(RND)/Frontend/RenderObject/CRenderObject.cpp \
+    \
+    $(RND)/Material/CCompiledShaderCache.cpp \
+    $(RND)/Material/CCompiledShaderCacheTypes.cpp \
+    $(RND)/Material/ProgShader/CShaderParameterBuffer.cpp \
+    $(RND)/Material/ProgShader/PSCShader.cpp \
+    $(RND)/Material/ProgShader/PSCShader_Factory.cpp \
+    $(RND)/Material/ProgShader/Shaders/CUnlitGeneric.cpp \
+    $(RND)/Material/ProgShader/Shaders/CVertexLitGeneric.cpp \
+    $(RND)/Material/ProgShader/Shaders/PSCDefaultShader.cpp \
+    $(RND)/Material/ProgShader/Shaders/PSCMovieShader.cpp \
+    $(RND)/Material/ProgShader/Shaders/PSShaderHelpers.cpp \
+    \
+    $(RND)/Primitive/CMesh.cpp \
+    $(RND)/Primitive/CMeshBuffers.cpp \
+    $(RND)/Primitive/CMeshChunk.cpp \
+    $(RND)/Primitive/CSkinnedMesh.cpp \
+    $(RND)/Primitive/ProgShader/PSCMesh.cpp \
+    $(RND)/Primitive/ProgShader/PSCMeshBuffers.cpp \
+    $(RND)/Primitive/ProgShader/PSCMeshChunk.cpp \
+    $(RND)/Primitive/ProgShader/PSCSkinnedMesh.cpp \
+    \
+    $(RND)/ShaderObjects/CGameObjectComponentPropertiesShader.cpp \
+    $(RND)/ShaderObjects/CShaderObjectFactory.cpp \
+    $(RND)/ShaderObjects/Properties/PropertiesClasses.cpp \
+    $(RND)/ShaderObjects/Shader/ICGLdrShader.cpp \
+    \
+    $(RND)/CDebugDraw.cpp \
+    $(RND)/CMTXFont.cpp
+
+# -----------------------------------------------------------------------
+# Object file list
+# -----------------------------------------------------------------------
+ALL_SRCS := $(ENG_SRCS) $(RND_SRCS)
+OBJS     := $(patsubst $(CURDIR)/%.cpp,$(OBJDIR)/%.o,$(ALL_SRCS))
+
+# -----------------------------------------------------------------------
+# Targets
+# -----------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# Host syntax-check — uses system g++ instead of sh-elf cross-compiler.
+# No SH-4 binaries produced; catches C++ type errors across the whole tree.
+# -----------------------------------------------------------------------
+MOCK_KOS  := $(CURDIR)/build/kos_mock
+HC_INCS   := -I$(MOCK_KOS) -I$(BPE_ROOT)/Source -I$(BPE_ROOT)/Source/Engine \
+             -I$(BPE_ROOT)/Source/ExtLibraries/Boost/include
+HC_DEFS   := -D__DREAMCAST__ -DMGS_VERSION=2 -DENGINE_EXPORTS -DRENDERER_EXPORTS
+HC_FLAGS  := -std=c++14 -fsyntax-only -w -Wno-deprecated $(HC_INCS) $(HC_DEFS)
+
+.PHONY: all clean compile-check host-check
+
+all: $(TARGET)
+
+# Phase 1 convenience: just compile, don't link (catches errors faster)
+compile-check: $(OBJS)
+	@echo "Compile check passed: $(words $(OBJS)) translation units OK"
+
+$(TARGET): $(OBJS)
+	$(CXX) $(KOS_LDFLAGS) -o $@ $(OBJS) $(KOS_LIBS)
+	$(OBJCOPY) -R .stack -O binary $@ $(TARGET:.elf=.bin)
+	@echo "Built $(TARGET)"
+
+$(OBJDIR)/%.o: $(CURDIR)/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@
+
+# Pull in generated dependency files
+-include $(OBJS:.o=.d)
+
+host-check:
+	@echo "Running host syntax-check with system g++ ($(words $(ALL_SRCS)) files)..."
+	@fail=0; \
+	for f in $(ALL_SRCS); do \
+	    g++ $(HC_FLAGS) $$f 2>&1 | sed "s|^|$$f: |"; \
+	    [ $${PIPESTATUS[0]} -eq 0 ] || fail=1; \
+	done; \
+	[ $$fail -eq 0 ] && echo "Host syntax-check passed." || { echo "Host syntax-check FAILED."; exit 1; }
+
+clean:
+	rm -rf $(OBJDIR) $(TARGET) $(TARGET:.elf=.bin)
+	@echo "Clean done"

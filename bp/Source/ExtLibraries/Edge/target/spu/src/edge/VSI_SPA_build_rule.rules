@@ -1,102 +1,102 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<VisualStudioToolFile
-	Name="SPA Rule File"
-	Version="8.00"
-	>
-	<Rules>
-		<CustomBuildRule
-			Name="SPA"
-			DisplayName="SPA"
-			CommandLine="[PathToSPA] &quot;$(InputPath)&quot; -o &quot;$(OutDir)\$(InputName).spa.obj&quot; [OptimizationLevel] [GenerateDebugInfo] [WarningsAsErrors] [GenerateAsmOutput] [QuietMode] [NoPICWarn] [VerboseSWPFeedback] [PreprocessorDefinitions]"
-			Outputs="$(OutDir)\$(InputName).spa.obj;$(OutDir)\$(InputName).spa.s"
-			AdditionalDependencies="[ExtraDependencies]"
-			FileExtensions="*.spa"
-			ExecutionDescription="Compiling $(InputName).spa with SPA..."
-			>
-			<Properties>
-				<EnumProperty
-					Name="OptimizationLevel"
-					DisplayName="Optimization Level"
-					Description="Sets the optimization level."
-					DefaultValue="2"
-					>
-					<Values>
-						<EnumValue
-							Value="0"
-							Switch="-O0"
-							DisplayName="0"
-						/>
-						<EnumValue
-							Value="1"
-							Switch="-O1"
-							DisplayName="1"
-						/>
-						<EnumValue
-							Value="2"
-							Switch="-O2"
-							DisplayName="2"
-						/>
-					</Values>
-				</EnumProperty>
-				<BooleanProperty
-					Name="GenerateDebugInfo"
-					DisplayName="Generate Debug Info"
-					Description="Specifies if SPA will generate debugging information."
-					Switch="--dwarf2 true"
-					DefaultValue="true"
-				/>
-				<BooleanProperty
-					Name="WarningsAsErrors"
-					DisplayName="Treat warnings as errors"
-					Description="Treats warnings as errors."
-					Switch="-Werror"
-				/>
-				<BooleanProperty
-					Name="NoPICWarn"
-					DisplayName="Disable PIC warnings"
-					Description="Disables warnings relating to PIC."
-					Switch="--nopicwarn"
-				/>
-				<BooleanProperty
-					Name="QuietMode"
-					DisplayName="Enable quiet mode"
-					Description="Enables quiet mode."
-					Switch="--quiet"
-				/>
-				<BooleanProperty
-					Name="VerboseSWPFeedback"
-					DisplayName="Enable verbose software pipelining feedback"
-					Description="Enables verbose software pipelining feedback."
-					Switch="--verboseswp"
-				/>
-				<BooleanProperty
-					Name="GenerateAsmOutput"
-					DisplayName="Keep intermediate asm file"
-					Description="Generates the intermediate asm file and keeps it.  The temporary file will be located at $(OutDir)\$(InputName).spa.s."
-					Switch="-s $(OutDir)\$(InputName).spa.s"
-				/>
-				<StringProperty
-					Name="ExtraDependencies"
-					DisplayName="Additional Dependencies"
-					Description="Specifies the additional dependencies that, when changed, should cause the SPA file to be re-built."
-					Switch="[value]"
-					Delimited="true"
-				/>
-				<StringProperty
-					Name="PreprocessorDefinitions"
-					DisplayName="Preprocessor Definitions"
-					Description="Defines a macro with the given name"
-					Switch="-D [value]"
-					Delimited="true"
-					Delimiters=" "
-				/>
-				<StringProperty
-					Name="PathToSPA"
-					DisplayName="Path to SPA"
-					Switch="[value]"
-					DefaultValue="$(ProjectDir)\..\..\..\..\..\host-win32\bin\spa.exe"
-				/>
-			</Properties>
-		</CustomBuildRule>
-	</Rules>
-</VisualStudioToolFile>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<VisualStudioToolFile
+	Name="SPA Rule File"
+	Version="8.00"
+	>
+	<Rules>
+		<CustomBuildRule
+			Name="SPA"
+			DisplayName="SPA"
+			CommandLine="[PathToSPA] &quot;$(InputPath)&quot; -o &quot;$(OutDir)\$(InputName).spa.obj&quot; [OptimizationLevel] [GenerateDebugInfo] [WarningsAsErrors] [GenerateAsmOutput] [QuietMode] [NoPICWarn] [VerboseSWPFeedback] [PreprocessorDefinitions]"
+			Outputs="$(OutDir)\$(InputName).spa.obj;$(OutDir)\$(InputName).spa.s"
+			AdditionalDependencies="[ExtraDependencies]"
+			FileExtensions="*.spa"
+			ExecutionDescription="Compiling $(InputName).spa with SPA..."
+			>
+			<Properties>
+				<EnumProperty
+					Name="OptimizationLevel"
+					DisplayName="Optimization Level"
+					Description="Sets the optimization level."
+					DefaultValue="2"
+					>
+					<Values>
+						<EnumValue
+							Value="0"
+							Switch="-O0"
+							DisplayName="0"
+						/>
+						<EnumValue
+							Value="1"
+							Switch="-O1"
+							DisplayName="1"
+						/>
+						<EnumValue
+							Value="2"
+							Switch="-O2"
+							DisplayName="2"
+						/>
+					</Values>
+				</EnumProperty>
+				<BooleanProperty
+					Name="GenerateDebugInfo"
+					DisplayName="Generate Debug Info"
+					Description="Specifies if SPA will generate debugging information."
+					Switch="--dwarf2 true"
+					DefaultValue="true"
+				/>
+				<BooleanProperty
+					Name="WarningsAsErrors"
+					DisplayName="Treat warnings as errors"
+					Description="Treats warnings as errors."
+					Switch="-Werror"
+				/>
+				<BooleanProperty
+					Name="NoPICWarn"
+					DisplayName="Disable PIC warnings"
+					Description="Disables warnings relating to PIC."
+					Switch="--nopicwarn"
+				/>
+				<BooleanProperty
+					Name="QuietMode"
+					DisplayName="Enable quiet mode"
+					Description="Enables quiet mode."
+					Switch="--quiet"
+				/>
+				<BooleanProperty
+					Name="VerboseSWPFeedback"
+					DisplayName="Enable verbose software pipelining feedback"
+					Description="Enables verbose software pipelining feedback."
+					Switch="--verboseswp"
+				/>
+				<BooleanProperty
+					Name="GenerateAsmOutput"
+					DisplayName="Keep intermediate asm file"
+					Description="Generates the intermediate asm file and keeps it.  The temporary file will be located at $(OutDir)\$(InputName).spa.s."
+					Switch="-s $(OutDir)\$(InputName).spa.s"
+				/>
+				<StringProperty
+					Name="ExtraDependencies"
+					DisplayName="Additional Dependencies"
+					Description="Specifies the additional dependencies that, when changed, should cause the SPA file to be re-built."
+					Switch="[value]"
+					Delimited="true"
+				/>
+				<StringProperty
+					Name="PreprocessorDefinitions"
+					DisplayName="Preprocessor Definitions"
+					Description="Defines a macro with the given name"
+					Switch="-D [value]"
+					Delimited="true"
+					Delimiters=" "
+				/>
+				<StringProperty
+					Name="PathToSPA"
+					DisplayName="Path to SPA"
+					Switch="[value]"
+					DefaultValue="$(ProjectDir)\..\..\..\..\..\host-win32\bin\spa.exe"
+				/>
+			</Properties>
+		</CustomBuildRule>
+	</Rules>
+</VisualStudioToolFile>

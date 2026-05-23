@@ -1,110 +1,110 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2009 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-.include "edgepost_helpers.inc"
-
-.cfunc void edgePostInitializeDofInputBuffer( qword output, qword colors, qword fuzziness, qword count )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-
-	.reg	kInsertFuzz0, kInsertFuzz1, kInsertFuzz2, kInsertFuzz3
-	il128	kInsertFuzz0, "aBCD"
-	il128	kInsertFuzz1, "bBCD"
-	il128	kInsertFuzz2, "cBCD"
-	il128	kInsertFuzz3, "dBCD"
-	
-	// convert backword so that conversion can be done in place
-	.reg		backoutput, backinput, backfuzziness
-	mpyui		backoutput, count, 16
-	mpyui		backinput, count, 4
-	mpyui		backfuzziness, count, 4
-	a			backoutput, backoutput, output
-	a			backinput, backinput, colors
-	a			backfuzziness, backfuzziness, fuzziness
-	
-loop:
-	ai			backoutput, backoutput, -0x40
-	ai			backinput, backinput, -0x10
-	ai			backfuzziness, backfuzziness, -0x10
-	ai			count, count, -4
-
-	.reg		c, f
-	lqd			c, 0x00( backinput )
-	lqd			f, 0x00( backfuzziness )
-
-	// unpack colors
-	.reg		c0, c1, c2, c3
-	EDGEPOST_UNPACK_PIXELS8( c0, c1, c2, c3, c )
-	
-	// Convert to float
-	EDGEPOST_U8_TO_FLOAT( c0, c0)
-	EDGEPOST_U8_TO_FLOAT( c1, c1)
-	EDGEPOST_U8_TO_FLOAT( c2, c2)
-	EDGEPOST_U8_TO_FLOAT( c3, c3)
-	
-	// Insert Fuzziness
-	shufb		c0, c0, f, kInsertFuzz0
-	shufb		c1, c1, f, kInsertFuzz1
-	shufb		c2, c2, f, kInsertFuzz2
-	shufb		c3, c3, f, kInsertFuzz3
-	
-	// Store
-	stqd		c0, 0x00( backoutput )
-	stqd		c1, 0x10( backoutput )
-	stqd		c2, 0x20( backoutput )
-	stqd		c3, 0x30( backoutput )
-	brnz		count, loop
-.endfunc
-
-
-.cfunc void edgePostInitializeDofInputBufferF4( qword output, qword colors, qword fuzziness, qword count )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-
-	.reg	kInsertFuzz0, kInsertFuzz1, kInsertFuzz2, kInsertFuzz3
-	il128	kInsertFuzz0, "aBCD"
-	il128	kInsertFuzz1, "bBCD"
-	il128	kInsertFuzz2, "cBCD"
-	il128	kInsertFuzz3, "dBCD"
-	
-	// convert backword so that conversion can be done in place
-	.reg		backoutput, backinput, backfuzziness
-	mpyui		backoutput, count, 16
-	mpyui		backinput, count, 16
-	mpyui		backfuzziness, count, 4
-	a			backoutput, backoutput, output
-	a			backinput, backinput, colors
-	a			backfuzziness, backfuzziness, fuzziness
-	
-loop:
-	ai			backoutput, backoutput, -0x40
-	ai			backinput, backinput, -0x40
-	ai			backfuzziness, backfuzziness, -0x10
-	ai			count, count, -4
-
-	.reg		c0, c1, c2, c3, f
-	lqd			c0, 0x00( backinput )
-	lqd			c1, 0x10( backinput )
-	lqd			c2, 0x20( backinput )
-	lqd			c3, 0x30( backinput )
-	lqd			f, 0x00( backfuzziness )
-
-	// Insert Fuzziness
-	shufb		c0, c0, f, kInsertFuzz0
-	shufb		c1, c1, f, kInsertFuzz1
-	shufb		c2, c2, f, kInsertFuzz2
-	shufb		c3, c3, f, kInsertFuzz3
-	
-	// Store
-	stqd		c0, 0x00( backoutput )
-	stqd		c1, 0x10( backoutput )
-	stqd		c2, 0x20( backoutput )
-	stqd		c3, 0x30( backoutput )
-	brnz		count, loop
-.endfunc
-
-
-
-
-
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+.include "edgepost_helpers.inc"
+
+.cfunc void edgePostInitializeDofInputBuffer( qword output, qword colors, qword fuzziness, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+
+	.reg	kInsertFuzz0, kInsertFuzz1, kInsertFuzz2, kInsertFuzz3
+	il128	kInsertFuzz0, "aBCD"
+	il128	kInsertFuzz1, "bBCD"
+	il128	kInsertFuzz2, "cBCD"
+	il128	kInsertFuzz3, "dBCD"
+	
+	// convert backword so that conversion can be done in place
+	.reg		backoutput, backinput, backfuzziness
+	mpyui		backoutput, count, 16
+	mpyui		backinput, count, 4
+	mpyui		backfuzziness, count, 4
+	a			backoutput, backoutput, output
+	a			backinput, backinput, colors
+	a			backfuzziness, backfuzziness, fuzziness
+	
+loop:
+	ai			backoutput, backoutput, -0x40
+	ai			backinput, backinput, -0x10
+	ai			backfuzziness, backfuzziness, -0x10
+	ai			count, count, -4
+
+	.reg		c, f
+	lqd			c, 0x00( backinput )
+	lqd			f, 0x00( backfuzziness )
+
+	// unpack colors
+	.reg		c0, c1, c2, c3
+	EDGEPOST_UNPACK_PIXELS8( c0, c1, c2, c3, c )
+	
+	// Convert to float
+	EDGEPOST_U8_TO_FLOAT( c0, c0)
+	EDGEPOST_U8_TO_FLOAT( c1, c1)
+	EDGEPOST_U8_TO_FLOAT( c2, c2)
+	EDGEPOST_U8_TO_FLOAT( c3, c3)
+	
+	// Insert Fuzziness
+	shufb		c0, c0, f, kInsertFuzz0
+	shufb		c1, c1, f, kInsertFuzz1
+	shufb		c2, c2, f, kInsertFuzz2
+	shufb		c3, c3, f, kInsertFuzz3
+	
+	// Store
+	stqd		c0, 0x00( backoutput )
+	stqd		c1, 0x10( backoutput )
+	stqd		c2, 0x20( backoutput )
+	stqd		c3, 0x30( backoutput )
+	brnz		count, loop
+.endfunc
+
+
+.cfunc void edgePostInitializeDofInputBufferF4( qword output, qword colors, qword fuzziness, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+
+	.reg	kInsertFuzz0, kInsertFuzz1, kInsertFuzz2, kInsertFuzz3
+	il128	kInsertFuzz0, "aBCD"
+	il128	kInsertFuzz1, "bBCD"
+	il128	kInsertFuzz2, "cBCD"
+	il128	kInsertFuzz3, "dBCD"
+	
+	// convert backword so that conversion can be done in place
+	.reg		backoutput, backinput, backfuzziness
+	mpyui		backoutput, count, 16
+	mpyui		backinput, count, 16
+	mpyui		backfuzziness, count, 4
+	a			backoutput, backoutput, output
+	a			backinput, backinput, colors
+	a			backfuzziness, backfuzziness, fuzziness
+	
+loop:
+	ai			backoutput, backoutput, -0x40
+	ai			backinput, backinput, -0x40
+	ai			backfuzziness, backfuzziness, -0x10
+	ai			count, count, -4
+
+	.reg		c0, c1, c2, c3, f
+	lqd			c0, 0x00( backinput )
+	lqd			c1, 0x10( backinput )
+	lqd			c2, 0x20( backinput )
+	lqd			c3, 0x30( backinput )
+	lqd			f, 0x00( backfuzziness )
+
+	// Insert Fuzziness
+	shufb		c0, c0, f, kInsertFuzz0
+	shufb		c1, c1, f, kInsertFuzz1
+	shufb		c2, c2, f, kInsertFuzz2
+	shufb		c3, c3, f, kInsertFuzz3
+	
+	// Store
+	stqd		c0, 0x00( backoutput )
+	stqd		c1, 0x10( backoutput )
+	stqd		c2, 0x20( backoutput )
+	stqd		c3, 0x30( backoutput )
+	brnz		count, loop
+.endfunc
+
+
+
+
+

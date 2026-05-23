@@ -1,259 +1,259 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2007 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-.cfunc void edgeAnimMatrices4x4ToJoints(EdgeAnimJointTransform* __restrict__ outputJoints, 
-										const void* __restrict__ inputMatrices, 
-										unsigned int count)
-	
-	//----------------------------------------------------------------------------------------------
-	// Early out
-	//----------------------------------------------------------------------------------------------    
-
-	brz		count, NoLoop
-
-	//----------------------------------------------------------------------------------------------
-    // Constants
-    //----------------------------------------------------------------------------------------------    
-    
-	// Constants
-	.reg	kOne, signMask
-	ilhu	kOne, 0x3f800000@h
-	ilhu	signMask, 0x80000000@h
-
-	// Shuffle masks
-	.reg	shufAaBb, shufBbAa, shufCcDd, shufDdCc, shufCDab
-	il128	shufAaBb, "AaBb"
-	il128	shufBbAa, "BbAa"
-	il128	shufCcDd, "CcDd"
-	il128	shufDdCc, "DdCc"	
-	il128	shufCDab, "CDab"
-	
-	.reg	shufABCD, shufBADC, shufCDAB, shufDCBA
-	il128	shufABCD, "ABCD"
-	il128	shufBADC, "BADC"
-	il128	shufCDAB, "CDAB"
-	il128	shufDCBA, "DCBA"
-	
-	.reg	selABcd
-	fsmbi	selABcd, 0x00FF
-	
-	//----------------------------------------------------------------------------------------------
-    // Shuffle table (temporarily on the stack)
-    //----------------------------------------------------------------------------------------------    
-
-	.reg	shufTabBase
-	ai		shufTabBase, $1, -0x90
-	stqd	shufABCD, 0x00(shufTabBase)
-    stqd	shufABCD, 0x10(shufTabBase)
-    stqd	shufABCD, 0x20(shufTabBase)
-    stqd	shufABCD, 0x30(shufTabBase)
-    stqd	shufBADC, 0x40(shufTabBase)
-    stqd	shufCDAB, 0x50(shufTabBase)
-    stqd	shufDCBA, 0x60(shufTabBase)
-    stqd	shufDCBA, 0x70(shufTabBase)		
-		
-    //----------------------------------------------------------------------------------------------
-    // Loop
-    //----------------------------------------------------------------------------------------------    
-	
-	.reg	count4, countTmp
-	ai		countTmp, count, 3
-	rotmi	count4, countTmp, -2	
-
-Loop:
-
-	ai		inputMatrices, inputMatrices, 0x100
-	ai		outputJoints, outputJoints, 0x0C0
-
-	.reg	m0row0, m0row1, m0row2, m0row3, m1row0, m1row1, m1row2, m1row3 
-	.reg	m2row0, m2row1, m2row2, m2row3, m3row0, m3row1, m3row2, m3row3	
-    lqd 	m0row0, -0x100(inputMatrices)
-    lqd 	m0row1, -0x0F0(inputMatrices)
-    lqd 	m0row2, -0x0E0(inputMatrices)
-    lqd 	m0row3, -0x0D0(inputMatrices)    
-    lqd 	m1row0, -0x0C0(inputMatrices)
-    lqd 	m1row1, -0x0B0(inputMatrices)
-    lqd 	m1row2, -0x0A0(inputMatrices)
-    lqd 	m1row3, -0x090(inputMatrices)   
-	lqd 	m2row0, -0x080(inputMatrices)    
-	lqd 	m2row1, -0x070(inputMatrices)
-	lqd 	m2row2, -0x060(inputMatrices)
-	lqd 	m2row3, -0x050(inputMatrices)
-	lqd 	m3row0, -0x040(inputMatrices)
-	lqd 	m3row1, -0x030(inputMatrices)
-	lqd 	m3row2, -0x020(inputMatrices)	
-	lqd 	m3row3, -0x010(inputMatrices)
-	
-	.reg	s00, s01, s02, s03
-	.reg	m00, m01, m02	
-    shufb  	s00, m0row0, m1row0, shufAaBb
-    shufb  	s01, m0row0, m1row0, shufCcDd
-    shufb  	s02, m2row0, m3row0, shufBbAa
-    shufb  	s03, m2row0, m3row0, shufDdCc
-    selb	m00, s00, s02, selABcd
-    shufb	m01, s00, s02, shufCDab
-    selb	m02, s01, s03, selABcd
-
-	.reg	s10, s11, s12, s13
-	.reg	m10, m11, m12
-    shufb  	s10, m0row1, m1row1, shufAaBb
-    shufb  	s11, m0row1, m1row1, shufCcDd
-    shufb  	s12, m2row1, m3row1, shufBbAa
-    shufb  	s13, m2row1, m3row1, shufDdCc
-    selb	m10, s10, s12, selABcd
-    shufb	m11, s10, s12, shufCDab
-    selb	m12, s11, s13, selABcd
-
-	.reg	s20, s21, s22, s23
-	.reg	m20, m21, m22
-    shufb  	s20, m0row2, m1row2, shufAaBb
-    shufb  	s21, m0row2, m1row2, shufCcDd
-    shufb  	s22, m2row2, m3row2, shufBbAa
-    shufb  	s23, m2row2, m3row2, shufDdCc
-    selb	m20, s20, s22, selABcd
-    shufb	m21, s20, s22, shufCDab
-    selb	m22, s21, s23, selABcd
-
-    // Extract quats
-    // Components require shuffling - this occurs after deswizzling
-	.reg	trTmp, cmp1tmp, cmp1tmp2, cmp2, cmp1, trTmp2, neg1tmp, neg2tmp
-	.reg	cmp0, neg0, neg1, neg2, m00Tmp, m11Tmp, m22Tmp, m21Tmp, m02Tmp
-	.reg	m10Tmp, qa, qb, qc, tr, tmTmp, qd        
-	fa		trTmp, m00, m11
-	fcgt 	cmp1tmp, m00, m11
-	fcgt 	cmp1tmp2, m00, m22
-	fcgt 	cmp2, m11, m22
-	and		cmp1, cmp1tmp, cmp1tmp2
-	fa		trTmp2, trTmp, m22
-	orc		neg1tmp, cmp1, cmp2
-	or		neg2tmp, cmp1, cmp2
-	and		cmp0, trTmp2, signMask
-	andc	neg0, cmp0, cmp1
-	and 	neg1, neg1tmp, cmp0
-	and 	neg2, neg2tmp, cmp0
-	xor 	m00Tmp, m00, neg0
-	xor 	m11Tmp, m11, neg1
-	xor 	m22Tmp, m22, neg2
-	xor 	m21Tmp, m21, neg0
-	xor 	m02Tmp, m02, neg1
-	xor 	m10Tmp, m10, neg2
-	fs 		qa, m12, m21Tmp
-	fs 		qb, m20, m02Tmp
-	fs 		qc, m01, m10Tmp
-	fa 		tr, m00Tmp, kOne
-	fa 		tmTmp, m11Tmp, m22Tmp
-	fa 		qd, tr, tmTmp
-
-    //Normalise quats 
-    .reg	qsqr0, qsqr1, qsqr2, qsqr3, qrinvest, qrinv        
-    fm		qsqr0, qa, qa
-    fma 	qsqr1, qb, qb, qsqr0
-    fma 	qsqr2, qc, qc, qsqr1
-    fma 	qsqr3, qd, qd, qsqr2
-    frsqest	qrinvest, qsqr3
-    fi		qrinv, qsqr3, qrinvest
-    
-    .reg	qan, qbn, qcn, qdn
-    fm 		qan, qa, qrinv
-    fm 		qbn, qb, qrinv
-    fm 		qcn, qc, qrinv
-    fm 		qdn, qd, qrinv
-
-	//  Lookup shuffles
-	.reg	cnt0tmp, cnt1tmp, cnt2tmp, cnt0tmp2, cnt0tmp3
-	.reg	cnt0, cnt1, cnt2, cnt3
-	rotmi	cnt0tmp, cmp0, -29      
-	rotmi	cnt1tmp, cmp1, -30      
-	rotmi	cnt2tmp, cmp2, -31     
-	or		cnt0tmp2, cnt0tmp, cnt1tmp
-	or		cnt0tmp3, cnt0tmp2, cnt2tmp
-	shli	cnt0, cnt0tmp3, 4
-	shlqbyi	cnt1, cnt0, 4
-	shlqbyi	cnt2, cnt0, 8
-	shlqbyi	cnt3, cnt0, 12	
-	
-	.reg	shuffle0, shuffle1, shuffle2, shuffle3
-	lqx		shuffle0, shufTabBase, cnt0
-	lqx		shuffle1, shufTabBase, cnt1
-	lqx		shuffle2, shufTabBase, cnt2
-	lqx		shuffle3, shufTabBase, cnt3
-	
-	// Deswizzle quats
-	.reg	qab0ab1, qab2ab3, qcd1cd0, qcd3cd2
-	.reg	q0tmp, q1tmp, q2tmp, q3tmp	
-	shufb 	qab0ab1, qan, qbn, shufAaBb
-	shufb 	qab2ab3, qan, qbn, shufCcDd
-	shufb 	qcd1cd0, qcn, qdn, shufBbAa
-	shufb 	qcd3cd2, qcn, qdn, shufDdCc
-	selb	q0tmp, qab0ab1, qcd1cd0, selABcd
-	shufb 	q1tmp, qab0ab1, qcd1cd0, shufCDab
-	selb	q2tmp, qab2ab3, qcd3cd2, selABcd
-	shufb 	q3tmp, qab2ab3, qcd3cd2, shufCDab
-
-	// Shuffle quats
-	.reg	q0, q1, q2, q3
-	shufb 	q0, q0tmp, q0tmp, shuffle0
-	shufb 	q1, q1tmp, q1tmp, shuffle1
-	shufb 	q2, q2tmp, q2tmp, shuffle2
-	shufb 	q3, q3tmp, q3tmp, shuffle3
-
-	// scales
-	.reg	sxsqr0, sxsqr1, sxsqr2, sxrinvest,  sxrinv, ssx		
-	fm		sxsqr0, m00, m00
-	fma		sxsqr1, m01, m01, sxsqr0
-	fma		sxsqr2, m02, m02, sxsqr1
-	frsqest	sxrinvest, sxsqr2
-	fi		sxrinv, sxsqr2, sxrinvest
-	fm		ssx, sxrinv, sxsqr2
-
-	.reg	sysqr0, sysqr1, sysqr2, syrinvest,  syrinv, ssy		
-	fm		sysqr0, m10, m10
-	fma		sysqr1, m11, m11, sysqr0
-	fma		sysqr2, m12, m12, sysqr1
-	frsqest	syrinvest, sysqr2	
-	fi		syrinv, sysqr2, syrinvest
-	fm		ssy, syrinv, sysqr2
-
-	.reg	szsqr0, szsqr1, szsqr2, szrinvest,  szrinv, ssz		
-	fm		szsqr0, m20, m20
-	fma		szsqr1, m21, m21, szsqr0
-	fma		szsqr2, m22, m22, szsqr1
-	frsqest	szrinvest, szsqr2
-	fi		szrinv, szsqr2, szrinvest
-	fm		ssz, szrinv, szsqr2
-
-    // Deswizzle scales
-    .reg	sh0, sh1, sh2, sh3
-    .reg	s0, s1, s2, s3    
-    shufb  	sh0, ssx, ssy, shufAaBb
-    shufb  	sh1, ssx, ssy, shufCcDd
-    shufb  	sh2, ssz, kOne, shufBbAa
-    shufb  	sh3, ssz, kOne, shufDdCc
-    selb	s0, sh0, sh2, selABcd
-    shufb	s1, sh0, sh2, shufCDab
-    selb	s2, sh1, sh3, selABcd
-    shufb	s3, sh1, sh3, shufCDab
-
-	// Store		
-    stqd	q0, -0xC0(outputJoints)
-    stqd	m0row3, -0xB0(outputJoints)
-    stqd	s0, -0xA0(outputJoints)
-	stqd	q1, -0x90(outputJoints)
-	stqd	m1row3, -0x80(outputJoints)
-	stqd	s1, -0x70(outputJoints)
-	stqd	q2, -0x60(outputJoints)
-	stqd	m2row3, -0x50(outputJoints)
-	stqd	s2, -0x40(outputJoints)
-	stqd	q3, -0x30(outputJoints)
-	stqd	m3row3, -0x20(outputJoints)
-	stqd	s3, -0x10(outputJoints)
-	
-	ai		count4, count4, -1
-	brnz	count4, Loop
-
-NoLoop:
-
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2007 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+.cfunc void edgeAnimMatrices4x4ToJoints(EdgeAnimJointTransform* __restrict__ outputJoints, 
+										const void* __restrict__ inputMatrices, 
+										unsigned int count)
+	
+	//----------------------------------------------------------------------------------------------
+	// Early out
+	//----------------------------------------------------------------------------------------------    
+
+	brz		count, NoLoop
+
+	//----------------------------------------------------------------------------------------------
+    // Constants
+    //----------------------------------------------------------------------------------------------    
+    
+	// Constants
+	.reg	kOne, signMask
+	ilhu	kOne, 0x3f800000@h
+	ilhu	signMask, 0x80000000@h
+
+	// Shuffle masks
+	.reg	shufAaBb, shufBbAa, shufCcDd, shufDdCc, shufCDab
+	il128	shufAaBb, "AaBb"
+	il128	shufBbAa, "BbAa"
+	il128	shufCcDd, "CcDd"
+	il128	shufDdCc, "DdCc"	
+	il128	shufCDab, "CDab"
+	
+	.reg	shufABCD, shufBADC, shufCDAB, shufDCBA
+	il128	shufABCD, "ABCD"
+	il128	shufBADC, "BADC"
+	il128	shufCDAB, "CDAB"
+	il128	shufDCBA, "DCBA"
+	
+	.reg	selABcd
+	fsmbi	selABcd, 0x00FF
+	
+	//----------------------------------------------------------------------------------------------
+    // Shuffle table (temporarily on the stack)
+    //----------------------------------------------------------------------------------------------    
+
+	.reg	shufTabBase
+	ai		shufTabBase, $1, -0x90
+	stqd	shufABCD, 0x00(shufTabBase)
+    stqd	shufABCD, 0x10(shufTabBase)
+    stqd	shufABCD, 0x20(shufTabBase)
+    stqd	shufABCD, 0x30(shufTabBase)
+    stqd	shufBADC, 0x40(shufTabBase)
+    stqd	shufCDAB, 0x50(shufTabBase)
+    stqd	shufDCBA, 0x60(shufTabBase)
+    stqd	shufDCBA, 0x70(shufTabBase)		
+		
+    //----------------------------------------------------------------------------------------------
+    // Loop
+    //----------------------------------------------------------------------------------------------    
+	
+	.reg	count4, countTmp
+	ai		countTmp, count, 3
+	rotmi	count4, countTmp, -2	
+
+Loop:
+
+	ai		inputMatrices, inputMatrices, 0x100
+	ai		outputJoints, outputJoints, 0x0C0
+
+	.reg	m0row0, m0row1, m0row2, m0row3, m1row0, m1row1, m1row2, m1row3 
+	.reg	m2row0, m2row1, m2row2, m2row3, m3row0, m3row1, m3row2, m3row3	
+    lqd 	m0row0, -0x100(inputMatrices)
+    lqd 	m0row1, -0x0F0(inputMatrices)
+    lqd 	m0row2, -0x0E0(inputMatrices)
+    lqd 	m0row3, -0x0D0(inputMatrices)    
+    lqd 	m1row0, -0x0C0(inputMatrices)
+    lqd 	m1row1, -0x0B0(inputMatrices)
+    lqd 	m1row2, -0x0A0(inputMatrices)
+    lqd 	m1row3, -0x090(inputMatrices)   
+	lqd 	m2row0, -0x080(inputMatrices)    
+	lqd 	m2row1, -0x070(inputMatrices)
+	lqd 	m2row2, -0x060(inputMatrices)
+	lqd 	m2row3, -0x050(inputMatrices)
+	lqd 	m3row0, -0x040(inputMatrices)
+	lqd 	m3row1, -0x030(inputMatrices)
+	lqd 	m3row2, -0x020(inputMatrices)	
+	lqd 	m3row3, -0x010(inputMatrices)
+	
+	.reg	s00, s01, s02, s03
+	.reg	m00, m01, m02	
+    shufb  	s00, m0row0, m1row0, shufAaBb
+    shufb  	s01, m0row0, m1row0, shufCcDd
+    shufb  	s02, m2row0, m3row0, shufBbAa
+    shufb  	s03, m2row0, m3row0, shufDdCc
+    selb	m00, s00, s02, selABcd
+    shufb	m01, s00, s02, shufCDab
+    selb	m02, s01, s03, selABcd
+
+	.reg	s10, s11, s12, s13
+	.reg	m10, m11, m12
+    shufb  	s10, m0row1, m1row1, shufAaBb
+    shufb  	s11, m0row1, m1row1, shufCcDd
+    shufb  	s12, m2row1, m3row1, shufBbAa
+    shufb  	s13, m2row1, m3row1, shufDdCc
+    selb	m10, s10, s12, selABcd
+    shufb	m11, s10, s12, shufCDab
+    selb	m12, s11, s13, selABcd
+
+	.reg	s20, s21, s22, s23
+	.reg	m20, m21, m22
+    shufb  	s20, m0row2, m1row2, shufAaBb
+    shufb  	s21, m0row2, m1row2, shufCcDd
+    shufb  	s22, m2row2, m3row2, shufBbAa
+    shufb  	s23, m2row2, m3row2, shufDdCc
+    selb	m20, s20, s22, selABcd
+    shufb	m21, s20, s22, shufCDab
+    selb	m22, s21, s23, selABcd
+
+    // Extract quats
+    // Components require shuffling - this occurs after deswizzling
+	.reg	trTmp, cmp1tmp, cmp1tmp2, cmp2, cmp1, trTmp2, neg1tmp, neg2tmp
+	.reg	cmp0, neg0, neg1, neg2, m00Tmp, m11Tmp, m22Tmp, m21Tmp, m02Tmp
+	.reg	m10Tmp, qa, qb, qc, tr, tmTmp, qd        
+	fa		trTmp, m00, m11
+	fcgt 	cmp1tmp, m00, m11
+	fcgt 	cmp1tmp2, m00, m22
+	fcgt 	cmp2, m11, m22
+	and		cmp1, cmp1tmp, cmp1tmp2
+	fa		trTmp2, trTmp, m22
+	orc		neg1tmp, cmp1, cmp2
+	or		neg2tmp, cmp1, cmp2
+	and		cmp0, trTmp2, signMask
+	andc	neg0, cmp0, cmp1
+	and 	neg1, neg1tmp, cmp0
+	and 	neg2, neg2tmp, cmp0
+	xor 	m00Tmp, m00, neg0
+	xor 	m11Tmp, m11, neg1
+	xor 	m22Tmp, m22, neg2
+	xor 	m21Tmp, m21, neg0
+	xor 	m02Tmp, m02, neg1
+	xor 	m10Tmp, m10, neg2
+	fs 		qa, m12, m21Tmp
+	fs 		qb, m20, m02Tmp
+	fs 		qc, m01, m10Tmp
+	fa 		tr, m00Tmp, kOne
+	fa 		tmTmp, m11Tmp, m22Tmp
+	fa 		qd, tr, tmTmp
+
+    //Normalise quats 
+    .reg	qsqr0, qsqr1, qsqr2, qsqr3, qrinvest, qrinv        
+    fm		qsqr0, qa, qa
+    fma 	qsqr1, qb, qb, qsqr0
+    fma 	qsqr2, qc, qc, qsqr1
+    fma 	qsqr3, qd, qd, qsqr2
+    frsqest	qrinvest, qsqr3
+    fi		qrinv, qsqr3, qrinvest
+    
+    .reg	qan, qbn, qcn, qdn
+    fm 		qan, qa, qrinv
+    fm 		qbn, qb, qrinv
+    fm 		qcn, qc, qrinv
+    fm 		qdn, qd, qrinv
+
+	//  Lookup shuffles
+	.reg	cnt0tmp, cnt1tmp, cnt2tmp, cnt0tmp2, cnt0tmp3
+	.reg	cnt0, cnt1, cnt2, cnt3
+	rotmi	cnt0tmp, cmp0, -29      
+	rotmi	cnt1tmp, cmp1, -30      
+	rotmi	cnt2tmp, cmp2, -31     
+	or		cnt0tmp2, cnt0tmp, cnt1tmp
+	or		cnt0tmp3, cnt0tmp2, cnt2tmp
+	shli	cnt0, cnt0tmp3, 4
+	shlqbyi	cnt1, cnt0, 4
+	shlqbyi	cnt2, cnt0, 8
+	shlqbyi	cnt3, cnt0, 12	
+	
+	.reg	shuffle0, shuffle1, shuffle2, shuffle3
+	lqx		shuffle0, shufTabBase, cnt0
+	lqx		shuffle1, shufTabBase, cnt1
+	lqx		shuffle2, shufTabBase, cnt2
+	lqx		shuffle3, shufTabBase, cnt3
+	
+	// Deswizzle quats
+	.reg	qab0ab1, qab2ab3, qcd1cd0, qcd3cd2
+	.reg	q0tmp, q1tmp, q2tmp, q3tmp	
+	shufb 	qab0ab1, qan, qbn, shufAaBb
+	shufb 	qab2ab3, qan, qbn, shufCcDd
+	shufb 	qcd1cd0, qcn, qdn, shufBbAa
+	shufb 	qcd3cd2, qcn, qdn, shufDdCc
+	selb	q0tmp, qab0ab1, qcd1cd0, selABcd
+	shufb 	q1tmp, qab0ab1, qcd1cd0, shufCDab
+	selb	q2tmp, qab2ab3, qcd3cd2, selABcd
+	shufb 	q3tmp, qab2ab3, qcd3cd2, shufCDab
+
+	// Shuffle quats
+	.reg	q0, q1, q2, q3
+	shufb 	q0, q0tmp, q0tmp, shuffle0
+	shufb 	q1, q1tmp, q1tmp, shuffle1
+	shufb 	q2, q2tmp, q2tmp, shuffle2
+	shufb 	q3, q3tmp, q3tmp, shuffle3
+
+	// scales
+	.reg	sxsqr0, sxsqr1, sxsqr2, sxrinvest,  sxrinv, ssx		
+	fm		sxsqr0, m00, m00
+	fma		sxsqr1, m01, m01, sxsqr0
+	fma		sxsqr2, m02, m02, sxsqr1
+	frsqest	sxrinvest, sxsqr2
+	fi		sxrinv, sxsqr2, sxrinvest
+	fm		ssx, sxrinv, sxsqr2
+
+	.reg	sysqr0, sysqr1, sysqr2, syrinvest,  syrinv, ssy		
+	fm		sysqr0, m10, m10
+	fma		sysqr1, m11, m11, sysqr0
+	fma		sysqr2, m12, m12, sysqr1
+	frsqest	syrinvest, sysqr2	
+	fi		syrinv, sysqr2, syrinvest
+	fm		ssy, syrinv, sysqr2
+
+	.reg	szsqr0, szsqr1, szsqr2, szrinvest,  szrinv, ssz		
+	fm		szsqr0, m20, m20
+	fma		szsqr1, m21, m21, szsqr0
+	fma		szsqr2, m22, m22, szsqr1
+	frsqest	szrinvest, szsqr2
+	fi		szrinv, szsqr2, szrinvest
+	fm		ssz, szrinv, szsqr2
+
+    // Deswizzle scales
+    .reg	sh0, sh1, sh2, sh3
+    .reg	s0, s1, s2, s3    
+    shufb  	sh0, ssx, ssy, shufAaBb
+    shufb  	sh1, ssx, ssy, shufCcDd
+    shufb  	sh2, ssz, kOne, shufBbAa
+    shufb  	sh3, ssz, kOne, shufDdCc
+    selb	s0, sh0, sh2, selABcd
+    shufb	s1, sh0, sh2, shufCDab
+    selb	s2, sh1, sh3, selABcd
+    shufb	s3, sh1, sh3, shufCDab
+
+	// Store		
+    stqd	q0, -0xC0(outputJoints)
+    stqd	m0row3, -0xB0(outputJoints)
+    stqd	s0, -0xA0(outputJoints)
+	stqd	q1, -0x90(outputJoints)
+	stqd	m1row3, -0x80(outputJoints)
+	stqd	s1, -0x70(outputJoints)
+	stqd	q2, -0x60(outputJoints)
+	stqd	m2row3, -0x50(outputJoints)
+	stqd	s2, -0x40(outputJoints)
+	stqd	q3, -0x30(outputJoints)
+	stqd	m3row3, -0x20(outputJoints)
+	stqd	s3, -0x10(outputJoints)
+	
+	ai		count4, count4, -1
+	brnz	count4, Loop
+
+NoLoop:
+
 .endfunc

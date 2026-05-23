@@ -1,217 +1,217 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2007 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-.cfunc void edgeAnimBlendUserLinear(float* __restrict__ outputChannels, 
-                              uint8_t* __restrict__ outputWeights,
-                              const float* __restrict__ leftChannels,
-                              const uint8_t* __restrict__ leftWeights,
-                              const float* __restrict__ rightChannels, 
-                              const uint8_t* __restrict__ rightWeights,
-                              const uint8_t* channelFlags,
-                              float alpha, unsigned int count)
-
-	//----------------------------------------------------------------------------------------------
-	// Early out
-	//----------------------------------------------------------------------------------------------    
-
-  	brz		count, NoLoop
-
-	//----------------------------------------------------------------------------------------------
-	// Splat input params
-	//----------------------------------------------------------------------------------------------    
-
-    .reg    shufAAAA
-    il128   shufAAAA, "AAAA"
-    
-    shufb   outputWeights, outputWeights, outputWeights, shufAAAA
-    shufb   leftWeights, leftWeights, leftWeights, shufAAAA
-    shufb   rightWeights, rightWeights, rightWeights, shufAAAA              
-    shufb   channelFlags, channelFlags, channelFlags, shufAAAA        
-    shufb   alpha, alpha, alpha, shufAAAA 
-
-      
-    //----------------------------------------------------------------------------------------------
-    // Vectorised count (warning : will overread/overwrite)
-    //----------------------------------------------------------------------------------------------
-
-    .reg    count4, countTmp
-    ai      countTmp, count, 3
-    rotmi   count4, countTmp, -2            
-    
-    //----------------------------------------------------------------------------------------------
-    // Init code
-    //----------------------------------------------------------------------------------------------        
-            
-    // Shuffle / select masks    
-    .reg    shuf000A000B000C000D, shuf000X000X000X000X, shufDHLPDHLPDHLPDHLP
-    .reg    shufAAAABBBBCCCCDDDD, shuf0000000000000000
-    il128   shuf000A000B000C000D, "000A000B000C000D"
-    ilhu    shuf000X000X000X000X, 0x808080C0@h
-    iohl    shuf000X000X000X000X, 0x808080C0@l   
-    il128   shufDHLPDHLPDHLPDHLP, "DHLPDHLPDHLPDHLP"
-    il128   shufAAAABBBBCCCCDDDD, "AAAABBBBCCCCDDDD"
-    il128   shuf0000000000000000, 0x80808080_80808080_80808080_80808080
-    .reg	shufABCD, shufabcd
-    il128	shufABCD, "ABCD"
-    il128	shufabcd, "abcd"
-
-    // Constants
-    .reg    kZero, kOne, kCufltScale, kCfltsScale, kCfltsBias, k255U
-    ilhu    kOne, 0x3f800000@h              
-    il      kZero, 0    
-    ilhu    kCufltScale, 0x3F808081@h       // +1.0039215686f 
-    iohl    kCufltScale, 0x3F808081@l       // +1.0039215686f (256/255)
-    ilhu    kCfltsScale, 0x3F7F0000@h       // +0.99609375 
-    iohl    kCfltsScale, 0x3F7F0000@l       // +0.99609375 (255/256)
-    ilhu    kCfltsBias, 0x3B000000@h        // +1/512
-    iohl    kCfltsBias, 0x3B000000@l        // +1/512
-    il      k255U, 255    
-        
-    // NULL weights? 
-    .reg    selLeftWeightsNonNull, selRightWeightsNonNull
-    clgti   selLeftWeightsNonNull, leftWeights, 0
-    clgti   selRightWeightsNonNull, rightWeights, 0 
-    .reg    shufLeftWeights, shufRightWeights
-    selb    shufLeftWeights, shuf000X000X000X000X, shuf000A000B000C000D, selLeftWeightsNonNull
-    selb    shufRightWeights, shuf000X000X000X000X, shuf000A000B000C000D, selRightWeightsNonNull
-        
-    // NULL channel flags? if null set to 0 otherweise replicate MSB
-    .reg    selChannelFlagsNonNull, shufChannelFlags
-    clgti   selChannelFlagsNonNull, channelFlags, 0
-    selb    shufChannelFlags, shuf0000000000000000, shufAAAABBBBCCCCDDDD, selChannelFlagsNonNull
-    
-    // Clamp : hardcoded to 0 1 if enabled in channel flags
-    .reg    clampMax, clampMin
-    mov     clampMax, kOne
-    mov     clampMin, kZero
-    
-    .memgroup outWeightAliasingGroup
-    
-    .reg    offsetChannels
-    il      offsetChannels, -0x10    
-                                      
-    //----------------------------------------------------------------------------------------------
-    // Loop
-    //----------------------------------------------------------------------------------------------        
-    
-Loop:
-    ai      count4, count4, -1
-    ai      offsetChannels, offsetChannels, 0x10
-  
-    //----------------------------------------------------------------------------------------------        
-    // Channel flags
-    //----------------------------------------------------------------------------------------------
-    
-    // Load and replicate 
-    .reg    qwFlags, byteFlags, replFlags
-    lqd     qwFlags, 0x0(channelFlags)
-    rotqby  byteFlags, qwFlags, channelFlags
-    ai      channelFlags, channelFlags, 4
-    shufb   replFlags, byteFlags, byteFlags, shufChannelFlags       
-    
-    .reg    clampFlags
-    andbi   clampFlags, replFlags, 0x01         // EDGE_ANIM_USER_CHANNEL_FLAG_CLAMP01
-    ceqbi   clampFlags, clampFlags, 0x01        // EDGE_ANIM_USER_CHANNEL_FLAG_CLAMP01
-    
-    //----------------------------------------------------------------------------------------------        
-    // Weights & partial animation logic
-    //----------------------------------------------------------------------------------------------
-
-    // Load and realign 
-    .reg    leftWQw0, rightWQw0, leftWB, rightWB, leftWU, rightWU
-    lqd     leftWQw0, 0x0(leftWeights)
-    lqd     rightWQw0, 0x0(rightWeights)
-    rotqby  leftWB, leftWQw0, leftWeights
-    rotqby  rightWB, rightWQw0, rightWeights    
-    ai      leftWeights, leftWeights, 0x04
-    ai      rightWeights, rightWeights, 0x04        
-    shufb   leftWU, leftWB, leftWB, shufLeftWeights
-    shufb   rightWU, rightWB, rightWB, shufRightWeights
-    
-    // Convert to floats + scale
-    .reg    leftWFt, rightWFt, leftWF, rightWF
-    cuflt   leftWFt, leftWU, 8 
-    cuflt   rightWFt, rightWU, 8 
-    fm      leftWF, leftWFt, kCufltScale
-    fm      rightWF, rightWFt, kCufltScale
-    
-    // Partial animation logic
-    .reg    leftNonZeroMask, rightNonZeroMask
-    clgti   leftNonZeroMask, leftWU, 0
-    clgti   rightNonZeroMask, rightWU, 0
-    
-    // Blend factor
-    .reg    selRightGreater, divW
-    fcgt    selRightGreater, rightWF, leftWF
-    selb    divW, leftWF, rightWF, selRightGreater
-    .reg    restDivW, intDivW, tmpDivW, invDivW
-    frest   restDivW, divW
-    fi      intDivW, divW, restDivW
-    fnms    tmpDivW, divW, intDivW, kOne
-    fma     invDivW, tmpDivW, intDivW, intDivW     
-        
-    .reg    tmpBlendF0, tmpBlendF1, tmpBlendF2, tmpBlendF3, t
-    fma     tmpBlendF0, alpha, leftWF, rightWF
-    fs      tmpBlendF1, tmpBlendF0, leftWF
-    fm      tmpBlendF2, alpha, rightWF
-    selb    tmpBlendF3, tmpBlendF2, tmpBlendF1, selRightGreater
-    fm      t, tmpBlendF3, invDivW               
-    
-    .reg	shufCopyLeft, shufCopyRight
-    selb	shufCopyLeft, shufabcd, shufABCD, rightNonZeroMask
-    selb	shufCopyRight, shufabcd, shufABCD, leftNonZeroMask
-    
-    // Output weight computation    
-    .reg    outWF0, outWF1, outWF
-    fma     outWF0, rightWF, t, leftWF
-    fnms    outWF1, leftWF, t, outWF0   
-    fma     outWF, outWF1, kCfltsScale, kCfltsBias
-    .reg    outWU0, outWU1, outWU2
-    .reg    outWUClampUp, outWUClampDown
-    cflts   outWU0, outWF, 8
-    cgti    outWUClampUp, outWU0, 255
-    cgt     outWUClampDown, kZero, outWU0
-    selb    outWU1, outWU0, k255U, outWUClampUp 
-    selb    outWU2, outWU1, kZero, outWUClampDown
-    .reg    outW    
-    shufb   outW, outWU2, outWU2, shufDHLPDHLPDHLPDHLP  
-
-    // Update weights
-    .reg    outWQwSrc, shufOutputWeights, outWQw
-    lqd     [outWeightAliasingGroup] outWQwSrc, 0x0(outputWeights)   
-    cwd     shufOutputWeights, 0x0(outputWeights)
-    shufb   outWQw, outW, outWQwSrc, shufOutputWeights
-    stqd    [outWeightAliasingGroup] outWQw, 0x0(outputWeights)  
-    ai      outputWeights, outputWeights, 0x04  
-
-    //----------------------------------------------------------------------------------------------        
-    // Lerp / clamp
-    //----------------------------------------------------------------------------------------------
-                        
-    .reg    left, right, output0, output1, output2, output3, output4, output5, output6
-    .reg	selClampUp, selClampDown
-    lqx     left, leftChannels, offsetChannels
-    lqx     right, rightChannels, offsetChannels
-    fma     output0, right, t, left
-    fnms    output1, left, t, output0
-	shufb	output2, output1, left, shufCopyLeft
-	shufb	output3, output2, right, shufCopyRight 
-    fcgt    selClampUp, output3, clampMax
-    fcgt    selClampDown, clampMin, output3
-    selb    output4, output3, clampMax, selClampUp
-    selb    output5, output4, clampMin, selClampDown 
-    selb    output6, output3, output5, clampFlags   
-    stqx    output6, outputChannels, offsetChannels
-        
-    //----------------------------------------------------------------------------------------------        
-    // Loop
-    //----------------------------------------------------------------------------------------------
-
-    brnz    count4, Loop   
-
-NoLoop:
-
-.endfunc
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2007 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+.cfunc void edgeAnimBlendUserLinear(float* __restrict__ outputChannels, 
+                              uint8_t* __restrict__ outputWeights,
+                              const float* __restrict__ leftChannels,
+                              const uint8_t* __restrict__ leftWeights,
+                              const float* __restrict__ rightChannels, 
+                              const uint8_t* __restrict__ rightWeights,
+                              const uint8_t* channelFlags,
+                              float alpha, unsigned int count)
+
+	//----------------------------------------------------------------------------------------------
+	// Early out
+	//----------------------------------------------------------------------------------------------    
+
+  	brz		count, NoLoop
+
+	//----------------------------------------------------------------------------------------------
+	// Splat input params
+	//----------------------------------------------------------------------------------------------    
+
+    .reg    shufAAAA
+    il128   shufAAAA, "AAAA"
+    
+    shufb   outputWeights, outputWeights, outputWeights, shufAAAA
+    shufb   leftWeights, leftWeights, leftWeights, shufAAAA
+    shufb   rightWeights, rightWeights, rightWeights, shufAAAA              
+    shufb   channelFlags, channelFlags, channelFlags, shufAAAA        
+    shufb   alpha, alpha, alpha, shufAAAA 
+
+      
+    //----------------------------------------------------------------------------------------------
+    // Vectorised count (warning : will overread/overwrite)
+    //----------------------------------------------------------------------------------------------
+
+    .reg    count4, countTmp
+    ai      countTmp, count, 3
+    rotmi   count4, countTmp, -2            
+    
+    //----------------------------------------------------------------------------------------------
+    // Init code
+    //----------------------------------------------------------------------------------------------        
+            
+    // Shuffle / select masks    
+    .reg    shuf000A000B000C000D, shuf000X000X000X000X, shufDHLPDHLPDHLPDHLP
+    .reg    shufAAAABBBBCCCCDDDD, shuf0000000000000000
+    il128   shuf000A000B000C000D, "000A000B000C000D"
+    ilhu    shuf000X000X000X000X, 0x808080C0@h
+    iohl    shuf000X000X000X000X, 0x808080C0@l   
+    il128   shufDHLPDHLPDHLPDHLP, "DHLPDHLPDHLPDHLP"
+    il128   shufAAAABBBBCCCCDDDD, "AAAABBBBCCCCDDDD"
+    il128   shuf0000000000000000, 0x80808080_80808080_80808080_80808080
+    .reg	shufABCD, shufabcd
+    il128	shufABCD, "ABCD"
+    il128	shufabcd, "abcd"
+
+    // Constants
+    .reg    kZero, kOne, kCufltScale, kCfltsScale, kCfltsBias, k255U
+    ilhu    kOne, 0x3f800000@h              
+    il      kZero, 0    
+    ilhu    kCufltScale, 0x3F808081@h       // +1.0039215686f 
+    iohl    kCufltScale, 0x3F808081@l       // +1.0039215686f (256/255)
+    ilhu    kCfltsScale, 0x3F7F0000@h       // +0.99609375 
+    iohl    kCfltsScale, 0x3F7F0000@l       // +0.99609375 (255/256)
+    ilhu    kCfltsBias, 0x3B000000@h        // +1/512
+    iohl    kCfltsBias, 0x3B000000@l        // +1/512
+    il      k255U, 255    
+        
+    // NULL weights? 
+    .reg    selLeftWeightsNonNull, selRightWeightsNonNull
+    clgti   selLeftWeightsNonNull, leftWeights, 0
+    clgti   selRightWeightsNonNull, rightWeights, 0 
+    .reg    shufLeftWeights, shufRightWeights
+    selb    shufLeftWeights, shuf000X000X000X000X, shuf000A000B000C000D, selLeftWeightsNonNull
+    selb    shufRightWeights, shuf000X000X000X000X, shuf000A000B000C000D, selRightWeightsNonNull
+        
+    // NULL channel flags? if null set to 0 otherweise replicate MSB
+    .reg    selChannelFlagsNonNull, shufChannelFlags
+    clgti   selChannelFlagsNonNull, channelFlags, 0
+    selb    shufChannelFlags, shuf0000000000000000, shufAAAABBBBCCCCDDDD, selChannelFlagsNonNull
+    
+    // Clamp : hardcoded to 0 1 if enabled in channel flags
+    .reg    clampMax, clampMin
+    mov     clampMax, kOne
+    mov     clampMin, kZero
+    
+    .memgroup outWeightAliasingGroup
+    
+    .reg    offsetChannels
+    il      offsetChannels, -0x10    
+                                      
+    //----------------------------------------------------------------------------------------------
+    // Loop
+    //----------------------------------------------------------------------------------------------        
+    
+Loop:
+    ai      count4, count4, -1
+    ai      offsetChannels, offsetChannels, 0x10
+  
+    //----------------------------------------------------------------------------------------------        
+    // Channel flags
+    //----------------------------------------------------------------------------------------------
+    
+    // Load and replicate 
+    .reg    qwFlags, byteFlags, replFlags
+    lqd     qwFlags, 0x0(channelFlags)
+    rotqby  byteFlags, qwFlags, channelFlags
+    ai      channelFlags, channelFlags, 4
+    shufb   replFlags, byteFlags, byteFlags, shufChannelFlags       
+    
+    .reg    clampFlags
+    andbi   clampFlags, replFlags, 0x01         // EDGE_ANIM_USER_CHANNEL_FLAG_CLAMP01
+    ceqbi   clampFlags, clampFlags, 0x01        // EDGE_ANIM_USER_CHANNEL_FLAG_CLAMP01
+    
+    //----------------------------------------------------------------------------------------------        
+    // Weights & partial animation logic
+    //----------------------------------------------------------------------------------------------
+
+    // Load and realign 
+    .reg    leftWQw0, rightWQw0, leftWB, rightWB, leftWU, rightWU
+    lqd     leftWQw0, 0x0(leftWeights)
+    lqd     rightWQw0, 0x0(rightWeights)
+    rotqby  leftWB, leftWQw0, leftWeights
+    rotqby  rightWB, rightWQw0, rightWeights    
+    ai      leftWeights, leftWeights, 0x04
+    ai      rightWeights, rightWeights, 0x04        
+    shufb   leftWU, leftWB, leftWB, shufLeftWeights
+    shufb   rightWU, rightWB, rightWB, shufRightWeights
+    
+    // Convert to floats + scale
+    .reg    leftWFt, rightWFt, leftWF, rightWF
+    cuflt   leftWFt, leftWU, 8 
+    cuflt   rightWFt, rightWU, 8 
+    fm      leftWF, leftWFt, kCufltScale
+    fm      rightWF, rightWFt, kCufltScale
+    
+    // Partial animation logic
+    .reg    leftNonZeroMask, rightNonZeroMask
+    clgti   leftNonZeroMask, leftWU, 0
+    clgti   rightNonZeroMask, rightWU, 0
+    
+    // Blend factor
+    .reg    selRightGreater, divW
+    fcgt    selRightGreater, rightWF, leftWF
+    selb    divW, leftWF, rightWF, selRightGreater
+    .reg    restDivW, intDivW, tmpDivW, invDivW
+    frest   restDivW, divW
+    fi      intDivW, divW, restDivW
+    fnms    tmpDivW, divW, intDivW, kOne
+    fma     invDivW, tmpDivW, intDivW, intDivW     
+        
+    .reg    tmpBlendF0, tmpBlendF1, tmpBlendF2, tmpBlendF3, t
+    fma     tmpBlendF0, alpha, leftWF, rightWF
+    fs      tmpBlendF1, tmpBlendF0, leftWF
+    fm      tmpBlendF2, alpha, rightWF
+    selb    tmpBlendF3, tmpBlendF2, tmpBlendF1, selRightGreater
+    fm      t, tmpBlendF3, invDivW               
+    
+    .reg	shufCopyLeft, shufCopyRight
+    selb	shufCopyLeft, shufabcd, shufABCD, rightNonZeroMask
+    selb	shufCopyRight, shufabcd, shufABCD, leftNonZeroMask
+    
+    // Output weight computation    
+    .reg    outWF0, outWF1, outWF
+    fma     outWF0, rightWF, t, leftWF
+    fnms    outWF1, leftWF, t, outWF0   
+    fma     outWF, outWF1, kCfltsScale, kCfltsBias
+    .reg    outWU0, outWU1, outWU2
+    .reg    outWUClampUp, outWUClampDown
+    cflts   outWU0, outWF, 8
+    cgti    outWUClampUp, outWU0, 255
+    cgt     outWUClampDown, kZero, outWU0
+    selb    outWU1, outWU0, k255U, outWUClampUp 
+    selb    outWU2, outWU1, kZero, outWUClampDown
+    .reg    outW    
+    shufb   outW, outWU2, outWU2, shufDHLPDHLPDHLPDHLP  
+
+    // Update weights
+    .reg    outWQwSrc, shufOutputWeights, outWQw
+    lqd     [outWeightAliasingGroup] outWQwSrc, 0x0(outputWeights)   
+    cwd     shufOutputWeights, 0x0(outputWeights)
+    shufb   outWQw, outW, outWQwSrc, shufOutputWeights
+    stqd    [outWeightAliasingGroup] outWQw, 0x0(outputWeights)  
+    ai      outputWeights, outputWeights, 0x04  
+
+    //----------------------------------------------------------------------------------------------        
+    // Lerp / clamp
+    //----------------------------------------------------------------------------------------------
+                        
+    .reg    left, right, output0, output1, output2, output3, output4, output5, output6
+    .reg	selClampUp, selClampDown
+    lqx     left, leftChannels, offsetChannels
+    lqx     right, rightChannels, offsetChannels
+    fma     output0, right, t, left
+    fnms    output1, left, t, output0
+	shufb	output2, output1, left, shufCopyLeft
+	shufb	output3, output2, right, shufCopyRight 
+    fcgt    selClampUp, output3, clampMax
+    fcgt    selClampDown, clampMin, output3
+    selb    output4, output3, clampMax, selClampUp
+    selb    output5, output4, clampMin, selClampDown 
+    selb    output6, output3, output5, clampFlags   
+    stqx    output6, outputChannels, offsetChannels
+        
+    //----------------------------------------------------------------------------------------------        
+    // Loop
+    //----------------------------------------------------------------------------------------------
+
+    brnz    count4, Loop   
+
+NoLoop:
+
+.endfunc

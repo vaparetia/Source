@@ -1,367 +1,367 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2010 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-.cfunc void edgeAnimLocalJointsToWorldJoints(EdgeAnimJointTransform* outputJoints, 
-                                       const EdgeAnimJointTransform* __restrict__ inputJoints,
-                                       const EdgeAnimJointTransform* __restrict__ rootJoint,
-                                       const unsigned short* __restrict__ jointLinkage, 
-                                       unsigned int count)
-	
-    //----------------------------------------------------------------------------------------------
-    // Early out
-    //----------------------------------------------------------------------------------------------    
-
-	brz		count, NoLoop
-
-  	// Shuffle masks
-  	.reg	shufAAAA
- 	il128	shufAAAA, "AAAA"
-       
-	shufb	outputJoints, outputJoints, outputJoints, shufAAAA
-	shufb	inputJoints, inputJoints, inputJoints, shufAAAA
-	shufb	rootJoint, rootJoint, rootJoint, shufAAAA
-
-    //----------------------------------------------------------------------------------------------
-    // Constants
-    //----------------------------------------------------------------------------------------------    
-    
-	// Constants
-	.reg	kOne, kTwo, kHalf
-	ilhu	kOne, 0x3f800000@h
-	ilhu	kTwo, 0x40000000@h
-	ilhu	kHalf, 0x3F000000@h
-
-	// Shuffle masks
-	.reg	shufBBBB, shufCCCC, shufDDDD, shufAaBb, shufBbAa, shufCcDd, shufDdCc, shufCDab	
-	il128	shufBBBB, "BBBB"
-	il128	shufCCCC, "CCCC"
-	il128	shufDDDD, "DDDD"
-	il128	shufAaBb, "AaBb"
-	il128	shufBbAa, "BbAa"
-	il128	shufCcDd, "CcDd"
-	il128	shufDdCc, "DdCc"
-	il128	shufCDab, "CDab"
-	
-	// Select masks
-	.reg	selABcd
-	fsmbi	selABcd, 0x00FF
-    
-    // Misc masks.
-    .reg	negParent, idxMask
-    ila		negParent, 0x00003FFF
-    ila		idxMask, 0x00007FFF
-    
-    // Aliasing
-    .memgroup		aliasWorldR
-    .memgroup		aliasWorldT
-    .memgroup		aliasWorldS
-    .memgroup		aliasLocalR
-    .memgroup		aliasLocalT
-    .memgroup		aliasLocalS
-    
-    //----------------------------------------------------------------------------------------------
-    // Setup 
-    //----------------------------------------------------------------------------------------------    
-    
-    .reg	inputBaseR, inputBaseT, inputBaseS 
-    ai		inputBaseR, inputJoints, 0x00
-    ai		inputBaseT, inputJoints, 0x10
-    ai		inputBaseS, inputJoints, 0x20
-    
-    .reg	outputBaseR, outputBaseT, outputBaseS 
-    ai		outputBaseR, outputJoints, 0x00
-    ai		outputBaseT, outputJoints, 0x10
-    ai		outputBaseS, outputJoints, 0x20
-    
-    .reg	inputBase, outputBase
-    mov		inputBase, inputJoints
-    mov		outputBase, outputJoints
-     
-	//----------------------------------------------------------------------------------------------
-    // Loop
-    //----------------------------------------------------------------------------------------------    
-	
-	.reg	count4, countTmp
-	ai		countTmp, count, 3
-	rotmi	count4, countTmp, -2	
-
-Loop:     
-		
-	ai		count4, count4, -1
-	     
-    .reg	indices
-    lqd		indices, 0x0(jointLinkage)
-    ai		jointLinkage, jointLinkage, 0x10
-     
-    // Local indices
-    .reg	localIdx, localIdxS5, localIdxS4, localOfs
-    rotmi	localIdx, indices, -16
-    shli	localIdxS5, localIdx, 5
-    shli	localIdxS4, localIdx, 4
-	a		localOfs, localIdxS5, localIdxS4
-
-	.reg	localOfs1, localOfs2, localOfs3	
-	shlqbyi	localOfs1, localOfs, 4
-	shlqbyi	localOfs2, localOfs, 8
-	shlqbyi	localOfs3, localOfs, 12 
-
-     // Parent indices
-	.reg	parentIdx, parentIdxS5, parentIdxS4, parentUseRoot, parentOfs
-	.reg	parentWorldAdrI, parentWorldAdr, parentLocalAdrI, parentLocalAdr 
-	and		parentIdx, indices, idxMask
-    clgt	parentUseRoot, parentIdx, negParent	    
-    shli	parentIdxS5, parentIdx, 5
-    shli	parentIdxS4, parentIdx, 4
-    a		parentOfs, parentIdxS5, parentIdxS4
-    a		parentLocalAdrI, inputBase, parentOfs
-    a		parentWorldAdrI, outputBase, parentOfs
-    selb	parentLocalAdr, parentLocalAdrI, rootJoint, parentUseRoot	
-    selb	parentWorldAdr, parentWorldAdrI, rootJoint, parentUseRoot	
-	.reg	parentWorldAdr1, parentWorldAdr2, parentWorldAdr3	
-    shlqbyi	parentWorldAdr1, parentWorldAdr, 4
-    shlqbyi	parentWorldAdr2, parentWorldAdr, 8
-	shlqbyi	parentWorldAdr3, parentWorldAdr, 12
-	.reg	parentLocalAdr1, parentLocalAdr2, parentLocalAdr3	
-    shlqbyi	parentLocalAdr1, parentLocalAdr, 4
-    shlqbyi	parentLocalAdr2, parentLocalAdr, 8
-	shlqbyi	parentLocalAdr3, parentLocalAdr, 12
-
-	// Local joints 
-	.reg	lr0, lr1, lr2, lr3, lt0, lt1, lt2, lt3, ls0, ls1, ls2, ls3	       
-    lqx 	lr0, inputBaseR, localOfs
-    lqx 	lr1, inputBaseR, localOfs1
-    lqx 	lr2, inputBaseR, localOfs2
-    lqx 	lr3, inputBaseR, localOfs3
-    lqx 	lt0, inputBaseT, localOfs
-    lqx 	lt1, inputBaseT, localOfs1
-    lqx 	lt2, inputBaseT, localOfs2
-    lqx 	lt3, inputBaseT, localOfs3
-    lqx 	ls0, inputBaseS, localOfs
-    lqx 	ls1, inputBaseS, localOfs1
-    lqx 	ls2, inputBaseS, localOfs2
-    lqx 	ls3, inputBaseS, localOfs3
-
-    // Parent joints 
-	.reg	pwr0, pwr1, pwr2, pwr3, pwt0, pwt1, pwt2, pwt3
-	.reg	pws0, pws1, pws2, pws3, pls0, pls1, pls2, pls3
-    lqd 	[aliasWorldR] pwr0, 0x00(parentWorldAdr) 
-    lqd 	[aliasWorldR] pwr1, 0x00(parentWorldAdr1) 
-    lqd 	[aliasWorldR] pwr2, 0x00(parentWorldAdr2) 
-    lqd 	[aliasWorldR] pwr3, 0x00(parentWorldAdr3) 
-    lqd 	[aliasWorldT] pwt0, 0x10(parentWorldAdr) 
-    lqd 	[aliasWorldT] pwt1, 0x10(parentWorldAdr1) 
-    lqd 	[aliasWorldT] pwt2, 0x10(parentWorldAdr2) 
-    lqd 	[aliasWorldT] pwt3, 0x10(parentWorldAdr3) 
-    lqd 	[aliasWorldS] pws0, 0x20(parentWorldAdr) 
-    lqd 	[aliasWorldS] pws1, 0x20(parentWorldAdr1) 
-    lqd 	[aliasWorldS] pws2, 0x20(parentWorldAdr2) 
-    lqd 	[aliasWorldS] pws3, 0x20(parentWorldAdr3)
-
-    lqd 	[aliasLocalS] pls0, 0x20(parentLocalAdr) 
-    lqd 	[aliasLocalS] pls1, 0x20(parentLocalAdr1) 
-    lqd 	[aliasLocalS] pls2, 0x20(parentLocalAdr2) 
-    lqd 	[aliasLocalS] pls3, 0x20(parentLocalAdr3)
-
-    // Swizzle local quats
-    .reg	lrs0, lrs1, lrs2, lrs3    
-    shufb 	lrs0, lr0, lr1, shufAaBb
-    shufb 	lrs1, lr0, lr1, shufCcDd
-    shufb 	lrs2, lr2, lr3, shufBbAa
-    shufb 	lrs3, lr2, lr3, shufDdCc
-    .reg	lrx, lry, lrz, lrw
-    selb	lrx, lrs0, lrs2, selABcd
-    shufb	lry, lrs0, lrs2, shufCDab
-    selb	lrz, lrs1, lrs3, selABcd
-    shufb	lrw, lrs1, lrs3, shufCDab
-
-    // Swizzle parent world quats   
-    .reg	pwrs0, pwrs1, pwrs2, pwrs3    
-    shufb 	pwrs0, pwr0, pwr1, shufAaBb
-    shufb 	pwrs1, pwr0, pwr1, shufCcDd
-    shufb 	pwrs2, pwr2, pwr3, shufBbAa
-    shufb 	pwrs3, pwr2, pwr3, shufDdCc
-    .reg	pwrx, pwry, pwrz, pwrw
-    selb	pwrx, pwrs0, pwrs2, selABcd
-    shufb	pwry, pwrs0, pwrs2, shufCDab
-    selb	pwrz, pwrs1, pwrs3, selABcd
-    shufb	pwrw, pwrs1, pwrs3, shufCDab
-        
-    // World quat = parent world quat * local quat
-	.reg	x0, x1, x2, wrx, y0, y1, y2, wry
-	.reg	z0, z1, z2, wrz, w0, w1, w2, wrw 	        
-    fm		x0,  pwrw, lrx
-    fma		x1,  pwrx, lrw, x0
-    fma		x2,  pwry, lrz, x1
-    fnms	wrx, pwrz, lry, x2
-    fm		y0,  pwrw, lry
-    fnms	y1,  pwrx, lrz, y0
-    fma		y2,  pwry, lrw, y1
-    fma		wry, pwrz, lrx, y2
-    fm		z0,  pwrw, lrz
-    fma		z1,  pwrx, lry, z0
-    fnms	z2,  pwry, lrx, z1
-    fma		wrz, pwrz, lrw, z2
-    fm		w0,  pwrw, lrw
-    fnms	w1,  pwrx, lrx, w0
-    fnms	w2,  pwry, lry, w1
-    fnms	wrw, pwrz, lrz, w2
-
-	// Normalise world quats
-	.reg wrsqr, ntmp0, ntmp1, ntmp2, ntmp3, ntmp4, inv
-	fm		wrsqr, wrx, wrx
-	fma		wrsqr, wry, wry, wrsqr
-	fma		wrsqr, wrz, wrz, wrsqr
-	fma		wrsqr, wrw, wrw, wrsqr
-	frsqest	ntmp0, wrsqr
-	fi		ntmp1, wrsqr, ntmp0
-	fm		ntmp2, wrsqr, ntmp1
-	fm		ntmp3, ntmp1, kHalf
-	fnms	ntmp4, ntmp2, ntmp1, kOne
-	fma		inv, ntmp3, ntmp4, ntmp1
-	fm		wrx, wrx, inv
-	fm		wry, wry, inv
-	fm		wrz, wrz, inv
-	fm		wrw, wrw, inv
-		
-    // Deswizzle world quats
-    .reg	s0, s1, s2, s3
-    shufb 	s0, wrx, wry, shufAaBb
-    shufb 	s1, wrx, wry, shufCcDd
-    shufb 	s2, wrz, wrw, shufBbAa
-    shufb 	s3, wrz, wrw, shufDdCc
-    .reg	wr0, wr1, wr2, wr3
-    selb	wr0, s0, s2, selABcd
-    shufb	wr1, s0, s2, shufCDab
-    selb	wr2, s1, s3, selABcd
-    shufb	wr3, s1, s3, shufCDab
-    
-    stqx 	[aliasWorldR] wr0, outputBaseR, localOfs
-    stqx 	[aliasWorldR] wr1, outputBaseR, localOfs1
-    stqx 	[aliasWorldR] wr2, outputBaseR, localOfs2
-    stqx	[aliasWorldR] wr3, outputBaseR, localOfs3
-    
-    // 1 / parent local scale
-	.reg	plsi0est, plsi1est, plsi2est, plsi3est
-	frest	plsi0est, pls0
-	frest	plsi1est, pls1
-	frest	plsi2est, pls2
-	frest	plsi3est, pls3
-	.reg	plsi0int, plsi1int, plsi2int, plsi3int
-	fi   	plsi0int, pls0, plsi0est
-	fi   	plsi1int, pls1, plsi1est
-	fi   	plsi2int, pls2, plsi2est
-	fi   	plsi3int, pls3, plsi3est
-
-    // nr refinement adds 2 cycle/joint
-	.reg	plsi0, plsi1, plsi2, plsi3    
-    .reg	tmp0, tmp1, tmp2, tmp3
-    fnms	tmp0,  pls0, plsi0int, kOne
-    fma		plsi0, tmp0, plsi0int, plsi0int
-    fnms	tmp1,  pls1, plsi1int, kOne
-    fma		plsi1, tmp1, plsi1int, plsi1int
-    fnms	tmp2,  pls2, plsi2int, kOne
-    fma		plsi2, tmp2, plsi2int, plsi2int
-    fnms	tmp3,  pls3, plsi3int, kOne
-    fma		plsi3, tmp3, plsi3int, plsi3int   
-    
-	// Scale compensate
-    .reg	compensateBit, compensateMask
-    shli	compensateBit, indices, 16
-    rotmai	compensateMask, compensateBit, -31
-    .reg	compensateMask0, compensateMask1, compensateMask2, compensateMask3
-    shufb	compensateMask0, compensateMask, compensateMask, shufAAAA
-    shufb	compensateMask1, compensateMask, compensateMask, shufBBBB
-    shufb	compensateMask2, compensateMask, compensateMask, shufCCCC
-    shufb	compensateMask3, compensateMask, compensateMask, shufDDDD
-    
-    .reg	scale0, scale1, scale2, scale3
-    selb	scale0, kOne, plsi0, compensateMask0
-    selb	scale1, kOne, plsi1, compensateMask1
-    selb	scale2, kOne, plsi2, compensateMask2
-    selb	scale3, kOne, plsi3, compensateMask3
-    
-    // Final scale
-    .reg	lss0, lss1, lss2, lss3
-	fm		lss0, ls0, pws0
-	fm		lss1, ls1, pws1
-	fm		lss2, ls2, pws2
-	fm		lss3, ls3, pws3
-	fm		lss0, lss0, scale0
-	fm		lss1, lss1, scale1
-	fm		lss2, lss2, scale2
-	fm		lss3, lss3, scale3
-
-    stqx 	[aliasWorldS] lss0, outputBaseS, localOfs
-    stqx 	[aliasWorldS] lss1, outputBaseS, localOfs1
-    stqx 	[aliasWorldS] lss2, outputBaseS, localOfs2
-    stqx 	[aliasWorldS] lss3, outputBaseS, localOfs3
-
-    // Scale and swizzle local translation
-	.reg	lts0, lts1, lts2, lts3
-	fm		lts0, lt0, pws0
-	fm		lts1, lt1, pws1	
-	fm		lts2, lt2, pws2
-	fm		lts3, lt3, pws3	
-    .reg	ltsh0, ltsh1, ltsh2, ltsh3    
-    shufb 	ltsh0, lts0, lts1, shufAaBb
-    shufb 	ltsh1, lts0, lts1, shufCcDd
-    shufb 	ltsh2, lts2, lts3, shufBbAa
-    shufb 	ltsh3, lts2, lts3, shufDdCc    
-    .reg	ltsx, ltsy, ltsz
-    selb	ltsx, ltsh0, ltsh2, selABcd
-    shufb	ltsy, ltsh0, ltsh2, shufCDab
-    selb	ltsz, ltsh1, ltsh3, selABcd
-    
-    // c = Cross(pwr, lt) + pwrw*lt = (pwry*ltz-pwrz*lty, pwrz*ltx-pwrx*ltz, pwrx*lty-pwry*ltx) + pwrw*lt
-	.reg	cx0, cx1, cx, cy0, cy1, cy, cz0, cz1, cz    
-	fm     	cx0, pwry, ltsz
-	fnms    cx1, pwrz, ltsy, cx0
-	fma     cx,  pwrw, ltsx, cx1
-	fm      cy0, pwrz, ltsx
-	fnms    cy1, pwrx, ltsz, cy0
-	fma     cy,  pwrw, ltsy, cy1
-	fm      cz0, pwrx, ltsy
-	fnms    cz1, pwry, ltsx, cz0
-	fma     cz,  pwrw, ltsz, cz1
-
-    // d, lt + 2 * Cross, pwr, c)
-	.reg	dx0, dx1, dx, dy0, dy1, dy, dz0, dz1, dz    
-	fm      dx0, pwry, cz
-	fnms    dx1, pwrz, cy, dx0
-	fma     dx,  kTwo, dx1, ltsx
-	fm      dy0, pwrz, cx
-	fnms    dy1, pwrx, cz, dy0
-	fma     dy,  kTwo, dy1, ltsy
-	fm      dz0, pwrx, cy
-	fnms    dz1, pwry, cx, dz0
-	fma		dz,  kTwo, dz1, ltsz
-
-    // Deswizzle rotated translation and add parent translation
-	.reg	s4, s5, s6, s7, rt0, rt1, rt2, rt3
-	.reg	wt0, wt1, wt2, wt3 
-    shufb   s4, dx, dy, shufAaBb
-    shufb   s5, dx, dy, shufCcDd
-    shufb   s6, dz, kOne, shufBbAa
-    shufb   s7, dz, kOne, shufDdCc
-    selb   	rt0, s4, s6, selABcd
-    shufb   rt1, s4, s6, shufCDab
-    selb   	rt2, s5, s7, selABcd
-    shufb   rt3, s5, s7, shufCDab
-	fa		wt0, rt0, pwt0  
-	fa		wt1, rt1, pwt1 
-	fa		wt2, rt2, pwt2 
-	fa		wt3, rt3, pwt3 
-                                        
-    stqx 	[aliasWorldT] wt0, outputBaseT, localOfs
-    stqx 	[aliasWorldT] wt1, outputBaseT, localOfs1
-    stqx 	[aliasWorldT] wt2, outputBaseT, localOfs2
-    stqx 	[aliasWorldT] wt3, outputBaseT, localOfs3
-    
-    brnz	count4, Loop
-
-NoLoop:
-
-.endfunc
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2010 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+.cfunc void edgeAnimLocalJointsToWorldJoints(EdgeAnimJointTransform* outputJoints, 
+                                       const EdgeAnimJointTransform* __restrict__ inputJoints,
+                                       const EdgeAnimJointTransform* __restrict__ rootJoint,
+                                       const unsigned short* __restrict__ jointLinkage, 
+                                       unsigned int count)
+	
+    //----------------------------------------------------------------------------------------------
+    // Early out
+    //----------------------------------------------------------------------------------------------    
+
+	brz		count, NoLoop
+
+  	// Shuffle masks
+  	.reg	shufAAAA
+ 	il128	shufAAAA, "AAAA"
+       
+	shufb	outputJoints, outputJoints, outputJoints, shufAAAA
+	shufb	inputJoints, inputJoints, inputJoints, shufAAAA
+	shufb	rootJoint, rootJoint, rootJoint, shufAAAA
+
+    //----------------------------------------------------------------------------------------------
+    // Constants
+    //----------------------------------------------------------------------------------------------    
+    
+	// Constants
+	.reg	kOne, kTwo, kHalf
+	ilhu	kOne, 0x3f800000@h
+	ilhu	kTwo, 0x40000000@h
+	ilhu	kHalf, 0x3F000000@h
+
+	// Shuffle masks
+	.reg	shufBBBB, shufCCCC, shufDDDD, shufAaBb, shufBbAa, shufCcDd, shufDdCc, shufCDab	
+	il128	shufBBBB, "BBBB"
+	il128	shufCCCC, "CCCC"
+	il128	shufDDDD, "DDDD"
+	il128	shufAaBb, "AaBb"
+	il128	shufBbAa, "BbAa"
+	il128	shufCcDd, "CcDd"
+	il128	shufDdCc, "DdCc"
+	il128	shufCDab, "CDab"
+	
+	// Select masks
+	.reg	selABcd
+	fsmbi	selABcd, 0x00FF
+    
+    // Misc masks.
+    .reg	negParent, idxMask
+    ila		negParent, 0x00003FFF
+    ila		idxMask, 0x00007FFF
+    
+    // Aliasing
+    .memgroup		aliasWorldR
+    .memgroup		aliasWorldT
+    .memgroup		aliasWorldS
+    .memgroup		aliasLocalR
+    .memgroup		aliasLocalT
+    .memgroup		aliasLocalS
+    
+    //----------------------------------------------------------------------------------------------
+    // Setup 
+    //----------------------------------------------------------------------------------------------    
+    
+    .reg	inputBaseR, inputBaseT, inputBaseS 
+    ai		inputBaseR, inputJoints, 0x00
+    ai		inputBaseT, inputJoints, 0x10
+    ai		inputBaseS, inputJoints, 0x20
+    
+    .reg	outputBaseR, outputBaseT, outputBaseS 
+    ai		outputBaseR, outputJoints, 0x00
+    ai		outputBaseT, outputJoints, 0x10
+    ai		outputBaseS, outputJoints, 0x20
+    
+    .reg	inputBase, outputBase
+    mov		inputBase, inputJoints
+    mov		outputBase, outputJoints
+     
+	//----------------------------------------------------------------------------------------------
+    // Loop
+    //----------------------------------------------------------------------------------------------    
+	
+	.reg	count4, countTmp
+	ai		countTmp, count, 3
+	rotmi	count4, countTmp, -2	
+
+Loop:     
+		
+	ai		count4, count4, -1
+	     
+    .reg	indices
+    lqd		indices, 0x0(jointLinkage)
+    ai		jointLinkage, jointLinkage, 0x10
+     
+    // Local indices
+    .reg	localIdx, localIdxS5, localIdxS4, localOfs
+    rotmi	localIdx, indices, -16
+    shli	localIdxS5, localIdx, 5
+    shli	localIdxS4, localIdx, 4
+	a		localOfs, localIdxS5, localIdxS4
+
+	.reg	localOfs1, localOfs2, localOfs3	
+	shlqbyi	localOfs1, localOfs, 4
+	shlqbyi	localOfs2, localOfs, 8
+	shlqbyi	localOfs3, localOfs, 12 
+
+     // Parent indices
+	.reg	parentIdx, parentIdxS5, parentIdxS4, parentUseRoot, parentOfs
+	.reg	parentWorldAdrI, parentWorldAdr, parentLocalAdrI, parentLocalAdr 
+	and		parentIdx, indices, idxMask
+    clgt	parentUseRoot, parentIdx, negParent	    
+    shli	parentIdxS5, parentIdx, 5
+    shli	parentIdxS4, parentIdx, 4
+    a		parentOfs, parentIdxS5, parentIdxS4
+    a		parentLocalAdrI, inputBase, parentOfs
+    a		parentWorldAdrI, outputBase, parentOfs
+    selb	parentLocalAdr, parentLocalAdrI, rootJoint, parentUseRoot	
+    selb	parentWorldAdr, parentWorldAdrI, rootJoint, parentUseRoot	
+	.reg	parentWorldAdr1, parentWorldAdr2, parentWorldAdr3	
+    shlqbyi	parentWorldAdr1, parentWorldAdr, 4
+    shlqbyi	parentWorldAdr2, parentWorldAdr, 8
+	shlqbyi	parentWorldAdr3, parentWorldAdr, 12
+	.reg	parentLocalAdr1, parentLocalAdr2, parentLocalAdr3	
+    shlqbyi	parentLocalAdr1, parentLocalAdr, 4
+    shlqbyi	parentLocalAdr2, parentLocalAdr, 8
+	shlqbyi	parentLocalAdr3, parentLocalAdr, 12
+
+	// Local joints 
+	.reg	lr0, lr1, lr2, lr3, lt0, lt1, lt2, lt3, ls0, ls1, ls2, ls3	       
+    lqx 	lr0, inputBaseR, localOfs
+    lqx 	lr1, inputBaseR, localOfs1
+    lqx 	lr2, inputBaseR, localOfs2
+    lqx 	lr3, inputBaseR, localOfs3
+    lqx 	lt0, inputBaseT, localOfs
+    lqx 	lt1, inputBaseT, localOfs1
+    lqx 	lt2, inputBaseT, localOfs2
+    lqx 	lt3, inputBaseT, localOfs3
+    lqx 	ls0, inputBaseS, localOfs
+    lqx 	ls1, inputBaseS, localOfs1
+    lqx 	ls2, inputBaseS, localOfs2
+    lqx 	ls3, inputBaseS, localOfs3
+
+    // Parent joints 
+	.reg	pwr0, pwr1, pwr2, pwr3, pwt0, pwt1, pwt2, pwt3
+	.reg	pws0, pws1, pws2, pws3, pls0, pls1, pls2, pls3
+    lqd 	[aliasWorldR] pwr0, 0x00(parentWorldAdr) 
+    lqd 	[aliasWorldR] pwr1, 0x00(parentWorldAdr1) 
+    lqd 	[aliasWorldR] pwr2, 0x00(parentWorldAdr2) 
+    lqd 	[aliasWorldR] pwr3, 0x00(parentWorldAdr3) 
+    lqd 	[aliasWorldT] pwt0, 0x10(parentWorldAdr) 
+    lqd 	[aliasWorldT] pwt1, 0x10(parentWorldAdr1) 
+    lqd 	[aliasWorldT] pwt2, 0x10(parentWorldAdr2) 
+    lqd 	[aliasWorldT] pwt3, 0x10(parentWorldAdr3) 
+    lqd 	[aliasWorldS] pws0, 0x20(parentWorldAdr) 
+    lqd 	[aliasWorldS] pws1, 0x20(parentWorldAdr1) 
+    lqd 	[aliasWorldS] pws2, 0x20(parentWorldAdr2) 
+    lqd 	[aliasWorldS] pws3, 0x20(parentWorldAdr3)
+
+    lqd 	[aliasLocalS] pls0, 0x20(parentLocalAdr) 
+    lqd 	[aliasLocalS] pls1, 0x20(parentLocalAdr1) 
+    lqd 	[aliasLocalS] pls2, 0x20(parentLocalAdr2) 
+    lqd 	[aliasLocalS] pls3, 0x20(parentLocalAdr3)
+
+    // Swizzle local quats
+    .reg	lrs0, lrs1, lrs2, lrs3    
+    shufb 	lrs0, lr0, lr1, shufAaBb
+    shufb 	lrs1, lr0, lr1, shufCcDd
+    shufb 	lrs2, lr2, lr3, shufBbAa
+    shufb 	lrs3, lr2, lr3, shufDdCc
+    .reg	lrx, lry, lrz, lrw
+    selb	lrx, lrs0, lrs2, selABcd
+    shufb	lry, lrs0, lrs2, shufCDab
+    selb	lrz, lrs1, lrs3, selABcd
+    shufb	lrw, lrs1, lrs3, shufCDab
+
+    // Swizzle parent world quats   
+    .reg	pwrs0, pwrs1, pwrs2, pwrs3    
+    shufb 	pwrs0, pwr0, pwr1, shufAaBb
+    shufb 	pwrs1, pwr0, pwr1, shufCcDd
+    shufb 	pwrs2, pwr2, pwr3, shufBbAa
+    shufb 	pwrs3, pwr2, pwr3, shufDdCc
+    .reg	pwrx, pwry, pwrz, pwrw
+    selb	pwrx, pwrs0, pwrs2, selABcd
+    shufb	pwry, pwrs0, pwrs2, shufCDab
+    selb	pwrz, pwrs1, pwrs3, selABcd
+    shufb	pwrw, pwrs1, pwrs3, shufCDab
+        
+    // World quat = parent world quat * local quat
+	.reg	x0, x1, x2, wrx, y0, y1, y2, wry
+	.reg	z0, z1, z2, wrz, w0, w1, w2, wrw 	        
+    fm		x0,  pwrw, lrx
+    fma		x1,  pwrx, lrw, x0
+    fma		x2,  pwry, lrz, x1
+    fnms	wrx, pwrz, lry, x2
+    fm		y0,  pwrw, lry
+    fnms	y1,  pwrx, lrz, y0
+    fma		y2,  pwry, lrw, y1
+    fma		wry, pwrz, lrx, y2
+    fm		z0,  pwrw, lrz
+    fma		z1,  pwrx, lry, z0
+    fnms	z2,  pwry, lrx, z1
+    fma		wrz, pwrz, lrw, z2
+    fm		w0,  pwrw, lrw
+    fnms	w1,  pwrx, lrx, w0
+    fnms	w2,  pwry, lry, w1
+    fnms	wrw, pwrz, lrz, w2
+
+	// Normalise world quats
+	.reg wrsqr, ntmp0, ntmp1, ntmp2, ntmp3, ntmp4, inv
+	fm		wrsqr, wrx, wrx
+	fma		wrsqr, wry, wry, wrsqr
+	fma		wrsqr, wrz, wrz, wrsqr
+	fma		wrsqr, wrw, wrw, wrsqr
+	frsqest	ntmp0, wrsqr
+	fi		ntmp1, wrsqr, ntmp0
+	fm		ntmp2, wrsqr, ntmp1
+	fm		ntmp3, ntmp1, kHalf
+	fnms	ntmp4, ntmp2, ntmp1, kOne
+	fma		inv, ntmp3, ntmp4, ntmp1
+	fm		wrx, wrx, inv
+	fm		wry, wry, inv
+	fm		wrz, wrz, inv
+	fm		wrw, wrw, inv
+		
+    // Deswizzle world quats
+    .reg	s0, s1, s2, s3
+    shufb 	s0, wrx, wry, shufAaBb
+    shufb 	s1, wrx, wry, shufCcDd
+    shufb 	s2, wrz, wrw, shufBbAa
+    shufb 	s3, wrz, wrw, shufDdCc
+    .reg	wr0, wr1, wr2, wr3
+    selb	wr0, s0, s2, selABcd
+    shufb	wr1, s0, s2, shufCDab
+    selb	wr2, s1, s3, selABcd
+    shufb	wr3, s1, s3, shufCDab
+    
+    stqx 	[aliasWorldR] wr0, outputBaseR, localOfs
+    stqx 	[aliasWorldR] wr1, outputBaseR, localOfs1
+    stqx 	[aliasWorldR] wr2, outputBaseR, localOfs2
+    stqx	[aliasWorldR] wr3, outputBaseR, localOfs3
+    
+    // 1 / parent local scale
+	.reg	plsi0est, plsi1est, plsi2est, plsi3est
+	frest	plsi0est, pls0
+	frest	plsi1est, pls1
+	frest	plsi2est, pls2
+	frest	plsi3est, pls3
+	.reg	plsi0int, plsi1int, plsi2int, plsi3int
+	fi   	plsi0int, pls0, plsi0est
+	fi   	plsi1int, pls1, plsi1est
+	fi   	plsi2int, pls2, plsi2est
+	fi   	plsi3int, pls3, plsi3est
+
+    // nr refinement adds 2 cycle/joint
+	.reg	plsi0, plsi1, plsi2, plsi3    
+    .reg	tmp0, tmp1, tmp2, tmp3
+    fnms	tmp0,  pls0, plsi0int, kOne
+    fma		plsi0, tmp0, plsi0int, plsi0int
+    fnms	tmp1,  pls1, plsi1int, kOne
+    fma		plsi1, tmp1, plsi1int, plsi1int
+    fnms	tmp2,  pls2, plsi2int, kOne
+    fma		plsi2, tmp2, plsi2int, plsi2int
+    fnms	tmp3,  pls3, plsi3int, kOne
+    fma		plsi3, tmp3, plsi3int, plsi3int   
+    
+	// Scale compensate
+    .reg	compensateBit, compensateMask
+    shli	compensateBit, indices, 16
+    rotmai	compensateMask, compensateBit, -31
+    .reg	compensateMask0, compensateMask1, compensateMask2, compensateMask3
+    shufb	compensateMask0, compensateMask, compensateMask, shufAAAA
+    shufb	compensateMask1, compensateMask, compensateMask, shufBBBB
+    shufb	compensateMask2, compensateMask, compensateMask, shufCCCC
+    shufb	compensateMask3, compensateMask, compensateMask, shufDDDD
+    
+    .reg	scale0, scale1, scale2, scale3
+    selb	scale0, kOne, plsi0, compensateMask0
+    selb	scale1, kOne, plsi1, compensateMask1
+    selb	scale2, kOne, plsi2, compensateMask2
+    selb	scale3, kOne, plsi3, compensateMask3
+    
+    // Final scale
+    .reg	lss0, lss1, lss2, lss3
+	fm		lss0, ls0, pws0
+	fm		lss1, ls1, pws1
+	fm		lss2, ls2, pws2
+	fm		lss3, ls3, pws3
+	fm		lss0, lss0, scale0
+	fm		lss1, lss1, scale1
+	fm		lss2, lss2, scale2
+	fm		lss3, lss3, scale3
+
+    stqx 	[aliasWorldS] lss0, outputBaseS, localOfs
+    stqx 	[aliasWorldS] lss1, outputBaseS, localOfs1
+    stqx 	[aliasWorldS] lss2, outputBaseS, localOfs2
+    stqx 	[aliasWorldS] lss3, outputBaseS, localOfs3
+
+    // Scale and swizzle local translation
+	.reg	lts0, lts1, lts2, lts3
+	fm		lts0, lt0, pws0
+	fm		lts1, lt1, pws1	
+	fm		lts2, lt2, pws2
+	fm		lts3, lt3, pws3	
+    .reg	ltsh0, ltsh1, ltsh2, ltsh3    
+    shufb 	ltsh0, lts0, lts1, shufAaBb
+    shufb 	ltsh1, lts0, lts1, shufCcDd
+    shufb 	ltsh2, lts2, lts3, shufBbAa
+    shufb 	ltsh3, lts2, lts3, shufDdCc    
+    .reg	ltsx, ltsy, ltsz
+    selb	ltsx, ltsh0, ltsh2, selABcd
+    shufb	ltsy, ltsh0, ltsh2, shufCDab
+    selb	ltsz, ltsh1, ltsh3, selABcd
+    
+    // c = Cross(pwr, lt) + pwrw*lt = (pwry*ltz-pwrz*lty, pwrz*ltx-pwrx*ltz, pwrx*lty-pwry*ltx) + pwrw*lt
+	.reg	cx0, cx1, cx, cy0, cy1, cy, cz0, cz1, cz    
+	fm     	cx0, pwry, ltsz
+	fnms    cx1, pwrz, ltsy, cx0
+	fma     cx,  pwrw, ltsx, cx1
+	fm      cy0, pwrz, ltsx
+	fnms    cy1, pwrx, ltsz, cy0
+	fma     cy,  pwrw, ltsy, cy1
+	fm      cz0, pwrx, ltsy
+	fnms    cz1, pwry, ltsx, cz0
+	fma     cz,  pwrw, ltsz, cz1
+
+    // d, lt + 2 * Cross, pwr, c)
+	.reg	dx0, dx1, dx, dy0, dy1, dy, dz0, dz1, dz    
+	fm      dx0, pwry, cz
+	fnms    dx1, pwrz, cy, dx0
+	fma     dx,  kTwo, dx1, ltsx
+	fm      dy0, pwrz, cx
+	fnms    dy1, pwrx, cz, dy0
+	fma     dy,  kTwo, dy1, ltsy
+	fm      dz0, pwrx, cy
+	fnms    dz1, pwry, cx, dz0
+	fma		dz,  kTwo, dz1, ltsz
+
+    // Deswizzle rotated translation and add parent translation
+	.reg	s4, s5, s6, s7, rt0, rt1, rt2, rt3
+	.reg	wt0, wt1, wt2, wt3 
+    shufb   s4, dx, dy, shufAaBb
+    shufb   s5, dx, dy, shufCcDd
+    shufb   s6, dz, kOne, shufBbAa
+    shufb   s7, dz, kOne, shufDdCc
+    selb   	rt0, s4, s6, selABcd
+    shufb   rt1, s4, s6, shufCDab
+    selb   	rt2, s5, s7, selABcd
+    shufb   rt3, s5, s7, shufCDab
+	fa		wt0, rt0, pwt0  
+	fa		wt1, rt1, pwt1 
+	fa		wt2, rt2, pwt2 
+	fa		wt3, rt3, pwt3 
+                                        
+    stqx 	[aliasWorldT] wt0, outputBaseT, localOfs
+    stqx 	[aliasWorldT] wt1, outputBaseT, localOfs1
+    stqx 	[aliasWorldT] wt2, outputBaseT, localOfs2
+    stqx 	[aliasWorldT] wt3, outputBaseT, localOfs3
+    
+    brnz	count4, Loop
+
+NoLoop:
+
+.endfunc

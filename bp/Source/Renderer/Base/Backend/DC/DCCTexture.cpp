@@ -6,7 +6,7 @@
 // See docs_and_planning/04 ASSET EXTRACTION GUIDE.md for the target format.
 //------------------------------------------------------------------------------------------
 
-#include "Engine/Stdafx.h"
+#include "Engine/StdAfx.h"
 #include "Renderer/Base/Backend/DC/DCCTexture.h"
 
 //----------------------------------------------------------------------------

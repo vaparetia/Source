@@ -1,129 +1,129 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2009 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-//--------------------------------------------------------------------------------------------------
-//  FUNCTION DEFINITION
-//--------------------------------------------------------------------------------------------------
-
-//--------------------------------------------------------------------------------------------------
-/**
-
-	void edgePostFloatsToLogLuv( void* output, void* input, uint32_t count );
-	
-**/
-//--------------------------------------------------------------------------------------------------
-
-
-.include "edgepost_helpers.inc"
-.include "edgepost_math_helpers.inc"
-.include "edgepost_luv_helpers.inc"
-
-
-
-.cfunc void edgePostFloatsToFP16Luv( qword output, qword input, qword count )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-	EDGEPOST_DECLARE_MATH_HELPER_CONSTANTS
-	EDGEPOST_DECLARE_LUV_HELPER_CONSTANTS
-	
-	.reg		kShuf6, kShuf7
-	il128		kShuf6, "0Dd00Hh00Ll00Pp0"
-	il128		kShuf7, "AbcBEfgFIjkJMnoN"
-	
-loop:
-	ai			output, output, 0x10
-	ai			input, input, 0x40
-	ai			count, count, -4
-	
-	// Load input pixels
-	.reg		s0, s1, s2, s3
-	lqd			s0, -0x40( input )
-	lqd			s1, -0x30( input )
-	lqd			s2, -0x20( input )
-	lqd			s3, -0x10( input )
-
-	// Simdify
-	.reg		r, g, b
-	.reg		r1, g1, b1
-	shufb		r, s0, s1, kEdgePost_Luv_Encode_kShuf0
-	shufb		g, s0, s1, kEdgePost_Luv_Encode_kShuf1
-	shufb		b, s0, s1, kEdgePost_Luv_Encode_kShuf2
-	shufb		r1, s2, s3, kEdgePost_Luv_Encode_kShuf3
-	shufb		g1, s2, s3, kEdgePost_Luv_Encode_kShuf4
-	shufb		b1, s2, s3, kEdgePost_Luv_Encode_kShuf5
-	or			r, r, r1
-	or			g, g, g1
-	or			b, b, b1
-	
-	// Convert to Luv
-	.reg L, u, v
-	EDGEPOST_RGB_TO_LUV( L, u, v, r, g, b)
-	
-	// convert u,v to integer
-	EDGEPOST_FLOAT_TO_U8( u, u)
-	EDGEPOST_FLOAT_TO_U8( v, v)
-	
-	// convert L to FP16
-	EDGEPOST_FLOAT_TO_FP16( L, L )
-	
-	// assemble and store.
-	.reg		luv
-	shufb		luv, u, v, kShuf6
-	shufb		luv, L, luv, kShuf7
-	stqd		luv, -0x10( output )
-	brnz		count, loop
-.endfunc
-
-.cfunc void edgePostFX16ToFP16Luv( qword output, qword input, qword count )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-	EDGEPOST_DECLARE_MATH_HELPER_CONSTANTS
-	EDGEPOST_DECLARE_LUV_HELPER_CONSTANTS
-	
-	.reg		kUnpackR, kUnpackG, kUnpackB
-	il128		kUnpackR, "0B0F0b0f"
-	il128		kUnpackG, "0C0G0c0g"
-	il128		kUnpackB, "0D0H0d0h"
-	
-	.reg		kShuf6, kShuf7
-	il128		kShuf6, "0Dd00Hh00Ll00Pp0"
-	il128		kShuf7, "AbcBEfgFIjkJMnoN"
-	
-loop:
-	ai			output, output, 0x10
-	ai			input, input, 0x20
-	ai			count, count, -4
-	
-	// Load input pixels
-	.reg		s0, s1
-	lqd			s0, -0x20( input )
-	lqd			s1, -0x10( input )
-
-	// Simdify
-	.reg		r, g, b
-	shufb		r, s0, s1, kUnpackR
-	shufb		g, s0, s1, kUnpackG
-	shufb		b, s0, s1, kUnpackB
-	cuflt		r, r, 11
-	cuflt		g, g, 11
-	cuflt		b, b, 11
-	
-	// Convert to Luv
-	.reg L, u, v
-	EDGEPOST_RGB_TO_LUV( L, u, v, r, g, b)
-	
-	// convert u,v to integer
-	EDGEPOST_FLOAT_TO_U8( u, u)
-	EDGEPOST_FLOAT_TO_U8( v, v)
-	
-	// convert L to FP16
-	EDGEPOST_FLOAT_TO_FP16( L, L )
-	
-	// assemble and store.
-	.reg		luv
-	shufb		luv, u, v, kShuf6
-	shufb		luv, L, luv, kShuf7
-	stqd		luv, -0x10( output )
-	brnz		count, loop
-.endfunc
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+
+	void edgePostFloatsToLogLuv( void* output, void* input, uint32_t count );
+	
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+.include "edgepost_helpers.inc"
+.include "edgepost_math_helpers.inc"
+.include "edgepost_luv_helpers.inc"
+
+
+
+.cfunc void edgePostFloatsToFP16Luv( qword output, qword input, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	EDGEPOST_DECLARE_MATH_HELPER_CONSTANTS
+	EDGEPOST_DECLARE_LUV_HELPER_CONSTANTS
+	
+	.reg		kShuf6, kShuf7
+	il128		kShuf6, "0Dd00Hh00Ll00Pp0"
+	il128		kShuf7, "AbcBEfgFIjkJMnoN"
+	
+loop:
+	ai			output, output, 0x10
+	ai			input, input, 0x40
+	ai			count, count, -4
+	
+	// Load input pixels
+	.reg		s0, s1, s2, s3
+	lqd			s0, -0x40( input )
+	lqd			s1, -0x30( input )
+	lqd			s2, -0x20( input )
+	lqd			s3, -0x10( input )
+
+	// Simdify
+	.reg		r, g, b
+	.reg		r1, g1, b1
+	shufb		r, s0, s1, kEdgePost_Luv_Encode_kShuf0
+	shufb		g, s0, s1, kEdgePost_Luv_Encode_kShuf1
+	shufb		b, s0, s1, kEdgePost_Luv_Encode_kShuf2
+	shufb		r1, s2, s3, kEdgePost_Luv_Encode_kShuf3
+	shufb		g1, s2, s3, kEdgePost_Luv_Encode_kShuf4
+	shufb		b1, s2, s3, kEdgePost_Luv_Encode_kShuf5
+	or			r, r, r1
+	or			g, g, g1
+	or			b, b, b1
+	
+	// Convert to Luv
+	.reg L, u, v
+	EDGEPOST_RGB_TO_LUV( L, u, v, r, g, b)
+	
+	// convert u,v to integer
+	EDGEPOST_FLOAT_TO_U8( u, u)
+	EDGEPOST_FLOAT_TO_U8( v, v)
+	
+	// convert L to FP16
+	EDGEPOST_FLOAT_TO_FP16( L, L )
+	
+	// assemble and store.
+	.reg		luv
+	shufb		luv, u, v, kShuf6
+	shufb		luv, L, luv, kShuf7
+	stqd		luv, -0x10( output )
+	brnz		count, loop
+.endfunc
+
+.cfunc void edgePostFX16ToFP16Luv( qword output, qword input, qword count )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	EDGEPOST_DECLARE_MATH_HELPER_CONSTANTS
+	EDGEPOST_DECLARE_LUV_HELPER_CONSTANTS
+	
+	.reg		kUnpackR, kUnpackG, kUnpackB
+	il128		kUnpackR, "0B0F0b0f"
+	il128		kUnpackG, "0C0G0c0g"
+	il128		kUnpackB, "0D0H0d0h"
+	
+	.reg		kShuf6, kShuf7
+	il128		kShuf6, "0Dd00Hh00Ll00Pp0"
+	il128		kShuf7, "AbcBEfgFIjkJMnoN"
+	
+loop:
+	ai			output, output, 0x10
+	ai			input, input, 0x20
+	ai			count, count, -4
+	
+	// Load input pixels
+	.reg		s0, s1
+	lqd			s0, -0x20( input )
+	lqd			s1, -0x10( input )
+
+	// Simdify
+	.reg		r, g, b
+	shufb		r, s0, s1, kUnpackR
+	shufb		g, s0, s1, kUnpackG
+	shufb		b, s0, s1, kUnpackB
+	cuflt		r, r, 11
+	cuflt		g, g, 11
+	cuflt		b, b, 11
+	
+	// Convert to Luv
+	.reg L, u, v
+	EDGEPOST_RGB_TO_LUV( L, u, v, r, g, b)
+	
+	// convert u,v to integer
+	EDGEPOST_FLOAT_TO_U8( u, u)
+	EDGEPOST_FLOAT_TO_U8( v, v)
+	
+	// convert L to FP16
+	EDGEPOST_FLOAT_TO_FP16( L, L )
+	
+	// assemble and store.
+	.reg		luv
+	shufb		luv, u, v, kShuf6
+	shufb		luv, L, luv, kShuf7
+	stqd		luv, -0x10( output )
+	brnz		count, loop
+.endfunc

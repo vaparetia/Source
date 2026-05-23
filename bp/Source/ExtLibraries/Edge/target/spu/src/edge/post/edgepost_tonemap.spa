@@ -1,163 +1,163 @@
-/* SCE CONFIDENTIAL
- * PlayStation(R)Edge 1.2.0
- * Copyright (C) 2009 Sony Computer Entertainment Inc.
- * All Rights Reserved.
- */
-
-//--------------------------------------------------------------------------------------------------
-//  FUNCTION DEFINITION
-//--------------------------------------------------------------------------------------------------
-
-//--------------------------------------------------------------------------------------------------
-/**
-
-	void edgePostTonemapFX16( void* output, void* input, uint32_t count, qword avgLuminance, qword middleGray, qword white );
-	
-**/
-//--------------------------------------------------------------------------------------------------
-
-
-.include "edgepost_helpers.inc"
-.include "edgepost_math_helpers.inc"
-
-
-.cfunc void edgePostTonemapFX16( qword output, qword input, qword count, qword avgLuminance, qword middleGray, qword white )
-	EDGEPOST_DECLARE_HELPER_CONSTANTS
-	EDGEPOST_DECLARE_MATH_HELPER_CONSTANTS
-	
-	// prepare luminance scaler
-	.reg		luminanceScaler, t0
-	ilf32		t0, .001f
-	fa			luminanceScaler, avgLuminance, t0
-	frest		t0, luminanceScaler
-	fi			luminanceScaler, luminanceScaler, t0
-	fm			luminanceScaler, luminanceScaler, middleGray
-	shufb		luminanceScaler, luminanceScaler, luminanceScaler, kEdgePostReplicateX
-
-	// prepare white value
-	.reg		iWhite
-	fm			white, white, white
-	frest		iWhite, white
-	fi			iWhite, white, iWhite
-	shufb		iWhite, iWhite, iWhite, kEdgePostReplicateX
-	
-	// RGB -> Yuv
-	.reg		M01, M02, M03
-	.reg		M11, M12, M13
-	.reg		M21, M22, M23
-	ilf32		M01, 0.2209f
-	ilf32		M02, 0.1138f
-	ilf32		M03, 0.0102f
-	ilf32		M11, 0.3390f
-	ilf32		M12, 0.6780f
-	ilf32		M13, 0.1130f
-	ilf32		M21, 0.4184f
-	ilf32		M22, 0.7319f
-	ilf32		M23, 0.2969f
-	
-	// Yuv -> RGB
-	.reg		iM01, iM02, iM03
-	.reg		iM11, iM12, iM13
-	.reg		iM21, iM22, iM23
-	ilf32		iM01, 6.0014f
-	ilf32		iM02, -1.3320f
-	ilf32		iM03, 0.3008f
-	ilf32		iM11, -2.7008f
-	ilf32		iM12, 3.1029f
-	ilf32		iM13, -1.0882f
-	ilf32		iM21, -1.7996f
-	ilf32		iM22, -5.7721f
-	ilf32		iM23, 5.6268f
-	
-	// unpacking shuffle masks
-	.reg		kUnpackShuf0, kUnpackShuf1, kUnpackShuf2
-	il128		kUnpackShuf0, "0B0F0b0f"
-	il128		kUnpackShuf1, "0C0G0c0g"
-	il128		kUnpackShuf2, "0D0H0d0h"
-	
-	// packing shuffle masks
-	.reg		kPackShuf0, kPackShuf1
-	il128		kPackShuf0, "0Dd00Hh00Ll00Pp0"
-	il128		kPackShuf1, "ABCdEFGhIJKlMNOp"
-	
-loop:
-	ai			output, output, 0x10
-	ai			input, input, 0x20
-	ai			count, count, -4
-	
-	// load input pixels
-	.reg		s0, s1
-	lqd			s0, -0x20( input )
-	lqd			s1, -0x10( input )
-
-	// unpack straight to SIMD
-	.reg		R, G, B
-	shufb		R, s0, s1, kUnpackShuf0
-	shufb		G, s0, s1, kUnpackShuf1
-	shufb		B, s0, s1, kUnpackShuf2
-	
-	// convert to float
-	cuflt		R, R, 11
-	cuflt		G, G, 11
-	cuflt		B, B, 11
-
-	// rgb to Yuv
-	.reg		X, Y, Z, u, v
-	fm			X, R, M01
-	fma			X, G, M02, X
-	fma			X, B, M03, X
-	fm			Y, R, M11
-	fma			Y, G, M12, Y
-	fma			Y, B, M13, Y
-	fm			Z, R, M21
-	fma			Z, G, M22, Z
-	fma			Z, B, M23, Z
-	frest		u, Z
-	fi			u, Z, u
-	fm			v, Y, u
-	fm			u, X, u
-	
-	// scale/compress luminance
-	.reg		l0, l1
-	fm			Y, Y, luminanceScaler
-	fm			l0, Y, iWhite
-	fa			l0, l0, kEdgePostFloatOne
-	fa			l1, Y, kEdgePostFloatOne
-	fm			Y, l0, Y
-	frest		l0, l1
-	fi			l1, l1, l0
-	fm			Y, Y, l1
-	
-	// Yuv --> RGB
-	frest		Z, v
-	fi			Z, v, Z
-	fm			Z, Z, Y
-	fm			X, u, Z
-	fm			R, X, iM01
-	fma			R, Y, iM02, R
-	fma			R, Z, iM03, R
-	fm			G, X, iM11
-	fma			G, Y, iM12, G
-	fma			G, Z, iM13, G
-	fm			B, X, iM21
-	fma			B, Y, iM22, B
-	fma			B, Z, iM23, B
-	
-	EDGEPOST_GAMMA( R, R )
-	EDGEPOST_GAMMA( G, G )
-	EDGEPOST_GAMMA( B, B )
-	
-	// repack and store result
-	.reg		rgb
-	EDGEPOST_CLAMP_FLOAT( R )
-	EDGEPOST_CLAMP_FLOAT( G )
-	EDGEPOST_CLAMP_FLOAT( B )
-	EDGEPOST_FLOAT_TO_U8( R, R)
-	EDGEPOST_FLOAT_TO_U8( G, G)
-	EDGEPOST_FLOAT_TO_U8( B, B)
-	shufb		rgb, R, G, kPackShuf0
-	shufb		rgb, rgb, B, kPackShuf1
-	stqd		rgb, -0x10( output )
-	brnz		count, loop
-.endfunc
-
+/* SCE CONFIDENTIAL
+ * PlayStation(R)Edge 1.2.0
+ * Copyright (C) 2009 Sony Computer Entertainment Inc.
+ * All Rights Reserved.
+ */
+
+//--------------------------------------------------------------------------------------------------
+//  FUNCTION DEFINITION
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+
+	void edgePostTonemapFX16( void* output, void* input, uint32_t count, qword avgLuminance, qword middleGray, qword white );
+	
+**/
+//--------------------------------------------------------------------------------------------------
+
+
+.include "edgepost_helpers.inc"
+.include "edgepost_math_helpers.inc"
+
+
+.cfunc void edgePostTonemapFX16( qword output, qword input, qword count, qword avgLuminance, qword middleGray, qword white )
+	EDGEPOST_DECLARE_HELPER_CONSTANTS
+	EDGEPOST_DECLARE_MATH_HELPER_CONSTANTS
+	
+	// prepare luminance scaler
+	.reg		luminanceScaler, t0
+	ilf32		t0, .001f
+	fa			luminanceScaler, avgLuminance, t0
+	frest		t0, luminanceScaler
+	fi			luminanceScaler, luminanceScaler, t0
+	fm			luminanceScaler, luminanceScaler, middleGray
+	shufb		luminanceScaler, luminanceScaler, luminanceScaler, kEdgePostReplicateX
+
+	// prepare white value
+	.reg		iWhite
+	fm			white, white, white
+	frest		iWhite, white
+	fi			iWhite, white, iWhite
+	shufb		iWhite, iWhite, iWhite, kEdgePostReplicateX
+	
+	// RGB -> Yuv
+	.reg		M01, M02, M03
+	.reg		M11, M12, M13
+	.reg		M21, M22, M23
+	ilf32		M01, 0.2209f
+	ilf32		M02, 0.1138f
+	ilf32		M03, 0.0102f
+	ilf32		M11, 0.3390f
+	ilf32		M12, 0.6780f
+	ilf32		M13, 0.1130f
+	ilf32		M21, 0.4184f
+	ilf32		M22, 0.7319f
+	ilf32		M23, 0.2969f
+	
+	// Yuv -> RGB
+	.reg		iM01, iM02, iM03
+	.reg		iM11, iM12, iM13
+	.reg		iM21, iM22, iM23
+	ilf32		iM01, 6.0014f
+	ilf32		iM02, -1.3320f
+	ilf32		iM03, 0.3008f
+	ilf32		iM11, -2.7008f
+	ilf32		iM12, 3.1029f
+	ilf32		iM13, -1.0882f
+	ilf32		iM21, -1.7996f
+	ilf32		iM22, -5.7721f
+	ilf32		iM23, 5.6268f
+	
+	// unpacking shuffle masks
+	.reg		kUnpackShuf0, kUnpackShuf1, kUnpackShuf2
+	il128		kUnpackShuf0, "0B0F0b0f"
+	il128		kUnpackShuf1, "0C0G0c0g"
+	il128		kUnpackShuf2, "0D0H0d0h"
+	
+	// packing shuffle masks
+	.reg		kPackShuf0, kPackShuf1
+	il128		kPackShuf0, "0Dd00Hh00Ll00Pp0"
+	il128		kPackShuf1, "ABCdEFGhIJKlMNOp"
+	
+loop:
+	ai			output, output, 0x10
+	ai			input, input, 0x20
+	ai			count, count, -4
+	
+	// load input pixels
+	.reg		s0, s1
+	lqd			s0, -0x20( input )
+	lqd			s1, -0x10( input )
+
+	// unpack straight to SIMD
+	.reg		R, G, B
+	shufb		R, s0, s1, kUnpackShuf0
+	shufb		G, s0, s1, kUnpackShuf1
+	shufb		B, s0, s1, kUnpackShuf2
+	
+	// convert to float
+	cuflt		R, R, 11
+	cuflt		G, G, 11
+	cuflt		B, B, 11
+
+	// rgb to Yuv
+	.reg		X, Y, Z, u, v
+	fm			X, R, M01
+	fma			X, G, M02, X
+	fma			X, B, M03, X
+	fm			Y, R, M11
+	fma			Y, G, M12, Y
+	fma			Y, B, M13, Y
+	fm			Z, R, M21
+	fma			Z, G, M22, Z
+	fma			Z, B, M23, Z
+	frest		u, Z
+	fi			u, Z, u
+	fm			v, Y, u
+	fm			u, X, u
+	
+	// scale/compress luminance
+	.reg		l0, l1
+	fm			Y, Y, luminanceScaler
+	fm			l0, Y, iWhite
+	fa			l0, l0, kEdgePostFloatOne
+	fa			l1, Y, kEdgePostFloatOne
+	fm			Y, l0, Y
+	frest		l0, l1
+	fi			l1, l1, l0
+	fm			Y, Y, l1
+	
+	// Yuv --> RGB
+	frest		Z, v
+	fi			Z, v, Z
+	fm			Z, Z, Y
+	fm			X, u, Z
+	fm			R, X, iM01
+	fma			R, Y, iM02, R
+	fma			R, Z, iM03, R
+	fm			G, X, iM11
+	fma			G, Y, iM12, G
+	fma			G, Z, iM13, G
+	fm			B, X, iM21
+	fma			B, Y, iM22, B
+	fma			B, Z, iM23, B
+	
+	EDGEPOST_GAMMA( R, R )
+	EDGEPOST_GAMMA( G, G )
+	EDGEPOST_GAMMA( B, B )
+	
+	// repack and store result
+	.reg		rgb
+	EDGEPOST_CLAMP_FLOAT( R )
+	EDGEPOST_CLAMP_FLOAT( G )
+	EDGEPOST_CLAMP_FLOAT( B )
+	EDGEPOST_FLOAT_TO_U8( R, R)
+	EDGEPOST_FLOAT_TO_U8( G, G)
+	EDGEPOST_FLOAT_TO_U8( B, B)
+	shufb		rgb, R, G, kPackShuf0
+	shufb		rgb, rgb, B, kPackShuf1
+	stqd		rgb, -0x10( output )
+	brnz		count, loop
+.endfunc
+
