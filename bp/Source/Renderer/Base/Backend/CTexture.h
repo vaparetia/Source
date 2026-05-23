@@ -53,6 +53,8 @@ struct SCreateTextureParams
       mYTiles = 0;
       mStride = 0;
       mLoadStore = 3;
+#elif BPE_TARGET == BPE_TARGET_DREAMCAST
+      mPVRTCFormat = 0;
 #endif
       mClearMemory = 0;
    }
@@ -76,6 +78,8 @@ struct SCreateTextureParams
    int mYTiles;
    int mStride;
    int mLoadStore;
+#elif BPE_TARGET == BPE_TARGET_DREAMCAST
+   int mPVRTCFormat;   // 0 = PVRTC 4bpp, 1 = PVRTC 2bpp
 #endif
    int mClearMemory;
 };
@@ -148,6 +152,9 @@ public:
       // TextureFormatAsString
 #if BPE_TARGET == BPE_TARGET_VITA
       kFormat_A8B8G8R8,
+#elif BPE_TARGET == BPE_TARGET_DREAMCAST
+      kFormat_PVRTC4,   // 4bpp PVRTC - native PowerVR tile compression
+      kFormat_PVRTC2,   // 2bpp PVRTC - higher compression, lower quality
 #endif
       kFormat_Count,
 
