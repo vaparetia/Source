@@ -83,7 +83,8 @@
 #define BPE_TARGET_PS3     1
 #define BPE_TARGET_RVL     2
 #define BPE_TARGET_X360    3
-#define BPE_TARGET_VITA    4
+#define BPE_TARGET_VITA       4
+#define BPE_TARGET_DREAMCAST  5
 
 #ifdef WIN32
    #define BPE_TARGET BPE_TARGET_WIN32
@@ -271,6 +272,29 @@
 
    #define BPE_PIXELCENTER_MATCH_TEXELCENTER 0 //be sure to set D3DRS_HALFPIXELOFFSET to true
 
+#elif defined(__DREAMCAST__)
+   #define BPE_TARGET BPE_TARGET_DREAMCAST
+   #define BPE_PLATFORM_SPECIFIC( header ) BPE_STRINGIZE( DC ##header )
+   #define BPE_PLATFORM_SPECIFIC2( path, header ) BPE_STRINGIZE( path/DC ##header )
+
+   #define BPE_PLATFORM_PATH(header) BPE_STRINGIZE( DC/DC ##header )
+   #define BPE_PLATFORM_PATH2(path,header) BPE_STRINGIZE( path/DC/DC ##header )
+   #define BPE_PLATFORM_COMPLEX_PATH(path1,path2,header) BPE_STRINGIZE( path1/DC/path2/DC ##header )
+
+   #define BPE_FORCE_REFERENCE   __attribute__((used))
+   #define BPE_NOINLINE          __attribute__((noinline))
+   #define BPE_FORCEINLINE       inline __attribute__((always_inline))
+
+   #define BPE_BRANCH_HINT_TRUE(a)  __builtin_expect(a, 1)
+   #define BPE_BRANCH_HINT_FALSE(a) __builtin_expect(a, 0)
+   #define BPE_BRANCH_HINT_DYNAMIC(a, b) a
+
+   #define BPE_DCACHE_PREFETCH(a)   __builtin_prefetch(a)
+
+   #define STD_HASH_MAP          std
+   #define BPE_PATH_SEPARATOR "/"
+   #define BPE_PIXELCENTER_MATCH_TEXELCENTER 0
+
 #else
    #error Unknown compile target!
 #endif
@@ -281,7 +305,7 @@
 #define BPE_ENDIAN_LITTLE 0
 #define BPE_ENDIAN_BIG    1
 
-#if BPE_TARGET==BPE_TARGET_WIN32 || BPE_TARGET==BPE_TARGET_VITA
+#if BPE_TARGET==BPE_TARGET_WIN32 || BPE_TARGET==BPE_TARGET_VITA || BPE_TARGET==BPE_TARGET_DREAMCAST
 #define BPE_ENDIAN BPE_ENDIAN_LITTLE
 #elif ( BPE_TARGET == BPE_TARGET_PS3 || BPE_TARGET==BPE_TARGET_RVL || BPE_TARGET==BPE_TARGET_X360 )
 #define BPE_ENDIAN BPE_ENDIAN_BIG
@@ -424,6 +448,13 @@ typedef struct _BPE_CRITICAL_SECTION
    SceInt64 data[4];
 } BPE_CRITICAL_SECTION;
 
+#elif BPE_TARGET==BPE_TARGET_DREAMCAST
+
+typedef struct _BPE_CRITICAL_SECTION
+{
+   int mutex; // KallistiOS mutex placeholder
+} BPE_CRITICAL_SECTION;
+
 #else
 #  error Unknown platform!
 #endif
@@ -485,6 +516,10 @@ typedef struct _BPE_CRITICAL_SECTION
 #elif BPE_TARGET==BPE_TARGET_VITA
 #define BPE_SET_BREAKPOINT             __builtin_breakpoint(0)
 #define BPE_SET_BREAKPOINT_ALWAYS      __builtin_breakpoint(0)
+
+#elif BPE_TARGET==BPE_TARGET_DREAMCAST
+#define BPE_SET_BREAKPOINT             __builtin_trap()
+#define BPE_SET_BREAKPOINT_ALWAYS      __builtin_trap()
 
 #else
 #  error Unknown platform!
