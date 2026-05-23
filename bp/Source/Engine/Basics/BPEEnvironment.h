@@ -369,6 +369,8 @@ typedef double             real64;
 #include <revolution/os.h>
 #elif BPE_TARGET == BPE_TARGET_VITA
 #include <scetypes.h>
+#elif BPE_TARGET == BPE_TARGET_DREAMCAST
+#include <kos/mutex.h>
 #endif
 
 //-------------------------------------------------------------------------------------------------------
@@ -450,10 +452,7 @@ typedef struct _BPE_CRITICAL_SECTION
 
 #elif BPE_TARGET==BPE_TARGET_DREAMCAST
 
-typedef struct _BPE_CRITICAL_SECTION
-{
-   int mutex; // KallistiOS mutex placeholder
-} BPE_CRITICAL_SECTION;
+typedef mutex_t BPE_CRITICAL_SECTION;
 
 #else
 #  error Unknown platform!
