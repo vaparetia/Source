@@ -46,13 +46,14 @@ class CDynamicIndexBuffer;
 #if BPE_TARGET == BPE_TARGET_X360 || BPE_TARGET == BPE_TARGET_PS3 || BPE_TARGET == BPE_TARGET_VITA
    #define ENABLE_SEPERATE_RENDER_THREAD 1
 #else
+   // Dreamcast: single render thread for initial port; KOS threading available if needed later.
    #define ENABLE_SEPERATE_RENDER_THREAD 0
 #endif
 
 
 //----------------------------------------------------------------------------
 
-#if (!GOLD_VERSION && BPE_TARGET != BPE_TARGET_PS3)
+#if (!GOLD_VERSION && BPE_TARGET != BPE_TARGET_PS3 && BPE_TARGET != BPE_TARGET_DREAMCAST)
 #define USE_GPU_PROFILE_MARKERS 1
 #endif
 
