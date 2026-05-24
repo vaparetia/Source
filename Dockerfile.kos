@@ -58,6 +58,18 @@ RUN cp doc/environ.sh.sample environ.sh
 # --- 4. Build KallistiOS library ---
 RUN bash -c "source /opt/toolchains/dc/kos/environ.sh && make -j$(nproc)"
 
+# --- 5. Build host disc-creation utilities (scramble, makeip) ---
+# These are pure host-side C tools; no KOS env needed to compile them.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    genisoimage \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN make -C /opt/toolchains/dc/kos/utils/scramble \
+    && cp /opt/toolchains/dc/kos/utils/scramble/scramble /usr/local/bin/
+
+RUN make -C /opt/toolchains/dc/kos/utils/makeip \
+    && cp /opt/toolchains/dc/kos/utils/makeip/makeip /usr/local/bin/
+
 # Make the cross-compiler available without sourcing environ.sh
 ENV PATH=/opt/toolchains/dc/sh-elf/bin:${PATH}
 

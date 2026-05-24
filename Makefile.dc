@@ -263,8 +263,21 @@ DC_IMAGE  := mgs2-dreamcast-sdk
 DC_ENV    := source /opt/toolchains/dc/kos/environ.sh
 DC_RUN    := docker run --volume=$(CURDIR):/work:z --userns=keep-id --rm $(DC_IMAGE)
 
-.PHONY: all clean compile-check host-check \
-        docker-build docker-clean docker-shell docker-image-check docker-link
+# -----------------------------------------------------------------------
+# Flycast emulator (load ELF directly — no disc image needed)
+# -----------------------------------------------------------------------
+FLYCAST := $(HOME)/Downloads/flycast-x86_64.AppImage
+
+# -----------------------------------------------------------------------
+# GDI disc image for USB-GDROM hardware testing
+# Requires image rebuilt after Dockerfile.kos disc-tools additions:
+#   docker build -f Dockerfile.kos -t mgs2-dreamcast-sdk .
+# -----------------------------------------------------------------------
+DISC_DIR := $(CURDIR)/build/disc
+
+.PHONY: all clean compile-check host-check flycast \
+        docker-build docker-clean docker-shell docker-image-check docker-link \
+        docker-disc disc-gdi-finalize
 
 all: $(TARGET)
 
@@ -334,3 +347,40 @@ docker-image-check:
 	    echo ""; \
 	    exit 1; \
 	}
+
+# Launch Flycast with the ELF directly — no disc image required.
+flycast: $(TARGET)
+	$(FLYCAST) $(TARGET)
+
+# Build a bootable GDI disc image for USB-GDROM hardware testing.
+#
+# Output: build/disc/disc.gdi + track01.bin + track02.bin + track03.bin
+# Copy all four files to your USB-GDROM drive in a folder named MGS2DC/.
+#
+# Requires image rebuilt with disc utilities (adds ~2 min to build time):
+#   docker build -f Dockerfile.kos -t $(DC_IMAGE) .
+docker-disc: docker-image-check $(TARGET)
+	mkdir -p $(DISC_DIR)/data
+	$(DC_RUN) bash -c " \
+	    scramble /work/mgs2dc.bin /work/build/disc/data/1ST_READ.BIN && \
+	    makeip /work/scripts/dc_ip.txt /work/build/disc/IP.BIN && \
+	    genisoimage \
+	        -C 0,45000 \
+	        -V MGS2DC \
+	        -G /work/build/disc/IP.BIN \
+	        -r -J -l \
+	        -o /work/build/disc/track03.bin \
+	        /work/build/disc/data/"
+	$(MAKE) -f Makefile.dc disc-gdi-finalize
+
+# Writes the silent lead-in tracks and disc.gdi descriptor.
+# Runs on the host (no Docker needed) after docker-disc creates track03.bin.
+disc-gdi-finalize:
+	dd if=/dev/zero bs=2048 count=300 of=$(DISC_DIR)/track01.bin 2>/dev/null
+	dd if=/dev/zero bs=2048 count=1   of=$(DISC_DIR)/track02.bin 2>/dev/null
+	printf '3\n1 0 4 2048 track01.bin 0\n2 0 0 0 track02.bin 0\n3 45000 4 2048 track03.bin 0\n' \
+	    > $(DISC_DIR)/disc.gdi
+	@echo ""
+	@echo "GDI image ready in $(DISC_DIR)/"
+	@echo "Copy these files to a MGS2DC/ folder on your USB-GDROM drive:"
+	@echo "  disc.gdi  track01.bin  track02.bin  track03.bin"
