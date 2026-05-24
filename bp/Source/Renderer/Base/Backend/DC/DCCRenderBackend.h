@@ -290,6 +290,8 @@ private:
    void BeginFrameResourceTick();
    void FlushProjectionTimesViewMatrix();
 
+   static void VBLHandler(uint32 code, void *data);
+
    CMatrix4           mCameraMatrix;
    CMatrix4           mViewMatrix;
    CMatrix4           mProjectionTimesViewMatrix;
@@ -300,6 +302,7 @@ private:
    CBaseTexture *     mpDisplayDepth;
 
    uint32             mVBLCount;
+   int                mVBLHandle;    // handle returned by vblank_handler_add; -1 if unregistered
    EFPS               mTargetFPS;
 
    bool               mDepthWriteEnabled;

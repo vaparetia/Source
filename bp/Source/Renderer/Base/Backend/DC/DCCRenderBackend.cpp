@@ -1,14 +1,20 @@
 //------------------------------------------------------------------------------------------
 // DCCRenderBackend.cpp
-// Dreamcast render backend — stub implementation
-//
-// All methods are no-ops until the KallistiOS / PowerVR layer is wired up.
-// See docs_and_planning/05_IMPLEMENTATION_ROADMAP.md Phase 2 for the plan.
+// Dreamcast render backend — KallistiOS + PowerVR implementation
 //------------------------------------------------------------------------------------------
 
 #include "Engine/StdAfx.h"
-// Include the base header (which in turn includes DCCRenderBackend.h as the DC platform plugin).
 #include "Renderer/Base/Backend/CRenderBackend.h"
+
+#include <dc/pvr.h>
+#include <dc/vblank.h>
+
+//----------------------------------------------------------------------------
+
+void CRenderBackend::VBLHandler(uint32 /*code*/, void *data)
+{
+   static_cast<CRenderBackend *>(data)->mVBLCount++;
+}
 
 //----------------------------------------------------------------------------
 
@@ -21,6 +27,7 @@ CRenderBackend::CRenderBackend(IResourcePool & resourcePool,
 ,  mpDisplayTexture(NULL)
 ,  mpDisplayDepth(NULL)
 ,  mVBLCount(0)
+,  mVBLHandle(-1)
 ,  mTargetFPS(kFPS_30)
 ,  mDepthWriteEnabled(true)
 ,  mBlendEnabled(false)
@@ -31,7 +38,8 @@ CRenderBackend::CRenderBackend(IResourcePool & resourcePool,
 ,  mDepthFunc(kDF_LEqual)
 ,  mCullMode(kCM_CCW)
 {
-   // TODO Phase 1: Initialize KallistiOS vid_set_mode, pvr_init
+   pvr_init_defaults();
+   mVBLHandle = vblank_handler_add(VBLHandler, this);
 }
 
 CRenderBackend::~CRenderBackend()
@@ -41,18 +49,28 @@ CRenderBackend::~CRenderBackend()
 
 void CRenderBackend::ShutDown()
 {
-   // TODO Phase 1: pvr_shutdown, vid_shutdown
+   if (mVBLHandle >= 0) {
+      vblank_handler_remove(mVBLHandle);
+      mVBLHandle = -1;
+   }
+   pvr_shutdown();
 }
 
 void CRenderBackend::BeginScene()
 {
    InternalBeginScene();
-   // TODO Phase 2: pvr_scene_begin
+   pvr_wait_ready();
+   pvr_scene_begin();
+   pvr_list_begin(PVR_LIST_OP_POLY);
 }
 
 void CRenderBackend::EndScene()
 {
-   // TODO Phase 2: pvr_scene_finish, pvr_wait_ready
+   pvr_list_finish();
+   // Submit an empty translucent list so the PVR doesn't stall waiting for it.
+   pvr_list_begin(PVR_LIST_TR_POLY);
+   pvr_list_finish();
+   pvr_scene_finish();
    InternalPresent();
 }
 
@@ -202,8 +220,7 @@ void CRenderBackend::SetFragmentRegisters(int /*start*/, int /*num*/,
 
 void CRenderBackend::UpdateVBLCount()
 {
-   ++mVBLCount;
-   // TODO Phase 1: hook into KallistiOS vbl_handler
+   // mVBLCount is incremented by VBLHandler registered in the constructor.
 }
 
 CRenderHWAllocator::SHandle const * CRenderBackend::AllocFixed(int const /*size*/,
