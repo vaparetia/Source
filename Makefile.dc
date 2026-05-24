@@ -146,7 +146,9 @@ ENG_SRCS := \
     $(ENG)/GameObjectSystem/GameObjectUtils.cpp \
     $(ENG)/GameObjectSystem/TGameObjectTypes.cpp \
     \
-    $(ENG)/Input/CInputGenerator.cpp
+    $(ENG)/Input/CInputGenerator.cpp \
+    \
+    $(ENG)/Evaluators/IEvaluator.cpp
 
 # -----------------------------------------------------------------------
 # Renderer sources
@@ -194,15 +196,47 @@ RND_SRCS := \
     $(RND)/ShaderObjects/CShaderObjectFactory.cpp \
     $(RND)/ShaderObjects/Properties/PropertiesClasses.cpp \
     $(RND)/ShaderObjects/Shader/ICGLdrShader.cpp \
+    $(RND)/ShaderObjects/Shader/CCPLdrShaderDefaultShader.cpp \
     \
     $(RND)/CDebugDraw.cpp \
     $(RND)/CMTXFont.cpp
 
 # -----------------------------------------------------------------------
-# Object file list
+# DC platform entry point (cross-compile only; excluded from host-check
+# because it includes <kos.h> which is not available on the host)
+# -----------------------------------------------------------------------
+DC_MAIN_SRC := $(ENG)/System/DC/DCMain.cpp
+DC_MAIN_OBJ := $(patsubst $(CURDIR)/%.cpp,$(OBJDIR)/%.o,$(DC_MAIN_SRC))
+
+# -----------------------------------------------------------------------
+# Zlib C sources (compiled with CC; excluded from host-check)
+# -----------------------------------------------------------------------
+ZLIB := $(ENG)/Mechanics/zlib
+
+ZLIB_SRCS := \
+    $(ZLIB)/adler32.c \
+    $(ZLIB)/compress.c \
+    $(ZLIB)/crc32.c \
+    $(ZLIB)/deflate.c \
+    $(ZLIB)/infback.c \
+    $(ZLIB)/inffast.c \
+    $(ZLIB)/inflate.c \
+    $(ZLIB)/inftrees.c \
+    $(ZLIB)/trees.c \
+    $(ZLIB)/uncompr.c \
+    $(ZLIB)/zutil.c
+
+ZLIB_OBJS := $(patsubst $(CURDIR)/%.c,$(OBJDIR)/%.o,$(ZLIB_SRCS))
+
+# -----------------------------------------------------------------------
+# Object file lists
+# ALL_SRCS / OBJS  — C++ engine+renderer sources (used by host-check + compile-check)
+# ALL_LINK_OBJS    — everything that goes into the linked ELF
 # -----------------------------------------------------------------------
 ALL_SRCS := $(ENG_SRCS) $(RND_SRCS)
 OBJS     := $(patsubst $(CURDIR)/%.cpp,$(OBJDIR)/%.o,$(ALL_SRCS))
+
+ALL_LINK_OBJS := $(OBJS) $(DC_MAIN_OBJ) $(ZLIB_OBJS)
 
 # -----------------------------------------------------------------------
 # Targets
@@ -230,16 +264,21 @@ DC_ENV    := source /opt/toolchains/dc/kos/environ.sh
 DC_RUN    := docker run --volume=$(CURDIR):/work:z --userns=keep-id --rm $(DC_IMAGE)
 
 .PHONY: all clean compile-check host-check \
-        docker-build docker-clean docker-shell docker-image-check
+        docker-build docker-clean docker-shell docker-image-check docker-link
 
 all: $(TARGET)
 
-# Phase 1 convenience: just compile, don't link (catches errors faster)
+# Phase 2: compile all C++ engine+renderer sources for SH4 (no link)
 compile-check: $(OBJS)
 	@echo "Compile check passed: $(words $(OBJS)) translation units OK"
 
-$(TARGET): $(OBJS)
-	$(CXX) $(KOS_LDFLAGS) -o $@ $(OBJS) $(KOS_LIBS)
+# Phase 3: full link into a KOS ELF (includes zlib + DCMain entry point)
+# DC_LIBS adds -lstdc++ to KOS's group for std::string, operator new/delete,
+# __cxa_guard_acquire/release, and std::_Rb_tree_* used by the engine.
+DC_LIBS := -Wl,--start-group -lstdc++ -lkallisti -lm -lc -lgcc -Wl,--end-group
+
+$(TARGET): $(ALL_LINK_OBJS)
+	$(CXX) $(KOS_LDFLAGS) -o $@ $(ALL_LINK_OBJS) $(DC_LIBS)
 	$(OBJCOPY) -R .stack -O binary $@ $(TARGET:.elf=.bin)
 	@echo "Built $(TARGET)"
 
@@ -247,8 +286,13 @@ $(OBJDIR)/%.o: $(CURDIR)/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -MMD -MP -c $< -o $@
 
+# C sources (zlib) — compiled with CC, same KOS flags
+$(OBJDIR)/%.o: $(CURDIR)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+
 # Pull in generated dependency files
--include $(OBJS:.o=.d)
+-include $(ALL_LINK_OBJS:.o=.d)
 
 host-check:
 	@echo "Running host syntax-check with system g++ ($(words $(ALL_SRCS)) files)..."
@@ -276,6 +320,10 @@ docker-clean: docker-image-check
 docker-shell: docker-image-check
 	docker run --volume=$(CURDIR):/work:z --userns=keep-id --rm -it $(DC_IMAGE) \
 	    bash -c "$(DC_ENV) && cd /work && exec bash"
+
+# Attempt a full link inside the KOS container to expose undefined symbols.
+docker-link: docker-image-check
+	$(DC_RUN) bash -c "$(DC_ENV) && make -j$$(nproc) -f /work/Makefile.dc all"
 
 docker-image-check:
 	@docker image inspect $(DC_IMAGE) >/dev/null 2>&1 || { \

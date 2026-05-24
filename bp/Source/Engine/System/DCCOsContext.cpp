@@ -67,13 +67,6 @@ void CBaseOsContext::TerminateProcess()
 
 //----------------------------------------------------------------------------
 
-CBaseOsContext::EBootType CBaseOsContext::GetBootType() const
-{
-   return mBootType;
-}
-
-//----------------------------------------------------------------------------
-
 CBaseOsContext::EProfileStatus CBaseOsContext::GetUserProfile()
 {
    return kPS_Valid;
