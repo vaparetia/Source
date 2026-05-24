@@ -217,7 +217,20 @@ HC_INCS   := -I$(MOCK_KOS) -I$(BPE_ROOT)/Source -I$(BPE_ROOT)/Source/Engine \
 HC_DEFS   := -D__DREAMCAST__ -DMGS_VERSION=2 -DENGINE_EXPORTS -DRENDERER_EXPORTS
 HC_FLAGS  := -std=c++14 -fsyntax-only -w -Wno-deprecated $(HC_INCS) $(HC_DEFS)
 
-.PHONY: all clean compile-check host-check
+# -----------------------------------------------------------------------
+# Docker build — Phase 2 cross-compilation inside KallistiOS toolchain image.
+# Avoids the GCC 16 / safe-ctype.h conflict on Fedora 44: the container
+# runs Ubuntu 22.04 with GCC 11 as the host compiler.
+#
+# One-time image build (30-60 min):
+#   docker build -f Dockerfile.kos -t mgs2-dreamcast-sdk .
+# -----------------------------------------------------------------------
+DC_IMAGE  := mgs2-dreamcast-sdk
+DC_ENV    := source /opt/kos/environ.sh
+DC_RUN    := docker run --volume=$(CURDIR):/work:z --userns=keep-id --rm $(DC_IMAGE)
+
+.PHONY: all clean compile-check host-check \
+        docker-build docker-clean docker-shell docker-image-check
 
 all: $(TARGET)
 
@@ -249,3 +262,27 @@ host-check:
 clean:
 	rm -rf $(OBJDIR) $(TARGET) $(TARGET:.elf=.bin)
 	@echo "Clean done"
+
+# Compile all engine sources for SH4 inside the KOS container.
+# Requires the image to be built first (docker build -f Dockerfile.kos -t $(DC_IMAGE) .)
+docker-build: docker-image-check
+	$(DC_RUN) bash -c "$(DC_ENV) && make -j$$(nproc) -f /work/Makefile.dc compile-check"
+
+docker-clean: docker-image-check
+	$(DC_RUN) bash -c "make -f /work/Makefile.dc clean"
+
+# Drop into a shell with the full KOS environment active.
+# Sources environ.sh so KOS_CCPLUS, KOS_CFLAGS, etc. are all set.
+docker-shell: docker-image-check
+	docker run --volume=$(CURDIR):/work:z --userns=keep-id --rm -it $(DC_IMAGE) \
+	    bash -c "$(DC_ENV) && cd /work && exec bash"
+
+docker-image-check:
+	@docker image inspect $(DC_IMAGE) >/dev/null 2>&1 || { \
+	    echo ""; \
+	    echo "Docker image '$(DC_IMAGE)' not found."; \
+	    echo "Build it first (takes 30-60 min):"; \
+	    echo "  docker build -f Dockerfile.kos -t $(DC_IMAGE) ."; \
+	    echo ""; \
+	    exit 1; \
+	}
