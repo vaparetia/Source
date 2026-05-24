@@ -8,7 +8,7 @@
 #   make -f Makefile.dc docker-build    # compile all engine sources for SH4
 #
 # Why Ubuntu 22.04: host GCC 11 avoids the GCC 16 safe-ctype.h conflict
-# that blocks building older cross-compilers on Fedora 44.
+# that blocks building cross-compilers on Fedora 44.
 
 FROM ubuntu:22.04
 
@@ -21,51 +21,42 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgmp-dev \
     libmpfr-dev \
     libmpc-dev \
+    libelf-dev \
+    libjpeg-dev \
+    libpng-dev \
     wget \
+    curl \
     git \
+    subversion \
     python3 \
     bison \
     flex \
+    patch \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# --- 1. Clone KallistiOS ---
-# Pin to a specific commit for reproducibility; update intentionally.
-ARG KOS_REF=master
-RUN git clone --depth=1 --branch=${KOS_REF} \
-    https://github.com/KallistiOS/KallistiOS.git /opt/kos
+# --- 1. Clone KallistiOS to its standard install location ---
+# kos-chain expects KOS at KOS_BASE; the sample environ.sh defaults to
+# /opt/toolchains/dc/kos, so we clone there to avoid any path patching.
+RUN mkdir -p /opt/toolchains/dc && \
+    git clone --depth=1 \
+        https://github.com/KallistiOS/KallistiOS.git \
+        /opt/toolchains/dc/kos
 
-# --- 2. Build the SH4 cross-compiler via dc-chain ---
-# dc-chain downloads GCC/binutils/newlib and installs to /opt/toolchains/dc.
-# BUILD_ARM_TOOLCHAIN=0 skips the ARM7 (AICA sound chip) compiler — not
-# needed until we tackle audio in a later phase.
-WORKDIR /opt/kos/utils/dc-chain
-ENV BUILD_ARM_TOOLCHAIN=0
-RUN make -j$(nproc)
+# --- 2. Build the SH4 cross-compiler via kos-chain ---
+# toolchain_profile=legacy = GCC 13.2.0 (previously "stable"; battle-tested).
+# platform=dreamcast builds only the SH4 toolchain, not the ARM/AICA chain.
+# Installs to /opt/toolchains/dc/sh-elf/ by default.
+WORKDIR /opt/toolchains/dc/kos/utils/kos-chain
+RUN make build platform=dreamcast toolchain_profile=legacy
 
-# --- 3. Set up environ.sh from the KOS-provided sample ---
-# The sample has placeholder paths; patch them to match our install locations.
-RUN cp /opt/kos/doc/environ.sh.sample /opt/kos/environ.sh && \
-    python3 - <<'PYEOF'
-import re
+# --- 3. Configure the KOS environment ---
+# The sample already uses the correct paths for our layout, so copy as-is.
+WORKDIR /opt/toolchains/dc/kos
+RUN cp doc/environ.sh.sample environ.sh
 
-with open('/opt/kos/environ.sh') as f:
-    txt = f.read()
-
-replacements = {
-    r'^export KOS_BASE=.*':  'export KOS_BASE=/opt/kos',
-    r'^export KOS_PORTS=.*': 'export KOS_PORTS=/opt/kos-ports',
-}
-for pattern, repl in replacements.items():
-    txt = re.sub(pattern, repl, txt, flags=re.MULTILINE)
-
-with open('/opt/kos/environ.sh', 'w') as f:
-    f.write(txt)
-PYEOF
-
-# --- 4. Build KallistiOS ---
-WORKDIR /opt/kos
-RUN bash -c "source /opt/kos/environ.sh && make -j$(nproc)"
+# --- 4. Build KallistiOS library ---
+RUN bash -c "source /opt/toolchains/dc/kos/environ.sh && make -j$(nproc)"
 
 # Make the cross-compiler available without sourcing environ.sh
 ENV PATH=/opt/toolchains/dc/sh-elf/bin:${PATH}

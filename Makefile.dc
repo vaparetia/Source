@@ -226,7 +226,7 @@ HC_FLAGS  := -std=c++14 -fsyntax-only -w -Wno-deprecated $(HC_INCS) $(HC_DEFS)
 #   docker build -f Dockerfile.kos -t mgs2-dreamcast-sdk .
 # -----------------------------------------------------------------------
 DC_IMAGE  := mgs2-dreamcast-sdk
-DC_ENV    := source /opt/kos/environ.sh
+DC_ENV    := source /opt/toolchains/dc/kos/environ.sh
 DC_RUN    := docker run --volume=$(CURDIR):/work:z --userns=keep-id --rm $(DC_IMAGE)
 
 .PHONY: all clean compile-check host-check \
