@@ -12,6 +12,7 @@
 
 //----------------------------------------------------------------------------
 
+class CMatrix34;
 class CShader;
 class CEvaluatorUpdateData;
 class CShaderVertexDataBinding;

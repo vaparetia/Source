@@ -29,6 +29,7 @@ public:
    void PutTo(COutputStream & stream) const;
 
    void AddTexture(uint32 const parameterCRC, CBaseTexture const * pTexture, bool const clampU, bool const clampV, bool const srgb = false);
+   void AddTexture(uint32 const parameterCRC, CBaseTexture const * pTexture) { AddTexture(parameterCRC, pTexture, false, false); }
 
    void AddParameter(uint32 const parameterCRC, real32 const value) { AddParameter(parameterCRC, CVector4(value, 0.0f, 0.0f, 0.0f)); }
    void AddParameter(uint32 const parameterCRC, CVector2 const & value) { AddParameter(parameterCRC, CVector4(value.GetX(), value.GetY(), 0.0f, 0.0f)); }

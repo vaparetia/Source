@@ -7,7 +7,9 @@
 
 //----------------------------------------------------------------------------
 
-#include "Renderer/Base/Backend/CRenderBackend.h"
+// Note: CRenderBackend.h includes this file as a platform plugin, so we must NOT
+// include it here (would be circular). CBaseRenderBackend and related types are
+// already defined by the time this file is included.
 #include "Renderer/Base/Backend/CRenderHWAllocator.h"
 #include "Renderer/Base/Primitive/CIndexBuffer.h"
 #include "Renderer/Base/Primitive/CVertexBuffer.h"

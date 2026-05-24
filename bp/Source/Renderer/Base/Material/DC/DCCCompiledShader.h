@@ -41,5 +41,17 @@ struct SShaderPassData
    int mData;
 };
 
-class CCompiledShader {};
+class CCompiledShader
+{
+public:
+   int  const Begin()                                    const { return 1; }
+   void       End()                                      const {}
+   int  const BeginPass(int const /*currentPass*/)       const { return 0; }
+   void       EndPass()                                  const {}
+   void       BeginShaderBatch(uint8* /*pMatConst*/,     int const /*matConstSize*/,
+                                uint8* /*pSharedRT*/,    int const /*sharedRTSize*/,
+                                uint8* /*pUnsharedRT*/,  int const /*unsharedRTSize*/) const {}
+   void       EndShaderBatch()                           const {}
+};
+
 class CCompiledShaderPackage {};

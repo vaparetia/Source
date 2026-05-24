@@ -228,7 +228,7 @@ void CVertexArray::AddStream(uint32 const id, uint16 const type, uint16 const fl
    mStreams[mStreamCount].mId = id;
    mStreams[mStreamCount].mType = type;
    mStreams[mStreamCount].mFlags = flags;
-   mStreams[mStreamCount].mData = (uint32)pData;
+   mStreams[mStreamCount].mData = (uint32)(uintptr_t)pData;
    mStreams[mStreamCount].mSize = size;
    ++mStreamCount;
 }
@@ -262,7 +262,7 @@ CVertexArray * CVertexArray::Load(CInputStream & stream)
    // patch up data offset to become ptrs.
    for( int i = 0; i < pOutput->mStreamCount; ++i )
    {
-      pOutput->mStreams[i].mData += (uint32)pBaseAddress;
+      pOutput->mStreams[i].mData += (uint32)(uintptr_t)pBaseAddress;
       pOutput->mStreams[i].mFlags &= ~kFlags_IsOffset;
    }
 

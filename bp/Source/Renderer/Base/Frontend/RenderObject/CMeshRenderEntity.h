@@ -11,6 +11,7 @@
 #include "Renderer/Base/BPERendererAPI.h"
 
 #include "Engine/Resource/CResourceManager.h"
+#include "Engine/Math/CMatrix4.h"
 #include "Engine/Math/CMatrix34.h"
 #include "Renderer/Base/Frontend/RenderObject/CDrawableMasterRenderEntity.h"
 

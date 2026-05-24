@@ -9,6 +9,7 @@
 
 #include "Renderer/Base/BPERendererAPI.h"
 #include "Renderer/Base/Material/CCompiledShaderCacheTypes.h"
+#include "Renderer/Base/Material/CMaterialFlags.h"
 #include "Renderer/Base/Material/CShaderVertexDataBinding.h"
 #include "Renderer/Base/Backend/RenderBackendTypes.h"
 #include "Engine/System/CGuid.h"

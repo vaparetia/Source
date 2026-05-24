@@ -126,7 +126,7 @@ CShaderParameterBuffer const CShaderParameterBufferAllocator::AllocateParameterB
    sBufferWaitingForFinalize = true;
 
    // because we use these buffers on the SPU we align them to 16 bytes
-   uint8* pNewAddress = (uint8*)(uint32(sCurrentPtr + 15) & (~15));
+   uint8* pNewAddress = (uint8*)((uintptr_t(sCurrentPtr) + 15) & ~uintptr_t(15));
 
    return CShaderParameterBuffer(pNewAddress);
 }
@@ -207,8 +207,8 @@ void CShaderParameterBuffer::AddTexture(uint32 const parameterCRC, CBaseTexture 
    // write size
    *mpParameters++ = 2 * sizeof(uint32);
 
-   // write texture ptr
-   *mpParameters++ = (uint32)pTexture;
+   // write texture ptr (truncate to 32-bit; valid on 32-bit targets like Dreamcast/PS3)
+   *mpParameters++ = (uint32)(uintptr_t)pTexture;
 
    // write srgb value
    *mpParameters++ = (uint32)srgb;

@@ -312,7 +312,7 @@ void bpe_add_string_part( char * msgString, int const maxMsgStringSize, int & ms
 
 //----------------------------------------------------------------------------------------------
 
-void bpe_log_assert_failure(char const * const fileName, unsigned long lineNum,
+void bpe_log_assert_failure(char const * const fileName, uint32 lineNum,
                        char const * const prefix, char const * const cond, char const * const msg )
 {
    printf(
@@ -329,7 +329,7 @@ void bpe_log_assert_failure(char const * const fileName, unsigned long lineNum,
 
 //----------------------------------------------------------------------------------------------
 
-bool bpe_query_to_halt_program(char const * const fileName, unsigned long const lineNum,
+bool bpe_query_to_halt_program(char const * const fileName, uint32 const lineNum,
                           char const * const prefix, char const * const cond, char const * const msg)
 {
 

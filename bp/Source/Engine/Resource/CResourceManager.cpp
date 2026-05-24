@@ -578,7 +578,10 @@ int uncompress_gzip_internal(Bytef *dest, uLongf *destLen, const Bytef *source, 
 
 int uncompress_gzip(uint8 * dest, uint32 *destLen, uint8 * const source, uint32 sourceLen)
 {
-   return uncompress_gzip_internal((Bytef*) dest, destLen, (Bytef*const) source, sourceLen);
+   uLongf destLenLong = *destLen;
+   int const result = uncompress_gzip_internal((Bytef*) dest, &destLenLong, (Bytef*const) source, (uLong)sourceLen);
+   *destLen = (uint32)destLenLong;
+   return result;
 }
 
 //----------------------------------------------------------------------------

@@ -5,7 +5,7 @@
 
 #pragma once
 
-
+#include <stdint.h>
 
 //----------------------------------------------------------------------------
 
@@ -32,7 +32,7 @@
 // warning C4251: 'CLASS' : class 'MEMBER VARIABLE CLASS TYPE' needs to have dll-interface to be used by clients of class 'CLASS'
 #pragma warning ( disable : 4251 )
 
-// warning C4251: non – DLL-interface classkey 'identifier' used as base for DLL-interface classkey 'identifier'
+// warning C4251: non ï¿½ DLL-interface classkey 'identifier' used as base for DLL-interface classkey 'identifier'
 // Disabled due to boost signals.
 #pragma warning ( disable : 4275 )
 
@@ -337,11 +337,17 @@
 #define int8_16_32_64_defined
 typedef unsigned char      uint8;
 typedef unsigned short     uint16;
+// On LP64 (64-bit Linux/macOS), unsigned long is 8 bytes; use unsigned int to keep uint32 at 4.
+// int32 stays as long to preserve overload resolution on the host (avoids ambiguity with int).
+#if defined(__LP64__)
+typedef unsigned int       uint32;
+#else
 typedef unsigned long      uint32;
+#endif
+typedef long               int32;
 
 typedef char               int8;
 typedef short              int16;
-typedef long               int32;
 
 #if BPE_TARGET != BPE_TARGET_WIN32
 typedef unsigned long long   uint64;

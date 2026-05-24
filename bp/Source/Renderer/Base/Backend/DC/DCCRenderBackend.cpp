@@ -7,13 +7,17 @@
 //------------------------------------------------------------------------------------------
 
 #include "Engine/StdAfx.h"
-#include "Renderer/Base/Backend/DC/DCCRenderBackend.h"
+// Include the base header (which in turn includes DCCRenderBackend.h as the DC platform plugin).
+#include "Renderer/Base/Backend/CRenderBackend.h"
 
 //----------------------------------------------------------------------------
 
 CRenderBackend::CRenderBackend(IResourcePool & resourcePool,
    SRenderInitialization const & initFlags)
 :  CBaseRenderBackend(resourcePool, initFlags)
+,  mCameraMatrix(CMatrix4::kConstructUninitialized)
+,  mViewMatrix(CMatrix4::kConstructUninitialized)
+,  mProjectionTimesViewMatrix(CMatrix4::kConstructUninitialized)
 ,  mpDisplayTexture(NULL)
 ,  mpDisplayDepth(NULL)
 ,  mVBLCount(0)
