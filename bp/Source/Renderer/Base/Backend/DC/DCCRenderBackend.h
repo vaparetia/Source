@@ -218,6 +218,8 @@ public:
    CMatrix4 const & GetCameraMatrix()                const { return mCameraMatrix; }
    CMatrix4 const & GetProjectionTimesViewMatrix()   const { return mProjectionTimesViewMatrix; }
 
+   void SetModelMatrix(CMatrix4 const & m) { mModelMatrix = m; }
+
    void UpdateVBLCount();
    uint32 GetVBLCount() const { return mVBLCount; }
 
@@ -304,6 +306,9 @@ private:
    uint32             mVBLCount;
    int                mVBLHandle;    // handle returned by vblank_handler_add; -1 if unregistered
    EFPS               mTargetFPS;
+
+   // Per-object model matrix — set by SetModelMatrix before each draw call.
+   CMatrix4                    mModelMatrix;
 
    // Bound geometry state — set by SetVertexData / SetIndexData, consumed by RenderPrimitives.
    const CVertexData *         mpBoundVertexData;

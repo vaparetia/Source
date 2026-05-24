@@ -40,9 +40,11 @@ CRenderBackend::CRenderBackend(IResourcePool & resourcePool,
 ,  mBlendDstA(kBF_Zero)
 ,  mDepthFunc(kDF_LEqual)
 ,  mCullMode(kCM_CCW)
+,  mModelMatrix(CMatrix4::kConstructUninitialized)
 ,  mpBoundVertexData(NULL)
 ,  mpBoundIndices(NULL)
 {
+   mModelMatrix = CMatrix4::Identity();
    pvr_init_defaults();
    mVBLHandle = vblank_handler_add(VBLHandler, this);
 }
@@ -112,12 +114,30 @@ void CRenderBackend::ForceVertexDataRebind()
 void CRenderBackend::RenderPrimitives(CMeshChunk::EPrimitive const type,
    uint32 const indexBufferOffset, uint32 const indexCount)
 {
-   if (!mpBoundVertexData || !mpBoundIndices || indexCount == 0)
+   if (!mpBoundVertexData || !mpBoundIndices || indexCount < 3)
       return;
-   if (type != CMeshChunk::kPrimitive_TriangleList)
-      return;  // strips/fans deferred to Phase 5 Step 2
    if (!mpBoundVertexData->HasAttribute(kVDS_Position))
       return;
+
+   // Determine triangle count and per-triangle index pattern.
+   uint32 triCount;
+   bool   isStrip = false;
+   bool   isFan   = false;
+   switch (type) {
+   case CMeshChunk::kPrimitive_TriangleList:
+      triCount = indexCount / 3;
+      break;
+   case CMeshChunk::kPrimitive_TriangleStrip:
+      triCount = indexCount - 2;
+      isStrip  = true;
+      break;
+   case CMeshChunk::kPrimitive_TriangleFan:
+      triCount = indexCount - 2;
+      isFan    = true;
+      break;
+   default:
+      return;
+   }
 
    // Polygon header: solid colour, opaque, no texture.
    pvr_poly_cxt_t cxt;
@@ -126,16 +146,16 @@ void CRenderBackend::RenderPrimitives(CMeshChunk::EPrimitive const type,
    pvr_poly_compile(&hdr, &cxt);
    pvr_prim(&hdr, sizeof(hdr));
 
-   // Position stream.
+   // Position stream (Float3 assumed).
    const CVertexData::SVertexAttribute &posAttr = mpBoundVertexData->GetAttribute(kVDS_Position);
    const uint8 *posBase   = (const uint8*)mpBoundVertexData->GetBufferPtrByBufferIndex(posAttr.mBufferIndex);
    uint32       posStride = mpBoundVertexData->GetStrideByBufferIndex(posAttr.mBufferIndex);
 
    // Optional UV stream.
-   bool                hasUV     = mpBoundVertexData->HasAttribute(kVDS_TexCoord0);
-   const uint8        *uvBase    = NULL;
-   uint32              uvStride  = 0, uvOffset = 0;
-   EVertexDataType     uvType    = kVDT_Invalid;
+   bool            hasUV    = mpBoundVertexData->HasAttribute(kVDS_TexCoord0);
+   const uint8    *uvBase   = NULL;
+   uint32          uvStride = 0, uvOffset = 0;
+   EVertexDataType uvType   = kVDT_Invalid;
    if (hasUV) {
       const CVertexData::SVertexAttribute &a = mpBoundVertexData->GetAttribute(kVDS_TexCoord0);
       uvBase   = (const uint8*)mpBoundVertexData->GetBufferPtrByBufferIndex(a.mBufferIndex);
@@ -144,22 +164,70 @@ void CRenderBackend::RenderPrimitives(CMeshChunk::EPrimitive const type,
       uvType   = (EVertexDataType)a.mType;
    }
 
-   const uint16 *idx = mpBoundIndices + indexBufferOffset;
+   // Optional colour stream (kVDS_Color0, engine stores RGBA bytes → PVR ARGB uint32).
+   bool            hasColor    = mpBoundVertexData->HasAttribute(kVDS_Color0);
+   const uint8    *colorBase   = NULL;
+   uint32          colorStride = 0, colorOffset = 0;
+   EVertexDataType colorType   = kVDT_Invalid;
+   if (hasColor) {
+      const CVertexData::SVertexAttribute &a = mpBoundVertexData->GetAttribute(kVDS_Color0);
+      colorBase   = (const uint8*)mpBoundVertexData->GetBufferPtrByBufferIndex(a.mBufferIndex);
+      colorStride = mpBoundVertexData->GetStrideByBufferIndex(a.mBufferIndex);
+      colorOffset = a.mOffset;
+      colorType   = (EVertexDataType)a.mType;
+   }
 
-   // De-index and transform one triangle at a time.
-   // Each triangle is submitted as a 3-vertex strip with the last vertex flagged EOL.
-   for (uint32 i = 0; i < indexCount; i += 3) {
+   // Full MVP = ProjectionTimesView * per-object model matrix.
+   CMatrix4 const mvp = mProjectionTimesViewMatrix * mModelMatrix;
+   const uint16  *idx = mpBoundIndices + indexBufferOffset;
+
+   // De-index and CPU-transform one triangle at a time.
+   // Each triangle is submitted as a 3-vertex PVR strip (last vertex flagged EOL).
+   for (uint32 t = 0; t < triCount; ++t) {
+      // Resolve the three vertex indices for this triangle.
+      uint16 vi[3];
+      if (isFan) {
+         vi[0] = idx[0];
+         vi[1] = idx[t + 1];
+         vi[2] = idx[t + 2];
+      } else if (isStrip) {
+         // Odd triangles swap first two indices to maintain consistent winding.
+         if (t & 1) {
+            vi[0] = idx[t + 1]; vi[1] = idx[t]; vi[2] = idx[t + 2];
+         } else {
+            vi[0] = idx[t]; vi[1] = idx[t + 1]; vi[2] = idx[t + 2];
+         }
+      } else {
+         vi[0] = idx[t * 3]; vi[1] = idx[t * 3 + 1]; vi[2] = idx[t * 3 + 2];
+      }
+
       for (int v = 0; v < 3; ++v) {
-         uint16 vi = idx[i + v];
+         const uint16 vidx = vi[v];
 
          pvr_vertex_t vert;
          vert.flags = (v == 2) ? PVR_CMD_VERTEX_EOL : PVR_CMD_VERTEX;
-         vert.argb  = 0xFFFFFFFF;  // white; per-vertex colour deferred to Phase 5 Step 2
          vert.oargb = 0x00000000;
 
-         // Transform position (assumed Float3) to PVR screen space.
-         const float *f = (const float*)(posBase + (uint32)vi * posStride + posAttr.mOffset);
-         CVector4 clip = mProjectionTimesViewMatrix * CVector4(f[0], f[1], f[2], 1.0f);
+         // Colour: decode RGBA bytes or float4 → PVR ARGB; default to white.
+         if (hasColor) {
+            const uint8 *c = colorBase + (uint32)vidx * colorStride + colorOffset;
+            if (colorType == kVDT_UByte4N || colorType == kVDT_UByte4) {
+               vert.argb = ((uint32)c[3] << 24) | ((uint32)c[0] << 16)
+                         | ((uint32)c[1] <<  8) |  (uint32)c[2];
+            } else if (colorType == kVDT_Float4) {
+               const float *cf = (const float*)c;
+               vert.argb = ((uint32)(cf[3] * 255.f) << 24) | ((uint32)(cf[0] * 255.f) << 16)
+                         | ((uint32)(cf[1] * 255.f) <<  8) |  (uint32)(cf[2] * 255.f);
+            } else {
+               vert.argb = 0xFFFFFFFF;
+            }
+         } else {
+            vert.argb = 0xFFFFFFFF;
+         }
+
+         // Transform position (Float3) through full MVP to PVR screen space.
+         const float *f = (const float*)(posBase + (uint32)vidx * posStride + posAttr.mOffset);
+         CVector4 clip = mvp * CVector4(f[0], f[1], f[2], 1.0f);
          float invW = (clip.GetW() != 0.0f) ? (1.0f / clip.GetW()) : 0.0f;
          vert.x = (clip.GetX() * invW + 1.0f) * (0.5f * (float)skDisplayWidth);
          vert.y = (1.0f - clip.GetY() * invW) * (0.5f * (float)skDisplayHeight);
@@ -167,7 +235,7 @@ void CRenderBackend::RenderPrimitives(CMeshChunk::EPrimitive const type,
 
          // UV.
          if (hasUV) {
-            const uint8 *u = uvBase + (uint32)vi * uvStride + uvOffset;
+            const uint8 *u = uvBase + (uint32)vidx * uvStride + uvOffset;
             if (uvType == kVDT_Half2 || uvType == kVDT_Half4) {
                const uint16 *h = (const uint16*)u;
                vert.u = CHalfFloat::ConvertToR32(h[0]);

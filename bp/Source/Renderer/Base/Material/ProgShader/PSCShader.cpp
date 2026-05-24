@@ -256,6 +256,12 @@ void CShader::BuildRuntimeParameters(int const pass, SRenderEntry const * object
             mWorldViewProjectionMatrixCached = RenderBackend()->GetProjectionTimesViewMatrix()  * objectTransform44;
 
             parameters.AddParameter(sCommonCRC.mWorldViewProjection, mWorldViewProjectionMatrixCached);
+
+#if BPE_TARGET == BPE_TARGET_DREAMCAST
+            // DC has no GPU vertex shader; pass the model matrix to RenderPrimitives
+            // for CPU-side MVP transform.
+            RenderBackend()->SetModelMatrix(objectTransform44);
+#endif
          }
 
          parameters.AddParameterGamma(sCommonCRC.mAdditive, CColor::Black(), colorSpace);
