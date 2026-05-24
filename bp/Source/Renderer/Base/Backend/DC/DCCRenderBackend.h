@@ -305,6 +305,11 @@ private:
    int                mVBLHandle;    // handle returned by vblank_handler_add; -1 if unregistered
    EFPS               mTargetFPS;
 
+   // Bound geometry state — set by SetVertexData / SetIndexData, consumed by RenderPrimitives.
+   const CVertexData *         mpBoundVertexData;
+   CShaderVertexDataBinding    mBoundBinding;
+   const uint16 *              mpBoundIndices;
+
    bool               mDepthWriteEnabled;
    bool               mBlendEnabled;
    EBlendFunc         mBlendSrcRGB;

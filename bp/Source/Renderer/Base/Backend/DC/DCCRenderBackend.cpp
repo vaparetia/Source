@@ -5,6 +5,9 @@
 
 #include "Engine/StdAfx.h"
 #include "Renderer/Base/Backend/CRenderBackend.h"
+#include "Renderer/Base/Primitive/CVertexData.h"
+#include "Engine/Math/CHalfFloat.h"
+#include "Renderer/Base/Primitive/EVertexDataType.h"
 
 #include <dc/pvr.h>
 #include <dc/vblank.h>
@@ -37,6 +40,8 @@ CRenderBackend::CRenderBackend(IResourcePool & resourcePool,
 ,  mBlendDstA(kBF_Zero)
 ,  mDepthFunc(kDF_LEqual)
 ,  mCullMode(kCM_CCW)
+,  mpBoundVertexData(NULL)
+,  mpBoundIndices(NULL)
 {
    pvr_init_defaults();
    mVBLHandle = vblank_handler_add(VBLHandler, this);
@@ -91,21 +96,94 @@ void CRenderBackend::SetViewport()
    // TODO Phase 2: glViewport equivalent
 }
 
-void CRenderBackend::SetVertexData(CShaderVertexDataBinding const & /*binding*/,
-   CVertexData const & /*vertexData*/,
+void CRenderBackend::SetVertexData(CShaderVertexDataBinding const & binding,
+   CVertexData const & vertexData,
    uint64 const /*hash1*/, uint64 const /*hash2*/)
 {
-   // TODO Phase 2: bind vertex arrays for PowerVR submission
+   mpBoundVertexData = &vertexData;
+   mBoundBinding     = binding;
 }
 
 void CRenderBackend::ForceVertexDataRebind()
 {
+   mpBoundVertexData = NULL;
 }
 
-void CRenderBackend::RenderPrimitives(CMeshChunk::EPrimitive /*type*/,
-   uint32 const /*indexBufferOffset*/, uint32 const /*indexCount*/)
+void CRenderBackend::RenderPrimitives(CMeshChunk::EPrimitive const type,
+   uint32 const indexBufferOffset, uint32 const indexCount)
 {
-   // TODO Phase 2: pvr_prim submission
+   if (!mpBoundVertexData || !mpBoundIndices || indexCount == 0)
+      return;
+   if (type != CMeshChunk::kPrimitive_TriangleList)
+      return;  // strips/fans deferred to Phase 5 Step 2
+   if (!mpBoundVertexData->HasAttribute(kVDS_Position))
+      return;
+
+   // Polygon header: solid colour, opaque, no texture.
+   pvr_poly_cxt_t cxt;
+   pvr_poly_cxt_col(&cxt, PVR_LIST_OP_POLY);
+   pvr_poly_hdr_t hdr;
+   pvr_poly_compile(&hdr, &cxt);
+   pvr_prim(&hdr, sizeof(hdr));
+
+   // Position stream.
+   const CVertexData::SVertexAttribute &posAttr = mpBoundVertexData->GetAttribute(kVDS_Position);
+   const uint8 *posBase   = (const uint8*)mpBoundVertexData->GetBufferPtrByBufferIndex(posAttr.mBufferIndex);
+   uint32       posStride = mpBoundVertexData->GetStrideByBufferIndex(posAttr.mBufferIndex);
+
+   // Optional UV stream.
+   bool                hasUV     = mpBoundVertexData->HasAttribute(kVDS_TexCoord0);
+   const uint8        *uvBase    = NULL;
+   uint32              uvStride  = 0, uvOffset = 0;
+   EVertexDataType     uvType    = kVDT_Invalid;
+   if (hasUV) {
+      const CVertexData::SVertexAttribute &a = mpBoundVertexData->GetAttribute(kVDS_TexCoord0);
+      uvBase   = (const uint8*)mpBoundVertexData->GetBufferPtrByBufferIndex(a.mBufferIndex);
+      uvStride = mpBoundVertexData->GetStrideByBufferIndex(a.mBufferIndex);
+      uvOffset = a.mOffset;
+      uvType   = (EVertexDataType)a.mType;
+   }
+
+   const uint16 *idx = mpBoundIndices + indexBufferOffset;
+
+   // De-index and transform one triangle at a time.
+   // Each triangle is submitted as a 3-vertex strip with the last vertex flagged EOL.
+   for (uint32 i = 0; i < indexCount; i += 3) {
+      for (int v = 0; v < 3; ++v) {
+         uint16 vi = idx[i + v];
+
+         pvr_vertex_t vert;
+         vert.flags = (v == 2) ? PVR_CMD_VERTEX_EOL : PVR_CMD_VERTEX;
+         vert.argb  = 0xFFFFFFFF;  // white; per-vertex colour deferred to Phase 5 Step 2
+         vert.oargb = 0x00000000;
+
+         // Transform position (assumed Float3) to PVR screen space.
+         const float *f = (const float*)(posBase + (uint32)vi * posStride + posAttr.mOffset);
+         CVector4 clip = mProjectionTimesViewMatrix * CVector4(f[0], f[1], f[2], 1.0f);
+         float invW = (clip.GetW() != 0.0f) ? (1.0f / clip.GetW()) : 0.0f;
+         vert.x = (clip.GetX() * invW + 1.0f) * (0.5f * (float)skDisplayWidth);
+         vert.y = (1.0f - clip.GetY() * invW) * (0.5f * (float)skDisplayHeight);
+         vert.z = invW;  // PVR depth buffer stores 1/w
+
+         // UV.
+         if (hasUV) {
+            const uint8 *u = uvBase + (uint32)vi * uvStride + uvOffset;
+            if (uvType == kVDT_Half2 || uvType == kVDT_Half4) {
+               const uint16 *h = (const uint16*)u;
+               vert.u = CHalfFloat::ConvertToR32(h[0]);
+               vert.v = CHalfFloat::ConvertToR32(h[1]);
+            } else {
+               const float *uf = (const float*)u;
+               vert.u = uf[0];
+               vert.v = uf[1];
+            }
+         } else {
+            vert.u = vert.v = 0.0f;
+         }
+
+         pvr_prim(&vert, sizeof(vert));
+      }
+   }
 }
 
 void CRenderBackend::RenderPrimitivesInstanced(CMeshChunk::EPrimitive /*type*/,
@@ -142,12 +220,13 @@ void CRenderBackend::RenderPrimitivesUserVertexData(CMeshChunk::EPrimitive /*typ
 
 void CRenderBackend::SetIndexData(CIndexBuffer const * /*indexBuffer*/)
 {
-   // TODO Phase 2
+   // CIndexBuffer uses hardware-allocated memory (pvr_mem_malloc); not yet implemented.
+   mpBoundIndices = NULL;
 }
 
-void CRenderBackend::SetIndexData(CIndexBufferChunk const & /*chunk*/)
+void CRenderBackend::SetIndexData(CIndexBufferChunk const & chunk)
 {
-   // TODO Phase 2
+   mpBoundIndices = chunk.GetMemory();
 }
 
 void CRenderBackend::SetTexture(int const /*texUnit*/,
