@@ -347,3 +347,16 @@ void CRenderBackend::BeginFrameResourceTick()
 }
 
 //----------------------------------------------------------------------------
+
+CRenderBackend::EInitializeDisplayResult CBaseRenderBackend::InitializeDisplay(EStereoMode const /*stereoMode*/)
+{
+   // Video mode and PVR are initialized in the CRenderBackend constructor.
+   // DC only supports monoscopic display; there is nothing to negotiate here.
+   return kIDR_Succeded;
+}
+
+void CBaseRenderBackend::UninitializeDisplay()
+{
+}
+
+//----------------------------------------------------------------------------

@@ -83,6 +83,7 @@ IResourcePool::TResourceChildDependencies const & CResourcePool::GetChildDepende
    string const dependencesFilename(CStringExtras::Stringize("%s.assets", CResourceManager::GetLocalPath(resId).c_str()));
    std::string dependencesXml;
    int64 const fileSize = CFileUtils::LoadFileAsString(dependencesFilename.c_str(), dependencesXml);
+#ifndef __DREAMCAST__
    if (fileSize > 0)
    {
       TiXmlDocument doc;
@@ -105,6 +106,7 @@ IResourcePool::TResourceChildDependencies const & CResourcePool::GetChildDepende
          deps.push_back(depId);
       }
    }
+#endif // !__DREAMCAST__
 
    for (TResourceChildDependencies::const_iterator it = deps.begin(); it != deps.end(); ++it)
    {
