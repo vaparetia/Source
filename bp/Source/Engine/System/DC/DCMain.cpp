@@ -13,10 +13,37 @@
 #include "Engine/System/COsContext.h"
 #include "Engine/Resource/CResourcePool.h"
 #include "Engine/Resource/CResourceFactory.h"
+#include "Engine/Resource/CResourceManager.h"
+#include "Engine/Mechanics/IObject.h"
+#include "Engine/Basics/NEndian.h"
 #include "Renderer/Base/Backend/CRenderBackend.h"
 #include "Renderer/Base/Frontend/CRenderer.h"
 
 KOS_INIT_FLAGS(INIT_DEFAULT);
+
+//----------------------------------------------------------------------------
+// Minimal test asset — IObject subclass so the resource system can delete it.
+
+class CTestAsset : public IObject
+{
+public:
+   explicit CTestAsset(bool valid) : mValid(valid) {}
+   virtual ~CTestAsset() {}
+   bool mValid;
+};
+
+static void TestBinFactory(SFactoryResourceBuildData & buildData, SFactoryReturnResource & returnResource)
+{
+   bool valid = false;
+   if (buildData.mSize >= 4)
+   {
+      uint8 const * p = reinterpret_cast<uint8 const *>(buildData.mpMemory);
+      valid = (p[0] == 'M') && (p[1] == 'G') && (p[2] == 'S') && (p[3] == 'D');
+   }
+   returnResource.mpResource = new CTestAsset(valid);
+}
+
+//----------------------------------------------------------------------------
 
 int main(int argc, char* argv[])
 {
@@ -25,8 +52,19 @@ int main(int argc, char* argv[])
    // --- OS context ---
    COsContext osContext;
 
-   // --- Resource pool (no asset factory yet; asset loading is Phase 6) ---
-   CResourcePool resourcePool(NULL);
+   // --- Resource factory: register .bin loader ---
+   CResourceFactory factory;
+   {
+      uint32 bin4CC;
+      char const ext[4] = {'.','b','i','n'};
+      memcpy(&bin4CC, ext, 4);
+      NEndian::Swap4Bytes(&bin4CC);
+      CResourceFactory::SFactoryEntry entry(CResourceFactory::SFactoryEntry::kFF_None, TestBinFactory);
+      factory.AddFactory(bin4CC, entry);
+   }
+
+   // --- Resource pool ---
+   CResourcePool resourcePool(&factory);
 
    // --- Render backend ---
    CRenderBackend::SRenderFrameBufferSize fbSize(
@@ -46,13 +84,14 @@ int main(int argc, char* argv[])
    // --- Renderer front-end ---
    CRenderer renderer;
 
-   // --- Phase 6: probe GD-ROM file access ---
-   // Green bg = file opened OK from /cd; red = fopen failed.
+   // --- Phase 6 Step 2: load test.bin through CResourcePool/DCCResourceFactoryLoadItem ---
+   // Green bg = asset loaded with correct magic; red = failed or wrong magic.
    {
-      FILE * f = fopen("/cd/test.bin", "rb");
-      bool const fileOk = (f != NULL);
-      if (f) fclose(f);
-      pvr_set_bg_color(0.0f, fileOk ? 0.5f : 0.0f, fileOk ? 0.0f : 0.5f);
+      CResource res = resourcePool.GetResource(CResId("$/test.bin"));
+      res.Lock();
+      void const * pRaw = res.GetResource_Untyped();
+      bool const assetOk = pRaw && static_cast<CTestAsset const *>(pRaw)->mValid;
+      pvr_set_bg_color(0.0f, assetOk ? 0.5f : 0.0f, assetOk ? 0.0f : 0.5f);
    }
 
    // --- Game loop ---
