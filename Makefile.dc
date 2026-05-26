@@ -277,9 +277,9 @@ FLYCAST := $(HOME)/Downloads/flycast-x86_64.AppImage
 # -----------------------------------------------------------------------
 DISC_DIR := $(CURDIR)/build/disc
 
-.PHONY: all clean compile-check host-check flycast \
+.PHONY: all clean compile-check host-check flycast flycast-disc \
         docker-build docker-clean docker-shell docker-image-check docker-link \
-        docker-disc disc-gdi-finalize
+        docker-disc
 
 all: $(TARGET)
 
@@ -306,8 +306,12 @@ $(OBJDIR)/%.o: $(CURDIR)/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
-# Pull in generated dependency files
+# Pull in generated dependency files — only inside the KOS cross-compile environment.
+# The .d files use absolute /work/... paths (Docker WORKDIR); including them on the
+# host causes "no rule to make target /work/..." errors for host-side targets.
+ifneq ($(KOS_CCPLUS),)
 -include $(ALL_LINK_OBJS:.o=.d)
+endif
 
 host-check:
 	@echo "Running host syntax-check with system g++ ($(words $(ALL_SRCS)) files)..."
@@ -354,34 +358,35 @@ docker-image-check:
 flycast: $(TARGET)
 	$(FLYCAST) $(TARGET)
 
-# Build a bootable GDI disc image for USB-GDROM hardware testing.
-#
-# Output: build/disc/disc.gdi + track01.bin + track02.bin + track03.bin
-# Copy all four files to your USB-GDROM drive in a folder named MGS2DC/.
-#
-# Requires image rebuilt with disc utilities (adds ~2 min to build time):
-#   docker build -f Dockerfile.kos -t $(DC_IMAGE) .
-docker-disc: docker-image-check $(TARGET)
-	mkdir -p $(DISC_DIR)/data
-	$(DC_RUN) bash -c " \
-	    scramble /work/mgs2dc.bin /work/build/disc/data/1ST_READ.BIN && \
-	    makeip /work/scripts/dc_ip.txt /work/build/disc/IP.BIN && \
-	    genisoimage \
-	        -C 0,45000 \
-	        -V MGS2DC \
-	        -G /work/build/disc/IP.BIN \
-	        -r -J -l \
-	        -o /work/build/disc/track03.bin \
-	        /work/build/disc/data/"
-	$(MAKE) -f Makefile.dc disc-gdi-finalize
+# Launch Flycast with the full GDI disc image — required for GD-ROM file I/O testing.
+# Build the image first: make -f Makefile.dc docker-disc
+flycast-disc: $(DISC_DIR)/mgs2dc.cdi
+	$(FLYCAST) $(DISC_DIR)/mgs2dc.cdi
 
-# Writes the silent lead-in tracks and disc.gdi descriptor.
-# Runs on the host (no Docker needed) after docker-disc creates track03.bin.
-disc-gdi-finalize:
-	dd if=/dev/zero bs=2048 count=300 of=$(DISC_DIR)/track01.bin 2>/dev/null
-	dd if=/dev/zero bs=2048 count=1   of=$(DISC_DIR)/track02.bin 2>/dev/null
-	printf '3\n1 0 4 2048 track01.bin 0\n2 0 0 0 track02.bin 0\n3 45000 4 2048 track03.bin 0\n' \
-	    > $(DISC_DIR)/disc.gdi
+# Build a bootable CDI disc image using mkdcdisc (same tool as GTA Dreamcast port).
+# mkdcdisc takes the ELF directly and handles scrambling, IP.BIN, and correct
+# sector layout automatically.
+#
+# Output: build/disc/mgs2dc.cdi
+# For USB-GDROM hardware: convert CDI → GDI with a separate tool.
+#
+# Requires image rebuilt with mkdcdisc:
+#   docker build -f Dockerfile.kos -t $(DC_IMAGE) .
+DISC_DATA_SRC := $(CURDIR)/scripts/disc_data
+
+docker-disc: docker-image-check docker-link
+	rm -rf $(DISC_DIR)
+	mkdir -p $(DISC_DIR)
+	$(DC_RUN) bash -c " \
+	    mkdcdisc \
+	        -e /work/mgs2dc.elf \
+	        -D /work/scripts/disc_data \
+	        -n 'METAL GEAR SOLID 2' \
+	        -r 20260523 \
+	        -s T0000 \
+	        -o /work/build/disc/mgs2dc.cdi"
+	@echo ""
+	@echo "CDI image ready: $(DISC_DIR)/mgs2dc.cdi"
 	@echo ""
 	@echo "GDI image ready in $(DISC_DIR)/"
 	@echo "Copy these files to a MGS2DC/ folder on your USB-GDROM drive:"

@@ -46,10 +46,18 @@ int main(int argc, char* argv[])
    // --- Renderer front-end ---
    CRenderer renderer;
 
+   // --- Phase 6: probe GD-ROM file access ---
+   // Green bg = file opened OK from /cd; red = fopen failed.
+   {
+      FILE * f = fopen("/cd/test.bin", "rb");
+      bool const fileOk = (f != NULL);
+      if (f) fclose(f);
+      pvr_set_bg_color(0.0f, fileOk ? 0.5f : 0.0f, fileOk ? 0.0f : 0.5f);
+   }
+
    // --- Game loop ---
    while (!osContext.mShouldTerminateApplication) {
       renderer.FrameBegin();
-      // Draw calls go here once assets and game logic are wired up (Phase 6).
       renderer.FrameEnd();
       renderer.FrameFlip();
    }

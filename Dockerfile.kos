@@ -58,10 +58,12 @@ RUN cp doc/environ.sh.sample environ.sh
 # --- 4. Build KallistiOS library ---
 RUN bash -c "source /opt/toolchains/dc/kos/environ.sh && make -j$(nproc)"
 
-# --- 5. Build host disc-creation utilities (scramble, makeip) ---
-# These are pure host-side C tools; no KOS env needed to compile them.
+# --- 5. Build host disc-creation utilities ---
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    genisoimage \
+    meson \
+    ninja-build \
+    pkg-config \
+    libisofs-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN make -C /opt/toolchains/dc/kos/utils/scramble \
@@ -69,6 +71,15 @@ RUN make -C /opt/toolchains/dc/kos/utils/scramble \
 
 RUN make -C /opt/toolchains/dc/kos/utils/makeip \
     && cp /opt/toolchains/dc/kos/utils/makeip/makeip /usr/local/bin/
+
+# --- 6. Build mkdcdisc (DCA3/GTA Dreamcast approach) ---
+# One command: ELF in, bootable CDI out. Handles scrambling, IP.BIN,
+# lead-in sectors, and correct LBA layout automatically.
+RUN git clone --depth=1 https://gitlab.com/simulant/mkdcdisc.git /tmp/mkdcdisc \
+    && meson setup /tmp/mkdcdisc/build /tmp/mkdcdisc \
+    && ninja -C /tmp/mkdcdisc/build \
+    && cp /tmp/mkdcdisc/build/mkdcdisc /usr/local/bin/ \
+    && rm -rf /tmp/mkdcdisc
 
 # Make the cross-compiler available without sourcing environ.sh
 ENV PATH=/opt/toolchains/dc/sh-elf/bin:${PATH}
