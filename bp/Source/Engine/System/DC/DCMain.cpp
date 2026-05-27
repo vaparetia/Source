@@ -16,8 +16,12 @@
 #include "Engine/Resource/CResourceManager.h"
 #include "Engine/Mechanics/IObject.h"
 #include "Engine/Basics/NEndian.h"
+#include "Engine/Math/CMatrix34.h"
 #include "Renderer/Base/Backend/CRenderBackend.h"
 #include "Renderer/Base/Frontend/CRenderer.h"
+#include "Renderer/Base/Primitive/CMesh.h"
+#include "Renderer/Base/Primitive/ProgShader/PSCMeshBuffers.h"
+#include "Renderer/Base/Material/CShaderVertexDataBinding.h"
 
 KOS_INIT_FLAGS(INIT_DEFAULT);
 
@@ -52,15 +56,23 @@ int main(int argc, char* argv[])
    // --- OS context ---
    COsContext osContext;
 
-   // --- Resource factory: register .bin loader ---
+   // --- Resource factory: register .bin and .psc loaders ---
    CResourceFactory factory;
    {
       uint32 bin4CC;
-      char const ext[4] = {'.','b','i','n'};
-      memcpy(&bin4CC, ext, 4);
+      char const binExt[4] = {'.','b','i','n'};
+      memcpy(&bin4CC, binExt, 4);
       NEndian::Swap4Bytes(&bin4CC);
-      CResourceFactory::SFactoryEntry entry(CResourceFactory::SFactoryEntry::kFF_None, TestBinFactory);
-      factory.AddFactory(bin4CC, entry);
+      CResourceFactory::SFactoryEntry binEntry(CResourceFactory::SFactoryEntry::kFF_None, TestBinFactory);
+      factory.AddFactory(bin4CC, binEntry);
+   }
+   {
+      uint32 psc4CC;
+      char const pscExt[4] = {'.','p','s','c'};
+      memcpy(&psc4CC, pscExt, 4);
+      NEndian::Swap4Bytes(&psc4CC);
+      CResourceFactory::SFactoryEntry pscEntry(CResourceFactory::SFactoryEntry::kFF_None, CMesh::FMeshFactory);
+      factory.AddFactory(psc4CC, pscEntry);
    }
 
    // --- Resource pool ---
@@ -84,19 +96,34 @@ int main(int argc, char* argv[])
    // --- Renderer front-end ---
    CRenderer renderer;
 
-   // --- Phase 6 Step 2: load test.bin through CResourcePool/DCCResourceFactoryLoadItem ---
-   // Green bg = asset loaded with correct magic; red = failed or wrong magic.
-   {
-      CResource res = resourcePool.GetResource(CResId("$/test.bin"));
-      res.Lock();
-      void const * pRaw = res.GetResource_Untyped();
-      bool const assetOk = pRaw && static_cast<CTestAsset const *>(pRaw)->mValid;
-      pvr_set_bg_color(0.0f, assetOk ? 0.5f : 0.0f, assetOk ? 0.0f : 0.5f);
-   }
+   // --- Phase 7 Step 1: load test.psc mesh ---
+   // Green bg = mesh loaded with 1 chunk; red = failed.
+   CMesh const * pMesh = NULL;
+   CResource meshRes = resourcePool.GetResource(CResId("$/test.psc"));
+   meshRes.Lock();
+   pMesh = static_cast<CMesh const *>(meshRes.GetResource_Untyped());
+   bool const meshOk = pMesh && pMesh->GetMeshChunks().size() == 1;
+   pvr_set_bg_color(0.0f, meshOk ? 0.5f : 0.0f, meshOk ? 0.0f : 0.5f);
+
+   // --- Phase 7 Step 2: set identity camera ---
+   renderBackend.SetCameraMatrix(CMatrix34::Identity());
+
+   // Persistent index buffer for the loaded mesh triangle.
+   static uint16 s_triIdx[] = { 0, 1, 2 };
+   CIndexBufferChunk const idxChunk(NULL, s_triIdx, 3);
 
    // --- Game loop ---
    while (!osContext.mShouldTerminateApplication) {
       renderer.FrameBegin();
+
+      if (pMesh) {
+         CShaderVertexDataBinding binding;
+         pMesh->GetMeshBuffers().SetVertexData(binding);
+         renderBackend.SetIndexData(idxChunk);
+         CMeshChunk const & chunk = pMesh->GetMeshChunks()[0];
+         renderBackend.RenderPrimitives(chunk.mPrimitiveType, chunk.mIndexBufferOffset, chunk.mIndicesCount);
+      }
+
       renderer.FrameEnd();
       renderer.FrameFlip();
    }

@@ -7,10 +7,13 @@
 #include "Renderer/Base/Backend/CRenderBackend.h"
 #include "Renderer/Base/Primitive/CVertexData.h"
 #include "Engine/Math/CHalfFloat.h"
+#include "Engine/Math/CMatrix34.h"
+#include "Engine/Math/BPEMath.h"
 #include "Renderer/Base/Primitive/EVertexDataType.h"
 
 #include <dc/pvr.h>
 #include <dc/vblank.h>
+#include <stdlib.h>
 
 //----------------------------------------------------------------------------
 
@@ -45,6 +48,9 @@ CRenderBackend::CRenderBackend(IResourcePool & resourcePool,
 ,  mpBoundIndices(NULL)
 {
    mModelMatrix = CMatrix4::Identity();
+   mCameraMatrix = CMatrix4::Identity();
+   mViewMatrix = CMatrix4::Identity();
+   FlushProjectionTimesViewMatrix();  // mProjectionMatrix already Identity from base ctor
    pvr_init_defaults();
    mVBLHandle = vblank_handler_add(VBLHandler, this);
 }
@@ -140,8 +146,12 @@ void CRenderBackend::RenderPrimitives(CMeshChunk::EPrimitive const type,
    }
 
    // Polygon header: solid colour, opaque, no texture.
+   // CULLING_NONE + DEPTHCMP_ALWAYS: pvr_poly_cxt_col defaults (CCW cull + GEQUAL)
+   // fail on Flycast with a fresh depth buffer; override both to be safe.
    pvr_poly_cxt_t cxt;
    pvr_poly_cxt_col(&cxt, PVR_LIST_OP_POLY);
+   cxt.gen.culling      = PVR_CULLING_NONE;
+   cxt.depth.comparison = PVR_DEPTHCMP_ALWAYS;
    pvr_poly_hdr_t hdr;
    pvr_poly_compile(&hdr, &cxt);
    pvr_prim(&hdr, sizeof(hdr));
@@ -370,15 +380,28 @@ void CRenderBackend::UpdateVBLCount()
    // mVBLCount is incremented by VBLHandler registered in the constructor.
 }
 
-CRenderHWAllocator::SHandle const * CRenderBackend::AllocFixed(int const /*size*/,
+CRenderHWAllocator::SHandle const * CRenderBackend::AllocFixed(int const size,
    int const /*alignment*/, ERenderMemory const /*memoryType*/,
    ERenderMemory const /*fallbackMemory*/)
 {
-   return NULL; // TODO Phase 1: KallistiOS malloc / pvr_mem_malloc
+   CRenderHWAllocator::SHandle* pHandle = new CRenderHWAllocator::SHandle();
+   pHandle->mpAddress = (uint8*)malloc(size > 0 ? size : 1);
+   return pHandle;
 }
 
-void CRenderBackend::Free(CRenderHWAllocator::SHandle const * /*pHandle*/) {}
-void CRenderBackend::FreeImmediate(CRenderHWAllocator::SHandle const * /*pHandle*/) {}
+void CRenderBackend::Free(CRenderHWAllocator::SHandle const * pHandle)
+{
+   if( pHandle )
+   {
+      free(const_cast<CRenderHWAllocator::SHandle*>(pHandle)->mpAddress);
+      delete const_cast<CRenderHWAllocator::SHandle*>(pHandle);
+   }
+}
+
+void CRenderBackend::FreeImmediate(CRenderHWAllocator::SHandle const * pHandle)
+{
+   Free(pHandle);
+}
 
 void CRenderBackend::GetMemoryStats(ERenderMemory const /*memory*/,
    SRenderHWAllocatorStats * pStats) const
@@ -425,6 +448,24 @@ CRenderBackend::EInitializeDisplayResult CBaseRenderBackend::InitializeDisplay(E
 
 void CBaseRenderBackend::UninitializeDisplay()
 {
+}
+
+//----------------------------------------------------------------------------
+
+void CBaseRenderBackend::SetProjectionMatrix(CMatrix4 const & matrix)
+{
+   mProjectionMatrix = matrix;
+   static_cast<CRenderBackend*>(this)->FlushProjectionTimesViewMatrix();
+}
+
+//----------------------------------------------------------------------------
+
+void CBaseRenderBackend::SetCameraMatrix(CMatrix34 const & matrix)
+{
+   CRenderBackend* pThis = static_cast<CRenderBackend*>(this);
+   pThis->mCameraMatrix = CMatrix4::FromMatrix34(matrix);
+   pThis->mViewMatrix = CMatrix4::Scale(CVector3(1.0f, 1.0f, -1.0f)) * pThis->mCameraMatrix.Inverse();
+   pThis->FlushProjectionTimesViewMatrix();
 }
 
 //----------------------------------------------------------------------------
