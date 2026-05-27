@@ -313,7 +313,7 @@ private:
    // Bound geometry state — set by SetVertexData / SetIndexData, consumed by RenderPrimitives.
    const CVertexData *         mpBoundVertexData;
    CShaderVertexDataBinding    mBoundBinding;
-   const uint16 *              mpBoundIndices;
+   const uint32 *              mpBoundIndices;
 
    bool               mDepthWriteEnabled;
    bool               mBlendEnabled;

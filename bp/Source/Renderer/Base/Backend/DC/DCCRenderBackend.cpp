@@ -146,12 +146,12 @@ void CRenderBackend::RenderPrimitives(CMeshChunk::EPrimitive const type,
    }
 
    // Polygon header: solid colour, opaque, no texture.
-   // CULLING_NONE + DEPTHCMP_ALWAYS: pvr_poly_cxt_col defaults (CCW cull + GEQUAL)
-   // fail on Flycast with a fresh depth buffer; override both to be safe.
+   // CULLING_NONE: winding is not yet established for all mesh types.
+   // GEQUAL: PVR uses 1/w as depth; larger = closer, so GEQUAL keeps nearest pixel.
    pvr_poly_cxt_t cxt;
    pvr_poly_cxt_col(&cxt, PVR_LIST_OP_POLY);
    cxt.gen.culling      = PVR_CULLING_NONE;
-   cxt.depth.comparison = PVR_DEPTHCMP_ALWAYS;
+   cxt.depth.comparison = PVR_DEPTHCMP_GEQUAL;
    pvr_poly_hdr_t hdr;
    pvr_poly_compile(&hdr, &cxt);
    pvr_prim(&hdr, sizeof(hdr));
@@ -189,13 +189,13 @@ void CRenderBackend::RenderPrimitives(CMeshChunk::EPrimitive const type,
 
    // Full MVP = ProjectionTimesView * per-object model matrix.
    CMatrix4 const mvp = mProjectionTimesViewMatrix * mModelMatrix;
-   const uint16  *idx = mpBoundIndices + indexBufferOffset;
+   const uint32  *idx = mpBoundIndices + indexBufferOffset;
 
    // De-index and CPU-transform one triangle at a time.
    // Each triangle is submitted as a 3-vertex PVR strip (last vertex flagged EOL).
    for (uint32 t = 0; t < triCount; ++t) {
       // Resolve the three vertex indices for this triangle.
-      uint16 vi[3];
+      uint32 vi[3];
       if (isFan) {
          vi[0] = idx[0];
          vi[1] = idx[t + 1];
@@ -212,7 +212,7 @@ void CRenderBackend::RenderPrimitives(CMeshChunk::EPrimitive const type,
       }
 
       for (int v = 0; v < 3; ++v) {
-         const uint16 vidx = vi[v];
+         const uint32 vidx = vi[v];
 
          pvr_vertex_t vert;
          vert.flags = (v == 2) ? PVR_CMD_VERTEX_EOL : PVR_CMD_VERTEX;
@@ -296,15 +296,27 @@ void CRenderBackend::RenderPrimitivesUserVertexData(CMeshChunk::EPrimitive /*typ
    // TODO Phase 2
 }
 
-void CRenderBackend::SetIndexData(CIndexBuffer const * /*indexBuffer*/)
+void CRenderBackend::SetIndexData(CIndexBuffer const * pIndexBuffer)
 {
-   // CIndexBuffer uses hardware-allocated memory (pvr_mem_malloc); not yet implemented.
-   mpBoundIndices = NULL;
+   if (pIndexBuffer && pIndexBuffer->mpMemory_RT)
+      mpBoundIndices = reinterpret_cast<const uint32 *>(pIndexBuffer->mpMemory_RT->mpAddress);
+   else
+      mpBoundIndices = NULL;
 }
 
 void CRenderBackend::SetIndexData(CIndexBufferChunk const & chunk)
 {
-   mpBoundIndices = chunk.GetMemory();
+   // CIndexBufferChunk stores uint16 — promote to a per-frame uint32 staging buffer.
+   // Sufficient for debug/test meshes; large meshes should use CIndexBuffer directly.
+   static uint32 s_scratch[4096];
+   const uint16 *src = chunk.GetMemory();
+   int count = chunk.GetCount();
+   if (src && count > 0 && count <= (int)(sizeof(s_scratch)/sizeof(s_scratch[0]))) {
+      for (int i = 0; i < count; ++i) s_scratch[i] = src[i];
+      mpBoundIndices = s_scratch;
+   } else {
+      mpBoundIndices = NULL;
+   }
 }
 
 void CRenderBackend::SetTexture(int const /*texUnit*/,
@@ -456,6 +468,19 @@ void CBaseRenderBackend::SetProjectionMatrix(CMatrix4 const & matrix)
 {
    mProjectionMatrix = matrix;
    static_cast<CRenderBackend*>(this)->FlushProjectionTimesViewMatrix();
+}
+
+//----------------------------------------------------------------------------
+
+void CBaseRenderBackend::SetPerspectiveProjection(CAngle const & fov,
+                                                   real32 const aspect,
+                                                   real32 const minClip,
+                                                   real32 const maxClip)
+{
+   mFrustumNear = minClip;
+   mFrustumFar  = maxClip;
+   static_cast<CRenderBackend*>(this)->SetProjectionMatrix(
+      CMatrix4::Perspective(fov, aspect, minClip, maxClip));
 }
 
 //----------------------------------------------------------------------------

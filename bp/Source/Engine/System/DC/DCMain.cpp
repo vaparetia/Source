@@ -96,30 +96,36 @@ int main(int argc, char* argv[])
    // --- Renderer front-end ---
    CRenderer renderer;
 
-   // --- Phase 7 Step 1: load test.psc mesh ---
+   // --- Phase 8: load cube.psc + perspective camera ---
    // Green bg = mesh loaded with 1 chunk; red = failed.
    CMesh const * pMesh = NULL;
-   CResource meshRes = resourcePool.GetResource(CResId("$/test.psc"));
+   CResource meshRes = resourcePool.GetResource(CResId("$/cube.psc"));
    meshRes.Lock();
    pMesh = static_cast<CMesh const *>(meshRes.GetResource_Untyped());
    bool const meshOk = pMesh && pMesh->GetMeshChunks().size() == 1;
-   pvr_set_bg_color(0.0f, meshOk ? 0.5f : 0.0f, meshOk ? 0.0f : 0.5f);
+   pvr_set_bg_color(0.0f, meshOk ? 0.3f : 0.0f, meshOk ? 0.0f : 0.3f);
 
-   // --- Phase 7 Step 2: set identity camera ---
+   // Identity camera at origin — cube is at world (0, 0, -3) in view frustum.
    renderBackend.SetCameraMatrix(CMatrix34::Identity());
+   // Perspective: 60° FOV, 4:3 aspect, near=0.1, far=100.
+   renderBackend.SetPerspectiveProjection(CAngle::FromDegrees(60.0f), 4.0f / 3.0f, 0.1f, 100.0f);
 
-   // Persistent index buffer for the loaded mesh triangle.
-   static uint16 s_triIdx[] = { 0, 1, 2 };
-   CIndexBufferChunk const idxChunk(NULL, s_triIdx, 3);
+   // Cube is at origin in model space; place at z=-3, rotated to show three faces.
+   // Order: rotate first (around cube centre), then translate into the scene.
+   CMatrix4 const cubeModel =
+      CMatrix4::Translation(CVector3(0.0f, 0.0f, -3.0f)) *
+      CMatrix4::RotateY(CAngle::FromDegrees(45.0f)) *
+      CMatrix4::RotateX(CAngle::FromDegrees(30.0f));
 
    // --- Game loop ---
    while (!osContext.mShouldTerminateApplication) {
       renderer.FrameBegin();
 
       if (pMesh) {
+         renderBackend.SetModelMatrix(cubeModel);
          CShaderVertexDataBinding binding;
          pMesh->GetMeshBuffers().SetVertexData(binding);
-         renderBackend.SetIndexData(idxChunk);
+         renderBackend.SetIndexData(pMesh->GetMeshBuffers().GetIndexBuffer());
          CMeshChunk const & chunk = pMesh->GetMeshChunks()[0];
          renderBackend.RenderPrimitives(chunk.mPrimitiveType, chunk.mIndexBufferOffset, chunk.mIndicesCount);
       }
