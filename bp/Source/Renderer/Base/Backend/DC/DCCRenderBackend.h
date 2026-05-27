@@ -220,6 +220,16 @@ public:
 
    void SetModelMatrix(CMatrix4 const & m) { mModelMatrix = m; }
 
+   // DC-specific: bind a PVR VRAM texture for subsequent draw calls.
+   // pvrTex is the pvr_ptr_t (uint32 VRAM address) cast to void*.
+   // Pass NULL to revert to untextured rendering.
+   void SetDCTexture(void* pvrTex, int w, int h)
+   {
+      mBoundTexPVR = pvrTex;
+      mBoundTexW   = w;
+      mBoundTexH   = h;
+   }
+
    void UpdateVBLCount();
    uint32 GetVBLCount() const { return mVBLCount; }
 
@@ -314,6 +324,11 @@ private:
    const CVertexData *         mpBoundVertexData;
    CShaderVertexDataBinding    mBoundBinding;
    const uint32 *              mpBoundIndices;
+
+   // Bound texture state — set by SetDCTexture, consumed by RenderPrimitives.
+   void *                      mBoundTexPVR;  // pvr_ptr_t cast to void*, NULL = no texture
+   int                         mBoundTexW;
+   int                         mBoundTexH;
 
    bool               mDepthWriteEnabled;
    bool               mBlendEnabled;

@@ -46,6 +46,9 @@ CRenderBackend::CRenderBackend(IResourcePool & resourcePool,
 ,  mModelMatrix(CMatrix4::kConstructUninitialized)
 ,  mpBoundVertexData(NULL)
 ,  mpBoundIndices(NULL)
+,  mBoundTexPVR(NULL)
+,  mBoundTexW(0)
+,  mBoundTexH(0)
 {
    mModelMatrix = CMatrix4::Identity();
    mCameraMatrix = CMatrix4::Identity();
@@ -145,11 +148,22 @@ void CRenderBackend::RenderPrimitives(CMeshChunk::EPrimitive const type,
       return;
    }
 
-   // Polygon header: solid colour, opaque, no texture.
-   // CULLING_NONE: winding is not yet established for all mesh types.
-   // GEQUAL: PVR uses 1/w as depth; larger = closer, so GEQUAL keeps nearest pixel.
+   // Pre-check UV stream so polygon context can be chosen before attribute setup.
+   bool const hasUV = mpBoundVertexData->HasAttribute(kVDS_TexCoord0);
+
+   // Polygon header. Use textured context when a texture is bound and UVs are present,
+   // otherwise solid colour. CULLING_NONE + GEQUAL per Phase 7 fix.
    pvr_poly_cxt_t cxt;
-   pvr_poly_cxt_col(&cxt, PVR_LIST_OP_POLY);
+   bool const useTexture = (mBoundTexPVR != NULL) && hasUV;
+   if (useTexture) {
+      pvr_poly_cxt_txr(&cxt, PVR_LIST_OP_POLY,
+                       PVR_TXRFMT_RGB565 | PVR_TXRFMT_TWIDDLED,
+                       mBoundTexW, mBoundTexH,
+                       (pvr_ptr_t)(uintptr_t)mBoundTexPVR,
+                       PVR_FILTER_BILINEAR);
+   } else {
+      pvr_poly_cxt_col(&cxt, PVR_LIST_OP_POLY);
+   }
    cxt.gen.culling      = PVR_CULLING_NONE;
    cxt.depth.comparison = PVR_DEPTHCMP_GEQUAL;
    pvr_poly_hdr_t hdr;
@@ -162,7 +176,6 @@ void CRenderBackend::RenderPrimitives(CMeshChunk::EPrimitive const type,
    uint32       posStride = mpBoundVertexData->GetStrideByBufferIndex(posAttr.mBufferIndex);
 
    // Optional UV stream.
-   bool            hasUV    = mpBoundVertexData->HasAttribute(kVDS_TexCoord0);
    const uint8    *uvBase   = NULL;
    uint32          uvStride = 0, uvOffset = 0;
    EVertexDataType uvType   = kVDT_Invalid;

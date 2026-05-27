@@ -9,6 +9,7 @@
 #include "Engine/StdAfx.h"
 
 #include <kos.h>
+#include <dc/maple/controller.h>
 
 #include "Engine/System/COsContext.h"
 #include "Engine/Resource/CResourcePool.h"
@@ -96,10 +97,10 @@ int main(int argc, char* argv[])
    // --- Renderer front-end ---
    CRenderer renderer;
 
-   // --- Phase 8: load cube.psc + perspective camera ---
+   // --- Phase 10: load real game mesh (crate) + perspective camera ---
    // Green bg = mesh loaded with 1 chunk; red = failed.
    CMesh const * pMesh = NULL;
-   CResource meshRes = resourcePool.GetResource(CResId("$/cube.psc"));
+   CResource meshRes = resourcePool.GetResource(CResId("$/crate.psc"));
    meshRes.Lock();
    pMesh = static_cast<CMesh const *>(meshRes.GetResource_Untyped());
    bool const meshOk = pMesh && pMesh->GetMeshChunks().size() == 1;
@@ -110,15 +111,56 @@ int main(int argc, char* argv[])
    // Perspective: 60° FOV, 4:3 aspect, near=0.1, far=100.
    renderBackend.SetPerspectiveProjection(CAngle::FromDegrees(60.0f), 4.0f / 3.0f, 0.1f, 100.0f);
 
-   // Cube is at origin in model space; place at z=-3, rotated to show three faces.
-   // Order: rotate first (around cube centre), then translate into the scene.
-   CMatrix4 const cubeModel =
-      CMatrix4::Translation(CVector3(0.0f, 0.0f, -3.0f)) *
-      CMatrix4::RotateY(CAngle::FromDegrees(45.0f)) *
-      CMatrix4::RotateX(CAngle::FromDegrees(30.0f));
+   // --- Load cube.tex from GD-ROM and upload to PVR VRAM ---
+   {
+      FILE* f = fopen("/cd/crate.tex", "rb");
+      if (f) {
+         fseek(f, 0, SEEK_END);
+         int const texBytes = (int)ftell(f);
+         fseek(f, 0, SEEK_SET);
+         void* buf = malloc((size_t)texBytes);
+         if (buf) {
+            fread(buf, 1, (size_t)texBytes, f);
+            pvr_ptr_t vramTex = pvr_mem_malloc((size_t)texBytes);
+            pvr_txr_load_ex(buf, vramTex, 256, 256, PVR_TXRLOAD_16BPP);
+            free(buf);
+            renderBackend.SetDCTexture((void*)(uintptr_t)vramTex, 256, 256);
+         }
+         fclose(f);
+      }
+   }
+
+   // Initial rotation angles; controller input accumulates into these each frame.
+   CAngle rotX = CAngle::FromDegrees(30.0f);
+   CAngle rotY = CAngle::FromDegrees(45.0f);
+   float const rotSpeed = 90.0f;   // degrees/second
+   float const dt       = 1.0f / 30.0f;
 
    // --- Game loop ---
    while (!osContext.mShouldTerminateApplication) {
+      // --- Controller input ---
+      maple_device_t* dev = maple_enum_type(0, MAPLE_FUNC_CONTROLLER);
+      if (dev) {
+         cont_state_t* st = (cont_state_t*)maple_dev_status(dev);
+         if (st) {
+            if (st->buttons & CONT_DPAD_LEFT)  rotY -= CAngle::FromDegrees(rotSpeed * dt);
+            if (st->buttons & CONT_DPAD_RIGHT) rotY += CAngle::FromDegrees(rotSpeed * dt);
+            if (st->buttons & CONT_DPAD_UP)    rotX -= CAngle::FromDegrees(rotSpeed * dt);
+            if (st->buttons & CONT_DPAD_DOWN)  rotX += CAngle::FromDegrees(rotSpeed * dt);
+            // Analog stick (dead zone ±32)
+            if (st->joyx >  32) rotY += CAngle::FromDegrees(rotSpeed * dt * (st->joyx / 128.0f));
+            if (st->joyx < -32) rotY -= CAngle::FromDegrees(rotSpeed * dt * (-st->joyx / 128.0f));
+            if (st->joyy >  32) rotX += CAngle::FromDegrees(rotSpeed * dt * (st->joyy / 128.0f));
+            if (st->joyy < -32) rotX -= CAngle::FromDegrees(rotSpeed * dt * (-st->joyy / 128.0f));
+            if (st->buttons & CONT_START) osContext.mShouldTerminateApplication = true;
+         }
+      }
+
+      CMatrix4 const cubeModel =
+         CMatrix4::Translation(CVector3(0.0f, 0.0f, -3.0f)) *
+         CMatrix4::RotateY(rotY) *
+         CMatrix4::RotateX(rotX);
+
       renderer.FrameBegin();
 
       if (pMesh) {
